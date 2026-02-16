@@ -147,6 +147,39 @@ def main() -> None:
         help="Also compile the skeleton and report errors",
     )
 
+    # --- synthesize ---
+    synth_parser = subparsers.add_parser(
+        "synthesize", help="Assemble, compile, and repair a skeleton (full Round 3)"
+    )
+    synth_parser.add_argument("cdg_file", type=str, help="Path to CDG JSON")
+    synth_parser.add_argument(
+        "matches_file", type=str, help="Path to match results JSON"
+    )
+    synth_parser.add_argument(
+        "--prover", choices=["lean4", "coq"], default="lean4", help="Proof assistant"
+    )
+    synth_parser.add_argument(
+        "--output", type=str, default=None, help="Output path for final verified source"
+    )
+    synth_parser.add_argument(
+        "--max-iterations", type=int, default=None,
+        help="Max repair iterations (default: from config)",
+    )
+    synth_parser.add_argument(
+        "--llm-provider",
+        choices=["anthropic", "codex"],
+        default=None,
+        help="LLM provider override (default: from config)",
+    )
+    synth_parser.add_argument(
+        "--llm-model", type=str, default=None,
+        help="LLM model override (default: from config)",
+    )
+    synth_parser.add_argument(
+        "--llm-max-tokens", type=int, default=None,
+        help="Max output tokens for LLM calls",
+    )
+
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
@@ -199,6 +232,8 @@ def main() -> None:
         asyncio.run(_cmd_match(args))
     elif args.command == "assemble":
         asyncio.run(_cmd_assemble(args))
+    elif args.command == "synthesize":
+        asyncio.run(_cmd_synthesize(args))
     elif args.command == "visualize":
         _cmd_visualize(args)
     else:
@@ -651,6 +686,110 @@ async def _cmd_assemble(args: argparse.Namespace) -> None:
                         print(f"    {err}")
         finally:
             await env.close()
+
+
+async def _cmd_synthesize(args: argparse.Namespace) -> None:
+    """Assemble CDG + match results, then repair via the synthesizer agent."""
+    from ageom.architect.handoff import load_json
+    from ageom.config import AgeomConfig
+    from ageom.hunter.llm import create_llm_client
+    from ageom.synthesizer.agent import SynthesizerAgent
+    from ageom.synthesizer.assembler import Assembler, AssemblyError
+    from ageom.types import MatchResult, Prover
+
+    config = AgeomConfig()
+
+    # Load CDG
+    cdg_path = Path(args.cdg_file)
+    if not cdg_path.exists():
+        print(f"Error: CDG file not found: {cdg_path}", file=sys.stderr)
+        sys.exit(1)
+    cdg = load_json(cdg_path)
+
+    # Load match results
+    matches_path = Path(args.matches_file)
+    if not matches_path.exists():
+        print(f"Error: matches file not found: {matches_path}", file=sys.stderr)
+        sys.exit(1)
+    with open(matches_path) as f:
+        matches_data = json.load(f)
+    if not isinstance(matches_data, list):
+        print("Error: matches file must contain a JSON array", file=sys.stderr)
+        sys.exit(1)
+    match_results = [MatchResult.from_dict(d) for d in matches_data]
+
+    prover = Prover(args.prover)
+
+    # Phase 1: Assemble
+    try:
+        assembler = Assembler(prover)
+        skeleton = assembler.assemble(cdg, match_results)
+    except AssemblyError as exc:
+        print(f"Error assembling skeleton: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Assembled skeleton: {len(skeleton.units)} units, {skeleton.sorry_count} sorrys")
+
+    # Set up ProofEnvironment
+    if prover == Prover.LEAN4:
+        from ageom.judge.lean_env import LeanEnvironment
+
+        env = LeanEnvironment(config.lean_toolchain)
+    else:
+        from ageom.judge.coq_env import CoqEnvironment
+
+        env = CoqEnvironment(config.coq_project_path)
+
+    # Set up LLM
+    llm_provider = (
+        args.llm_provider
+        or config.synthesizer_llm_provider
+        or config.llm_provider
+    )
+    llm_model = args.llm_model or config.synthesizer_llm_model
+    llm_max_tokens = args.llm_max_tokens or config.llm_max_tokens
+    try:
+        llm = create_llm_client(
+            provider=llm_provider,
+            model=llm_model,
+            max_tokens=llm_max_tokens,
+            anthropic_api_key=config.anthropic_api_key,
+            openai_api_key=config.openai_api_key,
+            openai_base_url=config.openai_base_url,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except ImportError as exc:
+        print(f"Error: missing LLM dependency ({exc})", file=sys.stderr)
+        sys.exit(1)
+
+    max_iterations = args.max_iterations or config.synthesizer_max_iterations
+
+    try:
+        agent = SynthesizerAgent(env=env, llm=llm, max_iterations=max_iterations)
+        print(f"Starting repair loop (max {max_iterations} iterations)...")
+        result = agent_result = await agent.synthesize(skeleton)
+
+        # Output
+        ext = ".lean" if prover == Prover.LEAN4 else ".v"
+        output = args.output or (cdg_path.stem + "_verified" + ext)
+        output_path = Path(output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(result.skeleton.source_code)
+
+        print(f"\nResult written to {output_path}")
+        print(f"  Compiled OK: {result.compiled_ok}")
+        print(f"  Iterations used: {result.iterations_used}")
+        print(f"  Patches applied: {result.patches_applied}")
+        print(f"  Sorry remaining: {result.sorry_remaining}")
+
+        if result.error_history:
+            print(f"  Errors encountered:")
+            for it, cat, text in result.error_history:
+                print(f"    [{it}] {cat}: {text[:80]}")
+    finally:
+        await env.close()
 
 
 def _cmd_visualize(args: argparse.Namespace) -> None:

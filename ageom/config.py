@@ -54,3 +54,8 @@ class AgeomConfig(BaseSettings):
     architect_max_depth: int = 8
     architect_llm_provider: str = ""  # falls back to llm_provider when empty
     architect_llm_model: str = "claude-sonnet-4-5-20250929"
+
+    # Synthesizer (Round 3)
+    synthesizer_max_iterations: int = 10
+    synthesizer_llm_provider: str = ""  # falls back to llm_provider
+    synthesizer_llm_model: str = "claude-sonnet-4-5-20250929"

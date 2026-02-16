@@ -52,3 +52,14 @@ class AssemblyResult(BaseModel):
     compiled_ok: bool = False
 
     model_config = {"arbitrary_types_allowed": True}
+
+
+class SynthesisResult(BaseModel):
+    """Result of the repair agent's synthesis loop."""
+
+    skeleton: SkeletonFile
+    compiled_ok: bool = False
+    sorry_remaining: int = 0
+    patches_applied: int = 0
+    iterations_used: int = 0
+    error_history: list[tuple[int, str, str]] = Field(default_factory=list)
