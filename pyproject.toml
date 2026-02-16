@@ -38,13 +38,16 @@ architect = [
     "psycopg[binary]>=3.1.0",
     "pyyaml>=6.0",
 ]
+synthesizer = [
+    "ageo-matcher[hunter]",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "mypy>=1.0",
 ]
 all = [
-    "ageo-matcher[indexer,lean,coq,hunter,architect,dev]",
+    "ageo-matcher[indexer,lean,coq,hunter,architect,synthesizer,dev]",
 ]
 
 [project.scripts]

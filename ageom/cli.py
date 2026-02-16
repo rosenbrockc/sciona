@@ -128,6 +128,25 @@ def main() -> None:
         help="Open file:// directly instead of starting a local server",
     )
 
+    # --- assemble ---
+    assemble_parser = subparsers.add_parser(
+        "assemble", help="Assemble CDG + match results into a compilable skeleton"
+    )
+    assemble_parser.add_argument("cdg_file", type=str, help="Path to CDG JSON")
+    assemble_parser.add_argument(
+        "matches_file", type=str, help="Path to match results JSON"
+    )
+    assemble_parser.add_argument(
+        "--prover", choices=["lean4", "coq"], default="lean4", help="Proof assistant"
+    )
+    assemble_parser.add_argument(
+        "--output", type=str, default=None, help="Output path for generated source file"
+    )
+    assemble_parser.add_argument(
+        "--check", action="store_true", default=False,
+        help="Also compile the skeleton and report errors",
+    )
+
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
@@ -178,6 +197,8 @@ def main() -> None:
         asyncio.run(_cmd_history(args))
     elif args.command == "match":
         asyncio.run(_cmd_match(args))
+    elif args.command == "assemble":
+        asyncio.run(_cmd_assemble(args))
     elif args.command == "visualize":
         _cmd_visualize(args)
     else:
@@ -556,6 +577,80 @@ async def _cmd_match(args: argparse.Namespace) -> None:
             print(f"  NO MATCH FOUND ({len(result.all_candidates)} candidates tried)")
             for vr in result.all_verifications:
                 print(f"    - {vr.candidate.declaration.name}: {vr.error_message[:100]}")
+
+
+async def _cmd_assemble(args: argparse.Namespace) -> None:
+    """Assemble CDG + match results into a compilable skeleton."""
+    from ageom.architect.handoff import load_json
+    from ageom.synthesizer.assembler import Assembler, AssemblyError
+    from ageom.types import MatchResult, Prover
+
+    # Load CDG
+    cdg_path = Path(args.cdg_file)
+    if not cdg_path.exists():
+        print(f"Error: CDG file not found: {cdg_path}", file=sys.stderr)
+        sys.exit(1)
+    cdg = load_json(cdg_path)
+
+    # Load match results
+    matches_path = Path(args.matches_file)
+    if not matches_path.exists():
+        print(f"Error: matches file not found: {matches_path}", file=sys.stderr)
+        sys.exit(1)
+    with open(matches_path) as f:
+        matches_data = json.load(f)
+    if not isinstance(matches_data, list):
+        print("Error: matches file must contain a JSON array", file=sys.stderr)
+        sys.exit(1)
+    match_results = [MatchResult.from_dict(d) for d in matches_data]
+
+    prover = Prover(args.prover)
+
+    # Assemble
+    try:
+        assembler = Assembler(prover)
+        skeleton = assembler.assemble(cdg, match_results)
+    except AssemblyError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    # Determine output path
+    ext = ".lean" if prover == Prover.LEAN4 else ".v"
+    output = args.output or (cdg_path.stem + "_skeleton" + ext)
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(skeleton.source_code)
+
+    print(f"Skeleton written to {output_path}")
+    print(f"  Units: {len(skeleton.units)}, Sorry count: {skeleton.sorry_count}")
+
+    # Optional compilation check
+    if args.check:
+        from ageom.config import AgeomConfig
+        from ageom.synthesizer.compiler import SkeletonCompiler
+
+        config = AgeomConfig()
+        if prover == Prover.LEAN4:
+            from ageom.judge.lean_env import LeanEnvironment
+
+            env = LeanEnvironment(config.lean_toolchain)
+        else:
+            from ageom.judge.coq_env import CoqEnvironment
+
+            env = CoqEnvironment(config.coq_project_path)
+
+        try:
+            compiler = SkeletonCompiler(env)
+            result = await compiler.compile(skeleton)
+            if result.compiled_ok:
+                print("  Compilation: OK")
+            else:
+                print("  Compilation: FAILED")
+                if result.feedback:
+                    for err in result.feedback.errors:
+                        print(f"    {err}")
+        finally:
+            await env.close()
 
 
 def _cmd_visualize(args: argparse.Namespace) -> None:
