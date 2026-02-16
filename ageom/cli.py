@@ -63,6 +63,21 @@ def main() -> None:
         "--index-dir", type=str, default=None, help="Skill index directory"
     )
 
+    # --- decompose ---
+    decompose_parser = subparsers.add_parser(
+        "decompose", help="Decompose a goal into a Conceptual Dependency Graph"
+    )
+    decompose_parser.add_argument("goal", type=str, help="High-level goal to decompose")
+    decompose_parser.add_argument(
+        "--max-depth", type=int, default=None, help="Max decomposition depth (default: from config)"
+    )
+    decompose_parser.add_argument(
+        "--output", type=str, default=None, help="Output path for CDG JSON"
+    )
+    decompose_parser.add_argument(
+        "--catalog", type=str, default=None, help="Path to catalog JSON (default: auto-detect)"
+    )
+
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
@@ -89,6 +104,8 @@ def main() -> None:
         else:
             print("Error: provide a skill subcommand (ingest, index, search)", file=sys.stderr)
             sys.exit(1)
+    elif args.command == "decompose":
+        asyncio.run(_cmd_decompose(args))
     elif args.command == "match":
         asyncio.run(_cmd_match(args))
     else:
@@ -226,6 +243,84 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
     )
     store.save(output_dir)
     print(f"Index saved to {output_dir} ({store.size} entries)")
+
+
+async def _cmd_decompose(args: argparse.Namespace) -> None:
+    """Decompose a goal into a Conceptual Dependency Graph."""
+    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.embedder import SkillIndex
+    from ageom.architect.graph import DecompositionAgent
+    from ageom.architect.handoff import save_json
+    from ageom.architect.models import NodeStatus
+    from ageom.config import AgeomConfig
+    from ageom.hunter.llm import ClaudeLLMClient
+
+    config = AgeomConfig()
+    max_depth = args.max_depth or config.architect_max_depth
+
+    # Load catalog
+    catalog = PrimitiveCatalog()
+    if args.catalog:
+        catalog = PrimitiveCatalog.load(args.catalog)
+    else:
+        search_dir = config.skill_index_dir
+        if search_dir.exists():
+            for cat_file in sorted(search_dir.glob("catalog_*.json")):
+                print(f"Loading catalog: {cat_file.name}")
+                partial = PrimitiveCatalog.load(cat_file)
+                for prim in partial.all_primitives():
+                    catalog.add(prim)
+
+    if catalog.size == 0:
+        print("Warning: no catalog loaded. Decomposition will have no atomic stop conditions.",
+              file=sys.stderr)
+
+    # Load skill index (falls back to empty)
+    skill_index = SkillIndex(index_dir=config.skill_index_dir)
+    if config.skill_index_dir.exists():
+        try:
+            skill_index = SkillIndex.load(config.skill_index_dir)
+        except Exception:
+            pass  # Use empty index
+
+    # Set up LLM
+    if not config.anthropic_api_key:
+        print("Error: AGEOM_ANTHROPIC_API_KEY not set", file=sys.stderr)
+        sys.exit(1)
+
+    llm = ClaudeLLMClient(
+        api_key=config.anthropic_api_key,
+        model=config.architect_llm_model,
+    )
+
+    agent = DecompositionAgent(
+        catalog=catalog,
+        skill_index=skill_index,
+        llm=llm,
+        max_depth=max_depth,
+    )
+
+    print(f"Decomposing: {args.goal}")
+    print(f"  Max depth: {max_depth}, Catalog size: {catalog.size}")
+
+    cdg = await agent.decompose(args.goal)
+
+    # Print summary
+    by_status: dict[str, int] = {}
+    for node in cdg.nodes:
+        status = node.status.value
+        by_status[status] = by_status.get(status, 0) + 1
+
+    print(f"\nDecomposition complete:")
+    print(f"  Nodes: {len(cdg.nodes)}, Edges: {len(cdg.edges)}")
+    for status, count in sorted(by_status.items()):
+        print(f"    {status}: {count}")
+    print(f"  Complete: {cdg.is_complete()}")
+
+    # Save output
+    if args.output:
+        save_json(cdg, args.output)
+        print(f"  Saved to: {args.output}")
 
 
 async def _cmd_match(args: argparse.Namespace) -> None:
