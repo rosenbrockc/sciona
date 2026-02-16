@@ -40,7 +40,9 @@ pip install -e ".[all]"
 
 - **Lean 4**: Install [elan](https://github.com/leanprover/elan) and run `lean-explore data fetch` for Mathlib data
 - **Coq**: Install via opam with your project's dependencies
-- **LLM**: Set `AGEOM_ANTHROPIC_API_KEY` in `.env`
+- **LLM**: Configure one provider in `.env`
+  - Anthropic: `AGEOM_LLM_PROVIDER=anthropic` + `AGEOM_ANTHROPIC_API_KEY`
+  - Codex: `AGEOM_LLM_PROVIDER=codex` + `AGEOM_OPENAI_API_KEY`
 
 ## Configuration
 
@@ -49,8 +51,12 @@ All settings are read from `.env` (prefixed with `AGEOM_`) via pydantic-settings
 ```bash
 # .env
 AGEOM_INDEX_DIR=data/index
+AGEOM_LLM_PROVIDER=anthropic
 AGEOM_ANTHROPIC_API_KEY=sk-ant-...
 AGEOM_LLM_MODEL=claude-sonnet-4-5-20250929
+# For Codex/OpenAI provider:
+# AGEOM_OPENAI_API_KEY=sk-...
+# AGEOM_LLM_MODEL=codex-mini-latest
 AGEOM_HUNTER_MAX_ITERATIONS=5
 
 # PostgreSQL persistence (optional -- omit for in-memory only)
@@ -77,6 +83,9 @@ ageom index build --prover coq --path ./my-coq-project
 # Basic decomposition (in-memory checkpointing)
 ageom decompose "Implement merge sort" --no-persist --output cdg.json
 
+# Use Codex for Round 1 (override .env)
+ageom decompose "Implement merge sort" --llm-provider codex --llm-model codex-mini-latest --no-persist
+
 # With a specific thread ID
 ageom decompose "Sort and search" --thread-id my-run-01
 
@@ -89,6 +98,9 @@ ageom history my-run-01
 ```bash
 # Single statement
 ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4
+
+# Use Codex for Round 2 (override .env)
+ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4 --llm-provider codex --llm-model codex-mini-latest
 
 # Batch from a PDG file
 ageom match --pdg-file predicates.json --prover lean4
@@ -149,7 +161,7 @@ ageom/
   hunter/           Round 2 -- Retrieval Agent
     nodes.py          pydantic-graph nodes (search/rank/verify/reformulate cycle)
     graph.py          Graph assembly + HunterAgent
-    llm.py            LLM client (Claude API)
+    llm.py            LLM clients (Anthropic Claude + Codex/OpenAI)
     prompts.py        Prompt templates
 tests/
 ```

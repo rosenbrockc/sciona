@@ -82,6 +82,24 @@ def main() -> None:
         help="Checkpoint thread ID (auto-generated if omitted)",
     )
     decompose_parser.add_argument(
+        "--llm-provider",
+        choices=["anthropic", "codex"],
+        default=None,
+        help="LLM provider override (default: from config)",
+    )
+    decompose_parser.add_argument(
+        "--llm-model",
+        type=str,
+        default=None,
+        help="LLM model override for decomposition (default: from config)",
+    )
+    decompose_parser.add_argument(
+        "--llm-max-tokens",
+        type=int,
+        default=None,
+        help="Max output tokens for decomposition LLM calls",
+    )
+    decompose_parser.add_argument(
         "--no-persist", action="store_true", default=False,
         help="Disable PostgreSQL persistence (use in-memory only)",
     )
@@ -101,6 +119,24 @@ def main() -> None:
     )
     match_parser.add_argument(
         "--index-dir", type=str, default=None, help="Directory containing FAISS index (default: from .env)"
+    )
+    match_parser.add_argument(
+        "--llm-provider",
+        choices=["anthropic", "codex"],
+        default=None,
+        help="LLM provider override (default: from config)",
+    )
+    match_parser.add_argument(
+        "--llm-model",
+        type=str,
+        default=None,
+        help="LLM model override for matching (default: from config)",
+    )
+    match_parser.add_argument(
+        "--llm-max-tokens",
+        type=int,
+        default=None,
+        help="Max output tokens for matching LLM calls",
     )
 
     args = parser.parse_args()
@@ -270,7 +306,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     from ageom.architect.handoff import save_json
     from ageom.architect.models import NodeStatus
     from ageom.config import AgeomConfig
-    from ageom.hunter.llm import ClaudeLLMClient
+    from ageom.hunter.llm import create_llm_client
 
     config = AgeomConfig()
     max_depth = args.max_depth or config.architect_max_depth
@@ -301,14 +337,24 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             pass  # Use empty index
 
     # Set up LLM
-    if not config.anthropic_api_key:
-        print("Error: AGEOM_ANTHROPIC_API_KEY not set", file=sys.stderr)
+    llm_provider = args.llm_provider or config.architect_llm_provider or config.llm_provider
+    llm_model = args.llm_model or config.architect_llm_model
+    llm_max_tokens = args.llm_max_tokens or config.llm_max_tokens
+    try:
+        llm = create_llm_client(
+            provider=llm_provider,
+            model=llm_model,
+            max_tokens=llm_max_tokens,
+            anthropic_api_key=config.anthropic_api_key,
+            openai_api_key=config.openai_api_key,
+            openai_base_url=config.openai_base_url,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
-
-    llm = ClaudeLLMClient(
-        api_key=config.anthropic_api_key,
-        model=config.architect_llm_model,
-    )
+    except ImportError as exc:
+        print(f"Error: missing LLM dependency ({exc})", file=sys.stderr)
+        sys.exit(1)
 
     # Determine persistence URI
     postgres_uri = "" if args.no_persist else config.postgres_uri
@@ -390,7 +436,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     """Match predicates to library functions."""
     from ageom.config import AgeomConfig
     from ageom.hunter.graph import HunterAgent
-    from ageom.hunter.llm import ClaudeLLMClient
+    from ageom.hunter.llm import create_llm_client
     from ageom.indexer.builder import SemanticIndexImpl
     from ageom.indexer.embedder import UniXcoderEmbedder
     from ageom.indexer.faiss_store import FAISSStore
@@ -422,11 +468,24 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         oracle = VerificationOracleImpl(coq_env=coq_env)
 
     # Set up LLM
-    llm = ClaudeLLMClient(
-        api_key=config.anthropic_api_key,
-        model=config.llm_model,
-        max_tokens=config.llm_max_tokens,
-    )
+    llm_provider = args.llm_provider or config.llm_provider
+    llm_model = args.llm_model or config.llm_model
+    llm_max_tokens = args.llm_max_tokens or config.llm_max_tokens
+    try:
+        llm = create_llm_client(
+            provider=llm_provider,
+            model=llm_model,
+            max_tokens=llm_max_tokens,
+            anthropic_api_key=config.anthropic_api_key,
+            openai_api_key=config.openai_api_key,
+            openai_base_url=config.openai_base_url,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except ImportError as exc:
+        print(f"Error: missing LLM dependency ({exc})", file=sys.stderr)
+        sys.exit(1)
 
     agent = HunterAgent(
         index=index,

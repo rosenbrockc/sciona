@@ -27,7 +27,10 @@ class AgeomConfig(BaseSettings):
     index_dir: Path = Field(default=Path("data/index"))
 
     # LLM (for Hunter agent)
+    llm_provider: str = "anthropic"  # "anthropic" | "codex"
     anthropic_api_key: str = ""
+    openai_api_key: str = ""
+    openai_base_url: str = ""
     llm_model: str = "claude-sonnet-4-5-20250929"
     llm_max_tokens: int = 4096
 
@@ -49,4 +52,5 @@ class AgeomConfig(BaseSettings):
     coq100_path: Path = Field(default=Path(""))
     postgres_uri: str = ""
     architect_max_depth: int = 8
+    architect_llm_provider: str = ""  # falls back to llm_provider when empty
     architect_llm_model: str = "claude-sonnet-4-5-20250929"

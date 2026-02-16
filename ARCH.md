@@ -170,7 +170,12 @@ InitialSearch ──> RankCandidates ──> VerifyTopK ──> End[MatchResult]
 
 ### LLM integration (`ageom/hunter/llm.py`)
 
-`LLMClient` is a Protocol with a single method: `async complete(system, user) -> str`. The `ClaudeLLMClient` implementation wraps `anthropic.AsyncAnthropic`. Swappable to any provider.
+`LLMClient` is a Protocol with a single method: `async complete(system, user) -> str`.
+Built-in implementations:
+- `ClaudeLLMClient` via `anthropic.AsyncAnthropic`
+- `CodexLLMClient` via `openai.AsyncOpenAI` (Codex-compatible models)
+
+`create_llm_client(...)` selects the provider (`anthropic` or `codex`) from config/CLI.
 
 Three prompt templates drive the agent's reasoning:
 - **`REFORMULATE_QUERY`** -- Given failed queries + compiler errors, generate new search terms
@@ -184,7 +189,10 @@ Three prompt templates drive the agent's reasoning:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `AGEOM_INDEX_DIR` | `data/index` | FAISS index location |
+| `AGEOM_LLM_PROVIDER` | `anthropic` | LLM provider (`anthropic` or `codex`) |
 | `AGEOM_ANTHROPIC_API_KEY` | | Claude API key |
+| `AGEOM_OPENAI_API_KEY` | | OpenAI API key for Codex |
+| `AGEOM_OPENAI_BASE_URL` | *(empty)* | Optional OpenAI-compatible endpoint |
 | `AGEOM_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Hunter |
 | `AGEOM_EMBEDDING_MODEL` | `microsoft/unixcoder-base` | Embedding model |
 | `AGEOM_LEAN_TOOLCHAIN` | `leanprover/lean4:v4.14.0` | Lean version |
@@ -193,6 +201,7 @@ Three prompt templates drive the agent's reasoning:
 | `AGEOM_HUNTER_SEARCH_K` | `20` | Candidates retrieved per search |
 | `AGEOM_POSTGRES_URI` | *(empty)* | PostgreSQL URI for checkpoint persistence (omit for in-memory) |
 | `AGEOM_ARCHITECT_MAX_DEPTH` | `8` | Max CDG decomposition depth |
+| `AGEOM_ARCHITECT_LLM_PROVIDER` | *(empty)* | Optional Round 1 provider override (falls back to `AGEOM_LLM_PROVIDER`) |
 | `AGEOM_ARCHITECT_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Architect |
 | `AGEOM_SKILL_INDEX_DIR` | `data/skill_index` | Skill catalog and index location |
 
@@ -261,7 +270,7 @@ ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
     |         |          |           coqpyt, langgraph, psycopg)
     +----+----+          |
          |               |
-      hunter/            |          (pydantic-graph, anthropic)
+      hunter/            |          (pydantic-graph, anthropic, openai)
          |               |
          +-------+-------+
                  |
