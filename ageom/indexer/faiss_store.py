@@ -1,0 +1,138 @@
+"""FAISS-based vector store for declaration embeddings."""
+
+from __future__ import annotations
+
+import json
+import pickle
+from pathlib import Path
+
+import numpy as np
+
+from ageom.indexer.models import IndexEntry, IndexMetadata
+from ageom.types import Declaration
+
+
+class FAISSStore:
+    """Vector store using FAISS IndexFlatIP (inner product on normalized vectors = cosine similarity).
+
+    Uses IndexIDMap to map FAISS internal IDs to our integer keys,
+    with a separate dict for ID-to-Declaration metadata.
+    """
+
+    def __init__(self, dim: int = 768) -> None:
+        import faiss
+
+        self._dim = dim
+        base_index = faiss.IndexFlatIP(dim)
+        self._index = faiss.IndexIDMap(base_index)
+        self._declarations: dict[int, Declaration] = {}
+        self._next_id = 0
+        self._metadata: IndexMetadata | None = None
+
+    @property
+    def size(self) -> int:
+        return self._index.ntotal
+
+    def add(self, entries: list[IndexEntry]) -> None:
+        """Add entries to the index."""
+        import faiss
+
+        if not entries:
+            return
+        ids = []
+        vecs = []
+        for entry in entries:
+            entry_id = self._next_id
+            self._next_id += 1
+            self._declarations[entry_id] = entry.declaration
+            ids.append(entry_id)
+            vecs.append(entry.embedding)
+
+        id_array = np.array(ids, dtype=np.int64)
+        vec_array = np.vstack(vecs).astype(np.float32)
+        self._index.add_with_ids(vec_array, id_array)
+
+    def search(
+        self, query_vec: np.ndarray, k: int = 10
+    ) -> list[tuple[Declaration, float]]:
+        """Search for the k most similar declarations.
+
+        Returns list of (Declaration, score) sorted by descending similarity.
+        """
+        query = query_vec.reshape(1, -1).astype(np.float32)
+        k = min(k, self.size) if self.size > 0 else 0
+        if k == 0:
+            return []
+        scores, ids = self._index.search(query, k)
+        results: list[tuple[Declaration, float]] = []
+        for score, entry_id in zip(scores[0], ids[0]):
+            if entry_id == -1:
+                continue
+            decl = self._declarations.get(int(entry_id))
+            if decl is not None:
+                results.append((decl, float(score)))
+        return results
+
+    def save(self, directory: str | Path) -> None:
+        """Persist the FAISS index and metadata to disk."""
+        import faiss
+
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+
+        faiss.write_index(self._index, str(directory / "index.faiss"))
+
+        with open(directory / "declarations.pkl", "wb") as f:
+            pickle.dump(self._declarations, f)
+
+        meta = {
+            "next_id": self._next_id,
+            "dim": self._dim,
+        }
+        if self._metadata:
+            meta["metadata"] = {
+                "num_entries": self._metadata.num_entries,
+                "prover": self._metadata.prover.value,
+                "source_lib": self._metadata.source_lib,
+                "embedding_model": self._metadata.embedding_model,
+                "created_at": self._metadata.created_at,
+            }
+        with open(directory / "meta.json", "w") as f:
+            json.dump(meta, f, indent=2)
+
+    @classmethod
+    def load(cls, directory: str | Path) -> FAISSStore:
+        """Load a persisted index from disk."""
+        import faiss
+
+        directory = Path(directory)
+
+        store = cls.__new__(cls)
+        store._index = faiss.read_index(str(directory / "index.faiss"))
+        store._dim = store._index.d
+
+        with open(directory / "declarations.pkl", "rb") as f:
+            store._declarations = pickle.load(f)  # noqa: S301
+
+        with open(directory / "meta.json") as f:
+            meta = json.load(f)
+        store._next_id = meta["next_id"]
+
+        if "metadata" in meta:
+            from ageom.types import Prover
+
+            md = meta["metadata"]
+            store._metadata = IndexMetadata(
+                num_entries=md["num_entries"],
+                prover=Prover(md["prover"]),
+                source_lib=md["source_lib"],
+                embedding_model=md["embedding_model"],
+                created_at=md["created_at"],
+            )
+        else:
+            store._metadata = None
+
+        return store
+
+    def set_metadata(self, metadata: IndexMetadata) -> None:
+        self._metadata = metadata

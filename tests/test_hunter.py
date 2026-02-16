@@ -1,0 +1,204 @@
+"""Tests for the Hunter (Retrieval Agent) graph."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock
+
+import pytest
+
+from ageom.hunter.deps import HunterDeps
+from ageom.hunter.state import HunterState
+from ageom.types import (
+    CandidateMatch,
+    Declaration,
+    MatchResult,
+    PDGNode,
+    Prover,
+    VerificationResult,
+)
+
+
+@pytest.fixture
+def pdg_node():
+    return PDGNode(
+        predicate_id="p1",
+        statement="∀ (n m : ℕ), n + m = m + n",
+        informal_desc="commutativity of addition on natural numbers",
+        prover=Prover.LEAN4,
+    )
+
+
+@pytest.fixture
+def correct_decl():
+    return Declaration(
+        name="Nat.add_comm",
+        type_signature="∀ (n m : ℕ), n + m = m + n",
+        prover=Prover.LEAN4,
+    )
+
+
+@pytest.fixture
+def wrong_decl():
+    return Declaration(
+        name="Nat.mul_comm",
+        type_signature="∀ (n m : ℕ), n * m = m * n",
+        prover=Prover.LEAN4,
+    )
+
+
+def _make_mock_index(declarations: list[Declaration]):
+    """Create a mock SemanticIndex returning the given declarations."""
+    index = AsyncMock()
+    index.search_by_embedding = lambda query, k=10: [
+        (d, 1.0 - i * 0.1) for i, d in enumerate(declarations[:k])
+    ]
+    index.search_by_type = lambda sig, k=10: declarations[:k]
+    index.get_declaration = lambda name: next(
+        (d for d in declarations if d.name == name), None
+    )
+    return index
+
+
+def _make_mock_oracle(verified_names: set[str]):
+    """Create a mock VerificationOracle that verifies only specific names."""
+
+    async def verify_candidate(pdg_node, candidate):
+        is_verified = candidate.declaration.name in verified_names
+        return VerificationResult(
+            candidate=candidate,
+            verified=is_verified,
+            compiler_output="ok" if is_verified else "type mismatch",
+            proof_term=f"@{candidate.declaration.name}" if is_verified else "",
+            error_message="" if is_verified else "type mismatch",
+        )
+
+    async def verify_candidates(pdg_node, candidates):
+        results = []
+        for c in candidates:
+            r = await verify_candidate(pdg_node, c)
+            results.append(r)
+            if r.verified:
+                break
+        return results
+
+    oracle = AsyncMock()
+    oracle.verify_candidate = verify_candidate
+    oracle.verify_candidates = verify_candidates
+    return oracle
+
+
+def _make_mock_llm(rank_response: str = "[0, 1, 2]", queries_response: str = '["query1"]'):
+    """Create a mock LLMClient."""
+    llm = AsyncMock()
+
+    async def complete(system: str, user: str) -> str:
+        if "rank" in system.lower() or "score" in system.lower():
+            return rank_response
+        elif "reformulate" in system.lower():
+            return queries_response
+        elif "analy" in system.lower():
+            return "The types don't match. Try searching for add_comm instead."
+        return '["fallback_query"]'
+
+    llm.complete = complete
+    return llm
+
+
+class TestHunterHappyPath:
+    """Test: InitialSearch -> RankCandidates -> VerifyTopK -> End (verified)."""
+
+    @pytest.mark.asyncio
+    async def test_finds_correct_match_on_first_try(self, pdg_node, correct_decl, wrong_decl):
+        from ageom.hunter.graph import HunterAgent
+
+        index = _make_mock_index([correct_decl, wrong_decl])
+        oracle = _make_mock_oracle({"Nat.add_comm"})
+        llm = _make_mock_llm()
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=3)
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert result.verified_match.candidate.declaration.name == "Nat.add_comm"
+
+
+class TestHunterRefinement:
+    """Test: first verify fails -> reformulate -> second search finds match."""
+
+    @pytest.mark.asyncio
+    async def test_refines_and_finds_match(self, pdg_node, correct_decl, wrong_decl):
+        from ageom.hunter.graph import HunterAgent
+
+        call_count = 0
+
+        def search_by_embedding(query, k=10):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # First search returns only wrong declaration
+                return [(wrong_decl, 0.9)]
+            else:
+                # After reformulation, returns correct one
+                return [(correct_decl, 0.95), (wrong_decl, 0.8)]
+
+        index = AsyncMock()
+        index.search_by_embedding = search_by_embedding
+        index.search_by_type = lambda sig, k=10: []
+
+        oracle = _make_mock_oracle({"Nat.add_comm"})
+        llm = _make_mock_llm(queries_response='["Nat.add_comm addition commutative"]')
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=5)
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert result.verified_match.candidate.declaration.name == "Nat.add_comm"
+
+
+class TestHunterBudgetExhaustion:
+    """Test: max_iterations reached -> End with no verified match."""
+
+    @pytest.mark.asyncio
+    async def test_exhausts_budget(self, pdg_node, wrong_decl):
+        from ageom.hunter.graph import HunterAgent
+
+        index = _make_mock_index([wrong_decl])
+        oracle = _make_mock_oracle(set())  # Nothing verifies
+        llm = _make_mock_llm()
+
+        agent = HunterAgent(
+            index=index, oracle=oracle, llm=llm, max_iterations=2, top_k_verify=1
+        )
+        result = await agent.find_match(pdg_node)
+
+        assert not result.success
+        assert result.verified_match is None
+        assert len(result.all_verifications) > 0
+
+
+class TestHunterNoCandidates:
+    """Test: no candidates found -> immediate End."""
+
+    @pytest.mark.asyncio
+    async def test_no_candidates(self, pdg_node):
+        from ageom.hunter.graph import HunterAgent
+
+        index = _make_mock_index([])
+        oracle = _make_mock_oracle(set())
+        llm = _make_mock_llm()
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm)
+        result = await agent.find_match(pdg_node)
+
+        assert not result.success
+        assert len(result.all_candidates) == 0
+
+
+class TestHunterState:
+    def test_initial_state(self, pdg_node):
+        state = HunterState(pdg_node=pdg_node)
+        assert state.iteration == 0
+        assert state.verified_match is None
+        assert state.candidates_found == []
