@@ -466,14 +466,29 @@ async def critique_decomposition(
     parsed = _parse_json(response)
 
     if parsed is None:
-        # Conservative fallback: reject
+        # Deterministic checks already passed, so malformed critique should not
+        # block progress solely due LLM formatting.
         return {
-            "critique_passed": False,
-            "critique_reason": "Failed to parse LLM critique response",
+            "critique_passed": True,
+            "critique_reason": "LLM critique parse failed; accepted by deterministic checks",
             "history": [{"step": "critique", "phase": "llm", "parse_error": True}],
         }
 
-    approved = parsed.get("approved", False)
+    approved_raw = parsed.get("approved")
+    if not isinstance(approved_raw, bool):
+        # Same fail-open behavior for wrong JSON shape (e.g., missing "approved").
+        return {
+            "critique_passed": True,
+            "critique_reason": "LLM critique had invalid schema; accepted by deterministic checks",
+            "history": [{
+                "step": "critique",
+                "phase": "llm",
+                "schema_error": True,
+                "keys": sorted(parsed.keys()),
+            }],
+        }
+
+    approved = approved_raw
     reason = parsed.get("reason", "")
     flagged = parsed.get("flagged_nodes", [])
 
@@ -582,12 +597,10 @@ async def prepare_retry(
     all_nodes = state["nodes"]
     retries = state.get("critique_retries", 0)
 
-    # Mark rejected children
+    # Mark all current children rejected so retries replace prior attempts.
     rejected_updates: list[AlgorithmicNode] = []
     for node in all_nodes:
-        if node.parent_id == current_id and node.status not in (
-            NodeStatus.REJECTED, NodeStatus.ATOMIC
-        ):
+        if node.parent_id == current_id and node.status != NodeStatus.REJECTED:
             rejected_updates.append(
                 node.model_copy(update={"status": NodeStatus.REJECTED})
             )

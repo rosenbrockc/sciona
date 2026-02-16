@@ -521,3 +521,129 @@ class TestMaxDepth:
 
         assert result["critique_passed"] is False
         assert "max depth" in result["critique_reason"].lower() or "depth" in result["critique_reason"].lower()
+
+
+class TestCritiqueHardening:
+    """Hardening behaviors for malformed critique payloads and retries."""
+
+    @pytest.mark.asyncio
+    async def test_malformed_critique_schema_fails_open(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            # Valid JSON but wrong shape for a critique response.
+            return json.dumps({"sub_nodes": [], "edges": []})
+
+        llm.complete = complete
+
+        parent = AlgorithmicNode(
+            node_id="parent",
+            name="Parent",
+            description="Parent node",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        child1 = AlgorithmicNode(
+            node_id="c1",
+            parent_id="parent",
+            name="Child 1",
+            description="child 1",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+        child2 = AlgorithmicNode(
+            node_id="c2",
+            parent_id="parent",
+            name="Child 2",
+            description="child 2",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+
+        state: DecompositionState = {
+            "goal": "test",
+            "max_depth": 8,
+            "nodes": [parent, child1, child2],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["parent"],
+            "current_node_id": "parent",
+            "paradigm": "custom",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        config = {"configurable": {"deps": deps}}
+        result = await critique_decomposition(state, config)
+
+        assert result["critique_passed"] is True
+        assert "invalid schema" in result["critique_reason"].lower()
+
+    @pytest.mark.asyncio
+    async def test_prepare_retry_rejects_prior_atomic_children(self):
+        from ageom.architect.nodes import prepare_retry
+
+        parent = AlgorithmicNode(
+            node_id="p",
+            name="Parent",
+            description="parent",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=0,
+        )
+        child_atomic = AlgorithmicNode(
+            node_id="a",
+            parent_id="p",
+            name="Atomic Child",
+            description="atomic",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.ATOMIC,
+            depth=1,
+        )
+        child_pending = AlgorithmicNode(
+            node_id="b",
+            parent_id="p",
+            name="Pending Child",
+            description="pending",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        state: DecompositionState = {
+            "goal": "test",
+            "max_depth": 8,
+            "nodes": [parent, child_atomic, child_pending],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["p"],
+            "current_node_id": "p",
+            "paradigm": "custom",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "bad decomposition",
+            "critique_retries": 1,
+            "done": False,
+            "error": "",
+        }
+
+        result = await prepare_retry(state, {"configurable": {"deps": None}})
+        updated = result["nodes"]
+
+        assert len(updated) == 2
+        assert all(n.status == NodeStatus.REJECTED for n in updated)
+        assert result["critique_retries"] == 2
