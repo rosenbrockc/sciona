@@ -6,11 +6,17 @@ Given a predicate like `forall n m : Nat, n + m = m + n`, AGEO-Matcher searches 
 
 ## How it works
 
-The system follows a **Deterministic -> Agentic -> Deterministic** sandwich:
+The system implements a **Two-Round Agentic Development Cycle**:
+
+**Round 1 -- Architect** (Conceptual Dependency Agent): decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) using LangGraph, with PostgreSQL-backed checkpointing for time-travel and fork/resume.
+
+**Round 2 -- Hunter** (Functional Matching Agent): grounds each atomic CDG leaf into a verified library function through a **Deterministic -> Agentic -> Deterministic** sandwich:
 
 1. **Semantic Indexer** -- embeds library declarations with UniXcoder into a FAISS vector store
 2. **Retrieval Agent** -- LLM-driven search loop with query reformulation (pydantic-graph state machine)
 3. **Verification Oracle** -- compiler-based type checking via Lean 4 / Coq REPLs
+
+The handoff from Round 1 to Round 2 is validated: every atomic leaf must have a `type_signature` and `description` before conversion to PDG nodes.
 
 See [ARCH.md](ARCH.md) for the full architecture.
 
@@ -46,6 +52,9 @@ AGEOM_INDEX_DIR=data/index
 AGEOM_ANTHROPIC_API_KEY=sk-ant-...
 AGEOM_LLM_MODEL=claude-sonnet-4-5-20250929
 AGEOM_HUNTER_MAX_ITERATIONS=5
+
+# PostgreSQL persistence (optional -- omit for in-memory only)
+AGEOM_POSTGRES_URI=postgresql://localhost:5432/ageom_architect
 ```
 
 CLI flags override `.env` when provided. See `ageom/config.py` for all options.
@@ -62,7 +71,20 @@ ageom index build --prover lean4
 ageom index build --prover coq --path ./my-coq-project
 ```
 
-### Match predicates
+### Decompose a goal (Round 1)
+
+```bash
+# Basic decomposition (in-memory checkpointing)
+ageom decompose "Implement merge sort" --no-persist --output cdg.json
+
+# With a specific thread ID
+ageom decompose "Sort and search" --thread-id my-run-01
+
+# View checkpoint history for a thread
+ageom history my-run-01
+```
+
+### Match predicates (Round 2)
 
 ```bash
 # Single statement
@@ -100,7 +122,20 @@ ageom/
   types.py          Shared domain types (Declaration, PDGNode, MatchResult, ...)
   protocols.py      Protocol interfaces (SemanticIndex, ProofEnvironment, ...)
   config.py         AgeomConfig (pydantic-settings, reads .env)
-  cli.py            CLI entrypoint
+  cli.py            CLI entrypoint (decompose, history, match, index, skill)
+  architect/        Round 1 -- Conceptual Dependency Agent
+    models.py         CDG node/edge Pydantic models
+    catalog.py        PrimitiveCatalog (CLRS-30, coq-100-theorems)
+    embedder.py       FAISS-based SkillIndex for primitive matching
+    skeletons.py      Pre-built graph templates per paradigm
+    nodes.py          LangGraph node functions (select_strategy, decompose, critique, ...)
+    state.py          DecompositionState TypedDict + DecompositionDeps
+    graph.py          StateGraph assembly + DecompositionAgent (with time-travel)
+    checkpointer.py   Checkpointer factory (AsyncPostgresSaver / MemorySaver)
+    handoff.py        CDGExport, validate_handoff, to_pdg_nodes (Round 1 -> 2 bridge)
+    prompts.py        Prompt templates for decomposition LLM calls
+    ingest_clrs.py    CLRS-30 ingestion
+    ingest_coq100.py  coq-100-theorems ingestion
   indexer/          Semantic Indexer
     embedder.py       UniXcoder embeddings (768-dim, L2-normalized)
     faiss_store.py    FAISS IndexFlatIP vector store
@@ -111,7 +146,7 @@ ageom/
     lean_env.py       Lean 4 REPL via lean-interact
     coq_env.py        Coq compiler via coqpyt
     checker.py        VerificationOracleImpl (routes by prover)
-  hunter/           Retrieval Agent
+  hunter/           Round 2 -- Retrieval Agent
     nodes.py          pydantic-graph nodes (search/rank/verify/reformulate cycle)
     graph.py          Graph assembly + HunterAgent
     llm.py            LLM client (Claude API)
