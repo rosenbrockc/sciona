@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -110,6 +111,23 @@ def main() -> None:
     )
     history_parser.add_argument("thread_id", type=str, help="Thread ID to inspect")
 
+    # --- visualize ---
+    viz_parser = subparsers.add_parser(
+        "visualize", help="Open browser-based CDG visualization"
+    )
+    viz_parser.add_argument(
+        "cdg_file", nargs="?", default=None,
+        help="Path to CDG JSON to pre-load (optional)",
+    )
+    viz_parser.add_argument(
+        "--port", type=int, default=0,
+        help="HTTP server port (default: auto-pick)",
+    )
+    viz_parser.add_argument(
+        "--no-serve", action="store_true", default=False,
+        help="Open file:// directly instead of starting a local server",
+    )
+
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
@@ -160,6 +178,8 @@ def main() -> None:
         asyncio.run(_cmd_history(args))
     elif args.command == "match":
         asyncio.run(_cmd_match(args))
+    elif args.command == "visualize":
+        _cmd_visualize(args)
     else:
         parser.print_help()
         sys.exit(1)
@@ -536,6 +556,78 @@ async def _cmd_match(args: argparse.Namespace) -> None:
             print(f"  NO MATCH FOUND ({len(result.all_candidates)} candidates tried)")
             for vr in result.all_verifications:
                 print(f"    - {vr.candidate.declaration.name}: {vr.error_message[:100]}")
+
+
+def _cmd_visualize(args: argparse.Namespace) -> None:
+    """Open browser-based CDG visualization."""
+    import shutil
+    import socketserver
+    import threading
+    import webbrowser
+    from http.server import SimpleHTTPRequestHandler
+
+    static_dir = Path(__file__).resolve().parent / "static"
+    if not static_dir.exists():
+        print(f"Error: static directory not found at {static_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    default_cdg = static_dir / "default_cdg.json"
+
+    # If a CDG file was provided, validate and copy it
+    if args.cdg_file:
+        cdg_path = Path(args.cdg_file)
+        if not cdg_path.exists():
+            print(f"Error: CDG file not found: {cdg_path}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            with open(cdg_path) as f:
+                data = json.load(f)
+            if not isinstance(data.get("nodes"), list):
+                print("Error: CDG JSON must contain a 'nodes' array", file=sys.stderr)
+                sys.exit(1)
+            if not isinstance(data.get("edges"), list):
+                print("Error: CDG JSON must contain an 'edges' array", file=sys.stderr)
+                sys.exit(1)
+        except json.JSONDecodeError as exc:
+            print(f"Error: invalid JSON in {cdg_path}: {exc}", file=sys.stderr)
+            sys.exit(1)
+        shutil.copy2(str(cdg_path), str(default_cdg))
+
+    try:
+        if args.no_serve:
+            # Open file:// directly
+            index_html = static_dir / "index.html"
+            url = index_html.as_uri()
+            print(f"Opening {url}")
+            webbrowser.open(url)
+        else:
+            # Start local HTTP server
+            original_dir = os.getcwd()
+            os.chdir(str(static_dir))
+
+            handler = SimpleHTTPRequestHandler
+
+            with socketserver.TCPServer(("127.0.0.1", args.port), handler) as httpd:
+                port = httpd.server_address[1]
+                url = f"http://127.0.0.1:{port}/index.html"
+                print(f"Serving CDG visualizer at {url}")
+                print("Press Ctrl+C to stop")
+
+                # Open browser in a thread so we don't block the server
+                threading.Thread(
+                    target=webbrowser.open, args=(url,), daemon=True
+                ).start()
+
+                try:
+                    httpd.serve_forever()
+                except KeyboardInterrupt:
+                    print("\nShutting down server")
+                finally:
+                    os.chdir(original_dir)
+    finally:
+        # Clean up default_cdg.json
+        if default_cdg.exists():
+            default_cdg.unlink()
 
 
 if __name__ == "__main__":

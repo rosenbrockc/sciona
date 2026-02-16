@@ -5,3 +5,4 @@ dist/
 build/
 .pytest_cache/
 data/
+ageom/static/default_cdg.json

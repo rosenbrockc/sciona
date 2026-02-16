@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGEO-Matcher CDG Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Metadata bar -->
+  <div id="metadata-bar">
+    <span class="meta-chip" id="meta-goal">Goal: —</span>
+    <span class="meta-chip" id="meta-paradigm">Paradigm: —</span>
+    <span class="meta-chip" id="meta-nodes">Nodes: 0</span>
+    <span class="meta-chip" id="meta-edges">Edges: 0</span>
+    <span class="meta-chip" id="meta-thread">Thread: —</span>
+  </div>
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <button id="btn-open">Open File...</button>
+    <label for="layout-select">Layout:</label>
+    <select id="layout-select">
+      <option value="dagre" selected>Hierarchical</option>
+      <option value="cose">Force-directed</option>
+      <option value="breadthfirst">Breadthfirst</option>
+    </select>
+    <button id="btn-fit">Fit</button>
+    <button id="btn-reset">Reset</button>
+    <span id="status-text">No data loaded</span>
+  </div>
+
+  <!-- Main area -->
+  <div id="main-container">
+    <div id="cy-container">
+      <div id="drop-zone">
+        <p>Drop a CDG JSON file here<br>or click <strong>Open File...</strong></p>
+      </div>
+    </div>
+    <div id="detail-panel">
+      <h3 id="detail-name"></h3>
+      <div class="detail-section">
+        <label>Status</label>
+        <span id="detail-status" class="status-badge"></span>
+      </div>
+      <div class="detail-section">
+        <label>Concept Type</label>
+        <span id="detail-concept-type"></span>
+      </div>
+      <div class="detail-section">
+        <label>Description</label>
+        <p id="detail-description"></p>
+      </div>
+      <div class="detail-section">
+        <label>Type Signature</label>
+        <code id="detail-type-sig"></code>
+      </div>
+      <div class="detail-section">
+        <label>Matched Primitive</label>
+        <span id="detail-primitive"></span>
+      </div>
+      <div class="detail-section">
+        <label>Inputs</label>
+        <table id="detail-inputs" class="io-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Constraints</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="detail-section">
+        <label>Outputs</label>
+        <table id="detail-outputs" class="io-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Constraints</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="detail-section">
+        <label>Internal Metadata</label>
+        <div id="detail-internal">
+          <div><strong>Depth:</strong> <span id="detail-depth"></span></div>
+          <div><strong>Children:</strong> <span id="detail-children"></span></div>
+          <div><strong>Parent:</strong> <span id="detail-parent"></span></div>
+          <div><strong>Rationale:</strong> <span id="detail-rationale"></span></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <label>Critic Agent</label>
+        <textarea id="detail-critic" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden file input -->
+  <input type="file" id="file-input" accept=".json" style="display:none">
+
+  <!-- CDN scripts -->
+  <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
