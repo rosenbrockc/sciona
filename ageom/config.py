@@ -47,6 +47,6 @@ class AgeomConfig(BaseSettings):
     skill_index_dir: Path = Field(default=Path("data/skill_index"))
     clrs_path: Path = Field(default=Path(""))
     coq100_path: Path = Field(default=Path(""))
-    postgres_uri: str = "postgresql://localhost:5432/ageom_architect"
+    postgres_uri: str = ""
     architect_max_depth: int = 8
     architect_llm_model: str = "claude-sonnet-4-5-20250929"

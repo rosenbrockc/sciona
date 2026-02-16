@@ -6,6 +6,7 @@ from pathlib import Path
 
 from ageom.architect.handoff import (
     CDGExport,
+    HandoffValidationError,
     export_cdg,
     load_json,
     save_json,
@@ -165,7 +166,7 @@ class TestToPDGNodes:
 
     def test_rejects_incomplete_cdg(self, non_atomic_nodes):
         cdg = CDGExport(nodes=non_atomic_nodes, edges=[])
-        with pytest.raises(ValueError, match="incomplete CDG"):
+        with pytest.raises(HandoffValidationError):
             to_pdg_nodes(cdg)
 
     def test_context_includes_matched_primitive(self, atomic_nodes, edges):

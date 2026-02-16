@@ -20,6 +20,17 @@ from ageom.architect.models import (
 from ageom.types import PDGNode, Prover
 
 
+class HandoffValidationError(ValueError):
+    """Raised when a CDG fails strict handoff validation."""
+
+    def __init__(self, issues: list[str]) -> None:
+        self.issues = issues
+        super().__init__(
+            f"Handoff validation failed with {len(issues)} issue(s): "
+            + "; ".join(issues)
+        )
+
+
 class CDGExport(BaseModel):
     """A complete CDG ready for Round 2 handoff."""
 
@@ -30,6 +41,10 @@ class CDGExport(BaseModel):
     def leaf_nodes(self) -> list[AlgorithmicNode]:
         """Return all leaf (atomic) nodes in the CDG."""
         return [n for n in self.nodes if n.status == NodeStatus.ATOMIC]
+
+    def handoff_issues(self) -> list[str]:
+        """Convenience: return validation issues for Round 2 handoff."""
+        return validate_handoff(self)
 
     def non_atomic_leaves(self) -> list[AlgorithmicNode]:
         """Return leaf nodes that are NOT atomic (validation failures)."""
@@ -86,10 +101,45 @@ def export_cdg(
     return cdg
 
 
+def validate_handoff(cdg: CDGExport) -> list[str]:
+    """Check that every atomic leaf is ready for Round 2 handoff.
+
+    Returns a list of human-readable issue strings (empty == valid).
+    Checks:
+    - Every atomic leaf must have a non-empty ``description``.
+    - Every atomic leaf must have a non-empty ``type_signature``.
+    - Flags non-atomic leaf nodes (they can't be handed off).
+    """
+    issues: list[str] = []
+    parent_ids = {e.source_id for e in cdg.edges}
+
+    for node in cdg.nodes:
+        is_leaf = not node.children and node.node_id not in parent_ids
+        if not is_leaf:
+            continue
+
+        if node.status == NodeStatus.ATOMIC:
+            if not node.description:
+                issues.append(
+                    f"Atomic leaf '{node.name}' ({node.node_id}) has empty description"
+                )
+            if not node.type_signature:
+                issues.append(
+                    f"Atomic leaf '{node.name}' ({node.node_id}) has empty type_signature"
+                )
+        else:
+            issues.append(
+                f"Leaf '{node.name}' ({node.node_id}) is {node.status.value}, not atomic"
+            )
+
+    return issues
+
+
 def to_pdg_nodes(
     cdg: CDGExport,
     *,
     prover: Prover = Prover.LEAN4,
+    strict: bool = True,
 ) -> list[PDGNode]:
     """Convert atomic leaf nodes of a CDG into PDGNode objects for the Round 2 Hunter.
 
@@ -99,9 +149,19 @@ def to_pdg_nodes(
     - informal_desc: the node description
     - context: parent chain, concept type, matched primitive
 
+    Args:
+        strict: When True (default), runs ``validate_handoff`` and raises
+            ``HandoffValidationError`` on any issues. Set to False to skip.
+
     Raises:
+        HandoffValidationError: If strict and the CDG has handoff issues.
         ValueError: If the CDG is not complete (has non-atomic leaves).
     """
+    if strict:
+        issues = validate_handoff(cdg)
+        if issues:
+            raise HandoffValidationError(issues)
+
     if not cdg.is_complete():
         non_atomic = cdg.non_atomic_leaves()
         names = [n.name for n in non_atomic]

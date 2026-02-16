@@ -77,6 +77,20 @@ def main() -> None:
     decompose_parser.add_argument(
         "--catalog", type=str, default=None, help="Path to catalog JSON (default: auto-detect)"
     )
+    decompose_parser.add_argument(
+        "--thread-id", type=str, default=None,
+        help="Checkpoint thread ID (auto-generated if omitted)",
+    )
+    decompose_parser.add_argument(
+        "--no-persist", action="store_true", default=False,
+        help="Disable PostgreSQL persistence (use in-memory only)",
+    )
+
+    # --- history ---
+    history_parser = subparsers.add_parser(
+        "history", help="Show checkpoint history for a decomposition thread"
+    )
+    history_parser.add_argument("thread_id", type=str, help="Thread ID to inspect")
 
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
@@ -106,6 +120,8 @@ def main() -> None:
             sys.exit(1)
     elif args.command == "decompose":
         asyncio.run(_cmd_decompose(args))
+    elif args.command == "history":
+        asyncio.run(_cmd_history(args))
     elif args.command == "match":
         asyncio.run(_cmd_match(args))
     else:
@@ -248,6 +264,7 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
 async def _cmd_decompose(args: argparse.Namespace) -> None:
     """Decompose a goal into a Conceptual Dependency Graph."""
     from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
@@ -293,34 +310,80 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
         model=config.architect_llm_model,
     )
 
-    agent = DecompositionAgent(
-        catalog=catalog,
-        skill_index=skill_index,
-        llm=llm,
-        max_depth=max_depth,
-    )
+    # Determine persistence URI
+    postgres_uri = "" if args.no_persist else config.postgres_uri
 
-    print(f"Decomposing: {args.goal}")
-    print(f"  Max depth: {max_depth}, Catalog size: {catalog.size}")
+    async with create_checkpointer(postgres_uri) as checkpointer:
+        agent = DecompositionAgent(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            max_depth=max_depth,
+            checkpointer=checkpointer,
+        )
 
-    cdg = await agent.decompose(args.goal)
+        print(f"Decomposing: {args.goal}")
+        print(f"  Max depth: {max_depth}, Catalog size: {catalog.size}")
 
-    # Print summary
-    by_status: dict[str, int] = {}
-    for node in cdg.nodes:
-        status = node.status.value
-        by_status[status] = by_status.get(status, 0) + 1
+        cdg = await agent.decompose(args.goal, thread_id=args.thread_id)
 
-    print(f"\nDecomposition complete:")
-    print(f"  Nodes: {len(cdg.nodes)}, Edges: {len(cdg.edges)}")
-    for status, count in sorted(by_status.items()):
-        print(f"    {status}: {count}")
-    print(f"  Complete: {cdg.is_complete()}")
+        thread_id = cdg.metadata.get("thread_id", "")
+        print(f"  Thread ID: {thread_id}")
 
-    # Save output
-    if args.output:
-        save_json(cdg, args.output)
-        print(f"  Saved to: {args.output}")
+        # Print summary
+        by_status: dict[str, int] = {}
+        for node in cdg.nodes:
+            status = node.status.value
+            by_status[status] = by_status.get(status, 0) + 1
+
+        print(f"\nDecomposition complete:")
+        print(f"  Nodes: {len(cdg.nodes)}, Edges: {len(cdg.edges)}")
+        for status, count in sorted(by_status.items()):
+            print(f"    {status}: {count}")
+        print(f"  Complete: {cdg.is_complete()}")
+
+        # Save output
+        if args.output:
+            save_json(cdg, args.output)
+            print(f"  Saved to: {args.output}")
+
+
+async def _cmd_history(args: argparse.Namespace) -> None:
+    """Show checkpoint history for a decomposition thread."""
+    from ageom.architect.checkpointer import create_checkpointer
+    from ageom.architect.graph import DecompositionAgent
+    from ageom.config import AgeomConfig
+    from ageom.hunter.llm import LLMClient
+
+    config = AgeomConfig()
+
+    # Minimal no-op deps — we only need the compiled graph for state queries
+    class _Stub(LLMClient):
+        async def complete(self, system: str, user: str) -> str:
+            return ""
+
+    async with create_checkpointer(config.postgres_uri) as checkpointer:
+        agent = DecompositionAgent(
+            catalog=None,  # type: ignore[arg-type]
+            skill_index=None,  # type: ignore[arg-type]
+            llm=_Stub(),
+            checkpointer=checkpointer,
+        )
+        history = await agent.get_state_history(args.thread_id)
+
+    if not history:
+        print(f"No checkpoints found for thread {args.thread_id}")
+        return
+
+    print(f"Thread {args.thread_id}: {len(history)} checkpoint(s)\n")
+    for i, entry in enumerate(history):
+        vals = entry["values"]
+        node_count = len(vals.get("nodes", []))
+        pending = len(vals.get("pending_node_ids", []))
+        done = vals.get("done", False)
+        cp_id = entry.get("checkpoint_id", "?")
+        print(f"  [{i}] checkpoint_id={cp_id}")
+        print(f"      nodes={node_count}  pending={pending}  done={done}")
 
 
 async def _cmd_match(args: argparse.Namespace) -> None:
