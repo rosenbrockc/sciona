@@ -31,13 +31,19 @@ hunter = [
     "pydantic-graph>=0.1.0",
     "anthropic>=0.40.0",
 ]
+architect = [
+    "langgraph>=0.4.0",
+    "langgraph-checkpoint-postgres>=2.0.0",
+    "psycopg[binary]>=3.1.0",
+    "pyyaml>=6.0",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "mypy>=1.0",
 ]
 all = [
-    "ageo-matcher[indexer,lean,coq,hunter,dev]",
+    "ageo-matcher[indexer,lean,coq,hunter,architect,dev]",
 ]
 
 [project.scripts]

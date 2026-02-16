@@ -42,3 +42,11 @@ class AgeomConfig(BaseSettings):
     hunter_max_iterations: int = 5
     hunter_top_k_verify: int = 3
     hunter_search_k: int = 20
+
+    # Architect (Round 1)
+    skill_index_dir: Path = Field(default=Path("data/skill_index"))
+    clrs_path: Path = Field(default=Path(""))
+    coq100_path: Path = Field(default=Path(""))
+    postgres_uri: str = "postgresql://localhost:5432/ageom_architect"
+    architect_max_depth: int = 8
+    architect_llm_model: str = "claude-sonnet-4-5-20250929"

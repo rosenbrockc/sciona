@@ -31,6 +31,38 @@ def main() -> None:
         "--output", type=str, default=None, help="Output directory for index (default: from .env)"
     )
 
+    # --- skill ---
+    skill_parser = subparsers.add_parser("skill", help="Manage the algorithmic skill catalog")
+    skill_sub = skill_parser.add_subparsers(dest="skill_command")
+
+    ingest_parser = skill_sub.add_parser("ingest", help="Ingest primitives from a source")
+    ingest_parser.add_argument(
+        "--source", choices=["clrs", "coq100"], required=True, help="Source to ingest from"
+    )
+    ingest_parser.add_argument(
+        "--path", type=str, required=True, help="Path to the cloned source repo"
+    )
+    ingest_parser.add_argument(
+        "--output", type=str, default=None, help="Output path for catalog JSON"
+    )
+
+    skill_index_parser = skill_sub.add_parser("index", help="Build FAISS skill index from catalog")
+    skill_index_parser.add_argument(
+        "--catalog", type=str, default=None, help="Path to catalog JSON (default: auto-detect)"
+    )
+    skill_index_parser.add_argument(
+        "--output", type=str, default=None, help="Output directory for skill index"
+    )
+
+    skill_search_parser = skill_sub.add_parser("search", help="Search the skill index")
+    skill_search_parser.add_argument("query", type=str, help="Search query")
+    skill_search_parser.add_argument(
+        "--k", type=int, default=10, help="Number of results to return"
+    )
+    skill_search_parser.add_argument(
+        "--index-dir", type=str, default=None, help="Skill index directory"
+    )
+
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
@@ -46,11 +78,115 @@ def main() -> None:
 
     if args.command == "index" and getattr(args, "index_command", None) == "build":
         _cmd_index_build(args)
+    elif args.command == "skill":
+        skill_cmd = getattr(args, "skill_command", None)
+        if skill_cmd == "ingest":
+            _cmd_skill_ingest(args)
+        elif skill_cmd == "index":
+            _cmd_skill_index(args)
+        elif skill_cmd == "search":
+            _cmd_skill_search(args)
+        else:
+            print("Error: provide a skill subcommand (ingest, index, search)", file=sys.stderr)
+            sys.exit(1)
     elif args.command == "match":
         asyncio.run(_cmd_match(args))
     else:
         parser.print_help()
         sys.exit(1)
+
+
+def _cmd_skill_ingest(args: argparse.Namespace) -> None:
+    """Ingest algorithmic primitives from a source repo."""
+    from ageom.config import AgeomConfig
+
+    config = AgeomConfig()
+    source = args.source
+    source_path = Path(args.path)
+
+    if not source_path.exists():
+        print(f"Error: source path {source_path} not found", file=sys.stderr)
+        sys.exit(1)
+
+    if source == "clrs":
+        from ageom.architect.ingest_clrs import ingest_clrs
+
+        print(f"Ingesting CLRS-30 from {source_path}...")
+        catalog = ingest_clrs(source_path)
+    elif source == "coq100":
+        from ageom.architect.ingest_coq100 import ingest_coq100
+
+        print(f"Ingesting coq-100-theorems from {source_path}...")
+        catalog = ingest_coq100(source_path)
+    else:
+        print(f"Error: unknown source {source}", file=sys.stderr)
+        sys.exit(1)
+
+    output = args.output or str(config.skill_index_dir / f"catalog_{source}.json")
+    catalog.save(output)
+    print(f"Catalog saved to {output} ({catalog.size} primitives)")
+
+
+def _cmd_skill_index(args: argparse.Namespace) -> None:
+    """Build FAISS skill index from a catalog."""
+    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.embedder import SkillIndex
+    from ageom.config import AgeomConfig
+
+    config = AgeomConfig()
+    output_dir = Path(args.output) if args.output else config.skill_index_dir
+
+    # Auto-detect catalogs if no explicit path given
+    catalog = PrimitiveCatalog()
+    if args.catalog:
+        catalog = PrimitiveCatalog.load(args.catalog)
+    else:
+        # Load all catalog_*.json files from the skill index dir
+        search_dir = config.skill_index_dir
+        if search_dir.exists():
+            for cat_file in sorted(search_dir.glob("catalog_*.json")):
+                print(f"Loading catalog: {cat_file.name}")
+                partial = PrimitiveCatalog.load(cat_file)
+                for prim in partial.all_primitives():
+                    catalog.add(prim)
+
+    if catalog.size == 0:
+        print("Error: no primitives found. Run 'ageom skill ingest' first.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Building skill index from {catalog.size} primitives...")
+    index = SkillIndex(index_dir=output_dir)
+    index.build_from_catalog(catalog)
+    index.save()
+    print(f"Skill index saved to {output_dir}")
+
+
+def _cmd_skill_search(args: argparse.Namespace) -> None:
+    """Search the skill index."""
+    from ageom.architect.embedder import SkillIndex
+    from ageom.config import AgeomConfig
+
+    config = AgeomConfig()
+    index_dir = Path(args.index_dir) if args.index_dir else config.skill_index_dir
+
+    if not index_dir.exists():
+        print(f"Error: skill index not found at {index_dir}. Run 'ageom skill index' first.",
+              file=sys.stderr)
+        sys.exit(1)
+
+    index = SkillIndex.load(index_dir)
+    results = index.search(args.query, k=args.k)
+
+    if not results:
+        print("No results found.")
+        return
+
+    for i, prim in enumerate(results, 1):
+        print(f"{i}. [{prim.category.value}] {prim.name}")
+        print(f"   {prim.description[:100]}")
+        if prim.type_signature:
+            print(f"   Type: {prim.type_signature[:80]}")
+        print()
 
 
 def _cmd_index_build(args: argparse.Namespace) -> None:
