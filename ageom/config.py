@@ -59,3 +59,8 @@ class AgeomConfig(BaseSettings):
     synthesizer_max_iterations: int = 10
     synthesizer_llm_provider: str = ""  # falls back to llm_provider
     synthesizer_llm_model: str = "claude-sonnet-4-5-20250929"
+
+    # Extractor (Round 3 Phase 3)
+    export_output_dir: Path = Field(default=Path("export"))
+    lean_lake_path: str = "lake"  # path to lake binary
+    optimize_by_default: bool = False

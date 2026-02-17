@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic import BaseModel, Field
 
 from ageom.architect.models import IOSpec
@@ -63,3 +65,29 @@ class SynthesisResult(BaseModel):
     patches_applied: int = 0
     iterations_used: int = 0
     error_history: list[tuple[int, str, str]] = Field(default_factory=list)
+
+
+class VerificationCertificate(BaseModel):
+    """Cryptographic certificate tying a binary artifact back to its proof."""
+
+    source_hash: str  # SHA-256 of the verified source file
+    artifact_hash: str = ""  # SHA-256 of the compiled artifact
+    prover: str  # "lean4" or "coq"
+    prover_version: str
+    goal: str = ""
+    node_count: int = 0
+    sorry_count: int = 0
+    timestamp: str = ""
+    certificate_version: str = "1.0"
+
+
+class ExportBundle(BaseModel):
+    """Result of the extractor's export operation."""
+
+    target: str
+    output_dir: Path
+    source_path: Path
+    compiled_artifact: Path | None = None
+    ffi_files: list[Path] = Field(default_factory=list)
+    certificate: VerificationCertificate | None = None
+    errors: list[str] = Field(default_factory=list)

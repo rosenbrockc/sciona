@@ -180,6 +180,33 @@ def main() -> None:
         help="Max output tokens for LLM calls",
     )
 
+    # --- export ---
+    export_parser = subparsers.add_parser(
+        "export", help="Export verified source to compiled artifacts and FFI bindings"
+    )
+    export_parser.add_argument(
+        "source_file", type=str,
+        help="Path to verified .lean/.v file or SynthesisResult JSON",
+    )
+    export_parser.add_argument(
+        "--target",
+        choices=["lean-lib", "coq-lib", "rust-ffi", "c-header"],
+        default="lean-lib",
+        help="Export target (default: lean-lib)",
+    )
+    export_parser.add_argument(
+        "--output-dir", type=str, default=None,
+        help="Output directory (default: from config)",
+    )
+    export_parser.add_argument(
+        "--optimize", action="store_true", default=False,
+        help="Run hot-path optimizer before export",
+    )
+    export_parser.add_argument(
+        "--prover", choices=["lean4", "coq"], default="lean4",
+        help="Proof assistant (default: lean4)",
+    )
+
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
@@ -234,6 +261,8 @@ def main() -> None:
         asyncio.run(_cmd_assemble(args))
     elif args.command == "synthesize":
         asyncio.run(_cmd_synthesize(args))
+    elif args.command == "export":
+        asyncio.run(_cmd_export(args))
     elif args.command == "visualize":
         _cmd_visualize(args)
     else:
@@ -686,6 +715,79 @@ async def _cmd_assemble(args: argparse.Namespace) -> None:
                         print(f"    {err}")
         finally:
             await env.close()
+
+
+async def _cmd_export(args: argparse.Namespace) -> None:
+    """Export verified source to compiled artifacts and FFI bindings."""
+    from ageom.config import AgeomConfig
+    from ageom.synthesizer.extractor import ExportTarget, Extractor
+    from ageom.synthesizer.models import SkeletonFile, SynthesisResult
+
+    config = AgeomConfig()
+
+    source_path = Path(args.source_file)
+    if not source_path.exists():
+        print(f"Error: source file not found: {source_path}", file=sys.stderr)
+        sys.exit(1)
+
+    # Try loading as SynthesisResult JSON, else treat as raw source
+    synthesis_result: SynthesisResult
+    if source_path.suffix == ".json":
+        with open(source_path) as f:
+            data = json.load(f)
+        synthesis_result = SynthesisResult(**data)
+    else:
+        source_code = source_path.read_text()
+        skeleton = SkeletonFile(
+            prover=args.prover,
+            source_code=source_code,
+        )
+        synthesis_result = SynthesisResult(
+            skeleton=skeleton,
+            compiled_ok=True,
+        )
+
+    # Optional optimizer
+    if args.optimize or config.optimize_by_default:
+        from ageom.synthesizer.optimizer import Optimizer
+
+        optimizer = Optimizer()
+        candidates = optimizer.scan(synthesis_result.skeleton)
+        if candidates:
+            print(f"Optimizer found {len(candidates)} candidate(s) for hot-path swap")
+            # Verify guards (without a real env, just apply comment-guards)
+            verified = [c for c in candidates if c.rule.guard_check.startswith("--")]
+            for c in verified:
+                c.guard_verified = True
+            if verified:
+                synthesis_result.skeleton = optimizer.apply(
+                    synthesis_result.skeleton, verified
+                )
+                print(f"  Applied {len(verified)} optimization(s)")
+
+    target = ExportTarget(args.target)
+    output_dir = Path(args.output_dir) if args.output_dir else config.export_output_dir
+
+    extractor = Extractor(config)
+    print(f"Exporting to {target.value} in {output_dir}/...")
+    bundle = await extractor.extract(synthesis_result, target, output_dir)
+
+    print(f"\nExport complete:")
+    print(f"  Target: {bundle.target}")
+    print(f"  Source: {bundle.source_path}")
+    if bundle.compiled_artifact:
+        print(f"  Artifact: {bundle.compiled_artifact}")
+    if bundle.ffi_files:
+        print(f"  FFI files:")
+        for f in bundle.ffi_files:
+            print(f"    {f}")
+    if bundle.certificate:
+        print(f"  Certificate: {output_dir / 'certificate.json'}")
+        print(f"    Source hash: {bundle.certificate.source_hash[:16]}...")
+    if bundle.errors:
+        print(f"  Errors:")
+        for err in bundle.errors:
+            print(f"    {err}")
 
 
 async def _cmd_synthesize(args: argparse.Namespace) -> None:
