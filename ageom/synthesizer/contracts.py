@@ -117,12 +117,67 @@ class ContractGenerator:
     def _iospec_to_contract(
         self, spec: IOSpec, kind: str
     ) -> ContractSpec | None:
-        """Convert an IOSpec constraint to a ContractSpec."""
+        """Convert an IOSpec constraint to a ContractSpec.
+
+        Recognizes DSP-specific constraint patterns:
+        - "round_trip: INVERSE(FORWARD(x))" -> epsilon-metric postcondition
+        - "poles inside unit circle" -> stability postcondition
+        - "positive semi-definite" -> eigenvalue check
+        - "TV(result) <= TV(input)" -> total variation reduction
+        """
         if not spec.constraints:
             return None
 
         constraint = spec.constraints.strip()
-        # Try to form a lambda expression from the constraint
+
+        # DSP pattern: round-trip epsilon-metric
+        if constraint.startswith("round_trip:"):
+            expr = constraint[len("round_trip:"):].strip()
+            lambda_expr = (
+                f"lambda result, {spec.name}: "
+                f"np.allclose({expr}, atol=1e-10)"
+            )
+            return ContractSpec(
+                kind="ensure",
+                lambda_expr=lambda_expr,
+                description=f"Round-trip: {expr}",
+            )
+
+        # DSP pattern: filter stability
+        if constraint == "poles inside unit circle":
+            lambda_expr = (
+                f"lambda result: _poles_inside_unit_circle(result[1])"
+            )
+            return ContractSpec(
+                kind="ensure",
+                lambda_expr=lambda_expr,
+                description="Filter must be stable (poles inside unit circle)",
+            )
+
+        # DSP pattern: positive semi-definite
+        if constraint == "positive semi-definite":
+            lambda_expr = (
+                f"lambda result: _eigenvalues_nonneg(result, k=1)"
+            )
+            return ContractSpec(
+                kind="ensure",
+                lambda_expr=lambda_expr,
+                description="Matrix must be positive semi-definite",
+            )
+
+        # DSP pattern: total variation reduction
+        if constraint == "TV(result) <= TV(input)":
+            lambda_expr = (
+                f"lambda result, {spec.name}: "
+                f"_total_variation(L, result) <= _total_variation(L, {spec.name}) + 1e-8"
+            )
+            return ContractSpec(
+                kind="ensure",
+                lambda_expr=lambda_expr,
+                description="Output total variation must not exceed input total variation",
+            )
+
+        # Default: generic constraint
         if kind == "require":
             lambda_expr = f"lambda {spec.name}: {constraint}"
         else:

@@ -25,6 +25,9 @@ class ConceptType(str, Enum):
     ALGEBRA = "algebra"
     ANALYSIS = "analysis"
     SET_THEORY = "set_theory"
+    SIGNAL_TRANSFORM = "signal_transform"
+    SIGNAL_FILTER = "signal_filter"
+    GRAPH_SIGNAL_PROCESSING = "graph_signal_processing"
     CUSTOM = "custom"
 
 

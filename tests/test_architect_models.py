@@ -23,7 +23,9 @@ class TestConceptType:
             "sorting", "searching", "divide_and_conquer", "greedy",
             "dynamic_programming", "graph_traversal", "graph_optimization",
             "string_matching", "geometry", "arithmetic", "number_theory",
-            "combinatorics", "algebra", "analysis", "set_theory", "custom",
+            "combinatorics", "algebra", "analysis", "set_theory",
+            "signal_transform", "signal_filter", "graph_signal_processing",
+            "custom",
         }
         assert {ct.value for ct in ConceptType} == expected
 

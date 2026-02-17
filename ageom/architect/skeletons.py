@@ -414,6 +414,113 @@ def _build_number_theory() -> SkeletonGraph:
     )
 
 
+def _build_signal_transform() -> SkeletonGraph:
+    window = _node("Window", "Apply window function to input signal segment",
+                    ConceptType.SIGNAL_TRANSFORM,
+                    inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+                    outputs=[IOSpec(name="windowed", type_desc="np.ndarray")])
+    forward = _node("Forward Transform", "Apply forward transform (FFT, DCT, etc.)",
+                     ConceptType.SIGNAL_TRANSFORM,
+                     inputs=[IOSpec(name="windowed", type_desc="np.ndarray")],
+                     outputs=[IOSpec(name="spectrum", type_desc="np.ndarray")])
+    spectral = _node("Spectral Processing", "Modify spectral coefficients",
+                      ConceptType.SIGNAL_TRANSFORM,
+                      inputs=[IOSpec(name="spectrum", type_desc="np.ndarray")],
+                      outputs=[IOSpec(name="modified_spectrum", type_desc="np.ndarray")])
+    inverse = _node("Inverse Transform", "Apply inverse transform to recover signal",
+                     ConceptType.SIGNAL_TRANSFORM,
+                     inputs=[IOSpec(name="modified_spectrum", type_desc="np.ndarray")],
+                     outputs=[IOSpec(name="result", type_desc="np.ndarray")])
+
+    edges = [
+        _edge(window, forward, "windowed", "windowed", "np.ndarray"),
+        _edge(forward, spectral, "spectrum", "spectrum", "np.ndarray"),
+        _edge(spectral, inverse, "modified_spectrum", "modified_spectrum", "np.ndarray"),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.SIGNAL_TRANSFORM,
+        name="Signal Transform",
+        description="Window input, forward transform, spectral processing, inverse transform",
+        template_nodes=[window, forward, spectral, inverse],
+        template_edges=edges,
+        variants=["fft_filter", "spectral_analysis", "dct_compression", "stft"],
+    )
+
+
+def _build_signal_filter() -> SkeletonGraph:
+    design = _node("Design Filter", "Design filter coefficients from specification",
+                    ConceptType.SIGNAL_FILTER,
+                    inputs=[IOSpec(name="spec", type_desc="filter specification")],
+                    outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")])
+    validate = _node("Validate Stability", "Check filter stability via pole analysis",
+                      ConceptType.SIGNAL_FILTER,
+                      inputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+                      outputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")])
+    apply_filt = _node("Apply Filter", "Apply filter to input signal",
+                        ConceptType.SIGNAL_FILTER,
+                        inputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients"),
+                                IOSpec(name="signal", type_desc="np.ndarray")],
+                        outputs=[IOSpec(name="filtered", type_desc="np.ndarray")])
+    freq_resp = _node("Frequency Response", "Compute and inspect frequency response",
+                       ConceptType.SIGNAL_FILTER,
+                       inputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+                       outputs=[IOSpec(name="response", type_desc="tuple[np.ndarray, np.ndarray]")])
+
+    edges = [
+        _edge(design, validate, "coefficients", "coefficients", "filter coefficients"),
+        _edge(validate, apply_filt, "valid_coefficients", "valid_coefficients", "filter coefficients"),
+        _edge(validate, freq_resp, "valid_coefficients", "valid_coefficients", "filter coefficients"),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.SIGNAL_FILTER,
+        name="Signal Filter",
+        description="Design filter, validate stability, apply filter / compute frequency response",
+        template_nodes=[design, validate, apply_filt, freq_resp],
+        template_edges=edges,
+        variants=["butterworth_lowpass", "chebyshev_bandpass", "fir_bandpass", "notch_filter"],
+    )
+
+
+def _build_graph_signal_processing() -> SkeletonGraph:
+    build = _node("Build Graph", "Construct weighted adjacency matrix from data",
+                   ConceptType.GRAPH_SIGNAL_PROCESSING,
+                   inputs=[IOSpec(name="data", type_desc="any")],
+                   outputs=[IOSpec(name="W", type_desc="sparse matrix")])
+    laplacian = _node("Compute Laplacian", "Compute graph Laplacian from adjacency",
+                       ConceptType.GRAPH_SIGNAL_PROCESSING,
+                       inputs=[IOSpec(name="W", type_desc="sparse matrix")],
+                       outputs=[IOSpec(name="L", type_desc="sparse matrix")])
+    gft = _node("GFT", "Compute Graph Fourier Transform",
+                 ConceptType.GRAPH_SIGNAL_PROCESSING,
+                 inputs=[IOSpec(name="L", type_desc="sparse matrix"),
+                         IOSpec(name="signal", type_desc="np.ndarray")],
+                 outputs=[IOSpec(name="spectrum", type_desc="np.ndarray"),
+                          IOSpec(name="eigenvectors", type_desc="np.ndarray")])
+    graph_filter = _node("Graph Filter/Diffuse", "Apply spectral filter or heat diffusion",
+                          ConceptType.GRAPH_SIGNAL_PROCESSING,
+                          inputs=[IOSpec(name="spectrum", type_desc="np.ndarray"),
+                                  IOSpec(name="eigenvectors", type_desc="np.ndarray"),
+                                  IOSpec(name="L", type_desc="sparse matrix")],
+                          outputs=[IOSpec(name="result", type_desc="np.ndarray")])
+
+    edges = [
+        _edge(build, laplacian, "W", "W", "sparse matrix"),
+        _edge(laplacian, gft, "L", "L", "sparse matrix"),
+        _edge(gft, graph_filter, "spectrum", "spectrum", "np.ndarray"),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.GRAPH_SIGNAL_PROCESSING,
+        name="Graph Signal Processing",
+        description="Build graph, compute Laplacian, GFT, apply graph filter or diffusion",
+        template_nodes=[build, laplacian, gft, graph_filter],
+        template_edges=edges,
+        variants=["graph_lowpass", "heat_diffusion", "graph_denoising", "community_detection"],
+    )
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -426,6 +533,9 @@ SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.SEARCHING: _build_searching(),
     ConceptType.GEOMETRY: _build_geometry(),
     ConceptType.NUMBER_THEORY: _build_number_theory(),
+    ConceptType.SIGNAL_TRANSFORM: _build_signal_transform(),
+    ConceptType.SIGNAL_FILTER: _build_signal_filter(),
+    ConceptType.GRAPH_SIGNAL_PROCESSING: _build_graph_signal_processing(),
 }
 
 

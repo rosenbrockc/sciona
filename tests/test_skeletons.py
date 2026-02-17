@@ -28,6 +28,9 @@ class TestSkeletonRegistry:
             ConceptType.SEARCHING,
             ConceptType.GEOMETRY,
             ConceptType.NUMBER_THEORY,
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
         }
         assert set(SKELETON_TEMPLATES.keys()) == expected
 
