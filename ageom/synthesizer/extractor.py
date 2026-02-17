@@ -24,6 +24,7 @@ class ExportTarget(str, Enum):
     COQ_LIB = "coq-lib"
     RUST_FFI = "rust-ffi"
     C_HEADER = "c-header"
+    PYTHON_PKG = "python-pkg"
 
 
 class Extractor:
@@ -46,7 +47,12 @@ class Extractor:
         # Write verified source
         src_dir = output_dir / "src"
         src_dir.mkdir(parents=True, exist_ok=True)
-        ext = ".lean" if skeleton.prover == "lean4" else ".v"
+        if skeleton.prover == "lean4":
+            ext = ".lean"
+        elif skeleton.prover == "python":
+            ext = ".py"
+        else:
+            ext = ".v"
         source_path = src_dir / f"Verified{ext}"
         source_path.write_text(skeleton.source_code)
 
@@ -79,13 +85,23 @@ class Extractor:
             errors.extend(build_errors)
             ffi_files = self._generate_c_header(skeleton, output_dir)
 
+        elif target == ExportTarget.PYTHON_PKG:
+            compiled_artifact, build_errors = await self._build_python(
+                skeleton, source_path, output_dir
+            )
+            errors.extend(build_errors)
+
         # Generate certificate
         goal = skeleton.metadata.get("goal", "")
         cert = generate_certificate(
             source_path=source_path,
             artifact_path=compiled_artifact,
             skeleton=skeleton,
-            prover_version=self._config.lean_toolchain if skeleton.prover == "lean4" else "coq",
+            prover_version=(
+                self._config.lean_toolchain if skeleton.prover == "lean4"
+                else "python" if skeleton.prover == "python"
+                else "coq"
+            ),
             goal=goal,
         )
         cert_path = output_dir / "certificate.json"
@@ -175,6 +191,65 @@ class Extractor:
         vo_path = source_path.with_suffix(".vo")
         artifact = vo_path if vo_path.exists() else None
 
+        return artifact, errors
+
+    async def _build_python(
+        self,
+        skeleton: SkeletonFile,
+        source_path: Path,
+        output_dir: Path,
+    ) -> tuple[Path | None, list[str]]:
+        """Generate Python package and run mypy to validate."""
+        from ageom.synthesizer.python_template import (
+            generate_init_py,
+            generate_pipeline_py,
+            generate_pyproject_toml,
+        )
+
+        errors: list[str] = []
+        package_name = skeleton.metadata.get("name", "verified_pkg")
+
+        # Collect dependencies from imports in source
+        dependencies = ["numpy", "scipy"]
+
+        # Generate pyproject.toml
+        pyproject_content = generate_pyproject_toml(package_name, dependencies)
+        pyproject_path = output_dir / "pyproject.toml"
+        pyproject_path.write_text(pyproject_content)
+
+        # Generate package structure
+        pkg_dir = output_dir / "src" / package_name
+        pkg_dir.mkdir(parents=True, exist_ok=True)
+
+        # __init__.py
+        exports = [u.name for u in skeleton.units]
+        init_content = generate_init_py(package_name, exports)
+        (pkg_dir / "__init__.py").write_text(init_content)
+
+        # atoms.py — the verified source
+        (pkg_dir / "atoms.py").write_text(skeleton.source_code)
+
+        # pipeline.py
+        pipeline_content = generate_pipeline_py([])
+        (pkg_dir / "pipeline.py").write_text(pipeline_content)
+
+        # Run mypy --strict on the package
+        mypy_bin = getattr(self._config, "python_mypy_path", "mypy")
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                mypy_bin, "--strict", str(pkg_dir),
+                cwd=str(output_dir),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+            if proc.returncode != 0:
+                raw = stdout.decode() + stderr.decode()
+                errors.append(f"mypy validation failed (exit {proc.returncode}): {raw[:500]}")
+        except FileNotFoundError:
+            errors.append(f"mypy not found at '{mypy_bin}' — skipping validation")
+
+        artifact = pkg_dir if pkg_dir.exists() else None
         return artifact, errors
 
     def _generate_rust_ffi(

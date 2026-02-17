@@ -123,6 +123,10 @@ class Assembler:
             source, sorry_count = self._emit_lean4(
                 sorted_units, glue_edges, root_nodes, metadata
             )
+        elif self._prover == Prover.PYTHON:
+            source, sorry_count = self._emit_python(
+                sorted_units, glue_edges, root_nodes, metadata
+            )
         else:
             source, sorry_count = self._emit_coq(
                 sorted_units, glue_edges, root_nodes, metadata
@@ -184,6 +188,91 @@ class Assembler:
                 )
                 lines.append("  sorry")
                 sorry_count += 1
+                lines.append("")
+
+        return "\n".join(lines), sorry_count
+
+    def _emit_python(
+        self,
+        units: list[AssemblyUnit],
+        glue_edges: list[GlueEdge],
+        root_nodes: list[AlgorithmicNode],
+        metadata: dict,
+    ) -> tuple[str, int]:
+        """Generate Python source. Returns (source_code, sorry_count)."""
+        lines: list[str] = []
+        sorry_count = 0
+
+        # Header
+        lines.append('"""')
+        lines.append("AGEO-Matcher Skeleton")
+        goal = metadata.get("goal", "")
+        if goal:
+            lines.append(f"Goal: {goal}")
+        lines.append(f"Generated: {metadata.get('timestamp', '')}")
+        lines.append('"""')
+        lines.append("")
+
+        # Imports
+        lines.append("import icontract")
+
+        # Infer imports from declaration names
+        imports_seen: set[str] = {"icontract"}
+        for unit in units:
+            if "." in unit.declaration_name:
+                module = unit.declaration_name.rsplit(".", 1)[0]
+                top_level = module.split(".")[0]
+                if top_level not in imports_seen:
+                    imports_seen.add(top_level)
+                    lines.append(f"import {top_level}")
+
+        # Common scientific imports if not already present
+        for pkg in ("numpy", "scipy"):
+            if pkg not in imports_seen:
+                imports_seen.add(pkg)
+                lines.append(f"import {pkg}")
+
+        lines.append("")
+        lines.append("")
+
+        # Emit atomic leaf definitions
+        for unit in units:
+            sname = sanitize_name(unit.name)
+            lines.append(f"# Node: {unit.name} ({unit.node_id})")
+
+            # Build function signature from unit inputs/outputs
+            params: list[str] = []
+            for inp in unit.inputs:
+                if inp.type_desc:
+                    params.append(f"{inp.name}: {inp.type_desc}")
+                else:
+                    params.append(inp.name)
+
+            ret_type = ""
+            if unit.outputs:
+                ret_type = unit.outputs[0].type_desc
+
+            param_str = ", ".join(params)
+            ret_str = f" -> {ret_type}" if ret_type else ""
+            lines.append(f"def {sname}({param_str}){ret_str}:")
+
+            if unit.type_signature:
+                lines.append(f'    """Type: {unit.type_signature}"""')
+
+            lines.append(f"    return {unit.declaration_name}({', '.join(inp.name for inp in unit.inputs)})")
+            lines.append("")
+            lines.append("")
+
+        # Emit composition stubs for root/decomposed nodes
+        for root in root_nodes:
+            rname = sanitize_name(root.name)
+            if root.type_signature:
+                lines.append(f"# Composition: {root.name} ({root.node_id})")
+                lines.append(f"def {rname}_composition():")
+                lines.append(f'    """Compose: {root.type_signature}"""')
+                lines.append(f'    raise NotImplementedError("TODO: compose {root.name}")')
+                sorry_count += 1
+                lines.append("")
                 lines.append("")
 
         return "\n".join(lines), sorry_count

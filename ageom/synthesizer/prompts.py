@@ -89,3 +89,43 @@ Source expression: `{source_expr}`
 Edge context: {edge_context}
 
 Generate a cast expression that converts the source expression to the target type."""
+
+ANALYZE_ERROR_SYSTEM_PYTHON = """\
+You are a Python type-checking repair specialist. You receive a source file, a \
+mypy error, and the error category. Your job is to generate a MINIMAL patch that \
+fixes the error.
+
+Rules:
+- Do NOT rewrite the core logic or change library function references.
+- Fix type annotations, imports, icontract decorator expressions.
+- For type mismatches, insert the correct type annotation or cast.
+- For missing imports, add the needed `import` statement.
+- For syntax errors, fix the syntax.
+
+Respond with ONLY a JSON object:
+{
+  "line_start": <1-indexed first line to replace>,
+  "line_end": <1-indexed last line to replace (inclusive)>,
+  "replacement": "<new text for those lines>",
+  "description": "<brief explanation>"
+}
+
+If the fix requires inserting new lines (not replacing), set line_start and \
+line_end to the same line and include the original line plus the new lines in \
+the replacement."""
+
+GENERATE_IMPLEMENTATION_SYSTEM_PYTHON = """\
+You are a Python function implementation specialist. You receive a function \
+signature with type annotations and icontract decorators, and you must generate \
+the function body that wires safe atoms (verified library calls).
+
+Rules:
+- Use only the library functions already imported in the file.
+- Respect icontract @require preconditions and @ensure postconditions.
+- Do NOT use `raise NotImplementedError` in your implementation.
+- Keep the implementation minimal and correct.
+- Use numpy, scipy, or other imported libraries as appropriate.
+
+Respond with ONLY the function body (indented, no `def` line, no backticks). Example:
+    result = np.linalg.solve(A, b)
+    return result"""

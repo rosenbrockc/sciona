@@ -23,10 +23,14 @@ def main() -> None:
 
     build_parser = index_sub.add_parser("build", help="Build FAISS index from library")
     build_parser.add_argument(
-        "--prover", choices=["lean4", "coq"], required=True, help="Proof assistant"
+        "--prover", choices=["lean4", "coq", "python"], required=True, help="Proof assistant"
     )
     build_parser.add_argument(
         "--path", type=str, default="", help="Path to Coq project (for --prover coq)"
+    )
+    build_parser.add_argument(
+        "--packages", type=str, default=None,
+        help="Comma-separated Python packages to index (for --prover python, default: numpy,scipy)",
     )
     build_parser.add_argument(
         "--output", type=str, default=None, help="Output directory for index (default: from .env)"
@@ -137,7 +141,7 @@ def main() -> None:
         "matches_file", type=str, help="Path to match results JSON"
     )
     assemble_parser.add_argument(
-        "--prover", choices=["lean4", "coq"], default="lean4", help="Proof assistant"
+        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
     )
     assemble_parser.add_argument(
         "--output", type=str, default=None, help="Output path for generated source file"
@@ -156,7 +160,7 @@ def main() -> None:
         "matches_file", type=str, help="Path to match results JSON"
     )
     synth_parser.add_argument(
-        "--prover", choices=["lean4", "coq"], default="lean4", help="Proof assistant"
+        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
     )
     synth_parser.add_argument(
         "--output", type=str, default=None, help="Output path for final verified source"
@@ -190,7 +194,7 @@ def main() -> None:
     )
     export_parser.add_argument(
         "--target",
-        choices=["lean-lib", "coq-lib", "rust-ffi", "c-header"],
+        choices=["lean-lib", "coq-lib", "rust-ffi", "c-header", "python-pkg"],
         default="lean-lib",
         help="Export target (default: lean-lib)",
     )
@@ -203,7 +207,7 @@ def main() -> None:
         help="Run hot-path optimizer before export",
     )
     export_parser.add_argument(
-        "--prover", choices=["lean4", "coq"], default="lean4",
+        "--prover", choices=["lean4", "coq", "python"], default="lean4",
         help="Proof assistant (default: lean4)",
     )
 
@@ -212,7 +216,7 @@ def main() -> None:
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
     match_parser.add_argument("--pdg-file", type=str, help="JSON file with PDG nodes")
     match_parser.add_argument(
-        "--prover", choices=["lean4", "coq"], default="lean4", help="Proof assistant"
+        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
     )
     match_parser.add_argument(
         "--index-dir", type=str, default=None, help="Directory containing FAISS index (default: from .env)"
@@ -390,6 +394,17 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
         source = CoqDeclarationSource()
         declarations = source.get_all_declarations(args.path)
         print(f"Found {len(declarations)} declarations from {args.path}")
+    elif prover == Prover.PYTHON:
+        from ageom.indexer.python_source import PythonDeclarationSource
+
+        packages = args.packages.split(",") if getattr(args, "packages", None) else config.python_packages.split(",")
+        py_source = PythonDeclarationSource()
+        declarations = []
+        for pkg in packages:
+            pkg = pkg.strip()
+            if pkg:
+                declarations.extend(py_source.get_declarations_from_package(pkg))
+        print(f"Found {len(declarations)} declarations from {', '.join(packages)}")
     else:
         print(f"Error: unsupported prover {prover}", file=sys.stderr)
         sys.exit(1)
@@ -566,6 +581,14 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     if prover == Prover.LEAN4:
         lean_env = LeanEnvironment(config.lean_toolchain)
         oracle = VerificationOracleImpl(lean_env=lean_env)
+    elif prover == Prover.PYTHON:
+        from ageom.judge.python_env import PythonEnvironment
+
+        python_env = PythonEnvironment(
+            mypy_path=config.python_mypy_path,
+            python_path=config.python_path,
+        )
+        oracle = VerificationOracleImpl(python_env=python_env)
     else:
         from ageom.judge.coq_env import CoqEnvironment
 
@@ -679,7 +702,12 @@ async def _cmd_assemble(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     # Determine output path
-    ext = ".lean" if prover == Prover.LEAN4 else ".v"
+    if prover == Prover.LEAN4:
+        ext = ".lean"
+    elif prover == Prover.PYTHON:
+        ext = ".py"
+    else:
+        ext = ".v"
     output = args.output or (cdg_path.stem + "_skeleton" + ext)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -698,6 +726,13 @@ async def _cmd_assemble(args: argparse.Namespace) -> None:
             from ageom.judge.lean_env import LeanEnvironment
 
             env = LeanEnvironment(config.lean_toolchain)
+        elif prover == Prover.PYTHON:
+            from ageom.judge.python_env import PythonEnvironment
+
+            env = PythonEnvironment(
+                mypy_path=config.python_mypy_path,
+                python_path=config.python_path,
+            )
         else:
             from ageom.judge.coq_env import CoqEnvironment
 
@@ -837,6 +872,13 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
         from ageom.judge.lean_env import LeanEnvironment
 
         env = LeanEnvironment(config.lean_toolchain)
+    elif prover == Prover.PYTHON:
+        from ageom.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment(
+            mypy_path=config.python_mypy_path,
+            python_path=config.python_path,
+        )
     else:
         from ageom.judge.coq_env import CoqEnvironment
 
@@ -874,7 +916,12 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
         result = agent_result = await agent.synthesize(skeleton)
 
         # Output
-        ext = ".lean" if prover == Prover.LEAN4 else ".v"
+        if prover == Prover.LEAN4:
+            ext = ".lean"
+        elif prover == Prover.PYTHON:
+            ext = ".py"
+        else:
+            ext = ".v"
         output = args.output or (cdg_path.stem + "_verified" + ext)
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)

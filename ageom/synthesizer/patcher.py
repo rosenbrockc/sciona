@@ -62,6 +62,8 @@ def find_sorry_locations(
     """
     if prover == "coq":
         pattern = re.compile(r"\bAdmitted\.\s*$", re.MULTILINE)
+    elif prover == "python":
+        pattern = re.compile(r"\braise NotImplementedError\b")
     else:
         pattern = re.compile(r"\bsorry\b")
 

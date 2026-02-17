@@ -32,7 +32,9 @@ from ageom.synthesizer.patcher import (
 )
 from ageom.synthesizer.prompts import (
     ANALYZE_ERROR_SYSTEM,
+    ANALYZE_ERROR_SYSTEM_PYTHON,
     ANALYZE_ERROR_USER,
+    GENERATE_IMPLEMENTATION_SYSTEM_PYTHON,
     GENERATE_TACTIC_SYSTEM,
     GENERATE_TACTIC_USER,
 )
@@ -199,8 +201,14 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             error_context=context,
         )
 
+        system_prompt = (
+            ANALYZE_ERROR_SYSTEM_PYTHON
+            if state.skeleton.prover == "python"
+            else ANALYZE_ERROR_SYSTEM
+        )
+
         try:
-            response = await deps.llm.complete(ANALYZE_ERROR_SYSTEM, user_msg)
+            response = await deps.llm.complete(system_prompt, user_msg)
             patch = _parse_patch_response(response)
             if patch is not None:
                 state.skeleton.source_code = apply_patches(
@@ -242,8 +250,14 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             available_lemmas="(use standard Mathlib tactics)",
         )
 
+        system_prompt = (
+            GENERATE_IMPLEMENTATION_SYSTEM_PYTHON
+            if state.skeleton.prover == "python"
+            else GENERATE_TACTIC_SYSTEM
+        )
+
         try:
-            response = await deps.llm.complete(GENERATE_TACTIC_SYSTEM, user_msg)
+            response = await deps.llm.complete(system_prompt, user_msg)
             tactic_body = response.strip()
             if tactic_body and "sorry" not in tactic_body.lower():
                 patch = Patch(
@@ -319,6 +333,12 @@ def _extract_goal_from_context(source: str, sorry_line: int) -> str:
             r"\s*(?:theorem|lemma|def|noncomputable\s+def)\s+\w+\s*.*?:\s*(.*)",
             line,
         )
+        if not m:
+            # Python: def func_name(params) -> ReturnType:
+            m = re.match(
+                r"\s*def\s+\w+\s*\(.*?\)\s*(?:->\s*(.+?))?\s*:",
+                line,
+            )
         if m:
             goal = m.group(1).strip()
             goal = re.sub(r"\s*:=\s*(by)?\s*$", "", goal)

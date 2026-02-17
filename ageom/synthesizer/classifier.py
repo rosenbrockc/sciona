@@ -34,6 +34,14 @@ _PATTERNS: list[tuple[re.Pattern[str], ErrorCategory]] = [
     (re.compile(r"expected .*(token|command|declaration)", re.IGNORECASE), ErrorCategory.SYNTAX),
     (re.compile(r"parse error", re.IGNORECASE), ErrorCategory.SYNTAX),
     (re.compile(r"unexpected token", re.IGNORECASE), ErrorCategory.SYNTAX),
+    # Python / mypy patterns
+    (re.compile(r"No module named", re.IGNORECASE), ErrorCategory.MISSING_IMPORT),
+    (re.compile(r"Cannot find implementation or library stub for module named", re.IGNORECASE), ErrorCategory.MISSING_IMPORT),
+    (re.compile(r"Incompatible types", re.IGNORECASE), ErrorCategory.TYPE_MISMATCH),
+    (re.compile(r"Incompatible return value type", re.IGNORECASE), ErrorCategory.TYPE_MISMATCH),
+    (re.compile(r"Argument \d+ .* has incompatible type", re.IGNORECASE), ErrorCategory.TYPE_MISMATCH),
+    (re.compile(r"invalid syntax", re.IGNORECASE), ErrorCategory.SYNTAX),
+    (re.compile(r"SyntaxError", re.IGNORECASE), ErrorCategory.SYNTAX),
 ]
 
 
@@ -60,6 +68,7 @@ def classify_feedback(
 # Regex to extract identifier from "unknown identifier 'Foo.bar'" style messages
 _IMPORT_IDENT_RE = re.compile(r"unknown (?:identifier|constant) '?@?([A-Za-z_][\w.]*)'?")
 _NAMESPACE_RE = re.compile(r"unknown namespace '?([A-Za-z_][\w.]*)'?")
+_PYTHON_MODULE_RE = re.compile(r"(?:No module named|module named) '([A-Za-z_][\w.]*)'?")
 
 
 def suggest_deterministic_fix(
@@ -87,5 +96,11 @@ def suggest_deterministic_fix(
     if m:
         ns = m.group(1)
         return f"open {ns}"
+
+    # Python: "No module named 'foo'" or "Cannot find ... module named 'foo'"
+    m = _PYTHON_MODULE_RE.search(error_text)
+    if m:
+        module = m.group(1)
+        return f"import {module}"
 
     return None

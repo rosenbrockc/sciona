@@ -60,6 +60,11 @@ class AgeomConfig(BaseSettings):
     synthesizer_llm_provider: str = ""  # falls back to llm_provider
     synthesizer_llm_model: str = "claude-sonnet-4-5-20250929"
 
+    # Python target
+    python_path: str = "python"
+    python_mypy_path: str = "mypy"
+    python_packages: str = "numpy,scipy"
+
     # Extractor (Round 3 Phase 3)
     export_output_dir: Path = Field(default=Path("export"))
     lean_lake_path: str = "lake"  # path to lake binary

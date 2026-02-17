@@ -11,6 +11,7 @@ class Prover(str, Enum):
 
     LEAN4 = "lean4"
     COQ = "coq"
+    PYTHON = "python"
 
 
 @dataclass(frozen=True)

@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ageom.judge.coq_env import CoqEnvironment
 from ageom.judge.lean_env import LeanEnvironment
+
+if TYPE_CHECKING:
+    from ageom.judge.python_env import PythonEnvironment
 from ageom.types import (
     CandidateMatch,
     PDGNode,
@@ -23,11 +28,13 @@ class VerificationOracleImpl:
         self,
         lean_env: LeanEnvironment | None = None,
         coq_env: CoqEnvironment | None = None,
+        python_env: "PythonEnvironment | None" = None,
     ) -> None:
         self._lean_env = lean_env
         self._coq_env = coq_env
+        self._python_env = python_env
 
-    def _get_env(self, prover: Prover) -> LeanEnvironment | CoqEnvironment:
+    def _get_env(self, prover: Prover) -> LeanEnvironment | CoqEnvironment | "PythonEnvironment":
         if prover == Prover.LEAN4:
             if self._lean_env is None:
                 raise RuntimeError("LeanEnvironment not configured")
@@ -36,6 +43,10 @@ class VerificationOracleImpl:
             if self._coq_env is None:
                 raise RuntimeError("CoqEnvironment not configured")
             return self._coq_env
+        elif prover == Prover.PYTHON:
+            if self._python_env is None:
+                raise RuntimeError("PythonEnvironment not configured")
+            return self._python_env
         else:
             raise ValueError(f"Unsupported prover: {prover}")
 
