@@ -174,8 +174,9 @@ InitialSearch ──> RankCandidates ──> VerifyTopK ──> End[MatchResult]
 Built-in implementations:
 - `ClaudeLLMClient` via `anthropic.AsyncAnthropic`
 - `CodexLLMClient` via `openai.AsyncOpenAI` (Codex-compatible models)
+- `LlamaCppLLMClient` via OpenAI-compatible llama.cpp endpoint (`extra_body.grammar`)
 
-`create_llm_client(...)` selects the provider (`anthropic` or `codex`) from config/CLI.
+`create_llm_client(...)` selects the provider (`anthropic`, `codex`, or `llama_cpp`) from config/CLI.
 
 Three prompt templates drive the agent's reasoning:
 - **`REFORMULATE_QUERY`** -- Given failed queries + compiler errors, generate new search terms
@@ -189,11 +190,16 @@ Three prompt templates drive the agent's reasoning:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `AGEOM_INDEX_DIR` | `data/index` | FAISS index location |
-| `AGEOM_LLM_PROVIDER` | `anthropic` | LLM provider (`anthropic` or `codex`) |
+| `AGEOM_LLM_PROVIDER` | `anthropic` | Global LLM provider (`anthropic`, `codex`, or `llama_cpp`) |
 | `AGEOM_ANTHROPIC_API_KEY` | | Claude API key |
 | `AGEOM_OPENAI_API_KEY` | | OpenAI API key for Codex |
 | `AGEOM_OPENAI_BASE_URL` | *(empty)* | Optional OpenAI-compatible endpoint |
 | `AGEOM_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Hunter |
+| `AGEOM_LLAMA_CPP_BASE_URL` | `http://127.0.0.1:8080/v1` | Local llama.cpp endpoint |
+| `AGEOM_HUNTER_LLM_PROVIDER` | `llama_cpp` | Hunter-specific provider (defaults local) |
+| `AGEOM_HUNTER_LLM_MODEL` | `llama-3.1-8b-instruct` | Hunter local model |
+| `AGEOM_HUNTER_MODE` | `speculative_local` | Hunter loop mode |
+| `AGEOM_HUNTER_USE_GBNF` | `true` | Grammar-constrained decoding in Hunter |
 | `AGEOM_EMBEDDING_MODEL` | `microsoft/unixcoder-base` | Embedding model |
 | `AGEOM_LEAN_TOOLCHAIN` | `leanprover/lean4:v4.14.0` | Lean version |
 | `AGEOM_HUNTER_MAX_ITERATIONS` | `5` | Max search-verify-refine loops |

@@ -26,13 +26,15 @@ class AgeomConfig(BaseSettings):
     # FAISS index
     index_dir: Path = Field(default=Path("data/index"))
 
-    # LLM (for Hunter agent)
+    # LLM (global defaults / shared credentials)
     llm_provider: str = "anthropic"  # "anthropic" | "codex"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
     openai_base_url: str = ""
     llm_model: str = "claude-sonnet-4-5-20250929"
     llm_max_tokens: int = 4096
+    llama_cpp_base_url: str = "http://127.0.0.1:8080/v1"
+    llama_cpp_api_key: str = "local"
 
     # Lean 4
     lean_toolchain: str = "leanprover/lean4:v4.14.0"
@@ -42,9 +44,17 @@ class AgeomConfig(BaseSettings):
     coq_project_path: Path = Field(default=Path(""))
 
     # Hunter agent parameters
+    hunter_llm_provider: str = "llama_cpp"  # default local quantized worker
+    hunter_llm_model: str = "llama-3.1-8b-instruct"
+    hunter_llm_max_tokens: int = 1024
+    hunter_mode: str = "speculative_local"  # "standard" | "speculative_local"
+    hunter_use_gbnf: bool = True
     hunter_max_iterations: int = 5
-    hunter_top_k_verify: int = 3
+    hunter_top_k_verify: int = 10
     hunter_search_k: int = 20
+    hunter_query_batch_size: int = 40
+    hunter_top_k_per_query: int = 50
+    hunter_max_candidates_total: int = 3000
 
     # Architect (Round 1)
     skill_index_dir: Path = Field(default=Path("data/skill_index"))

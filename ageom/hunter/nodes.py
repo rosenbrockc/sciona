@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from typing import Any
 
 from pydantic_graph import BaseNode, End, GraphRunContext
 
@@ -24,6 +25,33 @@ from ageom.hunter.prompts import (
 )
 from ageom.hunter.state import HunterState
 from ageom.types import CandidateMatch, MatchResult
+
+
+_INT_ARRAY_GBNF = r"""
+root ::= ws "[" ws int_list? ws "]" ws
+int_list ::= integer (ws "," ws integer)*
+integer ::= "-"? [0-9]+
+ws ::= [ \t\n\r]*
+"""
+
+_STRING_ARRAY_GBNF = r"""
+root ::= ws "[" ws string_list? ws "]" ws
+string_list ::= string (ws "," ws string)*
+string ::= "\"" chars "\""
+chars ::= char*
+char ::= [^"\\] | "\\" escape
+escape ::= ["\\/bfnrt] | "u" hex hex hex hex
+hex ::= [0-9a-fA-F]
+ws ::= [ \t\n\r]*
+"""
+
+
+async def _complete_with_optional_grammar(
+    llm: Any, *, system: str, user: str, grammar: str, use_gbnf: bool
+) -> str:
+    if use_gbnf and hasattr(type(llm), "complete_with_grammar"):
+        return await llm.complete_with_grammar(system, user, grammar)
+    return await llm.complete(system, user)
 
 
 @dataclass
@@ -44,8 +72,16 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
             query = f"{node.statement} {node.informal_desc}".strip()
             state.queries_tried.append(query)
 
-        # Embedding search
-        embedding_results = deps.index.search_by_embedding(query, k=state.search_k)
+        # In speculative-local mode, flood retrieval with a batch of queries.
+        queries_to_use = [query]
+        embedding_k = state.search_k
+        if state.mode == "speculative_local":
+            queries_to_use = state.queries_tried[-state.query_batch_size :]
+            embedding_k = state.top_k_per_query
+
+        embedding_results = []
+        for q in queries_to_use:
+            embedding_results.extend(deps.index.search_by_embedding(q, k=embedding_k))
 
         # Type search
         type_results = deps.index.search_by_type(node.statement, k=state.search_k)
@@ -69,6 +105,11 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
                 )
 
         state.candidates_found.extend(new_candidates)
+        if state.max_candidates_total > 0 and len(state.candidates_found) > state.max_candidates_total:
+            # Keep highest-scoring candidates when speculative retrieval floods the pool.
+            state.candidates_found = sorted(
+                state.candidates_found, key=lambda c: c.score, reverse=True
+            )[: state.max_candidates_total]
 
         if not state.candidates_found:
             # No candidates at all - end immediately
@@ -106,7 +147,13 @@ class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
         )
 
         try:
-            response = await deps.llm.complete(SCORE_CANDIDATES_SYSTEM, user_msg)
+            response = await _complete_with_optional_grammar(
+                deps.llm,
+                system=SCORE_CANDIDATES_SYSTEM,
+                user=user_msg,
+                grammar=_INT_ARRAY_GBNF,
+                use_gbnf=state.use_gbnf,
+            )
             ranked_indices = json.loads(response)
             # Reorder candidates
             reordered = []
@@ -235,10 +282,34 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
         )
 
         try:
-            response = await deps.llm.complete(REFORMULATE_QUERY_SYSTEM, reformulate_msg)
+            if state.mode == "speculative_local":
+                reformulate_msg += (
+                    f"\n\nGenerate exactly {state.query_batch_size} highly diverse queries "
+                    "that maximize synonym and namespace coverage."
+                )
+
+            response = await _complete_with_optional_grammar(
+                deps.llm,
+                system=REFORMULATE_QUERY_SYSTEM,
+                user=reformulate_msg,
+                grammar=_STRING_ARRAY_GBNF,
+                use_gbnf=state.use_gbnf,
+            )
             new_queries = json.loads(response)
             if isinstance(new_queries, list) and new_queries:
-                state.queries_tried.extend(str(q) for q in new_queries)
+                deduped: list[str] = []
+                seen = set(state.queries_tried)
+                for q in new_queries:
+                    q_str = str(q).strip()
+                    if q_str and q_str not in seen:
+                        seen.add(q_str)
+                        deduped.append(q_str)
+                if state.mode == "speculative_local":
+                    deduped = deduped[: state.query_batch_size]
+                state.queries_tried.extend(deduped)
+                max_keep = max(50, state.query_batch_size * 3)
+                if len(state.queries_tried) > max_keep:
+                    state.queries_tried = state.queries_tried[-max_keep:]
         except (json.JSONDecodeError, Exception):
             # Fallback: try a simple variant
             state.queries_tried.append(state.pdg_node.statement)

@@ -13,6 +13,12 @@ class LLMClient(Protocol):
         """Send a system + user prompt and return the completion text."""
         ...
 
+    async def complete_with_grammar(
+        self, system: str, user: str, grammar: str
+    ) -> str:
+        """Send a system + user prompt with a GBNF grammar constraint."""
+        ...
+
 
 class ClaudeLLMClient:
     """LLM client backed by Anthropic's Claude API."""
@@ -37,6 +43,12 @@ class ClaudeLLMClient:
             messages=[{"role": "user", "content": user}],
         )
         return response.content[0].text
+
+    async def complete_with_grammar(
+        self, system: str, user: str, grammar: str
+    ) -> str:
+        # Anthropic API path here has no grammar hook; fallback to normal completion.
+        return await self.complete(system, user)
 
 
 class CodexLLMClient:
@@ -84,6 +96,58 @@ class CodexLLMClient:
             return "".join(parts)
         return ""
 
+    async def complete_with_grammar(
+        self, system: str, user: str, grammar: str
+    ) -> str:
+        # Generic OpenAI/Codex path may not support GBNF directly; fallback.
+        return await self.complete(system, user)
+
+
+class LlamaCppLLMClient:
+    """LLM client backed by a local llama.cpp server (OpenAI-compatible API)."""
+
+    def __init__(
+        self,
+        model: str,
+        max_tokens: int = 4096,
+        *,
+        base_url: str = "http://127.0.0.1:8080/v1",
+        api_key: str = "local",
+    ) -> None:
+        from openai import AsyncOpenAI
+
+        self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        self._model = model
+        self._max_tokens = max_tokens
+
+    async def complete(self, system: str, user: str) -> str:
+        response = await self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            max_tokens=self._max_tokens,
+        )
+        content = response.choices[0].message.content
+        return content if isinstance(content, str) else ""
+
+    async def complete_with_grammar(
+        self, system: str, user: str, grammar: str
+    ) -> str:
+        response = await self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            max_tokens=self._max_tokens,
+            # llama.cpp accepts grammar via extra_body on compatible endpoints.
+            extra_body={"grammar": grammar},
+        )
+        content = response.choices[0].message.content
+        return content if isinstance(content, str) else ""
+
 
 def create_llm_client(
     *,
@@ -93,6 +157,8 @@ def create_llm_client(
     anthropic_api_key: str = "",
     openai_api_key: str = "",
     openai_base_url: str = "",
+    llama_cpp_base_url: str = "",
+    llama_cpp_api_key: str = "",
 ) -> LLMClient:
     """Construct an LLM client for the requested provider."""
     normalized = provider.lower().strip()
@@ -114,6 +180,14 @@ def create_llm_client(
             model=model,
             max_tokens=max_tokens,
             base_url=openai_base_url,
+        )
+
+    if normalized in {"llama_cpp", "local"}:
+        return LlamaCppLLMClient(
+            model=model,
+            max_tokens=max_tokens,
+            base_url=llama_cpp_base_url or "http://127.0.0.1:8080/v1",
+            api_key=llama_cpp_api_key or "local",
         )
 
     raise ValueError(f"Unsupported LLM provider: {provider}")

@@ -88,7 +88,7 @@ def main() -> None:
     )
     decompose_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex"],
+        choices=["anthropic", "codex", "llama_cpp"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -171,7 +171,7 @@ def main() -> None:
     )
     synth_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex"],
+        choices=["anthropic", "codex", "llama_cpp"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -223,7 +223,7 @@ def main() -> None:
     )
     match_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex"],
+        choices=["anthropic", "codex", "llama_cpp"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -468,6 +468,8 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             anthropic_api_key=config.anthropic_api_key,
             openai_api_key=config.openai_api_key,
             openai_base_url=config.openai_base_url,
+            llama_cpp_base_url=config.llama_cpp_base_url,
+            llama_cpp_api_key=config.llama_cpp_api_key,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -526,6 +528,11 @@ async def _cmd_history(args: argparse.Namespace) -> None:
     # Minimal no-op deps — we only need the compiled graph for state queries
     class _Stub(LLMClient):
         async def complete(self, system: str, user: str) -> str:
+            return ""
+
+        async def complete_with_grammar(
+            self, system: str, user: str, grammar: str
+        ) -> str:
             return ""
 
     async with create_checkpointer(config.postgres_uri) as checkpointer:
@@ -596,9 +603,9 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         oracle = VerificationOracleImpl(coq_env=coq_env)
 
     # Set up LLM
-    llm_provider = args.llm_provider or config.llm_provider
-    llm_model = args.llm_model or config.llm_model
-    llm_max_tokens = args.llm_max_tokens or config.llm_max_tokens
+    llm_provider = args.llm_provider or config.hunter_llm_provider or config.llm_provider
+    llm_model = args.llm_model or config.hunter_llm_model or config.llm_model
+    llm_max_tokens = args.llm_max_tokens or config.hunter_llm_max_tokens or config.llm_max_tokens
     try:
         llm = create_llm_client(
             provider=llm_provider,
@@ -607,6 +614,8 @@ async def _cmd_match(args: argparse.Namespace) -> None:
             anthropic_api_key=config.anthropic_api_key,
             openai_api_key=config.openai_api_key,
             openai_base_url=config.openai_base_url,
+            llama_cpp_base_url=config.llama_cpp_base_url,
+            llama_cpp_api_key=config.llama_cpp_api_key,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -622,6 +631,11 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         max_iterations=config.hunter_max_iterations,
         top_k_verify=config.hunter_top_k_verify,
         search_k=config.hunter_search_k,
+        mode=config.hunter_mode,
+        use_gbnf=config.hunter_use_gbnf,
+        query_batch_size=config.hunter_query_batch_size,
+        top_k_per_query=config.hunter_top_k_per_query,
+        max_candidates_total=config.hunter_max_candidates_total,
     )
 
     # Build PDG nodes
@@ -900,6 +914,8 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
             anthropic_api_key=config.anthropic_api_key,
             openai_api_key=config.openai_api_key,
             openai_base_url=config.openai_base_url,
+            llama_cpp_base_url=config.llama_cpp_base_url,
+            llama_cpp_api_key=config.llama_cpp_api_key,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)

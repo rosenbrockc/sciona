@@ -202,3 +202,65 @@ class TestHunterState:
         assert state.iteration == 0
         assert state.verified_match is None
         assert state.candidates_found == []
+
+
+class _GrammarAwareLLM:
+    def __init__(self):
+        self.complete_calls = 0
+        self.grammar_calls = 0
+
+    async def complete(self, system: str, user: str) -> str:
+        self.complete_calls += 1
+        s = system.lower()
+        if "analy" in s:
+            return "analysis"
+        return "[]"
+
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
+        self.grammar_calls += 1
+        s = system.lower()
+        if "rank" in s or "score" in s:
+            return "[0]"
+        if "search expert" in s or "reformulate" in s:
+            return '["q1", "q2", "q3", "q4"]'
+        return "[]"
+
+
+class TestHunterSpeculativeLocal:
+    @pytest.mark.asyncio
+    async def test_uses_gbnf_and_query_batching(self, pdg_node, wrong_decl):
+        from ageom.hunter.graph import HunterAgent
+
+        search_calls = 0
+
+        def search_by_embedding(query, k=10):
+            nonlocal search_calls
+            search_calls += 1
+            return [(wrong_decl, 0.9)]
+
+        index = AsyncMock()
+        index.search_by_embedding = search_by_embedding
+        index.search_by_type = lambda sig, k=10: []
+
+        oracle = _make_mock_oracle(set())  # force reformulation path
+        llm = _GrammarAwareLLM()
+
+        agent = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            max_iterations=1,
+            top_k_verify=1,
+            search_k=1,
+            mode="speculative_local",
+            use_gbnf=True,
+            query_batch_size=4,
+            top_k_per_query=1,
+            max_candidates_total=100,
+        )
+        result = await agent.find_match(pdg_node)
+
+        assert not result.success
+        assert llm.grammar_calls >= 2  # rank + reformulate
+        # First InitialSearch uses one query; second uses the 4-query batch.
+        assert search_calls >= 5

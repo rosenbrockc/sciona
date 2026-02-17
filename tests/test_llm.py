@@ -7,7 +7,12 @@ import types
 
 import pytest
 
-from ageom.hunter.llm import ClaudeLLMClient, CodexLLMClient, create_llm_client
+from ageom.hunter.llm import (
+    ClaudeLLMClient,
+    CodexLLMClient,
+    LlamaCppLLMClient,
+    create_llm_client,
+)
 
 
 class _FakeAnthropicMessages:
@@ -23,7 +28,11 @@ class _FakeAsyncAnthropic:
 
 
 class _FakeChatCompletions:
+    def __init__(self):
+        self.last_kwargs = {}
+
     async def create(self, **kwargs):
+        self.last_kwargs = kwargs
         msg = types.SimpleNamespace(content="codex-ok")
         choice = types.SimpleNamespace(message=msg)
         return types.SimpleNamespace(choices=[choice])
@@ -33,7 +42,8 @@ class _FakeAsyncOpenAI:
     def __init__(self, api_key: str, base_url: str | None = None):
         self.api_key = api_key
         self.base_url = base_url
-        self.chat = types.SimpleNamespace(completions=_FakeChatCompletions())
+        self.completions = _FakeChatCompletions()
+        self.chat = types.SimpleNamespace(completions=self.completions)
 
 
 class TestCreateLLMClient:
@@ -94,3 +104,21 @@ class TestConcreteClients:
         text = await client.complete("system", "user")
         assert text == "codex-ok"
 
+    @pytest.mark.asyncio
+    async def test_llama_cpp_client_grammar(self, monkeypatch):
+        fake_mod = types.SimpleNamespace(AsyncOpenAI=_FakeAsyncOpenAI)
+        monkeypatch.setitem(sys.modules, "openai", fake_mod)
+
+        client = create_llm_client(
+            provider="llama_cpp",
+            model="llama-3.1-8b-instruct",
+            max_tokens=128,
+            llama_cpp_base_url="http://127.0.0.1:8080/v1",
+            llama_cpp_api_key="local",
+        )
+        assert isinstance(client, LlamaCppLLMClient)
+        text = await client.complete_with_grammar("sys", "user", "root ::= \"[]\"")
+        assert text == "codex-ok"
+        assert client._client.completions.last_kwargs["extra_body"] == {
+            "grammar": "root ::= \"[]\""
+        }

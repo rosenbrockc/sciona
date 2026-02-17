@@ -43,6 +43,7 @@ pip install -e ".[all]"
 - **LLM**: Configure one provider in `.env`
   - Anthropic: `AGEOM_LLM_PROVIDER=anthropic` + `AGEOM_ANTHROPIC_API_KEY`
   - Codex: `AGEOM_LLM_PROVIDER=codex` + `AGEOM_OPENAI_API_KEY`
+  - Local llama.cpp (Hunter default): `AGEOM_HUNTER_LLM_PROVIDER=llama_cpp`
 
 ## Configuration
 
@@ -57,6 +58,12 @@ AGEOM_LLM_MODEL=claude-sonnet-4-5-20250929
 # For Codex/OpenAI provider:
 # AGEOM_OPENAI_API_KEY=sk-...
 # AGEOM_LLM_MODEL=codex-mini-latest
+# Hunter local defaults (GBNF + speculative retrieval):
+AGEOM_HUNTER_LLM_PROVIDER=llama_cpp
+AGEOM_HUNTER_LLM_MODEL=llama-3.1-8b-instruct
+AGEOM_LLAMA_CPP_BASE_URL=http://127.0.0.1:8080/v1
+AGEOM_HUNTER_MODE=speculative_local
+AGEOM_HUNTER_USE_GBNF=true
 AGEOM_HUNTER_MAX_ITERATIONS=5
 
 # PostgreSQL persistence (optional -- omit for in-memory only)
@@ -101,6 +108,9 @@ ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4
 
 # Use Codex for Round 2 (override .env)
 ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4 --llm-provider codex --llm-model codex-mini-latest
+
+# Use local llama.cpp for Round 2 (default if configured in .env)
+ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4 --llm-provider llama_cpp --llm-model llama-3.1-8b-instruct
 
 # Batch from a PDG file
 ageom match --pdg-file predicates.json --prover lean4
