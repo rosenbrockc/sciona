@@ -1,13 +1,14 @@
 # Architecture
 
-AGEO-Matcher implements the full Two-Round Agentic Development Cycle:
+AGEO-Matcher implements a Three-Round Agentic Development Cycle:
 
 - **Round 1 (Architect)**: Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) via LangGraph, with PostgreSQL-backed persistence for checkpoint time-travel and forking.
 - **Round 2 (Hunter)**: Grounds each atomic CDG leaf into a verified library function in Lean 4/Mathlib or Coq/Rocq.
+- **Round 3 (Synthesizer)**: Assembles matched atoms into compilable skeleton files. Runs an optional ghost witness simulation pass (via `ageoa`) to catch structural mismatches before expensive compilation, then compiles, repairs, and exports.
 
 ## Design principle
 
-**Deterministic -> Agentic -> Deterministic** sandwich (applies to both rounds):
+**Deterministic -> Agentic -> Deterministic** sandwich (applies to all rounds):
 
 ```
 High-Level Goal
@@ -29,9 +30,24 @@ High-Level Goal
   |
   v
 MatchResult
+  |
+  v
+[Ghost Simulation]      deterministic -- abstract interpretation via ghost witnesses (optional)
+  |
+  v
+[Assembler]             deterministic -- CDG + matches -> skeleton source code
+  |
+  v
+[Compiler]              deterministic -- proof assistant says yes or no
+  |
+  v
+[Repair Agent]          agentic -- compile-analyze-patch loop
+  |
+  v
+SkeletonFile + VerificationCertificate
 ```
 
-LLMs are confined to agentic layers. The indexer, oracle, and handoff validation are pure functions of their inputs -- no hallucination surface.
+LLMs are confined to agentic layers. The indexer, oracle, ghost simulation, assembler, and handoff validation are pure functions of their inputs -- no hallucination surface.
 
 ## Components
 
@@ -183,6 +199,60 @@ Three prompt templates drive the agent's reasoning:
 - **`SCORE_CANDIDATES`** -- Given predicate + candidate list, return ranked indices
 - **`ANALYZE_FAILURE`** -- Given compiler error, explain why and suggest direction
 
+### Synthesizer (`ageom/synthesizer/`) -- Round 3
+
+Assembles CDG + MatchResults into compilable skeleton files, optionally pre-validated by ghost witness simulation.
+
+#### Pipeline (`pipeline.py`)
+
+`assemble_and_check()` orchestrates the full flow:
+
+1. **Ghost simulation** (optional) -- converts CDG atomic leaves to `SimNode`s and runs `simulate_graph()` from `ageoa.ghost`. Catches domain mismatches (e.g., feeding frequency-domain data into an FFT that expects time-domain), shape errors, and type violations *before* expensive compilation.
+2. **Assembly** -- topologically sorts CDG nodes, fuses each atomic leaf with its `MatchResult`, and emits source code (Lean 4, Coq, or Python).
+3. **Compilation** -- sends the skeleton through the `ProofEnvironment` compiler.
+
+The ghost simulation is best-effort: if `ageoa` is not installed or no atoms have registered witnesses, it is silently skipped. Non-DSP atoms (those without witnesses) are also skipped. Results are attached to `skeleton.metadata["ghost_simulation"]`.
+
+#### Ghost Witness integration (`ghost_sim.py`)
+
+The ghost simulation pass bridges the two repositories:
+
+```
+ageoa (ageo-atoms)                    ageom (ageo-matcher)
+  ghost/                                synthesizer/
+    registry.py  REGISTRY  <-------->   ghost_sim.py  run_ghost_simulation()
+    witnesses.py  witness_fft, ...        |
+    simulator.py  simulate_graph()        +-- converts CDGExport to SimNodes
+    abstract.py   AbstractSignal          +-- builds initial abstract state from IOSpec
+                                          +-- calls simulate_graph()
+  numpy/fft.py   @register_atom(witness_fft)
+  scipy/signal.py @register_atom(witness_butter)
+  ...
+```
+
+16 DSP atoms are auto-registered when their modules are imported:
+
+| Module | Atoms |
+|--------|-------|
+| `ageoa.numpy.fft` | `fft`, `ifft`, `rfft`, `irfft` |
+| `ageoa.scipy.fft` | `dct`, `idct` |
+| `ageoa.scipy.signal` | `butter`, `cheby1`, `cheby2`, `firwin`, `sosfilt`, `lfilter`, `freqz` |
+| `ageoa.scipy.sparse_graph` | `graph_laplacian`, `graph_fourier_transform`, `heat_kernel_diffusion` |
+
+#### Key modules
+
+| Module | Role |
+|--------|------|
+| `pipeline.py` | `assemble_and_check()` -- ghost sim + assembly + compilation |
+| `ghost_sim.py` | `run_ghost_simulation()` -- CDG to SimNode conversion, abstract state construction, `GhostSimReport` |
+| `assembler.py` | `Assembler` -- CDG + matches -> `SkeletonFile` with Lean 4 / Coq / Python source code |
+| `compiler.py` | `SkeletonCompiler` -- wraps `ProofEnvironment` for whole-file compilation |
+| `toposort.py` | `toposort_nodes()` -- Kahn's algorithm for dependency ordering |
+| `contracts.py` | `ContractGenerator` -- generates icontract decorators, recognizes DSP constraint patterns |
+| `models.py` | `AssemblyUnit`, `GlueEdge`, `SkeletonFile`, `AssemblyResult`, `SynthesisResult`, `VerificationCertificate`, `ExportBundle` |
+| `repair.py` | Compile-analyze-patch loop (fills `sorry` / `Admitted` / `NotImplementedError` stubs) |
+| `extractor.py` | FFI export and verification certificate generation |
+
 ## Configuration
 
 `AgeomConfig` (pydantic-settings) reads from `.env` with prefix `AGEOM_`:
@@ -265,6 +335,32 @@ Each step is checkpointed. Use `ageom history <thread-id>` to inspect, or `agent
 
 If step 4 fails for all candidates, `ReformulateQuery` asks the LLM to analyze the compiler errors and generate new search queries, then loops back to step 2.
 
+### Round 3: Synthesis
+
+```
+1. Ghost simulation (optional):
+   - Convert atomic leaves to SimNodes using matched atom names
+   - Build initial abstract state from IOSpec metadata
+   - Run simulate_graph() -- propagates shape/dtype/domain
+   - If PlanError: log warning, attach to metadata, continue
+
+2. Assembly:
+   - Topological sort (Kahn's algorithm)
+   - For each atomic leaf: fuse with MatchResult -> AssemblyUnit
+   - Emit source code: Lean 4 (sorry stubs), Coq (Admitted), or Python (NotImplementedError)
+
+3. Compilation:
+   - Send skeleton source to ProofEnvironment
+   - AssemblyResult { compiled_ok, feedback }
+
+4. Repair (if compilation fails):
+   - LLM analyzes compiler errors
+   - Generates patches for sorry/Admitted stubs
+   - Iterate up to max_iterations
+
+5. Result: SkeletonFile + VerificationCertificate
+```
+
 ## Dependency graph
 
 ```
@@ -272,15 +368,31 @@ ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
          |
     +----+----+----------+
     |         |          |
- indexer/   judge/    architect/    (faiss, transformers, lean-interact,
-    |         |          |           coqpyt, langgraph, psycopg)
+ indexer/   judge/    architect/        (faiss, transformers, lean-interact,
+    |         |          |               coqpyt, langgraph, psycopg)
     +----+----+          |
          |               |
-      hunter/            |          (pydantic-graph, anthropic, openai)
+      hunter/            |              (pydantic-graph, anthropic, openai)
          |               |
          +-------+-------+
+                 |
+           synthesizer/                 (ageoa [optional])
                  |
                cli.py
 ```
 
-The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge.
+```
+                 ageoa (ageo-atoms)
+                   |
+        ghost/     |     numpy/, scipy/
+     abstract.py   |     fft.py, signal.py, ...
+     registry.py   |     @register_atom(witness_xxx)
+     simulator.py  |
+     witnesses.py  |
+                   |
+            [optional import]
+                   |
+           ageom/synthesizer/ghost_sim.py
+```
+
+The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `ageoa` for ghost witness simulation. If `ageoa` is not installed, the synthesizer works normally without the simulation pass.

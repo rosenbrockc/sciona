@@ -6,7 +6,7 @@ Given a predicate like `forall n m : Nat, n + m = m + n`, AGEO-Matcher searches 
 
 ## How it works
 
-The system implements a **Two-Round Agentic Development Cycle**:
+The system implements a **Three-Round Agentic Development Cycle**:
 
 **Round 1 -- Architect** (Conceptual Dependency Agent): decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) using LangGraph, with PostgreSQL-backed checkpointing for time-travel and fork/resume.
 
@@ -16,7 +16,9 @@ The system implements a **Two-Round Agentic Development Cycle**:
 2. **Retrieval Agent** -- LLM-driven search loop with query reformulation (pydantic-graph state machine)
 3. **Verification Oracle** -- compiler-based type checking via Lean 4 / Coq REPLs
 
-The handoff from Round 1 to Round 2 is validated: every atomic leaf must have a `type_signature` and `description` before conversion to PDG nodes.
+**Round 3 -- Synthesizer** (Assembly + Verification): assembles matched atoms into compilable skeleton files, with an optional **ghost witness simulation pass** that catches structural mismatches (shape, dtype, domain) before expensive compilation.
+
+The handoff between rounds is validated: every atomic leaf must have a `type_signature` and `description` before conversion to PDG nodes. DSP atoms are also checked via ghost witness simulation when the `ageoa` package is installed.
 
 See [ARCH.md](ARCH.md) for the full architecture.
 
@@ -31,6 +33,9 @@ pip install -e ".[indexer,lean,hunter]"
 
 # With Coq support
 pip install -e ".[indexer,coq,hunter]"
+
+# With ghost witness simulation (requires ageo-atoms)
+pip install -e ".[ghost]"
 
 # Everything
 pip install -e ".[all]"
@@ -144,12 +149,12 @@ ageom/
   types.py          Shared domain types (Declaration, PDGNode, MatchResult, ...)
   protocols.py      Protocol interfaces (SemanticIndex, ProofEnvironment, ...)
   config.py         AgeomConfig (pydantic-settings, reads .env)
-  cli.py            CLI entrypoint (decompose, history, match, index, skill)
+  cli.py            CLI entrypoint (decompose, history, match, index, assemble)
   architect/        Round 1 -- Conceptual Dependency Agent
-    models.py         CDG node/edge Pydantic models
+    models.py         CDG node/edge Pydantic models, ConceptType enum (incl. DSP types)
     catalog.py        PrimitiveCatalog (CLRS-30, coq-100-theorems)
     embedder.py       FAISS-based SkillIndex for primitive matching
-    skeletons.py      Pre-built graph templates per paradigm
+    skeletons.py      Pre-built graph templates per paradigm (13 templates incl. DSP)
     nodes.py          LangGraph node functions (select_strategy, decompose, critique, ...)
     state.py          DecompositionState TypedDict + DecompositionDeps
     graph.py          StateGraph assembly + DecompositionAgent (with time-travel)
@@ -173,6 +178,16 @@ ageom/
     graph.py          Graph assembly + HunterAgent
     llm.py            LLM clients (Anthropic Claude + Codex/OpenAI)
     prompts.py        Prompt templates
+  synthesizer/      Round 3 -- Assembly + Verification
+    pipeline.py       assemble_and_check() orchestration (with ghost simulation pass)
+    ghost_sim.py      CDG -> SimNode conversion, run_ghost_simulation()
+    assembler.py      CDG + MatchResults -> SkeletonFile (Lean 4 / Coq / Python)
+    compiler.py       SkeletonCompiler (wraps ProofEnvironment)
+    toposort.py       Kahn's algorithm for dependency ordering
+    contracts.py      ContractGenerator with DSP constraint pattern recognition
+    models.py         AssemblyUnit, GlueEdge, SkeletonFile, AssemblyResult, ...
+    repair.py         Compile-analyze-patch repair loop
+    extractor.py      FFI export and verification certificates
 tests/
 ```
 

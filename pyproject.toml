@@ -43,6 +43,9 @@ python-target = [
     "icontract>=2.6",
     "docstring-parser>=0.15",
 ]
+ghost = [
+    "ageoa>=0.1.0",
+]
 synthesizer = [
     "ageo-matcher[hunter]",
 ]
@@ -52,7 +55,7 @@ dev = [
     "mypy>=1.0",
 ]
 all = [
-    "ageo-matcher[indexer,lean,coq,hunter,architect,synthesizer,python-target,dev]",
+    "ageo-matcher[indexer,lean,coq,hunter,architect,synthesizer,python-target,ghost,dev]",
 ]
 
 [project.scripts]
