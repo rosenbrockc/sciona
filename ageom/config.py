@@ -55,6 +55,7 @@ class AgeomConfig(BaseSettings):
     hunter_query_batch_size: int = 40
     hunter_top_k_per_query: int = 50
     hunter_max_candidates_total: int = 3000
+    hunter_verify_concurrency: int = 1  # >1 enables parallel verification
 
     # Architect (Round 1)
     skill_index_dir: Path = Field(default=Path("data/skill_index"))

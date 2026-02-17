@@ -203,7 +203,12 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
                 )
             return ReformulateQuery()
 
-        results = await deps.oracle.verify_candidates(state.pdg_node, to_verify)
+        if state.verify_concurrency > 1 and hasattr(deps.oracle, "verify_candidates_parallel"):
+            results = await deps.oracle.verify_candidates_parallel(
+                state.pdg_node, to_verify, max_concurrent=state.verify_concurrency
+            )
+        else:
+            results = await deps.oracle.verify_candidates(state.pdg_node, to_verify)
         state.verification_results.extend(results)
 
         # Collect compiler feedback for potential reformulation

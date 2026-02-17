@@ -10,6 +10,7 @@ Graph topology:
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 
@@ -39,6 +40,8 @@ from ageom.synthesizer.prompts import (
     GENERATE_TACTIC_USER,
 )
 
+logger = logging.getLogger(__name__)
+
 # Error category priority for LLM repair (lower = higher priority)
 _ERROR_PRIORITY: dict[ErrorCategory, int] = {
     ErrorCategory.TYPE_MISMATCH: 0,
@@ -62,6 +65,14 @@ class RepairState:
     sorry_remaining: int = 0
     compiled_ok: bool = False
     _last_feedback: CompilerFeedback | None = field(default=None, repr=False)
+
+    # Resilience tracking (Issue 8)
+    _source_snapshots: list[str] = field(default_factory=list, repr=False)
+    _last_error_count: int = field(default=-1, repr=False)
+    llm_attempts: int = 0
+    llm_successes: int = 0  # produced usable patches
+    best_source: str = ""
+    best_error_count: int = field(default=999999, repr=False)
 
 
 @dataclass
@@ -96,14 +107,46 @@ class CompileCheck(BaseNode[RepairState, RepairDeps, SkeletonFile]):
         feedback = await _compile_source(deps.env, state.skeleton.source_code)
         state._last_feedback = feedback
 
+        # Track error count for regression detection
+        current_error_count = len(feedback.errors) if not feedback.success else 0
+
+        # Regression detection: if errors increased, rollback
+        if (
+            state._last_error_count >= 0
+            and current_error_count > state._last_error_count
+            and state._source_snapshots
+        ):
+            logger.info(
+                "Regression detected: errors %d -> %d, rolling back",
+                state._last_error_count,
+                current_error_count,
+            )
+            state.skeleton.source_code = state._source_snapshots[-1]
+            # Re-compile after rollback
+            feedback = await _compile_source(deps.env, state.skeleton.source_code)
+            state._last_feedback = feedback
+            current_error_count = len(feedback.errors) if not feedback.success else 0
+
+        state._last_error_count = current_error_count
+
+        # Track best source
+        if current_error_count < state.best_error_count:
+            state.best_error_count = current_error_count
+            state.best_source = state.skeleton.source_code
+
         if feedback.success:
             state.compiled_ok = True
             state.sorry_remaining = 0
             return End(state.skeleton)
 
-        # Budget check
+        # Budget check — return best version if exhausted
         if state.iteration >= state.max_iterations:
+            if state.best_source and state.best_error_count < current_error_count:
+                state.skeleton.source_code = state.best_source
             return End(state.skeleton)
+
+        # Snapshot current source before any modifications
+        state._source_snapshots.append(state.skeleton.source_code)
 
         # Classify errors
         classified = classify_feedback(feedback)
@@ -130,7 +173,10 @@ class CompileCheck(BaseNode[RepairState, RepairDeps, SkeletonFile]):
 
 @dataclass
 class DeterministicFix(BaseNode[RepairState, RepairDeps, SkeletonFile]):
-    """Apply deterministic fixes (e.g. missing imports)."""
+    """Apply deterministic fixes (e.g. missing imports).
+
+    Applies ALL deterministic fixes in one pass instead of one-per-iteration.
+    """
 
     async def run(
         self, ctx: GraphRunContext[RepairState, RepairDeps]
@@ -144,22 +190,28 @@ class DeterministicFix(BaseNode[RepairState, RepairDeps, SkeletonFile]):
         classified = classify_feedback(state._last_feedback)
         lines = state.skeleton.source_code.splitlines()
 
+        # Collect ALL deterministic fixes in one pass
+        fixes_to_apply: list[str] = []
         for cat, text in classified:
             fix = suggest_deterministic_fix(cat, text)
             if fix is not None:
-                # Insert fix at top of file (after first line)
-                patch = Patch(
-                    line_start=1,
-                    line_end=1,
-                    replacement=lines[0] + "\n" + fix if lines else fix,
-                    description=f"Deterministic fix: {fix}",
-                )
-                state.skeleton.source_code = apply_patches(
-                    state.skeleton.source_code, [patch]
-                )
-                state.patches_applied.append(patch)
+                if fix not in fixes_to_apply:
+                    fixes_to_apply.append(fix)
                 state.error_history.append((state.iteration, cat, text))
-                break  # One fix per iteration to avoid patch conflicts
+
+        if fixes_to_apply:
+            # Insert all fixes at top of file (after first line)
+            combined_fix = "\n".join(fixes_to_apply)
+            patch = Patch(
+                line_start=1,
+                line_end=1,
+                replacement=lines[0] + "\n" + combined_fix if lines else combined_fix,
+                description=f"Deterministic fixes: {len(fixes_to_apply)} fix(es)",
+            )
+            state.skeleton.source_code = apply_patches(
+                state.skeleton.source_code, [patch]
+            )
+            state.patches_applied.append(patch)
 
         state.iteration += 1
         return CompileCheck()
@@ -207,6 +259,7 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             else ANALYZE_ERROR_SYSTEM
         )
 
+        state.llm_attempts += 1
         try:
             response = await deps.llm.complete(system_prompt, user_msg)
             patch = _parse_patch_response(response)
@@ -215,8 +268,22 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
                     state.skeleton.source_code, [patch]
                 )
                 state.patches_applied.append(patch)
-        except Exception:
-            pass  # LLM or parse failure — move on
+                state.llm_successes += 1
+        except json.JSONDecodeError as exc:
+            state.error_history.append(
+                (state.iteration, ErrorCategory.UNKNOWN, f"LLM_FAILURE: JSON parse error: {exc}")
+            )
+            logger.warning("LLM repair JSON parse error: %s", exc)
+        except ValueError as exc:
+            state.error_history.append(
+                (state.iteration, ErrorCategory.UNKNOWN, f"LLM_FAILURE: {exc}")
+            )
+            logger.warning("LLM repair value error: %s", exc)
+        except RuntimeError as exc:
+            state.error_history.append(
+                (state.iteration, ErrorCategory.UNKNOWN, f"LLM_FAILURE: {exc}")
+            )
+            logger.warning("LLM repair runtime error: %s", exc)
 
         state.iteration += 1
         return CompileCheck()
@@ -256,6 +323,7 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             else GENERATE_TACTIC_SYSTEM
         )
 
+        state.llm_attempts += 1
         try:
             response = await deps.llm.complete(system_prompt, user_msg)
             tactic_body = response.strip()
@@ -270,8 +338,22 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
                     state.skeleton.source_code, [patch]
                 )
                 state.patches_applied.append(patch)
-        except Exception:
-            pass
+                state.llm_successes += 1
+        except json.JSONDecodeError as exc:
+            state.error_history.append(
+                (state.iteration, ErrorCategory.UNKNOWN, f"PARSE_FAILURE: {exc}")
+            )
+            logger.warning("Sorry elimination parse error: %s", exc)
+        except ValueError as exc:
+            state.error_history.append(
+                (state.iteration, ErrorCategory.UNKNOWN, f"LLM_FAILURE: {exc}")
+            )
+            logger.warning("Sorry elimination value error: %s", exc)
+        except RuntimeError as exc:
+            state.error_history.append(
+                (state.iteration, ErrorCategory.UNKNOWN, f"LLM_FAILURE: {exc}")
+            )
+            logger.warning("Sorry elimination runtime error: %s", exc)
 
         state.sorry_remaining = len(locations) - 1
         state.iteration += 1

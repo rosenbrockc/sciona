@@ -277,20 +277,22 @@ class TestAssembler:
             assembler.assemble(sample_cdg, partial_matches)
 
     def test_sorry_count(self, sample_cdg, sample_match_results):
-        """Sorry count should match number of decomposed nodes with type signatures."""
+        """Composition should produce actual term composition (no bare sorry)."""
         assembler = Assembler(Prover.LEAN4)
         skeleton = assembler.assemble(sample_cdg, sample_match_results)
 
-        # root node is decomposed and has a type_signature -> 1 sorry
-        assert skeleton.sorry_count == 1
-        assert "sorry" in skeleton.source_code
+        # With composition logic, sorry_count should be 0 when children match
+        assert skeleton.sorry_count == 0
+        # Composition output should use exact/calc instead of sorry
+        assert "composition" in skeleton.source_code.lower()
 
     def test_sorry_count_coq(self, sample_cdg, sample_match_results):
         assembler = Assembler(Prover.COQ)
         skeleton = assembler.assemble(sample_cdg, sample_match_results)
 
-        assert skeleton.sorry_count == 1
-        assert "Admitted." in skeleton.source_code
+        # Coq composition uses Proof/Qed instead of Admitted
+        assert skeleton.sorry_count == 0
+        assert "Proof." in skeleton.source_code
 
     def test_glue_edges_flagged(self, sample_cdg_with_glue, sample_match_results):
         assembler = Assembler(Prover.LEAN4)

@@ -261,13 +261,13 @@ class TestRunGhostSimulationNoWitness:
         """CDG with non-DSP atoms (no witnesses)."""
         nodes = [
             AlgorithmicNode(
-                node_id="sort_node",
-                name="Sort",
-                description="Sort an array",
-                concept_type=ConceptType.SORTING,
+                node_id="custom_node",
+                name="Custom Op",
+                description="A custom operation with no witness",
+                concept_type=ConceptType.CUSTOM,
                 status=NodeStatus.ATOMIC,
-                inputs=[IOSpec(name="arr", type_desc="list[int]")],
-                outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+                inputs=[IOSpec(name="data", type_desc="list[int]")],
+                outputs=[IOSpec(name="result", type_desc="list[int]")],
                 depth=0,
             ),
         ]
@@ -275,13 +275,13 @@ class TestRunGhostSimulationNoWitness:
 
     @pytest.fixture
     def non_dsp_matches(self) -> list[MatchResult]:
-        return [_make_match("sort_node", "heapsort")]
+        return [_make_match("custom_node", "my_custom_unregistered_op")]
 
     def test_no_simulable_nodes(self, non_dsp_cdg, non_dsp_matches):
         report = run_ghost_simulation(non_dsp_cdg, non_dsp_matches)
         # Should not crash; just reports no simulation ran
         assert report.ran is False
-        assert report.skipped_nodes == ["Sort"]
+        assert report.skipped_nodes == ["Custom Op"]
 
 
 class TestRunGhostSimulationFilter:
@@ -361,7 +361,7 @@ class TestRunGhostSimulationMixed:
 
     @pytest.fixture
     def mixed_cdg(self) -> CDGExport:
-        """CDG with one DSP node and one non-DSP node, independent."""
+        """CDG with one DSP node and one non-DSP node (unregistered), independent."""
         nodes = [
             AlgorithmicNode(
                 node_id="fft_node",
@@ -375,13 +375,13 @@ class TestRunGhostSimulationMixed:
                 depth=0,
             ),
             AlgorithmicNode(
-                node_id="sort_node",
-                name="Sort",
-                description="Sort an array",
-                concept_type=ConceptType.SORTING,
+                node_id="custom_node",
+                name="Custom Op",
+                description="A custom unregistered operation",
+                concept_type=ConceptType.CUSTOM,
                 status=NodeStatus.ATOMIC,
-                inputs=[IOSpec(name="arr", type_desc="list[int]")],
-                outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+                inputs=[IOSpec(name="data", type_desc="list[int]")],
+                outputs=[IOSpec(name="result", type_desc="list[int]")],
                 depth=0,
             ),
         ]
@@ -391,7 +391,7 @@ class TestRunGhostSimulationMixed:
     def mixed_matches(self) -> list[MatchResult]:
         return [
             _make_match("fft_node", "fft"),
-            _make_match("sort_node", "heapsort"),
+            _make_match("custom_node", "my_custom_unregistered_op"),
         ]
 
     def test_mixed_simulates_dsp_only(self, mixed_cdg, mixed_matches):
@@ -399,5 +399,5 @@ class TestRunGhostSimulationMixed:
         assert report.ran is True
         assert report.passed is True
         assert report.node_count == 1
-        assert "Sort" in report.skipped_nodes
+        assert "Custom Op" in report.skipped_nodes
         assert "FFT" in report.trace

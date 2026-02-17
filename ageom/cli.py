@@ -10,6 +10,69 @@ import sys
 from pathlib import Path
 
 
+def _create_llm(args: argparse.Namespace, config: "AgeomConfig", round_name: str) -> "LLMClient":
+    """Create an LLM client with per-round provider/model overrides.
+
+    Args:
+        args: Parsed CLI arguments (may have llm_provider, llm_model, llm_max_tokens).
+        config: The AgeomConfig instance.
+        round_name: One of "architect", "hunter", "synthesizer" to select per-round overrides.
+    """
+    from ageom.hunter.llm import LLMClient, create_llm_client
+
+    provider_attr = f"{round_name}_llm_provider"
+    model_attr = f"{round_name}_llm_model"
+    max_tokens_attr = f"{round_name}_llm_max_tokens" if round_name == "hunter" else None
+
+    llm_provider = (
+        getattr(args, "llm_provider", None)
+        or getattr(config, provider_attr, "")
+        or config.llm_provider
+    )
+    llm_model = (
+        getattr(args, "llm_model", None)
+        or getattr(config, model_attr, "")
+        or config.llm_model
+    )
+    llm_max_tokens = (
+        getattr(args, "llm_max_tokens", None)
+        or (getattr(config, max_tokens_attr, None) if max_tokens_attr else None)
+        or config.llm_max_tokens
+    )
+
+    return create_llm_client(
+        provider=llm_provider,
+        model=llm_model,
+        max_tokens=llm_max_tokens,
+        anthropic_api_key=config.anthropic_api_key,
+        openai_api_key=config.openai_api_key,
+        openai_base_url=config.openai_base_url,
+        llama_cpp_base_url=config.llama_cpp_base_url,
+        llama_cpp_api_key=config.llama_cpp_api_key,
+    )
+
+
+def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironment":
+    """Create the appropriate ProofEnvironment for the given prover.
+
+    Args:
+        prover: The target proof assistant.
+        config: The AgeomConfig instance.
+    """
+    if prover.value == "lean4":
+        from ageom.judge.lean_env import LeanEnvironment
+        return LeanEnvironment(config.lean_toolchain)
+    elif prover.value == "python":
+        from ageom.judge.python_env import PythonEnvironment
+        return PythonEnvironment(
+            mypy_path=config.python_mypy_path,
+            python_path=config.python_path,
+        )
+    else:
+        from ageom.judge.coq_env import CoqEnvironment
+        return CoqEnvironment(config.coq_project_path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="ageom",
@@ -108,6 +171,10 @@ def main() -> None:
         "--no-persist", action="store_true", default=False,
         help="Disable PostgreSQL persistence (use in-memory only)",
     )
+    decompose_parser.add_argument(
+        "--trace", action="store_true", default=False,
+        help="Write pipeline event trace to {output_dir}/trace.jsonl",
+    )
 
     # --- history ---
     history_parser = subparsers.add_parser(
@@ -183,6 +250,35 @@ def main() -> None:
         "--llm-max-tokens", type=int, default=None,
         help="Max output tokens for LLM calls",
     )
+    synth_parser.add_argument(
+        "--trace", action="store_true", default=False,
+        help="Write pipeline event trace to {output_dir}/trace.jsonl",
+    )
+
+    # --- run (full orchestration) ---
+    run_parser = subparsers.add_parser(
+        "run", help="Run full orchestration: decompose -> match -> (refine) -> assemble"
+    )
+    run_parser.add_argument("goal", type=str, help="High-level goal")
+    run_parser.add_argument(
+        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
+    )
+    run_parser.add_argument(
+        "--max-rounds", type=int, default=3, help="Max refinement rounds (default: 3)"
+    )
+    run_parser.add_argument(
+        "--output", type=str, default=None, help="Output directory for all artifacts"
+    )
+    run_parser.add_argument(
+        "--catalog", type=str, default=None, help="Path to catalog JSON"
+    )
+    run_parser.add_argument(
+        "--llm-provider", choices=["anthropic", "codex", "llama_cpp"], default=None,
+        help="LLM provider override",
+    )
+    run_parser.add_argument("--llm-model", type=str, default=None, help="LLM model override")
+    run_parser.add_argument("--llm-max-tokens", type=int, default=None, help="Max output tokens")
+    run_parser.add_argument("--trace", action="store_true", default=False, help="Write trace.jsonl")
 
     # --- export ---
     export_parser = subparsers.add_parser(
@@ -239,6 +335,10 @@ def main() -> None:
         default=None,
         help="Max output tokens for matching LLM calls",
     )
+    match_parser.add_argument(
+        "--trace", action="store_true", default=False,
+        help="Write pipeline event trace to trace.jsonl",
+    )
 
     args = parser.parse_args()
 
@@ -265,6 +365,8 @@ def main() -> None:
         asyncio.run(_cmd_assemble(args))
     elif args.command == "synthesize":
         asyncio.run(_cmd_synthesize(args))
+    elif args.command == "run":
+        asyncio.run(_cmd_run(args))
     elif args.command == "export":
         asyncio.run(_cmd_export(args))
     elif args.command == "visualize":
@@ -426,7 +528,6 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     from ageom.architect.handoff import save_json
     from ageom.architect.models import NodeStatus
     from ageom.config import AgeomConfig
-    from ageom.hunter.llm import create_llm_client
 
     config = AgeomConfig()
     max_depth = args.max_depth or config.architect_max_depth
@@ -457,20 +558,8 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             pass  # Use empty index
 
     # Set up LLM
-    llm_provider = args.llm_provider or config.architect_llm_provider or config.llm_provider
-    llm_model = args.llm_model or config.architect_llm_model
-    llm_max_tokens = args.llm_max_tokens or config.llm_max_tokens
     try:
-        llm = create_llm_client(
-            provider=llm_provider,
-            model=llm_model,
-            max_tokens=llm_max_tokens,
-            anthropic_api_key=config.anthropic_api_key,
-            openai_api_key=config.openai_api_key,
-            openai_base_url=config.openai_base_url,
-            llama_cpp_base_url=config.llama_cpp_base_url,
-            llama_cpp_api_key=config.llama_cpp_api_key,
-        )
+        llm = _create_llm(args, config, "architect")
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -563,12 +652,10 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     """Match predicates to library functions."""
     from ageom.config import AgeomConfig
     from ageom.hunter.graph import HunterAgent
-    from ageom.hunter.llm import create_llm_client
     from ageom.indexer.builder import SemanticIndexImpl
     from ageom.indexer.embedder import UniXcoderEmbedder
     from ageom.indexer.faiss_store import FAISSStore
     from ageom.judge.checker import VerificationOracleImpl
-    from ageom.judge.lean_env import LeanEnvironment
     from ageom.types import PDGNode, Prover
 
     config = AgeomConfig()
@@ -585,38 +672,17 @@ async def _cmd_match(args: argparse.Namespace) -> None:
 
     # Set up verification oracle
     prover = Prover(args.prover)
+    env = _create_proof_env(prover, config)
     if prover == Prover.LEAN4:
-        lean_env = LeanEnvironment(config.lean_toolchain)
-        oracle = VerificationOracleImpl(lean_env=lean_env)
+        oracle = VerificationOracleImpl(lean_env=env)
     elif prover == Prover.PYTHON:
-        from ageom.judge.python_env import PythonEnvironment
-
-        python_env = PythonEnvironment(
-            mypy_path=config.python_mypy_path,
-            python_path=config.python_path,
-        )
-        oracle = VerificationOracleImpl(python_env=python_env)
+        oracle = VerificationOracleImpl(python_env=env)
     else:
-        from ageom.judge.coq_env import CoqEnvironment
-
-        coq_env = CoqEnvironment(config.coq_project_path)
-        oracle = VerificationOracleImpl(coq_env=coq_env)
+        oracle = VerificationOracleImpl(coq_env=env)
 
     # Set up LLM
-    llm_provider = args.llm_provider or config.hunter_llm_provider or config.llm_provider
-    llm_model = args.llm_model or config.hunter_llm_model or config.llm_model
-    llm_max_tokens = args.llm_max_tokens or config.hunter_llm_max_tokens or config.llm_max_tokens
     try:
-        llm = create_llm_client(
-            provider=llm_provider,
-            model=llm_model,
-            max_tokens=llm_max_tokens,
-            anthropic_api_key=config.anthropic_api_key,
-            openai_api_key=config.openai_api_key,
-            openai_base_url=config.openai_base_url,
-            llama_cpp_base_url=config.llama_cpp_base_url,
-            llama_cpp_api_key=config.llama_cpp_api_key,
-        )
+        llm = _create_llm(args, config, "hunter")
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -736,21 +802,7 @@ async def _cmd_assemble(args: argparse.Namespace) -> None:
         from ageom.synthesizer.compiler import SkeletonCompiler
 
         config = AgeomConfig()
-        if prover == Prover.LEAN4:
-            from ageom.judge.lean_env import LeanEnvironment
-
-            env = LeanEnvironment(config.lean_toolchain)
-        elif prover == Prover.PYTHON:
-            from ageom.judge.python_env import PythonEnvironment
-
-            env = PythonEnvironment(
-                mypy_path=config.python_mypy_path,
-                python_path=config.python_path,
-            )
-        else:
-            from ageom.judge.coq_env import CoqEnvironment
-
-            env = CoqEnvironment(config.coq_project_path)
+        env = _create_proof_env(prover, config)
 
         try:
             compiler = SkeletonCompiler(env)
@@ -843,7 +895,6 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     """Assemble CDG + match results, then repair via the synthesizer agent."""
     from ageom.architect.handoff import load_json
     from ageom.config import AgeomConfig
-    from ageom.hunter.llm import create_llm_client
     from ageom.synthesizer.agent import SynthesizerAgent
     from ageom.synthesizer.assembler import Assembler, AssemblyError
     from ageom.types import MatchResult, Prover
@@ -882,41 +933,11 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     print(f"Assembled skeleton: {len(skeleton.units)} units, {skeleton.sorry_count} sorrys")
 
     # Set up ProofEnvironment
-    if prover == Prover.LEAN4:
-        from ageom.judge.lean_env import LeanEnvironment
-
-        env = LeanEnvironment(config.lean_toolchain)
-    elif prover == Prover.PYTHON:
-        from ageom.judge.python_env import PythonEnvironment
-
-        env = PythonEnvironment(
-            mypy_path=config.python_mypy_path,
-            python_path=config.python_path,
-        )
-    else:
-        from ageom.judge.coq_env import CoqEnvironment
-
-        env = CoqEnvironment(config.coq_project_path)
+    env = _create_proof_env(prover, config)
 
     # Set up LLM
-    llm_provider = (
-        args.llm_provider
-        or config.synthesizer_llm_provider
-        or config.llm_provider
-    )
-    llm_model = args.llm_model or config.synthesizer_llm_model
-    llm_max_tokens = args.llm_max_tokens or config.llm_max_tokens
     try:
-        llm = create_llm_client(
-            provider=llm_provider,
-            model=llm_model,
-            max_tokens=llm_max_tokens,
-            anthropic_api_key=config.anthropic_api_key,
-            openai_api_key=config.openai_api_key,
-            openai_base_url=config.openai_base_url,
-            llama_cpp_base_url=config.llama_cpp_base_url,
-            llama_cpp_api_key=config.llama_cpp_api_key,
-        )
+        llm = _create_llm(args, config, "synthesizer")
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -953,8 +974,151 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
             print(f"  Errors encountered:")
             for it, cat, text in result.error_history:
                 print(f"    [{it}] {cat}: {text[:80]}")
+
+        # Write trace if requested
+        if getattr(args, "trace", False):
+            from ageom.telemetry import get_event_log
+
+            trace_path = output_path.parent / "trace.jsonl"
+            event_log = get_event_log()
+            if len(event_log) > 0:
+                event_log.save(trace_path)
+                print(f"  Trace: {trace_path} ({len(event_log)} events)")
     finally:
         await env.close()
+
+
+async def _cmd_run(args: argparse.Namespace) -> None:
+    """Run the full orchestration loop: decompose -> match -> refine -> assemble."""
+    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.checkpointer import create_checkpointer
+    from ageom.architect.embedder import SkillIndex
+    from ageom.architect.graph import DecompositionAgent
+    from ageom.architect.handoff import save_json
+    from ageom.config import AgeomConfig
+    from ageom.hunter.graph import HunterAgent
+    from ageom.indexer.builder import SemanticIndexImpl
+    from ageom.indexer.embedder import UniXcoderEmbedder
+    from ageom.indexer.faiss_store import FAISSStore
+    from ageom.judge.checker import VerificationOracleImpl
+    from ageom.orchestrator import run_orchestration
+    from ageom.types import Prover
+
+    config = AgeomConfig()
+    prover = Prover(args.prover)
+
+    # Load catalog
+    catalog = PrimitiveCatalog()
+    if args.catalog:
+        catalog = PrimitiveCatalog.load(args.catalog)
+    else:
+        search_dir = config.skill_index_dir
+        if search_dir.exists():
+            for cat_file in sorted(search_dir.glob("catalog_*.json")):
+                partial = PrimitiveCatalog.load(cat_file)
+                for prim in partial.all_primitives():
+                    catalog.add(prim)
+
+    # Load skill index
+    skill_index = SkillIndex(index_dir=config.skill_index_dir)
+    if config.skill_index_dir.exists():
+        try:
+            skill_index = SkillIndex.load(config.skill_index_dir)
+        except Exception:
+            pass
+
+    # Set up LLM
+    try:
+        llm = _create_llm(args, config, "architect")
+    except (ValueError, ImportError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    # Step 1: Decompose
+    print(f"Decomposing: {args.goal}")
+
+    from ageom.architect.checkpointer import create_checkpointer
+    async with create_checkpointer("") as checkpointer:
+        architect = DecompositionAgent(
+            catalog=catalog, skill_index=skill_index,
+            llm=llm, checkpointer=checkpointer,
+        )
+        cdg = await architect.decompose(args.goal)
+
+    print(f"  Decomposed: {len(cdg.nodes)} nodes, {len(cdg.edges)} edges")
+
+    # Step 2: Set up Hunter
+    index_dir = config.index_dir
+    if not index_dir.exists():
+        print(f"Error: index directory {index_dir} not found. Run 'ageom index build' first.",
+              file=sys.stderr)
+        sys.exit(1)
+
+    store = FAISSStore.load(index_dir)
+    embedder = UniXcoderEmbedder(config.embedding_model)
+    index = SemanticIndexImpl(store, embedder)
+
+    env = _create_proof_env(prover, config)
+    if prover == Prover.LEAN4:
+        oracle = VerificationOracleImpl(lean_env=env)
+    elif prover == Prover.PYTHON:
+        oracle = VerificationOracleImpl(python_env=env)
+    else:
+        oracle = VerificationOracleImpl(coq_env=env)
+
+    try:
+        hunter_llm = _create_llm(args, config, "hunter")
+    except (ValueError, ImportError) as exc:
+        print(f"Error setting up hunter LLM: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    hunter = HunterAgent(
+        index=index, oracle=oracle, llm=hunter_llm,
+        max_iterations=config.hunter_max_iterations,
+        top_k_verify=config.hunter_top_k_verify,
+        search_k=config.hunter_search_k,
+        mode=config.hunter_mode,
+        use_gbnf=config.hunter_use_gbnf,
+        query_batch_size=config.hunter_query_batch_size,
+        top_k_per_query=config.hunter_top_k_per_query,
+        max_candidates_total=config.hunter_max_candidates_total,
+    )
+
+    # Step 3: Run orchestration loop
+    print(f"Running orchestration (max {args.max_rounds} rounds)...")
+    try:
+        result = await run_orchestration(
+            cdg, hunter_agent=hunter, llm=llm,
+            prover=prover, max_rounds=args.max_rounds,
+        )
+    finally:
+        await env.close()
+
+    # Output
+    print(f"\nOrchestration complete:")
+    print(f"  Rounds used: {result.rounds_used}")
+    print(f"  Matches: {sum(1 for mr in result.match_results if mr.success)}/{len(result.match_results)}")
+    if result.ungroundable:
+        print(f"  Ungroundable: {result.ungroundable}")
+
+    output_dir = Path(args.output) if args.output else Path("output")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    save_json(result.cdg, output_dir / "cdg.json")
+
+    if result.match_results:
+        import json
+        matches_data = [mr.to_dict() for mr in result.match_results]
+        with open(output_dir / "matches.json", "w") as f:
+            json.dump(matches_data, f, indent=2)
+
+    print(f"  Output: {output_dir}/")
+
+    if getattr(args, "trace", False):
+        from ageom.telemetry import get_event_log
+        event_log = get_event_log()
+        if len(event_log) > 0:
+            event_log.save(output_dir / "trace.jsonl")
+            print(f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)")
 
 
 def _cmd_visualize(args: argparse.Namespace) -> None:

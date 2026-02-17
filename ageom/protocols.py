@@ -86,6 +86,18 @@ class VerificationOracle(Protocol):
         """Verify multiple candidates. May short-circuit on first success."""
         ...
 
+    async def verify_candidates_parallel(
+        self,
+        pdg_node: PDGNode,
+        candidates: list[CandidateMatch],
+        max_concurrent: int = 3,
+    ) -> list[VerificationResult]:
+        """Verify multiple candidates in parallel with bounded concurrency.
+
+        Default implementation falls back to sequential verification.
+        """
+        return await self.verify_candidates(pdg_node, candidates)
+
 
 @runtime_checkable
 class RetrievalAgent(Protocol):

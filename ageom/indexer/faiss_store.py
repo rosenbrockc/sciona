@@ -3,13 +3,46 @@
 from __future__ import annotations
 
 import json
-import pickle
+import warnings
 from pathlib import Path
 
+import msgpack
 import numpy as np
 
 from ageom.indexer.models import IndexEntry, IndexMetadata
-from ageom.types import Declaration
+from ageom.types import Declaration, Prover
+
+
+def _declarations_to_msgpack(declarations: dict[int, Declaration]) -> bytes:
+    """Serialize declarations dict to msgpack bytes."""
+    data = {
+        k: {
+            "name": d.name,
+            "type_signature": d.type_signature,
+            "docstring": d.docstring,
+            "source_lib": d.source_lib,
+            "prover": d.prover.value,
+            "raw_code": d.raw_code,
+        }
+        for k, d in declarations.items()
+    }
+    return msgpack.packb(data, use_bin_type=True)
+
+
+def _declarations_from_msgpack(raw: bytes) -> dict[int, Declaration]:
+    """Deserialize declarations dict from msgpack bytes."""
+    data = msgpack.unpackb(raw, raw=False, strict_map_key=False)
+    return {
+        int(k): Declaration(
+            name=d["name"],
+            type_signature=d.get("type_signature", ""),
+            docstring=d.get("docstring", ""),
+            source_lib=d.get("source_lib", ""),
+            prover=Prover(d.get("prover", "lean4")),
+            raw_code=d.get("raw_code", ""),
+        )
+        for k, d in data.items()
+    }
 
 
 class FAISSStore:
@@ -82,8 +115,8 @@ class FAISSStore:
 
         faiss.write_index(self._index, str(directory / "index.faiss"))
 
-        with open(directory / "declarations.pkl", "wb") as f:
-            pickle.dump(self._declarations, f)
+        with open(directory / "declarations.msgpack", "wb") as f:
+            f.write(_declarations_to_msgpack(self._declarations))
 
         meta = {
             "next_id": self._next_id,
@@ -111,16 +144,30 @@ class FAISSStore:
         store._index = faiss.read_index(str(directory / "index.faiss"))
         store._dim = store._index.d
 
-        with open(directory / "declarations.pkl", "rb") as f:
-            store._declarations = pickle.load(f)  # noqa: S301
+        msgpack_path = directory / "declarations.msgpack"
+        pkl_path = directory / "declarations.pkl"
+        if msgpack_path.exists():
+            with open(msgpack_path, "rb") as f:
+                store._declarations = _declarations_from_msgpack(f.read())
+        elif pkl_path.exists():
+            # Legacy fallback -- warn and migrate
+            import pickle
+
+            warnings.warn(
+                "Loading legacy pickle index. Re-run 'ageom index build' to migrate to msgpack.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            with open(pkl_path, "rb") as f:
+                store._declarations = pickle.load(f)  # noqa: S301
+        else:
+            store._declarations = {}
 
         with open(directory / "meta.json") as f:
             meta = json.load(f)
         store._next_id = meta["next_id"]
 
         if "metadata" in meta:
-            from ageom.types import Prover
-
             md = meta["metadata"]
             store._metadata = IndexMetadata(
                 num_entries=md["num_entries"],

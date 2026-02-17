@@ -14,6 +14,15 @@ class Prover(str, Enum):
     PYTHON = "python"
 
 
+class VerificationLevel(str, Enum):
+    """Trust level of a verification result."""
+
+    KERNEL_PROOF = "kernel_proof"        # Lean 4 kernel, Coq kernel
+    TYPE_CHECKED = "type_checked"        # mypy, Lean elaborator without proof
+    CONTRACT_CHECKED = "contract_checked"  # icontract runtime validation
+    UNVERIFIED = "unverified"            # no verification performed
+
+
 @dataclass(frozen=True)
 class Declaration:
     """A formal declaration extracted from a proof library.
@@ -62,6 +71,40 @@ class VerificationResult:
     compiler_output: str = ""
     proof_term: str = ""
     error_message: str = ""
+    verification_level: VerificationLevel = VerificationLevel.UNVERIFIED
+
+
+class FailureAction(str, Enum):
+    """Suggested action when a match fails."""
+
+    SPLIT = "split"           # split the atomic node into finer sub-atoms
+    GENERALIZE = "generalize"  # replace with an equivalent formulation
+    RELAX_TYPE = "relax_type"  # broaden the type signature
+    UNGROUNDABLE = "ungroundable"  # cannot be grounded
+
+
+@dataclass
+class MatchFailureReport:
+    """Report generated when the Hunter fails to ground an atomic leaf."""
+
+    pdg_node: PDGNode
+    best_candidates: list[CandidateMatch] = field(default_factory=list)
+    error_summaries: list[str] = field(default_factory=list)
+    suggested_action: FailureAction = FailureAction.SPLIT
+
+    @staticmethod
+    def from_match_result(result: "MatchResult") -> "MatchFailureReport":
+        """Build a failure report from a failed MatchResult."""
+        errors = [
+            vr.error_message
+            for vr in result.all_verifications
+            if vr.error_message
+        ][:5]  # keep top 5 error summaries
+        return MatchFailureReport(
+            pdg_node=result.pdg_node,
+            best_candidates=result.all_candidates[:5],
+            error_summaries=errors,
+        )
 
 
 @dataclass
@@ -104,6 +147,7 @@ class MatchResult:
                 "compiler_output": vr.compiler_output,
                 "proof_term": vr.proof_term,
                 "error_message": vr.error_message,
+                "verification_level": vr.verification_level.value,
             }
 
         result: dict = {
@@ -148,6 +192,9 @@ class MatchResult:
                 compiler_output=d.get("compiler_output", ""),
                 proof_term=d.get("proof_term", ""),
                 error_message=d.get("error_message", ""),
+                verification_level=VerificationLevel(
+                    d.get("verification_level", "unverified")
+                ),
             )
 
         pdg_data = data["pdg_node"]

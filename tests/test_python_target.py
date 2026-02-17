@@ -349,9 +349,8 @@ class TestPythonAssembler:
         assembler = Assembler(Prover.PYTHON)
         skeleton = assembler.assemble(python_cdg, python_match_results)
 
-        # root is decomposed with type_signature -> 1 sorry
-        assert skeleton.sorry_count == 1
-        assert "raise NotImplementedError" in skeleton.source_code
+        # Composition is now generated, so sorry_count should be 0
+        assert skeleton.sorry_count == 0
 
     def test_python_skeleton_has_docstring_header(self, python_cdg, python_match_results):
         assembler = Assembler(Prover.PYTHON)
@@ -366,7 +365,9 @@ class TestPythonAssembler:
         skeleton = assembler.assemble(python_cdg, python_match_results)
 
         assert "def solve_linear_system_composition" in skeleton.source_code
-        assert 'raise NotImplementedError("TODO: compose Solve Linear System")' in skeleton.source_code
+        # Composition now generates actual code (Issue 1 fix)
+        assert "lu_solve_result" in skeleton.source_code
+        assert "return lu_solve_result" in skeleton.source_code
 
 
 # ---------------------------------------------------------------------------

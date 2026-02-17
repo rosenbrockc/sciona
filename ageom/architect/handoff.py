@@ -19,6 +19,12 @@ from ageom.architect.models import (
 )
 from ageom.types import PDGNode, Prover
 
+import ast
+import logging
+import re
+
+_logger = logging.getLogger(__name__)
+
 
 class HandoffValidationError(ValueError):
     """Raised when a CDG fails strict handoff validation."""
@@ -131,6 +137,184 @@ def validate_handoff(cdg: CDGExport) -> list[str]:
             issues.append(
                 f"Leaf '{node.name}' ({node.node_id}) is {node.status.value}, not atomic"
             )
+
+    return issues
+
+
+def _validate_type_signature_syntax(
+    sig: str, prover: Prover = Prover.LEAN4
+) -> str | None:
+    """Validate type signature syntax. Returns error string or None if OK."""
+    if not sig.strip():
+        return None  # empty is caught by basic validation
+    sig = sig.strip()
+
+    if prover == Prover.PYTHON:
+        try:
+            ast.parse(f"x: {sig}", mode="exec")
+        except SyntaxError as exc:
+            return f"Invalid Python type annotation '{sig}': {exc}"
+        return None
+    elif prover == Prover.LEAN4:
+        # Lean 4: must contain arrow, colon, or be a single identifier
+        if re.match(r"^[A-Za-z_]\w*$", sig):
+            return None  # single identifier
+        if "\u2192" in sig or "→" in sig or ":" in sig or "->" in sig:
+            return None
+        # Check for balanced parentheses
+        depth = 0
+        for ch in sig:
+            if ch in "([{":
+                depth += 1
+            elif ch in ")]}":
+                depth -= 1
+            if depth < 0:
+                return f"Unbalanced parentheses in Lean type '{sig}'"
+        if depth != 0:
+            return f"Unbalanced parentheses in Lean type '{sig}'"
+        return None  # allow other forms
+    elif prover == Prover.COQ:
+        if re.match(r"^[A-Za-z_]\w*$", sig):
+            return None
+        if "->" in sig or "forall" in sig.lower() or ":" in sig:
+            return None
+        return None
+    return None
+
+
+def _check_edge_type_compatibility(edge: DependencyEdge) -> str | None:
+    """Check if source_type and target_type are compatible.
+
+    Returns a warning string or None if compatible.
+    """
+    src = edge.source_type.strip()
+    tgt = edge.target_type.strip()
+
+    if not src or not tgt:
+        return None  # missing types are not a compatibility error
+
+    if src == tgt:
+        return None
+
+    # Both contain ndarray → OK (shape mismatch caught by ghost sim)
+    if "ndarray" in src and "ndarray" in tgt:
+        return None
+
+    # Both contain array → OK
+    if "array" in src.lower() and "array" in tgt.lower():
+        return None
+
+    return (
+        f"Edge {edge.source_id}->{edge.target_id}: "
+        f"type mismatch '{src}' vs '{tgt}' "
+        f"(output '{edge.output_name}' -> input '{edge.input_name}')"
+    )
+
+
+def _check_graph_connectivity(cdg: "CDGExport") -> list[str]:
+    """Verify the CDG forms a connected DAG from root(s) to all atomic leaves.
+
+    Returns list of issues (orphan nodes not reachable from any root).
+    """
+    if not cdg.nodes:
+        return []
+
+    # Build adjacency: parent -> children
+    children_of: dict[str, set[str]] = {n.node_id: set() for n in cdg.nodes}
+    for edge in cdg.edges:
+        if edge.source_id in children_of:
+            children_of[edge.source_id].add(edge.target_id)
+
+    # Also use node.children
+    for node in cdg.nodes:
+        for child_id in node.children:
+            children_of.setdefault(node.node_id, set()).add(child_id)
+
+    # Find roots: nodes with no parent
+    child_ids = set()
+    for edge in cdg.edges:
+        child_ids.add(edge.target_id)
+    for node in cdg.nodes:
+        if node.parent_id:
+            child_ids.add(node.node_id)
+
+    roots = [n.node_id for n in cdg.nodes if n.node_id not in child_ids]
+    if not roots:
+        # Fallback: treat DECOMPOSED nodes at depth 0 as roots
+        roots = [n.node_id for n in cdg.nodes if n.depth == 0]
+
+    # BFS from roots
+    reachable: set[str] = set()
+    queue = list(roots)
+    while queue:
+        nid = queue.pop()
+        if nid in reachable:
+            continue
+        reachable.add(nid)
+        for child in children_of.get(nid, set()):
+            queue.append(child)
+
+    # Check for orphans
+    issues: list[str] = []
+    all_ids = {n.node_id for n in cdg.nodes}
+    orphans = all_ids - reachable - set(roots)
+    for orphan_id in orphans:
+        node = next((n for n in cdg.nodes if n.node_id == orphan_id), None)
+        if node:
+            issues.append(
+                f"Orphan node '{node.name}' ({node.node_id}) is not reachable from any root"
+            )
+
+    return issues
+
+
+def validate_handoff_strict(
+    cdg: "CDGExport",
+    prover: Prover = Prover.LEAN4,
+) -> list[str]:
+    """Strict validation of a CDG for Round 2 handoff.
+
+    Runs all checks from ``validate_handoff`` plus:
+    - Type signature syntax validation (per prover)
+    - Edge type compatibility checks
+    - Graph connectivity (no orphan nodes)
+    - IOSpec arity (atoms must have inputs and outputs)
+
+    Returns a list of issue strings (empty == valid).
+    """
+    issues = validate_handoff(cdg)
+
+    # Type signature syntax validation
+    for node in cdg.nodes:
+        if node.status == NodeStatus.ATOMIC and node.type_signature:
+            err = _validate_type_signature_syntax(node.type_signature, prover)
+            if err:
+                issues.append(
+                    f"Atomic leaf '{node.name}' ({node.node_id}): {err}"
+                )
+
+    # Edge type compatibility
+    for edge in cdg.edges:
+        warning = _check_edge_type_compatibility(edge)
+        if warning:
+            _logger.warning("Handoff edge type warning: %s", warning)
+            issues.append(warning)
+
+    # Connectivity check
+    connectivity_issues = _check_graph_connectivity(cdg)
+    issues.extend(connectivity_issues)
+
+    # IOSpec arity check: atomic nodes must have inputs and outputs
+    for node in cdg.nodes:
+        if node.status == NodeStatus.ATOMIC:
+            if not node.inputs:
+                issues.append(
+                    f"Atomic leaf '{node.name}' ({node.node_id}) has no inputs"
+                )
+            if not node.outputs:
+                issues.append(
+                    f"Atomic leaf '{node.name}' ({node.node_id}) has no outputs"
+                )
 
     return issues
 

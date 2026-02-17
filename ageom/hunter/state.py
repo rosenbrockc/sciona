@@ -20,6 +20,7 @@ class HunterState:
     query_batch_size: int = 40
     top_k_per_query: int = 50
     max_candidates_total: int = 3000
+    verify_concurrency: int = 1  # >1 enables parallel verification
 
     # Accumulated across iterations
     candidates_found: list[CandidateMatch] = field(default_factory=list)

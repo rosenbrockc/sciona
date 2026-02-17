@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timezone
 
 from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, NodeStatus
+from ageom.architect.models import AlgorithmicNode, DependencyEdge, NodeStatus
 from ageom.synthesizer.models import AssemblyUnit, GlueEdge, SkeletonFile
 from ageom.synthesizer.toposort import toposort_nodes
 from ageom.types import MatchResult, Prover
@@ -30,6 +30,37 @@ def sanitize_name(name: str) -> str:
     if s and not s[0].isalpha():
         s = "n_" + s
     return s or "unnamed"
+
+
+def _infer_cast(source_type: str, target_type: str) -> str:
+    """Infer a cast expression for a GlueEdge between source and target types.
+
+    Returns an empty string when no cast is needed, or a code snippet
+    appropriate for the type transformation.
+    """
+    src = source_type.strip()
+    tgt = target_type.strip()
+
+    if not src or not tgt:
+        return ""
+
+    # Same type -> identity (no cast)
+    if src == tgt:
+        return ""
+
+    # ndarray shape changes -> np.reshape()
+    if "ndarray" in src and "ndarray" in tgt:
+        return "np.reshape({src}, {tgt_shape})"
+
+    # Tuple destructure: (b, a) -> individual components
+    if src.startswith("(") and "," in src and not tgt.startswith("("):
+        return "({src})[0]"
+
+    # Lean coercions
+    if "Equiv" in src or "Equiv" in tgt:
+        return "Equiv.toFun"
+
+    return ""
 
 
 class Assembler:
@@ -88,9 +119,10 @@ class Assembler:
                 )
             )
 
-        # Build GlueEdges
+        # Build GlueEdges with cast inference
         glue_edges: list[GlueEdge] = []
         for edge in cdg.edges:
+            cast = _infer_cast(edge.source_type, edge.target_type)
             glue_edges.append(
                 GlueEdge(
                     source_id=edge.source_id,
@@ -99,7 +131,7 @@ class Assembler:
                     input_name=edge.input_name,
                     source_type=edge.source_type,
                     target_type=edge.target_type,
-                    cast_expr="",  # Phase 2 fills this
+                    cast_expr=cast,
                 )
             )
 
@@ -141,6 +173,154 @@ class Assembler:
             metadata=metadata,
         )
 
+    # ------------------------------------------------------------------
+    # Composition helpers
+    # ------------------------------------------------------------------
+
+    def _compose_python(
+        self,
+        units: list[AssemblyUnit],
+        glue_edges: list[GlueEdge],
+        root: AlgorithmicNode,
+    ) -> list[str]:
+        """Generate Python composition body for a root node.
+
+        Walks glue edges in topological order and emits variable assignments
+        connecting source outputs to target inputs.
+        """
+        unit_map = {u.node_id: u for u in units}
+
+        # Edges relevant to this root's children
+        child_ids = set(root.children) if root.children else {u.node_id for u in units}
+        relevant_edges = [
+            e for e in glue_edges
+            if e.source_id in child_ids or e.target_id in child_ids
+        ]
+
+        if not relevant_edges and not units:
+            return ['    raise NotImplementedError("TODO: compose {}")'.format(root.name)]
+
+        lines: list[str] = []
+
+        # First, call each atomic unit in topological order
+        called: set[str] = set()
+        for unit in units:
+            if unit.node_id not in child_ids:
+                continue
+            sname = sanitize_name(unit.name)
+            # Determine input arguments from edges or function inputs
+            args: list[str] = []
+            for inp in unit.inputs:
+                # Check if an edge provides this input
+                edge_for_inp = next(
+                    (e for e in relevant_edges
+                     if e.target_id == unit.node_id and e.input_name == inp.name),
+                    None,
+                )
+                if edge_for_inp:
+                    src_unit = unit_map.get(edge_for_inp.source_id)
+                    if src_unit:
+                        src_var = sanitize_name(src_unit.name) + "_result"
+                        if edge_for_inp.cast_expr:
+                            args.append(f"# cast: {edge_for_inp.cast_expr}\n    {src_var}")
+                        else:
+                            args.append(src_var)
+                    else:
+                        args.append(inp.name)
+                else:
+                    args.append(inp.name)
+
+            args_str = ", ".join(args)
+            lines.append(f"    {sname}_result = {sname}({args_str})")
+            called.add(unit.node_id)
+
+        # Return the last unit's result
+        if called:
+            last_unit = [u for u in units if u.node_id in called]
+            if last_unit:
+                last_name = sanitize_name(last_unit[-1].name) + "_result"
+                lines.append(f"    return {last_name}")
+        else:
+            lines.append('    # TODO: compose -- no atomic children resolved')
+            lines.append('    raise NotImplementedError("compose {}")'.format(root.name))
+
+        return lines
+
+    def _compose_lean4(
+        self,
+        units: list[AssemblyUnit],
+        glue_edges: list[GlueEdge],
+        root: AlgorithmicNode,
+    ) -> list[str]:
+        """Generate Lean 4 composition proof body for a root node.
+
+        Uses direct term composition (f . g) or calc chains instead of sorry.
+        """
+        unit_map = {u.node_id: u for u in units}
+        child_ids = set(root.children) if root.children else {u.node_id for u in units}
+        relevant_units = [u for u in units if u.node_id in child_ids]
+
+        if not relevant_units:
+            return ["  -- TODO: compose {} -- no atomic children resolved".format(root.name),
+                    "  sorry"]
+
+        lines: list[str] = []
+
+        if len(relevant_units) == 1:
+            # Single child: direct application
+            u = relevant_units[0]
+            sname = sanitize_name(u.name)
+            lines.append(f"  exact {sname}")
+        else:
+            # Multiple children: compose via term application
+            names = [sanitize_name(u.name) for u in relevant_units]
+
+            # Check for glue edges needing casts
+            has_casts = any(
+                e.cast_expr for e in glue_edges
+                if e.source_id in child_ids or e.target_id in child_ids
+            )
+            if has_casts:
+                for e in glue_edges:
+                    if e.cast_expr and (e.source_id in child_ids or e.target_id in child_ids):
+                        lines.append(f"  -- GLUE: {e.source_type} -> {e.target_type}")
+                lines.append(f"  exact ({' ∘ '.join(reversed(names))})")
+            else:
+                lines.append(f"  exact ({' ∘ '.join(reversed(names))})")
+
+        return lines
+
+    def _compose_coq(
+        self,
+        units: list[AssemblyUnit],
+        glue_edges: list[GlueEdge],
+        root: AlgorithmicNode,
+    ) -> list[str]:
+        """Generate Coq composition proof body for a root node.
+
+        Uses exact/apply chains instead of Admitted.
+        """
+        unit_map = {u.node_id: u for u in units}
+        child_ids = set(root.children) if root.children else {u.node_id for u in units}
+        relevant_units = [u for u in units if u.node_id in child_ids]
+
+        if not relevant_units:
+            return ["  (* TODO: compose {} -- no atomic children resolved *)".format(root.name),
+                    "  Admitted."]
+
+        if len(relevant_units) == 1:
+            u = relevant_units[0]
+            sname = sanitize_name(u.name)
+            return [f"Proof. exact {sname}. Qed."]
+        else:
+            names = [sanitize_name(u.name) for u in relevant_units]
+            apply_chain = " ".join(f"apply {n}." for n in names)
+            return [f"Proof. {apply_chain} Qed."]
+
+    # ------------------------------------------------------------------
+    # Prover-specific emitters
+    # ------------------------------------------------------------------
+
     def _emit_lean4(
         self,
         units: list[AssemblyUnit],
@@ -178,7 +358,7 @@ class Assembler:
                 lines.append(f"noncomputable def {sname} := @{unit.declaration_name}")
             lines.append("")
 
-        # Emit composition stubs for root/decomposed nodes
+        # Emit composition for root/decomposed nodes
         for root in root_nodes:
             rname = sanitize_name(root.name)
             if root.type_signature:
@@ -186,8 +366,12 @@ class Assembler:
                 lines.append(
                     f"theorem {rname}_composition : {root.type_signature} := by"
                 )
-                lines.append("  sorry")
-                sorry_count += 1
+                composition = self._compose_lean4(units, glue_edges, root)
+                lines.extend(composition)
+                # Count sorrys in generated composition
+                for line in composition:
+                    if "sorry" in line and not line.strip().startswith("--"):
+                        sorry_count += 1
                 lines.append("")
 
         return "\n".join(lines), sorry_count
@@ -263,15 +447,35 @@ class Assembler:
             lines.append("")
             lines.append("")
 
-        # Emit composition stubs for root/decomposed nodes
+        # Emit composition for root/decomposed nodes
         for root in root_nodes:
             rname = sanitize_name(root.name)
             if root.type_signature:
                 lines.append(f"# Composition: {root.name} ({root.node_id})")
-                lines.append(f"def {rname}_composition():")
+
+                # Build composition function with appropriate params from root inputs
+                params = []
+                for inp in root.inputs:
+                    if inp.type_desc:
+                        params.append(f"{inp.name}: {inp.type_desc}")
+                    else:
+                        params.append(inp.name)
+                param_str = ", ".join(params) if params else ""
+
+                ret_type = ""
+                if root.outputs:
+                    ret_type = root.outputs[0].type_desc
+                ret_str = f" -> {ret_type}" if ret_type else ""
+
+                lines.append(f"def {rname}_composition({param_str}){ret_str}:")
                 lines.append(f'    """Compose: {root.type_signature}"""')
-                lines.append(f'    raise NotImplementedError("TODO: compose {root.name}")')
-                sorry_count += 1
+
+                composition = self._compose_python(units, glue_edges, root)
+                lines.extend(composition)
+                # Count NotImplementedError stubs
+                for line in composition:
+                    if "NotImplementedError" in line:
+                        sorry_count += 1
                 lines.append("")
                 lines.append("")
 
@@ -313,7 +517,7 @@ class Assembler:
                 )
             lines.append("")
 
-        # Emit composition stubs
+        # Emit composition for root/decomposed nodes
         for root in root_nodes:
             rname = sanitize_name(root.name)
             if root.type_signature:
@@ -321,8 +525,11 @@ class Assembler:
                 lines.append(
                     f"Lemma {rname}_composition : {root.type_signature}."
                 )
-                lines.append("Proof. Admitted.")
-                sorry_count += 1
+                composition = self._compose_coq(units, glue_edges, root)
+                lines.extend(composition)
+                for line in composition:
+                    if "Admitted" in line:
+                        sorry_count += 1
                 lines.append("")
 
         return "\n".join(lines), sorry_count

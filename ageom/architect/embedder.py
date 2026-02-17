@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive
+from ageom.types import Declaration
 
 
 class SkillIndex:
@@ -81,6 +82,36 @@ class SkillIndex:
 
         store.add(entries)
         self._store = store
+
+    # --- SemanticIndex protocol methods ---
+
+    def search_by_embedding(
+        self, query_text: str, k: int = 10
+    ) -> list[tuple[Declaration, float]]:
+        """Search by embedding similarity. Returns (Declaration, score) pairs."""
+        if self._store is None:
+            return []
+        self._ensure_embedder()
+        query_vec = self._embedder.embed(query_text)
+        return self._store.search(query_vec, k=k)
+
+    def search_by_type(
+        self, type_signature: str, k: int = 10
+    ) -> list[Declaration]:
+        """Search by type signature (falls back to embedding search)."""
+        results = self.search_by_embedding(type_signature, k=k)
+        return [decl for decl, _score in results]
+
+    def get_declaration(self, name: str) -> Declaration | None:
+        """Look up a declaration by fully-qualified name."""
+        if self._store is None:
+            return None
+        for decl in self._store._declarations.values():
+            if decl.name == name:
+                return decl
+        return None
+
+    # --- Original search returning AlgorithmicPrimitive ---
 
     def search(self, query: str, k: int = 10) -> list[AlgorithmicPrimitive]:
         """Semantic search over the primitive index.

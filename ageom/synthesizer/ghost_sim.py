@@ -50,6 +50,8 @@ class GhostSimReport:
     """Name of the node where the simulation failed."""
     error_function: str = ""
     """Function name where the simulation failed."""
+    coverage: float = 0.0
+    """Ratio of simulable / total atomic nodes (0.0 - 1.0)."""
 
 
 def _extract_atom_name(declaration_name: str) -> str:
@@ -255,6 +257,30 @@ def run_ghost_simulation(
 
     report.skipped_nodes = skipped
 
+    # Compute coverage
+    total_atomic = len(simulable_nodes) + len(skipped)
+    if total_atomic > 0:
+        report.coverage = len(simulable_nodes) / total_atomic
+    else:
+        report.coverage = 0.0
+
+    if report.coverage < 0.5 and total_atomic > 0:
+        unsimulated_categories = set()
+        for nid in sorted_ids:
+            if nid not in atomic_leaves:
+                continue
+            node = node_map[nid]
+            mr = match_map.get(nid)
+            if mr and mr.success:
+                atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
+                if atom_name not in registered:
+                    unsimulated_categories.add(node.concept_type.value if hasattr(node, "concept_type") else "unknown")
+        logger.warning(
+            "Ghost simulation coverage is low (%.0f%%): unsimulated categories: %s",
+            report.coverage * 100,
+            sorted(unsimulated_categories),
+        )
+
     if not simulable_nodes:
         logger.info("Ghost simulation skipped: no simulable nodes")
         return report
@@ -335,6 +361,9 @@ def _ensure_atoms_imported() -> None:
         "ageoa.scipy.fft",
         "ageoa.scipy.signal",
         "ageoa.scipy.sparse_graph",
+        "ageoa.algorithms.sorting",
+        "ageoa.algorithms.graph",
+        "ageoa.algorithms.search",
     ]
     for mod in modules:
         try:
