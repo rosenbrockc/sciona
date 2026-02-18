@@ -71,6 +71,10 @@ class AgeomConfig(BaseSettings):
     synthesizer_llm_provider: str = ""  # falls back to llm_provider
     synthesizer_llm_model: str = "claude-sonnet-4-5-20250929"
 
+    # Ingester (Round 0)
+    ingester_llm_provider: str = ""  # falls back to llm_provider
+    ingester_llm_model: str = "claude-sonnet-4-5-20250929"
+
     # Python target
     python_path: str = "python"
     python_mypy_path: str = "mypy"

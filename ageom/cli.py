@@ -307,6 +307,34 @@ def main() -> None:
         help="Proof assistant (default: lean4)",
     )
 
+    # --- ingest ---
+    ingest_parser = subparsers.add_parser(
+        "ingest", help="Ingest an existing Python class into the atom framework (Round 0)"
+    )
+    ingest_parser.add_argument("source", type=str, help="Path to Python source file")
+    ingest_parser.add_argument(
+        "--class", dest="class_name", type=str, required=True,
+        help="Name of the class to ingest",
+    )
+    ingest_parser.add_argument(
+        "--output", type=str, default=None,
+        help="Output directory for generated files",
+    )
+    ingest_parser.add_argument(
+        "--llm-provider",
+        choices=["anthropic", "codex", "llama_cpp"],
+        default=None,
+        help="LLM provider override (default: from config)",
+    )
+    ingest_parser.add_argument(
+        "--llm-model", type=str, default=None,
+        help="LLM model override (default: from config)",
+    )
+    ingest_parser.add_argument(
+        "--trace", action="store_true", default=False,
+        help="Write pipeline event trace to {output_dir}/trace.jsonl",
+    )
+
     # --- match ---
     match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
@@ -359,6 +387,8 @@ def main() -> None:
         asyncio.run(_cmd_decompose(args))
     elif args.command == "history":
         asyncio.run(_cmd_history(args))
+    elif args.command == "ingest":
+        asyncio.run(_cmd_ingest(args))
     elif args.command == "match":
         asyncio.run(_cmd_match(args))
     elif args.command == "assemble":
@@ -517,6 +547,94 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
     )
     store.save(output_dir)
     print(f"Index saved to {output_dir} ({store.size} entries)")
+
+
+async def _cmd_ingest(args: argparse.Namespace) -> None:
+    """Ingest an existing Python class into the atom framework."""
+    from ageom.config import AgeomConfig
+    from ageom.ingester import IngesterAgent
+    from ageom.types import Prover
+
+    config = AgeomConfig()
+
+    source_path = Path(args.source)
+    if not source_path.exists():
+        print(f"Error: source file not found: {source_path}", file=sys.stderr)
+        sys.exit(1)
+
+    # Set up LLM
+    try:
+        llm = _create_llm(args, config, "ingester")
+    except (ValueError, ImportError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    # Set up proof environment (Python/mypy)
+    proof_env = _create_proof_env(Prover.PYTHON, config)
+
+    # Optionally load FAISS index
+    faiss_index = None
+    if config.index_dir.exists():
+        try:
+            from ageom.indexer.builder import SemanticIndexImpl
+            from ageom.indexer.embedder import UniXcoderEmbedder
+            from ageom.indexer.faiss_store import FAISSStore
+
+            store = FAISSStore.load(config.index_dir)
+            embedder = UniXcoderEmbedder(config.embedding_model)
+            faiss_index = SemanticIndexImpl(store, embedder)
+        except Exception:
+            pass  # Proceed without index
+
+    output_dir = Path(args.output) if args.output else Path("output") / args.class_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        agent = IngesterAgent(
+            llm=llm,
+            proof_env=proof_env,
+            faiss_index=faiss_index,
+            output_dir=str(output_dir),
+        )
+
+        print(f"Ingesting class '{args.class_name}' from {source_path}")
+        bundle = await agent.ingest(str(source_path), args.class_name)
+
+        # Write output files
+        if bundle.generated_atoms:
+            (output_dir / "atoms.py").write_text(bundle.generated_atoms)
+        if bundle.generated_state_models:
+            (output_dir / "state_models.py").write_text(bundle.generated_state_models)
+        if bundle.generated_witnesses:
+            (output_dir / "witnesses.py").write_text(bundle.generated_witnesses)
+
+        # Write CDG JSON
+        from ageom.architect.handoff import save_json
+        save_json(bundle.cdg, output_dir / "cdg.json")
+
+        # Write match results
+        if bundle.match_results:
+            matches_data = [mr.to_dict() for mr in bundle.match_results]
+            with open(output_dir / "matches.json", "w") as f:
+                json.dump(matches_data, f, indent=2)
+
+        print(f"\nIngestion complete:")
+        print(f"  CDG: {len(bundle.cdg.nodes)} nodes, {len(bundle.cdg.edges)} edges")
+        print(f"  Matches: {len(bundle.match_results)}")
+        print(f"  mypy passed: {bundle.mypy_passed}")
+        print(f"  Ghost sim passed: {bundle.ghost_sim_passed}")
+        print(f"  Output: {output_dir}/")
+
+        # Write trace if requested
+        if getattr(args, "trace", False):
+            from ageom.telemetry import get_event_log
+
+            event_log = get_event_log()
+            if len(event_log) > 0:
+                event_log.save(output_dir / "trace.jsonl")
+                print(f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)")
+    finally:
+        await proof_env.close()
 
 
 async def _cmd_decompose(args: argparse.Namespace) -> None:
