@@ -7,8 +7,12 @@ and edges, and pre-filled MatchResults.
 
 from __future__ import annotations
 
+import json
+import logging
 import textwrap
 from typing import Any
+
+from ageom.hunter.llm import LLMClient
 
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import (
@@ -26,6 +30,10 @@ from ageom.ingester.models import (
     StateModelSpec,
     ValidatedMacroPlan,
 )
+from ageom.ingester.prompts import (
+    DRAFT_OPAQUE_WITNESS_SYSTEM,
+    DRAFT_OPAQUE_WITNESS_USER,
+)
 from ageom.types import (
     CandidateMatch,
     Declaration,
@@ -35,6 +43,123 @@ from ageom.types import (
     VerificationLevel,
     VerificationResult,
 )
+
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Opaque DL boundary witness generation
+# ---------------------------------------------------------------------------
+
+
+def _opaque_witness_fallback(atom: MacroAtomSpec) -> str:
+    """Generate a shape-preserving default witness for an opaque atom."""
+    fn_name = _snake_case(atom.name)
+    witness_name = f"witness_{fn_name}"
+
+    params = []
+    for inp in atom.inputs:
+        params.append(f"{inp.name}: AbstractArray")
+    param_str = ", ".join(params) if params else ""
+
+    lines = [
+        f"def {witness_name}({param_str}) -> AbstractArray:",
+        f'    """Ghost witness for opaque boundary: {atom.name}."""',
+    ]
+    if atom.inputs:
+        first = atom.inputs[0].name
+        lines.append(f"    return AbstractArray(shape={first}.shape, dtype=\"float32\")")
+    else:
+        lines.append(f'    return AbstractArray(shape=(), dtype="float32")')
+
+    return "\n".join(lines)
+
+
+async def generate_opaque_witnesses(
+    macro_atoms: list[MacroAtomSpec],
+    dfg: RawDataFlowGraph,
+    llm: LLMClient,
+) -> tuple[str, dict[str, str]]:
+    """Generate AbstractArray-based witnesses for opaque DL atoms.
+
+    Attempts LLM shape inference; falls back to shape-preserving default.
+
+    Returns (source_code, name_mapping).
+    """
+    lines = [
+        '"""Auto-generated ghost witnesses for opaque DL boundaries."""',
+        "",
+        "from __future__ import annotations",
+        "",
+        "try:",
+        "    from ageoa.ghost.abstract import AbstractArray",
+        "except ImportError:",
+        "    pass",
+        "",
+    ]
+
+    name_map: dict[str, str] = {}
+
+    for atom in macro_atoms:
+        if not atom.is_opaque:
+            continue
+
+        fn_name = _snake_case(atom.name)
+        witness_name = f"witness_{fn_name}"
+        name_map[atom.name] = witness_name
+
+        # Attempt LLM-drafted witness
+        mf = dfg.methods[0] if dfg.methods else None
+        witness_body: str | None = None
+
+        if mf and llm is not None:
+            param_specs = ", ".join(
+                f'"{p}: AbstractArray"' for p in mf.params
+            )
+            try:
+                user_prompt = DRAFT_OPAQUE_WITNESS_USER.format(
+                    class_name=dfg.class_name,
+                    base_classes=", ".join(dfg.opaque_base_classes),
+                    method_name=mf.name,
+                    params=", ".join(mf.params),
+                    return_type=mf.return_type or "Any",
+                    docstring=mf.docstring or "(none)",
+                    fn_name=fn_name,
+                    param_specs=param_specs,
+                    return_type_spec="AbstractArray",
+                )
+                response = await llm.complete(
+                    DRAFT_OPAQUE_WITNESS_SYSTEM, user_prompt
+                )
+                raw = json.loads(response)
+                witness_body = raw.get("witness_body")
+            except Exception as exc:
+                logger.warning(
+                    "LLM witness drafting failed for %s: %s", atom.name, exc
+                )
+
+        if witness_body:
+            # Build function with LLM-drafted body
+            params = []
+            for inp in atom.inputs:
+                params.append(f"{inp.name}: AbstractArray")
+            param_str = ", ".join(params) if params else ""
+
+            lines.append(f"def {witness_name}({param_str}) -> AbstractArray:")
+            lines.append(
+                f'    """Ghost witness for opaque boundary: {atom.name}."""'
+            )
+            # Indent each line of the body
+            for body_line in witness_body.strip().splitlines():
+                lines.append(f"    {body_line}")
+            lines.append("")
+        else:
+            # Fallback: shape-preserving default
+            lines.append(_opaque_witness_fallback(atom))
+            lines.append("")
+
+    return "\n".join(lines), name_map
 
 
 # ---------------------------------------------------------------------------
@@ -372,6 +497,7 @@ def build_cdg_export(
             outputs=list(atom.outputs),
             status=NodeStatus.ATOMIC,
             is_optional=atom.is_optional,
+            is_opaque=atom.is_opaque,
             type_signature=_build_type_signature(atom),
             depth=1,
         )
@@ -567,11 +693,36 @@ def emit_ingestion_bundle(
     source_file: str = "",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
-    # Generate witnesses first (need name mapping for atoms)
-    witness_source, witness_names = generate_ghost_witnesses(
-        plan.plan.macro_atoms,
-        state_models=plan.plan.state_models,
-    )
+    # Check for opaque atoms — use fallback witnesses (synchronous)
+    has_opaque = any(a.is_opaque for a in plan.plan.macro_atoms)
+
+    if has_opaque:
+        # Generate opaque witness stubs (fallback, no LLM)
+        witness_lines = [
+            '"""Auto-generated ghost witnesses for opaque DL boundaries."""',
+            "",
+            "from __future__ import annotations",
+            "",
+            "try:",
+            "    from ageoa.ghost.abstract import AbstractArray",
+            "except ImportError:",
+            "    pass",
+            "",
+        ]
+        witness_names: dict[str, str] = {}
+        for atom in plan.plan.macro_atoms:
+            if atom.is_opaque:
+                witness_lines.append(_opaque_witness_fallback(atom))
+                witness_lines.append("")
+                fn_name = _snake_case(atom.name)
+                witness_names[atom.name] = f"witness_{fn_name}"
+        witness_source = "\n".join(witness_lines)
+    else:
+        # Generate witnesses first (need name mapping for atoms)
+        witness_source, witness_names = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+        )
 
     # Generate state models
     state_model_source = generate_state_models(plan.plan.state_models)

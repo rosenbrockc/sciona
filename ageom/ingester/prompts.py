@@ -161,3 +161,39 @@ Return JSON array of fixes:
     "replacement": "<fixed witness code>"
   }}
 ]"""
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Opaque DL boundary witness drafting
+# ---------------------------------------------------------------------------
+
+DRAFT_OPAQUE_WITNESS_SYSTEM = """\
+You are a shape-inference expert for deep-learning modules. Given the \
+forward signature of an opaque DL module, draft an AbstractArray-based \
+ghost witness that captures the shape transform symbolically.
+
+Rules:
+1. Use ``AbstractArray`` for all tensor parameters and return values.
+2. Capture shape transforms symbolically (e.g., (B, N, C_in) -> (B, N, C_out)).
+3. Default dtype to "float32".
+4. The witness body should construct and return an ``AbstractArray`` with the \
+   correct output shape derived from input shapes.
+5. Keep it minimal — no actual computation, just shape propagation.
+
+Return valid JSON only."""
+
+DRAFT_OPAQUE_WITNESS_USER = """\
+Module: {class_name}
+Base classes: {base_classes}
+Entry method: {method_name}({params})
+Return type annotation: {return_type}
+Docstring: {docstring}
+
+Return JSON:
+{{
+  "witness_name": "witness_{fn_name}",
+  "params": [{param_specs}],
+  "return_type": "{return_type_spec}",
+  "shape_transform": "<symbolic description, e.g. (B,N,C_in) -> (B,N,C_out)>",
+  "witness_body": "<Python code for the witness function body>"
+}}"""

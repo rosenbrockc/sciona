@@ -21,7 +21,11 @@ from typing_extensions import TypedDict
 from ageom.architect.handoff import CDGExport
 from ageom.hunter.llm import LLMClient
 from ageom.ingester.chunker import ChunkerDeps, ChunkerState, build_chunker_graph
-from ageom.ingester.emitter import build_procedural_plan, emit_ingestion_bundle
+from ageom.ingester.emitter import (
+    build_procedural_plan,
+    emit_ingestion_bundle,
+    generate_opaque_witnesses,
+)
 from ageom.ingester.extractor import extract_data_flow, extract_procedural_data_flow
 from ageom.ingester.models import (
     IngestionBundle,
@@ -53,6 +57,7 @@ class IngesterState(TypedDict):
     raw_dfg: RawDataFlowGraph
     validated_plan: ValidatedMacroPlan
     bundle: IngestionBundle
+    is_opaque: bool
     mypy_passed: bool
     ghost_passed: bool
     mypy_errors: str
@@ -82,7 +87,7 @@ async def phase1_extract(
     """Phase 1: Deterministic AST extraction."""
     try:
         dfg = await extract_data_flow(state["source_path"], state["class_name"])
-        return {"raw_dfg": dfg}
+        return {"raw_dfg": dfg, "is_opaque": dfg.is_opaque}
     except (FileNotFoundError, ValueError) as exc:
         return {"error": str(exc), "done": True}
 
@@ -138,6 +143,22 @@ async def phase3_emit(
         state["class_name"],
         state["source_path"],
     )
+
+    # If opaque, attempt LLM-drafted witnesses and merge into bundle
+    if state.get("is_opaque", False):
+        deps: IngesterDeps = config["configurable"]["deps"]
+        dfg = state["raw_dfg"]
+        try:
+            witness_source, witness_names = await generate_opaque_witnesses(
+                state["validated_plan"].plan.macro_atoms, dfg, deps.llm,
+            )
+            if witness_source.strip():
+                bundle = bundle.model_copy(update={
+                    "generated_witnesses": witness_source,
+                })
+        except Exception as exc:
+            logger.warning("Opaque witness generation failed: %s", exc)
+
     return {"bundle": bundle}
 
 
@@ -407,6 +428,7 @@ class IngesterAgent:
             "bundle": IngestionBundle(
                 cdg=CDGExport(nodes=[], edges=[]),
             ),
+            "is_opaque": False,
             "mypy_passed": False,
             "ghost_passed": False,
             "mypy_errors": "",

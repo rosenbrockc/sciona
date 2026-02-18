@@ -25,7 +25,7 @@ class TestConceptType:
             "string_matching", "geometry", "arithmetic", "number_theory",
             "combinatorics", "algebra", "analysis", "set_theory",
             "signal_transform", "signal_filter", "graph_signal_processing",
-            "custom",
+            "neural_network", "custom",
         }
         assert {ct.value for ct in ConceptType} == expected
 

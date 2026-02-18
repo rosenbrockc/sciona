@@ -16,6 +16,7 @@ from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
 
 from ageom.hunter.llm import LLMClient
+from ageom.architect.models import ConceptType, IOSpec
 from ageom.ingester.models import (
     DependencyEdge,
     MacroAtomSpec,
@@ -166,8 +167,6 @@ def _compute_state_edges(
 
 
 def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
-    from ageom.architect.models import ConceptType, IOSpec
-
     atoms = []
     for item in raw.get("macro_atoms", []):
         inputs = [
@@ -228,6 +227,20 @@ async def propose_macro_atoms(
     """LLM call: group methods into macro-atoms."""
     deps: ChunkerDeps = config["configurable"]["deps"]
     dfg = state["raw_dfg"]
+
+    # Opaque DL boundary: deterministic single-atom plan, no LLM cost
+    if dfg.is_opaque and dfg.methods:
+        mf = dfg.methods[0]
+        atom = MacroAtomSpec(
+            name=dfg.class_name,
+            description=mf.docstring or f"Opaque DL boundary: {dfg.class_name}",
+            method_names=[mf.name],
+            inputs=[IOSpec(name=p, type_desc="Any") for p in mf.params],
+            outputs=[IOSpec(name="output", type_desc=mf.return_type or "Any")],
+            concept_type=ConceptType.NEURAL_NETWORK,
+            is_opaque=True,
+        )
+        return {"proposed_plan": ProposedMacroPlan(macro_atoms=[atom])}
 
     retry_context = ""
     if state.get("retry_count", 0) > 0:
@@ -342,6 +355,18 @@ async def critic_validate(
     """Validate that ALL self.* attributes appear in macro-atoms or state models."""
     dfg = state["raw_dfg"]
     plan = state["proposed_plan"]
+
+    # Opaque DL boundary: auto-pass (no self.* tracking)
+    if dfg.is_opaque:
+        return {
+            "validated_plan": ValidatedMacroPlan(
+                plan=plan,
+                all_attrs_accounted=True,
+                coverage_report="Opaque DL boundary: no self.* tracking required.",
+            ),
+            "critique_passed": True,
+            "critique_reason": "",
+        }
 
     # Collect all attrs covered by macro-atoms
     covered_attrs: set[str] = set()

@@ -30,6 +30,15 @@ _CONFIG_CONTAINER_NAMES = frozenset({
     "options", "config", "params", "settings", "opts", "cfg", "hparams",
 })
 
+# Deep-learning base classes treated as opaque boundaries.
+_OPAQUE_BASE_CLASSES: frozenset[str] = frozenset({
+    "nn.Module", "Module",
+    "hk.Module",
+    "tf.keras.Model", "tf.keras.layers.Layer",
+    "keras.Model", "keras.layers.Layer",
+    "flax.linen.Module",
+})
+
 
 class _SelfAccessVisitor(ast.NodeVisitor):
     """Walk a method body and collect ``self.*`` reads, writes and config branches."""
@@ -258,6 +267,65 @@ def _compute_init_chain(init_method: MethodFact | None) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Opaque boundary detection
+# ---------------------------------------------------------------------------
+
+
+def _detect_opaque_bases(cls_node: ast.ClassDef) -> list[str]:
+    """Return matched DL base class names, or empty list if transparent."""
+    matched: list[str] = []
+    for base in cls_node.bases:
+        unparsed = ast.unparse(base)
+        if unparsed in _OPAQUE_BASE_CLASSES:
+            matched.append(unparsed)
+    return matched
+
+
+def _extract_opaque_boundary_fact(
+    cls_node: ast.ClassDef,
+    source_lines: list[str],
+) -> MethodFact:
+    """Extract a single MethodFact from the entry method of an opaque class.
+
+    Priority: ``forward`` > ``__call__`` > ``call`` > first non-``__init__``.
+    """
+    priority = ["forward", "__call__", "call"]
+    methods: dict[str, ast.FunctionDef] = {}
+    first_non_init: ast.FunctionDef | None = None
+
+    for item in cls_node.body:
+        if isinstance(item, ast.FunctionDef):
+            methods[item.name] = item
+            if first_non_init is None and item.name != "__init__":
+                first_non_init = item
+
+    entry: ast.FunctionDef | None = None
+    for name in priority:
+        if name in methods:
+            entry = methods[name]
+            break
+    if entry is None:
+        entry = first_non_init
+    if entry is None:
+        # Fallback: use __init__ if nothing else exists
+        entry = methods.get("__init__")
+    if entry is None:
+        return MethodFact(name="unknown", is_opaque=True)
+
+    params = [arg.arg for arg in entry.args.args if arg.arg != "self"]
+    return_type = ast.unparse(entry.returns) if entry.returns else ""
+    docstring = ast.get_docstring(entry) or ""
+
+    return MethodFact(
+        name=entry.name,
+        params=params,
+        return_type=return_type,
+        docstring=docstring,
+        is_opaque=True,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
@@ -295,6 +363,19 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
 
     if cls_node is None:
         raise ValueError(f"Class '{class_name}' not found in {source_path}")
+
+    # Check for opaque DL base classes — early return
+    opaque_bases = _detect_opaque_bases(cls_node)
+    if opaque_bases:
+        boundary_fact = _extract_opaque_boundary_fact(cls_node, source_lines)
+        return RawDataFlowGraph(
+            class_name=class_name,
+            source_code=source_code,
+            methods=[boundary_fact],
+            all_attributes={},
+            is_opaque=True,
+            opaque_base_classes=opaque_bases,
+        )
 
     # Detect config container names
     config_attr_names = _detect_config_attr_names(cls_node)
