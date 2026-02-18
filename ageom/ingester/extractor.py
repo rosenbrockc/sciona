@@ -97,6 +97,9 @@ class _SelfAccessVisitor(ast.NodeVisitor):
                     line_number=lineno,
                     is_config=is_config,
                 ))
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            for elt in target.elts:
+                self._check_self_write(elt, lineno)
 
     def _check_self_read(self, node: ast.Attribute, lineno: int) -> None:
         if isinstance(node.value, ast.Name) and node.value.id == "self":
