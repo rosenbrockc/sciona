@@ -371,6 +371,7 @@ def build_cdg_export(
             inputs=list(atom.inputs),
             outputs=list(atom.outputs),
             status=NodeStatus.ATOMIC,
+            is_optional=atom.is_optional,
             type_signature=_build_type_signature(atom),
             depth=1,
         )

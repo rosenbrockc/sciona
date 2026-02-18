@@ -64,6 +64,7 @@ class AlgorithmicNode(BaseModel):
     depth: int = 0
     type_signature: str = ""  # Formal type sig for Round 2 handoff
     matched_primitive: str | None = None  # e.g., "Nat.add_comm" or "heapsort"
+    is_optional: bool = False  # Config-gated branches
     critic_notes: str = ""
     decomposition_rationale: str = ""
 
