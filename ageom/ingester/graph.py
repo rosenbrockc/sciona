@@ -21,8 +21,8 @@ from typing_extensions import TypedDict
 from ageom.architect.handoff import CDGExport
 from ageom.hunter.llm import LLMClient
 from ageom.ingester.chunker import ChunkerDeps, ChunkerState, build_chunker_graph
-from ageom.ingester.emitter import emit_ingestion_bundle
-from ageom.ingester.extractor import extract_data_flow
+from ageom.ingester.emitter import build_procedural_plan, emit_ingestion_bundle
+from ageom.ingester.extractor import extract_data_flow, extract_procedural_data_flow
 from ageom.ingester.models import (
     IngestionBundle,
     ProposedMacroPlan,
@@ -425,3 +425,23 @@ class IngesterAgent:
 
         bundle: IngestionBundle = final_state["bundle"]
         return bundle
+
+    async def ingest_procedural(
+        self, source_path: str, pipeline_name: str | None = None
+    ) -> IngestionBundle:
+        """Ingest a procedural Python script using SSA edge inference.
+
+        No LLM calls — edges are determined deterministically from variable
+        tracking.  Skips Phase 2 (chunker) and verification loops entirely.
+
+        Args:
+            source_path: Path to the Python source file.
+            pipeline_name: Display name for the pipeline (defaults to file stem).
+
+        Returns:
+            An ``IngestionBundle`` with CDG, generated source, and match results.
+        """
+        name = pipeline_name or Path(source_path).stem
+        dfg = await extract_procedural_data_flow(source_path, name)
+        plan = build_procedural_plan(dfg, name)
+        return emit_ingestion_bundle(plan, name, source_path)

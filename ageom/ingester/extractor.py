@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import ast
 import textwrap
+from dataclasses import dataclass, field
 from pathlib import Path
 
+from ageom.architect.models import DependencyEdge
 from ageom.ingester.models import (
     AttributeAccess,
     ConfigBranch,
@@ -341,4 +343,214 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
         init_chain=init_chain,
         cross_window_attrs=cross_window_attrs,
         internal_call_graph=internal_call_graph,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Procedural / script-level SSA edge inference
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _CallSite:
+    """A single ``y = func(x)`` call found at module level."""
+
+    func_name: str
+    targets: list[str]
+    args: list[str]
+    lineno: int
+
+
+class _ProceduralBlockVisitor(ast.NodeVisitor):
+    """Walk module-level statements and collect call sites + variable producers."""
+
+    def __init__(self, known_functions: set[str]) -> None:
+        self.known_functions = known_functions
+        self.call_sites: list[_CallSite] = []
+        self.var_producers: dict[str, _CallSite] = {}
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        if not isinstance(node.value, ast.Call):
+            self.generic_visit(node)
+            return
+
+        func_name = self._resolve_func_name(node.value.func)
+        if func_name is None or func_name not in self.known_functions:
+            self.generic_visit(node)
+            return
+
+        # Collect LHS targets (handle tuple unpacking)
+        targets = self._collect_targets(node.targets)
+
+        # Collect variable names used as arguments
+        args = self._collect_arg_names(node.value)
+
+        cs = _CallSite(
+            func_name=func_name,
+            targets=targets,
+            args=args,
+            lineno=node.lineno,
+        )
+        self.call_sites.append(cs)
+
+        # Record each target variable as produced by this call site
+        for t in targets:
+            self.var_producers[t] = cs
+
+        self.generic_visit(node)
+
+    # --- helpers ---
+
+    @staticmethod
+    def _resolve_func_name(node: ast.expr) -> str | None:
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            return node.attr
+        return None
+
+    @staticmethod
+    def _collect_targets(targets: list[ast.expr]) -> list[str]:
+        names: list[str] = []
+        for t in targets:
+            if isinstance(t, ast.Name):
+                names.append(t.id)
+            elif isinstance(t, (ast.Tuple, ast.List)):
+                for elt in t.elts:
+                    if isinstance(elt, ast.Name):
+                        names.append(elt.id)
+        return names
+
+    @staticmethod
+    def _collect_arg_names(call_node: ast.Call) -> list[str]:
+        names: list[str] = []
+        for arg in call_node.args:
+            for child in ast.walk(arg):
+                if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load):
+                    names.append(child.id)
+        for kw in call_node.keywords:
+            for child in ast.walk(kw.value):
+                if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load):
+                    names.append(child.id)
+        return names
+
+
+def _infer_ssa_edges(
+    call_sites: list[_CallSite],
+    var_producers: dict[str, _CallSite],
+) -> list[DependencyEdge]:
+    """Build dependency edges from SSA variable tracking.
+
+    For each call site, if an argument variable was produced by a prior
+    call site, create an edge from the producer to the consumer.
+    """
+    seen: set[tuple[str, str, str]] = set()
+    edges: list[DependencyEdge] = []
+
+    for cs in call_sites:
+        for arg_var in cs.args:
+            producer = var_producers.get(arg_var)
+            if producer is None or producer is cs:
+                continue
+            key = (producer.func_name, cs.func_name, arg_var)
+            if key in seen:
+                continue
+            seen.add(key)
+            edges.append(DependencyEdge(
+                source_id=producer.func_name,
+                target_id=cs.func_name,
+                output_name=arg_var,
+                input_name=arg_var,
+                source_type="Any",
+                target_type="Any",
+            ))
+
+    return edges
+
+
+def _extract_function_fact(
+    func_node: ast.FunctionDef,
+    source_lines: list[str],
+) -> MethodFact:
+    """Build a ``MethodFact`` from a top-level function (no ``self.*`` tracking)."""
+    params = [arg.arg for arg in func_node.args.args]
+
+    return_type = ""
+    if func_node.returns:
+        return_type = ast.unparse(func_node.returns)
+
+    docstring = ast.get_docstring(func_node) or ""
+
+    start = func_node.lineno - 1
+    end = func_node.end_lineno or func_node.lineno
+    source_code = "\n".join(source_lines[start:end])
+
+    return MethodFact(
+        name=func_node.name,
+        params=params,
+        return_type=return_type,
+        docstring=docstring,
+        source_code=source_code,
+    )
+
+
+async def extract_procedural_data_flow(
+    source_path: str,
+    pipeline_name: str | None = None,
+    entry_block: str | None = None,
+) -> RawDataFlowGraph:
+    """Parse a procedural Python file and extract SSA-based data flow.
+
+    Args:
+        source_path: Path to the ``.py`` file.
+        pipeline_name: Display name for the pipeline (defaults to file stem).
+        entry_block: Unused, reserved for future notebook cell selection.
+
+    Returns:
+        A ``RawDataFlowGraph`` with function facts and inferred SSA edges.
+    """
+    path = Path(source_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Source file not found: {source_path}")
+
+    source_code = path.read_text()
+    source_lines = source_code.splitlines()
+    tree = ast.parse(source_code, filename=source_path)
+
+    name = pipeline_name or path.stem
+
+    # Collect top-level function definitions
+    known_functions: set[str] = set()
+    func_nodes: list[ast.FunctionDef] = []
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            known_functions.add(node.name)
+            func_nodes.append(node)
+
+    # Build MethodFact for each function
+    methods = [_extract_function_fact(fn, source_lines) for fn in func_nodes]
+
+    # Run procedural block visitor over the entire module body
+    visitor = _ProceduralBlockVisitor(known_functions)
+    for stmt in tree.body:
+        if not isinstance(stmt, ast.FunctionDef):
+            visitor.visit(stmt)
+
+    # Infer SSA edges
+    inferred_edges = _infer_ssa_edges(visitor.call_sites, visitor.var_producers)
+
+    # Build all_attributes from call sites
+    all_attributes: dict[str, list[str]] = {}
+    for cs in visitor.call_sites:
+        for t in cs.targets:
+            all_attributes.setdefault(t, []).append(f"write:{cs.func_name}")
+        for a in cs.args:
+            all_attributes.setdefault(a, []).append(f"read:{cs.func_name}")
+
+    return RawDataFlowGraph(
+        class_name=name,
+        source_code=source_code,
+        methods=methods,
+        all_attributes=all_attributes,
+        inferred_edges=inferred_edges,
     )

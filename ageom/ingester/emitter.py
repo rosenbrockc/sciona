@@ -21,6 +21,8 @@ from ageom.architect.models import (
 from ageom.ingester.models import (
     IngestionBundle,
     MacroAtomSpec,
+    ProposedMacroPlan,
+    RawDataFlowGraph,
     StateModelSpec,
     ValidatedMacroPlan,
 )
@@ -369,6 +371,49 @@ def build_match_results(
         ))
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Procedural plan builder (bypasses Phase 2)
+# ---------------------------------------------------------------------------
+
+
+def _title_case(name: str) -> str:
+    """Convert a snake_case name like 'remove_baseline' to 'Remove Baseline'."""
+    return name.replace("_", " ").title()
+
+
+def build_procedural_plan(
+    dfg: RawDataFlowGraph, pipeline_name: str
+) -> ValidatedMacroPlan:
+    """Build a ValidatedMacroPlan from procedural SSA edges (no LLM needed).
+
+    Each top-level function becomes one MacroAtomSpec.  Edges come directly
+    from ``dfg.inferred_edges`` computed by the SSA visitor.
+    """
+    macro_atoms: list[MacroAtomSpec] = []
+    for mf in dfg.methods:
+        inputs = [IOSpec(name=p, type_desc="Any") for p in mf.params]
+        outputs = (
+            [IOSpec(name="result", type_desc=mf.return_type or "Any")]
+            if mf.return_type
+            else [IOSpec(name="result", type_desc="Any")]
+        )
+        macro_atoms.append(MacroAtomSpec(
+            name=_title_case(mf.name),
+            description=mf.docstring,
+            method_names=[mf.name],
+            inputs=inputs,
+            outputs=outputs,
+            concept_type=ConceptType.CUSTOM,
+        ))
+
+    plan = ProposedMacroPlan(
+        macro_atoms=macro_atoms,
+        edge_definitions=list(dfg.inferred_edges),
+    )
+
+    return ValidatedMacroPlan(plan=plan, all_attrs_accounted=True)
 
 
 # ---------------------------------------------------------------------------

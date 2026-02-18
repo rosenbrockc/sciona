@@ -63,6 +63,7 @@ class RawDataFlowGraph(BaseModel):
     init_chain: list[str] = Field(default_factory=list)
     cross_window_attrs: list[str] = Field(default_factory=list)
     internal_call_graph: dict[str, list[str]] = Field(default_factory=dict)
+    inferred_edges: list[DependencyEdge] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
