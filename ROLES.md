@@ -1,0 +1,280 @@
+# AGEO-Matcher Roles
+
+The AGEO-Matcher pipeline decomposes algorithm synthesis into specialized roles,
+each solving a distinct subproblem. No single role has full knowledge of the
+pipeline -- they communicate through typed data contracts (CDG, PDGNode,
+MatchResult, SkeletonFile).
+
+---
+
+## Orchestrator
+
+**Problem solved:** Coordinating multi-round feedback between decomposition and
+grounding when the first attempt fails.
+
+**What it does:** Runs the top-level loop: Architect decomposes a goal, Hunter
+tries to ground each atomic node, and failures feed back to the Architect for
+re-decomposition. Manages a configurable round budget (default: 3) and decides
+when to mark nodes as ungroundable.
+
+**Interacts with:**
+- **Architect** -- invokes decomposition and refinement
+- **Hunter** -- invokes matching for each atomic node
+- **User** -- receives the initial goal, returns final artifacts
+
+**Key files:** `ageom/orchestrator.py`, `ageom/cli.py`
+
+---
+
+## Architect
+
+**Problem solved:** Turning a vague, high-level goal into a precise graph of
+atomic algorithmic operations that can be individually grounded to library
+functions.
+
+**What it does:** A LangGraph state machine that recursively decomposes a goal
+into a Conceptual Dependency Graph (CDG). At each node, it:
+1. Selects a paradigm strategy (divide-and-conquer, greedy, etc.)
+2. Instantiates a skeleton template for that paradigm
+3. Decomposes non-atomic nodes into sub-nodes via LLM
+4. Validates each decomposition through a Critic pass
+5. Repeats until all leaf nodes are marked ATOMIC
+
+**Interacts with:**
+- **Catalog** -- checks whether a node matches a known algorithmic primitive
+  (the stop condition for decomposition)
+- **Skill Index** -- semantic search over primitives to suggest candidates
+  during decomposition
+- **Critic** -- validates each decomposition before accepting it
+- **Orchestrator** -- receives the goal, returns CDG; accepts refinement
+  requests when Hunter fails
+
+**Key files:** `ageom/architect/graph.py`, `ageom/architect/nodes.py`,
+`ageom/architect/handoff.py`
+
+---
+
+## Critic
+
+**Problem solved:** Preventing the Architect from producing structurally invalid
+or semantically nonsensical decompositions.
+
+**What it does:** A two-phase validation gate within the Architect round:
+1. **Deterministic checks** -- arity (>=2 children), depth bounds, no
+   self-loops, I/O name matching, atomicity claims verified against catalog
+2. **LLM critique** -- semantic evaluation of completeness, type compatibility,
+   and whether the sub-nodes actually solve the parent's problem
+
+If the Critic rejects a decomposition, the Architect retries (up to 3 times)
+with the rejection reason injected into the prompt.
+
+**Interacts with:**
+- **Architect** -- receives decomposition proposals, returns approve/reject
+  with reasons and flagged nodes
+
+**Key files:** `ageom/architect/nodes.py` (critique_decomposition, prepare_retry)
+
+---
+
+## Catalog
+
+**Problem solved:** Providing the universe of known algorithmic primitives that
+serve as the "ground truth" for what the Architect can decompose into.
+
+**What it does:** Maintains a searchable collection of ~200-500 algorithmic
+primitives (from CLRS-30, Coq 100 Theorems, Mathlib, etc.). Provides keyword
+overlap scoring and exact-match lookup. Acts as the stop condition oracle: a
+node is ATOMIC if and only if it matches a catalog entry.
+
+**Interacts with:**
+- **Architect** -- consulted during decomposition to suggest primitives and
+  validate atomicity claims
+- **Critic** -- used to verify that nodes claimed as ATOMIC actually exist
+
+**Key files:** `ageom/architect/catalog.py`
+
+---
+
+## Skill Index
+
+**Problem solved:** Finding semantically similar primitives even when the
+Architect's natural language description doesn't exactly match catalog keywords.
+
+**What it does:** Wraps a FAISS vector store over primitive descriptions,
+embedded with UniXcoder. Returns the top-K most similar primitives for a given
+query. Complements the Catalog's keyword-based search with embedding-based
+semantic search.
+
+**Interacts with:**
+- **Architect** -- queried during decomposition to find relevant primitives
+
+**Key files:** `ageom/architect/embedder.py`
+
+---
+
+## Hunter
+
+**Problem solved:** Grounding each atomic predicate from the CDG to a specific,
+verified library function.
+
+**What it does:** A pydantic-graph state machine with 4 nodes that, for each
+PDGNode:
+1. **InitialSearch** -- queries the FAISS index by embedding and type signature
+2. **RankCandidates** -- uses LLM to reorder candidates by relevance
+3. **VerifyTopK** -- sends top candidates to the Judge for type-checking
+4. **ReformulateQuery** -- on failure, analyzes compiler errors and generates
+   new search queries
+
+Loops until a verified match is found or the iteration budget is exhausted.
+
+**Interacts with:**
+- **Index** -- semantic search for candidate declarations
+- **Judge** -- type-checks candidates against formal specifications
+- **Orchestrator** -- receives PDGNodes, returns MatchResults; failures trigger
+  Architect refinement
+
+**Key files:** `ageom/hunter/nodes.py`, `ageom/hunter/graph.py`,
+`ageom/hunter/state.py`
+
+---
+
+## Index
+
+**Problem solved:** Fast retrieval of library declarations that are semantically
+similar to a natural language or type-signature query.
+
+**What it does:** A FAISS IndexFlatIP (cosine similarity) over declaration
+embeddings produced by UniXcoder. Stores declaration metadata (name, type
+signature, docstring, prover, source library) alongside the vectors. Supports
+both embedding-based search and type-signature search.
+
+Must be built offline as a prerequisite (`ageom index build`) from Mathlib,
+Coq libraries, or Python packages.
+
+**Interacts with:**
+- **Hunter** -- queried during candidate retrieval
+- **Skill Index** -- shares the same FAISSStore infrastructure
+
+**Key files:** `ageom/indexer/builder.py`, `ageom/indexer/faiss_store.py`,
+`ageom/indexer/unified.py`
+
+---
+
+## Judge
+
+**Problem solved:** Determining whether a candidate library function actually
+inhabits the type specified by a PDGNode -- using the target prover's own
+compiler as the oracle.
+
+**What it does:** The Verification Oracle routes each candidate to the
+appropriate proof environment:
+- **Lean 4:** compiles `example : {type} := @{candidate}` via lean-interact
+- **Coq:** compiles `Definition _check : {type} := {candidate}.` via coqpyt
+- **Python:** type-checks `_result: {type} = {candidate}` via mypy --strict
+
+Returns a VerificationResult with success/failure, compiler output, and a
+VerificationLevel (KERNEL_PROOF, TYPE_CHECKED, CONTRACT_CHECKED, UNVERIFIED).
+
+Supports parallel verification with configurable concurrency.
+
+**Interacts with:**
+- **Hunter** -- called to verify candidate matches
+- **Repair Agent** -- called to compile repaired skeletons
+
+**Key files:** `ageom/judge/checker.py`, `ageom/judge/lean_env.py`,
+`ageom/judge/coq_env.py`, `ageom/judge/python_env.py`
+
+---
+
+## Assembler
+
+**Problem solved:** Composing individually matched atoms into a single
+compilable source file with correct data flow between them.
+
+**What it does:** Takes the CDG and MatchResults and produces a SkeletonFile:
+1. Builds AssemblyUnits from each verified atomic match
+2. Infers GlueEdges with cast expressions for type mismatches
+3. Topologically sorts units by data dependencies
+4. Emits language-specific source (Lean 4, Coq, or Python) with:
+   - Atomic definitions referencing matched library functions
+   - Composition functions connecting atoms via glue edges
+   - Import/open statements for required modules
+
+**Interacts with:**
+- **Synthesizer pipeline** -- produces the initial SkeletonFile consumed by
+  Ghost Simulator and Repair Agent
+
+**Key files:** `ageom/synthesizer/assembler.py`, `ageom/synthesizer/models.py`
+
+---
+
+## Ghost Simulator
+
+**Problem solved:** Catching structural mismatches (shape, dtype, domain) before
+committing to expensive compilation.
+
+**What it does:** Runs abstract witness functions on metadata instead of real
+data. For each atomic node with a registered ghost witness, it:
+1. Builds abstract input values (AbstractSignal, AbstractArray, etc.)
+2. Executes witnesses in topological order
+3. Propagates metadata through the graph
+4. Catches mismatches (e.g., feeding frequency-domain data into a time-domain
+   filter)
+
+Reports coverage (fraction of nodes with witnesses) and warns when coverage is
+low. Nodes without witnesses are silently skipped.
+
+**Interacts with:**
+- **Assembler** -- runs on the CDG before or alongside assembly
+- **Ghost Registry** (ageoa) -- looks up witness functions for each atom
+
+**Key files:** `ageom/synthesizer/ghost_sim.py`
+
+---
+
+## Repair Agent
+
+**Problem solved:** Iteratively fixing compilation errors and filling in proof
+obligations (sorry/Admitted/NotImplementedError) in the assembled skeleton.
+
+**What it does:** A pydantic-graph state machine that loops:
+1. **CompileCheck** -- compiles the skeleton, classifies errors, detects
+   regressions (rolls back if error count increases)
+2. **DeterministicFix** -- applies all mechanical fixes in one pass (missing
+   imports, missing opens)
+3. **LLMRepair** -- sends the highest-priority error to the LLM for a targeted
+   patch (JSON with line range + replacement)
+4. **SorryElimination** -- generates proof tactics or implementations to replace
+   sorry/Admitted/NotImplementedError stubs
+
+Tracks the best source seen (lowest error count) and returns it if the iteration
+budget is exhausted.
+
+**Interacts with:**
+- **Judge** -- compiles the skeleton at each iteration
+- **LLM** -- generates patches and proof tactics
+- **Assembler** -- consumes the SkeletonFile produced by assembly
+
+**Key files:** `ageom/synthesizer/repair.py`
+
+---
+
+## Extractor
+
+**Problem solved:** Packaging the verified source code into a distributable
+artifact with cryptographic certificates.
+
+**What it does:** Takes the final SynthesisResult and:
+1. Writes verified source to disk
+2. Builds the target artifact (lake build / coqc / mypy / cargo)
+3. Generates SHA-256 verification certificates
+4. Optionally generates FFI bindings (C headers, Rust crate)
+
+Supports export targets: LEAN_LIB, COQ_LIB, PYTHON_PKG, C_HEADER, RUST_FFI.
+
+**Interacts with:**
+- **Repair Agent** -- consumes the final repaired SkeletonFile
+- **Native toolchains** -- invokes lake, coqc, mypy, cargo via subprocess
+
+**Key files:** `ageom/synthesizer/extractor.py`,
+`ageom/synthesizer/certificate.py`
