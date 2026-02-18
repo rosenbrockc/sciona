@@ -99,6 +99,72 @@ def _build_config_branches(dfg: RawDataFlowGraph) -> str:
     return "\n".join(lines)
 
 
+def _compute_state_edges(
+    dfg: RawDataFlowGraph,
+    plan: ProposedMacroPlan,
+) -> list[DependencyEdge]:
+    """Compute deterministic state-typed edges from method read/write sets.
+
+    For each state attribute, creates edges from every writer atom to every
+    reader atom (deduplicated, self-loops excluded).  The edge type is the
+    state model name (e.g. ``RollingAveragerState``).
+    """
+    if not plan.state_models:
+        return []
+
+    state_model = plan.state_models[0]
+    state_model_name = state_model.model_name
+    state_attrs = set(state_model.source_attrs)
+
+    # Map method name -> atom snake_case id
+    method_to_atom: dict[str, str] = {}
+    for atom in plan.macro_atoms:
+        atom_id = atom.name.lower().replace(" ", "_").replace("-", "_")
+        for mname in atom.method_names:
+            method_to_atom[mname] = atom_id
+
+    # For each method, check if it reads/writes state attrs
+    writers: dict[str, set[str]] = {}  # attr -> set of atom_ids
+    readers: dict[str, set[str]] = {}  # attr -> set of atom_ids
+
+    for mf in dfg.methods:
+        if mf.name == "__init__":
+            continue
+        atom_id = method_to_atom.get(mf.name)
+        if atom_id is None:
+            continue
+        for attr in mf.writes:
+            if attr in state_attrs:
+                writers.setdefault(attr, set()).add(atom_id)
+        for attr in mf.reads:
+            if attr in state_attrs:
+                readers.setdefault(attr, set()).add(atom_id)
+
+    # Build edges: writer -> reader for each attr
+    seen: set[tuple[str, str]] = set()
+    edges: list[DependencyEdge] = []
+
+    for attr in state_attrs:
+        for w in writers.get(attr, set()):
+            for r in readers.get(attr, set()):
+                if w == r:
+                    continue
+                key = (w, r)
+                if key in seen:
+                    continue
+                seen.add(key)
+                edges.append(DependencyEdge(
+                    source_id=w,
+                    target_id=r,
+                    output_name=attr,
+                    input_name=attr,
+                    source_type=state_model_name,
+                    target_type=state_model_name,
+                ))
+
+    return edges
+
+
 def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
     from ageom.architect.models import ConceptType, IOSpec
 
@@ -236,6 +302,13 @@ async def hoist_state(
         ))
 
     updated = plan.model_copy(update={"state_models": state_models})
+
+    # Compute deterministic state edges and append to existing edges
+    state_edges = _compute_state_edges(dfg, updated)
+    if state_edges:
+        all_edges = list(updated.edge_definitions) + state_edges
+        updated = updated.model_copy(update={"edge_definitions": all_edges})
+
     return {"proposed_plan": updated}
 
 

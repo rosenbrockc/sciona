@@ -140,18 +140,142 @@ def generate_atom_wrappers(
 
 
 # ---------------------------------------------------------------------------
+# Stateful wrapper generation
+# ---------------------------------------------------------------------------
+
+
+def generate_stateful_wrappers(
+    macro_atoms: list[MacroAtomSpec],
+    state_models: list[StateModelSpec],
+    class_name: str,
+    witness_names: dict[str, str],
+) -> str:
+    """Generate ``@register_atom`` wrappers with inject/run/extract state pattern.
+
+    Each wrapper instantiates the legacy class via ``__new__``, injects ALL
+    state fields, runs the original method(s), and extracts ALL state fields
+    back into an immutable ``model_copy`` update.
+    """
+    if not state_models:
+        return generate_atom_wrappers(macro_atoms, state_models, witness_names)
+
+    state_model = state_models[0]
+    state_type = state_model.model_name
+    fields = state_model.fields  # list of (field_name, field_type)
+
+    lines = [
+        '"""Auto-generated stateful atom wrappers following the ageoa pattern."""',
+        "",
+        "from __future__ import annotations",
+        "",
+        "import icontract",
+        "from ageoa.ghost.registry import register_atom",
+        "",
+        f"# Import the original class for __new__ instantiation",
+        f"# from <source_module> import {class_name}",
+        "",
+        f"# State model should be imported from the generated state_models module",
+        f"# from <state_module> import {state_type}",
+        "",
+    ]
+
+    # Import witness functions
+    if witness_names:
+        lines.append("# Witness functions should be imported from the generated witnesses module")
+        lines.append("")
+
+    for atom in macro_atoms:
+        fn_name = _snake_case(atom.name)
+        witness_fn = witness_names.get(atom.name, f"witness_{fn_name}")
+
+        # Build parameter list — original params + state
+        params = []
+        for inp in atom.inputs:
+            params.append(f"{inp.name}: {inp.type_desc}")
+        params.append(f"state: {state_type}")
+        param_str = ", ".join(params)
+
+        # Build return type — (original_return, StateType)
+        if atom.outputs:
+            if len(atom.outputs) == 1:
+                orig_ret = atom.outputs[0].type_desc
+            else:
+                orig_ret = "tuple[" + ", ".join(o.type_desc for o in atom.outputs) + "]"
+        else:
+            orig_ret = "None"
+        ret_type = f"tuple[{orig_ret}, {state_type}]"
+
+        lines.append(f"@register_atom({witness_fn})")
+        lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
+        if atom.description:
+            lines.append(f'    """Stateless wrapper: Functional Core, Imperative Shell.')
+            lines.append(f"")
+            lines.append(f"    {atom.description}")
+            lines.append(f'    """')
+        else:
+            lines.append(f'    """Stateless wrapper: Functional Core, Imperative Shell."""')
+
+        # Instantiate via __new__
+        lines.append(f"    obj = {class_name}.__new__({class_name})")
+
+        # Inject ALL state fields
+        for field_name, _ in fields:
+            lines.append(f"    obj.{field_name} = state.{field_name}")
+
+        # Run method(s)
+        for method_name in atom.method_names:
+            if method_name == "__init__":
+                continue
+            # Build call args from atom inputs
+            call_args = ", ".join(inp.name for inp in atom.inputs)
+            lines.append(f"    obj.{method_name}({call_args})")
+
+        # Extract ALL state fields via model_copy
+        update_entries = ", ".join(
+            f'"{fname}": obj.{fname}' for fname, _ in fields
+        )
+        lines.append(f"    new_state = state.model_copy(update={{")
+        for fname, _ in fields:
+            lines.append(f'        "{fname}": obj.{fname},')
+        lines.append(f"    }})")
+
+        # Build return value
+        if atom.outputs:
+            if len(atom.outputs) == 1:
+                out = atom.outputs[0]
+                lines.append(f"    result = obj.{out.name}")
+                lines.append(f"    return result, new_state")
+            else:
+                out_names = ", ".join(f"obj.{o.name}" for o in atom.outputs)
+                lines.append(f"    result = ({out_names})")
+                lines.append(f"    return result, new_state")
+        else:
+            lines.append(f"    return None, new_state")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Ghost witness generation
 # ---------------------------------------------------------------------------
 
 
 def generate_ghost_witnesses(
     macro_atoms: list[MacroAtomSpec],
+    state_models: list[StateModelSpec] | None = None,
 ) -> tuple[str, dict[str, str]]:
     """Generate ghost witness functions.
 
     Returns (source_code, name_mapping) where name_mapping maps
     atom name -> witness function name.
+
+    When *state_models* is non-empty, each witness gains a
+    ``state: AbstractSignal`` parameter and returns
+    ``tuple[AbstractSignal, AbstractSignal]`` (result, state pass-through).
     """
+    has_state = bool(state_models)
+
     lines = [
         '"""Auto-generated ghost witness functions for abstract simulation."""',
         "",
@@ -175,27 +299,42 @@ def generate_ghost_witnesses(
         params = []
         for inp in atom.inputs:
             params.append(f"{inp.name}: AbstractSignal")
+        if has_state:
+            params.append("state: AbstractSignal")
         param_str = ", ".join(params) if params else ""
 
         # Return type
-        if atom.outputs:
-            ret_type = "AbstractSignal"
+        if has_state:
+            if atom.outputs:
+                ret_type = "tuple[AbstractSignal, AbstractSignal]"
+            else:
+                ret_type = "tuple[None, AbstractSignal]"
         else:
-            ret_type = "None"
+            if atom.outputs:
+                ret_type = "AbstractSignal"
+            else:
+                ret_type = "None"
 
         lines.append(f"def {witness_name}({param_str}) -> {ret_type}:")
         lines.append(f'    """Ghost witness for {atom.name}."""')
 
         if atom.inputs and atom.outputs:
             first_input = atom.inputs[0].name
-            lines.append(f"    return AbstractSignal(")
+            lines.append(f"    result = AbstractSignal(")
             lines.append(f"        shape={first_input}.shape,")
             lines.append(f'        dtype="float64",')
             lines.append(f"        sampling_rate=getattr({first_input}, 'sampling_rate', 44100.0),")
             lines.append(f'        domain="time",')
             lines.append(f"    )")
+            if has_state:
+                lines.append(f"    return result, state")
+            else:
+                lines.append(f"    return result")
         else:
-            lines.append(f"    return None")
+            if has_state:
+                lines.append(f"    return None, state")
+            else:
+                lines.append(f"    return None")
         lines.append("")
 
     return "\n".join(lines), name_map
@@ -428,17 +567,28 @@ def emit_ingestion_bundle(
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
     # Generate witnesses first (need name mapping for atoms)
-    witness_source, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+    witness_source, witness_names = generate_ghost_witnesses(
+        plan.plan.macro_atoms,
+        state_models=plan.plan.state_models,
+    )
 
     # Generate state models
     state_model_source = generate_state_models(plan.plan.state_models)
 
-    # Generate atom wrappers
-    atoms_source = generate_atom_wrappers(
-        plan.plan.macro_atoms,
-        plan.plan.state_models,
-        witness_names,
-    )
+    # Generate atom wrappers — stateful if state models exist
+    if plan.plan.state_models:
+        atoms_source = generate_stateful_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            class_name,
+            witness_names,
+        )
+    else:
+        atoms_source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+        )
 
     # Build CDG
     cdg = build_cdg_export(plan, class_name)

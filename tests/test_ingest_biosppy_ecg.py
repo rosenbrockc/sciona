@@ -369,7 +369,12 @@ _HOIST_RESPONSE = json.dumps({
 def _make_agent() -> tuple[IngesterAgent, AsyncMock]:
     """Build an IngesterAgent with a mocked LLM returning known-correct data."""
     mock_llm = AsyncMock()
-    mock_llm.complete.side_effect = [_CHUNK_RESPONSE, _HOIST_RESPONSE]
+    _responses = iter([_CHUNK_RESPONSE, _HOIST_RESPONSE])
+
+    async def _side_effect(*args, **kwargs):
+        return next(_responses, "[]")
+
+    mock_llm.complete.side_effect = _side_effect
     agent = IngesterAgent(llm=mock_llm)
     return agent, mock_llm
 
@@ -538,7 +543,11 @@ class TestDataFlowEdges:
     async def test_edge_count(self, ecg_source):
         agent, _ = _make_agent()
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
-        assert len(bundle.cdg.edges) == 6
+        # 6 data-flow edges + 10 state edges (filtered, rpeaks cross-window)
+        data_edges = [e for e in bundle.cdg.edges if e.source_type != "ECGPipelineState"]
+        state_edges = [e for e in bundle.cdg.edges if e.source_type == "ECGPipelineState"]
+        assert len(data_edges) == 6
+        assert len(state_edges) > 0
 
     @pytest.mark.asyncio
     async def test_no_phantom_edge_sources(self, ecg_source):
@@ -564,13 +573,15 @@ class TestDataFlowEdges:
 
     @pytest.mark.asyncio
     async def test_edges_match_actual_data_flow(self, ecg_source):
-        """Every edge must reflect a real data dependency in BioSPPy ecg()."""
+        """Data-flow edges must reflect the real BioSPPy pipeline."""
         agent, _ = _make_agent()
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
 
-        edge_set = {
+        # Filter to data-flow edges only (exclude state-typed edges)
+        data_edge_set = {
             (e.source_id, e.target_id, e.output_name, e.input_name)
             for e in bundle.cdg.edges
+            if e.source_type != "ECGPipelineState"
         }
 
         # These are the REAL data flows in biosppy.signals.ecg.ecg():
@@ -593,17 +604,35 @@ class TestDataFlowEdges:
              "rpeaks_corrected", "rpeaks"),
         }
 
-        assert edge_set == expected
+        assert data_edge_set == expected
 
     @pytest.mark.asyncio
-    async def test_all_edges_are_ndarray(self, ecg_source):
-        """All edge types in the ECG pipeline are np.ndarray."""
+    async def test_all_data_edges_are_ndarray(self, ecg_source):
+        """All data-flow edge types in the ECG pipeline are np.ndarray."""
         agent, _ = _make_agent()
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
 
-        for edge in bundle.cdg.edges:
+        data_edges = [
+            e for e in bundle.cdg.edges
+            if e.source_type != "ECGPipelineState"
+        ]
+        for edge in data_edges:
             assert edge.source_type == "np.ndarray"
             assert edge.target_type == "np.ndarray"
+
+    @pytest.mark.asyncio
+    async def test_state_edges_are_ecg_pipeline_state(self, ecg_source):
+        """State edges should be typed with ECGPipelineState."""
+        agent, _ = _make_agent()
+        bundle = await agent.ingest(ecg_source, "ECGProcessor")
+
+        state_edges = [
+            e for e in bundle.cdg.edges
+            if e.source_type == "ECGPipelineState"
+        ]
+        assert len(state_edges) > 0
+        for edge in state_edges:
+            assert edge.target_type == "ECGPipelineState"
 
 
 # ---------------------------------------------------------------------------
@@ -716,7 +745,8 @@ class TestWriteToAgeoAtoms:
         # Verify round-trip
         loaded = json.loads(cdg_path.read_text())
         assert len(loaded["nodes"]) == 6
-        assert len(loaded["edges"]) == 6
+        # 6 data-flow edges + state edges
+        assert len(loaded["edges"]) >= 6
 
         # Atoms
         atoms_path = BIOSPPY_OUT / "ecg.py"
