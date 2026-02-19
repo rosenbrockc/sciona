@@ -51,6 +51,8 @@ class MethodFact(BaseModel):
     config_branches: list[ConfigBranch] = Field(default_factory=list)
     source_code: str = ""
     is_opaque: bool = False
+    is_external: bool = False
+    is_external: bool = False
 
 
 class RawDataFlowGraph(BaseModel):
@@ -67,6 +69,8 @@ class RawDataFlowGraph(BaseModel):
     inferred_edges: list[DependencyEdge] = Field(default_factory=list)
     source_language: str = "python"
     is_opaque: bool = False
+    is_external: bool = False
+    is_external: bool = False
     opaque_base_classes: list[str] = Field(default_factory=list)
 
 
@@ -87,6 +91,8 @@ class MacroAtomSpec(BaseModel):
     concept_type: ConceptType = ConceptType.CUSTOM
     is_optional: bool = False
     is_opaque: bool = False
+    is_external: bool = False
+    is_external: bool = False
 
 
 class StateModelSpec(BaseModel):

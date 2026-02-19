@@ -92,6 +92,8 @@ async def generate_opaque_witnesses(
         "",
         "from __future__ import annotations",
         "",
+        "import torch",
+        "",
         "import networkx as nx  # type: ignore",
         "",
         "import networkx as nx  # type: ignore",
@@ -181,6 +183,8 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
         "",
         "from __future__ import annotations",
         "",
+        "import torch",
+        "",
         "import networkx as nx  # type: ignore",
         "",
         "import networkx as nx  # type: ignore",
@@ -229,6 +233,8 @@ def generate_atom_wrappers(
         '"""Auto-generated atom wrappers following the ageoa pattern."""',
         "",
         "from __future__ import annotations",
+        "",
+        "import torch",
         "",
         "import networkx as nx  # type: ignore",
         "",
@@ -316,6 +322,8 @@ def generate_stateful_wrappers(
         '"""Auto-generated stateful atom wrappers following the ageoa pattern."""',
         "",
         "from __future__ import annotations",
+        "",
+        "import torch",
         "",
         "import networkx as nx  # type: ignore",
         "",
@@ -436,6 +444,8 @@ def generate_ghost_witnesses(
         "",
         "from __future__ import annotations",
         "",
+        "import torch",
+        "",
         "import networkx as nx  # type: ignore",
         "",
         "import networkx as nx  # type: ignore",
@@ -534,6 +544,7 @@ def build_cdg_export(
             status=NodeStatus.ATOMIC,
             is_optional=atom.is_optional,
             is_opaque=atom.is_opaque,
+            is_external=getattr(atom, "is_external", False),
             type_signature=_build_type_signature(atom),
             depth=1,
         )
@@ -702,12 +713,13 @@ def build_procedural_plan(
             else [IOSpec(name="result", type_desc="Any")]
         )
         macro_atoms.append(MacroAtomSpec(
+            is_external=mf.is_external,
+            concept_type=ConceptType.EXTERNAL_TOOL if mf.is_external else ConceptType.CUSTOM,
             name=_title_case(mf.name),
             description=mf.docstring,
             method_names=[mf.name],
             inputs=inputs,
             outputs=outputs,
-            concept_type=ConceptType.CUSTOM,
         ))
 
     plan = ProposedMacroPlan(

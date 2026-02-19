@@ -32,7 +32,7 @@ _CONFIG_CONTAINER_NAMES = frozenset({
 
 # Deep-learning base classes treated as opaque boundaries.
 _OPAQUE_BASE_CLASSES: frozenset[str] = frozenset({
-    "nn.Module", "Module",
+    "nn.Module", "Module", "torch.nn.Module",
     "hk.Module",
     "tf.keras.Model", "tf.keras.layers.Layer",
     "keras.Model", "keras.layers.Layer",
@@ -450,35 +450,45 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
         self.call_sites: list[_CallSite] = []
         self.var_producers: dict[str, str] = {}  # var_name -> producer_func_id
         self.inferred_edges: list[DependencyEdge] = []
+        self.external_tools: list[MethodFact] = []
 
     def visit_Assign(self, node: ast.Assign) -> None:
-        if not isinstance(node.value, ast.Call):
+        if isinstance(node.value, ast.Call):
+            self._handle_call(node.value, node.targets, node.lineno)
+        else:
             # Simple assignment: track variable lineage
             targets = self._collect_targets(node.targets)
             for t in targets:
-                # If RHS is a Name, inherit its producer
                 if isinstance(node.value, ast.Name):
                     self.var_producers[t] = self.var_producers.get(node.value.id, "INTERNAL_VAR")
                 else:
                     self.var_producers[t] = "INTERNAL_VAR"
-            self.generic_visit(node)
-            return
+        self.generic_visit(node)
 
-        func_name = self._resolve_func_name(node.value.func)
-        if func_name is None or func_name not in self.known_functions:
-            self.generic_visit(node)
+    def visit_Expr(self, node: ast.Expr) -> None:
+        if isinstance(node.value, ast.Call):
+            self._handle_call(node.value, [], node.lineno)
+        self.generic_visit(node)
+
+    def _handle_call(self, call_node: ast.Call, targets_nodes: list[ast.expr], lineno: int) -> None:
+        func_name = self._resolve_func_name(call_node.func)
+        full_func_name = self._resolve_full_func_name(call_node.func)
+        
+        is_known = func_name in self.known_functions
+        is_external = full_func_name in {'subprocess.run', 'subprocess.call', 'subprocess.check_output', 'os.system'}
+        
+        if not (is_known or is_external):
             return
 
         # 1. CONSUME: Arguments read prior to the call
-        args = self._collect_arg_names(node.value)
+        args = self._collect_arg_names(call_node)
         for arg_var in args:
             producer_id = self.var_producers.get(arg_var)
             if producer_id and producer_id != "INTERNAL_VAR":
-                # Deduplicate edges between same nodes for same variable
                 from ageom.architect.models import DependencyEdge
                 edge = DependencyEdge(
                     source_id=producer_id,
-                    target_id=func_name,
+                    target_id=func_name if is_known else full_func_name,
                     output_name=arg_var,
                     input_name=arg_var,
                     source_type="Any",
@@ -488,18 +498,40 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
                     self.inferred_edges.append(edge)
 
         # 2. PRODUCE: Targets assigned by the call
-        targets = self._collect_targets(node.targets)
+        targets = self._collect_targets(targets_nodes)
         for t in targets:
-            self.var_producers[t] = func_name
+            self.var_producers[t] = func_name if is_known else full_func_name
 
-        cs = _CallSite(
-            func_name=func_name,
-            targets=targets,
-            args=args,
-            lineno=node.lineno,
-        )
-        self.call_sites.append(cs)
-        self.generic_visit(node)
+        if is_known:
+            cs = _CallSite(
+                func_name=func_name,
+                targets=targets,
+                args=args,
+                lineno=lineno,
+            )
+            self.call_sites.append(cs)
+        
+        if is_external:
+            # Wrap as ExternalToolAtom
+            from ageom.ingester.models import MethodFact
+            self.external_tools.append(MethodFact(
+                name=full_func_name,
+                params=args,
+                docstring=f"External tool call: {full_func_name}",
+                source_code=ast.unparse(call_node),
+                is_external=True
+            ))
+
+    @staticmethod
+    def _resolve_full_func_name(node: ast.expr) -> str | None:
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            val = _ProceduralBlockVisitor._resolve_full_func_name(node.value)
+            if val:
+                return f"{val}.{node.attr}"
+            return node.attr
+        return None
 
     @staticmethod
     def _resolve_func_name(node: ast.expr) -> str | None:
@@ -646,6 +678,9 @@ async def extract_procedural_data_flow(
             all_attributes.setdefault(t, []).append(f"write:{cs.func_name}")
         for a in cs.args:
             all_attributes.setdefault(a, []).append(f"read:{cs.func_name}")
+
+    # Merge detected external tool calls as atoms
+    methods.extend(visitor.external_tools)
 
     return RawDataFlowGraph(
         class_name=name,

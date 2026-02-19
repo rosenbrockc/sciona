@@ -30,6 +30,7 @@ class ConceptType(str, Enum):
     GRAPH_SIGNAL_PROCESSING = "graph_signal_processing"
     NEURAL_NETWORK = "neural_network"
     CUSTOM = "custom"
+    EXTERNAL_TOOL = "external_tool"
 
 
 class IOSpec(BaseModel):
@@ -67,6 +68,7 @@ class AlgorithmicNode(BaseModel):
     matched_primitive: str | None = None  # e.g., "Nat.add_comm" or "heapsort"
     is_optional: bool = False  # Config-gated branches
     is_opaque: bool = False  # DL boundary: skip internal decomposition
+    is_external: bool = False  # External tool call
     critic_notes: str = ""
     decomposition_rationale: str = ""
 
