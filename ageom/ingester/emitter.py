@@ -92,6 +92,10 @@ async def generate_opaque_witnesses(
         "",
         "from __future__ import annotations",
         "",
+        "import networkx as nx  # type: ignore",
+        "",
+        "import networkx as nx  # type: ignore",
+        "",
         "try:",
         "    from ageoa.ghost.abstract import AbstractArray",
         "except ImportError:",
@@ -177,7 +181,11 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
         "",
         "from __future__ import annotations",
         "",
-        "from pydantic import BaseModel, Field",
+        "import networkx as nx  # type: ignore",
+        "",
+        "import networkx as nx  # type: ignore",
+        "",
+        "from pydantic import BaseModel, ConfigDict, Field",
         "",
     ]
 
@@ -188,11 +196,13 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
         else:
             lines.append(f"class {spec.model_name}(BaseModel):")
 
+        lines.append("    model_config = ConfigDict(arbitrary_types_allowed=True)")
+        lines.append("")
         if not spec.fields:
             lines.append("    pass")
         else:
             for field_name, field_type in spec.fields:
-                lines.append(f"    {field_name}: {field_type} = Field(default=None)")
+                lines.append(f"    {field_name}: {field_type} | None = Field(default=None)")
         lines.append("")
 
     return "\n".join(lines)
@@ -220,6 +230,12 @@ def generate_atom_wrappers(
         "",
         "from __future__ import annotations",
         "",
+        "import networkx as nx  # type: ignore",
+        "",
+        "import networkx as nx  # type: ignore",
+        "",
+        "import networkx as nx  # type: ignore",
+        "import networkx as nx  # type: ignore",
         "import icontract",
         "from ageoa.ghost.registry import register_atom",
         "",
@@ -301,6 +317,12 @@ def generate_stateful_wrappers(
         "",
         "from __future__ import annotations",
         "",
+        "import networkx as nx  # type: ignore",
+        "",
+        "import networkx as nx  # type: ignore",
+        "",
+        "import networkx as nx  # type: ignore",
+        "import networkx as nx  # type: ignore",
         "import icontract",
         "from ageoa.ghost.registry import register_atom",
         "",
@@ -414,6 +436,10 @@ def generate_ghost_witnesses(
         "",
         "from __future__ import annotations",
         "",
+        "import networkx as nx  # type: ignore",
+        "",
+        "import networkx as nx  # type: ignore",
+        "",
         "try:",
         "    from ageoa.ghost.abstract import AbstractSignal, AbstractArray, AbstractScalar",
         "except ImportError:",
@@ -424,6 +450,8 @@ def generate_ghost_witnesses(
     name_map: dict[str, str] = {}
 
     for atom in macro_atoms:
+        if atom.is_opaque:
+            continue
         fn_name = _snake_case(atom.name)
         witness_name = f"witness_{fn_name}"
         name_map[atom.name] = witness_name
@@ -702,36 +730,29 @@ def emit_ingestion_bundle(
     source_language: str = "python",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
-    # Check for opaque atoms — use fallback witnesses (synchronous)
+    # Check for opaque atoms
     has_opaque = any(a.is_opaque for a in plan.plan.macro_atoms)
 
+    # Generate witnesses first (need name mapping for atoms)
+    witness_source, witness_names = generate_ghost_witnesses(
+        plan.plan.macro_atoms,
+        state_models=plan.plan.state_models,
+    )
+
     if has_opaque:
-        # Generate opaque witness stubs (fallback, no LLM)
-        witness_lines = [
-            '"""Auto-generated ghost witnesses for opaque DL boundaries."""',
+        # Append opaque witness stubs (fallback, no LLM)
+        opaque_lines = [
             "",
-            "from __future__ import annotations",
-            "",
-            "try:",
-            "    from ageoa.ghost.abstract import AbstractArray",
-            "except ImportError:",
-            "    pass",
+            "# Opaque DL boundaries",
             "",
         ]
-        witness_names: dict[str, str] = {}
         for atom in plan.plan.macro_atoms:
             if atom.is_opaque:
-                witness_lines.append(_opaque_witness_fallback(atom))
-                witness_lines.append("")
+                opaque_lines.append(_opaque_witness_fallback(atom))
+                opaque_lines.append("")
                 fn_name = _snake_case(atom.name)
                 witness_names[atom.name] = f"witness_{fn_name}"
-        witness_source = "\n".join(witness_lines)
-    else:
-        # Generate witnesses first (need name mapping for atoms)
-        witness_source, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms,
-            state_models=plan.plan.state_models,
-        )
+        witness_source += "\n".join(opaque_lines)
 
     # Generate state models
     state_model_source = generate_state_models(plan.plan.state_models)
@@ -778,3 +799,4 @@ def emit_ingestion_bundle(
         generated_witnesses=witness_source,
         match_results=match_results,
     )
+
