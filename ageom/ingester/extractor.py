@@ -443,15 +443,24 @@ class _CallSite:
 
 
 class _ProceduralBlockVisitor(ast.NodeVisitor):
-    """Walk module-level statements and collect call sites + variable producers."""
+    """Walk module-level statements and collect call sites + inferred edges."""
 
     def __init__(self, known_functions: set[str]) -> None:
         self.known_functions = known_functions
         self.call_sites: list[_CallSite] = []
-        self.var_producers: dict[str, _CallSite] = {}
+        self.var_producers: dict[str, str] = {}  # var_name -> producer_func_id
+        self.inferred_edges: list[DependencyEdge] = []
 
     def visit_Assign(self, node: ast.Assign) -> None:
         if not isinstance(node.value, ast.Call):
+            # Simple assignment: track variable lineage
+            targets = self._collect_targets(node.targets)
+            for t in targets:
+                # If RHS is a Name, inherit its producer
+                if isinstance(node.value, ast.Name):
+                    self.var_producers[t] = self.var_producers.get(node.value.id, "INTERNAL_VAR")
+                else:
+                    self.var_producers[t] = "INTERNAL_VAR"
             self.generic_visit(node)
             return
 
@@ -460,11 +469,28 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
             self.generic_visit(node)
             return
 
-        # Collect LHS targets (handle tuple unpacking)
-        targets = self._collect_targets(node.targets)
-
-        # Collect variable names used as arguments
+        # 1. CONSUME: Arguments read prior to the call
         args = self._collect_arg_names(node.value)
+        for arg_var in args:
+            producer_id = self.var_producers.get(arg_var)
+            if producer_id and producer_id != "INTERNAL_VAR":
+                # Deduplicate edges between same nodes for same variable
+                from ageom.architect.models import DependencyEdge
+                edge = DependencyEdge(
+                    source_id=producer_id,
+                    target_id=func_name,
+                    output_name=arg_var,
+                    input_name=arg_var,
+                    source_type="Any",
+                    target_type="Any",
+                )
+                if edge not in self.inferred_edges:
+                    self.inferred_edges.append(edge)
+
+        # 2. PRODUCE: Targets assigned by the call
+        targets = self._collect_targets(node.targets)
+        for t in targets:
+            self.var_producers[t] = func_name
 
         cs = _CallSite(
             func_name=func_name,
@@ -473,14 +499,7 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
             lineno=node.lineno,
         )
         self.call_sites.append(cs)
-
-        # Record each target variable as produced by this call site
-        for t in targets:
-            self.var_producers[t] = cs
-
         self.generic_visit(node)
-
-    # --- helpers ---
 
     @staticmethod
     def _resolve_func_name(node: ast.expr) -> str | None:
@@ -617,8 +636,8 @@ async def extract_procedural_data_flow(
         if not isinstance(stmt, ast.FunctionDef):
             visitor.visit(stmt)
 
-    # Infer SSA edges
-    inferred_edges = _infer_ssa_edges(visitor.call_sites, visitor.var_producers)
+    # SSA edges were inferred during the visit
+    inferred_edges = visitor.inferred_edges
 
     # Build all_attributes from call sites
     all_attributes: dict[str, list[str]] = {}

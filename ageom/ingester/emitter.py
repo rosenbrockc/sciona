@@ -543,8 +543,8 @@ def build_cdg_export(
     edges = []
     for edge_def in plan.plan.edge_definitions:
         edges.append(DependencyEdge(
-            source_id=edge_def.source_id,
-            target_id=edge_def.target_id,
+            source_id=_snake_case(_title_case(edge_def.source_id)),
+            target_id=_snake_case(_title_case(edge_def.target_id)),
             output_name=edge_def.output_name,
             input_name=edge_def.input_name,
             source_type=edge_def.source_type,
