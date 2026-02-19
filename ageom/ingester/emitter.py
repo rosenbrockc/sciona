@@ -212,6 +212,7 @@ def generate_atom_wrappers(
     macro_atoms: list[MacroAtomSpec],
     state_models: list[StateModelSpec],
     witness_names: dict[str, str],
+    source_language: str = "python",
 ) -> str:
     """Generate ``@register_atom`` decorated function wrappers."""
     lines = [
@@ -223,6 +224,12 @@ def generate_atom_wrappers(
         "from ageoa.ghost.registry import register_atom",
         "",
     ]
+
+    # Add FFI imports for non-Python sources
+    if source_language != "python":
+        from ageom.ingester.ffi_emitter import generate_ffi_imports
+        lines.append(generate_ffi_imports(source_language))
+        lines.append("")
 
     # Import state models if any
     if state_models:
@@ -274,6 +281,7 @@ def generate_stateful_wrappers(
     state_models: list[StateModelSpec],
     class_name: str,
     witness_names: dict[str, str],
+    source_language: str = "python",
 ) -> str:
     """Generate ``@register_atom`` wrappers with inject/run/extract state pattern.
 
@@ -691,6 +699,7 @@ def emit_ingestion_bundle(
     plan: ValidatedMacroPlan,
     class_name: str,
     source_file: str = "",
+    source_language: str = "python",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
     # Check for opaque atoms — use fallback witnesses (synchronous)
@@ -734,13 +743,23 @@ def emit_ingestion_bundle(
             plan.plan.state_models,
             class_name,
             witness_names,
+            source_language=source_language,
         )
     else:
         atoms_source = generate_atom_wrappers(
             plan.plan.macro_atoms,
             plan.plan.state_models,
             witness_names,
+            source_language=source_language,
         )
+
+    # Append FFI binding stubs for non-Python sources
+    if source_language != "python":
+        from ageom.ingester.ffi_emitter import generate_ffi_bindings
+        ffi_source = generate_ffi_bindings(
+            plan.plan.macro_atoms, source_language
+        )
+        atoms_source = atoms_source + "\n\n" + ffi_source
 
     # Build CDG
     cdg = build_cdg_export(plan, class_name)

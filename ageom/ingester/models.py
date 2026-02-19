@@ -65,6 +65,7 @@ class RawDataFlowGraph(BaseModel):
     cross_window_attrs: list[str] = Field(default_factory=list)
     internal_call_graph: dict[str, list[str]] = Field(default_factory=dict)
     inferred_edges: list[DependencyEdge] = Field(default_factory=list)
+    source_language: str = "python"
     is_opaque: bool = False
     opaque_base_classes: list[str] = Field(default_factory=list)
 

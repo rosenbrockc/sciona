@@ -21,12 +21,15 @@ from typing_extensions import TypedDict
 from ageom.architect.handoff import CDGExport
 from ageom.hunter.llm import LLMClient
 from ageom.ingester.chunker import ChunkerDeps, ChunkerState, build_chunker_graph
+from ageom.ingester.base_extractor import EXTENSION_MAP, BaseExtractor, SourceLanguage
 from ageom.ingester.emitter import (
     build_procedural_plan,
     emit_ingestion_bundle,
     generate_opaque_witnesses,
 )
 from ageom.ingester.extractor import extract_data_flow, extract_procedural_data_flow
+from ageom.ingester.python_extractor import PythonASTExtractor
+from ageom.ingester.treesitter_extractor import TreeSitterExtractor
 from ageom.ingester.models import (
     IngestionBundle,
     ProposedMacroPlan,
@@ -77,6 +80,20 @@ class IngesterDeps:
 
 
 # ---------------------------------------------------------------------------
+# Extractor dispatch
+# ---------------------------------------------------------------------------
+
+
+def _get_extractor(source_path: str) -> BaseExtractor:
+    """Return the appropriate extractor for *source_path* based on extension."""
+    ext = Path(source_path).suffix.lower()
+    lang = EXTENSION_MAP.get(ext, SourceLanguage.PYTHON)
+    if lang == SourceLanguage.PYTHON:
+        return PythonASTExtractor()
+    return TreeSitterExtractor(lang)
+
+
+# ---------------------------------------------------------------------------
 # Graph nodes
 # ---------------------------------------------------------------------------
 
@@ -86,7 +103,10 @@ async def phase1_extract(
 ) -> dict[str, Any]:
     """Phase 1: Deterministic AST extraction."""
     try:
-        dfg = await extract_data_flow(state["source_path"], state["class_name"])
+        extractor = _get_extractor(state["source_path"])
+        dfg = await extractor.extract_class(
+            state["source_path"], state["class_name"]
+        )
         return {"raw_dfg": dfg, "is_opaque": dfg.is_opaque}
     except (FileNotFoundError, ValueError) as exc:
         return {"error": str(exc), "done": True}
@@ -138,10 +158,12 @@ async def phase3_emit(
     if state.get("error"):
         return {}
 
+    source_lang = state["raw_dfg"].source_language
     bundle = emit_ingestion_bundle(
         state["validated_plan"],
         state["class_name"],
         state["source_path"],
+        source_language=source_lang,
     )
 
     # If opaque, attempt LLM-drafted witnesses and merge into bundle
@@ -464,6 +486,10 @@ class IngesterAgent:
             An ``IngestionBundle`` with CDG, generated source, and match results.
         """
         name = pipeline_name or Path(source_path).stem
-        dfg = await extract_procedural_data_flow(source_path, name)
+        extractor = _get_extractor(source_path)
+        dfg = await extractor.extract_procedural(source_path, name)
         plan = build_procedural_plan(dfg, name)
-        return emit_ingestion_bundle(plan, name, source_path)
+        return emit_ingestion_bundle(
+            plan, name, source_path,
+            source_language=dfg.source_language,
+        )
