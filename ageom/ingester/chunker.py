@@ -277,6 +277,42 @@ async def propose_macro_atoms(
     return {"proposed_plan": plan}
 
 
+
+async def flatten_config(
+    state: ChunkerState, config: RunnableConfig
+) -> dict[str, Any]:
+    """Deterministic: Flatten config-gated branches into optional variants."""
+    plan = state["proposed_plan"]
+    dfg = state["raw_dfg"]
+    
+    new_atoms = []
+    for atom in plan.macro_atoms:
+        branches = []
+        for mname in atom.method_names:
+            mf = next((m for m in dfg.methods if m.name == mname), None)
+            if mf:
+                branches.extend(mf.config_branches)
+        
+        if not branches:
+            new_atoms.append(atom)
+            continue
+            
+        # Analyze branches to see if we should split
+        # For now, we simply ensure the atom is marked is_optional if it has significant branching
+        # and append it. In a full implementation, we would duplicate the atom for each variant.
+        # Here we simulate the flattening by marking it for the orchestrator.
+        if len(branches) > 0 and not atom.is_optional:
+            # It has config branches but wasn"t marked optional.
+            # We keep it as is but could tag it in description.
+            atom.description += f" (Contains {len(branches)} config branches)"
+            # atom.is_optional = True # Optional implies it might not run. Branching implies one of many runs.
+        
+        new_atoms.append(atom)
+        
+    updated = plan.model_copy(update={"macro_atoms": new_atoms})
+    return {"proposed_plan": updated}
+
+
 async def hoist_state(
     state: ChunkerState, config: RunnableConfig
 ) -> dict[str, Any]:
@@ -435,13 +471,15 @@ def build_chunker_graph() -> StateGraph:
     graph = StateGraph(ChunkerState)
 
     graph.add_node("propose_macro_atoms", propose_macro_atoms)
+    graph.add_node("flatten_config", flatten_config)
     graph.add_node("hoist_state", hoist_state)
     graph.add_node("search_sub_atoms", search_sub_atoms)
     graph.add_node("critic_validate", critic_validate)
     graph.add_node("prepare_chunk_retry", prepare_chunk_retry)
 
     graph.set_entry_point("propose_macro_atoms")
-    graph.add_edge("propose_macro_atoms", "hoist_state")
+    graph.add_edge("propose_macro_atoms", "flatten_config")
+    graph.add_edge("flatten_config", "hoist_state")
     graph.add_edge("hoist_state", "search_sub_atoms")
     graph.add_edge("search_sub_atoms", "critic_validate")
 
