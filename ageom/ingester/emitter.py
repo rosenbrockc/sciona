@@ -93,8 +93,9 @@ async def generate_opaque_witnesses(
         "from __future__ import annotations",
         "",
         "import torch",
-        "",
-        "import networkx as nx  # type: ignore",
+        "import jax",
+        "import jax.numpy as jnp",
+        "import haiku as hk",
         "",
         "import networkx as nx  # type: ignore",
         "",
@@ -184,8 +185,9 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
         "from __future__ import annotations",
         "",
         "import torch",
-        "",
-        "import networkx as nx  # type: ignore",
+        "import jax",
+        "import jax.numpy as jnp",
+        "import haiku as hk",
         "",
         "import networkx as nx  # type: ignore",
         "",
@@ -235,12 +237,10 @@ def generate_atom_wrappers(
         "from __future__ import annotations",
         "",
         "import torch",
+        "import jax",
+        "import jax.numpy as jnp",
+        "import haiku as hk",
         "",
-        "import networkx as nx  # type: ignore",
-        "",
-        "import networkx as nx  # type: ignore",
-        "",
-        "import networkx as nx  # type: ignore",
         "import networkx as nx  # type: ignore",
         "import icontract",
         "from ageoa.ghost.registry import register_atom",
@@ -283,6 +283,8 @@ def generate_atom_wrappers(
         else:
             ret_type = "None"
 
+        for deco in getattr(atom, "decorators", []):
+            lines.append(deco)
         lines.append(f"@register_atom({witness_fn})")
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
         if atom.description:
@@ -324,12 +326,10 @@ def generate_stateful_wrappers(
         "from __future__ import annotations",
         "",
         "import torch",
+        "import jax",
+        "import jax.numpy as jnp",
+        "import haiku as hk",
         "",
-        "import networkx as nx  # type: ignore",
-        "",
-        "import networkx as nx  # type: ignore",
-        "",
-        "import networkx as nx  # type: ignore",
         "import networkx as nx  # type: ignore",
         "import icontract",
         "from ageoa.ghost.registry import register_atom",
@@ -368,6 +368,8 @@ def generate_stateful_wrappers(
             orig_ret = "None"
         ret_type = f"tuple[{orig_ret}, {state_type}]"
 
+        for deco in getattr(atom, "decorators", []):
+            lines.append(deco)
         lines.append(f"@register_atom({witness_fn})")
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
         if atom.description:
@@ -445,8 +447,9 @@ def generate_ghost_witnesses(
         "from __future__ import annotations",
         "",
         "import torch",
-        "",
-        "import networkx as nx  # type: ignore",
+        "import jax",
+        "import jax.numpy as jnp",
+        "import haiku as hk",
         "",
         "import networkx as nx  # type: ignore",
         "",
@@ -713,6 +716,7 @@ def build_procedural_plan(
             else [IOSpec(name="result", type_desc="Any")]
         )
         macro_atoms.append(MacroAtomSpec(
+            decorators=mf.decorators,
             is_external=mf.is_external,
             concept_type=ConceptType.EXTERNAL_TOOL if mf.is_external else ConceptType.CUSTOM,
             name=_title_case(mf.name),

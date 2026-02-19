@@ -50,6 +50,7 @@ class MethodFact(BaseModel):
     calls: list[str] = Field(default_factory=list)
     config_branches: list[ConfigBranch] = Field(default_factory=list)
     source_code: str = ""
+    decorators: list[str] = Field(default_factory=list)
     is_opaque: bool = False
     is_external: bool = False
     is_external: bool = False
@@ -89,6 +90,7 @@ class MacroAtomSpec(BaseModel):
     outputs: list[IOSpec] = Field(default_factory=list)
     config_params: list[str] = Field(default_factory=list)
     concept_type: ConceptType = ConceptType.CUSTOM
+    decorators: list[str] = Field(default_factory=list)
     is_optional: bool = False
     is_opaque: bool = False
     is_external: bool = False

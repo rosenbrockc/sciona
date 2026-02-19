@@ -214,11 +214,20 @@ def _extract_method_fact(
     for stmt in method_node.body:
         visitor.visit(stmt)
 
+    # Extract decorators
+    decorators = []
+    for deco in method_node.decorator_list:
+        try:
+            decorators.append("@" + ast.unparse(deco))
+        except:
+            pass
+
     return MethodFact(
         name=method_node.name,
         params=params,
         return_type=return_type,
         docstring=docstring,
+        decorators=decorators,
         reads=sorted({a.attr_name for a in visitor.reads}),
         writes=sorted({a.attr_name for a in visitor.writes}),
         calls=sorted(set(visitor.calls)),
@@ -617,12 +626,21 @@ def _extract_function_fact(
     end = func_node.end_lineno or func_node.lineno
     source_code = "\n".join(source_lines[start:end])
 
+    # Extract decorators
+    decorators = []
+    for deco in func_node.decorator_list:
+        try:
+            decorators.append("@" + ast.unparse(deco))
+        except:
+            pass
+
     return MethodFact(
         name=func_node.name,
         params=params,
         return_type=return_type,
         docstring=docstring,
         source_code=source_code,
+        decorators=decorators,
     )
 
 

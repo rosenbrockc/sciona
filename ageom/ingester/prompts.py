@@ -179,6 +179,7 @@ Rules:
 4. The witness body should construct and return an ``AbstractArray`` with the \
    correct output shape derived from input shapes.
 5. Keep it minimal — no actual computation, just shape propagation.
+6. Explicitly track how JAX functional transformations (like `vmap`) alter    tensor dimensionalities. If the module is often vmapped, ensure the witness    body handles variable batch dimensions gracefully.
 
 Return valid JSON only."""
 
