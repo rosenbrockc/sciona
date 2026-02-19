@@ -82,9 +82,25 @@ class _SelfAccessVisitor(ast.NodeVisitor):
     # --- self.method() calls ---
 
     def visit_Call(self, node: ast.Call) -> None:
-        if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
-            if node.func.value.id == "self":
+        if isinstance(node.func, ast.Attribute):
+            # 1. self.method() calls
+            if isinstance(node.func.value, ast.Name) and node.func.value.id == "self":
                 self.calls.append(node.func.attr)
+            
+            # 2. self.attr.mutate() calls
+            # Common mutating methods
+            MUTATING_METHODS = {"append", "extend", "update", "pop", "insert", "remove", "clear", "sort"}
+            if node.func.attr in MUTATING_METHODS:
+                if isinstance(node.func.value, ast.Attribute):
+                    inner = node.func.value
+                    if isinstance(inner.value, ast.Name) and inner.value.id == "self":
+                        self.writes.append(AttributeAccess(
+                            attr_name=inner.attr,
+                            access_type="write",
+                            method_name=self.method_name,
+                            line_number=node.lineno,
+                            is_config=False,
+                        ))
         self.generic_visit(node)
 
     # --- if self.options.X branches ---
@@ -424,6 +440,27 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
         if internal_calls:
             internal_call_graph[mf.name] = internal_calls
 
+
+    # Recursive state mutation bubbling
+    # If method A calls B, then A inherits B reads and writes
+    changed = True
+    while changed:
+        changed = False
+        for mf in methods:
+            if mf.name in internal_call_graph:
+                for callee_name in internal_call_graph[mf.name]:
+                    callee = next((m for m in methods if m.name == callee_name), None)
+                    if callee:
+                        # Inherit reads
+                        new_reads = set(mf.reads) | set(callee.reads)
+                        if len(new_reads) > len(mf.reads):
+                            mf.reads = sorted(new_reads)
+                            changed = True
+                        # Inherit writes
+                        new_writes = set(mf.writes) | set(callee.writes)
+                        if len(new_writes) > len(mf.writes):
+                            mf.writes = sorted(new_writes)
+                            changed = True
     return RawDataFlowGraph(
         class_name=class_name,
         source_code=source_code,
