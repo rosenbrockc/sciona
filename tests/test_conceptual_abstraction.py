@@ -18,7 +18,6 @@ from ageom.ingester.chunker import (
     ChunkerState,
     abstract_atoms,
     build_chunker_graph,
-    _build_enriched_description,
     _format_io_specs,
     _parse_conceptual_profile,
 )
@@ -182,19 +181,6 @@ class TestHelpers:
         assert "x: int" in result
         assert "()" not in result  # no empty parens
 
-    def test_build_enriched_description(self):
-        profile = ConceptualProfile(
-            abstract_name="Test Atom",
-            conceptual_transform="Does something.",
-            cross_disciplinary_applications=["domain A", "domain B"],
-        )
-        result = _build_enriched_description("Original description.", profile)
-        assert result.startswith("Original description.")
-        assert "<!-- conceptual_profile -->" in result
-        assert "<!-- /conceptual_profile -->" in result
-        assert '"abstract_name": "Test Atom"' in result
-        assert '"conceptual_transform": "Does something."' in result
-
     def test_parse_conceptual_profile(self):
         raw = {
             "abstract_name": "Temporal Smoother",
@@ -232,7 +218,7 @@ class TestAbstractAtomsNode:
         return RunnableConfig(configurable={"deps": deps})
 
     @pytest.mark.asyncio
-    async def test_enriches_description(self, mock_llm, config):
+    async def test_stores_profile_without_modifying_description(self, mock_llm, config):
         validated = _make_validated_plan()
         state: ChunkerState = {
             "raw_dfg": RawDataFlowGraph(class_name="Test"),
@@ -249,9 +235,9 @@ class TestAbstractAtomsNode:
         new_plan = result["validated_plan"]
         atom = new_plan.plan.macro_atoms[0]
 
-        # Description should contain the profile
-        assert "<!-- conceptual_profile -->" in atom.description
-        assert "Frequency-Band Attenuator" in atom.description
+        # Description should NOT contain the profile JSON
+        assert "<!-- conceptual_profile -->" not in atom.description
+        assert atom.description == "Applies Butterworth low-pass filter to ECG signal"
 
         # Profile should be stored on the atom
         assert atom.conceptual_profile is not None
@@ -375,31 +361,3 @@ class TestGraphWiring:
         assert "abstract_atoms" in target_nodes
 
 
-# ---------------------------------------------------------------------------
-# Description format round-trip
-# ---------------------------------------------------------------------------
-
-
-class TestDescriptionRoundTrip:
-    def test_profile_extractable_from_description(self):
-        """The profile JSON can be extracted back from the enriched description."""
-        profile = ConceptualProfile(
-            abstract_name="Temporal Smoother",
-            conceptual_transform="Smooths values over a sliding window.",
-            algorithmic_properties=["linear", "causal"],
-            cross_disciplinary_applications=["aerospace", "finance", "audio"],
-        )
-        desc = _build_enriched_description("Original.", profile)
-
-        # Extract the JSON block
-        start = desc.index("<!-- conceptual_profile -->") + len("<!-- conceptual_profile -->")
-        end = desc.index("<!-- /conceptual_profile -->")
-        extracted = json.loads(desc[start:end].strip())
-
-        assert extracted["abstract_name"] == "Temporal Smoother"
-        assert len(extracted["cross_disciplinary_applications"]) == 3
-
-    def test_original_description_preserved(self):
-        profile = ConceptualProfile(abstract_name="Test")
-        desc = _build_enriched_description("My original description.", profile)
-        assert desc.startswith("My original description.")

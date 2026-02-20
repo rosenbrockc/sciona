@@ -75,6 +75,7 @@ class AlgorithmicNode(BaseModel):
     is_optional: bool = False  # Config-gated branches
     is_opaque: bool = False  # DL boundary: skip internal decomposition
     is_external: bool = False  # External tool call
+    conceptual_summary: str = ""
     critic_notes: str = ""
     decomposition_rationale: str = ""
 

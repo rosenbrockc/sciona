@@ -33,6 +33,7 @@ class Declaration:
     name: str
     type_signature: str
     docstring: str = ""
+    conceptual_summary: str = ""
     source_lib: str = ""
     prover: Prover = Prover.LEAN4
     raw_code: str = ""
@@ -128,6 +129,7 @@ class MatchResult:
                 "name": d.name,
                 "type_signature": d.type_signature,
                 "docstring": d.docstring,
+                "conceptual_summary": d.conceptual_summary,
                 "source_lib": d.source_lib,
                 "prover": d.prover.value,
                 "raw_code": d.raw_code,
@@ -173,6 +175,7 @@ class MatchResult:
                 name=d["name"],
                 type_signature=d.get("type_signature", ""),
                 docstring=d.get("docstring", ""),
+                conceptual_summary=d.get("conceptual_summary", ""),
                 source_lib=d.get("source_lib", ""),
                 prover=Prover(d.get("prover", "lean4")),
                 raw_code=d.get("raw_code", ""),

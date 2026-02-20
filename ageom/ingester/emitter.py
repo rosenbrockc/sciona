@@ -23,6 +23,7 @@ from ageom.architect.models import (
     NodeStatus,
 )
 from ageom.ingester.models import (
+    ConceptualProfile,
     IngestionBundle,
     MacroAtomSpec,
     ProposedMacroPlan,
@@ -672,6 +673,23 @@ def generate_ghost_witnesses(
 
 
 # ---------------------------------------------------------------------------
+# Conceptual profile → plain-text summary
+# ---------------------------------------------------------------------------
+
+
+def _profile_to_summary(profile: ConceptualProfile | None) -> str:
+    """Convert a ConceptualProfile to a plain-text summary for embedding."""
+    if not profile or not profile.abstract_name:
+        return ""
+    parts = [profile.abstract_name]
+    if profile.conceptual_transform:
+        parts.append(profile.conceptual_transform)
+    if profile.cross_disciplinary_applications:
+        parts.append("Applications: " + ", ".join(profile.cross_disciplinary_applications))
+    return ". ".join(parts)
+
+
+# ---------------------------------------------------------------------------
 # CDG construction
 # ---------------------------------------------------------------------------
 
@@ -706,6 +724,7 @@ def build_cdg_export(
             is_opaque=atom.is_opaque,
             is_external=getattr(atom, "is_external", False),
             type_signature=_build_type_signature(atom),
+            conceptual_summary=_profile_to_summary(atom.conceptual_profile),
             depth=1,
         )
         child_nodes.append(child)
@@ -816,6 +835,7 @@ def build_match_results(
             name=fn_name,
             type_signature=node.type_signature,
             docstring=node.description,
+            conceptual_summary=node.conceptual_summary,
             source_lib="ingester",
             prover=Prover.PYTHON,
             raw_code="",

@@ -33,6 +33,8 @@ class IndexBuilder:
             text = f"{decl.name} : {decl.type_signature}"
             if decl.docstring:
                 text += f"\n{decl.docstring}"
+            if decl.conceptual_summary:
+                text += f"\n{decl.conceptual_summary}"
             texts.append(text)
 
         # Batch embed

@@ -496,8 +496,9 @@ async def abstract_atoms(
 
     Runs the Conceptual Abstraction Agent on every atom in the validated
     plan.  The resulting profile is stored on each atom's
-    ``conceptual_profile`` field and merged into its ``description`` so
-    the Hunter's FAISS index picks up the cross-domain vocabulary.
+    ``conceptual_profile`` field.  A plain-text summary is threaded
+    through to the FAISS index via the emitter (not embedded in the
+    description).
     """
     deps: ChunkerDeps = config["configurable"]["deps"]
     validated = state["validated_plan"]
@@ -529,9 +530,6 @@ async def abstract_atoms(
 
         enriched = atom.model_copy(update={
             "conceptual_profile": profile,
-            "description": _build_enriched_description(
-                atom.description, profile
-            ),
         })
         enriched_atoms.append(enriched)
 
@@ -569,8 +567,7 @@ def build_chunker_graph() -> StateGraph:
 
     The ``abstract_atoms`` step runs the Conceptual Abstraction Agent on
     each atom after the plan is finalized (critic passed or budget exhausted),
-    enriching descriptions with domain-agnostic profiles for cross-field
-    semantic retrieval.
+    storing domain-agnostic profiles for cross-field semantic retrieval.
     """
     graph = StateGraph(ChunkerState)
 
