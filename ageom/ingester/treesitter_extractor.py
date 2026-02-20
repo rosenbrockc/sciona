@@ -534,6 +534,68 @@ def _extract_julia_functions_procedural(
 # ---------------------------------------------------------------------------
 
 
+
+# ---------------------------------------------------------------------------
+# Rust visitors
+# ---------------------------------------------------------------------------
+
+class _RustStructVisitor:
+    def __init__(self, node: TSNode) -> None:
+        self.node = node
+        self.struct_name = ""
+        self.fields: list[tuple[str, str]] = []
+
+    def visit(self) -> None:
+        for child in self.node.children:
+            if child.type == "type_identifier":
+                self.struct_name = _node_text(child)
+            elif child.type == "field_declaration_list":
+                for field in _find_children(child, "field_declaration"):
+                    fname = ""
+                    ftype = ""
+                    for fc in field.children:
+                        if fc.type == "field_identifier":
+                            fname = _node_text(fc)
+                        elif fc.type in ("type_identifier", "primitive_type", "generic_type"):
+                            ftype = _node_text(fc)
+                    if fname:
+                        self.fields.append((fname, ftype or "Any"))
+
+class _RustFunctionVisitor:
+    def __init__(self, node: TSNode, source_code: str) -> None:
+        self.node = node
+        self.source_code = source_code
+        self.source_lines = source_code.splitlines()
+        self.func_name = ""
+        self.params: list[str] = []
+        self.return_type = ""
+        self.reads: set[str] = set()
+        self.writes: set[str] = set()
+
+    def visit(self) -> None:
+        for child in self.node.children:
+            if child.type == "identifier":
+                self.func_name = _node_text(child)
+            elif child.type == "parameters":
+                for param in _find_children(child, "parameter"):
+                    for pc in param.children:
+                        if pc.type == "identifier":
+                            self.params.append(_node_text(pc))
+            elif child.type == "type_identifier": # Return type
+                self.return_type = _node_text(child)
+
+    def get_fact(self) -> MethodFact:
+        start = self.node.start_point[0]
+        end = self.node.end_point[0] + 1
+        return MethodFact(
+            name=self.func_name,
+            params=self.params,
+            return_type=self.return_type,
+            reads=sorted(self.reads),
+            writes=sorted(self.writes),
+            source_code="\n".join(self.source_lines[start:end]),
+        )
+
 class TreeSitterExtractor:
     """Extract data-flow graphs from C++ or Julia source via tree-sitter."""
 
@@ -541,7 +603,12 @@ class TreeSitterExtractor:
         if language == SourceLanguage.PYTHON:
             raise ValueError("Use PythonASTExtractor for Python sources")
         self.language = language
-        lang_key = "cpp" if language == SourceLanguage.CPP else "julia"
+        if language == SourceLanguage.CPP:
+            lang_key = "cpp"
+        elif language == SourceLanguage.JULIA:
+            lang_key = "julia"
+        else:
+            lang_key = "rust"
         self._parser = get_parser(lang_key)
 
     async def extract_class(
@@ -558,8 +625,10 @@ class TreeSitterExtractor:
 
         if self.language == SourceLanguage.CPP:
             return self._extract_cpp_class(root, source_code, class_name)
-        else:
+        elif self.language == SourceLanguage.JULIA:
             return self._extract_julia_struct(root, source_code, class_name)
+        else:
+            return self._extract_rust_struct(root, source_code, class_name)
 
     async def extract_procedural(
         self, source_path: str, pipeline_name: str | None = None
@@ -576,8 +645,10 @@ class TreeSitterExtractor:
 
         if self.language == SourceLanguage.CPP:
             methods = _extract_cpp_functions(root, source_code)
-        else:
+        elif self.language == SourceLanguage.JULIA:
             methods = _extract_julia_functions_procedural(root, source_code)
+        else:
+            methods = self._extract_rust_functions_procedural(root, source_code)
 
         # Build all_attributes from method reads/writes
         all_attributes: dict[str, list[str]] = {}
@@ -719,3 +790,48 @@ class TreeSitterExtractor:
             all_attributes=all_attributes,
             source_language="julia",
         )
+    def _extract_rust_struct(self, root: TSNode, source_code: str, name: str) -> RawDataFlowGraph:
+        struct_nodes = _find_descendants(root, "struct_item")
+        target = None
+        for sn in struct_nodes:
+            v = _RustStructVisitor(sn)
+            v.visit()
+            if v.struct_name == name:
+                target = v
+                break
+        
+        if not target:
+            raise ValueError(f"Rust struct {name} not found")
+
+        methods = []
+        impl_nodes = _find_descendants(root, "impl_item")
+        for im in impl_nodes:
+            is_target = False
+            for child in im.children:
+                if child.type == "type_identifier" and _node_text(child) == name:
+                    is_target = True
+                    break
+            
+            if is_target:
+                for child in im.children:
+                    if child.type == "function_item":
+                        fv = _RustFunctionVisitor(child, source_code)
+                        fv.visit()
+                        methods.append(fv.get_fact())
+
+        return RawDataFlowGraph(
+            class_name=name,
+            source_code=source_code,
+            methods=methods,
+            source_language="rust"
+        )
+
+    def _extract_rust_functions_procedural(self, root: TSNode, source_code: str) -> list[MethodFact]:
+        func_nodes = _find_descendants(root, "function_item")
+        methods = []
+        for fn in func_nodes:
+            if fn.parent and fn.parent.type == "source_file":
+                fv = _RustFunctionVisitor(fn, source_code)
+                fv.visit()
+                methods.append(fv.get_fact())
+        return methods

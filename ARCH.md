@@ -1,7 +1,8 @@
 # Architecture
 
-AGEO-Matcher implements a Three-Round Agentic Development Cycle:
+AGEO-Matcher implements a four-round Agentic Development Cycle:
 
+- **Round 0 (Ingester)**: Parses existing source code (Python, C++, Julia, Rust) into data-flow graphs, semantically chunks them into macro-atoms, and generates `@register_atom` wrappers, state models, ghost witnesses, and FFI bindings. Produces `IngestionBundle`s that feed directly into the Synthesizer.
 - **Round 1 (Architect)**: Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) via LangGraph, with PostgreSQL-backed persistence for checkpoint time-travel and forking.
 - **Round 2 (Hunter)**: Grounds each atomic CDG leaf into a verified library function in Lean 4/Mathlib or Coq/Rocq.
 - **Round 3 (Synthesizer)**: Assembles matched atoms into compilable skeleton files. Runs an optional ghost witness simulation pass (via `ageoa`) to catch structural mismatches before expensive compilation, then compiles, repairs, and exports.
@@ -11,6 +12,16 @@ AGEO-Matcher implements a Three-Round Agentic Development Cycle:
 **Deterministic -> Agentic -> Deterministic** sandwich (applies to all rounds):
 
 ```
+Existing Source Code (.py, .cpp, .jl, .rs)
+  |
+  v
+[Smart Ingester]        deterministic + agentic -- tree-sitter / AST extraction,
+  |                       LLM chunking, code generation, FFI binding emission
+  v
+ IngestionBundle (CDG + atoms + witnesses + state models)
+  |
+  v
+
 High-Level Goal
   |
   v
@@ -73,6 +84,65 @@ Four `typing.Protocol` interfaces define the contracts:
 - **`RetrievalAgent`** -- `find_match()`
 
 All component implementations are structural subtypes of these protocols. No inheritance required.
+
+### Smart Ingester (`ageom/ingester/`) -- Round 0
+
+Converts existing source code into stateless atom graphs compatible with the AGEO framework. Supports Python, C++, Julia, and Rust.
+
+#### Multi-language extraction
+
+The ingester dispatches by file extension via `_get_extractor()`:
+
+| Extension | Extractor | Parser |
+|-----------|-----------|--------|
+| `.py` | `PythonASTExtractor` | Python `ast` module |
+| `.cpp`, `.cc`, `.cxx`, `.h`, `.hpp` | `TreeSitterExtractor(CPP)` | tree-sitter |
+| `.jl` | `TreeSitterExtractor(JULIA)` | tree-sitter |
+| `.rs` | `TreeSitterExtractor(RUST)` | tree-sitter |
+
+All extractors implement the `BaseExtractor` protocol (`extract_class()`, `extract_procedural()`) and produce the same `RawDataFlowGraph` schema, so downstream phases are language-agnostic.
+
+#### Pipeline
+
+```
+Source file (.py / .cpp / .jl / .rs)
+  |
+  v
+Phase 1: Extraction          deterministic -- AST or tree-sitter parsing
+  |  RawDataFlowGraph (methods, fields, reads/writes, init chain, call graph)
+  v
+Phase 2: Semantic Chunking   agentic -- LLM groups methods into MacroAtomSpecs
+  |  ValidatedMacroPlan (macro_atoms, state_models, edges)
+  v
+Phase 3: Code Generation     deterministic -- @register_atom wrappers, state models,
+  |                             ghost witnesses, CDG, FFI bindings
+  v
+Verification Loops            mypy type checking + ghost simulation repair
+  |
+  v
+IngestionBundle (CDG + generated_atoms + generated_witnesses + match_results)
+```
+
+#### FFI binding generation
+
+For non-Python sources, the emitter appends FFI stubs so generated atoms can call into the original implementation:
+
+- **C++ / Rust**: `ctypes.CDLL` + function prototype stubs
+- **Julia**: `juliacall.Main` + `jl.eval()` call stubs
+
+#### Key modules
+
+| Module | Role |
+|--------|------|
+| `models.py` | `RawDataFlowGraph`, `MethodFact` (with `decorators`, `is_external`), `MacroAtomSpec`, `IngestionBundle` |
+| `base_extractor.py` | `BaseExtractor` protocol, `SourceLanguage` enum, `EXTENSION_MAP` |
+| `python_extractor.py` | `PythonASTExtractor` -- adapter wrapping existing `ast`-based extraction |
+| `treesitter_extractor.py` | `TreeSitterExtractor` -- C++/Julia/Rust class/struct extraction via tree-sitter |
+| `extractor.py` | Phase 1 Python implementation: `_SelfAccessVisitor`, config branches, SSA edges |
+| `chunker.py` | Phase 2: LLM-driven semantic chunking sub-graph |
+| `emitter.py` | Phase 3: `@register_atom` wrappers (with decorator passthrough), state models, ghost witnesses, CDG construction |
+| `ffi_emitter.py` | FFI binding generation for C++, Julia, and Rust |
+| `graph.py` | `IngesterAgent` state machine, `_get_extractor()` dispatch, verification/repair loops |
 
 ### Conceptual Dependency Agent (`ageom/architect/`) -- Round 1
 
@@ -366,19 +436,22 @@ If step 4 fails for all candidates, `ReformulateQuery` asks the LLM to analyze t
 ```
 ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
          |
-    +----+----+----------+
-    |         |          |
- indexer/   judge/    architect/        (faiss, transformers, lean-interact,
-    |         |          |               coqpyt, langgraph, psycopg)
-    +----+----+          |
-         |               |
-      hunter/            |              (pydantic-graph, anthropic, openai)
-         |               |
-         +-------+-------+
-                 |
-           synthesizer/                 (ageoa [optional])
-                 |
-               cli.py
+    +----+----+----------+-----------+
+    |         |          |           |
+ indexer/   judge/    architect/  ingester/    (faiss, transformers, lean-interact,
+    |         |          |           |          coqpyt, langgraph, psycopg,
+    +----+----+          |           |          tree-sitter, tree-sitter-language-pack)
+         |               |           |
+      hunter/            |           |         (pydantic-graph, anthropic, openai)
+         |               |           |
+         +-------+-------+-----+----+
+                 |              |
+           synthesizer/        |               (ageoa [optional])
+                 |             |
+               cli.py          |
+                               |
+                          IngestionBundle
+                     (CDG + atoms + witnesses)
 ```
 
 ```
@@ -393,6 +466,7 @@ ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
             [optional import]
                    |
            ageom/synthesizer/ghost_sim.py
+           ageom/ingester/emitter.py
 ```
 
-The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `ageoa` for ghost witness simulation. If `ageoa` is not installed, the synthesizer works normally without the simulation pass.
+The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The ingester is independent of the hunter/indexer/judge -- it produces `IngestionBundle`s (CDG + generated source + match results) that the Synthesizer can consume directly. For non-Python sources, the ingester uses tree-sitter for extraction and generates FFI bindings (ctypes for C++/Rust, juliacall for Julia). The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `ageoa` for ghost witness simulation. If `ageoa` is not installed, the synthesizer works normally without the simulation pass.

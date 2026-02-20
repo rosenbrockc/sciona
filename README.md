@@ -6,7 +6,9 @@ Given a predicate like `forall n m : Nat, n + m = m + n`, AGEO-Matcher searches 
 
 ## How it works
 
-The system implements a **Three-Round Agentic Development Cycle**:
+The system implements an **Agentic Development Cycle** with four rounds:
+
+**Round 0 -- Ingester** (Smart Ingester): parses existing source code (Python, C++, Julia, Rust) into `RawDataFlowGraph` models via language-specific extractors. Dispatches by file extension: Python uses `ast`, foreign languages use tree-sitter. The output feeds into LLM-driven semantic chunking, then deterministic code generation of `@register_atom` wrappers, Pydantic state models, ghost witnesses, and FFI bindings (ctypes for C++/Rust, juliacall for Julia). External atoms and decorator metadata are preserved through the pipeline.
 
 **Round 1 -- Architect** (Conceptual Dependency Agent): decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) using LangGraph, with PostgreSQL-backed checkpointing for time-travel and fork/resume.
 
@@ -178,6 +180,17 @@ ageom/
     graph.py          Graph assembly + HunterAgent
     llm.py            LLM clients (Anthropic Claude + Codex/OpenAI)
     prompts.py        Prompt templates
+  ingester/         Round 0 -- Smart Ingester (multi-language)
+    models.py         RawDataFlowGraph, MethodFact, MacroAtomSpec, IngestionBundle, ...
+    base_extractor.py BaseExtractor protocol, SourceLanguage enum, EXTENSION_MAP
+    python_extractor.py  PythonASTExtractor (wraps ast-based extraction)
+    treesitter_extractor.py  TreeSitterExtractor (C++, Julia via tree-sitter)
+    extractor.py      Phase 1: Python AST extraction (_SelfAccessVisitor, SSA edges)
+    chunker.py        Phase 2: LLM-driven semantic chunking into MacroAtomSpecs
+    emitter.py        Phase 3: code generation (@register_atom wrappers, state models, CDG, FFI)
+    ffi_emitter.py    FFI binding generation (ctypes for C++/Rust, juliacall for Julia)
+    graph.py          IngesterAgent state machine + extractor dispatch (_get_extractor)
+    prompts.py        LLM prompt templates for chunker/repair
   synthesizer/      Round 3 -- Assembly + Verification
     pipeline.py       assemble_and_check() orchestration (with ghost simulation pass)
     ghost_sim.py      CDG -> SimNode conversion, run_ghost_simulation()

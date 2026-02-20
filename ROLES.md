@@ -7,6 +7,46 @@ MatchResult, SkeletonFile).
 
 ---
 
+## Smart Ingester
+
+**Problem solved:** Extracting algorithmic structure from existing source code in
+multiple languages and converting it into the same atom graph format used by the
+rest of the pipeline.
+
+**What it does:** A three-phase pipeline (Extract -> Chunk -> Emit) that ingests
+existing classes/structs/modules and produces `IngestionBundle`s:
+
+1. **Phase 1 -- Extraction**: Language-specific parsing via `BaseExtractor`
+   protocol. Dispatches by file extension: Python uses `ast`, C++/Julia/Rust use
+   tree-sitter. Produces a `RawDataFlowGraph` with method facts, field
+   reads/writes, init chains, call graphs, and SSA edges. All extractors produce
+   the same schema -- downstream phases are language-agnostic.
+
+2. **Phase 2 -- Semantic Chunking**: LLM groups methods into `MacroAtomSpec`s,
+   hoists cross-window state into `StateModelSpec`s, and defines dependency edges.
+   A critic validates attribute coverage.
+
+3. **Phase 3 -- Code Generation**: Deterministic emission of `@register_atom`
+   wrappers (with decorator passthrough and external atom support), Pydantic state
+   models, ghost witness functions, CDG nodes/edges, and match results. For
+   non-Python sources, appends FFI bindings (ctypes for C++/Rust, juliacall for
+   Julia).
+
+Verification loops run mypy type checking and ghost simulation, with LLM-assisted
+repair on failure.
+
+**Interacts with:**
+- **Synthesizer** -- `IngestionBundle` output is format-identical to what the
+  Synthesizer expects (CDG + atoms + witnesses + match results)
+- **Ghost Registry** (ageoa) -- generated witnesses follow the `@register_atom`
+  pattern
+
+**Key files:** `ageom/ingester/graph.py`, `ageom/ingester/base_extractor.py`,
+`ageom/ingester/treesitter_extractor.py`, `ageom/ingester/emitter.py`,
+`ageom/ingester/ffi_emitter.py`
+
+---
+
 ## Orchestrator
 
 **Problem solved:** Coordinating multi-round feedback between decomposition and
@@ -278,3 +318,26 @@ Supports export targets: LEAN_LIB, COQ_LIB, PYTHON_PKG, C_HEADER, RUST_FFI.
 
 **Key files:** `ageom/synthesizer/extractor.py`,
 `ageom/synthesizer/certificate.py`
+
+---
+
+## FFI Emitter (ingester)
+
+**Problem solved:** Generating Python-callable wrappers for foreign-language
+implementations so that CDG output remains format-identical to pure Python.
+
+**What it does:** Given a list of `MacroAtomSpec`s and a source language, emits a
+complete Python module with:
+- **C++ / Rust**: `ctypes.CDLL` loading, `argtypes`/`restype` declarations, and
+  call-through wrapper functions
+- **Julia**: `juliacall.Main` imports and `jl.eval()` call stubs
+
+These stubs are appended to the generated atoms module by the emitter when
+`source_language != "python"`.
+
+**Interacts with:**
+- **Emitter** (Phase 3) -- called to append FFI stubs to generated atom wrappers
+- **TreeSitterExtractor** -- the upstream extractor that determines which language
+  the FFI stubs target
+
+**Key files:** `ageom/ingester/ffi_emitter.py`
