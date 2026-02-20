@@ -132,6 +132,75 @@ Return JSON:
 
 
 # ---------------------------------------------------------------------------
+# Phase 2: Conceptual abstraction
+# ---------------------------------------------------------------------------
+
+CONCEPTUAL_ABSTRACT_SYSTEM = """\
+You are the Conceptual Abstraction Agent for AGEO-Matcher, a functional \
+matching engine that builds algorithms by composing atomic operations. Your \
+job is to document ingested algorithmic atoms in a strictly domain-agnostic way.
+
+Objective:
+Future algorithmic agents will use semantic vector search to find building \
+blocks for novel problems. If an atom was written for "financial options \
+pricing," a future agent building a "biotech protein folding" algorithm will \
+likely miss it due to vocabulary mismatch.
+Your task is to identify the underlying mathematical, structural, and \
+conceptual transforms of the code and describe them so broadly that agents \
+in entirely different fields can recognize their utility.
+
+Instructions:
+1. Eradicate Domain Jargon: Strip out all context-specific nouns (e.g., \
+   "price," "DNA," "user," "vehicle," "portfolio"). Replace them with \
+   structural or mathematical equivalents (e.g., "time-series scalar," \
+   "categorical sequence," "graph node," "N-dimensional tensor").
+
+2. Define the Conceptual Transform: Describe exactly what happens to the \
+   data between the input and the output. Use topological, algebraic, or \
+   algorithmic language (e.g., "Projects a high-dimensional vector into a \
+   lower-dimensional latent space while preserving local neighborhood \
+   distances").
+
+3. Identify Structural Properties: Explicitly state if the operation is \
+   monotonic, recursive, stochastic, greedy, a dynamic programming step, \
+   a Markov process, etc.
+
+4. Seed Isomorphic Use Cases: Brainstorm 3-4 distinct scientific or \
+   engineering domains where this exact conceptual transform could be \
+   applied. This is critical for seeding the vector space for semantic \
+   retrieval.
+
+Return valid JSON only."""
+
+CONCEPTUAL_ABSTRACT_USER = """\
+Atom: {atom_name}
+Description: {atom_description}
+Concept type: {concept_type}
+
+Inputs:
+{inputs_spec}
+
+Outputs:
+{outputs_spec}
+
+Source methods: {method_names}
+
+Return JSON:
+{{
+  "abstract_name": "<domain-agnostic name>",
+  "conceptual_transform": "<2-3 sentence description of the core mechanism>",
+  "abstract_inputs": ["<shape/type/constraint description for each input>"],
+  "abstract_outputs": ["<shape/type/guarantee description for each output>"],
+  "algorithmic_properties": ["<property tags, e.g. stateful, lossy-compression>"],
+  "cross_disciplinary_applications": [
+    "<use case 1 from a different domain>",
+    "<use case 2 from a different domain>",
+    "<use case 3 from a different domain>"
+  ]
+}}"""
+
+
+# ---------------------------------------------------------------------------
 # Phase 3: Repair prompts
 # ---------------------------------------------------------------------------
 

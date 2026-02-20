@@ -18,6 +18,7 @@ from typing_extensions import TypedDict
 from ageom.hunter.llm import LLMClient
 from ageom.architect.models import ConceptType, IOSpec
 from ageom.ingester.models import (
+    ConceptualProfile,
     DependencyEdge,
     MacroAtomSpec,
     ProposedMacroPlan,
@@ -27,6 +28,8 @@ from ageom.ingester.models import (
     ValidatedMacroPlan,
 )
 from ageom.ingester.prompts import (
+    CONCEPTUAL_ABSTRACT_SYSTEM,
+    CONCEPTUAL_ABSTRACT_USER,
     HOIST_STATE_SYSTEM,
     HOIST_STATE_USER,
     SEMANTIC_CHUNK_SYSTEM,
@@ -448,6 +451,95 @@ async def prepare_chunk_retry(
     return {"retry_count": state.get("retry_count", 0) + 1}
 
 
+def _format_io_specs(specs: list) -> str:
+    """Format IOSpec list for the abstraction prompt."""
+    if not specs:
+        return "(none)"
+    return "\n".join(
+        f"  - {s.name}: {s.type_desc}"
+        + (f" ({s.constraints})" if s.constraints else "")
+        for s in specs
+    )
+
+
+def _build_enriched_description(
+    original: str, profile: ConceptualProfile
+) -> str:
+    """Merge a ConceptualProfile into an atom description.
+
+    The profile JSON is appended as a fenced block so downstream consumers
+    (the Hunter's FAISS index, CDG node descriptions, generated docstrings)
+    all benefit from the domain-agnostic vocabulary.
+    """
+    profile_json = json.dumps(profile.model_dump(), indent=2)
+    return f"{original}\n\n<!-- conceptual_profile -->\n{profile_json}\n<!-- /conceptual_profile -->"
+
+
+def _parse_conceptual_profile(raw: dict) -> ConceptualProfile:
+    """Parse a raw LLM JSON response into a ConceptualProfile."""
+    return ConceptualProfile(
+        abstract_name=raw.get("abstract_name", ""),
+        conceptual_transform=raw.get("conceptual_transform", ""),
+        abstract_inputs=raw.get("abstract_inputs", []),
+        abstract_outputs=raw.get("abstract_outputs", []),
+        algorithmic_properties=raw.get("algorithmic_properties", []),
+        cross_disciplinary_applications=raw.get(
+            "cross_disciplinary_applications", []
+        ),
+    )
+
+
+async def abstract_atoms(
+    state: ChunkerState, config: RunnableConfig
+) -> dict[str, Any]:
+    """LLM call: generate domain-agnostic conceptual profiles for each atom.
+
+    Runs the Conceptual Abstraction Agent on every atom in the validated
+    plan.  The resulting profile is stored on each atom's
+    ``conceptual_profile`` field and merged into its ``description`` so
+    the Hunter's FAISS index picks up the cross-domain vocabulary.
+    """
+    deps: ChunkerDeps = config["configurable"]["deps"]
+    validated = state["validated_plan"]
+    plan = validated.plan
+
+    enriched_atoms: list[MacroAtomSpec] = []
+
+    for atom in plan.macro_atoms:
+        user_prompt = CONCEPTUAL_ABSTRACT_USER.format(
+            atom_name=atom.name,
+            atom_description=atom.description,
+            concept_type=atom.concept_type.value,
+            inputs_spec=_format_io_specs(atom.inputs),
+            outputs_spec=_format_io_specs(atom.outputs),
+            method_names=", ".join(atom.method_names),
+        )
+
+        try:
+            response = await deps.llm.complete(
+                CONCEPTUAL_ABSTRACT_SYSTEM, user_prompt
+            )
+            raw = json.loads(response)
+            profile = _parse_conceptual_profile(raw)
+        except Exception as exc:
+            logger.warning(
+                "Conceptual abstraction failed for %s: %s", atom.name, exc
+            )
+            profile = ConceptualProfile(abstract_name=atom.name)
+
+        enriched = atom.model_copy(update={
+            "conceptual_profile": profile,
+            "description": _build_enriched_description(
+                atom.description, profile
+            ),
+        })
+        enriched_atoms.append(enriched)
+
+    new_plan = plan.model_copy(update={"macro_atoms": enriched_atoms})
+    new_validated = validated.model_copy(update={"plan": new_plan})
+    return {"validated_plan": new_validated}
+
+
 # ---------------------------------------------------------------------------
 # Routing
 # ---------------------------------------------------------------------------
@@ -467,7 +559,19 @@ def route_after_critic(state: ChunkerState) -> str:
 
 
 def build_chunker_graph() -> StateGraph:
-    """Construct the Phase 2 semantic chunking sub-graph."""
+    """Construct the Phase 2 semantic chunking sub-graph.
+
+    Flow::
+
+        propose_macro_atoms -> flatten_config -> hoist_state
+        -> search_sub_atoms -> critic_validate
+        -> [abstract_atoms -> END | prepare_chunk_retry -> propose_macro_atoms]
+
+    The ``abstract_atoms`` step runs the Conceptual Abstraction Agent on
+    each atom after the plan is finalized (critic passed or budget exhausted),
+    enriching descriptions with domain-agnostic profiles for cross-field
+    semantic retrieval.
+    """
     graph = StateGraph(ChunkerState)
 
     graph.add_node("propose_macro_atoms", propose_macro_atoms)
@@ -476,6 +580,7 @@ def build_chunker_graph() -> StateGraph:
     graph.add_node("search_sub_atoms", search_sub_atoms)
     graph.add_node("critic_validate", critic_validate)
     graph.add_node("prepare_chunk_retry", prepare_chunk_retry)
+    graph.add_node("abstract_atoms", abstract_atoms)
 
     graph.set_entry_point("propose_macro_atoms")
     graph.add_edge("propose_macro_atoms", "flatten_config")
@@ -487,11 +592,12 @@ def build_chunker_graph() -> StateGraph:
         "critic_validate",
         route_after_critic,
         {
-            "end": END,
-            "end_best_effort": END,
+            "end": "abstract_atoms",
+            "end_best_effort": "abstract_atoms",
             "retry": "prepare_chunk_retry",
         },
     )
+    graph.add_edge("abstract_atoms", END)
     graph.add_edge("prepare_chunk_retry", "propose_macro_atoms")
 
     return graph
