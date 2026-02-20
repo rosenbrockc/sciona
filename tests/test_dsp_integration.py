@@ -29,9 +29,10 @@ class TestDspConceptTypes:
         assert "signal_filter" in names
         assert "graph_signal_processing" in names
 
-    def test_custom_still_last(self):
+    def test_custom_and_external_tool_are_last(self):
         members = list(ConceptType)
-        assert members[-1] == ConceptType.CUSTOM
+        assert members[-2] == ConceptType.CUSTOM
+        assert members[-1] == ConceptType.EXTERNAL_TOOL
 
 
 class TestDspSkeletons:

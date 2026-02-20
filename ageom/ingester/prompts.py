@@ -29,7 +29,31 @@ Rules:
 6. Choose concept_type from: sorting, searching, divide_and_conquer, greedy, \
    dynamic_programming, graph_traversal, graph_optimization, string_matching, \
    geometry, arithmetic, number_theory, combinatorics, algebra, analysis, \
-   set_theory, signal_transform, signal_filter, graph_signal_processing, custom.
+   set_theory, signal_transform, signal_filter, graph_signal_processing, \
+   sampler, log_prob, posterior_update, variational_inference, prior_init, \
+   custom.
+
+Bayesian / probabilistic inference patterns:
+- **prior_init**: Methods that initialize prior distributions, set hyperparameters, \
+  or create initial parameter distributions. Look for: ``dist = Normal(...)``, \
+  ``prior = Dirichlet(alpha)``, ``self.mu_0``, ``self.sigma_0``.
+- **log_prob**: Methods that evaluate log-probability, log-likelihood, or score \
+  functions. Look for: ``log_pdf``, ``logp``, ``log_likelihood``, \
+  ``-0.5 * (x - mu)**2 / sigma**2``, ``scipy.stats.*.logpdf``.
+- **sampler**: Methods that draw samples from distributions or advance MCMC chains. \
+  Look for: ``np.random.``, ``rng.normal``, ``jax.random.``, Metropolis-Hastings \
+  accept/reject logic (``alpha = min(1, p_new/p_old)``), HMC leapfrog steps, \
+  Gibbs conditional sampling.
+- **posterior_update**: Methods that perform Bayesian updates — conjugate updates \
+  (``mu_n = (sigma_0^2 * x_bar + sigma^2 * mu_0) / ...``), particle filter \
+  reweighting, Kalman filter update steps.
+- **variational_inference**: Methods that compute ELBO, KL divergence, \
+  reparameterization trick (``z = mu + sigma * eps``), or optimize variational \
+  parameters.
+
+When you detect these patterns, group them into atoms with the corresponding \
+concept_type. Methods managing RNG state (seed, key splitting) should be grouped \
+with the sampler atom that consumes them.
 
 Return valid JSON only."""
 
@@ -57,7 +81,7 @@ Return JSON:
       "inputs": [{{"name": "<param>", "type_desc": "<type>", "constraints": ""}}],
       "outputs": [{{"name": "<output>", "type_desc": "<type>", "constraints": ""}}],
       "config_params": ["<options.X>", ...],
-      "concept_type": "<category>",
+      "concept_type": "<category from rules above>",
       "is_optional": false
     }}
   ],

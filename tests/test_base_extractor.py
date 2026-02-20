@@ -47,8 +47,11 @@ class TestExtensionMap:
     def test_julia(self):
         assert EXTENSION_MAP[".jl"] == SourceLanguage.JULIA
 
+    def test_rust(self):
+        assert EXTENSION_MAP[".rs"] == SourceLanguage.RUST
+
     def test_unknown_not_in_map(self):
-        assert ".rs" not in EXTENSION_MAP
+        assert ".go" not in EXTENSION_MAP
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +99,10 @@ class TestGetExtractor:
         ext = _get_extractor("header.hpp")
         assert isinstance(ext, TreeSitterExtractor)
 
-    def test_unknown_defaults_to_python(self):
+    def test_rust_dispatch(self):
         ext = _get_extractor("module.rs")
+        assert isinstance(ext, TreeSitterExtractor)
+
+    def test_unknown_defaults_to_python(self):
+        ext = _get_extractor("module.go")
         assert isinstance(ext, PythonASTExtractor)

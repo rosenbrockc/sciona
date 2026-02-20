@@ -28,6 +28,7 @@ from ageom.ingester.models import (
     ProposedMacroPlan,
     RawDataFlowGraph,
     StateModelSpec,
+    StochasticTraceSpec,
     ValidatedMacroPlan,
 )
 from ageom.ingester.prompts import (
@@ -46,6 +47,15 @@ from ageom.types import (
 
 
 logger = logging.getLogger(__name__)
+
+# Bayesian concept types that get specialized witness templates
+_BAYESIAN_CONCEPT_TYPES = frozenset({
+    ConceptType.SAMPLER,
+    ConceptType.LOG_PROB,
+    ConceptType.POSTERIOR_UPDATE,
+    ConceptType.VARIATIONAL_INFERENCE,
+    ConceptType.PRIOR_INIT,
+})
 
 
 # ---------------------------------------------------------------------------
@@ -175,14 +185,22 @@ async def generate_opaque_witnesses(
 
 
 def generate_state_models(specs: list[StateModelSpec]) -> str:
-    """Generate Pydantic BaseModel classes from state model specs."""
+    """Generate Pydantic BaseModel classes from state model specs.
+
+    When a spec has a ``stochastic`` field, injects RNG key and MCMC trace
+    fields with appropriate types and defaults.
+    """
     if not specs:
         return ""
+
+    has_stochastic = any(s.stochastic is not None for s in specs)
 
     lines = [
         '"""Auto-generated Pydantic state models for cross-window state."""',
         "",
         "from __future__ import annotations",
+        "",
+        "from typing import Any",
         "",
         "import torch",
         "import jax",
@@ -195,6 +213,12 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
         "",
     ]
 
+    if has_stochastic:
+        lines.extend([
+            "import numpy as np",
+            "",
+        ])
+
     for spec in specs:
         if spec.docstring:
             lines.append(f"class {spec.model_name}(BaseModel):")
@@ -204,11 +228,34 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
 
         lines.append("    model_config = ConfigDict(arbitrary_types_allowed=True)")
         lines.append("")
-        if not spec.fields:
+        if not spec.fields and spec.stochastic is None:
             lines.append("    pass")
         else:
             for field_name, field_type in spec.fields:
                 lines.append(f"    {field_name}: {field_type} | None = Field(default=None)")
+
+            # Inject stochastic state fields
+            if spec.stochastic is not None:
+                st = spec.stochastic
+                lines.append("")
+                lines.append("    # --- Stochastic state (auto-generated) ---")
+                lines.append(f"    {st.rng_field}: Any = Field(")
+                lines.append(f"        default=None,")
+                lines.append(f'        description="RNG state ({st.rng_type}). '
+                             f'Split before each stochastic atom.",')
+                lines.append(f"    )")
+
+                if st.trace_field:
+                    dims_str = str(st.trace_param_dims)
+                    lines.append(f"    {st.trace_field}: Any = Field(")
+                    lines.append(f"        default=None,")
+                    lines.append(f'        description="MCMC trace. '
+                                 f'param_dims={dims_str}, '
+                                 f'chains={st.chain_count}, '
+                                 f'warmup={st.warmup_steps}",')
+                    lines.append(f"    )")
+                    lines.append(f"    mcmc_step_count: int = Field(default=0)")
+                    lines.append(f"    mcmc_accept_rate: float = Field(default=0.0)")
         lines.append("")
 
     return "\n".join(lines)
@@ -426,6 +473,94 @@ def generate_stateful_wrappers(
 # ---------------------------------------------------------------------------
 
 
+def _generate_bayesian_witness(
+    atom: MacroAtomSpec,
+    fn_name: str,
+    witness_name: str,
+    has_state: bool,
+) -> list[str]:
+    """Generate a specialized witness for a Bayesian atom.
+
+    Routes to the appropriate witness template based on concept_type.
+    """
+    lines: list[str] = []
+    ct = atom.concept_type
+
+    if ct == ConceptType.PRIOR_INIT:
+        params = ["event_shape: tuple[int, ...]", "family: str = \"normal\""]
+        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:")
+        lines.append(f'    """Ghost witness for prior init: {atom.name}."""')
+        lines.append(f"    return AbstractDistribution(")
+        lines.append(f"        family=family,")
+        lines.append(f"        event_shape=event_shape,")
+        lines.append(f"    )")
+
+    elif ct == ConceptType.LOG_PROB:
+        params = ["dist: AbstractDistribution", "samples: AbstractArray"]
+        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractScalar:")
+        lines.append(f'    """Ghost witness for log-prob: {atom.name}."""')
+        lines.append(f"    n_event = len(dist.event_shape)")
+        lines.append(f"    if n_event > 0:")
+        lines.append(f"        sample_tail = samples.shape[-n_event:]")
+        lines.append(f"        if sample_tail != dist.event_shape:")
+        lines.append(f"            raise ValueError(")
+        lines.append(f'                f"Sample dims {{sample_tail}} vs event_shape {{dist.event_shape}}"')
+        lines.append(f"            )")
+        lines.append(f'    return AbstractScalar(dtype="float64", max_val=0.0)')
+
+    elif ct == ConceptType.SAMPLER:
+        params = [
+            "trace: AbstractMCMCTrace",
+            "target: AbstractDistribution",
+            "rng: AbstractRNGState",
+        ]
+        ret = "tuple[AbstractMCMCTrace, AbstractRNGState]"
+        lines.append(f"def {witness_name}({', '.join(params)}) -> {ret}:")
+        lines.append(f'    """Ghost witness for MCMC sampler: {atom.name}."""')
+        lines.append(f"    if trace.param_dims != target.event_shape:")
+        lines.append(f"        raise ValueError(")
+        lines.append(f'            f"param_dims {{trace.param_dims}} vs '
+                      f'event_shape {{target.event_shape}}"')
+        lines.append(f"        )")
+        lines.append(f"    return trace.step(accepted=True), rng.advance(n_draws=1)")
+
+    elif ct == ConceptType.POSTERIOR_UPDATE:
+        params = [
+            "prior: AbstractDistribution",
+            "likelihood: AbstractDistribution",
+            "data_shape: tuple[int, ...]",
+        ]
+        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:")
+        lines.append(f'    """Ghost witness for posterior update: {atom.name}."""')
+        lines.append(f"    prior.assert_conjugate_to(likelihood)")
+        lines.append(f"    return AbstractDistribution(")
+        lines.append(f"        family=prior.family,")
+        lines.append(f"        event_shape=prior.event_shape,")
+        lines.append(f"        batch_shape=prior.batch_shape,")
+        lines.append(f"        support_lower=prior.support_lower,")
+        lines.append(f"        support_upper=prior.support_upper,")
+        lines.append(f"        is_discrete=prior.is_discrete,")
+        lines.append(f"    )")
+
+    elif ct == ConceptType.VARIATIONAL_INFERENCE:
+        params = [
+            "q_dist: AbstractDistribution",
+            "p_dist: AbstractDistribution",
+            "n_samples: int = 1",
+        ]
+        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractScalar:")
+        lines.append(f'    """Ghost witness for VI ELBO: {atom.name}."""')
+        lines.append(f"    if q_dist.event_shape != p_dist.event_shape:")
+        lines.append(f"        raise ValueError(")
+        lines.append(f'            f"q event_shape {{q_dist.event_shape}} vs '
+                      f'p event_shape {{p_dist.event_shape}}"')
+        lines.append(f"        )")
+        lines.append(f'    return AbstractScalar(dtype="float64")')
+
+    lines.append("")
+    return lines
+
+
 def generate_ghost_witnesses(
     macro_atoms: list[MacroAtomSpec],
     state_models: list[StateModelSpec] | None = None,
@@ -438,8 +573,13 @@ def generate_ghost_witnesses(
     When *state_models* is non-empty, each witness gains a
     ``state: AbstractSignal`` parameter and returns
     ``tuple[AbstractSignal, AbstractSignal]`` (result, state pass-through).
+
+    Bayesian atoms (concept_type in SAMPLER, LOG_PROB, POSTERIOR_UPDATE,
+    VARIATIONAL_INFERENCE, PRIOR_INIT) get specialized witnesses that use
+    AbstractDistribution, AbstractRNGState, and AbstractMCMCTrace.
     """
     has_state = bool(state_models)
+    has_bayesian = any(a.concept_type in _BAYESIAN_CONCEPT_TYPES for a in macro_atoms)
 
     lines = [
         '"""Auto-generated ghost witness functions for abstract simulation."""',
@@ -455,10 +595,20 @@ def generate_ghost_witnesses(
         "",
         "try:",
         "    from ageoa.ghost.abstract import AbstractSignal, AbstractArray, AbstractScalar",
+    ]
+    if has_bayesian:
+        lines.append(
+            "    from ageoa.ghost.abstract import ("
+        )
+        lines.append("        AbstractDistribution,")
+        lines.append("        AbstractMCMCTrace,")
+        lines.append("        AbstractRNGState,")
+        lines.append("    )")
+    lines.extend([
         "except ImportError:",
         "    pass",
         "",
-    ]
+    ])
 
     name_map: dict[str, str] = {}
 
@@ -469,7 +619,14 @@ def generate_ghost_witnesses(
         witness_name = f"witness_{fn_name}"
         name_map[atom.name] = witness_name
 
-        # Build parameter list
+        # Bayesian atoms get specialized witness templates
+        if atom.concept_type in _BAYESIAN_CONCEPT_TYPES:
+            lines.extend(_generate_bayesian_witness(
+                atom, fn_name, witness_name, has_state
+            ))
+            continue
+
+        # Default DSP/generic witness
         params = []
         for inp in atom.inputs:
             params.append(f"{inp.name}: AbstractSignal")

@@ -50,8 +50,12 @@ class TestFFIImports:
         assert "juliacall" in result
         assert "Main" in result
 
-    def test_unknown_returns_empty(self):
+    def test_rust_imports(self):
         result = generate_ffi_imports("rust")
+        assert "ctypes" in result
+
+    def test_unknown_returns_empty(self):
+        result = generate_ffi_imports("fortran")
         assert result == ""
 
 
@@ -85,9 +89,15 @@ class TestFFIStubs:
         result = generate_ffi_stub(atom, "julia")
         assert "def test_atom_ffi():" in result
 
-    def test_unknown_language_returns_empty(self):
+    def test_rust_stub(self):
         atom = _make_atom()
         result = generate_ffi_stub(atom, "rust")
+        assert "def test_atom_ffi(x):" in result
+        assert "ctypes.CDLL" in result
+
+    def test_unknown_language_returns_empty(self):
+        atom = _make_atom()
+        result = generate_ffi_stub(atom, "fortran")
         assert result == ""
 
 

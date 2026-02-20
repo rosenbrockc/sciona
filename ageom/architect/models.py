@@ -29,6 +29,12 @@ class ConceptType(str, Enum):
     SIGNAL_FILTER = "signal_filter"
     GRAPH_SIGNAL_PROCESSING = "graph_signal_processing"
     NEURAL_NETWORK = "neural_network"
+    # Bayesian / probabilistic inference
+    SAMPLER = "sampler"
+    LOG_PROB = "log_prob"
+    POSTERIOR_UPDATE = "posterior_update"
+    VARIATIONAL_INFERENCE = "variational_inference"
+    PRIOR_INIT = "prior_init"
     CUSTOM = "custom"
     EXTERNAL_TOOL = "external_tool"
 

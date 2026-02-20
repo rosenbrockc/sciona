@@ -85,8 +85,8 @@ def _cpp_stub(
         f"def {fn_name}_ffi({params}):",
         f'    """FFI bridge to C++ implementation of {atom.name}."""',
         f'    _lib = ctypes.CDLL("./{fn_name}.so")',
-        f"    _func_name = atom.method_names[0] if atom.method_names else fn_name
-    _func = _lib[_func_name]",
+        f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
+        f"    _func = _lib[_func_name]",
     ]
 
     # Set argtypes
@@ -151,8 +151,8 @@ def _rust_stub(
         f'    """FFI bridge to Rust implementation of {atom.name}."""',
         f'    # Ensure the Rust library is compiled with #[no_mangle] and pub extern "C"',
         f'    _lib = ctypes.CDLL("./target/release/librust_robotics.so")',
-        f"    _func_name = atom.method_names[0] if atom.method_names else fn_name
-    _func = _lib[_func_name]",
+        f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
+        f"    _func = _lib[_func_name]",
     ]
 
     # Set argtypes

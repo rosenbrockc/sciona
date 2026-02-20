@@ -97,6 +97,39 @@ class MacroAtomSpec(BaseModel):
     is_external: bool = False
 
 
+class StochasticTraceSpec(BaseModel):
+    """Specification for stochastic state persisted across atom executions.
+
+    Captures the metadata needed to thread RNG keys and MCMC chain state
+    through a Bayesian pipeline without breaking functional purity.
+    """
+
+    rng_field: str = Field(
+        default="rng_key",
+        description="State field name for the RNG key/seed",
+    )
+    rng_type: str = Field(
+        default="jax.random.PRNGKey",
+        description="Type annotation for the RNG field",
+    )
+    trace_field: str = Field(
+        default="",
+        description="State field name for the MCMC trace (empty if not MCMC)",
+    )
+    trace_param_dims: tuple[int, ...] = Field(
+        default=(),
+        description="Parameter dimensions for the trace, e.g. (3,) for 3D",
+    )
+    chain_count: int = Field(
+        default=1, ge=1,
+        description="Number of parallel MCMC chains",
+    )
+    warmup_steps: int = Field(
+        default=0, ge=0,
+        description="Number of warmup/burn-in steps",
+    )
+
+
 class StateModelSpec(BaseModel):
     """Specification for a Pydantic state model (cross-window state)."""
 
@@ -104,6 +137,10 @@ class StateModelSpec(BaseModel):
     fields: list[tuple[str, str]] = Field(default_factory=list)
     source_attrs: list[str] = Field(default_factory=list)
     docstring: str = ""
+    stochastic: StochasticTraceSpec | None = Field(
+        default=None,
+        description="Stochastic trace spec for Bayesian state models",
+    )
 
 
 class SubAtomRef(BaseModel):
