@@ -70,7 +70,6 @@ class FAISSStore:
 
     def add(self, entries: list[IndexEntry]) -> None:
         """Add entries to the index."""
-        import faiss
 
         if not entries:
             return

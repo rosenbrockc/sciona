@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -22,9 +21,6 @@ from ageom.synthesizer.ghost_sim import (
     run_ghost_simulation,
 )
 
-_requires_ageoa = pytest.mark.skipif(
-    not _GHOST_AVAILABLE, reason="ageoa package not installed"
-)
 from ageom.types import (
     CandidateMatch,
     Declaration,
@@ -34,6 +30,9 @@ from ageom.types import (
     VerificationResult,
 )
 
+_requires_ageoa = pytest.mark.skipif(
+    not _GHOST_AVAILABLE, reason="ageoa package not installed"
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -68,7 +67,10 @@ class TestExtractAtomName:
         assert _extract_atom_name("signal.butter") == "butter"
 
     def test_dotted_module(self):
-        assert _extract_atom_name("scipy.sparse.csgraph.graph_laplacian") == "graph_laplacian"
+        assert (
+            _extract_atom_name("scipy.sparse.csgraph.graph_laplacian")
+            == "graph_laplacian"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -145,8 +147,18 @@ class TestRunGhostSimulationFFT:
                 concept_type=ConceptType.SIGNAL_TRANSFORM,
                 status=NodeStatus.ATOMIC,
                 matched_primitive="fft",
-                inputs=[IOSpec(name="sig", type_desc="np.ndarray", constraints="time domain")],
-                outputs=[IOSpec(name="spectrum", type_desc="np.ndarray", constraints="freq domain")],
+                inputs=[
+                    IOSpec(
+                        name="sig", type_desc="np.ndarray", constraints="time domain"
+                    )
+                ],
+                outputs=[
+                    IOSpec(
+                        name="spectrum",
+                        type_desc="np.ndarray",
+                        constraints="freq domain",
+                    )
+                ],
                 depth=1,
             ),
             AlgorithmicNode(
@@ -156,8 +168,18 @@ class TestRunGhostSimulationFFT:
                 concept_type=ConceptType.SIGNAL_TRANSFORM,
                 status=NodeStatus.ATOMIC,
                 matched_primitive="ifft",
-                inputs=[IOSpec(name="sig", type_desc="np.ndarray", constraints="freq domain")],
-                outputs=[IOSpec(name="reconstructed", type_desc="np.ndarray", constraints="time domain")],
+                inputs=[
+                    IOSpec(
+                        name="sig", type_desc="np.ndarray", constraints="freq domain"
+                    )
+                ],
+                outputs=[
+                    IOSpec(
+                        name="reconstructed",
+                        type_desc="np.ndarray",
+                        constraints="time domain",
+                    )
+                ],
                 depth=1,
             ),
         ]
@@ -217,8 +239,18 @@ class TestRunGhostSimulationDomainMismatch:
                 concept_type=ConceptType.SIGNAL_TRANSFORM,
                 status=NodeStatus.ATOMIC,
                 matched_primitive="fft",
-                inputs=[IOSpec(name="sig", type_desc="np.ndarray", constraints="time domain")],
-                outputs=[IOSpec(name="spectrum", type_desc="np.ndarray", constraints="freq domain")],
+                inputs=[
+                    IOSpec(
+                        name="sig", type_desc="np.ndarray", constraints="time domain"
+                    )
+                ],
+                outputs=[
+                    IOSpec(
+                        name="spectrum",
+                        type_desc="np.ndarray",
+                        constraints="freq domain",
+                    )
+                ],
                 depth=1,
             ),
             AlgorithmicNode(
@@ -228,8 +260,18 @@ class TestRunGhostSimulationDomainMismatch:
                 concept_type=ConceptType.SIGNAL_TRANSFORM,
                 status=NodeStatus.ATOMIC,
                 matched_primitive="fft",
-                inputs=[IOSpec(name="sig", type_desc="np.ndarray", constraints="freq domain")],
-                outputs=[IOSpec(name="spectrum2", type_desc="np.ndarray", constraints="freq domain")],
+                inputs=[
+                    IOSpec(
+                        name="sig", type_desc="np.ndarray", constraints="freq domain"
+                    )
+                ],
+                outputs=[
+                    IOSpec(
+                        name="spectrum2",
+                        type_desc="np.ndarray",
+                        constraints="freq domain",
+                    )
+                ],
                 depth=1,
             ),
         ]
@@ -334,9 +376,17 @@ class TestRunGhostSimulationFilter:
                 matched_primitive="lfilter",
                 inputs=[
                     IOSpec(name="coefficients", type_desc="Filter coefficients"),
-                    IOSpec(name="sig", type_desc="np.ndarray", constraints="time domain"),
+                    IOSpec(
+                        name="sig", type_desc="np.ndarray", constraints="time domain"
+                    ),
                 ],
-                outputs=[IOSpec(name="filtered", type_desc="np.ndarray", constraints="time domain")],
+                outputs=[
+                    IOSpec(
+                        name="filtered",
+                        type_desc="np.ndarray",
+                        constraints="time domain",
+                    )
+                ],
                 depth=1,
             ),
         ]
@@ -381,7 +431,11 @@ class TestRunGhostSimulationMixed:
                 concept_type=ConceptType.SIGNAL_TRANSFORM,
                 status=NodeStatus.ATOMIC,
                 matched_primitive="fft",
-                inputs=[IOSpec(name="sig", type_desc="np.ndarray", constraints="time domain")],
+                inputs=[
+                    IOSpec(
+                        name="sig", type_desc="np.ndarray", constraints="time domain"
+                    )
+                ],
                 outputs=[IOSpec(name="spectrum", type_desc="np.ndarray")],
                 depth=0,
             ),

@@ -3,9 +3,7 @@
 import pytest
 
 from ageom.architect.models import (
-    AlgorithmicNode,
     ConceptType,
-    DependencyEdge,
     NodeStatus,
 )
 from ageom.architect.skeletons import (
@@ -61,12 +59,12 @@ class TestSkeletonWellFormedness:
         skel = SKELETON_TEMPLATES[concept_type]
         node_ids = {n.node_id for n in skel.template_nodes}
         for edge in skel.template_edges:
-            assert edge.source_id in node_ids, (
-                f"Edge source {edge.source_id} not in nodes of {skel.name}"
-            )
-            assert edge.target_id in node_ids, (
-                f"Edge target {edge.target_id} not in nodes of {skel.name}"
-            )
+            assert (
+                edge.source_id in node_ids
+            ), f"Edge source {edge.source_id} not in nodes of {skel.name}"
+            assert (
+                edge.target_id in node_ids
+            ), f"Edge target {edge.target_id} not in nodes of {skel.name}"
 
     @pytest.mark.parametrize("concept_type", list(SKELETON_TEMPLATES.keys()))
     def test_unique_node_ids(self, concept_type):
@@ -78,10 +76,14 @@ class TestSkeletonWellFormedness:
     # Oracle Isolation (stateless oracle nodes) and Conjugate Update
     # semantics within a parent paradigm skeleton.
     _ALLOWED_HETEROGENEOUS: dict[ConceptType, set[ConceptType]] = {
-        ConceptType.MCMC_KERNEL: {ConceptType.MCMC_KERNEL, ConceptType.PROBABILISTIC_ORACLE},
+        ConceptType.MCMC_KERNEL: {
+            ConceptType.MCMC_KERNEL,
+            ConceptType.PROBABILISTIC_ORACLE,
+        },
         ConceptType.VI_ELBO: {ConceptType.VI_ELBO, ConceptType.PROBABILISTIC_ORACLE},
         ConceptType.SEQUENTIAL_FILTER: {
-            ConceptType.SEQUENTIAL_FILTER, ConceptType.PROBABILISTIC_ORACLE,
+            ConceptType.SEQUENTIAL_FILTER,
+            ConceptType.PROBABILISTIC_ORACLE,
             ConceptType.CONJUGATE_UPDATE,
         },
         ConceptType.MESSAGE_PASSING: {ConceptType.MESSAGE_PASSING},
@@ -102,9 +104,9 @@ class TestSkeletonWellFormedness:
     def test_all_nodes_pending(self, concept_type):
         skel = SKELETON_TEMPLATES[concept_type]
         for node in skel.template_nodes:
-            assert node.status == NodeStatus.PENDING, (
-                f"Template node {node.name} should be PENDING, got {node.status}"
-            )
+            assert (
+                node.status == NodeStatus.PENDING
+            ), f"Template node {node.name} should be PENDING, got {node.status}"
 
     @pytest.mark.parametrize("concept_type", list(SKELETON_TEMPLATES.keys()))
     def test_has_description_and_name(self, concept_type):

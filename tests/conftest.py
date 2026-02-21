@@ -14,7 +14,11 @@ from typing import Iterator
 
 import pytest
 
-from tests.helpers.match_regression import MatchCase, build_ageo_atoms_declarations, load_match_cases
+from tests.helpers.match_regression import (
+    MatchCase,
+    build_ageo_atoms_declarations,
+    load_match_cases,
+)
 
 
 def _find_free_port() -> int:
@@ -88,7 +92,9 @@ def llama_server() -> Iterator[dict[str, str]]:
     """Start a dedicated local llama.cpp server on an ephemeral port for live tests."""
     cmd_template = os.environ.get("AGEOM_TEST_LLAMA_SERVER_CMD", "").strip()
     if not cmd_template:
-        pytest.skip("Set AGEOM_TEST_LLAMA_SERVER_CMD to enable live llama regression tests")
+        pytest.skip(
+            "Set AGEOM_TEST_LLAMA_SERVER_CMD to enable live llama regression tests"
+        )
 
     model_name = os.environ.get("AGEOM_TEST_LLAMA_MODEL", "").strip() or "local-llama"
 

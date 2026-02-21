@@ -10,10 +10,8 @@ from ageom.architect.models import NodeStatus
 from ageom.ingester.emitter import build_procedural_plan, emit_ingestion_bundle
 from ageom.ingester.extractor import (
     _ProceduralBlockVisitor,
-    _infer_ssa_edges,
     extract_procedural_data_flow,
 )
-
 
 MOCK_SCRIPT = textwrap.dedent("""\
     import numpy as np
@@ -109,7 +107,9 @@ class TestProceduralExtraction:
 
     @pytest.mark.asyncio
     async def test_pipeline_name_override(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="MyPipeline")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="MyPipeline"
+        )
         assert dfg.class_name == "MyPipeline"
 
 
@@ -150,10 +150,12 @@ class TestSSAEdgeInference:
     async def test_no_edge_from_raw(self, script_source):
         """raw is assigned from np.random.randn, not a known function."""
         dfg = await extract_procedural_data_flow(script_source)
-        source_ids = {e.source_id for e in dfg.inferred_edges}
         # No edge should have raw as an intermediary source from a known func
         # (np.random.randn is not in known_functions)
-        assert all(e.source_id in {"remove_baseline", "fold_signal"} for e in dfg.inferred_edges)
+        assert all(
+            e.source_id in {"remove_baseline", "fold_signal"}
+            for e in dfg.inferred_edges
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +166,9 @@ class TestSSAEdgeInference:
 class TestProceduralCDG:
     @pytest.mark.asyncio
     async def test_cdg_has_four_nodes(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         # 1 DECOMPOSED root + 3 ATOMIC children
@@ -172,7 +176,9 @@ class TestProceduralCDG:
 
     @pytest.mark.asyncio
     async def test_cdg_root_is_decomposed(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         root = next(n for n in bundle.cdg.nodes if n.status == NodeStatus.DECOMPOSED)
@@ -181,14 +187,18 @@ class TestProceduralCDG:
 
     @pytest.mark.asyncio
     async def test_cdg_has_two_edges(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         assert len(bundle.cdg.edges) == 2
 
     @pytest.mark.asyncio
     async def test_cdg_edges_match_ssa(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         edge_pairs = {(e.source_id, e.target_id) for e in bundle.cdg.edges}
@@ -197,7 +207,9 @@ class TestProceduralCDG:
 
     @pytest.mark.asyncio
     async def test_cdg_metadata_source(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         assert bundle.cdg.metadata.get("source") == "ingester"
@@ -211,7 +223,9 @@ class TestProceduralCDG:
 class TestProceduralBundle:
     @pytest.mark.asyncio
     async def test_bundle_has_generated_atoms(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         assert bundle.generated_atoms
@@ -219,7 +233,9 @@ class TestProceduralBundle:
 
     @pytest.mark.asyncio
     async def test_bundle_cdg_edges_correct(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         edge_pairs = {(e.source_id, e.target_id) for e in bundle.cdg.edges}
@@ -228,14 +244,18 @@ class TestProceduralBundle:
 
     @pytest.mark.asyncio
     async def test_bundle_match_results_count(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         assert len(bundle.match_results) == 3
 
     @pytest.mark.asyncio
     async def test_bundle_match_results_verified(self, script_source):
-        dfg = await extract_procedural_data_flow(script_source, pipeline_name="PulsarFold")
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
         plan = build_procedural_plan(dfg, "PulsarFold")
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
         for mr in bundle.match_results:

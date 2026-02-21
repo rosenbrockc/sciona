@@ -7,7 +7,6 @@ from unittest.mock import patch
 
 from ageom.cli import main
 
-
 STATIC_DIR = Path(__file__).resolve().parent.parent / "ageom" / "static"
 
 
@@ -34,8 +33,12 @@ def sample_cdg(tmp_path):
                 "status": "atomic",
                 "matched_primitive": "merge_sort",
                 "type_signature": "list[int] -> list[int]",
-                "inputs": [{"name": "arr", "type_desc": "list[int]", "constraints": ""}],
-                "outputs": [{"name": "sorted", "type_desc": "list[int]", "constraints": ""}],
+                "inputs": [
+                    {"name": "arr", "type_desc": "list[int]", "constraints": ""}
+                ],
+                "outputs": [
+                    {"name": "sorted", "type_desc": "list[int]", "constraints": ""}
+                ],
                 "depth": 1,
                 "children": [],
             },
@@ -162,7 +165,9 @@ class TestCDGCopyAndCleanup:
                 main()
 
         # After the command, default_cdg.json should have been cleaned up
-        assert not default_cdg.exists(), "default_cdg.json should be cleaned up after exit"
+        assert (
+            not default_cdg.exists()
+        ), "default_cdg.json should be cleaned up after exit"
 
     def test_rejects_invalid_cdg(self, bad_cdg):
         """Should exit with error if CDG JSON is missing 'nodes'."""
@@ -173,7 +178,9 @@ class TestCDGCopyAndCleanup:
 
     def test_rejects_nonexistent_file(self):
         """Should exit with error if CDG file doesn't exist."""
-        with patch("sys.argv", ["ageom", "visualize", "/nonexistent/cdg.json", "--no-serve"]):
+        with patch(
+            "sys.argv", ["ageom", "visualize", "/nonexistent/cdg.json", "--no-serve"]
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 1

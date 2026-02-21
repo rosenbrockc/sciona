@@ -36,7 +36,9 @@ class VerificationOracleImpl:
         self._coq_env = coq_env
         self._python_env = python_env
 
-    def _get_env(self, prover: Prover) -> LeanEnvironment | CoqEnvironment | "PythonEnvironment":
+    def _get_env(
+        self, prover: Prover
+    ) -> LeanEnvironment | CoqEnvironment | "PythonEnvironment":
         if prover == Prover.LEAN4:
             if self._lean_env is None:
                 raise RuntimeError("LeanEnvironment not configured")

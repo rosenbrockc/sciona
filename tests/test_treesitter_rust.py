@@ -9,7 +9,6 @@ import pytest
 from ageom.ingester.base_extractor import SourceLanguage
 from ageom.ingester.treesitter_extractor import TreeSitterExtractor
 
-
 RUST_ORACLE_STRUCT = textwrap.dedent("""\
     struct State {
         x: f64,
@@ -73,7 +72,10 @@ class TestRustOracleSubgraph:
     async def test_oracle_edges_and_flows(self, extractor, rust_struct_source):
         dfg = await extractor.extract_class(rust_struct_source, "Sampler")
         assert any(e.caller == "step" for e in dfg.oracle_edges)
-        assert any("oracle_subgraph::BatchedGradientTarget::step" in e.oracle_ref for e in dfg.oracle_edges)
+        assert any(
+            "oracle_subgraph::BatchedGradientTarget::step" in e.oracle_ref
+            for e in dfg.oracle_edges
+        )
 
         # state variables routed to oracle subgraph
         assert any(

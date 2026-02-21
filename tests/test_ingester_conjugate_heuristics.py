@@ -91,7 +91,9 @@ class TestConjugateHeuristicPass:
         plan = _make_initial_plan()
 
         updated = apply_conjugate_heuristics(dfg, plan)
-        posterior_fit = next(a for a in updated.plan.macro_atoms if a.name == "Posterior Fit")
+        posterior_fit = next(
+            a for a in updated.plan.macro_atoms if a.name == "Posterior Fit"
+        )
 
         assert posterior_fit.concept_type == ConceptType.CONJUGATE_UPDATE
 

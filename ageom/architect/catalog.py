@@ -5,7 +5,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ageom.architect.models import AlgorithmicNode, AlgorithmicPrimitive, ConceptType, IOSpec
+from ageom.architect.models import (
+    AlgorithmicNode,
+    AlgorithmicPrimitive,
+    ConceptType,
+    IOSpec,
+)
 
 
 class PrimitiveCatalog:
@@ -121,7 +126,9 @@ _BAYESIAN_PRIMITIVES: list[AlgorithmicPrimitive] = [
             IOSpec(name="p", type_desc="ndarray", constraints="current momentum"),
             IOSpec(name="epsilon", type_desc="float", constraints="step size > 0"),
             IOSpec(name="grad_log_density", type_desc="Callable[[ndarray], ndarray]"),
-            IOSpec(name="mass_matrix", type_desc="ndarray", constraints="positive definite"),
+            IOSpec(
+                name="mass_matrix", type_desc="ndarray", constraints="positive definite"
+            ),
         ],
         outputs=[
             IOSpec(name="q_new", type_desc="ndarray"),
@@ -139,10 +146,18 @@ _BAYESIAN_PRIMITIVES: list[AlgorithmicPrimitive] = [
             "and (theta_plus - theta_minus) · r_plus >= 0."
         ),
         inputs=[
-            IOSpec(name="theta_minus", type_desc="ndarray", constraints="leftmost position"),
-            IOSpec(name="theta_plus", type_desc="ndarray", constraints="rightmost position"),
-            IOSpec(name="r_minus", type_desc="ndarray", constraints="leftmost momentum"),
-            IOSpec(name="r_plus", type_desc="ndarray", constraints="rightmost momentum"),
+            IOSpec(
+                name="theta_minus", type_desc="ndarray", constraints="leftmost position"
+            ),
+            IOSpec(
+                name="theta_plus", type_desc="ndarray", constraints="rightmost position"
+            ),
+            IOSpec(
+                name="r_minus", type_desc="ndarray", constraints="leftmost momentum"
+            ),
+            IOSpec(
+                name="r_plus", type_desc="ndarray", constraints="rightmost momentum"
+            ),
         ],
         outputs=[
             IOSpec(name="u_turn", type_desc="bool"),
@@ -159,10 +174,22 @@ _BAYESIAN_PRIMITIVES: list[AlgorithmicPrimitive] = [
             "State Decoupling: covariance P flows explicitly as an edge, never as hidden state."
         ),
         inputs=[
-            IOSpec(name="x_pred", type_desc="ndarray", constraints="predicted state mean"),
-            IOSpec(name="P_pred", type_desc="ndarray", constraints="predicted covariance, symmetric positive semi-definite"),
-            IOSpec(name="H", type_desc="ndarray", constraints="observation model matrix"),
-            IOSpec(name="R", type_desc="ndarray", constraints="observation noise covariance, symmetric positive definite"),
+            IOSpec(
+                name="x_pred", type_desc="ndarray", constraints="predicted state mean"
+            ),
+            IOSpec(
+                name="P_pred",
+                type_desc="ndarray",
+                constraints="predicted covariance, symmetric positive semi-definite",
+            ),
+            IOSpec(
+                name="H", type_desc="ndarray", constraints="observation model matrix"
+            ),
+            IOSpec(
+                name="R",
+                type_desc="ndarray",
+                constraints="observation noise covariance, symmetric positive definite",
+            ),
             IOSpec(name="z", type_desc="ndarray", constraints="observation vector"),
         ],
         outputs=[
@@ -182,13 +209,24 @@ _BAYESIAN_PRIMITIVES: list[AlgorithmicPrimitive] = [
             "weighted by incoming messages. Used in belief propagation / junction tree."
         ),
         inputs=[
-            IOSpec(name="factor_potential", type_desc="ndarray", constraints="non-negative tensor"),
-            IOSpec(name="incoming_messages", type_desc="dict[str, ndarray]",
-                   constraints="messages from all neighboring variables except target"),
+            IOSpec(
+                name="factor_potential",
+                type_desc="ndarray",
+                constraints="non-negative tensor",
+            ),
+            IOSpec(
+                name="incoming_messages",
+                type_desc="dict[str, ndarray]",
+                constraints="messages from all neighboring variables except target",
+            ),
             IOSpec(name="target_variable", type_desc="str"),
         ],
         outputs=[
-            IOSpec(name="message", type_desc="ndarray", constraints="marginalized message to target variable"),
+            IOSpec(
+                name="message",
+                type_desc="ndarray",
+                constraints="marginalized message to target variable",
+            ),
         ],
         type_signature="ndarray -> dict[str, ndarray] -> str -> ndarray",
     ),

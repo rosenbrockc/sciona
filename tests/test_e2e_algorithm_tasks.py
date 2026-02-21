@@ -110,7 +110,9 @@ class MockSemanticIndex:
 
     def _score(self, text: str, decl: Declaration) -> float:
         q_words = set(_slug(text).split("_"))
-        d_words = set(_slug(f"{decl.name} {decl.type_signature} {decl.docstring}").split("_"))
+        d_words = set(
+            _slug(f"{decl.name} {decl.type_signature} {decl.docstring}").split("_")
+        )
         return float(len(q_words & d_words))
 
     def search_by_embedding(self, query_text: str, k: int = 10):
@@ -238,7 +240,10 @@ def _node_name_set(cdg) -> set[str]:
 def _assert_edge_by_name(cdg, source_name: str, target_name: str) -> bool:
     by_id = {node.node_id: node.name for node in cdg.nodes}
     for edge in cdg.edges:
-        if by_id.get(edge.source_id) == source_name and by_id.get(edge.target_id) == target_name:
+        if (
+            by_id.get(edge.source_id) == source_name
+            and by_id.get(edge.target_id) == target_name
+        ):
             return True
     return False
 
@@ -279,8 +284,20 @@ def _task_specs() -> tuple[TaskSpec, ...]:
                 ),
             ),
             edges=(
-                EdgeSpec("List Merge Primitive", "Sortedness Theorem", "merged", "merged", "list[int]"),
-                EdgeSpec("List Merge Primitive", "Return Merged List", "merged", "merged", "list[int]"),
+                EdgeSpec(
+                    "List Merge Primitive",
+                    "Sortedness Theorem",
+                    "merged",
+                    "merged",
+                    "list[int]",
+                ),
+                EdgeSpec(
+                    "List Merge Primitive",
+                    "Return Merged List",
+                    "merged",
+                    "merged",
+                    "list[int]",
+                ),
             ),
             required_round1_nodes=("Split", "Recurse Left", "Recurse Right", "Merge"),
             round2_checks=(Round2Check("list.merge", "List.merge"),),
@@ -413,8 +430,20 @@ def _task_specs() -> tuple[TaskSpec, ...]:
                 ),
             ),
             edges=(
-                EdgeSpec("Frontier Queue (FIFO)", "Process Layer", "frontier", "frontier", "queue[node]"),
-                EdgeSpec("Process Layer", "Record Hop Distance", "distances", "distances", "map[node,int]"),
+                EdgeSpec(
+                    "Frontier Queue (FIFO)",
+                    "Process Layer",
+                    "frontier",
+                    "frontier",
+                    "queue[node]",
+                ),
+                EdgeSpec(
+                    "Process Layer",
+                    "Record Hop Distance",
+                    "distances",
+                    "distances",
+                    "map[node,int]",
+                ),
             ),
             required_round1_nodes=("FIFO", "Queue"),
             round2_checks=(),
@@ -453,8 +482,20 @@ def _task_specs() -> tuple[TaskSpec, ...]:
                 ),
             ),
             edges=(
-                EdgeSpec("Compute In-Degree", "Kahn Queue", "in_degree", "in_degree", "map[node,int]"),
-                EdgeSpec("Kahn Queue", "Detect Cycle (DAG Check)", "frontier", "frontier", "queue[node]"),
+                EdgeSpec(
+                    "Compute In-Degree",
+                    "Kahn Queue",
+                    "in_degree",
+                    "in_degree",
+                    "map[node,int]",
+                ),
+                EdgeSpec(
+                    "Kahn Queue",
+                    "Detect Cycle (DAG Check)",
+                    "frontier",
+                    "frontier",
+                    "queue[node]",
+                ),
             ),
             required_round1_nodes=("DAG", "Cycle"),
             round2_checks=(),
@@ -532,8 +573,20 @@ def _task_specs() -> tuple[TaskSpec, ...]:
                 ),
             ),
             edges=(
-                EdgeSpec("Sort by Finish Time", "Select Compatible Activity", "ordered", "ordered", "list[activity]"),
-                EdgeSpec("Select Compatible Activity", "Update Schedule", "chosen", "chosen", "activity"),
+                EdgeSpec(
+                    "Sort by Finish Time",
+                    "Select Compatible Activity",
+                    "ordered",
+                    "ordered",
+                    "list[activity]",
+                ),
+                EdgeSpec(
+                    "Select Compatible Activity",
+                    "Update Schedule",
+                    "chosen",
+                    "chosen",
+                    "activity",
+                ),
             ),
             required_round1_nodes=("Sort by Finish Time",),
             round2_checks=(),
@@ -571,8 +624,20 @@ def _task_specs() -> tuple[TaskSpec, ...]:
                 ),
             ),
             edges=(
-                EdgeSpec("Count Frequencies", "Priority Queue Build (Min-Heap)", "freqs", "freqs", "map[char,int]"),
-                EdgeSpec("Priority Queue Build (Min-Heap)", "BinaryTree Merge", "heap", "heap", "min_heap[node]"),
+                EdgeSpec(
+                    "Count Frequencies",
+                    "Priority Queue Build (Min-Heap)",
+                    "freqs",
+                    "freqs",
+                    "map[char,int]",
+                ),
+                EdgeSpec(
+                    "Priority Queue Build (Min-Heap)",
+                    "BinaryTree Merge",
+                    "heap",
+                    "heap",
+                    "min_heap[node]",
+                ),
             ),
             required_round1_nodes=("Priority Queue", "BinaryTree"),
             round2_checks=(
@@ -613,8 +678,20 @@ def _task_specs() -> tuple[TaskSpec, ...]:
                 ),
             ),
             edges=(
-                EdgeSpec("Sort by polar_angle", "ccw Turn Predicate", "sorted", "sorted", "list[point]"),
-                EdgeSpec("ccw Turn Predicate", "Build Hull Stack", "turn_ok", "turn_ok", "bool"),
+                EdgeSpec(
+                    "Sort by polar_angle",
+                    "ccw Turn Predicate",
+                    "sorted",
+                    "sorted",
+                    "list[point]",
+                ),
+                EdgeSpec(
+                    "ccw Turn Predicate",
+                    "Build Hull Stack",
+                    "turn_ok",
+                    "turn_ok",
+                    "bool",
+                ),
             ),
             required_round1_nodes=("polar_angle", "ccw"),
             round2_checks=(
@@ -685,18 +762,22 @@ async def test_algorithmic_tasks_round1_round2_end_to_end(task: TaskSpec):
     node_names = _node_name_set(cdg)
 
     for required in task.required_round1_nodes:
-        assert any(required.lower() in name.lower() for name in node_names), (
-            f"{task.task_id}: missing required Round 1 node containing '{required}'"
-        )
+        assert any(
+            required.lower() in name.lower() for name in node_names
+        ), f"{task.task_id}: missing required Round 1 node containing '{required}'"
 
     if task.task_id == "lcs":
         assert _assert_edge_by_name(cdg, "Cell[i-1][j]", "Cell[i][j]")
         assert _assert_edge_by_name(cdg, "Cell[i][j-1]", "Cell[i][j]")
 
     if task.task_id == "activity_selection":
-        sort_candidates = next(node for node in cdg.nodes if node.name == "Sort Candidates")
+        sort_candidates = next(
+            node for node in cdg.nodes if node.name == "Sort Candidates"
+        )
         child_indices = [
-            i for i, node in enumerate(cdg.nodes) if node.parent_id == sort_candidates.node_id
+            i
+            for i, node in enumerate(cdg.nodes)
+            if node.parent_id == sort_candidates.node_id
         ]
         assert child_indices
         assert cdg.nodes[min(child_indices)].name == "Sort by Finish Time"
@@ -710,15 +791,16 @@ async def test_algorithmic_tasks_round1_round2_end_to_end(task: TaskSpec):
     for check in task.round2_checks:
         query_node = next(
             (
-                node for node in pdg_nodes
+                node
+                for node in pdg_nodes
                 if check.query_hint.lower()
                 in f"{node.statement} {node.informal_desc}".lower()
             ),
             None,
         )
-        assert query_node is not None, (
-            f"{task.task_id}: no PDG node contains query hint '{check.query_hint}'"
-        )
+        assert (
+            query_node is not None
+        ), f"{task.task_id}: no PDG node contains query hint '{check.query_hint}'"
 
         declarations = [
             Declaration(
@@ -751,6 +833,11 @@ async def test_algorithmic_tasks_round1_round2_end_to_end(task: TaskSpec):
         )
         result = await hunter.find_match(query_node)
 
-        assert result.success, f"{task.task_id}: Hunter failed for {check.expected_declaration}"
+        assert (
+            result.success
+        ), f"{task.task_id}: Hunter failed for {check.expected_declaration}"
         assert result.verified_match is not None
-        assert result.verified_match.candidate.declaration.name == check.expected_declaration
+        assert (
+            result.verified_match.candidate.declaration.name
+            == check.expected_declaration
+        )

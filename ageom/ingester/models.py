@@ -12,7 +12,6 @@ from ageom.architect.handoff import CDGExport
 from ageom.architect.models import ConceptType, DependencyEdge, IOSpec
 from ageom.types import MatchResult
 
-
 # ---------------------------------------------------------------------------
 # Phase 1: AST extraction outputs
 # ---------------------------------------------------------------------------
@@ -91,7 +90,7 @@ class RawDataFlowGraph(BaseModel):
     static_shape: dict[str, str] = Field(
         default_factory=dict,
         description="Compile-time static matrix dimensions, e.g. {'N': '6', 'M': '3'} "
-                    "from nalgebra SMatrix<f64, N, M>",
+        "from nalgebra SMatrix<f64, N, M>",
     )
     requires_logdet_jacobian: bool = Field(
         default=False,
@@ -100,8 +99,8 @@ class RawDataFlowGraph(BaseModel):
     cartesian_product_fields: list[list[str]] = Field(
         default_factory=list,
         description="Groups of struct fields forming Cartesian type products "
-                    "(e.g. [['metric', 'integrator', 'trajectory_sampler']]). "
-                    "Each group should be emitted as distinct swappable subgraph inputs.",
+        "(e.g. [['metric', 'integrator', 'trajectory_sampler']]). "
+        "Each group should be emitted as distinct swappable subgraph inputs.",
     )
     oracle_edges: list[OracleEdge] = Field(
         default_factory=list,
@@ -189,11 +188,13 @@ class StochasticTraceSpec(BaseModel):
         description="Parameter dimensions for the trace, e.g. (3,) for 3D",
     )
     chain_count: int = Field(
-        default=1, ge=1,
+        default=1,
+        ge=1,
         description="Number of parallel MCMC chains",
     )
     warmup_steps: int = Field(
-        default=0, ge=0,
+        default=0,
+        ge=0,
         description="Number of warmup/burn-in steps",
     )
 

@@ -8,7 +8,7 @@ from ageom.architect.skeletons import (
     get_skeleton,
     instantiate_skeleton,
 )
-from ageom.synthesizer.contracts import ContractGenerator, ContractSpec
+from ageom.synthesizer.contracts import ContractGenerator
 
 
 class TestDspConceptTypes:
@@ -38,30 +38,39 @@ class TestDspConceptTypes:
 class TestDspSkeletons:
     """Test DSP skeleton template instantiation."""
 
-    @pytest.mark.parametrize("concept_type", [
-        ConceptType.SIGNAL_TRANSFORM,
-        ConceptType.SIGNAL_FILTER,
-        ConceptType.GRAPH_SIGNAL_PROCESSING,
-    ])
+    @pytest.mark.parametrize(
+        "concept_type",
+        [
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
+        ],
+    )
     def test_skeleton_exists(self, concept_type):
         skeleton = get_skeleton(concept_type)
         assert skeleton is not None
 
-    @pytest.mark.parametrize("concept_type", [
-        ConceptType.SIGNAL_TRANSFORM,
-        ConceptType.SIGNAL_FILTER,
-        ConceptType.GRAPH_SIGNAL_PROCESSING,
-    ])
+    @pytest.mark.parametrize(
+        "concept_type",
+        [
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
+        ],
+    )
     def test_skeleton_has_nodes_and_edges(self, concept_type):
         skeleton = get_skeleton(concept_type)
         assert len(skeleton.template_nodes) >= 3
         assert len(skeleton.template_edges) >= 2
 
-    @pytest.mark.parametrize("concept_type", [
-        ConceptType.SIGNAL_TRANSFORM,
-        ConceptType.SIGNAL_FILTER,
-        ConceptType.GRAPH_SIGNAL_PROCESSING,
-    ])
+    @pytest.mark.parametrize(
+        "concept_type",
+        [
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
+        ],
+    )
     def test_skeleton_no_dangling_edges(self, concept_type):
         skeleton = get_skeleton(concept_type)
         node_ids = {n.node_id for n in skeleton.template_nodes}
@@ -69,20 +78,26 @@ class TestDspSkeletons:
             assert e.source_id in node_ids, f"Dangling source: {e.source_id}"
             assert e.target_id in node_ids, f"Dangling target: {e.target_id}"
 
-    @pytest.mark.parametrize("concept_type", [
-        ConceptType.SIGNAL_TRANSFORM,
-        ConceptType.SIGNAL_FILTER,
-        ConceptType.GRAPH_SIGNAL_PROCESSING,
-    ])
+    @pytest.mark.parametrize(
+        "concept_type",
+        [
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
+        ],
+    )
     def test_skeleton_has_variants(self, concept_type):
         skeleton = get_skeleton(concept_type)
         assert len(skeleton.variants) >= 3
 
-    @pytest.mark.parametrize("concept_type", [
-        ConceptType.SIGNAL_TRANSFORM,
-        ConceptType.SIGNAL_FILTER,
-        ConceptType.GRAPH_SIGNAL_PROCESSING,
-    ])
+    @pytest.mark.parametrize(
+        "concept_type",
+        [
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
+        ],
+    )
     def test_instantiate_produces_fresh_ids(self, concept_type):
         skeleton = get_skeleton(concept_type)
         nodes1, edges1 = instantiate_skeleton(skeleton, "test goal 1")
@@ -91,11 +106,14 @@ class TestDspSkeletons:
         ids2 = {n.node_id for n in nodes2}
         assert ids1.isdisjoint(ids2)
 
-    @pytest.mark.parametrize("concept_type", [
-        ConceptType.SIGNAL_TRANSFORM,
-        ConceptType.SIGNAL_FILTER,
-        ConceptType.GRAPH_SIGNAL_PROCESSING,
-    ])
+    @pytest.mark.parametrize(
+        "concept_type",
+        [
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
+        ],
+    )
     def test_instantiate_preserves_structure(self, concept_type):
         skeleton = get_skeleton(concept_type)
         nodes, edges = instantiate_skeleton(skeleton, "test goal")

@@ -31,9 +31,7 @@ class UnifiedIndex:
         self._store = store
         self._by_name: dict[str, Declaration] = {}
         if store is not None:
-            self._by_name = {
-                decl.name: decl for decl in store._declarations.values()
-            }
+            self._by_name = {decl.name: decl for decl in store._declarations.values()}
 
     def _ensure_embedder(self) -> UniXcoderEmbedder:
         if self._embedder is None:
@@ -59,9 +57,7 @@ class UnifiedIndex:
         query_vec = embedder.embed(query_text)
         return self._store.search(query_vec, k=k)
 
-    def search_by_type(
-        self, type_signature: str, k: int = 10
-    ) -> list[Declaration]:
+    def search_by_type(self, type_signature: str, k: int = 10) -> list[Declaration]:
         """Search by type signature (falls back to embedding search)."""
         results = self.search_by_embedding(type_signature, k=k)
         return [decl for decl, _score in results]

@@ -31,6 +31,7 @@ from ageom.synthesizer.patcher import (
     extract_error_context,
     find_sorry_locations,
 )
+from ageom.llm_router import SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC, select_llm
 from ageom.synthesizer.prompts import (
     ANALYZE_ERROR_SYSTEM,
     ANALYZE_ERROR_SYSTEM_PYTHON,
@@ -153,8 +154,7 @@ class CompileCheck(BaseNode[RepairState, RepairDeps, SkeletonFile]):
 
         # Check if any have deterministic fixes
         has_deterministic = any(
-            suggest_deterministic_fix(cat, text) is not None
-            for cat, text in classified
+            suggest_deterministic_fix(cat, text) is not None for cat, text in classified
         )
         if has_deterministic:
             return DeterministicFix()
@@ -178,9 +178,7 @@ class DeterministicFix(BaseNode[RepairState, RepairDeps, SkeletonFile]):
     Applies ALL deterministic fixes in one pass instead of one-per-iteration.
     """
 
-    async def run(
-        self, ctx: GraphRunContext[RepairState, RepairDeps]
-    ) -> CompileCheck:
+    async def run(self, ctx: GraphRunContext[RepairState, RepairDeps]) -> CompileCheck:
         state = ctx.state
 
         if state._last_feedback is None:
@@ -221,9 +219,7 @@ class DeterministicFix(BaseNode[RepairState, RepairDeps, SkeletonFile]):
 class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
     """Use LLM to generate a patch for the highest-priority error."""
 
-    async def run(
-        self, ctx: GraphRunContext[RepairState, RepairDeps]
-    ) -> CompileCheck:
+    async def run(self, ctx: GraphRunContext[RepairState, RepairDeps]) -> CompileCheck:
         state = ctx.state
         deps = ctx.deps
 
@@ -259,11 +255,11 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             else ANALYZE_ERROR_SYSTEM
         )
 
-        from ageom.llm_router import SYNTHESIZER_REPAIR, select_llm
-
         state.llm_attempts += 1
         try:
-            response = await select_llm(deps.llm, SYNTHESIZER_REPAIR).complete(system_prompt, user_msg)
+            response = await select_llm(deps.llm, SYNTHESIZER_REPAIR).complete(
+                system_prompt, user_msg
+            )
             patch = _parse_patch_response(response)
             if patch is not None:
                 state.skeleton.source_code = apply_patches(
@@ -273,7 +269,11 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
                 state.llm_successes += 1
         except json.JSONDecodeError as exc:
             state.error_history.append(
-                (state.iteration, ErrorCategory.UNKNOWN, f"LLM_FAILURE: JSON parse error: {exc}")
+                (
+                    state.iteration,
+                    ErrorCategory.UNKNOWN,
+                    f"LLM_FAILURE: JSON parse error: {exc}",
+                )
             )
             logger.warning("LLM repair JSON parse error: %s", exc)
         except ValueError as exc:
@@ -295,9 +295,7 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
 class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
     """Replace sorry/Admitted placeholders with LLM-generated tactic proofs."""
 
-    async def run(
-        self, ctx: GraphRunContext[RepairState, RepairDeps]
-    ) -> CompileCheck:
+    async def run(self, ctx: GraphRunContext[RepairState, RepairDeps]) -> CompileCheck:
         state = ctx.state
         deps = ctx.deps
 
@@ -309,9 +307,7 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
 
         line_num, context = locations[0]  # Fix one sorry per iteration
 
-        goal_type = _extract_goal_from_context(
-            state.skeleton.source_code, line_num
-        )
+        goal_type = _extract_goal_from_context(state.skeleton.source_code, line_num)
 
         user_msg = GENERATE_TACTIC_USER.format(
             goal_type=goal_type or "(unknown — see context above)",
@@ -325,11 +321,11 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             else GENERATE_TACTIC_SYSTEM
         )
 
-        from ageom.llm_router import SYNTHESIZER_TACTIC, select_llm
-
         state.llm_attempts += 1
         try:
-            response = await select_llm(deps.llm, SYNTHESIZER_TACTIC).complete(system_prompt, user_msg)
+            response = await select_llm(deps.llm, SYNTHESIZER_TACTIC).complete(
+                system_prompt, user_msg
+            )
             tactic_body = response.strip()
             if tactic_body and "sorry" not in tactic_body.lower():
                 patch = Patch(

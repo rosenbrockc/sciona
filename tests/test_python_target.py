@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import ast
-import asyncio
-import re
 import textwrap
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -18,8 +16,7 @@ from ageom.architect.models import (
     IOSpec,
     NodeStatus,
 )
-from ageom.judge.models import CompilerFeedback
-from ageom.synthesizer.assembler import Assembler, sanitize_name
+from ageom.synthesizer.assembler import Assembler
 from ageom.synthesizer.classifier import (
     ErrorCategory,
     classify_error,
@@ -44,7 +41,6 @@ from ageom.types import (
     VerificationResult,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -58,10 +54,14 @@ def _make_python_match_result(
         type_signature=type_sig,
         prover=Prover.PYTHON,
     )
-    candidate = CandidateMatch(declaration=decl, score=0.95, retrieval_method="embedding")
+    candidate = CandidateMatch(
+        declaration=decl, score=0.95, retrieval_method="embedding"
+    )
     vr = VerificationResult(candidate=candidate, verified=True, proof_term=decl_name)
     return MatchResult(
-        pdg_node=PDGNode(predicate_id=node_id, statement=type_sig, prover=Prover.PYTHON),
+        pdg_node=PDGNode(
+            predicate_id=node_id, statement=type_sig, prover=Prover.PYTHON
+        ),
         verified_match=vr,
         all_candidates=[candidate],
         all_verifications=[vr],
@@ -182,7 +182,10 @@ class TestPythonDeclarationSource:
         assert info is None
 
     def test_type_signature_normalization(self):
-        from ageom.indexer.python_source import PythonDeclarationSource, PythonFunctionInfo
+        from ageom.indexer.python_source import (
+            PythonDeclarationSource,
+            PythonFunctionInfo,
+        )
 
         source = PythonDeclarationSource()
         info = PythonFunctionInfo(
@@ -340,7 +343,10 @@ class TestPythonAssembler:
 
         assert skeleton.prover == "python"
         assert "import icontract" in skeleton.source_code
-        assert "import numpy" in skeleton.source_code or "import scipy" in skeleton.source_code
+        assert (
+            "import numpy" in skeleton.source_code
+            or "import scipy" in skeleton.source_code
+        )
         assert "# Node: LU Solve" in skeleton.source_code
         assert "scipy.linalg.solve" in skeleton.source_code
         assert len(skeleton.units) == 1
@@ -352,7 +358,9 @@ class TestPythonAssembler:
         # Composition is now generated, so sorry_count should be 0
         assert skeleton.sorry_count == 0
 
-    def test_python_skeleton_has_docstring_header(self, python_cdg, python_match_results):
+    def test_python_skeleton_has_docstring_header(
+        self, python_cdg, python_match_results
+    ):
         assembler = Assembler(Prover.PYTHON)
         skeleton = assembler.assemble(python_cdg, python_match_results)
 
@@ -433,7 +441,9 @@ class TestContractGenerator:
         code = gen.render_wrapper(wrapper)
 
         assert "@icontract.require(lambda A: A.ndim == 2" in code
-        assert "@icontract.ensure(lambda result, A: result.shape == (A.shape[1],))" in code
+        assert (
+            "@icontract.ensure(lambda result, A: result.shape == (A.shape[1],))" in code
+        )
         assert "def solve_wrapper(A: np.ndarray, b: np.ndarray) -> np.ndarray:" in code
         assert "return scipy.linalg.solve(A, b)" in code
 
@@ -455,7 +465,9 @@ class TestContractGenerator:
     def test_iospec_to_contract(self):
         gen = ContractGenerator()
 
-        spec_with_constraint = IOSpec(name="A", type_desc="ndarray", constraints="A.ndim == 2")
+        spec_with_constraint = IOSpec(
+            name="A", type_desc="ndarray", constraints="A.ndim == 2"
+        )
         contract = gen._iospec_to_contract(spec_with_constraint, "require")
         assert contract is not None
         assert contract.kind == "require"
@@ -483,9 +495,7 @@ class TestPythonErrorClassifier:
         assert cat == ErrorCategory.MISSING_IMPORT
 
     def test_incompatible_types(self):
-        cat = classify_error(
-            "_check.py:1: error: Incompatible types in assignment"
-        )
+        cat = classify_error("_check.py:1: error: Incompatible types in assignment")
         assert cat == ErrorCategory.TYPE_MISMATCH
 
     def test_incompatible_return_value(self):
@@ -510,8 +520,7 @@ class TestPythonErrorClassifier:
 
     def test_suggest_python_import_fix(self):
         fix = suggest_deterministic_fix(
-            ErrorCategory.MISSING_IMPORT,
-            "_check.py:1: error: No module named 'numpy'"
+            ErrorCategory.MISSING_IMPORT, "_check.py:1: error: No module named 'numpy'"
         )
         assert fix is not None
         assert "import numpy" in fix
@@ -519,7 +528,7 @@ class TestPythonErrorClassifier:
     def test_suggest_python_module_stub_fix(self):
         fix = suggest_deterministic_fix(
             ErrorCategory.MISSING_IMPORT,
-            "_check.py:1: error: Cannot find implementation or library stub for module named 'scipy'"
+            "_check.py:1: error: Cannot find implementation or library stub for module named 'scipy'",
         )
         assert fix is not None
         assert "import scipy" in fix
@@ -674,12 +683,10 @@ class TestCLIAcceptsPython:
 
         from ageom.cli import main
 
-        captured_args = None
-
         # We patch asyncio.run and the command functions to capture args
         with _patch("sys.argv", ["ageom"] + argv):
-            with _patch("asyncio.run") as mock_run:
-                with _patch("ageom.cli._cmd_index_build") as mock_index:
+            with _patch("asyncio.run"):
+                with _patch("ageom.cli._cmd_index_build"):
                     try:
                         main()
                     except SystemExit:
@@ -694,37 +701,31 @@ class TestCLIAcceptsPython:
         cdg.write_text('{"nodes":[], "edges":[]}')
         matches = tmp_path / "m.json"
         matches.write_text("[]")
-        assert self._parse_args([
-            "assemble", str(cdg), str(matches), "--prover", "python"
-        ])
+        assert self._parse_args(
+            ["assemble", str(cdg), str(matches), "--prover", "python"]
+        )
 
     def test_synthesize_python(self, tmp_path):
         cdg = tmp_path / "cdg.json"
         cdg.write_text('{"nodes":[], "edges":[]}')
         matches = tmp_path / "m.json"
         matches.write_text("[]")
-        assert self._parse_args([
-            "synthesize", str(cdg), str(matches), "--prover", "python"
-        ])
+        assert self._parse_args(
+            ["synthesize", str(cdg), str(matches), "--prover", "python"]
+        )
 
     def test_export_python_pkg(self, tmp_path):
         src = tmp_path / "verified.py"
         src.write_text("pass")
-        assert self._parse_args([
-            "export", str(src), "--target", "python-pkg"
-        ])
+        assert self._parse_args(["export", str(src), "--target", "python-pkg"])
 
     def test_export_prover_python(self, tmp_path):
         src = tmp_path / "verified.py"
         src.write_text("pass")
-        assert self._parse_args([
-            "export", str(src), "--prover", "python"
-        ])
+        assert self._parse_args(["export", str(src), "--prover", "python"])
 
     def test_match_prover_python(self):
-        assert self._parse_args([
-            "match", "--statement", "test", "--prover", "python"
-        ])
+        assert self._parse_args(["match", "--statement", "test", "--prover", "python"])
 
 
 # ---------------------------------------------------------------------------

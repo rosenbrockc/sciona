@@ -6,12 +6,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.hunter.deps import HunterDeps
 from ageom.hunter.state import HunterState
 from ageom.types import (
-    CandidateMatch,
     Declaration,
-    MatchResult,
     PDGNode,
     Prover,
     VerificationResult,
@@ -87,7 +84,9 @@ def _make_mock_oracle(verified_names: set[str]):
     return oracle
 
 
-def _make_mock_llm(rank_response: str = "[0, 1, 2]", queries_response: str = '["query1"]'):
+def _make_mock_llm(
+    rank_response: str = "[0, 1, 2]", queries_response: str = '["query1"]'
+):
     """Create a mock LLMClient."""
     llm = AsyncMock()
 
@@ -108,7 +107,9 @@ class TestHunterHappyPath:
     """Test: InitialSearch -> RankCandidates -> VerifyTopK -> End (verified)."""
 
     @pytest.mark.asyncio
-    async def test_finds_correct_match_on_first_try(self, pdg_node, correct_decl, wrong_decl):
+    async def test_finds_correct_match_on_first_try(
+        self, pdg_node, correct_decl, wrong_decl
+    ):
         from ageom.hunter.graph import HunterAgent
 
         index = _make_mock_index([correct_decl, wrong_decl])

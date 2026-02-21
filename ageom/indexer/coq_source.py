@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from ageom.types import Declaration, Prover
+
+logger = logging.getLogger(__name__)
 
 
 class CoqDeclarationSource:
@@ -22,7 +25,14 @@ class CoqDeclarationSource:
             for step in coq_file.steps:
                 text = step.text.strip()
                 # Extract declarations (Theorem, Lemma, Definition, etc.)
-                for keyword in ("Theorem", "Lemma", "Definition", "Fixpoint", "Axiom", "Corollary"):
+                for keyword in (
+                    "Theorem",
+                    "Lemma",
+                    "Definition",
+                    "Fixpoint",
+                    "Axiom",
+                    "Corollary",
+                ):
                     if text.startswith(keyword):
                         name = _extract_name(text, keyword)
                         type_sig = _extract_type(text)
@@ -49,14 +59,14 @@ class CoqDeclarationSource:
             try:
                 declarations.extend(self.get_declarations_from_file(v_file))
             except Exception:
-                # Skip files that fail to parse
+                logger.warning("Failed to parse %s, skipping", v_file, exc_info=True)
                 continue
         return declarations
 
 
 def _extract_name(text: str, keyword: str) -> str:
     """Extract the declaration name from a Coq statement."""
-    rest = text[len(keyword):].strip()
+    rest = text[len(keyword) :].strip()
     # Name is the first token after the keyword
     name = rest.split()[0] if rest.split() else ""
     # Remove trailing colon or period

@@ -5,10 +5,13 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect
+import logging
 import pkgutil
 from dataclasses import dataclass, field
 
 from ageom.types import Declaration, Prover
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -47,6 +50,9 @@ class PythonDeclarationSource:
             try:
                 declarations.extend(self.get_declarations_from_module(modname))
             except Exception:
+                logger.warning(
+                    "Failed to index module %s, skipping", modname, exc_info=True
+                )
                 continue
 
         return declarations
@@ -159,6 +165,9 @@ class PythonDeclarationSource:
         try:
             source_code = ast.unparse(node)
         except Exception:
+            logger.debug(
+                "Failed to unparse AST node %s.%s", module, node.name, exc_info=True
+            )
             source_code = ""
 
         qualname = f"{module}.{node.name}"
@@ -227,11 +236,7 @@ class PythonDeclarationSource:
         ret = ""
         if sig.return_annotation is not inspect.Signature.empty:
             ret_ann = sig.return_annotation
-            ret = (
-                ret_ann.__name__
-                if hasattr(ret_ann, "__name__")
-                else str(ret_ann)
-            )
+            ret = ret_ann.__name__ if hasattr(ret_ann, "__name__") else str(ret_ann)
         result = f"({', '.join(parts)})"
         if ret:
             result += f" -> {ret}"

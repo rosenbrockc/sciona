@@ -17,9 +17,11 @@ def generate_lakefile(
         deps: Additional lake dependencies beyond Mathlib.
         ffi_export: If True, add moreLinkArgs for shared library export.
     """
-    dep_lines = ['require mathlib from git\n  "https://github.com/leanprover-community/mathlib4"']
+    dep_lines = [
+        'require mathlib from git\n  "https://github.com/leanprover-community/mathlib4"'
+    ]
     for dep in deps or []:
-        dep_lines.append(f'require {dep}')
+        dep_lines.append(f"require {dep}")
 
     deps_block = "\n\n".join(dep_lines)
 

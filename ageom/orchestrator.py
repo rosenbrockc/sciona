@@ -6,17 +6,18 @@ atomic nodes when the Hunter fails to ground them.
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass, field
 from typing import Any
 
 from ageom.architect.handoff import CDGExport, to_pdg_nodes
 from ageom.architect.models import AlgorithmicNode, NodeStatus
+from ageom.llm_router import ORCHESTRATOR_REFINE, select_llm
 from ageom.types import (
     FailureAction,
     MatchFailureReport,
     MatchResult,
-    PDGNode,
     Prover,
 )
 
@@ -87,10 +88,9 @@ async def refine_on_failure(
         )
 
         try:
-            from ageom.llm_router import ORCHESTRATOR_REFINE, select_llm
-
-            response = await select_llm(llm, ORCHESTRATOR_REFINE).complete(system_prompt, user_prompt)
-            import json
+            response = await select_llm(llm, ORCHESTRATOR_REFINE).complete(
+                system_prompt, user_prompt
+            )
 
             # Parse JSON from response
             text = response.strip()
@@ -200,7 +200,9 @@ async def run_orchestration(
             break
 
         # Filter out already-matched nodes
-        matched_ids = {mr.pdg_node.predicate_id for mr in result.match_results if mr.success}
+        matched_ids = {
+            mr.pdg_node.predicate_id for mr in result.match_results if mr.success
+        }
         pending_nodes = [n for n in pdg_nodes if n.predicate_id not in matched_ids]
 
         if not pending_nodes:
@@ -214,7 +216,8 @@ async def run_orchestration(
 
             # Replace existing result for this node if any
             result.match_results = [
-                mr for mr in result.match_results
+                mr
+                for mr in result.match_results
                 if mr.pdg_node.predicate_id != pdg_node.predicate_id
             ]
             result.match_results.append(match_result)

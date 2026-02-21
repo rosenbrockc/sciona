@@ -21,14 +21,13 @@ from typing_extensions import TypedDict
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import ConceptType, DependencyEdge
 from ageom.hunter.llm import LLMClient
-from ageom.ingester.chunker import ChunkerDeps, ChunkerState, build_chunker_graph
+from ageom.ingester.chunker import ChunkerDeps, build_chunker_graph
 from ageom.ingester.base_extractor import EXTENSION_MAP, BaseExtractor, SourceLanguage
 from ageom.ingester.emitter import (
     build_procedural_plan,
     emit_ingestion_bundle,
     generate_opaque_witnesses,
 )
-from ageom.ingester.extractor import extract_data_flow, extract_procedural_data_flow
 from ageom.ingester.python_extractor import JAXprExtractor, PythonASTExtractor
 from ageom.ingester.treesitter_extractor import TreeSitterExtractor
 from ageom.ingester.models import (
@@ -45,31 +44,88 @@ from ageom.ingester.prompts import (
     FIX_TYPE_ERROR_SYSTEM,
     FIX_TYPE_ERROR_USER,
 )
+from ageom.llm_router import (
+    INGESTER_FIX_GHOST,
+    INGESTER_FIX_MESSAGE_CYCLE,
+    INGESTER_FIX_TYPE,
+    select_llm,
+)
 from ageom.protocols import ProofEnvironment, SemanticIndex
 
 logger = logging.getLogger(__name__)
 
 _MAX_REPAIR_RETRIES = 3
 
-_CONJUGATE_METHOD_HINTS: frozenset[str] = frozenset({
-    "fit", "posterior", "posterior_update", "update_hyperparameters",
-    "update_params", "update_alpha", "update_beta", "update_conjugate",
-})
-_SUFF_STAT_HINTS: frozenset[str] = frozenset({
-    "sufficient", "stat", "sum", "mean", "count", "accumulate", "aggregate",
-    "n_obs", "n_samples", "successes", "failures",
-})
-_DISTRIBUTION_HINTS: frozenset[str] = frozenset({
-    "beta", "bernoulli", "binomial", "dirichlet", "categorical", "multinomial",
-    "gamma", "poisson", "normal", "gaussian", "wishart", "student",
-    "distribution", "prior", "posterior", "hyperparameter", "alpha", "theta",
-})
-_DATA_EDGE_HINTS: frozenset[str] = frozenset({
-    "data", "observation", "sample", "batch", "stats", "count",
-})
-_DIST_EDGE_HINTS: frozenset[str] = frozenset({
-    "posterior", "distribution", "prior", "params", "hyper", "alpha", "beta",
-})
+_CONJUGATE_METHOD_HINTS: frozenset[str] = frozenset(
+    {
+        "fit",
+        "posterior",
+        "posterior_update",
+        "update_hyperparameters",
+        "update_params",
+        "update_alpha",
+        "update_beta",
+        "update_conjugate",
+    }
+)
+_SUFF_STAT_HINTS: frozenset[str] = frozenset(
+    {
+        "sufficient",
+        "stat",
+        "sum",
+        "mean",
+        "count",
+        "accumulate",
+        "aggregate",
+        "n_obs",
+        "n_samples",
+        "successes",
+        "failures",
+    }
+)
+_DISTRIBUTION_HINTS: frozenset[str] = frozenset(
+    {
+        "beta",
+        "bernoulli",
+        "binomial",
+        "dirichlet",
+        "categorical",
+        "multinomial",
+        "gamma",
+        "poisson",
+        "normal",
+        "gaussian",
+        "wishart",
+        "student",
+        "distribution",
+        "prior",
+        "posterior",
+        "hyperparameter",
+        "alpha",
+        "theta",
+    }
+)
+_DATA_EDGE_HINTS: frozenset[str] = frozenset(
+    {
+        "data",
+        "observation",
+        "sample",
+        "batch",
+        "stats",
+        "count",
+    }
+)
+_DIST_EDGE_HINTS: frozenset[str] = frozenset(
+    {
+        "posterior",
+        "distribution",
+        "prior",
+        "params",
+        "hyper",
+        "alpha",
+        "beta",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -150,8 +206,12 @@ def _atom_id(name: str) -> str:
 
 def _edge_key(e: DependencyEdge) -> tuple[str, str, str, str, str, str]:
     return (
-        e.source_id, e.target_id, e.output_name, e.input_name,
-        e.source_type, e.target_type,
+        e.source_id,
+        e.target_id,
+        e.output_name,
+        e.input_name,
+        e.source_type,
+        e.target_type,
     )
 
 
@@ -174,12 +234,14 @@ def _method_has_sufficient_stats(mf) -> bool:
 
 
 def _method_has_distribution_context(mf) -> bool:
-    text = " ".join([
-        mf.name or "",
-        mf.return_type or "",
-        mf.docstring or "",
-        mf.source_code or "",
-    ])
+    text = " ".join(
+        [
+            mf.name or "",
+            mf.return_type or "",
+            mf.docstring or "",
+            mf.source_code or "",
+        ]
+    )
     return _contains_hint(text, _DISTRIBUTION_HINTS)
 
 
@@ -192,7 +254,11 @@ def _method_is_fit_or_posterior(mf) -> bool:
 def _choose_output(atom) -> tuple[str, str]:
     if atom.outputs:
         preferred = next(
-            (o for o in atom.outputs if _contains_hint(o.name, _DATA_EDGE_HINTS | _DIST_EDGE_HINTS)),
+            (
+                o
+                for o in atom.outputs
+                if _contains_hint(o.name, _DATA_EDGE_HINTS | _DIST_EDGE_HINTS)
+            ),
             atom.outputs[0],
         )
         return preferred.name, preferred.type_desc
@@ -205,7 +271,11 @@ def _choose_input(atom, output_name: str) -> tuple[str, str]:
             if inp.name == output_name:
                 return inp.name, inp.type_desc
         preferred = next(
-            (i for i in atom.inputs if _contains_hint(i.name, _DATA_EDGE_HINTS | _DIST_EDGE_HINTS)),
+            (
+                i
+                for i in atom.inputs
+                if _contains_hint(i.name, _DATA_EDGE_HINTS | _DIST_EDGE_HINTS)
+            ),
             atom.inputs[0],
         )
         return preferred.name, preferred.type_desc
@@ -217,7 +287,9 @@ def _select_data_atom(macro_atoms, conjugate_id: str):
         aid = _atom_id(atom.name)
         if aid == conjugate_id:
             continue
-        if _contains_hint(atom.name, frozenset({"data", "ingest", "observation", "evidence", "stats"})):
+        if _contains_hint(
+            atom.name, frozenset({"data", "ingest", "observation", "evidence", "stats"})
+        ):
             return atom
         if any(_contains_hint(o.name, _DATA_EDGE_HINTS) for o in atom.outputs):
             return atom
@@ -229,9 +301,14 @@ def _select_distribution_atom(macro_atoms, conjugate_id: str):
         aid = _atom_id(atom.name)
         if aid == conjugate_id:
             continue
-        if atom.concept_type in {ConceptType.PRIOR_INIT, ConceptType.PRIOR_DISTRIBUTION}:
+        if atom.concept_type in {
+            ConceptType.PRIOR_INIT,
+            ConceptType.PRIOR_DISTRIBUTION,
+        }:
             return atom
-        if _contains_hint(atom.name, frozenset({"distribution", "posterior", "construct", "build"})):
+        if _contains_hint(
+            atom.name, frozenset({"distribution", "posterior", "construct", "build"})
+        ):
             return atom
         if any(_contains_hint(i.name, _DIST_EDGE_HINTS) for i in atom.inputs):
             return atom
@@ -258,9 +335,13 @@ def apply_conjugate_heuristics(
         has_suff_stats = any(_method_has_sufficient_stats(m) for m in methods)
         has_distribution = any(_method_has_distribution_context(m) for m in methods)
 
-        should_promote = has_explicit or (has_fit_like and has_suff_stats and has_distribution)
+        should_promote = has_explicit or (
+            has_fit_like and has_suff_stats and has_distribution
+        )
         if should_promote and atom.concept_type != ConceptType.CONJUGATE_UPDATE:
-            atom = atom.model_copy(update={"concept_type": ConceptType.CONJUGATE_UPDATE})
+            atom = atom.model_copy(
+                update={"concept_type": ConceptType.CONJUGATE_UPDATE}
+            )
 
         if atom.concept_type == ConceptType.CONJUGATE_UPDATE:
             conjugate_ids.append(_atom_id(atom.name))
@@ -313,10 +394,12 @@ def apply_conjugate_heuristics(
                     seen.add(key)
                     edges.append(edge)
 
-    updated_plan = plan.model_copy(update={
-        "macro_atoms": updated_atoms,
-        "edge_definitions": edges,
-    })
+    updated_plan = plan.model_copy(
+        update={
+            "macro_atoms": updated_atoms,
+            "edge_definitions": edges,
+        }
+    )
     return validated.model_copy(update={"plan": updated_plan})
 
 
@@ -331,17 +414,13 @@ async def phase1_extract(
     """Phase 1: Deterministic AST extraction."""
     try:
         extractor = _get_extractor(state["source_path"])
-        dfg = await extractor.extract_class(
-            state["source_path"], state["class_name"]
-        )
+        dfg = await extractor.extract_class(state["source_path"], state["class_name"])
         return {"raw_dfg": dfg, "is_opaque": dfg.is_opaque}
     except (FileNotFoundError, ValueError) as exc:
         return {"error": str(exc), "done": True}
 
 
-async def phase2_chunk(
-    state: IngesterState, config: RunnableConfig
-) -> dict[str, Any]:
+async def phase2_chunk(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """Phase 2: Run the chunker sub-graph."""
     deps: IngesterDeps = config["configurable"]["deps"]
 
@@ -392,9 +471,7 @@ async def phase2_conjugate_heuristics(
     return {"validated_plan": updated}
 
 
-async def phase3_emit(
-    state: IngesterState, config: RunnableConfig
-) -> dict[str, Any]:
+async def phase3_emit(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """Phase 3: Generate code and build IngestionBundle."""
     if state.get("error"):
         return {}
@@ -413,21 +490,23 @@ async def phase3_emit(
         dfg = state["raw_dfg"]
         try:
             witness_source, witness_names = await generate_opaque_witnesses(
-                state["validated_plan"].plan.macro_atoms, dfg, deps.llm,
+                state["validated_plan"].plan.macro_atoms,
+                dfg,
+                deps.llm,
             )
             if witness_source.strip():
-                bundle = bundle.model_copy(update={
-                    "generated_witnesses": witness_source,
-                })
+                bundle = bundle.model_copy(
+                    update={
+                        "generated_witnesses": witness_source,
+                    }
+                )
         except Exception as exc:
             logger.warning("Opaque witness generation failed: %s", exc)
 
     return {"bundle": bundle}
 
 
-async def verify_types(
-    state: IngesterState, config: RunnableConfig
-) -> dict[str, Any]:
+async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """Write generated source to temp files and run mypy."""
     deps: IngesterDeps = config["configurable"]["deps"]
     bundle: IngestionBundle = state["bundle"]
@@ -448,9 +527,7 @@ async def verify_types(
         models_path.write_text(bundle.generated_state_models)
 
     try:
-        ok, output = await deps.proof_env.check_proof(
-            bundle.generated_atoms, ""
-        )
+        ok, output = await deps.proof_env.check_proof(bundle.generated_atoms, "")
         if ok:
             return {"mypy_passed": True, "mypy_errors": ""}
         else:
@@ -460,9 +537,7 @@ async def verify_types(
         return {"mypy_passed": False, "mypy_errors": str(exc)}
 
 
-async def verify_ghost(
-    state: IngesterState, config: RunnableConfig
-) -> dict[str, Any]:
+async def verify_ghost(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """Run ghost simulation on the generated CDG."""
     bundle: IngestionBundle = state["bundle"]
 
@@ -473,20 +548,22 @@ async def verify_ghost(
         from ageom.synthesizer.ghost_sim import run_ghost_simulation
 
         report = run_ghost_simulation(bundle.cdg, bundle.match_results)
-        bundle_update = bundle.model_copy(update={
-            "ghost_sim_passed": report.passed or not report.ran,
-            "ghost_sim_report": {
-                "ran": report.ran,
-                "passed": report.passed,
-                "error": report.error,
-                "error_node": report.error_node,
-                "error_function": report.error_function,
-                "coverage": report.coverage,
-                "cyclic_deadlock": report.cyclic_deadlock,
-                "deadlock_nodes": report.deadlock_nodes,
-                "iterations_used": report.iterations_used,
-            },
-        })
+        bundle_update = bundle.model_copy(
+            update={
+                "ghost_sim_passed": report.passed or not report.ran,
+                "ghost_sim_report": {
+                    "ran": report.ran,
+                    "passed": report.passed,
+                    "error": report.error,
+                    "error_node": report.error_node,
+                    "error_function": report.error_function,
+                    "coverage": report.coverage,
+                    "cyclic_deadlock": report.cyclic_deadlock,
+                    "deadlock_nodes": report.deadlock_nodes,
+                    "iterations_used": report.iterations_used,
+                },
+            }
+        )
         passed = report.passed or not report.ran
         errors = report.error if not passed else ""
         return {
@@ -498,9 +575,7 @@ async def verify_ghost(
         return {"ghost_passed": True, "ghost_errors": ""}
 
 
-async def repair_types(
-    state: IngesterState, config: RunnableConfig
-) -> dict[str, Any]:
+async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """LLM-assisted repair of mypy type errors."""
     deps: IngesterDeps = config["configurable"]["deps"]
     bundle: IngestionBundle = state["bundle"]
@@ -510,9 +585,9 @@ async def repair_types(
         source_code=bundle.generated_atoms,
     )
 
-    from ageom.llm_router import INGESTER_FIX_TYPE, select_llm
-
-    response = await select_llm(deps.llm, INGESTER_FIX_TYPE).complete(FIX_TYPE_ERROR_SYSTEM, user_prompt)
+    response = await select_llm(deps.llm, INGESTER_FIX_TYPE).complete(
+        FIX_TYPE_ERROR_SYSTEM, user_prompt
+    )
 
     try:
         fixes = json.loads(response)
@@ -524,9 +599,11 @@ async def repair_types(
                 replacement = fix.get("replacement", "")
                 lines[start:end] = replacement.splitlines()
             updated_atoms = "\n".join(lines)
-            updated_bundle = bundle.model_copy(update={
-                "generated_atoms": updated_atoms,
-            })
+            updated_bundle = bundle.model_copy(
+                update={
+                    "generated_atoms": updated_atoms,
+                }
+            )
             return {
                 "bundle": updated_bundle,
                 "type_repair_count": state.get("type_repair_count", 0) + 1,
@@ -537,9 +614,7 @@ async def repair_types(
     return {"type_repair_count": state.get("type_repair_count", 0) + 1}
 
 
-async def repair_ghost(
-    state: IngesterState, config: RunnableConfig
-) -> dict[str, Any]:
+async def repair_ghost(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """LLM-assisted repair of ghost simulation errors."""
     deps: IngesterDeps = config["configurable"]["deps"]
     bundle: IngestionBundle = state["bundle"]
@@ -552,9 +627,9 @@ async def repair_ghost(
         witness_source=bundle.generated_witnesses,
     )
 
-    from ageom.llm_router import INGESTER_FIX_GHOST, select_llm
-
-    response = await select_llm(deps.llm, INGESTER_FIX_GHOST).complete(FIX_GHOST_ERROR_SYSTEM, user_prompt)
+    response = await select_llm(deps.llm, INGESTER_FIX_GHOST).complete(
+        FIX_GHOST_ERROR_SYSTEM, user_prompt
+    )
 
     try:
         fixes = json.loads(response)
@@ -565,9 +640,11 @@ async def repair_ghost(
                 if replacement:
                     updated_witnesses = replacement
                     break
-            updated_bundle = bundle.model_copy(update={
-                "generated_witnesses": updated_witnesses,
-            })
+            updated_bundle = bundle.model_copy(
+                update={
+                    "generated_witnesses": updated_witnesses,
+                }
+            )
             return {
                 "bundle": updated_bundle,
                 "ghost_repair_count": state.get("ghost_repair_count", 0) + 1,
@@ -599,8 +676,6 @@ async def repair_message_cycle(
         witness_source=bundle.generated_witnesses,
     )
 
-    from ageom.llm_router import INGESTER_FIX_MESSAGE_CYCLE, select_llm
-
     response = await select_llm(deps.llm, INGESTER_FIX_MESSAGE_CYCLE).complete(
         FIX_MESSAGE_CYCLE_SYSTEM, user_prompt
     )
@@ -609,15 +684,19 @@ async def repair_message_cycle(
         fixes = json.loads(response)
         if isinstance(fixes, list) and fixes:
             lines = bundle.generated_witnesses.splitlines()
-            for fix in sorted(fixes, key=lambda f: f.get("line_start", 0), reverse=True):
+            for fix in sorted(
+                fixes, key=lambda f: f.get("line_start", 0), reverse=True
+            ):
                 start = fix.get("line_start", 1) - 1
                 end = fix.get("line_end", start + 1)
                 replacement = fix.get("replacement", "")
                 lines[start:end] = replacement.splitlines()
             updated_witnesses = "\n".join(lines)
-            updated_bundle = bundle.model_copy(update={
-                "generated_witnesses": updated_witnesses,
-            })
+            updated_bundle = bundle.model_copy(
+                update={
+                    "generated_witnesses": updated_witnesses,
+                }
+            )
             return {
                 "bundle": updated_bundle,
                 "ghost_repair_count": state.get("ghost_repair_count", 0) + 1,
@@ -741,9 +820,7 @@ class IngesterAgent:
         )
         self._graph = build_ingester_graph().compile()
 
-    async def ingest(
-        self, source_path: str, class_name: str
-    ) -> IngestionBundle:
+    async def ingest(self, source_path: str, class_name: str) -> IngestionBundle:
         """Run the full ingester pipeline.
 
         Args:
@@ -772,9 +849,7 @@ class IngesterAgent:
             "error": "",
         }
 
-        config: dict[str, Any] = {
-            "configurable": {"deps": self._deps}
-        }
+        config: dict[str, Any] = {"configurable": {"deps": self._deps}}
 
         final_state = await self._graph.ainvoke(initial_state, config=config)
 
@@ -801,6 +876,8 @@ class IngesterAgent:
         dfg = await extractor.extract_procedural(source_path, name)
         plan = build_procedural_plan(dfg, name)
         return emit_ingestion_bundle(
-            plan, name, source_path,
+            plan,
+            name,
+            source_path,
             source_language=dfg.source_language,
         )

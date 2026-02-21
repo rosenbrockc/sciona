@@ -2,7 +2,6 @@
 
 import json
 import pytest
-from pathlib import Path
 
 from ageom.architect.handoff import (
     CDGExport,
@@ -57,8 +56,10 @@ def atomic_nodes() -> list[AlgorithmicNode]:
             status=NodeStatus.ATOMIC,
             matched_primitive="binary_search",
             type_signature="list[int] -> int -> int",
-            inputs=[IOSpec(name="arr", type_desc="sorted list[int]"),
-                    IOSpec(name="target", type_desc="int")],
+            inputs=[
+                IOSpec(name="arr", type_desc="sorted list[int]"),
+                IOSpec(name="target", type_desc="int"),
+            ],
             outputs=[IOSpec(name="index", type_desc="int")],
             depth=1,
         ),
@@ -130,7 +131,8 @@ class TestCDGExport:
 class TestExportCDG:
     def test_valid_export(self, atomic_nodes, edges):
         cdg = export_cdg(
-            atomic_nodes, edges,
+            atomic_nodes,
+            edges,
             goal="Sort and search",
             paradigm="divide_and_conquer",
         )

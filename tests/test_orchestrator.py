@@ -1,6 +1,6 @@
 """Tests for the orchestrator feedback loop (Issue 2)."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -8,11 +8,10 @@ from ageom.architect.handoff import CDGExport
 from ageom.architect.models import (
     AlgorithmicNode,
     ConceptType,
-    DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.orchestrator import OrchestratorResult, refine_on_failure, run_orchestration
+from ageom.orchestrator import refine_on_failure, run_orchestration
 from ageom.types import (
     CandidateMatch,
     Declaration,
@@ -20,7 +19,6 @@ from ageom.types import (
     MatchFailureReport,
     MatchResult,
     PDGNode,
-    Prover,
     VerificationResult,
 )
 
@@ -45,7 +43,9 @@ def _make_cdg(*node_ids: str) -> CDGExport:
 
 def _make_match_result(node_id: str, success: bool) -> MatchResult:
     decl = Declaration(name=f"decl_{node_id}", type_signature="nat -> nat")
-    candidate = CandidateMatch(declaration=decl, score=0.9, retrieval_method="embedding")
+    candidate = CandidateMatch(
+        declaration=decl, score=0.9, retrieval_method="embedding"
+    )
     vr = VerificationResult(candidate=candidate, verified=success)
     return MatchResult(
         pdg_node=PDGNode(predicate_id=node_id, statement="nat -> nat"),
@@ -61,15 +61,20 @@ async def test_orchestration_all_matched():
     cdg = _make_cdg("a", "b")
 
     hunter = AsyncMock()
-    hunter.find_match = AsyncMock(side_effect=[
-        _make_match_result("a", True),
-        _make_match_result("b", True),
-    ])
+    hunter.find_match = AsyncMock(
+        side_effect=[
+            _make_match_result("a", True),
+            _make_match_result("b", True),
+        ]
+    )
 
     llm = AsyncMock()
 
     result = await run_orchestration(
-        cdg, hunter_agent=hunter, llm=llm, max_rounds=3,
+        cdg,
+        hunter_agent=hunter,
+        llm=llm,
+        max_rounds=3,
     )
 
     assert result.all_matched
@@ -96,10 +101,15 @@ async def test_orchestration_failure_triggers_refinement():
     hunter.find_match = AsyncMock(side_effect=mock_find_match)
 
     llm = AsyncMock()
-    llm.complete = AsyncMock(return_value='[{"name": "sub1", "description": "sub", "type_signature": "nat -> nat"}]')
+    llm.complete = AsyncMock(
+        return_value='[{"name": "sub1", "description": "sub", "type_signature": "nat -> nat"}]'
+    )
 
     result = await run_orchestration(
-        cdg, hunter_agent=hunter, llm=llm, max_rounds=3,
+        cdg,
+        hunter_agent=hunter,
+        llm=llm,
+        max_rounds=3,
     )
 
     assert result.rounds_used >= 1

@@ -13,7 +13,6 @@ import argparse
 import json
 import os
 import re
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -117,10 +116,13 @@ def _strip_fences(text: str) -> str:
 def main() -> int:
     dotenv_path = Path(".env")
 
-    parser = argparse.ArgumentParser(description="Test local llama.cpp server health and output quality.")
+    parser = argparse.ArgumentParser(
+        description="Test local llama.cpp server health and output quality."
+    )
     parser.add_argument(
         "--base-url",
-        default=_load_dotenv_value("AGEOM_LLAMA_CPP_BASE_URL", dotenv_path) or "http://127.0.0.1:18080/v1",
+        default=_load_dotenv_value("AGEOM_LLAMA_CPP_BASE_URL", dotenv_path)
+        or "http://127.0.0.1:18080/v1",
         help="OpenAI-compatible base URL (default: AGEOM_LLAMA_CPP_BASE_URL or http://127.0.0.1:18080/v1)",
     )
     parser.add_argument(
@@ -165,11 +167,15 @@ def main() -> int:
     if not model_ids:
         print("[fail] /models returned no model IDs")
         return 1
-    print(f"[pass] /models returned {len(model_ids)} model(s): {', '.join(model_ids[:3])}")
+    print(
+        f"[pass] /models returned {len(model_ids)} model(s): {', '.join(model_ids[:3])}"
+    )
 
     model = args.model or model_ids[0]
     if model not in model_ids:
-        print(f"[warn] requested model '{model}' not in /models; using '{model_ids[0]}'")
+        print(
+            f"[warn] requested model '{model}' not in /models; using '{model_ids[0]}'"
+        )
         model = model_ids[0]
     print(f"[info] using model={model}")
 
@@ -186,14 +192,21 @@ def main() -> int:
             api_key=api_key,
             model=model,
             messages=[
-                {"role": "system", "content": "You are a strict output-format assistant."},
+                {
+                    "role": "system",
+                    "content": "You are a strict output-format assistant.",
+                },
                 {"role": "user", "content": json_prompt},
             ],
             timeout_s=timeout_s,
         )
         try:
             parsed = json.loads(_strip_fences(json_out))
-            if not (isinstance(parsed, dict) and parsed.get("status") == "ok" and parsed.get("value") == 7):
+            if not (
+                isinstance(parsed, dict)
+                and parsed.get("status") == "ok"
+                and parsed.get("value") == 7
+            ):
                 failures.append(f"json_contract_bad_values: {json_out}")
             else:
                 print("[pass] JSON contract output is valid and correct")
@@ -209,7 +222,10 @@ def main() -> int:
             api_key=api_key,
             model=model,
             messages=[
-                {"role": "system", "content": "Answer only with the final integer result."},
+                {
+                    "role": "system",
+                    "content": "Answer only with the final integer result.",
+                },
                 {"role": "user", "content": "19 + 23 = ?"},
             ],
             timeout_s=timeout_s,

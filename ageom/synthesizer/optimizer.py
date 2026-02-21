@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from ageom.protocols import ProofEnvironment
 from ageom.synthesizer.models import AssemblyUnit, SkeletonFile
@@ -106,28 +106,31 @@ class Optimizer:
 
             # Find the definition line in the source
             for i, line in enumerate(lines):
-                if cand.unit.declaration_name in line and ("def " in line or "theorem " in line):
+                if cand.unit.declaration_name in line and (
+                    "def " in line or "theorem " in line
+                ):
                     line_num = i + 1  # 1-indexed
 
                     if skeleton.prover == "lean4":
                         extern_line = (
-                            f'@[extern "{cand.rule.replacement_symbol}"] '
-                            f"{line}"
+                            f'@[extern "{cand.rule.replacement_symbol}"] ' f"{line}"
                         )
                     else:
                         # Coq: Extract Constant directive
                         extern_line = (
                             f"{line}\n"
-                            f'Extract Constant {cand.unit.declaration_name} '
+                            f"Extract Constant {cand.unit.declaration_name} "
                             f'=> "{cand.rule.replacement_symbol}".'
                         )
 
-                    patches.append(Patch(
-                        line_start=line_num,
-                        line_end=line_num,
-                        replacement=extern_line,
-                        description=f"Optimize: {cand.unit.declaration_name} → {cand.rule.replacement_symbol}",
-                    ))
+                    patches.append(
+                        Patch(
+                            line_start=line_num,
+                            line_end=line_num,
+                            replacement=extern_line,
+                            description=f"Optimize: {cand.unit.declaration_name} → {cand.rule.replacement_symbol}",
+                        )
+                    )
                     break
 
         if patches:

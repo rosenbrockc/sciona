@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import json
 import textwrap
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from ageom.architect.models import NodeStatus
 from ageom.ingester import IngesterAgent, IngestionBundle
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -36,40 +35,58 @@ SAMPLE_CLASS = textwrap.dedent("""\
 
 
 def _llm_response_chunk() -> str:
-    return json.dumps({
-        "macro_atoms": [
-            {
-                "name": "Data Processor",
-                "description": "Transform raw data",
-                "method_names": ["__init__", "process"],
-                "inputs": [{"name": "data", "type_desc": "list[float]", "constraints": ""}],
-                "outputs": [{"name": "processed", "type_desc": "list[float]", "constraints": ""}],
-                "config_params": ["normalize"],
-                "concept_type": "custom",
-                "is_optional": False,
-            },
-            {
-                "name": "Summarizer",
-                "description": "Summarize processed data",
-                "method_names": ["summarize"],
-                "inputs": [{"name": "processed", "type_desc": "list[float]", "constraints": ""}],
-                "outputs": [{"name": "summary", "type_desc": "float", "constraints": ""}],
-                "config_params": [],
-                "concept_type": "custom",
-                "is_optional": False,
-            },
-        ],
-        "edges": [
-            {
-                "source_id": "data_processor",
-                "target_id": "summarizer",
-                "output_name": "processed",
-                "input_name": "processed",
-                "source_type": "list[float]",
-                "target_type": "list[float]",
-            }
-        ],
-    })
+    return json.dumps(
+        {
+            "macro_atoms": [
+                {
+                    "name": "Data Processor",
+                    "description": "Transform raw data",
+                    "method_names": ["__init__", "process"],
+                    "inputs": [
+                        {"name": "data", "type_desc": "list[float]", "constraints": ""}
+                    ],
+                    "outputs": [
+                        {
+                            "name": "processed",
+                            "type_desc": "list[float]",
+                            "constraints": "",
+                        }
+                    ],
+                    "config_params": ["normalize"],
+                    "concept_type": "custom",
+                    "is_optional": False,
+                },
+                {
+                    "name": "Summarizer",
+                    "description": "Summarize processed data",
+                    "method_names": ["summarize"],
+                    "inputs": [
+                        {
+                            "name": "processed",
+                            "type_desc": "list[float]",
+                            "constraints": "",
+                        }
+                    ],
+                    "outputs": [
+                        {"name": "summary", "type_desc": "float", "constraints": ""}
+                    ],
+                    "config_params": [],
+                    "concept_type": "custom",
+                    "is_optional": False,
+                },
+            ],
+            "edges": [
+                {
+                    "source_id": "data_processor",
+                    "target_id": "summarizer",
+                    "output_name": "processed",
+                    "input_name": "processed",
+                    "source_type": "list[float]",
+                    "target_type": "list[float]",
+                }
+            ],
+        }
+    )
 
 
 @pytest.fixture

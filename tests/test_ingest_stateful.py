@@ -18,10 +18,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import ConceptType, DependencyEdge, IOSpec, NodeStatus
+from ageom.architect.models import ConceptType, DependencyEdge, IOSpec
 from ageom.ingester.chunker import _compute_state_edges
 from ageom.ingester.emitter import (
-    emit_ingestion_bundle,
     generate_ghost_witnesses,
     generate_stateful_wrappers,
 )
@@ -30,17 +29,15 @@ from ageom.ingester.graph import IngesterAgent
 from ageom.ingester.models import (
     MacroAtomSpec,
     ProposedMacroPlan,
-    RawDataFlowGraph,
     StateModelSpec,
     ValidatedMacroPlan,
 )
-
 
 # ---------------------------------------------------------------------------
 # Mock class source
 # ---------------------------------------------------------------------------
 
-ROLLING_AVERAGER_SOURCE = textwrap.dedent('''\
+ROLLING_AVERAGER_SOURCE = textwrap.dedent("""\
     class RollingAverager:
         def __init__(self, window_size: int = 5):
             self.window_size = window_size
@@ -60,73 +57,77 @@ ROLLING_AVERAGER_SOURCE = textwrap.dedent('''\
             else:
                 self.result = sum(self.buffer) / len(self.buffer)
             return self.result
-''')
+""")
 
 
 # ---------------------------------------------------------------------------
 # Mock LLM responses (deterministic, like BioSPPy test pattern)
 # ---------------------------------------------------------------------------
 
-_CHUNK_RESPONSE = json.dumps({
-    "macro_atoms": [
-        {
-            "name": "Sample Accumulator",
-            "description": "Accumulate sample values into a rolling buffer",
-            "method_names": ["add_sample"],
-            "inputs": [
-                {
-                    "name": "value",
-                    "type_desc": "float",
-                    "constraints": "numeric sample value",
-                },
-            ],
-            "outputs": [],
-            "config_params": ["window_size"],
-            "concept_type": "custom",
-            "is_optional": False,
-        },
-        {
-            "name": "Average Computer",
-            "description": "Compute the rolling average from the buffer",
-            "method_names": ["compute_average"],
-            "inputs": [],
-            "outputs": [
-                {
-                    "name": "result",
-                    "type_desc": "float",
-                    "constraints": "rolling average value",
-                },
-            ],
-            "config_params": [],
-            "concept_type": "custom",
-            "is_optional": False,
-        },
-    ],
-    "edges": [
-        {
-            "source_id": "sample_accumulator",
-            "target_id": "average_computer",
-            "output_name": "buffer",
-            "input_name": "buffer",
-            "source_type": "list",
-            "target_type": "list",
-        },
-    ],
-})
+_CHUNK_RESPONSE = json.dumps(
+    {
+        "macro_atoms": [
+            {
+                "name": "Sample Accumulator",
+                "description": "Accumulate sample values into a rolling buffer",
+                "method_names": ["add_sample"],
+                "inputs": [
+                    {
+                        "name": "value",
+                        "type_desc": "float",
+                        "constraints": "numeric sample value",
+                    },
+                ],
+                "outputs": [],
+                "config_params": ["window_size"],
+                "concept_type": "custom",
+                "is_optional": False,
+            },
+            {
+                "name": "Average Computer",
+                "description": "Compute the rolling average from the buffer",
+                "method_names": ["compute_average"],
+                "inputs": [],
+                "outputs": [
+                    {
+                        "name": "result",
+                        "type_desc": "float",
+                        "constraints": "rolling average value",
+                    },
+                ],
+                "config_params": [],
+                "concept_type": "custom",
+                "is_optional": False,
+            },
+        ],
+        "edges": [
+            {
+                "source_id": "sample_accumulator",
+                "target_id": "average_computer",
+                "output_name": "buffer",
+                "input_name": "buffer",
+                "source_type": "list",
+                "target_type": "list",
+            },
+        ],
+    }
+)
 
-_HOIST_RESPONSE = json.dumps({
-    "state_models": [
-        {
-            "model_name": "RollingAveragerState",
-            "fields": [
-                ["buffer", "list"],
-                ["count", "int"],
-            ],
-            "source_attrs": ["buffer", "count"],
-            "docstring": "Cross-window state for the rolling averager.",
-        },
-    ],
-})
+_HOIST_RESPONSE = json.dumps(
+    {
+        "state_models": [
+            {
+                "model_name": "RollingAveragerState",
+                "fields": [
+                    ["buffer", "list"],
+                    ["count", "int"],
+                ],
+                "source_attrs": ["buffer", "count"],
+                "docstring": "Cross-window state for the rolling averager.",
+            },
+        ],
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +150,11 @@ def _make_stateful_plan() -> ValidatedMacroPlan:
             name="Sample Accumulator",
             description="Accumulate sample values into a rolling buffer",
             method_names=["add_sample"],
-            inputs=[IOSpec(name="value", type_desc="float", constraints="numeric sample value")],
+            inputs=[
+                IOSpec(
+                    name="value", type_desc="float", constraints="numeric sample value"
+                )
+            ],
             outputs=[],
             config_params=["window_size"],
             concept_type=ConceptType.CUSTOM,
@@ -159,7 +164,13 @@ def _make_stateful_plan() -> ValidatedMacroPlan:
             description="Compute the rolling average from the buffer",
             method_names=["compute_average"],
             inputs=[],
-            outputs=[IOSpec(name="result", type_desc="float", constraints="rolling average value")],
+            outputs=[
+                IOSpec(
+                    name="result",
+                    type_desc="float",
+                    constraints="rolling average value",
+                )
+            ],
             concept_type=ConceptType.CUSTOM,
         ),
     ]
@@ -250,7 +261,8 @@ class TestStatefulWrapperGeneration:
     def test_wrapper_has_state_param(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         source = generate_stateful_wrappers(
             plan.plan.macro_atoms,
@@ -263,7 +275,8 @@ class TestStatefulWrapperGeneration:
     def test_wrapper_return_type_is_tuple(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         source = generate_stateful_wrappers(
             plan.plan.macro_atoms,
@@ -277,7 +290,8 @@ class TestStatefulWrapperGeneration:
     def test_wrapper_contains_dunder_new(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         source = generate_stateful_wrappers(
             plan.plan.macro_atoms,
@@ -290,7 +304,8 @@ class TestStatefulWrapperGeneration:
     def test_wrapper_contains_model_copy(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         source = generate_stateful_wrappers(
             plan.plan.macro_atoms,
@@ -303,7 +318,8 @@ class TestStatefulWrapperGeneration:
     def test_wrapper_injects_all_state_fields(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         source = generate_stateful_wrappers(
             plan.plan.macro_atoms,
@@ -317,7 +333,8 @@ class TestStatefulWrapperGeneration:
     def test_wrapper_extracts_all_state_fields(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         source = generate_stateful_wrappers(
             plan.plan.macro_atoms,
@@ -331,7 +348,8 @@ class TestStatefulWrapperGeneration:
     def test_wrapper_is_valid_python(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         source = generate_stateful_wrappers(
             plan.plan.macro_atoms,
@@ -353,21 +371,24 @@ class TestStatefulGhostWitnesses:
     def test_witness_has_state_param(self):
         plan = _make_stateful_plan()
         source, _ = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         assert "state: AbstractSignal" in source
 
     def test_witness_returns_tuple(self):
         plan = _make_stateful_plan()
         source, _ = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         assert "tuple[" in source
 
     def test_witness_is_valid_python(self):
         plan = _make_stateful_plan()
         source, _ = generate_ghost_witnesses(
-            plan.plan.macro_atoms, state_models=plan.plan.state_models,
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
         )
         ast.parse(source)
 
@@ -466,8 +487,7 @@ class TestStatefulBundle:
         bundle = await agent.ingest(ra_source, "RollingAverager")
 
         state_edges = [
-            e for e in bundle.cdg.edges
-            if e.source_type == "RollingAveragerState"
+            e for e in bundle.cdg.edges if e.source_type == "RollingAveragerState"
         ]
         assert len(state_edges) > 0
 

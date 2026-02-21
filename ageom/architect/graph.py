@@ -130,8 +130,7 @@ class DecompositionAgent:
 
         # Filter out rejected nodes
         active_nodes = [
-            n for n in final_state["nodes"]
-            if n.status != NodeStatus.REJECTED
+            n for n in final_state["nodes"] if n.status != NodeStatus.REJECTED
         ]
 
         return CDGExport(
@@ -162,12 +161,14 @@ class DecompositionAgent:
         config = {"configurable": {"thread_id": thread_id}}
         history: list[dict] = []
         async for snapshot in self._graph.aget_state_history(config):
-            history.append({
-                "values": snapshot.values,
-                "checkpoint_id": snapshot.config["configurable"].get(
-                    "checkpoint_id"
-                ),
-            })
+            history.append(
+                {
+                    "values": snapshot.values,
+                    "checkpoint_id": snapshot.config["configurable"].get(
+                        "checkpoint_id"
+                    ),
+                }
+            )
         return history
 
     async def fork(

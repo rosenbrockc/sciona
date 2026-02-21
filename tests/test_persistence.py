@@ -29,37 +29,41 @@ from ageom.architect.models import (
 )
 from langgraph.checkpoint.memory import MemorySaver
 
-
 # ---------------------------------------------------------------------------
 # Shared fixtures / helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_catalog() -> PrimitiveCatalog:
     catalog = PrimitiveCatalog()
-    catalog.add(AlgorithmicPrimitive(
-        name="merge",
-        source="clrs-30",
-        category=ConceptType.SORTING,
-        description="Merge two sorted lists into one sorted list",
-        inputs=[
-            IOSpec(name="left", type_desc="list[comparable]"),
-            IOSpec(name="right", type_desc="list[comparable]"),
-        ],
-        outputs=[IOSpec(name="result", type_desc="list[comparable]")],
-        type_signature="list[T] -> list[T] -> list[T]",
-    ))
-    catalog.add(AlgorithmicPrimitive(
-        name="compare",
-        source="clrs-30",
-        category=ConceptType.SORTING,
-        description="Compare two elements",
-        inputs=[
-            IOSpec(name="a", type_desc="comparable"),
-            IOSpec(name="b", type_desc="comparable"),
-        ],
-        outputs=[IOSpec(name="order", type_desc="bool")],
-        type_signature="T -> T -> bool",
-    ))
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="merge",
+            source="clrs-30",
+            category=ConceptType.SORTING,
+            description="Merge two sorted lists into one sorted list",
+            inputs=[
+                IOSpec(name="left", type_desc="list[comparable]"),
+                IOSpec(name="right", type_desc="list[comparable]"),
+            ],
+            outputs=[IOSpec(name="result", type_desc="list[comparable]")],
+            type_signature="list[T] -> list[T] -> list[T]",
+        )
+    )
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="compare",
+            source="clrs-30",
+            category=ConceptType.SORTING,
+            description="Compare two elements",
+            inputs=[
+                IOSpec(name="a", type_desc="comparable"),
+                IOSpec(name="b", type_desc="comparable"),
+            ],
+            outputs=[IOSpec(name="order", type_desc="bool")],
+            type_signature="T -> T -> bool",
+        )
+    )
     return catalog
 
 
@@ -71,56 +75,62 @@ def _make_skill_index():
 
 def _make_mock_llm():
     """Mock LLM that drives a simple decomposition to completion."""
-    strategy_response = json.dumps({
-        "paradigm": "divide_and_conquer",
-        "rationale": "Classic D&C",
-        "variant_hint": "merge_sort",
-    })
-    decompose_response = json.dumps({
-        "sub_nodes": [
-            {
-                "name": "Split Input",
-                "description": "Split the input list into two halves",
-                "concept_type": "divide_and_conquer",
-                "inputs": [{"name": "data", "type_desc": "list[comparable]"}],
-                "outputs": [
-                    {"name": "left", "type_desc": "list[comparable]"},
-                    {"name": "right", "type_desc": "list[comparable]"},
-                ],
-                "type_signature": "",
-                "is_atomic": False,
-                "matched_primitive": None,
-            },
-            {
-                "name": "merge",
-                "description": "Merge two sorted lists into one sorted list",
-                "concept_type": "sorting",
-                "inputs": [
-                    {"name": "left", "type_desc": "list[comparable]"},
-                    {"name": "right", "type_desc": "list[comparable]"},
-                ],
-                "outputs": [{"name": "result", "type_desc": "list[comparable]"}],
-                "type_signature": "list[T] -> list[T] -> list[T]",
-                "is_atomic": True,
-                "matched_primitive": "merge",
-            },
-        ],
-        "edges": [
-            {
-                "source_name": "Split Input",
-                "target_name": "merge",
-                "output_name": "left",
-                "input_name": "left",
-                "data_type": "list[comparable]",
-            },
-        ],
-    })
-    critique_response = json.dumps({
-        "approved": True,
-        "reason": "Looks good",
-        "io_issues": [],
-        "flagged_nodes": [],
-    })
+    strategy_response = json.dumps(
+        {
+            "paradigm": "divide_and_conquer",
+            "rationale": "Classic D&C",
+            "variant_hint": "merge_sort",
+        }
+    )
+    decompose_response = json.dumps(
+        {
+            "sub_nodes": [
+                {
+                    "name": "Split Input",
+                    "description": "Split the input list into two halves",
+                    "concept_type": "divide_and_conquer",
+                    "inputs": [{"name": "data", "type_desc": "list[comparable]"}],
+                    "outputs": [
+                        {"name": "left", "type_desc": "list[comparable]"},
+                        {"name": "right", "type_desc": "list[comparable]"},
+                    ],
+                    "type_signature": "",
+                    "is_atomic": False,
+                    "matched_primitive": None,
+                },
+                {
+                    "name": "merge",
+                    "description": "Merge two sorted lists into one sorted list",
+                    "concept_type": "sorting",
+                    "inputs": [
+                        {"name": "left", "type_desc": "list[comparable]"},
+                        {"name": "right", "type_desc": "list[comparable]"},
+                    ],
+                    "outputs": [{"name": "result", "type_desc": "list[comparable]"}],
+                    "type_signature": "list[T] -> list[T] -> list[T]",
+                    "is_atomic": True,
+                    "matched_primitive": "merge",
+                },
+            ],
+            "edges": [
+                {
+                    "source_name": "Split Input",
+                    "target_name": "merge",
+                    "output_name": "left",
+                    "input_name": "left",
+                    "data_type": "list[comparable]",
+                },
+            ],
+        }
+    )
+    critique_response = json.dumps(
+        {
+            "approved": True,
+            "reason": "Looks good",
+            "io_issues": [],
+            "flagged_nodes": [],
+        }
+    )
 
     llm = AsyncMock()
 
@@ -152,6 +162,7 @@ def _build_agent(checkpointer=None):
 # TestCheckpointerFactory
 # ---------------------------------------------------------------------------
 
+
 class TestCheckpointerFactory:
     @pytest.mark.asyncio
     async def test_none_yields_memory_saver(self):
@@ -168,6 +179,7 @@ class TestCheckpointerFactory:
 # TestCheckpointPersistence
 # ---------------------------------------------------------------------------
 
+
 class TestCheckpointPersistence:
     @pytest.mark.asyncio
     async def test_thread_id_in_metadata(self):
@@ -180,7 +192,7 @@ class TestCheckpointPersistence:
     async def test_get_state_returns_terminal(self):
         saver = MemorySaver()
         agent = _build_agent(checkpointer=saver)
-        cdg = await agent.decompose("Sort a list", thread_id="terminal-check")
+        await agent.decompose("Sort a list", thread_id="terminal-check")
         state = await agent.get_state("terminal-check")
         assert state["values"]["done"] is True
 
@@ -206,6 +218,7 @@ class TestCheckpointPersistence:
 # ---------------------------------------------------------------------------
 # TestTimeTravelAndFork
 # ---------------------------------------------------------------------------
+
 
 class TestTimeTravelAndFork:
     @pytest.mark.asyncio
@@ -274,6 +287,7 @@ class TestTimeTravelAndFork:
 # TestNoCheckpointerFallback
 # ---------------------------------------------------------------------------
 
+
 class TestNoCheckpointerFallback:
     @pytest.mark.asyncio
     async def test_agent_works_without_checkpointer(self):
@@ -287,6 +301,7 @@ class TestNoCheckpointerFallback:
 # ---------------------------------------------------------------------------
 # TestHandoffValidation
 # ---------------------------------------------------------------------------
+
 
 def _valid_cdg() -> CDGExport:
     """CDG where all leaves are atomic with description + type_signature."""

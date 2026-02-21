@@ -1,10 +1,9 @@
 """Tests for CLRS-30 and coq-100-theorems ingestion."""
 
-import pytest
 from pathlib import Path
 from textwrap import dedent
 
-from ageom.architect.models import AlgorithmicPrimitive, ConceptType
+from ageom.architect.models import ConceptType
 
 
 class TestIngestCLRS:

@@ -35,6 +35,12 @@ from ageom.ingester.prompts import (
     SEMANTIC_CHUNK_SYSTEM,
     SEMANTIC_CHUNK_USER,
 )
+from ageom.llm_router import (
+    INGESTER_ABSTRACT,
+    INGESTER_CHUNK,
+    INGESTER_HOIST_STATE,
+    select_llm,
+)
 from ageom.protocols import SemanticIndex
 
 logger = logging.getLogger(__name__)
@@ -157,14 +163,16 @@ def _compute_state_edges(
                 if key in seen:
                     continue
                 seen.add(key)
-                edges.append(DependencyEdge(
-                    source_id=w,
-                    target_id=r,
-                    output_name=attr,
-                    input_name=attr,
-                    source_type=state_model_name,
-                    target_type=state_model_name,
-                ))
+                edges.append(
+                    DependencyEdge(
+                        source_id=w,
+                        target_id=r,
+                        output_name=attr,
+                        input_name=attr,
+                        source_type=state_model_name,
+                        target_type=state_model_name,
+                    )
+                )
 
     return edges
 
@@ -192,34 +200,38 @@ def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
             concept = ConceptType(item.get("concept_type", "custom"))
         except ValueError:
             concept = ConceptType.CUSTOM
-        atoms.append(MacroAtomSpec(
-            name=item.get("name", ""),
-            description=item.get("description", ""),
-            method_names=item.get("method_names", []),
-            inputs=inputs,
-            outputs=outputs,
-            config_params=item.get("config_params", []),
-            concept_type=concept,
-            is_optional=item.get("is_optional", False),
-            is_stochastic=item.get("is_stochastic", False),
-            requires_rng_key=item.get("requires_rng_key", False),
-            requires_autodiff=item.get("requires_autodiff", False),
-            autodiff_backend=item.get("autodiff_backend", ""),
-        ))
+        atoms.append(
+            MacroAtomSpec(
+                name=item.get("name", ""),
+                description=item.get("description", ""),
+                method_names=item.get("method_names", []),
+                inputs=inputs,
+                outputs=outputs,
+                config_params=item.get("config_params", []),
+                concept_type=concept,
+                is_optional=item.get("is_optional", False),
+                is_stochastic=item.get("is_stochastic", False),
+                requires_rng_key=item.get("requires_rng_key", False),
+                requires_autodiff=item.get("requires_autodiff", False),
+                autodiff_backend=item.get("autodiff_backend", ""),
+            )
+        )
     return atoms
 
 
 def _parse_edges(raw: dict) -> list[DependencyEdge]:
     edges = []
     for item in raw.get("edges", []):
-        edges.append(DependencyEdge(
-            source_id=item.get("source_id", ""),
-            target_id=item.get("target_id", ""),
-            output_name=item.get("output_name", ""),
-            input_name=item.get("input_name", ""),
-            source_type=item.get("source_type", ""),
-            target_type=item.get("target_type", ""),
-        ))
+        edges.append(
+            DependencyEdge(
+                source_id=item.get("source_id", ""),
+                target_id=item.get("target_id", ""),
+                output_name=item.get("output_name", ""),
+                input_name=item.get("input_name", ""),
+                source_type=item.get("source_type", ""),
+                target_type=item.get("target_type", ""),
+            )
+        )
     return edges
 
 
@@ -266,9 +278,9 @@ async def propose_macro_atoms(
         retry_context=retry_context,
     )
 
-    from ageom.llm_router import INGESTER_CHUNK, select_llm
-
-    response = await select_llm(deps.llm, INGESTER_CHUNK).complete(SEMANTIC_CHUNK_SYSTEM, user_prompt)
+    response = await select_llm(deps.llm, INGESTER_CHUNK).complete(
+        SEMANTIC_CHUNK_SYSTEM, user_prompt
+    )
 
     try:
         raw = json.loads(response)
@@ -286,14 +298,11 @@ async def propose_macro_atoms(
     return {"proposed_plan": plan}
 
 
-
-async def flatten_config(
-    state: ChunkerState, config: RunnableConfig
-) -> dict[str, Any]:
+async def flatten_config(state: ChunkerState, config: RunnableConfig) -> dict[str, Any]:
     """Deterministic: Flatten config-gated branches into optional variants."""
     plan = state["proposed_plan"]
     dfg = state["raw_dfg"]
-    
+
     new_atoms = []
     for atom in plan.macro_atoms:
         branches = []
@@ -301,11 +310,11 @@ async def flatten_config(
             mf = next((m for m in dfg.methods if m.name == mname), None)
             if mf:
                 branches.extend(mf.config_branches)
-        
+
         if not branches:
             new_atoms.append(atom)
             continue
-            
+
         # Analyze branches to see if we should split
         # For now, we simply ensure the atom is marked is_optional if it has significant branching
         # and append it. In a full implementation, we would duplicate the atom for each variant.
@@ -315,16 +324,14 @@ async def flatten_config(
             # We keep it as is but could tag it in description.
             atom.description += f" (Contains {len(branches)} config branches)"
             # atom.is_optional = True # Optional implies it might not run. Branching implies one of many runs.
-        
+
         new_atoms.append(atom)
-        
+
     updated = plan.model_copy(update={"macro_atoms": new_atoms})
     return {"proposed_plan": updated}
 
 
-async def hoist_state(
-    state: ChunkerState, config: RunnableConfig
-) -> dict[str, Any]:
+async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, Any]:
     """LLM call: identify cross-window attrs and generate state model specs."""
     deps: ChunkerDeps = config["configurable"]["deps"]
     dfg = state["raw_dfg"]
@@ -333,17 +340,15 @@ async def hoist_state(
     if not dfg.cross_window_attrs:
         return {"proposed_plan": plan}
 
-    macro_plan_json = json.dumps(
-        [a.model_dump() for a in plan.macro_atoms], indent=2
-    )
+    macro_plan_json = json.dumps([a.model_dump() for a in plan.macro_atoms], indent=2)
     user_prompt = HOIST_STATE_USER.format(
         cross_window_attrs=dfg.cross_window_attrs,
         macro_plan_json=macro_plan_json,
     )
 
-    from ageom.llm_router import INGESTER_HOIST_STATE, select_llm
-
-    response = await select_llm(deps.llm, INGESTER_HOIST_STATE).complete(HOIST_STATE_SYSTEM, user_prompt)
+    response = await select_llm(deps.llm, INGESTER_HOIST_STATE).complete(
+        HOIST_STATE_SYSTEM, user_prompt
+    )
 
     try:
         raw = json.loads(response)
@@ -354,12 +359,14 @@ async def hoist_state(
     state_models = []
     for item in raw.get("state_models", []):
         fields = [tuple(f) for f in item.get("fields", [])]
-        state_models.append(StateModelSpec(
-            model_name=item.get("model_name", ""),
-            fields=fields,
-            source_attrs=item.get("source_attrs", []),
-            docstring=item.get("docstring", ""),
-        ))
+        state_models.append(
+            StateModelSpec(
+                model_name=item.get("model_name", ""),
+                fields=fields,
+                source_attrs=item.get("source_attrs", []),
+                docstring=item.get("docstring", ""),
+            )
+        )
 
     updated = plan.model_copy(update={"state_models": state_models})
 
@@ -387,10 +394,12 @@ async def search_sub_atoms(
         results = deps.faiss_index.search_by_embedding(atom.name, k=3)
         for decl, score in results:
             if score > 0.5:
-                sub_refs.append(SubAtomRef(
-                    atom_name=decl.name,
-                    similarity_score=score,
-                ))
+                sub_refs.append(
+                    SubAtomRef(
+                        atom_name=decl.name,
+                        similarity_score=score,
+                    )
+                )
 
     updated = plan.model_copy(update={"sub_atom_refs": sub_refs})
     return {"proposed_plan": updated}
@@ -470,9 +479,7 @@ def _format_io_specs(specs: list) -> str:
     )
 
 
-def _build_enriched_description(
-    original: str, profile: ConceptualProfile
-) -> str:
+def _build_enriched_description(original: str, profile: ConceptualProfile) -> str:
     """Merge a ConceptualProfile into an atom description.
 
     The profile JSON is appended as a fenced block so downstream consumers
@@ -491,15 +498,11 @@ def _parse_conceptual_profile(raw: dict) -> ConceptualProfile:
         abstract_inputs=raw.get("abstract_inputs", []),
         abstract_outputs=raw.get("abstract_outputs", []),
         algorithmic_properties=raw.get("algorithmic_properties", []),
-        cross_disciplinary_applications=raw.get(
-            "cross_disciplinary_applications", []
-        ),
+        cross_disciplinary_applications=raw.get("cross_disciplinary_applications", []),
     )
 
 
-async def abstract_atoms(
-    state: ChunkerState, config: RunnableConfig
-) -> dict[str, Any]:
+async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[str, Any]:
     """LLM call: generate domain-agnostic conceptual profiles for each atom.
 
     Runs the Conceptual Abstraction Agent on every atom in the validated
@@ -525,22 +528,20 @@ async def abstract_atoms(
         )
 
         try:
-            from ageom.llm_router import INGESTER_ABSTRACT, select_llm
-
             response = await select_llm(deps.llm, INGESTER_ABSTRACT).complete(
                 CONCEPTUAL_ABSTRACT_SYSTEM, user_prompt
             )
             raw = json.loads(response)
             profile = _parse_conceptual_profile(raw)
         except Exception as exc:
-            logger.warning(
-                "Conceptual abstraction failed for %s: %s", atom.name, exc
-            )
+            logger.warning("Conceptual abstraction failed for %s: %s", atom.name, exc)
             profile = ConceptualProfile(abstract_name=atom.name)
 
-        enriched = atom.model_copy(update={
-            "conceptual_profile": profile,
-        })
+        enriched = atom.model_copy(
+            update={
+                "conceptual_profile": profile,
+            }
+        )
         enriched_atoms.append(enriched)
 
     new_plan = plan.model_copy(update={"macro_atoms": enriched_atoms})

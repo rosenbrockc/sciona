@@ -56,9 +56,11 @@ def generate_lib_rs(units: list[AssemblyUnit]) -> str:
         rust_name = _lean_name_to_rust(unit.declaration_name)
         lines.append(f"// Verified definition: {unit.name}")
         lines.append(f"// Lean type: {unit.type_signature}")
-        lines.append("extern \"C\" {")
+        lines.append('extern "C" {')
         lines.append(f"    /// FFI binding to `{unit.declaration_name}`.")
-        lines.append(f"    pub fn {rust_name}(arg: *mut LeanObject) -> *mut LeanObject;")
+        lines.append(
+            f"    pub fn {rust_name}(arg: *mut LeanObject) -> *mut LeanObject;"
+        )
         lines.append("}")
         lines.append("")
 

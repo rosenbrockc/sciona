@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 
-import pytest
 
 from ageom.architect.models import ConceptType, DependencyEdge, IOSpec, NodeStatus
 from ageom.ingester.emitter import (
@@ -22,7 +21,6 @@ from ageom.ingester.models import (
     ValidatedMacroPlan,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -35,16 +33,28 @@ def _make_plan() -> ValidatedMacroPlan:
             name="Signal Conditioner",
             description="Preprocess and filter signal",
             method_names=["__init__", "preprocess"],
-            inputs=[IOSpec(name="raw", type_desc="np.ndarray", constraints="time domain")],
-            outputs=[IOSpec(name="conditioned", type_desc="np.ndarray", constraints="time domain")],
+            inputs=[
+                IOSpec(name="raw", type_desc="np.ndarray", constraints="time domain")
+            ],
+            outputs=[
+                IOSpec(
+                    name="conditioned",
+                    type_desc="np.ndarray",
+                    constraints="time domain",
+                )
+            ],
             concept_type=ConceptType.SIGNAL_FILTER,
         ),
         MacroAtomSpec(
             name="Beat Detector",
             description="Detect beats in conditioned signal",
             method_names=["detect"],
-            inputs=[IOSpec(name="signal", type_desc="np.ndarray", constraints="time domain")],
-            outputs=[IOSpec(name="onsets", type_desc="np.ndarray", constraints="int indices")],
+            inputs=[
+                IOSpec(name="signal", type_desc="np.ndarray", constraints="time domain")
+            ],
+            outputs=[
+                IOSpec(name="onsets", type_desc="np.ndarray", constraints="int indices")
+            ],
             concept_type=ConceptType.SIGNAL_TRANSFORM,
         ),
     ]
@@ -217,7 +227,9 @@ class TestBuildMatchResults:
         from ageom.types import VerificationLevel
 
         for mr in results:
-            assert mr.verified_match.verification_level == VerificationLevel.TYPE_CHECKED
+            assert (
+                mr.verified_match.verification_level == VerificationLevel.TYPE_CHECKED
+            )
 
 
 # ---------------------------------------------------------------------------

@@ -11,7 +11,6 @@ Covers:
 
 from __future__ import annotations
 
-import pytest
 
 from ageom.architect.models import (
     AlgorithmicNode,
@@ -23,16 +22,14 @@ from ageom.architect.models import (
 from ageom.ingester.emitter import (
     _MESSAGE_PASSING_CONCEPT_TYPES,
     _generate_message_passing_witness,
-    _snake_case,
     generate_atom_wrappers,
     generate_ghost_witnesses,
 )
-from ageom.ingester.models import MacroAtomSpec, StateModelSpec
+from ageom.ingester.models import MacroAtomSpec
 from ageom.synthesizer.ghost_sim import (
     GhostSimReport,
     _detect_message_passing_cycle,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -54,29 +51,39 @@ def _bp_atoms() -> list[MacroAtomSpec]:
     return [
         _mp_atom(
             "Variable to Factor",
-            [IOSpec(name="incoming_messages", type_desc="dict[str, ndarray]"),
-             IOSpec(name="memo_state", type_desc="dict[str, ndarray]")],
+            [
+                IOSpec(name="incoming_messages", type_desc="dict[str, ndarray]"),
+                IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
+            ],
             [IOSpec(name="var_messages", type_desc="dict[str, ndarray]")],
         ),
         _mp_atom(
             "Factor to Variable",
-            [IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
-             IOSpec(name="factor_potentials", type_desc="dict[str, ndarray]"),
-             IOSpec(name="memo_state", type_desc="dict[str, ndarray]")],
+            [
+                IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
+                IOSpec(name="factor_potentials", type_desc="dict[str, ndarray]"),
+                IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
+            ],
             [IOSpec(name="factor_messages", type_desc="dict[str, ndarray]")],
         ),
         _mp_atom(
             "Marginal Computation",
-            [IOSpec(name="factor_messages", type_desc="dict[str, ndarray]"),
-             IOSpec(name="var_messages", type_desc="dict[str, ndarray]")],
+            [
+                IOSpec(name="factor_messages", type_desc="dict[str, ndarray]"),
+                IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
+            ],
             [IOSpec(name="marginals", type_desc="dict[str, ndarray]")],
         ),
         _mp_atom(
             "Memoization State",
-            [IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
-             IOSpec(name="factor_messages", type_desc="dict[str, ndarray]")],
-            [IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
-             IOSpec(name="converged", type_desc="bool")],
+            [
+                IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
+                IOSpec(name="factor_messages", type_desc="dict[str, ndarray]"),
+            ],
+            [
+                IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
+                IOSpec(name="converged", type_desc="bool"),
+            ],
         ),
     ]
 
@@ -89,8 +96,10 @@ def _bp_nodes_and_edges():
         description="Var-to-factor messages",
         concept_type=ConceptType.MESSAGE_PASSING,
         status=NodeStatus.ATOMIC,
-        inputs=[IOSpec(name="incoming_messages", type_desc="dict[str, ndarray]"),
-                IOSpec(name="memo_state", type_desc="dict[str, ndarray]")],
+        inputs=[
+            IOSpec(name="incoming_messages", type_desc="dict[str, ndarray]"),
+            IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
+        ],
         outputs=[IOSpec(name="var_messages", type_desc="dict[str, ndarray]")],
         depth=1,
     )
@@ -100,9 +109,11 @@ def _bp_nodes_and_edges():
         description="Factor-to-var messages",
         concept_type=ConceptType.MESSAGE_PASSING,
         status=NodeStatus.ATOMIC,
-        inputs=[IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
-                IOSpec(name="factor_potentials", type_desc="dict[str, ndarray]"),
-                IOSpec(name="memo_state", type_desc="dict[str, ndarray]")],
+        inputs=[
+            IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
+            IOSpec(name="factor_potentials", type_desc="dict[str, ndarray]"),
+            IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
+        ],
         outputs=[IOSpec(name="factor_messages", type_desc="dict[str, ndarray]")],
         depth=1,
     )
@@ -112,40 +123,59 @@ def _bp_nodes_and_edges():
         description="Memo state for convergence",
         concept_type=ConceptType.MESSAGE_PASSING,
         status=NodeStatus.ATOMIC,
-        inputs=[IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
-                IOSpec(name="factor_messages", type_desc="dict[str, ndarray]")],
-        outputs=[IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
-                 IOSpec(name="converged", type_desc="bool")],
+        inputs=[
+            IOSpec(name="var_messages", type_desc="dict[str, ndarray]"),
+            IOSpec(name="factor_messages", type_desc="dict[str, ndarray]"),
+        ],
+        outputs=[
+            IOSpec(name="memo_state", type_desc="dict[str, ndarray]"),
+            IOSpec(name="converged", type_desc="bool"),
+        ],
         depth=1,
     )
     nodes = [var_to_factor, factor_to_var, memo]
     edges = [
         DependencyEdge(
-            source_id="variable_to_factor", target_id="factor_to_variable",
-            output_name="var_messages", input_name="var_messages",
-            source_type="dict[str, ndarray]", target_type="dict[str, ndarray]",
+            source_id="variable_to_factor",
+            target_id="factor_to_variable",
+            output_name="var_messages",
+            input_name="var_messages",
+            source_type="dict[str, ndarray]",
+            target_type="dict[str, ndarray]",
         ),
         DependencyEdge(
-            source_id="factor_to_variable", target_id="memoization_state",
-            output_name="factor_messages", input_name="factor_messages",
-            source_type="dict[str, ndarray]", target_type="dict[str, ndarray]",
+            source_id="factor_to_variable",
+            target_id="memoization_state",
+            output_name="factor_messages",
+            input_name="factor_messages",
+            source_type="dict[str, ndarray]",
+            target_type="dict[str, ndarray]",
         ),
         DependencyEdge(
-            source_id="variable_to_factor", target_id="memoization_state",
-            output_name="var_messages", input_name="var_messages",
-            source_type="dict[str, ndarray]", target_type="dict[str, ndarray]",
+            source_id="variable_to_factor",
+            target_id="memoization_state",
+            output_name="var_messages",
+            input_name="var_messages",
+            source_type="dict[str, ndarray]",
+            target_type="dict[str, ndarray]",
         ),
         # Cycle: memo -> var_to_factor
         DependencyEdge(
-            source_id="memoization_state", target_id="variable_to_factor",
-            output_name="memo_state", input_name="memo_state",
-            source_type="dict[str, ndarray]", target_type="dict[str, ndarray]",
+            source_id="memoization_state",
+            target_id="variable_to_factor",
+            output_name="memo_state",
+            input_name="memo_state",
+            source_type="dict[str, ndarray]",
+            target_type="dict[str, ndarray]",
         ),
         # Cycle: memo -> factor_to_var
         DependencyEdge(
-            source_id="memoization_state", target_id="factor_to_variable",
-            output_name="memo_state", input_name="memo_state",
-            source_type="dict[str, ndarray]", target_type="dict[str, ndarray]",
+            source_id="memoization_state",
+            target_id="factor_to_variable",
+            output_name="memo_state",
+            input_name="memo_state",
+            source_type="dict[str, ndarray]",
+            target_type="dict[str, ndarray]",
         ),
     ]
     return nodes, edges
@@ -241,12 +271,14 @@ class TestGhostWitnessesMessagePassing:
         assert "sampling_rate=" not in source
 
     def test_no_memo_cache_without_mp_atoms(self):
-        atoms = [MacroAtomSpec(
-            name="Plain Node",
-            concept_type=ConceptType.CUSTOM,
-            inputs=[IOSpec(name="x", type_desc="ndarray")],
-            outputs=[IOSpec(name="y", type_desc="ndarray")],
-        )]
+        atoms = [
+            MacroAtomSpec(
+                name="Plain Node",
+                concept_type=ConceptType.CUSTOM,
+                inputs=[IOSpec(name="x", type_desc="ndarray")],
+                outputs=[IOSpec(name="y", type_desc="ndarray")],
+            )
+        ]
         source, _ = generate_ghost_witnesses(atoms)
         assert "_MEMO_CACHE" not in source
 
@@ -271,12 +303,14 @@ class TestAtomWrappersMessagePassing:
         assert "return _MEMO[_key]" in source
 
     def test_no_memo_preamble_for_non_mp(self):
-        atoms = [MacroAtomSpec(
-            name="Plain Node",
-            concept_type=ConceptType.CUSTOM,
-            inputs=[IOSpec(name="x", type_desc="ndarray")],
-            outputs=[IOSpec(name="y", type_desc="ndarray")],
-        )]
+        atoms = [
+            MacroAtomSpec(
+                name="Plain Node",
+                concept_type=ConceptType.CUSTOM,
+                inputs=[IOSpec(name="x", type_desc="ndarray")],
+                outputs=[IOSpec(name="y", type_desc="ndarray")],
+            )
+        ]
         source = generate_atom_wrappers(atoms, [], {})
         assert "_MEMO:" not in source
         assert "_memo_key" not in source
@@ -291,19 +325,28 @@ class TestDetectMessagePassingCycle:
     def test_no_cycle_returns_empty(self):
         """Acyclic graph: toposort completes, no cycle detected."""
         n1 = AlgorithmicNode(
-            node_id="a", name="A", description="node A",
+            node_id="a",
+            name="A",
+            description="node A",
             concept_type=ConceptType.MESSAGE_PASSING,
-            status=NodeStatus.ATOMIC, depth=1,
+            status=NodeStatus.ATOMIC,
+            depth=1,
         )
         n2 = AlgorithmicNode(
-            node_id="b", name="B", description="node B",
+            node_id="b",
+            name="B",
+            description="node B",
             concept_type=ConceptType.MESSAGE_PASSING,
-            status=NodeStatus.ATOMIC, depth=1,
+            status=NodeStatus.ATOMIC,
+            depth=1,
         )
         edge = DependencyEdge(
-            source_id="a", target_id="b",
-            output_name="out", input_name="in",
-            source_type="Any", target_type="Any",
+            source_id="a",
+            target_id="b",
+            output_name="out",
+            input_name="in",
+            source_type="Any",
+            target_type="Any",
         )
         cycle_ids, is_mp = _detect_message_passing_cycle([n1, n2], [edge])
         assert cycle_ids == set()
@@ -319,25 +362,37 @@ class TestDetectMessagePassingCycle:
     def test_mixed_type_cycle_not_message_passing(self):
         """Cycle with a non-MESSAGE_PASSING node should not be flagged."""
         n1 = AlgorithmicNode(
-            node_id="a", name="A", description="node A",
+            node_id="a",
+            name="A",
+            description="node A",
             concept_type=ConceptType.MESSAGE_PASSING,
-            status=NodeStatus.ATOMIC, depth=1,
+            status=NodeStatus.ATOMIC,
+            depth=1,
         )
         n2 = AlgorithmicNode(
-            node_id="b", name="B", description="node B",
+            node_id="b",
+            name="B",
+            description="node B",
             concept_type=ConceptType.CUSTOM,
-            status=NodeStatus.ATOMIC, depth=1,
+            status=NodeStatus.ATOMIC,
+            depth=1,
         )
         edges = [
             DependencyEdge(
-                source_id="a", target_id="b",
-                output_name="out", input_name="in",
-                source_type="Any", target_type="Any",
+                source_id="a",
+                target_id="b",
+                output_name="out",
+                input_name="in",
+                source_type="Any",
+                target_type="Any",
             ),
             DependencyEdge(
-                source_id="b", target_id="a",
-                output_name="out", input_name="in",
-                source_type="Any", target_type="Any",
+                source_id="b",
+                target_id="a",
+                output_name="out",
+                input_name="in",
+                source_type="Any",
+                target_type="Any",
             ),
         ]
         cycle_ids, is_mp = _detect_message_passing_cycle([n1, n2], edges)
@@ -377,6 +432,7 @@ class TestGhostSimReportCyclicFields:
 class TestLLMRouterKey:
     def test_key_in_all_prompt_keys(self):
         from ageom.llm_router import ALL_PROMPT_KEYS, INGESTER_FIX_MESSAGE_CYCLE
+
         assert INGESTER_FIX_MESSAGE_CYCLE in ALL_PROMPT_KEYS
         assert INGESTER_FIX_MESSAGE_CYCLE == "ingester_fix_message_cycle"
 
@@ -384,6 +440,7 @@ class TestLLMRouterKey:
 class TestConfigFields:
     def test_message_cycle_config_fields_exist(self):
         from ageom.config import AgeomConfig
+
         config = AgeomConfig()
         assert hasattr(config, "ingester_fix_message_cycle_llm_provider")
         assert hasattr(config, "ingester_fix_message_cycle_llm_model")
@@ -402,6 +459,7 @@ class TestPrompts:
             FIX_MESSAGE_CYCLE_SYSTEM,
             FIX_MESSAGE_CYCLE_USER,
         )
+
         assert "cyclic deadlock" in FIX_MESSAGE_CYCLE_SYSTEM
         assert "{deadlock_nodes}" in FIX_MESSAGE_CYCLE_USER
         assert "{cycle_edges}" in FIX_MESSAGE_CYCLE_USER

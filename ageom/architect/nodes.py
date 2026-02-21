@@ -29,6 +29,12 @@ from ageom.architect.prompts import (
 )
 from ageom.architect.skeletons import SKELETON_TEMPLATES, instantiate_skeleton
 from ageom.architect.state import DecompositionDeps, DecompositionState
+from ageom.llm_router import (
+    ARCHITECT_CRITIQUE,
+    ARCHITECT_DECOMPOSE,
+    ARCHITECT_STRATEGY,
+    select_llm,
+)
 
 # ---------------------------------------------------------------------------
 # Conjugate prior/likelihood pair detection
@@ -39,10 +45,20 @@ from ageom.architect.state import DecompositionDeps, DecompositionState
 # statistic description, hyperparameter update rule, and result distribution.
 _CONJUGATE_PAIRS: dict[str, dict] = {
     "beta_bernoulli": {
-        "keywords": ["beta-bernoulli", "beta bernoulli", "coin flip",
-                      "binomial with beta prior", "bernoulli with beta"],
-        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
-                          "conjugate_update", "analytical update"],
+        "keywords": [
+            "beta-bernoulli",
+            "beta bernoulli",
+            "coin flip",
+            "binomial with beta prior",
+            "bernoulli with beta",
+        ],
+        "library_hints": [
+            "conjugatepriorslib",
+            "conjugatepriors.jl",
+            "bayes crate",
+            "conjugate_update",
+            "analytical update",
+        ],
         "sufficient_stat": "Count successes k and total trials n from data",
         "hyperparameter_update": "alpha_post = alpha_prior + k, beta_post = beta_prior + (n - k)",
         "result_distribution": "Beta(alpha_post, beta_post)",
@@ -51,10 +67,20 @@ _CONJUGATE_PAIRS: dict[str, dict] = {
         "type_sig_construct": "tuple[float, float] -> BetaDistribution",
     },
     "normal_normal": {
-        "keywords": ["normal-normal", "normal normal", "gaussian conjugate",
-                      "gaussian with known variance", "normal with normal prior"],
-        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
-                          "conjugate_update", "analytical update"],
+        "keywords": [
+            "normal-normal",
+            "normal normal",
+            "gaussian conjugate",
+            "gaussian with known variance",
+            "normal with normal prior",
+        ],
+        "library_hints": [
+            "conjugatepriorslib",
+            "conjugatepriors.jl",
+            "bayes crate",
+            "conjugate_update",
+            "analytical update",
+        ],
         "sufficient_stat": "Compute sample mean x_bar and sample count n from data",
         "hyperparameter_update": (
             "mu_post = (mu_prior / sigma_prior^2 + n * x_bar / sigma_obs^2) "
@@ -68,8 +94,13 @@ _CONJUGATE_PAIRS: dict[str, dict] = {
     },
     "gamma_poisson": {
         "keywords": ["gamma-poisson", "gamma poisson", "poisson with gamma prior"],
-        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
-                          "conjugate_update", "analytical update"],
+        "library_hints": [
+            "conjugatepriorslib",
+            "conjugatepriors.jl",
+            "bayes crate",
+            "conjugate_update",
+            "analytical update",
+        ],
         "sufficient_stat": "Sum all observations s and count n from data",
         "hyperparameter_update": "alpha_post = alpha_prior + s, beta_post = beta_prior + n",
         "result_distribution": "Gamma(alpha_post, beta_post)",
@@ -78,10 +109,19 @@ _CONJUGATE_PAIRS: dict[str, dict] = {
         "type_sig_construct": "tuple[float, float] -> GammaDistribution",
     },
     "dirichlet_categorical": {
-        "keywords": ["dirichlet-categorical", "dirichlet categorical",
-                      "dirichlet multinomial", "categorical with dirichlet"],
-        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
-                          "conjugate_update", "analytical update"],
+        "keywords": [
+            "dirichlet-categorical",
+            "dirichlet categorical",
+            "dirichlet multinomial",
+            "categorical with dirichlet",
+        ],
+        "library_hints": [
+            "conjugatepriorslib",
+            "conjugatepriors.jl",
+            "bayes crate",
+            "conjugate_update",
+            "analytical update",
+        ],
         "sufficient_stat": "Count occurrences of each category from data",
         "hyperparameter_update": "alpha_post_k = alpha_prior_k + count_k for each category k",
         "result_distribution": "Dirichlet(alpha_post)",
@@ -106,10 +146,18 @@ def _detect_conjugate_pair(goal: str) -> dict | None:
         for hint in spec["library_hints"]:
             if hint in goal_lower:
                 # Library hint alone is weaker — require *some* probabilistic keyword too
-                if any(w in goal_lower for w in [
-                    "prior", "posterior", "conjugate", "bayesian",
-                    "update", "inference", "likelihood",
-                ]):
+                if any(
+                    w in goal_lower
+                    for w in [
+                        "prior",
+                        "posterior",
+                        "conjugate",
+                        "bayesian",
+                        "update",
+                        "inference",
+                        "likelihood",
+                    ]
+                ):
                     return {**spec, "pair_name": pair_name}
     return None
 
@@ -153,7 +201,7 @@ def _parse_json(text: str) -> dict | None:
     if text.startswith("```"):
         lines = text.split("\n")
         # Drop first and last lines (fences)
-        lines = [l for l in lines[1:] if not l.strip().startswith("```")]
+        lines = [line for line in lines[1:] if not line.strip().startswith("```")]
         text = "\n".join(lines)
     try:
         return json.loads(text)
@@ -164,6 +212,7 @@ def _parse_json(text: str) -> dict | None:
 # ---------------------------------------------------------------------------
 # Node: select_strategy
 # ---------------------------------------------------------------------------
+
 
 async def select_strategy(
     state: DecompositionState, config: RunnableConfig
@@ -177,7 +226,6 @@ async def select_strategy(
     """
     deps = _get_deps(config)
     goal = state["goal"]
-    max_depth = state["max_depth"]
 
     # ------------------------------------------------------------------
     # Conjugate pre-scan (deterministic, free — runs before LLM call)
@@ -227,8 +275,6 @@ async def select_strategy(
     available = list(SKELETON_TEMPLATES.keys())
     available_str = "\n".join(f"  - {ct.value}" for ct in available)
 
-    from ageom.llm_router import ARCHITECT_STRATEGY, select_llm
-
     response = await select_llm(deps.llm, ARCHITECT_STRATEGY).complete(
         SELECT_STRATEGY_SYSTEM.format(available_paradigms=available_str),
         SELECT_STRATEGY_USER.format(goal=goal),
@@ -268,9 +314,7 @@ async def select_strategy(
         skel_nodes, skel_edges = instantiate_skeleton(
             skeleton, goal, parent_id=root_id, base_depth=0
         )
-        root = root.model_copy(
-            update={"children": [n.node_id for n in skel_nodes]}
-        )
+        root = root.model_copy(update={"children": [n.node_id for n in skel_nodes]})
         nodes = [root] + skel_nodes
         edges = skel_edges
         skeleton_instantiated = True
@@ -296,10 +340,7 @@ async def select_strategy(
             )
 
     # Build pending queue (non-root, non-atomic)
-    pending = [
-        n.node_id for n in nodes
-        if n.status == NodeStatus.PENDING
-    ]
+    pending = [n.node_id for n in nodes if n.status == NodeStatus.PENDING]
 
     current_node_id = pending[0] if pending else ""
 
@@ -332,6 +373,7 @@ async def select_strategy(
 # Node: decompose_node
 # ---------------------------------------------------------------------------
 
+
 async def decompose_node(
     state: DecompositionState, config: RunnableConfig
 ) -> dict[str, Any]:
@@ -346,15 +388,15 @@ async def decompose_node(
         return {
             "error": f"Node {current_id} not found",
             "done": True,
-            "history": [{"step": "decompose_node", "error": f"Node {current_id} not found"}],
+            "history": [
+                {"step": "decompose_node", "error": f"Node {current_id} not found"}
+            ],
         }
 
     # Gather relevant primitives
     catalog_prims = deps.catalog.find_matching_primitives(node, k=5)
     try:
-        skill_prims = deps.skill_index.search(
-            f"{node.name} {node.description}", k=5
-        )
+        skill_prims = deps.skill_index.search(f"{node.name} {node.description}", k=5)
     except Exception:
         skill_prims = []
 
@@ -377,8 +419,6 @@ async def decompose_node(
             "Please fix the issues and try again."
         )
 
-    from ageom.llm_router import ARCHITECT_DECOMPOSE, select_llm
-
     response = await select_llm(deps.llm, ARCHITECT_DECOMPOSE).complete(
         DECOMPOSE_NODE_SYSTEM,
         DECOMPOSE_NODE_USER.format(
@@ -400,7 +440,9 @@ async def decompose_node(
         return {
             "nodes": [],
             "edges": [],
-            "history": [{"step": "decompose_node", "node_id": current_id, "parse_error": True}],
+            "history": [
+                {"step": "decompose_node", "node_id": current_id, "parse_error": True}
+            ],
         }
 
     # Parse sub-nodes
@@ -465,14 +507,16 @@ async def decompose_node(
         tgt_id = name_to_id.get(tgt_name, "")
         if src_id and tgt_id:
             data_type = edge_spec.get("data_type", "any")
-            new_edges.append(DependencyEdge(
-                source_id=src_id,
-                target_id=tgt_id,
-                output_name=edge_spec.get("output_name", "result"),
-                input_name=edge_spec.get("input_name", "data"),
-                source_type=data_type,
-                target_type=data_type,
-            ))
+            new_edges.append(
+                DependencyEdge(
+                    source_id=src_id,
+                    target_id=tgt_id,
+                    output_name=edge_spec.get("output_name", "result"),
+                    input_name=edge_spec.get("input_name", "data"),
+                    source_type=data_type,
+                    target_type=data_type,
+                )
+            )
 
     history_entry = {
         "step": "decompose_node",
@@ -492,6 +536,7 @@ async def decompose_node(
 # Node: critique_decomposition
 # ---------------------------------------------------------------------------
 
+
 async def critique_decomposition(
     state: DecompositionState, config: RunnableConfig
 ) -> dict[str, Any]:
@@ -510,9 +555,14 @@ async def critique_decomposition(
         }
 
     # Find children of current node
-    children = [n for n in all_nodes if n.parent_id == current_id and n.status != NodeStatus.REJECTED]
+    children = [
+        n
+        for n in all_nodes
+        if n.parent_id == current_id and n.status != NodeStatus.REJECTED
+    ]
     child_edges = [
-        e for e in state["edges"]
+        e
+        for e in state["edges"]
         if e.source_id in {c.node_id for c in children}
         or e.target_id in {c.node_id for c in children}
     ]
@@ -529,7 +579,9 @@ async def critique_decomposition(
     # Check: depth constraint
     for child in children:
         if child.depth > max_depth:
-            issues.append(f"Node '{child.name}' exceeds max depth ({child.depth} > {max_depth})")
+            issues.append(
+                f"Node '{child.name}' exceeds max depth ({child.depth} > {max_depth})"
+            )
 
     # Check: no self-loops in edges
     for edge in child_edges:
@@ -566,7 +618,9 @@ async def critique_decomposition(
         return {
             "critique_passed": False,
             "critique_reason": reason,
-            "history": [{"step": "critique", "phase": "deterministic", "issues": issues}],
+            "history": [
+                {"step": "critique", "phase": "deterministic", "issues": issues}
+            ],
         }
 
     # ------------------------------------------------------------------
@@ -585,8 +639,6 @@ async def critique_decomposition(
     )
 
     catalog_prims = deps.catalog.find_matching_primitives(parent, k=5)
-
-    from ageom.llm_router import ARCHITECT_CRITIQUE, select_llm
 
     response = await select_llm(deps.llm, ARCHITECT_CRITIQUE).complete(
         CRITIQUE_SYSTEM,
@@ -620,12 +672,14 @@ async def critique_decomposition(
         return {
             "critique_passed": True,
             "critique_reason": "LLM critique had invalid schema; accepted by deterministic checks",
-            "history": [{
-                "step": "critique",
-                "phase": "llm",
-                "schema_error": True,
-                "keys": sorted(parsed.keys()),
-            }],
+            "history": [
+                {
+                    "step": "critique",
+                    "phase": "llm",
+                    "schema_error": True,
+                    "keys": sorted(parsed.keys()),
+                }
+            ],
         }
 
     approved = approved_raw
@@ -644,7 +698,9 @@ async def critique_decomposition(
     result: dict[str, Any] = {
         "critique_passed": approved,
         "critique_reason": reason,
-        "history": [{"step": "critique", "phase": "llm", "approved": approved, "reason": reason}],
+        "history": [
+            {"step": "critique", "phase": "llm", "approved": approved, "reason": reason}
+        ],
     }
     if flagged_updates:
         result["nodes"] = flagged_updates
@@ -656,6 +712,7 @@ async def critique_decomposition(
 # Node: advance_node
 # ---------------------------------------------------------------------------
 
+
 async def advance_node(
     state: DecompositionState, config: RunnableConfig
 ) -> dict[str, Any]:
@@ -663,9 +720,7 @@ async def advance_node(
     current_id = state["current_node_id"]
     all_nodes = state["nodes"]
     pending = list(state["pending_node_ids"])
-    retries = state.get("critique_retries", 0)
     critique_passed = state.get("critique_passed", False)
-    deps = _get_deps(config)
 
     parent = _find_node(all_nodes, current_id)
     updated_nodes: list[AlgorithmicNode] = []
@@ -673,22 +728,22 @@ async def advance_node(
     if critique_passed and parent:
         # Update parent: mark as DECOMPOSED with children
         children = [
-            n for n in all_nodes
+            n
+            for n in all_nodes
             if n.parent_id == current_id and n.status != NodeStatus.REJECTED
         ]
         child_ids = [c.node_id for c in children]
         updated_nodes.append(
-            parent.model_copy(update={
-                "status": NodeStatus.DECOMPOSED,
-                "children": child_ids,
-            })
+            parent.model_copy(
+                update={
+                    "status": NodeStatus.DECOMPOSED,
+                    "children": child_ids,
+                }
+            )
         )
 
         # Add non-atomic children to pending
-        new_pending = [
-            c.node_id for c in children
-            if c.status == NodeStatus.PENDING
-        ]
+        new_pending = [c.node_id for c in children if c.status == NodeStatus.PENDING]
     else:
         # Max retries exhausted: mark node as HIGH_RISK, move on
         if parent:
@@ -716,18 +771,21 @@ async def advance_node(
         "critique_passed": False,
         "critique_reason": "",
         "done": done,
-        "history": [{
-            "step": "advance_node",
-            "from_node": current_id,
-            "next_node": next_id,
-            "done": done,
-        }],
+        "history": [
+            {
+                "step": "advance_node",
+                "from_node": current_id,
+                "next_node": next_id,
+                "done": done,
+            }
+        ],
     }
 
 
 # ---------------------------------------------------------------------------
 # Node: prepare_retry
 # ---------------------------------------------------------------------------
+
 
 async def prepare_retry(
     state: DecompositionState, config: RunnableConfig
@@ -748,18 +806,21 @@ async def prepare_retry(
     return {
         "nodes": rejected_updates,
         "critique_retries": retries + 1,
-        "history": [{
-            "step": "prepare_retry",
-            "node_id": current_id,
-            "retry_num": retries + 1,
-            "num_rejected": len(rejected_updates),
-        }],
+        "history": [
+            {
+                "step": "prepare_retry",
+                "node_id": current_id,
+                "retry_num": retries + 1,
+                "num_rejected": len(rejected_updates),
+            }
+        ],
     }
 
 
 # ---------------------------------------------------------------------------
 # Routing functions
 # ---------------------------------------------------------------------------
+
 
 def route_after_critic(state: DecompositionState) -> str:
     """Conditional edge after critique_decomposition."""
@@ -797,6 +858,7 @@ def route_after_advance(state: DecompositionState) -> str:
 # Node: advance_conjugate_node  (short-circuit path)
 # ---------------------------------------------------------------------------
 
+
 async def advance_conjugate_node(
     state: DecompositionState, config: RunnableConfig
 ) -> dict[str, Any]:
@@ -826,7 +888,9 @@ async def advance_conjugate_node(
         return {
             "error": "Conjugate spec not found on re-scan",
             "done": True,
-            "history": [{"step": "advance_conjugate_node", "error": "no conjugate pair"}],
+            "history": [
+                {"step": "advance_conjugate_node", "error": "no conjugate pair"}
+            ],
         }
 
     pair_name = conjugate_spec["pair_name"]
@@ -843,8 +907,13 @@ async def advance_conjugate_node(
         ),
         concept_type=ConceptType.CONJUGATE_UPDATE,
         inputs=[IOSpec(name="data", type_desc="ndarray", constraints="observed data")],
-        outputs=[IOSpec(name="sufficient_stats", type_desc="tuple",
-                        constraints="sufficient statistics for conjugate update")],
+        outputs=[
+            IOSpec(
+                name="sufficient_stats",
+                type_desc="tuple",
+                constraints="sufficient statistics for conjugate update",
+            )
+        ],
         status=NodeStatus.ATOMIC,
         depth=1,
         type_signature=conjugate_spec["type_sig_ingest"],
@@ -864,13 +933,24 @@ async def advance_conjugate_node(
         ),
         concept_type=ConceptType.CONJUGATE_UPDATE,
         inputs=[
-            IOSpec(name="prior_hyperparams", type_desc="tuple",
-                   constraints="prior distribution hyperparameters"),
-            IOSpec(name="sufficient_stats", type_desc="tuple",
-                   constraints="sufficient statistics from data ingestion"),
+            IOSpec(
+                name="prior_hyperparams",
+                type_desc="tuple",
+                constraints="prior distribution hyperparameters",
+            ),
+            IOSpec(
+                name="sufficient_stats",
+                type_desc="tuple",
+                constraints="sufficient statistics from data ingestion",
+            ),
         ],
-        outputs=[IOSpec(name="posterior_hyperparams", type_desc="tuple",
-                        constraints="updated posterior hyperparameters")],
+        outputs=[
+            IOSpec(
+                name="posterior_hyperparams",
+                type_desc="tuple",
+                constraints="updated posterior hyperparameters",
+            )
+        ],
         status=NodeStatus.ATOMIC,
         depth=1,
         type_signature=conjugate_spec["type_sig_update"],
@@ -888,10 +968,20 @@ async def advance_conjugate_node(
             "from posterior hyperparameters. Pure constructor — no side effects."
         ),
         concept_type=ConceptType.CONJUGATE_UPDATE,
-        inputs=[IOSpec(name="posterior_hyperparams", type_desc="tuple",
-                        constraints="posterior hyperparameters")],
-        outputs=[IOSpec(name="posterior_distribution", type_desc="Distribution",
-                        constraints=conjugate_spec["result_distribution"])],
+        inputs=[
+            IOSpec(
+                name="posterior_hyperparams",
+                type_desc="tuple",
+                constraints="posterior hyperparameters",
+            )
+        ],
+        outputs=[
+            IOSpec(
+                name="posterior_distribution",
+                type_desc="Distribution",
+                constraints=conjugate_spec["result_distribution"],
+            )
+        ],
         status=NodeStatus.ATOMIC,
         depth=1,
         type_signature=conjugate_spec["type_sig_construct"],
@@ -922,10 +1012,14 @@ async def advance_conjugate_node(
     root = _find_node(root_nodes, root_id)
     updated_root: list[AlgorithmicNode] = []
     if root:
-        updated_root = [root.model_copy(update={
-            "children": [ingest_id, update_id, construct_id],
-            "status": NodeStatus.DECOMPOSED,
-        })]
+        updated_root = [
+            root.model_copy(
+                update={
+                    "children": [ingest_id, update_id, construct_id],
+                    "status": NodeStatus.DECOMPOSED,
+                }
+            )
+        ]
 
     return {
         "nodes": updated_root + [ingest_node, update_node, construct_node],
@@ -933,10 +1027,12 @@ async def advance_conjugate_node(
         "pending_node_ids": [],
         "current_node_id": "",
         "done": True,
-        "history": [{
-            "step": "advance_conjugate_node",
-            "pair_name": pair_name,
-            "nodes_emitted": 3,
-            "all_atomic": True,
-        }],
+        "history": [
+            {
+                "step": "advance_conjugate_node",
+                "pair_name": pair_name,
+                "nodes_emitted": 3,
+                "all_atomic": True,
+            }
+        ],
     }

@@ -98,9 +98,9 @@ class Extractor:
             artifact_path=compiled_artifact,
             skeleton=skeleton,
             prover_version=(
-                self._config.lean_toolchain if skeleton.prover == "lean4"
-                else "python" if skeleton.prover == "python"
-                else "coq"
+                self._config.lean_toolchain
+                if skeleton.prover == "lean4"
+                else "python" if skeleton.prover == "python" else "coq"
             ),
             goal=goal,
         )
@@ -145,22 +145,29 @@ class Extractor:
         lake_bin = self._config.lean_lake_path
         try:
             proc = await asyncio.create_subprocess_exec(
-                lake_bin, "build",
+                lake_bin,
+                "build",
                 cwd=str(output_dir),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             _, stderr = await proc.communicate()
             if proc.returncode != 0:
-                errors.append(f"lake build failed (exit {proc.returncode}): {stderr.decode()[:500]}")
+                errors.append(
+                    f"lake build failed (exit {proc.returncode}): {stderr.decode()[:500]}"
+                )
                 return None, errors
         except FileNotFoundError:
-            errors.append(f"lake binary not found at '{lake_bin}' — skipping compilation")
+            errors.append(
+                f"lake binary not found at '{lake_bin}' — skipping compilation"
+            )
             return None, errors
 
         # Find .olean artifact
         build_dir = output_dir / ".lake" / "build" / "lib"
-        olean_candidates = list(build_dir.rglob("*.olean")) if build_dir.exists() else []
+        olean_candidates = (
+            list(build_dir.rglob("*.olean")) if build_dir.exists() else []
+        )
         artifact = olean_candidates[0] if olean_candidates else None
 
         return artifact, errors
@@ -175,14 +182,17 @@ class Extractor:
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                "coqc", str(source_path),
+                "coqc",
+                str(source_path),
                 cwd=str(output_dir),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             _, stderr = await proc.communicate()
             if proc.returncode != 0:
-                errors.append(f"coqc failed (exit {proc.returncode}): {stderr.decode()[:500]}")
+                errors.append(
+                    f"coqc failed (exit {proc.returncode}): {stderr.decode()[:500]}"
+                )
                 return None, errors
         except FileNotFoundError:
             errors.append("coqc not found — skipping compilation")
@@ -237,7 +247,9 @@ class Extractor:
         mypy_bin = getattr(self._config, "python_mypy_path", "mypy")
         try:
             proc = await asyncio.create_subprocess_exec(
-                mypy_bin, "--strict", str(pkg_dir),
+                mypy_bin,
+                "--strict",
+                str(pkg_dir),
                 cwd=str(output_dir),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -245,7 +257,9 @@ class Extractor:
             stdout, stderr = await proc.communicate()
             if proc.returncode != 0:
                 raw = stdout.decode() + stderr.decode()
-                errors.append(f"mypy validation failed (exit {proc.returncode}): {raw[:500]}")
+                errors.append(
+                    f"mypy validation failed (exit {proc.returncode}): {raw[:500]}"
+                )
         except FileNotFoundError:
             errors.append(f"mypy not found at '{mypy_bin}' — skipping validation")
 

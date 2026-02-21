@@ -10,14 +10,21 @@ installed, the simulation pass is silently skipped.
 
 from __future__ import annotations
 
+import importlib
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
 from collections import deque
 
 from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, ConceptType, DependencyEdge, NodeStatus
+from ageom.architect.models import (
+    AlgorithmicNode,
+    ConceptType,
+    DependencyEdge,
+    NodeStatus,
+)
 from ageom.synthesizer.toposort import toposort_nodes
 from ageom.types import MatchResult
 
@@ -25,8 +32,13 @@ logger = logging.getLogger(__name__)
 
 try:
     from ageoa.ghost.simulator import SimNode, SimResult, simulate_graph, PlanError
-    from ageoa.ghost.abstract import AbstractDistribution, AbstractSignal, AbstractMatrix
-    from ageoa.ghost.registry import REGISTRY, list_registered
+    from ageoa.ghost.abstract import (
+        AbstractDistribution,
+        AbstractSignal,
+        AbstractMatrix,
+    )
+    from ageoa.ghost.registry import list_registered
+    from ageoa.ghost.witnesses import AbstractFilterCoefficients, AbstractGraphMeta
 
     _GHOST_AVAILABLE = True
 except ImportError:
@@ -100,9 +112,6 @@ def _build_abstract_value(type_desc: str, constraints: str) -> Any:
     if not _GHOST_AVAILABLE:
         return None
 
-    from ageoa.ghost.abstract import AbstractSignal
-    from ageoa.ghost.witnesses import AbstractFilterCoefficients, AbstractGraphMeta
-
     type_lower = type_desc.lower()
     constraints_lower = constraints.lower()
 
@@ -125,7 +134,9 @@ def _build_abstract_value(type_desc: str, constraints: str) -> Any:
                     n_nodes = int(part.split("=", 1)[1])
                 except ValueError:
                     pass
-        symmetric = "symmetric" in constraints_lower or "undirected" in constraints_lower
+        symmetric = (
+            "symmetric" in constraints_lower or "undirected" in constraints_lower
+        )
         return AbstractGraphMeta(n_nodes=n_nodes, is_symmetric=symmetric)
 
     # Filter coefficients
@@ -159,7 +170,11 @@ def _build_abstract_value(type_desc: str, constraints: str) -> Any:
 
     # Parse sampling_rate hints
     for token in constraints_lower.replace(",", " ").split():
-        if token.startswith("fs=") or token.startswith("sr=") or token.startswith("sampling_rate="):
+        if (
+            token.startswith("fs=")
+            or token.startswith("sr=")
+            or token.startswith("sampling_rate=")
+        ):
             try:
                 sampling_rate = float(token.split("=", 1)[1])
             except ValueError:
@@ -180,14 +195,14 @@ def _build_abstract_value(type_desc: str, constraints: str) -> Any:
 _PARAM_DEFAULTS: dict[str, Any] = {
     "order": 4,
     "n": 1024,
-    "wn": 100.0,        # cutoff frequency — must be < nyquist
-    "fs": 44100.0,      # sampling rate — high default to keep wn < nyquist
-    "rp": 1.0,          # passband ripple (dB)
-    "rs": 40.0,         # stopband attenuation (dB)
+    "wn": 100.0,  # cutoff frequency — must be < nyquist
+    "fs": 44100.0,  # sampling rate — high default to keep wn < nyquist
+    "rp": 1.0,  # passband ripple (dB)
+    "rs": 40.0,  # stopband attenuation (dB)
     "btype": "low",
     "numtaps": 65,
-    "t": 0.5,           # diffusion time
-    "k": 6,             # number of eigenvectors
+    "t": 0.5,  # diffusion time
+    "k": 6,  # number of eigenvectors
     "n_freqs": 512,
     "worN": 512,
 }
@@ -197,7 +212,17 @@ def _build_initial_value(param_name: str, type_desc: str, constraints: str) -> A
     """Build an initial abstract value, using parameter-name heuristics for scalars."""
     type_lower = type_desc.lower()
     # Check if this is a known scalar parameter
-    if type_lower in ("int", "integer", "float", "double", "number", "str", "string", "bool", "boolean"):
+    if type_lower in (
+        "int",
+        "integer",
+        "float",
+        "double",
+        "number",
+        "str",
+        "string",
+        "bool",
+        "boolean",
+    ):
         if param_name in _PARAM_DEFAULTS:
             return _PARAM_DEFAULTS[param_name]
     return _build_abstract_value(type_desc, constraints)
@@ -211,18 +236,18 @@ def _build_initial_value(param_name: str, type_desc: str, constraints: str) -> A
 # applied to the incoming interval width.  Missing atoms are treated
 # as identity (factor = 1.0).
 _ATOM_ERROR_FACTORS: dict[str, float] = {
-    "fft": 1.5,        # O(n log n) rounding accumulation
+    "fft": 1.5,  # O(n log n) rounding accumulation
     "ifft": 1.5,
     "rfft": 1.3,
     "irfft": 1.3,
     "stft": 1.6,
     "istft": 1.6,
-    "butter": 1.1,     # filter design — coefficient quantisation
+    "butter": 1.1,  # filter design — coefficient quantisation
     "cheby1": 1.3,
     "cheby2": 1.3,
     "ellip": 1.4,
-    "lfilter": 2.0,    # IIR recursive application amplifies error
-    "sosfilt": 1.4,    # SOS form is more stable than TF
+    "lfilter": 2.0,  # IIR recursive application amplifies error
+    "sosfilt": 1.4,  # SOS form is more stable than TF
     "firwin": 1.05,
     "convolve": 1.2,
     "correlate": 1.2,
@@ -237,9 +262,9 @@ def _parse_error_bounds(constraints: str) -> ErrorInterval:
 
     Falls back to a zero-width interval when no bounds are declared.
     """
-    import re
-
-    match = re.search(r"error_bounds\s*=\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)", constraints)
+    match = re.search(
+        r"error_bounds\s*=\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)", constraints
+    )
     if match:
         try:
             return ErrorInterval(lo=float(match.group(1)), hi=float(match.group(2)))
@@ -441,12 +466,8 @@ def _simulate_message_passing_iterative(
             )
 
         # Deadlock detection: no state change and not converged
-        state_unchanged = all(
-            state.get(k) is prev_state.get(k)
-            for k in state
-        )
+        state_unchanged = all(state.get(k) is prev_state.get(k) for k in state)
         if state_unchanged and iteration > 0:
-            deadlock_names = [n.name for n in sim_nodes]
             raise PlanError(
                 node_name=sim_nodes[0].name if sim_nodes else "unknown",
                 function_name="iterative_message_passing",
@@ -505,7 +526,8 @@ def run_ghost_simulation(
         # and use the cycle node ids for iterative simulation
         acyclic_nodes = [n for n in cdg.nodes if n.node_id not in cycle_ids]
         acyclic_edges = [
-            e for e in cdg.edges
+            e
+            for e in cdg.edges
             if e.source_id not in cycle_ids and e.target_id not in cycle_ids
         ]
         try:
@@ -518,7 +540,9 @@ def run_ghost_simulation(
     # Precision gradients — runs independently of ageoa
     try:
         report.precision_gradients = _compute_precision_gradients(
-            cdg, match_map, sorted_ids,
+            cdg,
+            match_map,
+            sorted_ids,
         )
     except Exception as exc:
         logger.warning("Precision gradient computation failed: %s", exc)
@@ -583,9 +607,15 @@ def run_ghost_simulation(
             node = node_map[nid]
             mr = match_map.get(nid)
             if mr and mr.success:
-                atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
+                atom_name = _extract_atom_name(
+                    mr.verified_match.candidate.declaration.name
+                )
                 if atom_name not in registered:
-                    unsimulated_categories.add(node.concept_type.value if hasattr(node, "concept_type") else "unknown")
+                    unsimulated_categories.add(
+                        node.concept_type.value
+                        if hasattr(node, "concept_type")
+                        else "unknown"
+                    )
         logger.warning(
             "Ghost simulation coverage is low (%.0f%%): unsimulated categories: %s",
             report.coverage * 100,
@@ -631,22 +661,29 @@ def run_ghost_simulation(
         if node.outputs:
             output_name = f"{nid}:{node.outputs[0].name}"
 
-        sim_nodes.append(SimNode(
-            name=node.name,
-            function_name=atom_name,
-            inputs=edge_inputs,
-            output_name=output_name,
-        ))
+        sim_nodes.append(
+            SimNode(
+                name=node.name,
+                function_name=atom_name,
+                inputs=edge_inputs,
+                output_name=output_name,
+            )
+        )
 
     # Run the simulation
     report.ran = True
 
     if is_message_passing_cycle:
         # Split sim_nodes into acyclic (run once) and cyclic (run iteratively)
-        cyclic_sim_nodes = [n for n in sim_nodes if any(
-            nid in cycle_ids for nid in simulable_nodes
-            if node_map.get(nid, AlgorithmicNode(node_id="")).name == n.name
-        )]
+        cyclic_sim_nodes = [
+            n
+            for n in sim_nodes
+            if any(
+                nid in cycle_ids
+                for nid in simulable_nodes
+                if node_map.get(nid, AlgorithmicNode(node_id="")).name == n.name
+            )
+        ]
         acyclic_sim_nodes = [n for n in sim_nodes if n not in cyclic_sim_nodes]
 
         # If we can't cleanly separate, treat all as cyclic
@@ -657,7 +694,9 @@ def run_ghost_simulation(
         try:
             # Run acyclic nodes first
             if acyclic_sim_nodes:
-                result = _simulate_with_bayesian_checks(acyclic_sim_nodes, initial_state)
+                result = _simulate_with_bayesian_checks(
+                    acyclic_sim_nodes, initial_state
+                )
                 initial_state.update(result.final_state)
 
             # Run cyclic nodes iteratively
@@ -670,7 +709,8 @@ def run_ghost_simulation(
             report.iterations_used = iters
             logger.info(
                 "Ghost simulation (iterative) passed: %d nodes, %d iterations",
-                report.node_count, iters,
+                report.node_count,
+                iters,
             )
         except PlanError as exc:
             if "deadlock" in str(exc).lower():
@@ -692,7 +732,8 @@ def run_ghost_simulation(
             report.trace = result.trace
             logger.info(
                 "Ghost simulation passed: %d nodes simulated, trace: %s",
-                result.node_count, result.trace,
+                result.node_count,
+                result.trace,
             )
         except PlanError as exc:
             report.error = str(exc)
@@ -711,27 +752,40 @@ def run_ghost_simulation(
 # ---------------------------------------------------------------------------
 
 # Witness functions that produce reparameterized outputs.
-_REPARAM_WITNESSES = frozenset({
-    "witness_reparameterized_sample",
-    "reparameterized_sample",
-})
+_REPARAM_WITNESSES = frozenset(
+    {
+        "witness_reparameterized_sample",
+        "reparameterized_sample",
+    }
+)
 
 # Witness functions that produce bijector outputs (carry Jacobian).
-_BIJECTOR_WITNESSES = frozenset({
-    "witness_bijector_transform",
-    "bijector_transform",
-})
+_BIJECTOR_WITNESSES = frozenset(
+    {
+        "witness_bijector_transform",
+        "bijector_transform",
+    }
+)
 
 # Witness functions that require reparameterized / bijector inputs.
-_ELBO_WITNESSES = frozenset({
-    "witness_vi_elbo",
-    "vi_elbo",
-})
+_ELBO_WITNESSES = frozenset(
+    {
+        "witness_vi_elbo",
+        "vi_elbo",
+    }
+)
 
 # Abstract types allowed as inputs to stateless MCMC oracle nodes.
 _ORACLE_ALLOWED_TYPES: tuple[type, ...] = (float, int, str)
 if _GHOST_AVAILABLE:
-    _ORACLE_ALLOWED_TYPES = (AbstractDistribution, AbstractSignal, AbstractMatrix, float, int, str)
+    _ORACLE_ALLOWED_TYPES = (
+        AbstractDistribution,
+        AbstractSignal,
+        AbstractMatrix,
+        float,
+        int,
+        str,
+    )
 
 
 def _simulate_with_bayesian_checks(
@@ -754,8 +808,7 @@ def _simulate_with_bayesian_checks(
 
     # Provenance: state_key -> {"is_reparameterized": bool, "has_jacobian": bool}
     provenance: dict[str, dict[str, bool]] = {
-        key: {"is_reparameterized": False, "has_jacobian": False}
-        for key in state
+        key: {"is_reparameterized": False, "has_jacobian": False} for key in state
     }
 
     trace: list[str] = []
@@ -815,7 +868,6 @@ def _simulate_with_bayesian_checks(
 
 def _ensure_atoms_imported() -> None:
     """Import atom modules to trigger @register_atom decorators."""
-    import importlib
 
     modules = [
         "ageoa.numpy.fft",

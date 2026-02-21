@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 import json
-import math
-import textwrap
-from dataclasses import dataclass, field
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -15,7 +11,6 @@ from ageom.architect.handoff import CDGExport
 from ageom.architect.models import (
     AlgorithmicNode,
     ConceptType,
-    DependencyEdge,
     NodeStatus,
 )
 from ageom.principal.models import (
@@ -26,13 +21,14 @@ from ageom.principal.models import (
 )
 from ageom.synthesizer.ghost_sim import GhostSimReport
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
 
-def _make_telemetry(node_id: str, time_ms: float, mem: int, err: float) -> NodeTelemetry:
+def _make_telemetry(
+    node_id: str, time_ms: float, mem: int, err: float
+) -> NodeTelemetry:
     return NodeTelemetry(
         node_id=node_id,
         execution_time_ms=time_ms,
@@ -134,8 +130,18 @@ class TestParseTrace:
 
         trace = tmp_path / "trace.jsonl"
         records = [
-            {"node_id": "a", "execution_time_ms": 10.0, "peak_memory_bytes": 100, "error_expansion": 0.01},
-            {"node_id": "b", "execution_time_ms": 20.0, "peak_memory_bytes": 200, "error_expansion": 0.02},
+            {
+                "node_id": "a",
+                "execution_time_ms": 10.0,
+                "peak_memory_bytes": 100,
+                "error_expansion": 0.01,
+            },
+            {
+                "node_id": "b",
+                "execution_time_ms": 20.0,
+                "peak_memory_bytes": 200,
+                "error_expansion": 0.02,
+            },
         ]
         trace.write_text("\n".join(json.dumps(r) for r in records))
 
@@ -256,7 +262,10 @@ class TestCreditAssigner:
         sim = GhostSimReport()
 
         grads = self.assigner.compute_gradients(
-            self.cdg, bench, sim, OptimizationMetric.LATENCY,
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.LATENCY,
         )
         assert len(grads) == 2
         # Sorted descending
@@ -270,7 +279,10 @@ class TestCreditAssigner:
         sim = GhostSimReport()
 
         grads = self.assigner.compute_gradients(
-            self.cdg, bench, sim, OptimizationMetric.FLOP_COUNT,
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.FLOP_COUNT,
         )
         assert len(grads) == 2
         assert grads[0].metric_type == OptimizationMetric.FLOP_COUNT
@@ -280,7 +292,10 @@ class TestCreditAssigner:
         sim = GhostSimReport()
 
         grads = self.assigner.compute_gradients(
-            self.cdg, bench, sim, OptimizationMetric.MEMORY,
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.MEMORY,
         )
         assert grads[0].node_id == "b"
         assert grads[0].gradient_score == pytest.approx(70.0)
@@ -291,7 +306,10 @@ class TestCreditAssigner:
         sim = GhostSimReport(precision_gradients={"a": 3.0, "b": 1.0})
 
         grads = self.assigner.compute_gradients(
-            self.cdg, bench, sim, OptimizationMetric.PRECISION,
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.PRECISION,
         )
         assert grads[0].node_id == "a"
         assert grads[0].gradient_score == pytest.approx(75.0)
@@ -301,7 +319,10 @@ class TestCreditAssigner:
         sim = GhostSimReport()  # no precision_gradients
 
         grads = self.assigner.compute_gradients(
-            self.cdg, bench, sim, OptimizationMetric.PRECISION,
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.PRECISION,
         )
         assert grads[0].node_id == "b"
         assert grads[0].gradient_score == pytest.approx(75.0)
@@ -311,7 +332,10 @@ class TestCreditAssigner:
         sim = GhostSimReport()
 
         grads = self.assigner.compute_gradients(
-            self.cdg, bench, sim, OptimizationMetric.LATENCY,
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.LATENCY,
         )
         assert grads == []
 
@@ -320,7 +344,10 @@ class TestCreditAssigner:
         sim = GhostSimReport()
 
         grads = self.assigner.compute_gradients(
-            self.cdg, bench, sim, OptimizationMetric.LATENCY,
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.LATENCY,
         )
         assert "NodeA" in grads[0].bottleneck_reason
 
@@ -349,7 +376,10 @@ class TestCreditAssigner:
         sim = GhostSimReport()
 
         grads = self.assigner.compute_gradients(
-            cdg, bench, sim, OptimizationMetric.LATENCY,
+            cdg,
+            bench,
+            sim,
+            OptimizationMetric.LATENCY,
         )
         assert len(grads) == 1
         assert grads[0].node_id == "leaf"
@@ -393,7 +423,8 @@ class TestOptunaManager:
         from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
 
         report = GhostSimReport(
-            ran=True, passed=True,
+            ran=True,
+            passed=True,
             precision_gradients={"a": float("inf")},
         )
         with pytest.raises(TrialPrunedEarly, match="Infinite/NaN"):
@@ -403,7 +434,8 @@ class TestOptunaManager:
         from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
 
         report = GhostSimReport(
-            ran=True, passed=True,
+            ran=True,
+            passed=True,
             precision_gradients={"a": float("nan")},
         )
         with pytest.raises(TrialPrunedEarly):

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import NodeStatus
@@ -35,22 +34,28 @@ class CreditAssigner:
         Returns:
             ``NodeGradient`` objects sorted descending by ``gradient_score``.
         """
-        atomic_ids = {
-            n.node_id for n in cdg.nodes if n.status == NodeStatus.ATOMIC
-        }
+        atomic_ids = {n.node_id for n in cdg.nodes if n.status == NodeStatus.ATOMIC}
         node_names = {n.node_id: n.name for n in cdg.nodes}
 
         if target in (OptimizationMetric.LATENCY, OptimizationMetric.FLOP_COUNT):
             return self._gradient_latency(
-                atomic_ids, node_names, benchmark, target,
+                atomic_ids,
+                node_names,
+                benchmark,
+                target,
             )
         if target == OptimizationMetric.MEMORY:
             return self._gradient_memory(
-                atomic_ids, node_names, benchmark,
+                atomic_ids,
+                node_names,
+                benchmark,
             )
         # PRECISION
         return self._gradient_precision(
-            atomic_ids, node_names, benchmark, sim_report,
+            atomic_ids,
+            node_names,
+            benchmark,
+            sim_report,
         )
 
     # ------------------------------------------------------------------
@@ -78,15 +83,17 @@ class CreditAssigner:
             if tel is None:
                 continue
             pct = tel.execution_time_ms / total_ms * 100.0
-            gradients.append(NodeGradient(
-                node_id=nid,
-                gradient_score=pct,
-                metric_type=target,
-                bottleneck_reason=(
-                    f"Node '{node_names.get(nid, nid)}' consumed "
-                    f"{pct:.1f}% of total execution time"
-                ),
-            ))
+            gradients.append(
+                NodeGradient(
+                    node_id=nid,
+                    gradient_score=pct,
+                    metric_type=target,
+                    bottleneck_reason=(
+                        f"Node '{node_names.get(nid, nid)}' consumed "
+                        f"{pct:.1f}% of total execution time"
+                    ),
+                )
+            )
 
         gradients.sort(key=lambda g: g.gradient_score, reverse=True)
         return gradients
@@ -111,15 +118,17 @@ class CreditAssigner:
             if tel is None:
                 continue
             pct = tel.peak_memory_bytes / total_bytes * 100.0
-            gradients.append(NodeGradient(
-                node_id=nid,
-                gradient_score=pct,
-                metric_type=OptimizationMetric.MEMORY,
-                bottleneck_reason=(
-                    f"Node '{node_names.get(nid, nid)}' consumed "
-                    f"{pct:.1f}% of total peak memory"
-                ),
-            ))
+            gradients.append(
+                NodeGradient(
+                    node_id=nid,
+                    gradient_score=pct,
+                    metric_type=OptimizationMetric.MEMORY,
+                    bottleneck_reason=(
+                        f"Node '{node_names.get(nid, nid)}' consumed "
+                        f"{pct:.1f}% of total peak memory"
+                    ),
+                )
+            )
 
         gradients.sort(key=lambda g: g.gradient_score, reverse=True)
         return gradients
@@ -152,15 +161,17 @@ class CreditAssigner:
 
         for nid, raw in scored.items():
             pct = raw / total * 100.0
-            gradients.append(NodeGradient(
-                node_id=nid,
-                gradient_score=pct,
-                metric_type=OptimizationMetric.PRECISION,
-                bottleneck_reason=(
-                    f"Node '{node_names.get(nid, nid)}' contributed "
-                    f"{pct:.1f}% of total numerical error expansion"
-                ),
-            ))
+            gradients.append(
+                NodeGradient(
+                    node_id=nid,
+                    gradient_score=pct,
+                    metric_type=OptimizationMetric.PRECISION,
+                    bottleneck_reason=(
+                        f"Node '{node_names.get(nid, nid)}' contributed "
+                        f"{pct:.1f}% of total numerical error expansion"
+                    ),
+                )
+            )
 
         gradients.sort(key=lambda g: g.gradient_score, reverse=True)
         return gradients

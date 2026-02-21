@@ -24,21 +24,11 @@ def generate_ffi_imports(language: str) -> str:
         Python source code for the import section.
     """
     if language == "cpp":
-        return (
-            "import ctypes\n"
-            "import ctypes.util\n"
-            "from pathlib import Path\n"
-        )
+        return "import ctypes\n" "import ctypes.util\n" "from pathlib import Path\n"
     elif language == "julia":
-        return (
-            "from juliacall import Main as jl\n"
-        )
+        return "from juliacall import Main as jl\n"
     elif language == "rust":
-        return (
-            "import ctypes\n"
-            "import ctypes.util\n"
-            "from pathlib import Path\n"
-        )
+        return "import ctypes\n" "import ctypes.util\n" "from pathlib import Path\n"
     else:
         return ""
 
@@ -77,16 +67,14 @@ def generate_ffi_stub(atom: MacroAtomSpec, language: str) -> str:
         return ""
 
 
-def _cpp_stub(
-    fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str
-) -> str:
+def _cpp_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) -> str:
     """Generate a ctypes-based FFI stub for C++."""
     lines = [
         f"def {fn_name}_ffi({params}):",
         f'    """FFI bridge to C++ implementation of {atom.name}."""',
         f'    _lib = ctypes.CDLL("./{fn_name}.so")',
         f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
-        f"    _func = _lib[_func_name]",
+        "    _func = _lib[_func_name]",
     ]
 
     # Set argtypes
@@ -97,15 +85,13 @@ def _cpp_stub(
         lines.append(f"    _func.argtypes = [{', '.join(ctypes_args)}]")
 
     # Set restype
-    lines.append(f"    _func.restype = ctypes.c_void_p")
+    lines.append("    _func.restype = ctypes.c_void_p")
     lines.append(f"    return _func({params})")
     lines.append("")
     return "\n".join(lines)
 
 
-def _julia_stub(
-    fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str
-) -> str:
+def _julia_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) -> str:
     """Generate a juliacall-based FFI stub for Julia."""
     lines = [
         f"def {fn_name}_ffi({params}):",
@@ -116,9 +102,7 @@ def _julia_stub(
     return "\n".join(lines)
 
 
-def generate_ffi_bindings(
-    atoms: list[MacroAtomSpec], language: str
-) -> str:
+def generate_ffi_bindings(atoms: list[MacroAtomSpec], language: str) -> str:
     """Generate a complete FFI binding module.
 
     Args:
@@ -142,17 +126,16 @@ def generate_ffi_bindings(
 
     return "\n".join(lines)
 
-def _rust_stub(
-    fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str
-) -> str:
+
+def _rust_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) -> str:
     """Generate a ctypes-based FFI stub for Rust."""
     lines = [
         f"def {fn_name}_ffi({params}):",
         f'    """FFI bridge to Rust implementation of {atom.name}."""',
-        f'    # Ensure the Rust library is compiled with #[no_mangle] and pub extern "C"',
-        f'    _lib = ctypes.CDLL("./target/release/librust_robotics.so")',
+        '    # Ensure the Rust library is compiled with #[no_mangle] and pub extern "C"',
+        '    _lib = ctypes.CDLL("./target/release/librust_robotics.so")',
         f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
-        f"    _func = _lib[_func_name]",
+        "    _func = _lib[_func_name]",
     ]
 
     # Set argtypes
@@ -163,7 +146,7 @@ def _rust_stub(
         lines.append(f"    _func.argtypes = [{', '.join(ctypes_args)}]")
 
     # Set restype
-    lines.append(f"    _func.restype = ctypes.c_void_p")
+    lines.append("    _func.restype = ctypes.c_void_p")
     lines.append(f"    return _func({params})")
     lines.append("")
     return "\n".join(lines)

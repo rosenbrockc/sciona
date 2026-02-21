@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -20,9 +20,7 @@ class TestCompilerFeedback:
         assert fb.success is False
 
     def test_failure_with_remaining_goals(self):
-        fb = CompilerFeedback(
-            raw_output="goals", goals_remaining=["⊢ 1 + 1 = 2"]
-        )
+        fb = CompilerFeedback(raw_output="goals", goals_remaining=["⊢ 1 + 1 = 2"])
         assert fb.success is False
 
 
@@ -74,7 +72,9 @@ class TestVerificationOracleImpl:
             type_signature="∀ (n m : ℕ), n + m = m + n",
             prover=Prover.LEAN4,
         )
-        return CandidateMatch(declaration=decl, score=0.95, retrieval_method="embedding")
+        return CandidateMatch(
+            declaration=decl, score=0.95, retrieval_method="embedding"
+        )
 
     @pytest.mark.asyncio
     async def test_verify_candidate_success(self, oracle, pdg_node, candidate):
@@ -100,9 +100,7 @@ class TestVerificationOracleImpl:
 
         mock_lean = AsyncMock()
         # First fails, second succeeds
-        mock_lean.check_term = AsyncMock(
-            side_effect=[(False, "error"), (True, "ok")]
-        )
+        mock_lean.check_term = AsyncMock(side_effect=[(False, "error"), (True, "ok")])
         oracle = VerificationOracleImpl(lean_env=mock_lean)
 
         decl1 = Declaration(name="wrong", type_signature="Bool", prover=Prover.LEAN4)

@@ -55,8 +55,6 @@ class CDGExport(BaseModel):
     def non_atomic_leaves(self) -> list[AlgorithmicNode]:
         """Return leaf nodes that are NOT atomic (validation failures)."""
         parent_ids = {e.source_id for e in self.edges}
-        child_ids = {e.target_id for e in self.edges}
-        all_ids = {n.node_id for n in self.nodes}
 
         # Leaves: nodes that have no children (not a source in any edge,
         # or have no entries in children list)
@@ -289,9 +287,7 @@ def validate_handoff_strict(
         if node.status == NodeStatus.ATOMIC and node.type_signature:
             err = _validate_type_signature_syntax(node.type_signature, prover)
             if err:
-                issues.append(
-                    f"Atomic leaf '{node.name}' ({node.node_id}): {err}"
-                )
+                issues.append(f"Atomic leaf '{node.name}' ({node.node_id}): {err}")
 
     # Edge type compatibility
     for edge in cdg.edges:
@@ -349,9 +345,7 @@ def to_pdg_nodes(
     if not cdg.is_complete():
         non_atomic = cdg.non_atomic_leaves()
         names = [n.name for n in non_atomic]
-        raise ValueError(
-            f"Cannot convert incomplete CDG. Non-atomic leaves: {names}"
-        )
+        raise ValueError(f"Cannot convert incomplete CDG. Non-atomic leaves: {names}")
 
     pdg_nodes: list[PDGNode] = []
     for node in cdg.leaf_nodes():

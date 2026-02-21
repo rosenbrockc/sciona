@@ -19,7 +19,6 @@ from ageom.ingester.extractor import extract_data_flow
 from ageom.ingester.graph import IngesterAgent
 from ageom.ingester.models import IngestionBundle
 
-
 # ---------------------------------------------------------------------------
 # Mock class source
 # ---------------------------------------------------------------------------
@@ -50,69 +49,75 @@ SMOOTHED_ESTIMATOR_SOURCE = textwrap.dedent("""\
 # Mock LLM responses
 # ---------------------------------------------------------------------------
 
-_CHUNK_RESPONSE = json.dumps({
-    "macro_atoms": [
-        {
-            "name": "Data Smoother",
-            "description": "Preprocess and optionally smooth the input data",
-            "method_names": ["preprocess", "_apply_smooth"],
-            "inputs": [
-                {"name": "data", "type_desc": "list[float]", "constraints": ""},
-            ],
-            "outputs": [
-                {"name": "smoothed", "type_desc": "list[float]", "constraints": ""},
-            ],
-            "config_params": ["smooth"],
-            "concept_type": "custom",
-            "is_optional": True,
-        },
-        {
-            "name": "Estimator",
-            "description": "Compute the mean of the smoothed data",
-            "method_names": ["estimate"],
-            "inputs": [
-                {"name": "smoothed", "type_desc": "list[float]", "constraints": ""},
-            ],
-            "outputs": [
-                {"name": "result", "type_desc": "float", "constraints": ""},
-            ],
-            "config_params": [],
-            "concept_type": "custom",
-            "is_optional": False,
-        },
-    ],
-    "edges": [
-        {
-            "source_id": "data_smoother",
-            "target_id": "estimator",
-            "output_name": "smoothed",
-            "input_name": "smoothed",
-            "source_type": "list[float]",
-            "target_type": "list[float]",
-        },
-    ],
-})
+_CHUNK_RESPONSE = json.dumps(
+    {
+        "macro_atoms": [
+            {
+                "name": "Data Smoother",
+                "description": "Preprocess and optionally smooth the input data",
+                "method_names": ["preprocess", "_apply_smooth"],
+                "inputs": [
+                    {"name": "data", "type_desc": "list[float]", "constraints": ""},
+                ],
+                "outputs": [
+                    {"name": "smoothed", "type_desc": "list[float]", "constraints": ""},
+                ],
+                "config_params": ["smooth"],
+                "concept_type": "custom",
+                "is_optional": True,
+            },
+            {
+                "name": "Estimator",
+                "description": "Compute the mean of the smoothed data",
+                "method_names": ["estimate"],
+                "inputs": [
+                    {"name": "smoothed", "type_desc": "list[float]", "constraints": ""},
+                ],
+                "outputs": [
+                    {"name": "result", "type_desc": "float", "constraints": ""},
+                ],
+                "config_params": [],
+                "concept_type": "custom",
+                "is_optional": False,
+            },
+        ],
+        "edges": [
+            {
+                "source_id": "data_smoother",
+                "target_id": "estimator",
+                "output_name": "smoothed",
+                "input_name": "smoothed",
+                "source_type": "list[float]",
+                "target_type": "list[float]",
+            },
+        ],
+    }
+)
 
 # Hoist response: no cross-window state for this class
 _HOIST_RESPONSE = json.dumps({"state_models": []})
 
 # Repair response: a minimal type fix (used in repair-loop test)
-_REPAIR_RESPONSE = json.dumps([
-    {
-        "line_start": 1,
-        "line_end": 1,
-        "replacement": '"""Auto-generated atom wrappers following the ageoa pattern."""',
-    },
-])
+_REPAIR_RESPONSE = json.dumps(
+    [
+        {
+            "line_start": 1,
+            "line_end": 1,
+            "replacement": '"""Auto-generated atom wrappers following the ageoa pattern."""',
+        },
+    ]
+)
 
-_ABSTRACT_RESPONSE = json.dumps({
-    "abstract_name": "ConceptualAtom",
-    "conceptual_transform": "Transform data",
-    "abstract_inputs": [],
-    "abstract_outputs": [],
-    "algorithmic_properties": [],
-    "cross_disciplinary_applications": [],
-})
+_ABSTRACT_RESPONSE = json.dumps(
+    {
+        "abstract_name": "ConceptualAtom",
+        "conceptual_transform": "Transform data",
+        "abstract_inputs": [],
+        "abstract_outputs": [],
+        "algorithmic_properties": [],
+        "cross_disciplinary_applications": [],
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -164,12 +169,14 @@ class TestOptionalCDGNode:
             _CHUNK_RESPONSE,
             _HOIST_RESPONSE,
             _ABSTRACT_RESPONSE,
-            _ABSTRACT_RESPONSE
+            _ABSTRACT_RESPONSE,
         ]
 
         mock_ghost_mod = MagicMock()
         with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
-            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
+                passed=True, ran=True, error=""
+            )
             agent = IngesterAgent(llm=mock_llm)
             bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
@@ -183,12 +190,14 @@ class TestOptionalCDGNode:
             _CHUNK_RESPONSE,
             _HOIST_RESPONSE,
             _ABSTRACT_RESPONSE,
-            _ABSTRACT_RESPONSE
+            _ABSTRACT_RESPONSE,
         ]
 
         mock_ghost_mod = MagicMock()
         with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
-            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
+                passed=True, ran=True, error=""
+            )
             agent = IngesterAgent(llm=mock_llm)
             bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
@@ -205,18 +214,18 @@ class TestOptionalCDGNode:
             _CHUNK_RESPONSE,
             _HOIST_RESPONSE,
             _ABSTRACT_RESPONSE,
-            _ABSTRACT_RESPONSE
+            _ABSTRACT_RESPONSE,
         ]
 
         mock_ghost_mod = MagicMock()
         with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
-            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
+                passed=True, ran=True, error=""
+            )
             agent = IngesterAgent(llm=mock_llm)
             bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
-        estimator = next(
-            (n for n in bundle.cdg.nodes if n.name == "Estimator"), None
-        )
+        estimator = next((n for n in bundle.cdg.nodes if n.name == "Estimator"), None)
         assert estimator is not None
         assert estimator.is_optional is False
 
@@ -252,7 +261,9 @@ class TestMypyRepairLoop:
 
         mock_ghost_mod = MagicMock()
         with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
-            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
+                passed=True, ran=True, error=""
+            )
             agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
             bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
@@ -285,7 +296,9 @@ class TestMypyRepairLoop:
 
         mock_ghost_mod = MagicMock()
         with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
-            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
+                passed=True, ran=True, error=""
+            )
             agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
             bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 

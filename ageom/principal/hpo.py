@@ -9,7 +9,7 @@ from typing import Any
 import optuna
 from optuna.importance import get_param_importances
 
-from ageom.principal.models import BenchmarkResult, OptimizationMetric
+from ageom.principal.models import BenchmarkResult
 from ageom.synthesizer.ghost_sim import GhostSimReport
 
 logger = logging.getLogger(__name__)
@@ -65,15 +65,11 @@ class OptunaManager:
         2. Any node's precision gradient is infinite or NaN.
         """
         if sim_report.ran and not sim_report.passed:
-            raise TrialPrunedEarly(
-                f"Ghost simulation failed: {sim_report.error}"
-            )
+            raise TrialPrunedEarly(f"Ghost simulation failed: {sim_report.error}")
 
         for nid, pg in sim_report.precision_gradients.items():
             if math.isinf(pg) or math.isnan(pg):
-                raise TrialPrunedEarly(
-                    f"Infinite/NaN error bound at node '{nid}'"
-                )
+                raise TrialPrunedEarly(f"Infinite/NaN error bound at node '{nid}'")
 
     # ------------------------------------------------------------------
     # Importance analysis
@@ -95,8 +91,7 @@ class OptunaManager:
             Empty dict when fewer than 2 completed trials exist.
         """
         completed = [
-            t for t in self._study.trials
-            if t.state == optuna.trial.TrialState.COMPLETE
+            t for t in self._study.trials if t.state == optuna.trial.TrialState.COMPLETE
         ]
         if len(completed) < 2:
             logger.info(

@@ -26,7 +26,9 @@ def test_event_log_append_and_len():
     assert len(log) == 0
 
     ev = PipelineEvent(
-        timestamp=1.0, round="hunter", phase="search",
+        timestamp=1.0,
+        round="hunter",
+        phase="search",
         event_type="SEARCH_START",
     )
     log.append(ev)
@@ -36,13 +38,23 @@ def test_event_log_append_and_len():
 
 def test_event_log_to_jsonl():
     log = EventLog()
-    log.append(PipelineEvent(
-        timestamp=1.0, round="a", phase="b", event_type="E1",
-    ))
-    log.append(PipelineEvent(
-        timestamp=2.0, round="c", phase="d", event_type="E2",
-        payload={"key": "value"},
-    ))
+    log.append(
+        PipelineEvent(
+            timestamp=1.0,
+            round="a",
+            phase="b",
+            event_type="E1",
+        )
+    )
+    log.append(
+        PipelineEvent(
+            timestamp=2.0,
+            round="c",
+            phase="d",
+            event_type="E2",
+            payload={"key": "value"},
+        )
+    )
     jsonl = log.to_jsonl()
     lines = jsonl.strip().split("\n")
     assert len(lines) == 2
@@ -54,10 +66,15 @@ def test_event_log_to_jsonl():
 
 def test_event_log_save():
     log = EventLog()
-    log.append(PipelineEvent(
-        timestamp=1.0, round="synth", phase="compile",
-        event_type="COMPILE_ATTEMPT", duration_ms=42.5,
-    ))
+    log.append(
+        PipelineEvent(
+            timestamp=1.0,
+            round="synth",
+            phase="compile",
+            event_type="COMPILE_ATTEMPT",
+            duration_ms=42.5,
+        )
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "trace.jsonl"
@@ -70,9 +87,14 @@ def test_event_log_save():
 
 def test_event_log_clear():
     log = EventLog()
-    log.append(PipelineEvent(
-        timestamp=1.0, round="a", phase="b", event_type="X",
-    ))
+    log.append(
+        PipelineEvent(
+            timestamp=1.0,
+            round="a",
+            phase="b",
+            event_type="X",
+        )
+    )
     assert len(log) == 1
     log.clear()
     assert len(log) == 0
@@ -83,8 +105,14 @@ def test_log_event_convenience():
     global_log = get_event_log()
     global_log.clear()
 
-    ev = log_event("hunter", "verify", "VERIFICATION_ATTEMPT",
-                   node_id="n1", payload={"candidate": "foo"}, duration_ms=100.0)
+    ev = log_event(
+        "hunter",
+        "verify",
+        "VERIFICATION_ATTEMPT",
+        node_id="n1",
+        payload={"candidate": "foo"},
+        duration_ms=100.0,
+    )
 
     assert ev.round == "hunter"
     assert ev.phase == "verify"

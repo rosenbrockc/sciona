@@ -112,7 +112,9 @@ class SkeletonGraph(BaseModel):
     description: str
     template_nodes: list[AlgorithmicNode] = Field(default_factory=list)
     template_edges: list[DependencyEdge] = Field(default_factory=list)
-    variants: list[str] = Field(default_factory=list)  # e.g., ["merge_sort", "quicksort"]
+    variants: list[str] = Field(
+        default_factory=list
+    )  # e.g., ["merge_sort", "quicksort"]
 
 
 class AlgorithmicPrimitive(BaseModel):

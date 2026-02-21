@@ -21,12 +21,9 @@ from ageom.ingester.emitter import (
     generate_opaque_witnesses,
 )
 from ageom.ingester.extractor import (
-    _detect_opaque_bases,
-    _extract_opaque_boundary_fact,
     extract_data_flow,
 )
-from ageom.ingester.models import MacroAtomSpec, RawDataFlowGraph
-
+from ageom.ingester.models import MacroAtomSpec
 
 # ---------------------------------------------------------------------------
 # Mock source: mixed pipeline with transparent + opaque classes
@@ -71,17 +68,19 @@ MIXED_PIPELINE_SOURCE = textwrap.dedent("""\
 
 
 # Mock LLM response for opaque witness drafting
-_OPAQUE_WITNESS_RESPONSE = json.dumps({
-    "witness_name": "witness_feature_extractor",
-    "params": ["x: AbstractArray"],
-    "return_type": "AbstractArray",
-    "shape_transform": "(B, N, C_in) -> (B, N, C_out)",
-    "witness_body": (
-        "B, N, C_in = x.shape\n"
-        "C_out = 64  # default output channels\n"
-        "return AbstractArray(shape=(B, N, C_out), dtype=\"float32\")"
-    ),
-})
+_OPAQUE_WITNESS_RESPONSE = json.dumps(
+    {
+        "witness_name": "witness_feature_extractor",
+        "params": ["x: AbstractArray"],
+        "return_type": "AbstractArray",
+        "shape_transform": "(B, N, C_in) -> (B, N, C_out)",
+        "witness_body": (
+            "B, N, C_in = x.shape\n"
+            "C_out = 64  # default output channels\n"
+            'return AbstractArray(shape=(B, N, C_out), dtype="float32")'
+        ),
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -200,9 +199,7 @@ class TestFullPipelineOpaque:
         assert isinstance(bundle, IngestionBundle)
 
         # Should have root + 1 child
-        atomic_nodes = [
-            n for n in bundle.cdg.nodes if n.status == NodeStatus.ATOMIC
-        ]
+        atomic_nodes = [n for n in bundle.cdg.nodes if n.status == NodeStatus.ATOMIC]
         assert len(atomic_nodes) == 1
 
         node = atomic_nodes[0]
@@ -229,9 +226,7 @@ class TestFullPipelineOpaque:
         agent = IngesterAgent(llm=mock_llm, proof_env=None)
         bundle = await agent.ingest(mixed_source, "AlphaFoldBlock")
 
-        atomic_nodes = [
-            n for n in bundle.cdg.nodes if n.status == NodeStatus.ATOMIC
-        ]
+        atomic_nodes = [n for n in bundle.cdg.nodes if n.status == NodeStatus.ATOMIC]
         assert len(atomic_nodes) == 1
         node = atomic_nodes[0]
         assert len(node.inputs) == 2

@@ -28,9 +28,7 @@ class SynthesizerAgent:
 
     async def synthesize(self, skeleton: SkeletonFile) -> SynthesisResult:
         """Run the repair loop on a skeleton file."""
-        sorry_count = len(
-            find_sorry_locations(skeleton.source_code, skeleton.prover)
-        )
+        sorry_count = len(find_sorry_locations(skeleton.source_code, skeleton.prover))
 
         state = RepairState(
             skeleton=skeleton,
@@ -55,7 +53,6 @@ class SynthesizerAgent:
             patches_applied=len(state.patches_applied),
             iterations_used=state.iteration,
             error_history=[
-                (it, cat.value, text)
-                for it, cat, text in state.error_history
+                (it, cat.value, text) for it, cat, text in state.error_history
             ],
         )

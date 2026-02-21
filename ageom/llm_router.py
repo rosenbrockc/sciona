@@ -90,9 +90,7 @@ class LLMRouter:
     async def complete(self, system: str, user: str) -> str:
         return await self._default.complete(system, user)
 
-    async def complete_with_grammar(
-        self, system: str, user: str, grammar: str
-    ) -> str:
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         return await self._default.complete_with_grammar(system, user, grammar)
 
 

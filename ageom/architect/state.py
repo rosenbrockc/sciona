@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 from dataclasses import dataclass
-from typing import Annotated, Any
+from typing import Annotated
 
 from typing_extensions import TypedDict
 

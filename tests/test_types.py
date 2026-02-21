@@ -39,7 +39,9 @@ def test_pdg_node_defaults():
 
 def test_match_result_success():
     decl = Declaration(name="test", type_signature="Nat")
-    candidate = CandidateMatch(declaration=decl, score=0.9, retrieval_method="embedding")
+    candidate = CandidateMatch(
+        declaration=decl, score=0.9, retrieval_method="embedding"
+    )
     vr = VerificationResult(candidate=candidate, verified=True, proof_term="@test")
     node = PDGNode(predicate_id="p1", statement="Nat")
 

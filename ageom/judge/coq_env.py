@@ -62,9 +62,7 @@ class CoqEnvironment:
         def _execute() -> CompilerFeedback:
             from coqpyt.coq_file import CoqFile
 
-            with tempfile.NamedTemporaryFile(
-                suffix=".v", mode="w", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(suffix=".v", mode="w", delete=False) as f:
                 f.write(code)
                 f.flush()
                 tmp_path = f.name

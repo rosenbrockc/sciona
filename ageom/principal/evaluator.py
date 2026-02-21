@@ -60,13 +60,16 @@ class ExecutionSandbox:
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                "python", str(artifact), str(dataset_path),
+                "python",
+                str(artifact),
+                str(dataset_path),
                 cwd=str(bundle.output_dir),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=self._timeout_s,
+                proc.communicate(),
+                timeout=self._timeout_s,
             )
         except asyncio.TimeoutError:
             logger.error("Artifact timed out after %.1fs", self._timeout_s)

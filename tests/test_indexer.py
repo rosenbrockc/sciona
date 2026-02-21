@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -48,7 +46,7 @@ class TestFAISSStore:
 
     @pytest.fixture
     def store(self):
-        faiss = pytest.importorskip("faiss")
+        pytest.importorskip("faiss")
         from ageom.indexer.faiss_store import FAISSStore
 
         return FAISSStore(dim=8)

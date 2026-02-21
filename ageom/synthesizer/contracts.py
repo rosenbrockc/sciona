@@ -71,7 +71,9 @@ class ContractGenerator:
         # Build body
         body = f"return {declaration.name}({', '.join(name for name, _ in parameters)})"
 
-        function_name = unit.name.replace(" ", "_").replace("-", "_").lower() + "_wrapper"
+        function_name = (
+            unit.name.replace(" ", "_").replace("-", "_").lower() + "_wrapper"
+        )
 
         return SafeAtomWrapper(
             function_name=function_name,
@@ -99,8 +101,7 @@ class ContractGenerator:
 
         # Function signature
         params = ", ".join(
-            f"{name}: {typ}" if typ else name
-            for name, typ in wrapper.parameters
+            f"{name}: {typ}" if typ else name for name, typ in wrapper.parameters
         )
         ret = f" -> {wrapper.return_type}" if wrapper.return_type else ""
         lines.append(f"def {wrapper.function_name}({params}){ret}:")
@@ -110,13 +111,13 @@ class ContractGenerator:
             for body_line in wrapper.body.splitlines():
                 lines.append(f"    {body_line}")
         else:
-            lines.append(f"    raise NotImplementedError(\"TODO: compose {wrapper.original_qualname}\")")
+            lines.append(
+                f'    raise NotImplementedError("TODO: compose {wrapper.original_qualname}")'
+            )
 
         return "\n".join(lines)
 
-    def _iospec_to_contract(
-        self, spec: IOSpec, kind: str
-    ) -> ContractSpec | None:
+    def _iospec_to_contract(self, spec: IOSpec, kind: str) -> ContractSpec | None:
         """Convert an IOSpec constraint to a ContractSpec.
 
         Recognizes DSP-specific constraint patterns:
@@ -132,10 +133,9 @@ class ContractGenerator:
 
         # DSP pattern: round-trip epsilon-metric
         if constraint.startswith("round_trip:"):
-            expr = constraint[len("round_trip:"):].strip()
+            expr = constraint[len("round_trip:") :].strip()
             lambda_expr = (
-                f"lambda result, {spec.name}: "
-                f"np.allclose({expr}, atol=1e-10)"
+                f"lambda result, {spec.name}: " f"np.allclose({expr}, atol=1e-10)"
             )
             return ContractSpec(
                 kind="ensure",
@@ -145,9 +145,7 @@ class ContractGenerator:
 
         # DSP pattern: filter stability
         if constraint == "poles inside unit circle":
-            lambda_expr = (
-                f"lambda result: _poles_inside_unit_circle(result[1])"
-            )
+            lambda_expr = "lambda result: _poles_inside_unit_circle(result[1])"
             return ContractSpec(
                 kind="ensure",
                 lambda_expr=lambda_expr,
@@ -156,9 +154,7 @@ class ContractGenerator:
 
         # DSP pattern: positive semi-definite
         if constraint == "positive semi-definite":
-            lambda_expr = (
-                f"lambda result: _eigenvalues_nonneg(result, k=1)"
-            )
+            lambda_expr = "lambda result: _eigenvalues_nonneg(result, k=1)"
             return ContractSpec(
                 kind="ensure",
                 lambda_expr=lambda_expr,

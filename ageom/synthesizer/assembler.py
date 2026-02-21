@@ -6,11 +6,10 @@ import re
 from datetime import datetime, timezone
 
 from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, DependencyEdge, NodeStatus
+from ageom.architect.models import AlgorithmicNode, NodeStatus
 from ageom.synthesizer.models import AssemblyUnit, GlueEdge, SkeletonFile
 from ageom.synthesizer.toposort import toposort_nodes
 from ageom.types import MatchResult, Prover
-
 
 # ---------------------------------------------------------------------------
 # Telemetry helper emitted into instrumented Python skeletons
@@ -176,29 +175,38 @@ class Assembler:
         sorted_units = [unit_map[nid] for nid in sorted_ids if nid in unit_map]
 
         # Find root nodes (decomposed, not atomic)
-        root_nodes = [
-            n for n in cdg.nodes if n.status == NodeStatus.DECOMPOSED
-        ]
+        root_nodes = [n for n in cdg.nodes if n.status == NodeStatus.DECOMPOSED]
 
         # Generate source code
         metadata = dict(cdg.metadata) if cdg.metadata else {}
         metadata["timestamp"] = datetime.now(timezone.utc).isoformat()
 
-        telemetry = with_telemetry if with_telemetry is not None else self._with_telemetry
+        telemetry = (
+            with_telemetry if with_telemetry is not None else self._with_telemetry
+        )
 
         if self._prover == Prover.LEAN4:
             source, sorry_count = self._emit_lean4(
-                sorted_units, glue_edges, root_nodes, metadata,
+                sorted_units,
+                glue_edges,
+                root_nodes,
+                metadata,
                 telemetry=telemetry,
             )
         elif self._prover == Prover.PYTHON:
             source, sorry_count = self._emit_python(
-                sorted_units, glue_edges, root_nodes, metadata,
+                sorted_units,
+                glue_edges,
+                root_nodes,
+                metadata,
                 telemetry=telemetry,
             )
         else:
             source, sorry_count = self._emit_coq(
-                sorted_units, glue_edges, root_nodes, metadata,
+                sorted_units,
+                glue_edges,
+                root_nodes,
+                metadata,
                 telemetry=telemetry,
             )
 
@@ -231,12 +239,15 @@ class Assembler:
         # Edges relevant to this root's children
         child_ids = set(root.children) if root.children else {u.node_id for u in units}
         relevant_edges = [
-            e for e in glue_edges
+            e
+            for e in glue_edges
             if e.source_id in child_ids or e.target_id in child_ids
         ]
 
         if not relevant_edges and not units:
-            return ['    raise NotImplementedError("TODO: compose {}")'.format(root.name)]
+            return [
+                '    raise NotImplementedError("TODO: compose {}")'.format(root.name)
+            ]
 
         lines: list[str] = []
 
@@ -251,8 +262,11 @@ class Assembler:
             for inp in unit.inputs:
                 # Check if an edge provides this input
                 edge_for_inp = next(
-                    (e for e in relevant_edges
-                     if e.target_id == unit.node_id and e.input_name == inp.name),
+                    (
+                        e
+                        for e in relevant_edges
+                        if e.target_id == unit.node_id and e.input_name == inp.name
+                    ),
                     None,
                 )
                 if edge_for_inp:
@@ -260,7 +274,9 @@ class Assembler:
                     if src_unit:
                         src_var = sanitize_name(src_unit.name) + "_result"
                         if edge_for_inp.cast_expr:
-                            args.append(f"# cast: {edge_for_inp.cast_expr}\n    {src_var}")
+                            args.append(
+                                f"# cast: {edge_for_inp.cast_expr}\n    {src_var}"
+                            )
                         else:
                             args.append(src_var)
                     else:
@@ -279,8 +295,10 @@ class Assembler:
                 last_name = sanitize_name(last_unit[-1].name) + "_result"
                 lines.append(f"    return {last_name}")
         else:
-            lines.append('    # TODO: compose -- no atomic children resolved')
-            lines.append('    raise NotImplementedError("compose {}")'.format(root.name))
+            lines.append("    # TODO: compose -- no atomic children resolved")
+            lines.append(
+                '    raise NotImplementedError("compose {}")'.format(root.name)
+            )
 
         return lines
 
@@ -294,13 +312,16 @@ class Assembler:
 
         Uses direct term composition (f . g) or calc chains instead of sorry.
         """
-        unit_map = {u.node_id: u for u in units}
         child_ids = set(root.children) if root.children else {u.node_id for u in units}
         relevant_units = [u for u in units if u.node_id in child_ids]
 
         if not relevant_units:
-            return ["  -- TODO: compose {} -- no atomic children resolved".format(root.name),
-                    "  sorry"]
+            return [
+                "  -- TODO: compose {} -- no atomic children resolved".format(
+                    root.name
+                ),
+                "  sorry",
+            ]
 
         lines: list[str] = []
 
@@ -315,12 +336,15 @@ class Assembler:
 
             # Check for glue edges needing casts
             has_casts = any(
-                e.cast_expr for e in glue_edges
+                e.cast_expr
+                for e in glue_edges
                 if e.source_id in child_ids or e.target_id in child_ids
             )
             if has_casts:
                 for e in glue_edges:
-                    if e.cast_expr and (e.source_id in child_ids or e.target_id in child_ids):
+                    if e.cast_expr and (
+                        e.source_id in child_ids or e.target_id in child_ids
+                    ):
                         lines.append(f"  -- GLUE: {e.source_type} -> {e.target_type}")
                 lines.append(f"  exact ({' ∘ '.join(reversed(names))})")
             else:
@@ -338,13 +362,16 @@ class Assembler:
 
         Uses exact/apply chains instead of Admitted.
         """
-        unit_map = {u.node_id: u for u in units}
         child_ids = set(root.children) if root.children else {u.node_id for u in units}
         relevant_units = [u for u in units if u.node_id in child_ids]
 
         if not relevant_units:
-            return ["  (* TODO: compose {} -- no atomic children resolved *)".format(root.name),
-                    "  Admitted."]
+            return [
+                "  (* TODO: compose {} -- no atomic children resolved *)".format(
+                    root.name
+                ),
+                "  Admitted.",
+            ]
 
         if len(relevant_units) == 1:
             u = relevant_units[0]
@@ -381,7 +408,7 @@ class Assembler:
 
         # Header
         lines.append("/-!")
-        lines.append(f"  AGEO-Matcher Skeleton")
+        lines.append("  AGEO-Matcher Skeleton")
         goal = metadata.get("goal", "")
         if goal:
             lines.append(f"  Goal: {goal}")
@@ -397,9 +424,7 @@ class Assembler:
             lines.append(f"-- Node: {unit.name} ({unit.node_id})")
             lines.append(f"#check @{unit.declaration_name}")
             if unit.type_signature:
-                lines.append(
-                    f"noncomputable def {sname} : {unit.type_signature} :="
-                )
+                lines.append(f"noncomputable def {sname} : {unit.type_signature} :=")
                 lines.append(f"  @{unit.declaration_name}")
             else:
                 lines.append(f"noncomputable def {sname} := @{unit.declaration_name}")
@@ -507,9 +532,13 @@ class Assembler:
             if telemetry:
                 arg_str = ", ".join(inp.name for inp in unit.inputs)
                 call_expr = f"{unit.declaration_name}({arg_str})"
-                lines.append(f"    return _ageom_probe({unit.node_id!r}, lambda: {call_expr})")
+                lines.append(
+                    f"    return _ageom_probe({unit.node_id!r}, lambda: {call_expr})"
+                )
             else:
-                lines.append(f"    return {unit.declaration_name}({', '.join(inp.name for inp in unit.inputs)})")
+                lines.append(
+                    f"    return {unit.declaration_name}({', '.join(inp.name for inp in unit.inputs)})"
+                )
             lines.append("")
             lines.append("")
 
@@ -567,7 +596,7 @@ class Assembler:
 
         # Header
         lines.append("(*")
-        lines.append(f"  AGEO-Matcher Skeleton")
+        lines.append("  AGEO-Matcher Skeleton")
         goal = metadata.get("goal", "")
         if goal:
             lines.append(f"  Goal: {goal}")
@@ -585,9 +614,7 @@ class Assembler:
                     f"Definition {sname} : {unit.type_signature} := @{unit.declaration_name}."
                 )
             else:
-                lines.append(
-                    f"Definition {sname} := @{unit.declaration_name}."
-                )
+                lines.append(f"Definition {sname} := @{unit.declaration_name}.")
             lines.append("")
 
         # Emit composition for root/decomposed nodes
@@ -595,9 +622,7 @@ class Assembler:
             rname = sanitize_name(root.name)
             if root.type_signature:
                 lines.append(f"(* Composition: {root.name} ({root.node_id}) *)")
-                lines.append(
-                    f"Lemma {rname}_composition : {root.type_signature}."
-                )
+                lines.append(f"Lemma {rname}_composition : {root.type_signature}.")
                 composition = self._compose_coq(units, glue_edges, root)
                 lines.extend(composition)
                 for line in composition:

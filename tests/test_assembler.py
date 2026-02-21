@@ -18,7 +18,7 @@ from ageom.architect.models import (
 from ageom.judge.models import CompilerFeedback
 from ageom.synthesizer.assembler import Assembler, AssemblyError, sanitize_name
 from ageom.synthesizer.compiler import SkeletonCompiler
-from ageom.synthesizer.models import AssemblyUnit, SkeletonFile
+from ageom.synthesizer.models import AssemblyUnit
 from ageom.synthesizer.pipeline import assemble_and_check
 from ageom.synthesizer.toposort import toposort_nodes
 from ageom.types import (
@@ -29,7 +29,6 @@ from ageom.types import (
     Prover,
     VerificationResult,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -124,8 +123,12 @@ def _make_match_result(node_id: str, decl_name: str, type_sig: str) -> MatchResu
         type_signature=type_sig,
         prover=Prover.LEAN4,
     )
-    candidate = CandidateMatch(declaration=decl, score=0.95, retrieval_method="embedding")
-    vr = VerificationResult(candidate=candidate, verified=True, proof_term=f"@{decl_name}")
+    candidate = CandidateMatch(
+        declaration=decl, score=0.95, retrieval_method="embedding"
+    )
+    vr = VerificationResult(
+        candidate=candidate, verified=True, proof_term=f"@{decl_name}"
+    )
     return MatchResult(
         pdg_node=PDGNode(predicate_id=node_id, statement=type_sig),
         verified_match=vr,
@@ -138,7 +141,9 @@ def _make_match_result(node_id: str, decl_name: str, type_sig: str) -> MatchResu
 def sample_match_results() -> list[MatchResult]:
     return [
         _make_match_result("sort_step", "List.mergeSort", "list Nat -> list Nat"),
-        _make_match_result("search_step", "List.binSearch", "list Nat -> Nat -> Option Nat"),
+        _make_match_result(
+            "search_step", "List.binSearch", "list Nat -> Nat -> Option Nat"
+        ),
     ]
 
 
@@ -181,20 +186,32 @@ def mock_env_failure():
 class TestToposort:
     def test_linear_chain(self):
         nodes = [
-            AlgorithmicNode(node_id="A", name="A", description="", concept_type=ConceptType.CUSTOM),
-            AlgorithmicNode(node_id="B", name="B", description="", concept_type=ConceptType.CUSTOM),
-            AlgorithmicNode(node_id="C", name="C", description="", concept_type=ConceptType.CUSTOM),
+            AlgorithmicNode(
+                node_id="A", name="A", description="", concept_type=ConceptType.CUSTOM
+            ),
+            AlgorithmicNode(
+                node_id="B", name="B", description="", concept_type=ConceptType.CUSTOM
+            ),
+            AlgorithmicNode(
+                node_id="C", name="C", description="", concept_type=ConceptType.CUSTOM
+            ),
         ]
         edges = [
             DependencyEdge(
-                source_id="A", target_id="B",
-                output_name="x", input_name="x",
-                source_type="T", target_type="T",
+                source_id="A",
+                target_id="B",
+                output_name="x",
+                input_name="x",
+                source_type="T",
+                target_type="T",
             ),
             DependencyEdge(
-                source_id="B", target_id="C",
-                output_name="y", input_name="y",
-                source_type="T", target_type="T",
+                source_id="B",
+                target_id="C",
+                output_name="y",
+                input_name="y",
+                source_type="T",
+                target_type="T",
             ),
         ]
         result = toposort_nodes(nodes, edges)
@@ -202,16 +219,52 @@ class TestToposort:
 
     def test_diamond(self):
         nodes = [
-            AlgorithmicNode(node_id="A", name="A", description="", concept_type=ConceptType.CUSTOM),
-            AlgorithmicNode(node_id="B", name="B", description="", concept_type=ConceptType.CUSTOM),
-            AlgorithmicNode(node_id="C", name="C", description="", concept_type=ConceptType.CUSTOM),
-            AlgorithmicNode(node_id="D", name="D", description="", concept_type=ConceptType.CUSTOM),
+            AlgorithmicNode(
+                node_id="A", name="A", description="", concept_type=ConceptType.CUSTOM
+            ),
+            AlgorithmicNode(
+                node_id="B", name="B", description="", concept_type=ConceptType.CUSTOM
+            ),
+            AlgorithmicNode(
+                node_id="C", name="C", description="", concept_type=ConceptType.CUSTOM
+            ),
+            AlgorithmicNode(
+                node_id="D", name="D", description="", concept_type=ConceptType.CUSTOM
+            ),
         ]
         edges = [
-            DependencyEdge(source_id="A", target_id="B", output_name="x", input_name="x", source_type="T", target_type="T"),
-            DependencyEdge(source_id="A", target_id="C", output_name="x", input_name="x", source_type="T", target_type="T"),
-            DependencyEdge(source_id="B", target_id="D", output_name="x", input_name="x", source_type="T", target_type="T"),
-            DependencyEdge(source_id="C", target_id="D", output_name="x", input_name="x", source_type="T", target_type="T"),
+            DependencyEdge(
+                source_id="A",
+                target_id="B",
+                output_name="x",
+                input_name="x",
+                source_type="T",
+                target_type="T",
+            ),
+            DependencyEdge(
+                source_id="A",
+                target_id="C",
+                output_name="x",
+                input_name="x",
+                source_type="T",
+                target_type="T",
+            ),
+            DependencyEdge(
+                source_id="B",
+                target_id="D",
+                output_name="x",
+                input_name="x",
+                source_type="T",
+                target_type="T",
+            ),
+            DependencyEdge(
+                source_id="C",
+                target_id="D",
+                output_name="x",
+                input_name="x",
+                source_type="T",
+                target_type="T",
+            ),
         ]
         result = toposort_nodes(nodes, edges)
         assert result.index("A") < result.index("B")
@@ -221,19 +274,39 @@ class TestToposort:
 
     def test_single_node(self):
         nodes = [
-            AlgorithmicNode(node_id="X", name="X", description="", concept_type=ConceptType.CUSTOM),
+            AlgorithmicNode(
+                node_id="X", name="X", description="", concept_type=ConceptType.CUSTOM
+            ),
         ]
         result = toposort_nodes(nodes, [])
         assert result == ["X"]
 
     def test_cycle_raises(self):
         nodes = [
-            AlgorithmicNode(node_id="A", name="A", description="", concept_type=ConceptType.CUSTOM),
-            AlgorithmicNode(node_id="B", name="B", description="", concept_type=ConceptType.CUSTOM),
+            AlgorithmicNode(
+                node_id="A", name="A", description="", concept_type=ConceptType.CUSTOM
+            ),
+            AlgorithmicNode(
+                node_id="B", name="B", description="", concept_type=ConceptType.CUSTOM
+            ),
         ]
         edges = [
-            DependencyEdge(source_id="A", target_id="B", output_name="x", input_name="x", source_type="T", target_type="T"),
-            DependencyEdge(source_id="B", target_id="A", output_name="x", input_name="x", source_type="T", target_type="T"),
+            DependencyEdge(
+                source_id="A",
+                target_id="B",
+                output_name="x",
+                input_name="x",
+                source_type="T",
+                target_type="T",
+            ),
+            DependencyEdge(
+                source_id="B",
+                target_id="A",
+                output_name="x",
+                input_name="x",
+                source_type="T",
+                target_type="T",
+            ),
         ]
         with pytest.raises(ValueError, match="Cycle detected"):
             toposort_nodes(nodes, edges)
@@ -338,7 +411,9 @@ class TestAssembler:
 
 class TestSkeletonCompiler:
     @pytest.mark.asyncio
-    async def test_compile_success(self, mock_env_success, sample_cdg, sample_match_results):
+    async def test_compile_success(
+        self, mock_env_success, sample_cdg, sample_match_results
+    ):
         assembler = Assembler(Prover.LEAN4)
         skeleton = assembler.assemble(sample_cdg, sample_match_results)
 
@@ -350,7 +425,9 @@ class TestSkeletonCompiler:
         assert result.feedback.success is True
 
     @pytest.mark.asyncio
-    async def test_compile_failure(self, mock_env_failure, sample_cdg, sample_match_results):
+    async def test_compile_failure(
+        self, mock_env_failure, sample_cdg, sample_match_results
+    ):
         assembler = Assembler(Prover.LEAN4)
         skeleton = assembler.assemble(sample_cdg, sample_match_results)
 
@@ -385,7 +462,9 @@ class TestPipeline:
     async def test_assemble_and_check_happy_path(
         self, sample_cdg, sample_match_results, mock_env_success
     ):
-        result = await assemble_and_check(sample_cdg, sample_match_results, mock_env_success)
+        result = await assemble_and_check(
+            sample_cdg, sample_match_results, mock_env_success
+        )
 
         assert result.compiled_ok is True
         assert result.skeleton.prover == "lean4"
@@ -395,7 +474,9 @@ class TestPipeline:
     async def test_assemble_and_check_compile_failure(
         self, sample_cdg, sample_match_results, mock_env_failure
     ):
-        result = await assemble_and_check(sample_cdg, sample_match_results, mock_env_failure)
+        result = await assemble_and_check(
+            sample_cdg, sample_match_results, mock_env_failure
+        )
 
         assert result.compiled_ok is False
         assert result.feedback is not None

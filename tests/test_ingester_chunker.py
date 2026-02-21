@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import ConceptType
 from ageom.ingester.chunker import (
     ChunkerDeps,
     ChunkerState,
@@ -22,7 +21,6 @@ from ageom.ingester.models import (
     RawDataFlowGraph,
     ValidatedMacroPlan,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -60,21 +58,27 @@ def _make_llm_response(method_names: list[str] | None = None) -> str:
     """Build a valid LLM JSON response for propose_macro_atoms."""
     if method_names is None:
         method_names = ["__init__", "process"]
-    return json.dumps({
-        "macro_atoms": [
-            {
-                "name": "Data Processor",
-                "description": "Process raw data",
-                "method_names": method_names,
-                "inputs": [{"name": "data", "type_desc": "np.ndarray", "constraints": ""}],
-                "outputs": [{"name": "result", "type_desc": "np.ndarray", "constraints": ""}],
-                "config_params": [],
-                "concept_type": "custom",
-                "is_optional": False,
-            }
-        ],
-        "edges": [],
-    })
+    return json.dumps(
+        {
+            "macro_atoms": [
+                {
+                    "name": "Data Processor",
+                    "description": "Process raw data",
+                    "method_names": method_names,
+                    "inputs": [
+                        {"name": "data", "type_desc": "np.ndarray", "constraints": ""}
+                    ],
+                    "outputs": [
+                        {"name": "result", "type_desc": "np.ndarray", "constraints": ""}
+                    ],
+                    "config_params": [],
+                    "concept_type": "custom",
+                    "is_optional": False,
+                }
+            ],
+            "edges": [],
+        }
+    )
 
 
 # ---------------------------------------------------------------------------

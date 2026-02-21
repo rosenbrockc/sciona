@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from ageom.architect.models import IOSpec
 from ageom.ingester.ffi_emitter import (
@@ -11,7 +10,6 @@ from ageom.ingester.ffi_emitter import (
     generate_ffi_stub,
 )
 from ageom.ingester.models import MacroAtomSpec
-
 
 # ---------------------------------------------------------------------------
 # Helpers

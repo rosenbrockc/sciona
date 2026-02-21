@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -47,13 +48,12 @@ class PythonEnvironment:
 
     async def get_type(self, name: str) -> str | None:
         """Get the type signature of a name via inspect.signature."""
-        code = (
-            f"import inspect\n"
-            f"print(inspect.signature({name}))\n"
-        )
+        code = f"import inspect\n" f"print(inspect.signature({name}))\n"
         try:
             proc = await asyncio.create_subprocess_exec(
-                self._python_path, "-c", code,
+                self._python_path,
+                "-c",
+                code,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -66,7 +66,6 @@ class PythonEnvironment:
 
     async def close(self) -> None:
         """Clean up temp directory."""
-        import shutil
 
         try:
             shutil.rmtree(self._tmpdir, ignore_errors=True)
@@ -80,7 +79,9 @@ class PythonEnvironment:
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                self._mypy_path, "--strict", str(tmp_path),
+                self._mypy_path,
+                "--strict",
+                str(tmp_path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import json
 import logging
-import textwrap
-from typing import Any
 
 from ageom.hunter.llm import LLMClient
+from ageom.ingester.ffi_emitter import generate_ffi_bindings, generate_ffi_imports
+from ageom.llm_router import INGESTER_OPAQUE_WITNESS, select_llm
 
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import (
@@ -29,7 +29,6 @@ from ageom.ingester.models import (
     ProposedMacroPlan,
     RawDataFlowGraph,
     StateModelSpec,
-    StochasticTraceSpec,
     ValidatedMacroPlan,
 )
 from ageom.ingester.prompts import (
@@ -46,18 +45,19 @@ from ageom.types import (
     VerificationResult,
 )
 
-
 logger = logging.getLogger(__name__)
 
 # Bayesian concept types that get specialized witness templates
-_BAYESIAN_CONCEPT_TYPES = frozenset({
-    ConceptType.SAMPLER,
-    ConceptType.LOG_PROB,
-    ConceptType.POSTERIOR_UPDATE,
-    ConceptType.CONJUGATE_UPDATE,
-    ConceptType.VARIATIONAL_INFERENCE,
-    ConceptType.PRIOR_INIT,
-})
+_BAYESIAN_CONCEPT_TYPES = frozenset(
+    {
+        ConceptType.SAMPLER,
+        ConceptType.LOG_PROB,
+        ConceptType.POSTERIOR_UPDATE,
+        ConceptType.CONJUGATE_UPDATE,
+        ConceptType.VARIATIONAL_INFERENCE,
+        ConceptType.PRIOR_INIT,
+    }
+)
 
 # Message-passing concept types that get memoized witness templates
 _MESSAGE_PASSING_CONCEPT_TYPES = frozenset({ConceptType.MESSAGE_PASSING})
@@ -84,9 +84,9 @@ def _opaque_witness_fallback(atom: MacroAtomSpec) -> str:
     ]
     if atom.inputs:
         first = atom.inputs[0].name
-        lines.append(f"    return AbstractArray(shape={first}.shape, dtype=\"float32\")")
+        lines.append(f'    return AbstractArray(shape={first}.shape, dtype="float32")')
     else:
-        lines.append(f'    return AbstractArray(shape=(), dtype="float32")')
+        lines.append('    return AbstractArray(shape=(), dtype="float32")')
 
     return "\n".join(lines)
 
@@ -136,9 +136,7 @@ async def generate_opaque_witnesses(
         witness_body: str | None = None
 
         if mf and llm is not None:
-            param_specs = ", ".join(
-                f'"{p}: AbstractArray"' for p in mf.params
-            )
+            param_specs = ", ".join(f'"{p}: AbstractArray"' for p in mf.params)
             try:
                 user_prompt = DRAFT_OPAQUE_WITNESS_USER.format(
                     class_name=dfg.class_name,
@@ -151,17 +149,13 @@ async def generate_opaque_witnesses(
                     param_specs=param_specs,
                     return_type_spec="AbstractArray",
                 )
-                from ageom.llm_router import INGESTER_OPAQUE_WITNESS, select_llm
-
                 response = await select_llm(llm, INGESTER_OPAQUE_WITNESS).complete(
                     DRAFT_OPAQUE_WITNESS_SYSTEM, user_prompt
                 )
                 raw = json.loads(response)
                 witness_body = raw.get("witness_body")
             except Exception as exc:
-                logger.warning(
-                    "LLM witness drafting failed for %s: %s", atom.name, exc
-                )
+                logger.warning("LLM witness drafting failed for %s: %s", atom.name, exc)
 
         if witness_body:
             # Build function with LLM-drafted body
@@ -171,9 +165,7 @@ async def generate_opaque_witnesses(
             param_str = ", ".join(params) if params else ""
 
             lines.append(f"def {witness_name}({param_str}) -> AbstractArray:")
-            lines.append(
-                f'    """Ghost witness for opaque boundary: {atom.name}."""'
-            )
+            lines.append(f'    """Ghost witness for opaque boundary: {atom.name}."""')
             # Indent each line of the body
             for body_line in witness_body.strip().splitlines():
                 lines.append(f"    {body_line}")
@@ -221,10 +213,12 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
     ]
 
     if has_stochastic:
-        lines.extend([
-            "import numpy as np",
-            "",
-        ])
+        lines.extend(
+            [
+                "import numpy as np",
+                "",
+            ]
+        )
 
     for spec in specs:
         if spec.docstring:
@@ -239,7 +233,9 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
             lines.append("    pass")
         else:
             for field_name, field_type in spec.fields:
-                lines.append(f"    {field_name}: {field_type} | None = Field(default=None)")
+                lines.append(
+                    f"    {field_name}: {field_type} | None = Field(default=None)"
+                )
 
             # Inject stochastic state fields
             if spec.stochastic is not None:
@@ -247,22 +243,26 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
                 lines.append("")
                 lines.append("    # --- Stochastic state (auto-generated) ---")
                 lines.append(f"    {st.rng_field}: Any = Field(")
-                lines.append(f"        default=None,")
-                lines.append(f'        description="RNG state ({st.rng_type}). '
-                             f'Split before each stochastic atom.",')
-                lines.append(f"    )")
+                lines.append("        default=None,")
+                lines.append(
+                    f'        description="RNG state ({st.rng_type}). '
+                    f'Split before each stochastic atom.",'
+                )
+                lines.append("    )")
 
                 if st.trace_field:
                     dims_str = str(st.trace_param_dims)
                     lines.append(f"    {st.trace_field}: Any = Field(")
-                    lines.append(f"        default=None,")
-                    lines.append(f'        description="MCMC trace. '
-                                 f'param_dims={dims_str}, '
-                                 f'chains={st.chain_count}, '
-                                 f'warmup={st.warmup_steps}",')
-                    lines.append(f"    )")
-                    lines.append(f"    mcmc_step_count: int = Field(default=0)")
-                    lines.append(f"    mcmc_accept_rate: float = Field(default=0.0)")
+                    lines.append("        default=None,")
+                    lines.append(
+                        f'        description="MCMC trace. '
+                        f"param_dims={dims_str}, "
+                        f"chains={st.chain_count}, "
+                        f'warmup={st.warmup_steps}",'
+                    )
+                    lines.append("    )")
+                    lines.append("    mcmc_step_count: int = Field(default=0)")
+                    lines.append("    mcmc_accept_rate: float = Field(default=0.0)")
         lines.append("")
 
     return "\n".join(lines)
@@ -303,19 +303,21 @@ def generate_atom_wrappers(
 
     # Add FFI imports for non-Python sources
     if source_language != "python":
-        from ageom.ingester.ffi_emitter import generate_ffi_imports
         lines.append(generate_ffi_imports(source_language))
         lines.append("")
 
     # Import state models if any
     if state_models:
-        model_names = ", ".join(s.model_name for s in state_models)
-        lines.append(f"# State models should be imported from the generated state_models module")
+        lines.append(
+            "# State models should be imported from the generated state_models module"
+        )
         lines.append("")
 
     # Import witness functions
     if witness_names:
-        lines.append(f"# Witness functions should be imported from the generated witnesses module")
+        lines.append(
+            "# Witness functions should be imported from the generated witnesses module"
+        )
         lines.append("")
 
     # Memoization preamble for message-passing atoms
@@ -323,16 +325,18 @@ def generate_atom_wrappers(
         a.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES for a in macro_atoms
     )
     if has_message_passing:
-        lines.extend([
-            "_MEMO: dict = {}",
-            "",
-            "",
-            "def _memo_key(name: str, *args) -> tuple:",
-            '    """Build a memoization cache key from name and argument ids."""',
-            "    return (name,) + tuple(id(a) for a in args)",
-            "",
-            "",
-        ])
+        lines.extend(
+            [
+                "_MEMO: dict = {}",
+                "",
+                "",
+                "def _memo_key(name: str, *args) -> tuple:",
+                '    """Build a memoization cache key from name and argument ids."""',
+                "    return (name,) + tuple(id(a) for a in args)",
+                "",
+                "",
+            ]
+        )
 
     for atom in macro_atoms:
         fn_name = _snake_case(atom.name)
@@ -364,13 +368,17 @@ def generate_atom_wrappers(
             lines.append(f'    """{desc}"""')
             arg_names = ", ".join(inp.name for inp in atom.inputs)
             lines.append(f'    _key = _memo_key("{fn_name}", {arg_names})')
-            lines.append(f"    if _key in _MEMO:")
-            lines.append(f"        return _MEMO[_key]")
-            lines.append(f"    raise NotImplementedError(\"Wire to original implementation\")")
+            lines.append("    if _key in _MEMO:")
+            lines.append("        return _MEMO[_key]")
+            lines.append(
+                '    raise NotImplementedError("Wire to original implementation")'
+            )
         else:
             if atom.description:
                 lines.append(f'    """{atom.description}"""')
-            lines.append(f"    raise NotImplementedError(\"Wire to original implementation\")")
+            lines.append(
+                '    raise NotImplementedError("Wire to original implementation")'
+            )
         lines.append("")
 
     return "\n".join(lines)
@@ -415,17 +423,19 @@ def generate_stateful_wrappers(
         "import icontract",
         "from ageoa.ghost.registry import register_atom",
         "",
-        f"# Import the original class for __new__ instantiation",
+        "# Import the original class for __new__ instantiation",
         f"# from <source_module> import {class_name}",
         "",
-        f"# State model should be imported from the generated state_models module",
+        "# State model should be imported from the generated state_models module",
         f"# from <state_module> import {state_type}",
         "",
     ]
 
     # Import witness functions
     if witness_names:
-        lines.append("# Witness functions should be imported from the generated witnesses module")
+        lines.append(
+            "# Witness functions should be imported from the generated witnesses module"
+        )
         lines.append("")
 
     for atom in macro_atoms:
@@ -454,12 +464,14 @@ def generate_stateful_wrappers(
         lines.append(f"@register_atom({witness_fn})")
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
         if atom.description:
-            lines.append(f'    """Stateless wrapper: Functional Core, Imperative Shell.')
-            lines.append(f"")
+            lines.append('    """Stateless wrapper: Functional Core, Imperative Shell.')
+            lines.append("")
             lines.append(f"    {atom.description}")
-            lines.append(f'    """')
+            lines.append('    """')
         else:
-            lines.append(f'    """Stateless wrapper: Functional Core, Imperative Shell."""')
+            lines.append(
+                '    """Stateless wrapper: Functional Core, Imperative Shell."""'
+            )
 
         # Instantiate via __new__
         lines.append(f"    obj = {class_name}.__new__({class_name})")
@@ -477,26 +489,23 @@ def generate_stateful_wrappers(
             lines.append(f"    obj.{method_name}({call_args})")
 
         # Extract ALL state fields via model_copy
-        update_entries = ", ".join(
-            f'"{fname}": obj.{fname}' for fname, _ in fields
-        )
-        lines.append(f"    new_state = state.model_copy(update={{")
+        lines.append("    new_state = state.model_copy(update={")
         for fname, _ in fields:
             lines.append(f'        "{fname}": obj.{fname},')
-        lines.append(f"    }})")
+        lines.append("    })")
 
         # Build return value
         if atom.outputs:
             if len(atom.outputs) == 1:
                 out = atom.outputs[0]
                 lines.append(f"    result = obj.{out.name}")
-                lines.append(f"    return result, new_state")
+                lines.append("    return result, new_state")
             else:
                 out_names = ", ".join(f"obj.{o.name}" for o in atom.outputs)
                 lines.append(f"    result = ({out_names})")
-                lines.append(f"    return result, new_state")
+                lines.append("    return result, new_state")
         else:
-            lines.append(f"    return None, new_state")
+            lines.append("    return None, new_state")
         lines.append("")
 
     return "\n".join(lines)
@@ -521,26 +530,30 @@ def _generate_bayesian_witness(
     ct = atom.concept_type
 
     if ct == ConceptType.PRIOR_INIT:
-        params = ["event_shape: tuple[int, ...]", "family: str = \"normal\""]
-        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:")
+        params = ["event_shape: tuple[int, ...]", 'family: str = "normal"']
+        lines.append(
+            f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:"
+        )
         lines.append(f'    """Ghost witness for prior init: {atom.name}."""')
-        lines.append(f"    return AbstractDistribution(")
-        lines.append(f"        family=family,")
-        lines.append(f"        event_shape=event_shape,")
-        lines.append(f"    )")
+        lines.append("    return AbstractDistribution(")
+        lines.append("        family=family,")
+        lines.append("        event_shape=event_shape,")
+        lines.append("    )")
 
     elif ct == ConceptType.LOG_PROB:
         params = ["dist: AbstractDistribution", "samples: AbstractArray"]
         lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractScalar:")
         lines.append(f'    """Ghost witness for log-prob: {atom.name}."""')
-        lines.append(f"    n_event = len(dist.event_shape)")
-        lines.append(f"    if n_event > 0:")
-        lines.append(f"        sample_tail = samples.shape[-n_event:]")
-        lines.append(f"        if sample_tail != dist.event_shape:")
-        lines.append(f"            raise ValueError(")
-        lines.append(f'                f"Sample dims {{sample_tail}} vs event_shape {{dist.event_shape}}"')
-        lines.append(f"            )")
-        lines.append(f'    return AbstractScalar(dtype="float64", max_val=0.0)')
+        lines.append("    n_event = len(dist.event_shape)")
+        lines.append("    if n_event > 0:")
+        lines.append("        sample_tail = samples.shape[-n_event:]")
+        lines.append("        if sample_tail != dist.event_shape:")
+        lines.append("            raise ValueError(")
+        lines.append(
+            '                f"Sample dims {sample_tail} vs event_shape {dist.event_shape}"'
+        )
+        lines.append("            )")
+        lines.append('    return AbstractScalar(dtype="float64", max_val=0.0)')
 
     elif ct == ConceptType.SAMPLER:
         params = [
@@ -551,12 +564,14 @@ def _generate_bayesian_witness(
         ret = "tuple[AbstractMCMCTrace, AbstractRNGState]"
         lines.append(f"def {witness_name}({', '.join(params)}) -> {ret}:")
         lines.append(f'    """Ghost witness for MCMC sampler: {atom.name}."""')
-        lines.append(f"    if trace.param_dims != target.event_shape:")
-        lines.append(f"        raise ValueError(")
-        lines.append(f'            f"param_dims {{trace.param_dims}} vs '
-                      f'event_shape {{target.event_shape}}"')
-        lines.append(f"        )")
-        lines.append(f"    return trace.step(accepted=True), rng.advance(n_draws=1)")
+        lines.append("    if trace.param_dims != target.event_shape:")
+        lines.append("        raise ValueError(")
+        lines.append(
+            '            f"param_dims {trace.param_dims} vs '
+            'event_shape {target.event_shape}"'
+        )
+        lines.append("        )")
+        lines.append("    return trace.step(accepted=True), rng.advance(n_draws=1)")
 
     elif ct == ConceptType.POSTERIOR_UPDATE:
         params = [
@@ -564,34 +579,42 @@ def _generate_bayesian_witness(
             "likelihood: AbstractDistribution",
             "data_shape: tuple[int, ...]",
         ]
-        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:")
+        lines.append(
+            f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:"
+        )
         lines.append(f'    """Ghost witness for posterior update: {atom.name}."""')
-        lines.append(f"    prior.assert_conjugate_to(likelihood)")
-        lines.append(f"    return AbstractDistribution(")
-        lines.append(f"        family=prior.family,")
-        lines.append(f"        event_shape=prior.event_shape,")
-        lines.append(f"        batch_shape=prior.batch_shape,")
-        lines.append(f"        support_lower=prior.support_lower,")
-        lines.append(f"        support_upper=prior.support_upper,")
-        lines.append(f"        is_discrete=prior.is_discrete,")
-        lines.append(f"    )")
+        lines.append("    prior.assert_conjugate_to(likelihood)")
+        lines.append("    return AbstractDistribution(")
+        lines.append("        family=prior.family,")
+        lines.append("        event_shape=prior.event_shape,")
+        lines.append("        batch_shape=prior.batch_shape,")
+        lines.append("        support_lower=prior.support_lower,")
+        lines.append("        support_upper=prior.support_upper,")
+        lines.append("        is_discrete=prior.is_discrete,")
+        lines.append("    )")
 
     elif ct == ConceptType.CONJUGATE_UPDATE:
         params = [
             "prior: AbstractDistribution",
             "sufficient_stats: AbstractArray",
         ]
-        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:")
-        lines.append(f'    """Ghost witness for closed-form conjugate update: {atom.name}."""')
-        lines.append(f"    # Closed-form update: no sampling trace or RNG threading required.")
-        lines.append(f"    return AbstractDistribution(")
-        lines.append(f"        family=prior.family,")
-        lines.append(f"        event_shape=prior.event_shape,")
-        lines.append(f"        batch_shape=prior.batch_shape,")
-        lines.append(f"        support_lower=prior.support_lower,")
-        lines.append(f"        support_upper=prior.support_upper,")
-        lines.append(f"        is_discrete=prior.is_discrete,")
-        lines.append(f"    )")
+        lines.append(
+            f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:"
+        )
+        lines.append(
+            f'    """Ghost witness for closed-form conjugate update: {atom.name}."""'
+        )
+        lines.append(
+            "    # Closed-form update: no sampling trace or RNG threading required."
+        )
+        lines.append("    return AbstractDistribution(")
+        lines.append("        family=prior.family,")
+        lines.append("        event_shape=prior.event_shape,")
+        lines.append("        batch_shape=prior.batch_shape,")
+        lines.append("        support_lower=prior.support_lower,")
+        lines.append("        support_upper=prior.support_upper,")
+        lines.append("        is_discrete=prior.is_discrete,")
+        lines.append("    )")
 
     elif ct == ConceptType.VARIATIONAL_INFERENCE:
         params = [
@@ -601,12 +624,14 @@ def _generate_bayesian_witness(
         ]
         lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractScalar:")
         lines.append(f'    """Ghost witness for VI ELBO: {atom.name}."""')
-        lines.append(f"    if q_dist.event_shape != p_dist.event_shape:")
-        lines.append(f"        raise ValueError(")
-        lines.append(f'            f"q event_shape {{q_dist.event_shape}} vs '
-                      f'p event_shape {{p_dist.event_shape}}"')
-        lines.append(f"        )")
-        lines.append(f'    return AbstractScalar(dtype="float64")')
+        lines.append("    if q_dist.event_shape != p_dist.event_shape:")
+        lines.append("        raise ValueError(")
+        lines.append(
+            '            f"q event_shape {q_dist.event_shape} vs '
+            'p event_shape {p_dist.event_shape}"'
+        )
+        lines.append("        )")
+        lines.append('    return AbstractScalar(dtype="float64")')
 
     lines.append("")
     return lines
@@ -634,49 +659,75 @@ def _generate_message_passing_witness(
 
     if is_var_to_fac:
         # Variable-to-Factor message witness
-        lines.append(f"def {witness_name}(incoming_messages: dict[str, AbstractArray], memo_state: dict[str, AbstractArray]) -> dict[str, AbstractArray]:")
-        lines.append(f'    """Ghost witness for message-passing: Variable to Factor."""')
-        lines.append(f'    _cache_key = ("variable_to_factor", id(incoming_messages), id(memo_state))')
-        lines.append(f"    if _cache_key in _MEMO_CACHE:")
-        lines.append(f"        return _MEMO_CACHE[_cache_key]")
-        lines.append(f"    result = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in incoming_messages.items()}}")
-        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
-        lines.append(f"    return result")
+        lines.append(
+            f"def {witness_name}(incoming_messages: dict[str, AbstractArray], memo_state: dict[str, AbstractArray]) -> dict[str, AbstractArray]:"
+        )
+        lines.append('    """Ghost witness for message-passing: Variable to Factor."""')
+        lines.append(
+            '    _cache_key = ("variable_to_factor", id(incoming_messages), id(memo_state))'
+        )
+        lines.append("    if _cache_key in _MEMO_CACHE:")
+        lines.append("        return _MEMO_CACHE[_cache_key]")
+        lines.append(
+            "    result = {k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in incoming_messages.items()}"
+        )
+        lines.append("    _MEMO_CACHE[_cache_key] = result")
+        lines.append("    return result")
 
     elif is_fac_to_var:
         # Factor-to-Variable message witness
-        lines.append(f"def {witness_name}(var_messages: dict[str, AbstractArray], factor_potentials: dict[str, AbstractArray], memo_state: dict[str, AbstractArray]) -> dict[str, AbstractArray]:")
-        lines.append(f'    """Ghost witness for message-passing: Factor to Variable."""')
-        lines.append(f'    _cache_key = ("factor_to_variable", id(var_messages), id(factor_potentials), id(memo_state))')
-        lines.append(f"    if _cache_key in _MEMO_CACHE:")
-        lines.append(f"        return _MEMO_CACHE[_cache_key]")
-        lines.append(f"    result = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in var_messages.items()}}")
-        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
-        lines.append(f"    return result")
+        lines.append(
+            f"def {witness_name}(var_messages: dict[str, AbstractArray], factor_potentials: dict[str, AbstractArray], memo_state: dict[str, AbstractArray]) -> dict[str, AbstractArray]:"
+        )
+        lines.append('    """Ghost witness for message-passing: Factor to Variable."""')
+        lines.append(
+            '    _cache_key = ("factor_to_variable", id(var_messages), id(factor_potentials), id(memo_state))'
+        )
+        lines.append("    if _cache_key in _MEMO_CACHE:")
+        lines.append("        return _MEMO_CACHE[_cache_key]")
+        lines.append(
+            "    result = {k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in var_messages.items()}"
+        )
+        lines.append("    _MEMO_CACHE[_cache_key] = result")
+        lines.append("    return result")
 
     elif "marginal" in name_lower:
         # Marginal computation witness
-        lines.append(f"def {witness_name}(factor_messages: dict[str, AbstractArray], var_messages: dict[str, AbstractArray]) -> dict[str, AbstractArray]:")
-        lines.append(f'    """Ghost witness for message-passing: Marginal Computation."""')
-        lines.append(f'    _cache_key = ("marginal", id(factor_messages), id(var_messages))')
-        lines.append(f"    if _cache_key in _MEMO_CACHE:")
-        lines.append(f"        return _MEMO_CACHE[_cache_key]")
-        lines.append(f"    result = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in factor_messages.items()}}")
-        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
-        lines.append(f"    return result")
+        lines.append(
+            f"def {witness_name}(factor_messages: dict[str, AbstractArray], var_messages: dict[str, AbstractArray]) -> dict[str, AbstractArray]:"
+        )
+        lines.append(
+            '    """Ghost witness for message-passing: Marginal Computation."""'
+        )
+        lines.append(
+            '    _cache_key = ("marginal", id(factor_messages), id(var_messages))'
+        )
+        lines.append("    if _cache_key in _MEMO_CACHE:")
+        lines.append("        return _MEMO_CACHE[_cache_key]")
+        lines.append(
+            "    result = {k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in factor_messages.items()}"
+        )
+        lines.append("    _MEMO_CACHE[_cache_key] = result")
+        lines.append("    return result")
 
     elif "memo" in name_lower:
         # Memoization state witness
-        lines.append(f"def {witness_name}(var_messages: dict[str, AbstractArray], factor_messages: dict[str, AbstractArray]) -> tuple[dict[str, AbstractArray], bool]:")
-        lines.append(f'    """Ghost witness for message-passing: Memoization State."""')
-        lines.append(f'    _cache_key = ("memo_state", id(var_messages), id(factor_messages))')
-        lines.append(f"    if _cache_key in _MEMO_CACHE:")
-        lines.append(f"        return _MEMO_CACHE[_cache_key]")
-        lines.append(f"    memo_state = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in var_messages.items()}}")
-        lines.append(f"    converged = False")
-        lines.append(f"    result = (memo_state, converged)")
-        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
-        lines.append(f"    return result")
+        lines.append(
+            f"def {witness_name}(var_messages: dict[str, AbstractArray], factor_messages: dict[str, AbstractArray]) -> tuple[dict[str, AbstractArray], bool]:"
+        )
+        lines.append('    """Ghost witness for message-passing: Memoization State."""')
+        lines.append(
+            '    _cache_key = ("memo_state", id(var_messages), id(factor_messages))'
+        )
+        lines.append("    if _cache_key in _MEMO_CACHE:")
+        lines.append("        return _MEMO_CACHE[_cache_key]")
+        lines.append(
+            "    memo_state = {k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in var_messages.items()}"
+        )
+        lines.append("    converged = False")
+        lines.append("    result = (memo_state, converged)")
+        lines.append("    _MEMO_CACHE[_cache_key] = result")
+        lines.append("    return result")
 
     else:
         # Generic message-passing witness fallback
@@ -687,15 +738,17 @@ def _generate_message_passing_witness(
         lines.append(f"def {witness_name}({param_str}) -> AbstractArray:")
         lines.append(f'    """Ghost witness for message-passing: {atom.name}."""')
         lines.append(f'    _cache_key = ("{fn_name}",)')
-        lines.append(f"    if _cache_key in _MEMO_CACHE:")
-        lines.append(f"        return _MEMO_CACHE[_cache_key]")
+        lines.append("    if _cache_key in _MEMO_CACHE:")
+        lines.append("        return _MEMO_CACHE[_cache_key]")
         if atom.inputs:
             first = atom.inputs[0].name
-            lines.append(f"    result = AbstractArray(shape={first}.shape, dtype={first}.dtype)")
+            lines.append(
+                f"    result = AbstractArray(shape={first}.shape, dtype={first}.dtype)"
+            )
         else:
-            lines.append(f'    result = AbstractArray(shape=(), dtype="float32")')
-        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
-        lines.append(f"    return result")
+            lines.append('    result = AbstractArray(shape=(), dtype="float32")')
+        lines.append("    _MEMO_CACHE[_cache_key] = result")
+        lines.append("    return result")
 
     lines.append("")
     return lines
@@ -741,32 +794,40 @@ def generate_ghost_witnesses(
         "    from ageoa.ghost.abstract import AbstractSignal, AbstractArray, AbstractScalar",
     ]
     if has_bayesian:
-        lines.extend([
-            "    from ageoa.ghost.abstract import AbstractDistribution",
-        ])
+        lines.extend(
+            [
+                "    from ageoa.ghost.abstract import AbstractDistribution",
+            ]
+        )
     if has_sampler:
-        lines.extend([
-            "    from ageoa.ghost.abstract import AbstractMCMCTrace",
-            "    from ageoa.ghost.abstract import AbstractRNGState",
-        ])
-    lines.extend([
-        "except ImportError:",
-        "    pass",
-        "",
-    ])
+        lines.extend(
+            [
+                "    from ageoa.ghost.abstract import AbstractMCMCTrace",
+                "    from ageoa.ghost.abstract import AbstractRNGState",
+            ]
+        )
+    lines.extend(
+        [
+            "except ImportError:",
+            "    pass",
+            "",
+        ]
+    )
 
     # Memoization cache preamble for message-passing witnesses
     if has_message_passing:
-        lines.extend([
-            "_MEMO_CACHE: dict = {}",
-            "",
-            "",
-            "def _clear_memo_cache() -> None:",
-            '    """Reset the memoization cache between iterations."""',
-            "    _MEMO_CACHE.clear()",
-            "",
-            "",
-        ])
+        lines.extend(
+            [
+                "_MEMO_CACHE: dict = {}",
+                "",
+                "",
+                "def _clear_memo_cache() -> None:",
+                '    """Reset the memoization cache between iterations."""',
+                "    _MEMO_CACHE.clear()",
+                "",
+                "",
+            ]
+        )
 
     name_map: dict[str, str] = {}
 
@@ -779,16 +840,14 @@ def generate_ghost_witnesses(
 
         # Message-passing atoms get memoized witness templates
         if atom.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES:
-            lines.extend(_generate_message_passing_witness(
-                atom, fn_name, witness_name
-            ))
+            lines.extend(_generate_message_passing_witness(atom, fn_name, witness_name))
             continue
 
         # Bayesian atoms get specialized witness templates
         if atom.concept_type in _BAYESIAN_CONCEPT_TYPES:
-            lines.extend(_generate_bayesian_witness(
-                atom, fn_name, witness_name, has_state
-            ))
+            lines.extend(
+                _generate_bayesian_witness(atom, fn_name, witness_name, has_state)
+            )
             continue
 
         # Default DSP/generic witness
@@ -816,21 +875,23 @@ def generate_ghost_witnesses(
 
         if atom.inputs and atom.outputs:
             first_input = atom.inputs[0].name
-            lines.append(f"    result = AbstractSignal(")
+            lines.append("    result = AbstractSignal(")
             lines.append(f"        shape={first_input}.shape,")
-            lines.append(f'        dtype="float64",')
-            lines.append(f"        sampling_rate=getattr({first_input}, 'sampling_rate', 44100.0),")
-            lines.append(f'        domain="time",')
-            lines.append(f"    )")
+            lines.append('        dtype="float64",')
+            lines.append(
+                f"        sampling_rate=getattr({first_input}, 'sampling_rate', 44100.0),"
+            )
+            lines.append('        domain="time",')
+            lines.append("    )")
             if has_state:
-                lines.append(f"    return result, state")
+                lines.append("    return result, state")
             else:
-                lines.append(f"    return result")
+                lines.append("    return result")
         else:
             if has_state:
-                lines.append(f"    return None, state")
+                lines.append("    return None, state")
             else:
-                lines.append(f"    return None")
+                lines.append("    return None")
         lines.append("")
 
     return "\n".join(lines), name_map
@@ -849,7 +910,9 @@ def _profile_to_summary(profile: ConceptualProfile | None) -> str:
     if profile.conceptual_transform:
         parts.append(profile.conceptual_transform)
     if profile.cross_disciplinary_applications:
-        parts.append("Applications: " + ", ".join(profile.cross_disciplinary_applications))
+        parts.append(
+            "Applications: " + ", ".join(profile.cross_disciplinary_applications)
+        )
     return ". ".join(parts)
 
 
@@ -858,9 +921,7 @@ def _profile_to_summary(profile: ConceptualProfile | None) -> str:
 # ---------------------------------------------------------------------------
 
 
-def build_cdg_export(
-    plan: ValidatedMacroPlan, class_name: str
-) -> CDGExport:
+def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
     """Build a CDGExport with root DECOMPOSED node + ATOMIC children."""
     root_node = AlgorithmicNode(
         node_id=f"{class_name}_root",
@@ -896,14 +957,16 @@ def build_cdg_export(
     # Build typed edges
     edges = []
     for edge_def in plan.plan.edge_definitions:
-        edges.append(DependencyEdge(
-            source_id=_snake_case(_title_case(edge_def.source_id)),
-            target_id=_snake_case(_title_case(edge_def.target_id)),
-            output_name=edge_def.output_name,
-            input_name=edge_def.input_name,
-            source_type=edge_def.source_type,
-            target_type=edge_def.target_type,
-        ))
+        edges.append(
+            DependencyEdge(
+                source_id=_snake_case(_title_case(edge_def.source_id)),
+                target_id=_snake_case(_title_case(edge_def.target_id)),
+                output_name=edge_def.output_name,
+                input_name=edge_def.input_name,
+                source_type=edge_def.source_type,
+                target_type=edge_def.target_type,
+            )
+        )
 
     all_nodes = [root_node] + child_nodes
     return CDGExport(
@@ -941,8 +1004,7 @@ def build_sub_graphs(plan: ValidatedMacroPlan) -> dict[str, CDGExport]:
     for atom in plan.plan.macro_atoms:
         # Find sub-atom refs relevant to this macro-atom
         relevant_refs = [
-            ref for ref in plan.plan.sub_atom_refs
-            if ref.similarity_score > 0.5
+            ref for ref in plan.plan.sub_atom_refs if ref.similarity_score > 0.5
         ]
         if not relevant_refs:
             continue
@@ -985,9 +1047,7 @@ def build_sub_graphs(plan: ValidatedMacroPlan) -> dict[str, CDGExport]:
 # ---------------------------------------------------------------------------
 
 
-def build_match_results(
-    cdg: CDGExport, atoms_source: str
-) -> list[MatchResult]:
+def build_match_results(cdg: CDGExport, atoms_source: str) -> list[MatchResult]:
     """Build pre-filled MatchResults with verified=True for atomic leaves."""
     results = []
     for node in cdg.nodes:
@@ -1020,12 +1080,14 @@ def build_match_results(
             informal_desc=node.description,
             prover=Prover.PYTHON,
         )
-        results.append(MatchResult(
-            pdg_node=pdg_node,
-            verified_match=vr,
-            all_candidates=[candidate],
-            all_verifications=[vr],
-        ))
+        results.append(
+            MatchResult(
+                pdg_node=pdg_node,
+                verified_match=vr,
+                all_candidates=[candidate],
+                all_verifications=[vr],
+            )
+        )
 
     return results
 
@@ -1056,16 +1118,20 @@ def build_procedural_plan(
             if mf.return_type
             else [IOSpec(name="result", type_desc="Any")]
         )
-        macro_atoms.append(MacroAtomSpec(
-            decorators=mf.decorators,
-            is_external=mf.is_external,
-            concept_type=ConceptType.EXTERNAL_TOOL if mf.is_external else ConceptType.CUSTOM,
-            name=_title_case(mf.name),
-            description=mf.docstring,
-            method_names=[mf.name],
-            inputs=inputs,
-            outputs=outputs,
-        ))
+        macro_atoms.append(
+            MacroAtomSpec(
+                decorators=mf.decorators,
+                is_external=mf.is_external,
+                concept_type=(
+                    ConceptType.EXTERNAL_TOOL if mf.is_external else ConceptType.CUSTOM
+                ),
+                name=_title_case(mf.name),
+                description=mf.docstring,
+                method_names=[mf.name],
+                inputs=inputs,
+                outputs=outputs,
+            )
+        )
 
     plan = ProposedMacroPlan(
         macro_atoms=macro_atoms,
@@ -1084,8 +1150,12 @@ def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPla
     edges = list(plan.plan.edge_definitions)
     seen = {
         (
-            e.source_id, e.target_id, e.output_name, e.input_name,
-            e.source_type, e.target_type,
+            e.source_id,
+            e.target_id,
+            e.output_name,
+            e.input_name,
+            e.source_type,
+            e.target_type,
         )
         for e in edges
     }
@@ -1093,9 +1163,21 @@ def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPla
     def pick_output(atom: MacroAtomSpec) -> tuple[str, str]:
         if atom.outputs:
             pref = next(
-                (o for o in atom.outputs if any(
-                    h in o.name.lower() for h in ("data", "obs", "sample", "stats", "posterior", "params")
-                )),
+                (
+                    o
+                    for o in atom.outputs
+                    if any(
+                        h in o.name.lower()
+                        for h in (
+                            "data",
+                            "obs",
+                            "sample",
+                            "stats",
+                            "posterior",
+                            "params",
+                        )
+                    )
+                ),
                 atom.outputs[0],
             )
             return pref.name, pref.type_desc
@@ -1107,9 +1189,21 @@ def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPla
                 if inp.name == out_name:
                     return inp.name, inp.type_desc
             pref = next(
-                (i for i in atom.inputs if any(
-                    h in i.name.lower() for h in ("data", "obs", "sample", "stats", "posterior", "params")
-                )),
+                (
+                    i
+                    for i in atom.inputs
+                    if any(
+                        h in i.name.lower()
+                        for h in (
+                            "data",
+                            "obs",
+                            "sample",
+                            "stats",
+                            "posterior",
+                            "params",
+                        )
+                    )
+                ),
                 atom.inputs[0],
             )
             return pref.name, pref.type_desc
@@ -1117,8 +1211,12 @@ def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPla
 
     def add_edge(edge: DependencyEdge) -> None:
         key = (
-            edge.source_id, edge.target_id, edge.output_name, edge.input_name,
-            edge.source_type, edge.target_type,
+            edge.source_id,
+            edge.target_id,
+            edge.output_name,
+            edge.input_name,
+            edge.source_type,
+            edge.target_type,
         )
         if key not in seen:
             seen.add(key)
@@ -1132,13 +1230,18 @@ def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPla
         if not incoming:
             data_atom = next(
                 (
-                    a for a in atoms
+                    a
+                    for a in atoms
                     if a.concept_type != ConceptType.CONJUGATE_UPDATE
                     and _snake_case(a.name) != conj_id
                     and (
                         "data" in a.name.lower()
                         or "ingest" in a.name.lower()
-                        or any(h in o.name.lower() for o in a.outputs for h in ("data", "obs", "sample", "stats"))
+                        or any(
+                            h in o.name.lower()
+                            for o in a.outputs
+                            for h in ("data", "obs", "sample", "stats")
+                        )
                     )
                 ),
                 None,
@@ -1146,22 +1249,26 @@ def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPla
             if data_atom is not None:
                 out_name, out_type = pick_output(data_atom)
                 in_name, in_type = pick_input(conj, out_name)
-                add_edge(DependencyEdge(
-                    source_id=_snake_case(data_atom.name),
-                    target_id=conj_id,
-                    output_name=out_name,
-                    input_name=in_name,
-                    source_type=out_type,
-                    target_type=in_type,
-                ))
+                add_edge(
+                    DependencyEdge(
+                        source_id=_snake_case(data_atom.name),
+                        target_id=conj_id,
+                        output_name=out_name,
+                        input_name=in_name,
+                        source_type=out_type,
+                        target_type=in_type,
+                    )
+                )
 
         if not outgoing:
             dist_atom = next(
                 (
-                    a for a in atoms
+                    a
+                    for a in atoms
                     if _snake_case(a.name) != conj_id
                     and (
-                        a.concept_type in {ConceptType.PRIOR_DISTRIBUTION, ConceptType.PRIOR_INIT}
+                        a.concept_type
+                        in {ConceptType.PRIOR_DISTRIBUTION, ConceptType.PRIOR_INIT}
                         or "distribution" in a.name.lower()
                         or "posterior" in a.name.lower()
                         or "construct" in a.name.lower()
@@ -1172,14 +1279,16 @@ def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPla
             if dist_atom is not None:
                 out_name, out_type = pick_output(conj)
                 in_name, in_type = pick_input(dist_atom, out_name)
-                add_edge(DependencyEdge(
-                    source_id=conj_id,
-                    target_id=_snake_case(dist_atom.name),
-                    output_name=out_name,
-                    input_name=in_name,
-                    source_type=out_type,
-                    target_type=in_type,
-                ))
+                add_edge(
+                    DependencyEdge(
+                        source_id=conj_id,
+                        target_id=_snake_case(dist_atom.name),
+                        output_name=out_name,
+                        input_name=in_name,
+                        source_type=out_type,
+                        target_type=in_type,
+                    )
+                )
 
     updated = plan.plan.model_copy(update={"edge_definitions": edges})
     return plan.model_copy(update={"plan": updated})
@@ -1247,10 +1356,7 @@ def emit_ingestion_bundle(
 
     # Append FFI binding stubs for non-Python sources
     if source_language != "python":
-        from ageom.ingester.ffi_emitter import generate_ffi_bindings
-        ffi_source = generate_ffi_bindings(
-            plan.plan.macro_atoms, source_language
-        )
+        ffi_source = generate_ffi_bindings(plan.plan.macro_atoms, source_language)
         atoms_source = atoms_source + "\n\n" + ffi_source
 
     # Build CDG

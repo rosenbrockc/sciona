@@ -8,8 +8,7 @@ config-gated branches, and the init preprocessing chain.
 from __future__ import annotations
 
 import ast
-import textwrap
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from ageom.architect.models import DependencyEdge
@@ -20,24 +19,37 @@ from ageom.ingester.models import (
     RawDataFlowGraph,
 )
 
-
 # ---------------------------------------------------------------------------
 # AST visitors
 # ---------------------------------------------------------------------------
 
 # Common config container attribute names.
-_CONFIG_CONTAINER_NAMES = frozenset({
-    "options", "config", "params", "settings", "opts", "cfg", "hparams",
-})
+_CONFIG_CONTAINER_NAMES = frozenset(
+    {
+        "options",
+        "config",
+        "params",
+        "settings",
+        "opts",
+        "cfg",
+        "hparams",
+    }
+)
 
 # Deep-learning base classes treated as opaque boundaries.
-_OPAQUE_BASE_CLASSES: frozenset[str] = frozenset({
-    "nn.Module", "Module", "torch.nn.Module",
-    "hk.Module",
-    "tf.keras.Model", "tf.keras.layers.Layer",
-    "keras.Model", "keras.layers.Layer",
-    "flax.linen.Module",
-})
+_OPAQUE_BASE_CLASSES: frozenset[str] = frozenset(
+    {
+        "nn.Module",
+        "Module",
+        "torch.nn.Module",
+        "hk.Module",
+        "tf.keras.Model",
+        "tf.keras.layers.Layer",
+        "keras.Model",
+        "keras.layers.Layer",
+        "flax.linen.Module",
+    }
+)
 
 
 class _SelfAccessVisitor(ast.NodeVisitor):
@@ -86,21 +98,32 @@ class _SelfAccessVisitor(ast.NodeVisitor):
             # 1. self.method() calls
             if isinstance(node.func.value, ast.Name) and node.func.value.id == "self":
                 self.calls.append(node.func.attr)
-            
+
             # 2. self.attr.mutate() calls
             # Common mutating methods
-            MUTATING_METHODS = {"append", "extend", "update", "pop", "insert", "remove", "clear", "sort"}
+            MUTATING_METHODS = {
+                "append",
+                "extend",
+                "update",
+                "pop",
+                "insert",
+                "remove",
+                "clear",
+                "sort",
+            }
             if node.func.attr in MUTATING_METHODS:
                 if isinstance(node.func.value, ast.Attribute):
                     inner = node.func.value
                     if isinstance(inner.value, ast.Name) and inner.value.id == "self":
-                        self.writes.append(AttributeAccess(
-                            attr_name=inner.attr,
-                            access_type="write",
-                            method_name=self.method_name,
-                            line_number=node.lineno,
-                            is_config=False,
-                        ))
+                        self.writes.append(
+                            AttributeAccess(
+                                attr_name=inner.attr,
+                                access_type="write",
+                                method_name=self.method_name,
+                                line_number=node.lineno,
+                                is_config=False,
+                            )
+                        )
         self.generic_visit(node)
 
     # --- if self.options.X branches ---
@@ -117,13 +140,15 @@ class _SelfAccessVisitor(ast.NodeVisitor):
         if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
             if target.value.id == "self":
                 is_config = target.attr in self.config_attr_names
-                self.writes.append(AttributeAccess(
-                    attr_name=target.attr,
-                    access_type="write",
-                    method_name=self.method_name,
-                    line_number=lineno,
-                    is_config=is_config,
-                ))
+                self.writes.append(
+                    AttributeAccess(
+                        attr_name=target.attr,
+                        access_type="write",
+                        method_name=self.method_name,
+                        line_number=lineno,
+                        is_config=is_config,
+                    )
+                )
         elif isinstance(target, (ast.Tuple, ast.List)):
             for elt in target.elts:
                 self._check_self_write(elt, lineno)
@@ -131,13 +156,15 @@ class _SelfAccessVisitor(ast.NodeVisitor):
     def _check_self_read(self, node: ast.Attribute, lineno: int) -> None:
         if isinstance(node.value, ast.Name) and node.value.id == "self":
             is_config = node.attr in self.config_attr_names
-            self.reads.append(AttributeAccess(
-                attr_name=node.attr,
-                access_type="read",
-                method_name=self.method_name,
-                line_number=lineno,
-                is_config=is_config,
-            ))
+            self.reads.append(
+                AttributeAccess(
+                    attr_name=node.attr,
+                    access_type="read",
+                    method_name=self.method_name,
+                    line_number=lineno,
+                    is_config=is_config,
+                )
+            )
 
     def _walk_for_reads(self, node: ast.expr) -> None:
         """Walk an expression subtree collecting self.X reads."""
@@ -158,7 +185,9 @@ class _SelfAccessVisitor(ast.NodeVisitor):
                     branch_writes: list[str] = []
                     for stmt in node.body:
                         for child in ast.walk(stmt):
-                            if isinstance(child, ast.Attribute) and isinstance(child.value, ast.Name):
+                            if isinstance(child, ast.Attribute) and isinstance(
+                                child.value, ast.Name
+                            ):
                                 if child.value.id == "self":
                                     if isinstance(child.ctx, ast.Store):
                                         branch_writes.append(child.attr)
@@ -208,9 +237,7 @@ def _extract_method_fact(
 ) -> MethodFact:
     """Build a ``MethodFact`` from a single method AST node."""
     # Parameters (skip 'self')
-    params = [
-        arg.arg for arg in method_node.args.args if arg.arg != "self"
-    ]
+    params = [arg.arg for arg in method_node.args.args if arg.arg != "self"]
 
     # Return type annotation
     return_type = ""
@@ -235,7 +262,7 @@ def _extract_method_fact(
     for deco in method_node.decorator_list:
         try:
             decorators.append("@" + ast.unparse(deco))
-        except:
+        except Exception:
             pass
 
     return MethodFact(
@@ -421,9 +448,7 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
             all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
 
     # Collect all config branches
-    config_branches = [
-        cb for mf in methods for cb in mf.config_branches
-    ]
+    config_branches = [cb for mf in methods for cb in mf.config_branches]
 
     # Init chain
     init_method = next((mf for mf in methods if mf.name == "__init__"), None)
@@ -439,7 +464,6 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
         internal_calls = [c for c in mf.calls if c in method_names]
         if internal_calls:
             internal_call_graph[mf.name] = internal_calls
-
 
     # Recursive state mutation bubbling
     # If method A calls B, then A inherits B reads and writes
@@ -506,7 +530,9 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
             targets = self._collect_targets(node.targets)
             for t in targets:
                 if isinstance(node.value, ast.Name):
-                    self.var_producers[t] = self.var_producers.get(node.value.id, "INTERNAL_VAR")
+                    self.var_producers[t] = self.var_producers.get(
+                        node.value.id, "INTERNAL_VAR"
+                    )
                 else:
                     self.var_producers[t] = "INTERNAL_VAR"
         self.generic_visit(node)
@@ -516,13 +542,20 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
             self._handle_call(node.value, [], node.lineno)
         self.generic_visit(node)
 
-    def _handle_call(self, call_node: ast.Call, targets_nodes: list[ast.expr], lineno: int) -> None:
+    def _handle_call(
+        self, call_node: ast.Call, targets_nodes: list[ast.expr], lineno: int
+    ) -> None:
         func_name = self._resolve_func_name(call_node.func)
         full_func_name = self._resolve_full_func_name(call_node.func)
-        
+
         is_known = func_name in self.known_functions
-        is_external = full_func_name in {'subprocess.run', 'subprocess.call', 'subprocess.check_output', 'os.system'}
-        
+        is_external = full_func_name in {
+            "subprocess.run",
+            "subprocess.call",
+            "subprocess.check_output",
+            "os.system",
+        }
+
         if not (is_known or is_external):
             # For unknown calls, still mark targets as INTERNAL_VAR
             targets = self._collect_targets(targets_nodes)
@@ -536,9 +569,12 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
             producer = self.var_producers.get(arg_var)
             if producer and producer != "INTERNAL_VAR":
                 # Determine source_id (string)
-                source_id = producer.func_name if hasattr(producer, "func_name") else str(producer)
+                source_id = (
+                    producer.func_name
+                    if hasattr(producer, "func_name")
+                    else str(producer)
+                )
 
-                from ageom.architect.models import DependencyEdge
                 edge = DependencyEdge(
                     source_id=source_id,
                     target_id=func_name if is_known else full_func_name,
@@ -552,7 +588,7 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
 
         # 2. PRODUCE: Targets assigned by the call
         targets = self._collect_targets(targets_nodes)
-        
+
         cs = None
         if is_known:
             cs = _CallSite(
@@ -562,23 +598,26 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
                 lineno=lineno,
             )
             self.call_sites.append(cs)
-        
+
         for t in targets:
             if cs:
                 self.var_producers[t] = cs
             else:
-                self.var_producers[t] = full_func_name if is_external else "INTERNAL_VAR"
-        
+                self.var_producers[t] = (
+                    full_func_name if is_external else "INTERNAL_VAR"
+                )
+
         if is_external:
             # Wrap as ExternalToolAtom
-            from ageom.ingester.models import MethodFact
-            self.external_tools.append(MethodFact(
-                name=full_func_name,
-                params=args,
-                docstring=f"External tool call: {full_func_name}",
-                source_code=ast.unparse(call_node),
-                is_external=True
-            ))
+            self.external_tools.append(
+                MethodFact(
+                    name=full_func_name,
+                    params=args,
+                    docstring=f"External tool call: {full_func_name}",
+                    source_code=ast.unparse(call_node),
+                    is_external=True,
+                )
+            )
 
     @staticmethod
     def _resolve_full_func_name(node: ast.expr) -> str | None:
@@ -646,14 +685,16 @@ def _infer_ssa_edges(
             if key in seen:
                 continue
             seen.add(key)
-            edges.append(DependencyEdge(
-                source_id=producer.func_name,
-                target_id=cs.func_name,
-                output_name=arg_var,
-                input_name=arg_var,
-                source_type="Any",
-                target_type="Any",
-            ))
+            edges.append(
+                DependencyEdge(
+                    source_id=producer.func_name,
+                    target_id=cs.func_name,
+                    output_name=arg_var,
+                    input_name=arg_var,
+                    source_type="Any",
+                    target_type="Any",
+                )
+            )
 
     return edges
 
@@ -680,7 +721,7 @@ def _extract_function_fact(
     for deco in func_node.decorator_list:
         try:
             decorators.append("@" + ast.unparse(deco))
-        except:
+        except Exception:
             pass
 
     return MethodFact(

@@ -39,7 +39,6 @@ class SkeletonCompiler:
 
     async def check_unit(self, unit: AssemblyUnit) -> CompilerFeedback:
         """Compile a single unit's definition in isolation."""
-        code = f"#check @{unit.declaration_name}"
         success, output = await self._env.check_term(
             f"@{unit.declaration_name}", unit.type_signature
         )

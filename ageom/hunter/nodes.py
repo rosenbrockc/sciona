@@ -24,8 +24,13 @@ from ageom.hunter.prompts import (
     SCORE_CANDIDATES_USER,
 )
 from ageom.hunter.state import HunterState
+from ageom.llm_router import (
+    HUNTER_ANALYZE_FAILURE,
+    HUNTER_REFORMULATE,
+    HUNTER_SCORE,
+    select_llm,
+)
 from ageom.types import CandidateMatch, MatchResult
-
 
 _INT_ARRAY_GBNF = r"""
 root ::= ws "[" ws int_list? ws "]" ws
@@ -94,18 +99,25 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
             if decl.name not in seen_names:
                 seen_names.add(decl.name)
                 new_candidates.append(
-                    CandidateMatch(declaration=decl, score=score, retrieval_method="embedding")
+                    CandidateMatch(
+                        declaration=decl, score=score, retrieval_method="embedding"
+                    )
                 )
 
         for decl in type_results:
             if decl.name not in seen_names:
                 seen_names.add(decl.name)
                 new_candidates.append(
-                    CandidateMatch(declaration=decl, score=0.0, retrieval_method="type_search")
+                    CandidateMatch(
+                        declaration=decl, score=0.0, retrieval_method="type_search"
+                    )
                 )
 
         state.candidates_found.extend(new_candidates)
-        if state.max_candidates_total > 0 and len(state.candidates_found) > state.max_candidates_total:
+        if (
+            state.max_candidates_total > 0
+            and len(state.candidates_found) > state.max_candidates_total
+        ):
             # Keep highest-scoring candidates when speculative retrieval floods the pool.
             state.candidates_found = sorted(
                 state.candidates_found, key=lambda c: c.score, reverse=True
@@ -128,9 +140,7 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
 class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
     """Use LLM to rank candidates by likelihood of being correct."""
 
-    async def run(
-        self, ctx: GraphRunContext[HunterState, HunterDeps]
-    ) -> VerifyTopK:
+    async def run(self, ctx: GraphRunContext[HunterState, HunterDeps]) -> VerifyTopK:
         state = ctx.state
         deps = ctx.deps
 
@@ -147,8 +157,6 @@ class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
         )
 
         try:
-            from ageom.llm_router import HUNTER_SCORE, select_llm
-
             response = await _complete_with_optional_grammar(
                 select_llm(deps.llm, HUNTER_SCORE),
                 system=SCORE_CANDIDATES_SYSTEM,
@@ -188,9 +196,13 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
         deps = ctx.deps
 
         # Take top-K unverified candidates
-        already_verified = {vr.candidate.declaration.name for vr in state.verification_results}
+        already_verified = {
+            vr.candidate.declaration.name for vr in state.verification_results
+        }
         to_verify = [
-            c for c in state.candidates_found if c.declaration.name not in already_verified
+            c
+            for c in state.candidates_found
+            if c.declaration.name not in already_verified
         ][: state.top_k_verify]
 
         if not to_verify:
@@ -205,7 +217,9 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
                 )
             return ReformulateQuery()
 
-        if state.verify_concurrency > 1 and hasattr(deps.oracle, "verify_candidates_parallel"):
+        if state.verify_concurrency > 1 and hasattr(
+            deps.oracle, "verify_candidates_parallel"
+        ):
             results = await deps.oracle.verify_candidates_parallel(
                 state.pdg_node, to_verify, max_concurrent=state.verify_concurrency
             )
@@ -248,17 +262,13 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
 class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
     """Use LLM to analyze failures and generate new search queries."""
 
-    async def run(
-        self, ctx: GraphRunContext[HunterState, HunterDeps]
-    ) -> InitialSearch:
+    async def run(self, ctx: GraphRunContext[HunterState, HunterDeps]) -> InitialSearch:
         state = ctx.state
         deps = ctx.deps
         state.iteration += 1
 
         # Analyze the most recent failure if available
-        recent_failures = [
-            r for r in state.verification_results if not r.verified
-        ]
+        recent_failures = [r for r in state.verification_results if not r.verified]
         analysis = ""
         if recent_failures:
             last_fail = recent_failures[-1]
@@ -269,9 +279,9 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
                 compiler_output=last_fail.compiler_output,
             )
             try:
-                from ageom.llm_router import HUNTER_ANALYZE_FAILURE, select_llm
-
-                analysis = await select_llm(deps.llm, HUNTER_ANALYZE_FAILURE).complete(ANALYZE_FAILURE_SYSTEM, analyze_msg)
+                analysis = await select_llm(deps.llm, HUNTER_ANALYZE_FAILURE).complete(
+                    ANALYZE_FAILURE_SYSTEM, analyze_msg
+                )
             except Exception:
                 analysis = ""
 
@@ -296,8 +306,6 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
                     f"\n\nGenerate exactly {state.query_batch_size} highly diverse queries "
                     "that maximize synonym and namespace coverage."
                 )
-
-            from ageom.llm_router import HUNTER_REFORMULATE, select_llm
 
             response = await _complete_with_optional_grammar(
                 select_llm(deps.llm, HUNTER_REFORMULATE),

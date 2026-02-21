@@ -117,8 +117,8 @@ class TestConcreteClients:
             llama_cpp_api_key="local",
         )
         assert isinstance(client, LlamaCppLLMClient)
-        text = await client.complete_with_grammar("sys", "user", "root ::= \"[]\"")
+        text = await client.complete_with_grammar("sys", "user", 'root ::= "[]"')
         assert text == "codex-ok"
         assert client._client.completions.last_kwargs["extra_body"] == {
-            "grammar": "root ::= \"[]\""
+            "grammar": 'root ::= "[]"'
         }

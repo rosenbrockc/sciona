@@ -16,9 +16,9 @@ from tests.helpers.match_regression import (
 def test_match_case_fixture_paths_exist(match_cases):
     for case in match_cases:
         assert case.cdg_path.exists(), f"Missing CDG fixture: {case.cdg_path}"
-        assert case.witness_test_path.exists(), (
-            f"Missing witness-test reference: {case.witness_test_path}"
-        )
+        assert (
+            case.witness_test_path.exists()
+        ), f"Missing witness-test reference: {case.witness_test_path}"
 
 
 @pytest.mark.match_regression_deterministic

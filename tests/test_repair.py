@@ -23,11 +23,8 @@ from ageom.synthesizer.patcher import (
 )
 from ageom.synthesizer.repair import (
     CompileCheck,
-    DeterministicFix,
-    LLMRepair,
     RepairDeps,
     RepairState,
-    SorryElimination,
     _extract_goal_from_context,
     _extract_line_number,
     _parse_patch_response,
@@ -60,7 +57,11 @@ Admitted.
 
 
 def _make_skeleton(source: str, prover: str = "lean4") -> SkeletonFile:
-    sorry_count = source.lower().count("sorry") if prover == "lean4" else source.count("Admitted.")
+    sorry_count = (
+        source.lower().count("sorry")
+        if prover == "lean4"
+        else source.count("Admitted.")
+    )
     return SkeletonFile(
         prover=prover,
         source_code=source,
@@ -91,16 +92,27 @@ def _make_mock_llm(responses: list[str]) -> AsyncMock:
 
 class TestErrorClassifier:
     def test_classify_type_mismatch(self):
-        assert classify_error("type mismatch, expected List Nat, got List Int") == ErrorCategory.TYPE_MISMATCH
+        assert (
+            classify_error("type mismatch, expected List Nat, got List Int")
+            == ErrorCategory.TYPE_MISMATCH
+        )
 
     def test_classify_type_mismatch_expected_got(self):
-        assert classify_error("expected `Nat` but got `Int`") == ErrorCategory.TYPE_MISMATCH
+        assert (
+            classify_error("expected `Nat` but got `Int`")
+            == ErrorCategory.TYPE_MISMATCH
+        )
 
     def test_classify_missing_import(self):
-        assert classify_error("unknown identifier 'Nat.add_comm'") == ErrorCategory.MISSING_IMPORT
+        assert (
+            classify_error("unknown identifier 'Nat.add_comm'")
+            == ErrorCategory.MISSING_IMPORT
+        )
 
     def test_classify_missing_import_namespace(self):
-        assert classify_error("unknown namespace 'Finset'") == ErrorCategory.MISSING_IMPORT
+        assert (
+            classify_error("unknown namespace 'Finset'") == ErrorCategory.MISSING_IMPORT
+        )
 
     def test_classify_unsolved_goal(self):
         assert classify_error("unsolved goals") == ErrorCategory.UNSOLVED_GOAL
@@ -109,7 +121,9 @@ class TestErrorClassifier:
         assert classify_error("⊢ Nat → Nat") == ErrorCategory.UNSOLVED_GOAL
 
     def test_classify_universe_mismatch(self):
-        assert classify_error("universe level mismatch") == ErrorCategory.UNIVERSE_MISMATCH
+        assert (
+            classify_error("universe level mismatch") == ErrorCategory.UNIVERSE_MISMATCH
+        )
 
     def test_classify_syntax(self):
         assert classify_error("expected token") == ErrorCategory.SYNTAX
@@ -250,12 +264,14 @@ class TestRepairHelpers:
         assert _extract_line_number("some error text") == 1
 
     def test_parse_patch_response_valid(self):
-        response = json.dumps({
-            "line_start": 3,
-            "line_end": 3,
-            "replacement": "  exact Nat.add_comm",
-            "description": "Fix tactic",
-        })
+        response = json.dumps(
+            {
+                "line_start": 3,
+                "line_end": 3,
+                "replacement": "  exact Nat.add_comm",
+                "description": "Fix tactic",
+            }
+        )
         patch = _parse_patch_response(response)
         assert patch is not None
         assert patch.line_start == 3
@@ -263,11 +279,17 @@ class TestRepairHelpers:
         assert patch.replacement == "  exact Nat.add_comm"
 
     def test_parse_patch_response_with_markdown(self):
-        response = "```json\n" + json.dumps({
-            "line_start": 1,
-            "line_end": 1,
-            "replacement": "import Mathlib",
-        }) + "\n```"
+        response = (
+            "```json\n"
+            + json.dumps(
+                {
+                    "line_start": 1,
+                    "line_end": 1,
+                    "replacement": "import Mathlib",
+                }
+            )
+            + "\n```"
+        )
         patch = _parse_patch_response(response)
         assert patch is not None
         assert patch.line_start == 1
@@ -299,9 +321,11 @@ class TestRepairGraph:
     async def test_happy_path_no_errors(self):
         """Skeleton compiles on first try."""
         skeleton = _make_skeleton("-- correct code\n")
-        env = _make_mock_env([
-            CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
-        ])
+        env = _make_mock_env(
+            [
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
         llm = _make_mock_llm([])
 
         state = RepairState(skeleton=skeleton, max_iterations=5)
@@ -317,15 +341,17 @@ class TestRepairGraph:
     async def test_deterministic_fix_resolves(self):
         """Missing import → deterministic fix → compiles."""
         skeleton = _make_skeleton("def foo := Nat.add_comm\n")
-        env = _make_mock_env([
-            # First compile: missing import
-            CompilerFeedback(
-                raw_output="unknown identifier 'Nat.add_comm'",
-                errors=["unknown identifier 'Nat.add_comm'"],
-            ),
-            # Second compile: success
-            CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
-        ])
+        env = _make_mock_env(
+            [
+                # First compile: missing import
+                CompilerFeedback(
+                    raw_output="unknown identifier 'Nat.add_comm'",
+                    errors=["unknown identifier 'Nat.add_comm'"],
+                ),
+                # Second compile: success
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
         llm = _make_mock_llm([])
 
         state = RepairState(skeleton=skeleton, max_iterations=5)
@@ -342,25 +368,29 @@ class TestRepairGraph:
     async def test_llm_repair_type_mismatch(self):
         """Type mismatch → LLM generates patch → compiles."""
         skeleton = _make_skeleton("def foo : Nat := (1 : Int)\n")
-        patch_response = json.dumps({
-            "line_start": 1,
-            "line_end": 1,
-            "replacement": "def foo : Nat := 1",
-            "description": "Remove type annotation",
-        })
-        env = _make_mock_env([
-            # First compile: type mismatch
-            CompilerFeedback(
-                raw_output="type mismatch",
-                errors=["type mismatch, expected Nat, got Int"],
-            ),
-            # Second compile: success
-            CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
-        ])
+        patch_response = json.dumps(
+            {
+                "line_start": 1,
+                "line_end": 1,
+                "replacement": "def foo : Nat := 1",
+                "description": "Remove type annotation",
+            }
+        )
+        env = _make_mock_env(
+            [
+                # First compile: type mismatch
+                CompilerFeedback(
+                    raw_output="type mismatch",
+                    errors=["type mismatch, expected Nat, got Int"],
+                ),
+                # Second compile: success
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
         llm = _make_mock_llm([patch_response])
 
         state = RepairState(skeleton=skeleton, max_iterations=5)
-        result = await repair_graph.run(
+        await repair_graph.run(
             CompileCheck(), state=state, deps=RepairDeps(env=env, llm=llm)
         )
 
@@ -372,16 +402,18 @@ class TestRepairGraph:
         """Skeleton with sorry → LLM generates tactic → compiles."""
         source = "theorem foo : 1 + 1 = 2 := by\n  sorry\n"
         skeleton = _make_skeleton(source)
-        env = _make_mock_env([
-            # First compile: unsolved goals (sorry)
-            CompilerFeedback(
-                raw_output="unsolved goals\n⊢ 1 + 1 = 2",
-                errors=[],
-                goals_remaining=["⊢ 1 + 1 = 2"],
-            ),
-            # Second compile: success
-            CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
-        ])
+        env = _make_mock_env(
+            [
+                # First compile: unsolved goals (sorry)
+                CompilerFeedback(
+                    raw_output="unsolved goals\n⊢ 1 + 1 = 2",
+                    errors=[],
+                    goals_remaining=["⊢ 1 + 1 = 2"],
+                ),
+                # Second compile: success
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
         llm = _make_mock_llm(["omega"])
 
         state = RepairState(skeleton=skeleton, max_iterations=5, sorry_remaining=1)
@@ -407,7 +439,7 @@ class TestRepairGraph:
         llm = _make_mock_llm(["not valid json"] * 5)
 
         state = RepairState(skeleton=skeleton, max_iterations=3)
-        result = await repair_graph.run(
+        await repair_graph.run(
             CompileCheck(), state=state, deps=RepairDeps(env=env, llm=llm)
         )
 
@@ -420,31 +452,35 @@ class TestRepairGraph:
         source = "def bar := unknown_func\ndef foo : Nat := (1 : Int)\n"
         skeleton = _make_skeleton(source)
 
-        patch_response = json.dumps({
-            "line_start": 2,
-            "line_end": 2,
-            "replacement": "def foo : Nat := 1",
-            "description": "Fix type",
-        })
+        patch_response = json.dumps(
+            {
+                "line_start": 2,
+                "line_end": 2,
+                "replacement": "def foo : Nat := 1",
+                "description": "Fix type",
+            }
+        )
 
-        env = _make_mock_env([
-            # First: missing import
-            CompilerFeedback(
-                raw_output="",
-                errors=["unknown identifier 'unknown_func'"],
-            ),
-            # Second: type mismatch (import fixed)
-            CompilerFeedback(
-                raw_output="",
-                errors=["type mismatch, expected Nat, got Int"],
-            ),
-            # Third: success
-            CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
-        ])
+        env = _make_mock_env(
+            [
+                # First: missing import
+                CompilerFeedback(
+                    raw_output="",
+                    errors=["unknown identifier 'unknown_func'"],
+                ),
+                # Second: type mismatch (import fixed)
+                CompilerFeedback(
+                    raw_output="",
+                    errors=["type mismatch, expected Nat, got Int"],
+                ),
+                # Third: success
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
         llm = _make_mock_llm([patch_response])
 
         state = RepairState(skeleton=skeleton, max_iterations=10)
-        result = await repair_graph.run(
+        await repair_graph.run(
             CompileCheck(), state=state, deps=RepairDeps(env=env, llm=llm)
         )
 
@@ -464,9 +500,11 @@ class TestSynthesizerAgent:
         from ageom.synthesizer.agent import SynthesizerAgent
 
         skeleton = _make_skeleton("-- clean code\n")
-        env = _make_mock_env([
-            CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
-        ])
+        env = _make_mock_env(
+            [
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
         llm = _make_mock_llm([])
 
         agent = SynthesizerAgent(env=env, llm=llm, max_iterations=5)
@@ -485,20 +523,24 @@ class TestSynthesizerAgent:
         source = "def good : Nat := 42\ndef bad : Nat := (1 : Int)\n"
         skeleton = _make_skeleton(source)
 
-        patch_response = json.dumps({
-            "line_start": 2,
-            "line_end": 2,
-            "replacement": "def bad : Nat := 1",
-            "description": "Fix cast",
-        })
+        patch_response = json.dumps(
+            {
+                "line_start": 2,
+                "line_end": 2,
+                "replacement": "def bad : Nat := 1",
+                "description": "Fix cast",
+            }
+        )
 
-        env = _make_mock_env([
-            CompilerFeedback(
-                raw_output="",
-                errors=["type mismatch on line 2"],
-            ),
-            CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
-        ])
+        env = _make_mock_env(
+            [
+                CompilerFeedback(
+                    raw_output="",
+                    errors=["type mismatch on line 2"],
+                ),
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
         llm = _make_mock_llm([patch_response])
 
         agent = SynthesizerAgent(env=env, llm=llm, max_iterations=5)
@@ -513,9 +555,12 @@ class TestSynthesizerAgent:
         from ageom.synthesizer.agent import SynthesizerAgent
 
         skeleton = _make_skeleton("broken\n")
-        env = _make_mock_env([
-            CompilerFeedback(raw_output="", errors=["syntax error"]) for _ in range(10)
-        ])
+        env = _make_mock_env(
+            [
+                CompilerFeedback(raw_output="", errors=["syntax error"])
+                for _ in range(10)
+            ]
+        )
         llm = _make_mock_llm(["invalid"] * 10)
 
         agent = SynthesizerAgent(env=env, llm=llm, max_iterations=2)
@@ -533,14 +578,14 @@ class TestSynthesizerAgent:
 class TestCLIParserAcceptsSynthesize:
     def test_synthesize_subcommand_exists(self):
         """The CLI parser accepts the 'synthesize' subcommand."""
-        from ageom.cli import main
 
         import argparse
         import sys
         from unittest.mock import patch
 
-        with patch.object(sys, "argv", ["ageom", "synthesize", "cdg.json", "matches.json"]):
-            from ageom.cli import main as _main
+        with patch.object(
+            sys, "argv", ["ageom", "synthesize", "cdg.json", "matches.json"]
+        ):
 
             parser = argparse.ArgumentParser(prog="ageom")
             subparsers = parser.add_subparsers(dest="command")

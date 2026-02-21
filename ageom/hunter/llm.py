@@ -13,9 +13,7 @@ class LLMClient(Protocol):
         """Send a system + user prompt and return the completion text."""
         ...
 
-    async def complete_with_grammar(
-        self, system: str, user: str, grammar: str
-    ) -> str:
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         """Send a system + user prompt with a GBNF grammar constraint."""
         ...
 
@@ -44,9 +42,7 @@ class ClaudeLLMClient:
         )
         return response.content[0].text
 
-    async def complete_with_grammar(
-        self, system: str, user: str, grammar: str
-    ) -> str:
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         # Anthropic API path here has no grammar hook; fallback to normal completion.
         return await self.complete(system, user)
 
@@ -96,9 +92,7 @@ class CodexLLMClient:
             return "".join(parts)
         return ""
 
-    async def complete_with_grammar(
-        self, system: str, user: str, grammar: str
-    ) -> str:
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         # Generic OpenAI/Codex path may not support GBNF directly; fallback.
         return await self.complete(system, user)
 
@@ -132,9 +126,7 @@ class LlamaCppLLMClient:
         content = response.choices[0].message.content
         return content if isinstance(content, str) else ""
 
-    async def complete_with_grammar(
-        self, system: str, user: str, grammar: str
-    ) -> str:
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=[

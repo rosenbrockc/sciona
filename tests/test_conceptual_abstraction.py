@@ -33,7 +33,6 @@ from ageom.ingester.prompts import (
     CONCEPTUAL_ABSTRACT_USER,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -65,29 +64,34 @@ def _make_validated_plan(
     )
 
 
-_SAMPLE_LLM_RESPONSE = json.dumps({
-    "abstract_name": "Frequency-Band Attenuator",
-    "conceptual_transform": (
-        "Suppresses spectral components above a cutoff frequency in a "
-        "uniformly sampled 1D real-valued sequence, preserving low-frequency "
-        "structure while attenuating high-frequency oscillations."
-    ),
-    "abstract_inputs": [
-        "A uniformly sampled 1D array of floats representing a continuous physical measurement"
-    ],
-    "abstract_outputs": [
-        "A 1D array of the same length with high-frequency components attenuated"
-    ],
-    "algorithmic_properties": [
-        "linear", "causal", "stateless", "lossy-compression"
-    ],
-    "cross_disciplinary_applications": [
-        "Smoothing telemetry data in aerospace",
-        "De-noising seismic waveforms in geophysics",
-        "Filtering high-frequency noise in audio processing",
-        "Removing motion artifacts from accelerometer data in wearables",
-    ],
-})
+_SAMPLE_LLM_RESPONSE = json.dumps(
+    {
+        "abstract_name": "Frequency-Band Attenuator",
+        "conceptual_transform": (
+            "Suppresses spectral components above a cutoff frequency in a "
+            "uniformly sampled 1D real-valued sequence, preserving low-frequency "
+            "structure while attenuating high-frequency oscillations."
+        ),
+        "abstract_inputs": [
+            "A uniformly sampled 1D array of floats representing a continuous physical measurement"
+        ],
+        "abstract_outputs": [
+            "A 1D array of the same length with high-frequency components attenuated"
+        ],
+        "algorithmic_properties": [
+            "linear",
+            "causal",
+            "stateless",
+            "lossy-compression",
+        ],
+        "cross_disciplinary_applications": [
+            "Smoothing telemetry data in aerospace",
+            "De-noising seismic waveforms in geophysics",
+            "Filtering high-frequency noise in audio processing",
+            "Removing motion artifacts from accelerometer data in wearables",
+        ],
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -353,11 +357,6 @@ class TestGraphWiring:
         compiled = graph.compile()
         graph_dict = compiled.get_graph()
         # abstract_atoms should be reachable from critic_validate
-        critic_edges = [
-            e for e in graph_dict.edges
-            if e.source == "critic_validate"
-        ]
+        critic_edges = [e for e in graph_dict.edges if e.source == "critic_validate"]
         target_nodes = {e.target for e in critic_edges}
         assert "abstract_atoms" in target_nodes
-
-

@@ -5,7 +5,6 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from ageom.architect.handoff import load_json, to_pdg_nodes
 from ageom.types import (
@@ -89,11 +88,13 @@ class DeterministicHunterLLM:
             # Over-complete index list; Hunter ignores out-of-range values.
             return json.dumps(list(range(200)))
         if "reformulate" in lower:
-            return json.dumps([
-                "exact function name",
-                "python callable signature",
-                "algorithmic primitive",
-            ])
+            return json.dumps(
+                [
+                    "exact function name",
+                    "python callable signature",
+                    "algorithmic primitive",
+                ]
+            )
         if "analy" in lower:
             return "Prioritize exact operator/function semantics."
         return "[]"
@@ -120,7 +121,9 @@ class FixtureOracle:
             proof_term=f"{candidate.declaration.name}" if verified else "",
             error_message="" if verified else "type mismatch",
             verification_level=(
-                VerificationLevel.TYPE_CHECKED if verified else VerificationLevel.UNVERIFIED
+                VerificationLevel.TYPE_CHECKED
+                if verified
+                else VerificationLevel.UNVERIFIED
             ),
         )
 
@@ -141,8 +144,7 @@ def load_match_cases(repo_root: Path, fixture_path: Path) -> list[MatchCase]:
     result: list[MatchCase] = []
     for raw in data.get("cases", []):
         aliases = {
-            node_id: set(names)
-            for node_id, names in raw.get("aliases", {}).items()
+            node_id: set(names) for node_id, names in raw.get("aliases", {}).items()
         }
         # Ensure canonical declaration is always accepted.
         for node_id, canonical in raw.get("expected_matches", {}).items():

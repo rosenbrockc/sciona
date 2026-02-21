@@ -8,11 +8,14 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import logging
 import sys
 from pathlib import Path
 
 from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
+
+logger = logging.getLogger(__name__)
 
 # Map CLRS source module filenames to ConceptType
 _MODULE_TO_CONCEPT: dict[str, ConceptType] = {
@@ -85,6 +88,7 @@ def _import_specs(specs_path: Path) -> dict:
         spec.loader.exec_module(module)
         return getattr(module, "SPECS", {})
     except Exception:
+        logger.warning("Failed to import CLRS specs from %s", specs_path, exc_info=True)
         return {}
     finally:
         sys.path[:] = old_path
@@ -118,9 +122,7 @@ def _parse_algorithm_files(algorithms_dir: Path) -> dict[str, dict]:
     return result
 
 
-def _spec_to_io(
-    spec_dict: dict, stage: str
-) -> list[IOSpec]:
+def _spec_to_io(spec_dict: dict, stage: str) -> list[IOSpec]:
     """Extract IOSpec list from CLRS spec entries of a given stage."""
     ios: list[IOSpec] = []
     for field_name, spec_tuple in spec_dict.items():
@@ -139,7 +141,9 @@ def _spec_to_io(
             # It's an actual enum from the clrs module
             stage_val = spec_tuple[0]
             type_val = spec_tuple[2]
-            stage_name = stage_val.name.lower() if hasattr(stage_val, "name") else str(stage_val)
+            stage_name = (
+                stage_val.name.lower() if hasattr(stage_val, "name") else str(stage_val)
+            )
             if stage not in stage_name:
                 continue
             type_name = type_val.name if hasattr(type_val, "name") else str(type_val)
@@ -228,8 +232,20 @@ def _infer_concept_type(name: str) -> ConceptType:
     sort_keywords = {"sort", "heap", "insertion", "bubble", "merge", "quick"}
     search_keywords = {"search", "find", "binary_search", "minimum"}
     graph_keywords = {
-        "bfs", "dfs", "dijkstra", "bellman", "floyd", "warshall", "prim",
-        "kruskal", "dag", "scc", "topological", "mst", "bridges", "articulation",
+        "bfs",
+        "dfs",
+        "dijkstra",
+        "bellman",
+        "floyd",
+        "warshall",
+        "prim",
+        "kruskal",
+        "dag",
+        "scc",
+        "topological",
+        "mst",
+        "bridges",
+        "articulation",
     }
     dp_keywords = {"lcs", "matrix_chain", "optimal_bst", "knapsack", "activity"}
     greedy_keywords = {"huffman", "activity_selector", "greedy"}

@@ -6,11 +6,14 @@ index specifically for the architect's primitive catalog.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive
-from ageom.types import Declaration
+from ageom.indexer.faiss_store import FAISSStore
+from ageom.indexer.models import IndexEntry
+from ageom.types import Declaration, Prover
 
 
 class SkillIndex:
@@ -46,10 +49,6 @@ class SkillIndex:
 
     def build_from_catalog(self, catalog: PrimitiveCatalog) -> None:
         """Build the FAISS index from all primitives in the catalog."""
-        from ageom.indexer.faiss_store import FAISSStore
-        from ageom.indexer.models import IndexEntry
-        from ageom.types import Declaration, Prover
-
         self._ensure_embedder()
         primitives = catalog.all_primitives()
         if not primitives:
@@ -73,11 +72,13 @@ class SkillIndex:
                 source_lib=prim.source,
                 prover=Prover.LEAN4,  # placeholder — primitives are prover-agnostic
             )
-            entries.append(IndexEntry(
-                declaration=decl,
-                embedding=embeddings[i],
-                source_text=texts[i],
-            ))
+            entries.append(
+                IndexEntry(
+                    declaration=decl,
+                    embedding=embeddings[i],
+                    source_text=texts[i],
+                )
+            )
             self._id_to_primitive[i] = prim
 
         store.add(entries)
@@ -95,9 +96,7 @@ class SkillIndex:
         query_vec = self._embedder.embed(query_text)
         return self._store.search(query_vec, k=k)
 
-    def search_by_type(
-        self, type_signature: str, k: int = 10
-    ) -> list[Declaration]:
+    def search_by_type(self, type_signature: str, k: int = 10) -> list[Declaration]:
         """Search by type signature (falls back to embedding search)."""
         results = self.search_by_embedding(type_signature, k=k)
         return [decl for decl, _score in results]
@@ -137,7 +136,6 @@ class SkillIndex:
 
     def save(self, directory: str | Path | None = None) -> None:
         """Persist the skill index to disk."""
-        import json
 
         directory = Path(directory) if directory else self._index_dir
         directory.mkdir(parents=True, exist_ok=True)
@@ -153,9 +151,6 @@ class SkillIndex:
     @classmethod
     def load(cls, directory: str | Path) -> SkillIndex:
         """Load a persisted skill index from disk."""
-        import json
-
-        from ageom.indexer.faiss_store import FAISSStore
 
         directory = Path(directory)
         idx = cls(index_dir=directory)

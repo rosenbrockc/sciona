@@ -30,7 +30,7 @@ packages = ["src/{package_name}"]
 
 def generate_init_py(package_name: str, exports: list[str]) -> str:
     """Generate an __init__.py with explicit exports."""
-    export_lines = "\n".join(f"    \"{name}\"," for name in exports)
+    export_lines = "\n".join(f'    "{name}",' for name in exports)
     import_lines = "\n".join(
         f"from {package_name}.atoms import {name}" for name in exports
     )
@@ -60,7 +60,11 @@ def generate_main_script(
     # Collect unique imports from skeleton metadata
     imports_seen: set[str] = set()
     for unit in skeleton.units:
-        module = unit.declaration_name.rsplit(".", 1)[0] if "." in unit.declaration_name else ""
+        module = (
+            unit.declaration_name.rsplit(".", 1)[0]
+            if "." in unit.declaration_name
+            else ""
+        )
         if module:
             top_level = module.split(".")[0]
             if top_level not in imports_seen:

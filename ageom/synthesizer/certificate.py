@@ -28,7 +28,9 @@ def generate_certificate(
 ) -> VerificationCertificate:
     """Generate a verification certificate for the export bundle."""
     source_hash = _sha256(source_path)
-    artifact_hash = _sha256(artifact_path) if artifact_path and artifact_path.exists() else ""
+    artifact_hash = (
+        _sha256(artifact_path) if artifact_path and artifact_path.exists() else ""
+    )
 
     return VerificationCertificate(
         source_hash=source_hash,

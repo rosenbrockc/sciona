@@ -9,7 +9,6 @@ import pytest
 from ageom.ingester.base_extractor import SourceLanguage
 from ageom.ingester.treesitter_extractor import TreeSitterExtractor
 
-
 # ---------------------------------------------------------------------------
 # Embedded Pronto-like C++ source
 # ---------------------------------------------------------------------------

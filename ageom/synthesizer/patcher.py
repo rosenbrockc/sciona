@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -53,9 +53,7 @@ def apply_patches(source: str, patches: list[Patch]) -> str:
     return "".join(lines)
 
 
-def find_sorry_locations(
-    source: str, prover: str
-) -> list[tuple[int, str]]:
+def find_sorry_locations(source: str, prover: str) -> list[tuple[int, str]]:
     """Find sorry/Admitted placeholders and return (line_number, context).
 
     Returns a list of (1-indexed line number, surrounding context string).
@@ -78,9 +76,7 @@ def find_sorry_locations(
     return results
 
 
-def extract_error_context(
-    source: str, error_line: int, radius: int = 3
-) -> str:
+def extract_error_context(source: str, error_line: int, radius: int = 3) -> str:
     """Extract lines around an error for LLM context.
 
     Args:

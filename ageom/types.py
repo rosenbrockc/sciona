@@ -17,10 +17,10 @@ class Prover(str, Enum):
 class VerificationLevel(str, Enum):
     """Trust level of a verification result."""
 
-    KERNEL_PROOF = "kernel_proof"        # Lean 4 kernel, Coq kernel
-    TYPE_CHECKED = "type_checked"        # mypy, Lean elaborator without proof
+    KERNEL_PROOF = "kernel_proof"  # Lean 4 kernel, Coq kernel
+    TYPE_CHECKED = "type_checked"  # mypy, Lean elaborator without proof
     CONTRACT_CHECKED = "contract_checked"  # icontract runtime validation
-    UNVERIFIED = "unverified"            # no verification performed
+    UNVERIFIED = "unverified"  # no verification performed
 
 
 @dataclass(frozen=True)
@@ -78,7 +78,7 @@ class VerificationResult:
 class FailureAction(str, Enum):
     """Suggested action when a match fails."""
 
-    SPLIT = "split"           # split the atomic node into finer sub-atoms
+    SPLIT = "split"  # split the atomic node into finer sub-atoms
     GENERALIZE = "generalize"  # replace with an equivalent formulation
     RELAX_TYPE = "relax_type"  # broaden the type signature
     UNGROUNDABLE = "ungroundable"  # cannot be grounded
@@ -97,10 +97,10 @@ class MatchFailureReport:
     def from_match_result(result: "MatchResult") -> "MatchFailureReport":
         """Build a failure report from a failed MatchResult."""
         errors = [
-            vr.error_message
-            for vr in result.all_verifications
-            if vr.error_message
-        ][:5]  # keep top 5 error summaries
+            vr.error_message for vr in result.all_verifications if vr.error_message
+        ][
+            :5
+        ]  # keep top 5 error summaries
         return MatchFailureReport(
             pdg_node=result.pdg_node,
             best_candidates=result.all_candidates[:5],
@@ -160,7 +160,9 @@ class MatchResult:
                 "prover": self.pdg_node.prover.value,
                 "context": dict(self.pdg_node.context),
             },
-            "verified_match": _vr_dict(self.verified_match) if self.verified_match else None,
+            "verified_match": (
+                _vr_dict(self.verified_match) if self.verified_match else None
+            ),
             "all_candidates": [_candidate_dict(c) for c in self.all_candidates],
             "all_verifications": [_vr_dict(vr) for vr in self.all_verifications],
         }
@@ -209,7 +211,9 @@ class MatchResult:
             context=pdg_data.get("context", {}),
         )
 
-        verified_match = _vr(data["verified_match"]) if data.get("verified_match") else None
+        verified_match = (
+            _vr(data["verified_match"]) if data.get("verified_match") else None
+        )
         all_candidates = [_candidate(c) for c in data.get("all_candidates", [])]
         all_verifications = [_vr(vr) for vr in data.get("all_verifications", [])]
 

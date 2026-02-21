@@ -1,7 +1,6 @@
 """Tests for the unified index (Issue 3)."""
 
 from ageom.architect.embedder import SkillIndex
-from ageom.protocols import SemanticIndex
 
 
 def test_skill_index_has_semantic_index_methods():

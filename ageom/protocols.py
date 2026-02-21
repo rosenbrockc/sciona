@@ -27,9 +27,7 @@ class SemanticIndex(Protocol):
         """Search by embedding similarity. Returns (declaration, score) pairs."""
         ...
 
-    def search_by_type(
-        self, type_signature: str, k: int = 10
-    ) -> list[Declaration]:
+    def search_by_type(self, type_signature: str, k: int = 10) -> list[Declaration]:
         """Search by type signature (exact or approximate)."""
         ...
 

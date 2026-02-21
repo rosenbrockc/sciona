@@ -20,7 +20,9 @@ class IndexEntry:
 
     def __post_init__(self) -> None:
         if self.embedding.ndim != 1:
-            raise ValueError(f"Expected 1-d embedding, got shape {self.embedding.shape}")
+            raise ValueError(
+                f"Expected 1-d embedding, got shape {self.embedding.shape}"
+            )
 
 
 @dataclass

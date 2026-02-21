@@ -9,7 +9,6 @@ import pytest
 from ageom.ingester.base_extractor import SourceLanguage
 from ageom.ingester.treesitter_extractor import TreeSitterExtractor
 
-
 # ---------------------------------------------------------------------------
 # Embedded Tempo.jl-like Julia source
 # ---------------------------------------------------------------------------
@@ -320,7 +319,10 @@ class TestJuliaProcedural:
         step = next(m for m in dfg.methods if m.name == "step")
         assert step.is_oracle is True
         assert any(e.caller == "step" for e in dfg.oracle_edges)
-        assert any("oracle_subgraph::JuliaDispatch::step::model" in e.oracle_ref for e in dfg.oracle_edges)
+        assert any(
+            "oracle_subgraph::JuliaDispatch::step::model" in e.oracle_ref
+            for e in dfg.oracle_edges
+        )
 
         # state -> oracle routing edges
         assert any(

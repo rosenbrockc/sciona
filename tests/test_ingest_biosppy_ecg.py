@@ -25,12 +25,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import CDGExport, save_json
+from ageom.architect.handoff import save_json
 from ageom.architect.models import ConceptType, NodeStatus
 from ageom.ingester.extractor import extract_data_flow
 from ageom.ingester.graph import IngesterAgent
-from ageom.ingester.models import ProposedMacroPlan, ValidatedMacroPlan
-
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -142,223 +140,227 @@ ECG_PROCESSOR_SOURCE = textwrap.dedent('''\
 # them deterministically we guarantee NO hallucinated data flows.
 # ---------------------------------------------------------------------------
 
-_CHUNK_RESPONSE = json.dumps({
-    "macro_atoms": [
-        {
-            "name": "Bandpass Filter",
-            "description": (
-                "Apply FIR bandpass filter (3-45 Hz) to remove baseline "
-                "wander and high-frequency noise from the raw ECG signal"
-            ),
-            "method_names": ["filter_signal"],
-            "inputs": [
-                {
-                    "name": "signal",
-                    "type_desc": "np.ndarray",
-                    "constraints": "1D raw ECG signal",
-                },
-            ],
-            "outputs": [
-                {
-                    "name": "filtered",
-                    "type_desc": "np.ndarray",
-                    "constraints": "bandpass-filtered ECG",
-                },
-            ],
-            "config_params": ["sampling_rate"],
-            "concept_type": "signal_filter",
-            "is_optional": False,
-        },
-        {
-            "name": "R-Peak Detection",
-            "description": (
-                "Detect R-peak locations in the filtered ECG signal "
-                "using the Hamilton segmenter algorithm"
-            ),
-            "method_names": ["detect_rpeaks"],
-            "inputs": [
-                {
-                    "name": "filtered",
-                    "type_desc": "np.ndarray",
-                    "constraints": "filtered ECG signal",
-                },
-            ],
-            "outputs": [
-                {
-                    "name": "rpeaks",
-                    "type_desc": "np.ndarray",
-                    "constraints": "R-peak sample indices",
-                },
-            ],
-            "config_params": ["sampling_rate"],
-            "concept_type": "custom",
-            "is_optional": False,
-        },
-        {
-            "name": "Peak Correction",
-            "description": (
-                "Correct R-peak locations to the nearest local maximum "
-                "within a tolerance window"
-            ),
-            "method_names": ["correct_peaks"],
-            "inputs": [
-                {
-                    "name": "filtered",
-                    "type_desc": "np.ndarray",
-                    "constraints": "filtered ECG signal",
-                },
-                {
-                    "name": "rpeaks",
-                    "type_desc": "np.ndarray",
-                    "constraints": "initial R-peak indices",
-                },
-            ],
-            "outputs": [
-                {
-                    "name": "rpeaks_corrected",
-                    "type_desc": "np.ndarray",
-                    "constraints": "corrected R-peak indices",
-                },
-            ],
-            "config_params": ["sampling_rate"],
-            "concept_type": "custom",
-            "is_optional": False,
-        },
-        {
-            "name": "Template Extraction",
-            "description": (
-                "Extract individual heartbeat waveform templates around "
-                "each R-peak with configurable before/after windows"
-            ),
-            "method_names": ["extract_templates"],
-            "inputs": [
-                {
-                    "name": "filtered",
-                    "type_desc": "np.ndarray",
-                    "constraints": "filtered ECG signal",
-                },
-                {
-                    "name": "rpeaks",
-                    "type_desc": "np.ndarray",
-                    "constraints": "corrected R-peak indices",
-                },
-            ],
-            "outputs": [
-                {
-                    "name": "templates",
-                    "type_desc": "np.ndarray",
-                    "constraints": "2D array of heartbeat templates",
-                },
-                {
-                    "name": "rpeaks_final",
-                    "type_desc": "np.ndarray",
-                    "constraints": "final R-peak indices after template extraction",
-                },
-            ],
-            "config_params": ["sampling_rate"],
-            "concept_type": "custom",
-            "is_optional": False,
-        },
-        {
-            "name": "Heart Rate Computation",
-            "description": (
-                "Compute instantaneous heart rate in bpm from R-R "
-                "intervals with optional smoothing"
-            ),
-            "method_names": ["compute_heart_rate"],
-            "inputs": [
-                {
-                    "name": "rpeaks",
-                    "type_desc": "np.ndarray",
-                    "constraints": "R-peak sample indices",
-                },
-            ],
-            "outputs": [
-                {
-                    "name": "hr_idx",
-                    "type_desc": "np.ndarray",
-                    "constraints": "time indices for heart rate values",
-                },
-                {
-                    "name": "heart_rate",
-                    "type_desc": "np.ndarray",
-                    "constraints": "instantaneous heart rate in bpm",
-                },
-            ],
-            "config_params": ["sampling_rate"],
-            "concept_type": "custom",
-            "is_optional": False,
-        },
-    ],
-    "edges": [
-        {
-            "source_id": "bandpass_filter",
-            "target_id": "r_peak_detection",
-            "output_name": "filtered",
-            "input_name": "filtered",
-            "source_type": "np.ndarray",
-            "target_type": "np.ndarray",
-        },
-        {
-            "source_id": "bandpass_filter",
-            "target_id": "peak_correction",
-            "output_name": "filtered",
-            "input_name": "filtered",
-            "source_type": "np.ndarray",
-            "target_type": "np.ndarray",
-        },
-        {
-            "source_id": "r_peak_detection",
-            "target_id": "peak_correction",
-            "output_name": "rpeaks",
-            "input_name": "rpeaks",
-            "source_type": "np.ndarray",
-            "target_type": "np.ndarray",
-        },
-        {
-            "source_id": "bandpass_filter",
-            "target_id": "template_extraction",
-            "output_name": "filtered",
-            "input_name": "filtered",
-            "source_type": "np.ndarray",
-            "target_type": "np.ndarray",
-        },
-        {
-            "source_id": "peak_correction",
-            "target_id": "template_extraction",
-            "output_name": "rpeaks_corrected",
-            "input_name": "rpeaks",
-            "source_type": "np.ndarray",
-            "target_type": "np.ndarray",
-        },
-        {
-            "source_id": "peak_correction",
-            "target_id": "heart_rate_computation",
-            "output_name": "rpeaks_corrected",
-            "input_name": "rpeaks",
-            "source_type": "np.ndarray",
-            "target_type": "np.ndarray",
-        },
-    ],
-})
+_CHUNK_RESPONSE = json.dumps(
+    {
+        "macro_atoms": [
+            {
+                "name": "Bandpass Filter",
+                "description": (
+                    "Apply FIR bandpass filter (3-45 Hz) to remove baseline "
+                    "wander and high-frequency noise from the raw ECG signal"
+                ),
+                "method_names": ["filter_signal"],
+                "inputs": [
+                    {
+                        "name": "signal",
+                        "type_desc": "np.ndarray",
+                        "constraints": "1D raw ECG signal",
+                    },
+                ],
+                "outputs": [
+                    {
+                        "name": "filtered",
+                        "type_desc": "np.ndarray",
+                        "constraints": "bandpass-filtered ECG",
+                    },
+                ],
+                "config_params": ["sampling_rate"],
+                "concept_type": "signal_filter",
+                "is_optional": False,
+            },
+            {
+                "name": "R-Peak Detection",
+                "description": (
+                    "Detect R-peak locations in the filtered ECG signal "
+                    "using the Hamilton segmenter algorithm"
+                ),
+                "method_names": ["detect_rpeaks"],
+                "inputs": [
+                    {
+                        "name": "filtered",
+                        "type_desc": "np.ndarray",
+                        "constraints": "filtered ECG signal",
+                    },
+                ],
+                "outputs": [
+                    {
+                        "name": "rpeaks",
+                        "type_desc": "np.ndarray",
+                        "constraints": "R-peak sample indices",
+                    },
+                ],
+                "config_params": ["sampling_rate"],
+                "concept_type": "custom",
+                "is_optional": False,
+            },
+            {
+                "name": "Peak Correction",
+                "description": (
+                    "Correct R-peak locations to the nearest local maximum "
+                    "within a tolerance window"
+                ),
+                "method_names": ["correct_peaks"],
+                "inputs": [
+                    {
+                        "name": "filtered",
+                        "type_desc": "np.ndarray",
+                        "constraints": "filtered ECG signal",
+                    },
+                    {
+                        "name": "rpeaks",
+                        "type_desc": "np.ndarray",
+                        "constraints": "initial R-peak indices",
+                    },
+                ],
+                "outputs": [
+                    {
+                        "name": "rpeaks_corrected",
+                        "type_desc": "np.ndarray",
+                        "constraints": "corrected R-peak indices",
+                    },
+                ],
+                "config_params": ["sampling_rate"],
+                "concept_type": "custom",
+                "is_optional": False,
+            },
+            {
+                "name": "Template Extraction",
+                "description": (
+                    "Extract individual heartbeat waveform templates around "
+                    "each R-peak with configurable before/after windows"
+                ),
+                "method_names": ["extract_templates"],
+                "inputs": [
+                    {
+                        "name": "filtered",
+                        "type_desc": "np.ndarray",
+                        "constraints": "filtered ECG signal",
+                    },
+                    {
+                        "name": "rpeaks",
+                        "type_desc": "np.ndarray",
+                        "constraints": "corrected R-peak indices",
+                    },
+                ],
+                "outputs": [
+                    {
+                        "name": "templates",
+                        "type_desc": "np.ndarray",
+                        "constraints": "2D array of heartbeat templates",
+                    },
+                    {
+                        "name": "rpeaks_final",
+                        "type_desc": "np.ndarray",
+                        "constraints": "final R-peak indices after template extraction",
+                    },
+                ],
+                "config_params": ["sampling_rate"],
+                "concept_type": "custom",
+                "is_optional": False,
+            },
+            {
+                "name": "Heart Rate Computation",
+                "description": (
+                    "Compute instantaneous heart rate in bpm from R-R "
+                    "intervals with optional smoothing"
+                ),
+                "method_names": ["compute_heart_rate"],
+                "inputs": [
+                    {
+                        "name": "rpeaks",
+                        "type_desc": "np.ndarray",
+                        "constraints": "R-peak sample indices",
+                    },
+                ],
+                "outputs": [
+                    {
+                        "name": "hr_idx",
+                        "type_desc": "np.ndarray",
+                        "constraints": "time indices for heart rate values",
+                    },
+                    {
+                        "name": "heart_rate",
+                        "type_desc": "np.ndarray",
+                        "constraints": "instantaneous heart rate in bpm",
+                    },
+                ],
+                "config_params": ["sampling_rate"],
+                "concept_type": "custom",
+                "is_optional": False,
+            },
+        ],
+        "edges": [
+            {
+                "source_id": "bandpass_filter",
+                "target_id": "r_peak_detection",
+                "output_name": "filtered",
+                "input_name": "filtered",
+                "source_type": "np.ndarray",
+                "target_type": "np.ndarray",
+            },
+            {
+                "source_id": "bandpass_filter",
+                "target_id": "peak_correction",
+                "output_name": "filtered",
+                "input_name": "filtered",
+                "source_type": "np.ndarray",
+                "target_type": "np.ndarray",
+            },
+            {
+                "source_id": "r_peak_detection",
+                "target_id": "peak_correction",
+                "output_name": "rpeaks",
+                "input_name": "rpeaks",
+                "source_type": "np.ndarray",
+                "target_type": "np.ndarray",
+            },
+            {
+                "source_id": "bandpass_filter",
+                "target_id": "template_extraction",
+                "output_name": "filtered",
+                "input_name": "filtered",
+                "source_type": "np.ndarray",
+                "target_type": "np.ndarray",
+            },
+            {
+                "source_id": "peak_correction",
+                "target_id": "template_extraction",
+                "output_name": "rpeaks_corrected",
+                "input_name": "rpeaks",
+                "source_type": "np.ndarray",
+                "target_type": "np.ndarray",
+            },
+            {
+                "source_id": "peak_correction",
+                "target_id": "heart_rate_computation",
+                "output_name": "rpeaks_corrected",
+                "input_name": "rpeaks",
+                "source_type": "np.ndarray",
+                "target_type": "np.ndarray",
+            },
+        ],
+    }
+)
 
 # hoist_state: extract cross-window state model for intermediate pipeline data
-_HOIST_RESPONSE = json.dumps({
-    "state_models": [
-        {
-            "model_name": "ECGPipelineState",
-            "fields": [
-                ["filtered", "np.ndarray"],
-                ["rpeaks", "np.ndarray"],
-            ],
-            "source_attrs": ["filtered", "rpeaks"],
-            "docstring": (
-                "Intermediate pipeline state carrying the filtered ECG "
-                "signal and detected R-peak indices between stages"
-            ),
-        },
-    ],
-})
+_HOIST_RESPONSE = json.dumps(
+    {
+        "state_models": [
+            {
+                "model_name": "ECGPipelineState",
+                "fields": [
+                    ["filtered", "np.ndarray"],
+                    ["rpeaks", "np.ndarray"],
+                ],
+                "source_attrs": ["filtered", "rpeaks"],
+                "docstring": (
+                    "Intermediate pipeline state carrying the filtered ECG "
+                    "signal and detected R-peak indices between stages"
+                ),
+            },
+        ],
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -397,8 +399,13 @@ class TestPhase1Extraction:
     async def test_extracts_all_attributes(self, ecg_source):
         dfg = await extract_data_flow(ecg_source, "ECGProcessor")
         assert set(dfg.all_attributes.keys()) == {
-            "signal", "sampling_rate", "filtered", "rpeaks",
-            "templates", "heart_rate", "hr_idx",
+            "signal",
+            "sampling_rate",
+            "filtered",
+            "rpeaks",
+            "templates",
+            "heart_rate",
+            "hr_idx",
         }
 
     @pytest.mark.asyncio
@@ -406,8 +413,12 @@ class TestPhase1Extraction:
         dfg = await extract_data_flow(ecg_source, "ECGProcessor")
         method_names = {m.name for m in dfg.methods}
         assert method_names == {
-            "__init__", "filter_signal", "detect_rpeaks",
-            "correct_peaks", "extract_templates", "compute_heart_rate",
+            "__init__",
+            "filter_signal",
+            "detect_rpeaks",
+            "correct_peaks",
+            "extract_templates",
+            "compute_heart_rate",
         }
 
     @pytest.mark.asyncio
@@ -458,8 +469,13 @@ class TestPhase1Extraction:
         dfg = await extract_data_flow(ecg_source, "ECGProcessor")
         # init_chain is sorted alphabetically (from _extract_method_fact)
         assert set(dfg.init_chain) == {
-            "signal", "sampling_rate", "filtered", "rpeaks",
-            "templates", "heart_rate", "hr_idx",
+            "signal",
+            "sampling_rate",
+            "filtered",
+            "rpeaks",
+            "templates",
+            "heart_rate",
+            "hr_idx",
         }
 
 
@@ -544,8 +560,12 @@ class TestDataFlowEdges:
         agent, _ = _make_agent()
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
         # 6 data-flow edges + 10 state edges (filtered, rpeaks cross-window)
-        data_edges = [e for e in bundle.cdg.edges if e.source_type != "ECGPipelineState"]
-        state_edges = [e for e in bundle.cdg.edges if e.source_type == "ECGPipelineState"]
+        data_edges = [
+            e for e in bundle.cdg.edges if e.source_type != "ECGPipelineState"
+        ]
+        state_edges = [
+            e for e in bundle.cdg.edges if e.source_type == "ECGPipelineState"
+        ]
         assert len(data_edges) == 6
         assert len(state_edges) > 0
 
@@ -556,9 +576,7 @@ class TestDataFlowEdges:
 
         node_ids = {n.node_id for n in bundle.cdg.nodes}
         for edge in bundle.cdg.edges:
-            assert edge.source_id in node_ids, (
-                f"phantom source: {edge.source_id}"
-            )
+            assert edge.source_id in node_ids, f"phantom source: {edge.source_id}"
 
     @pytest.mark.asyncio
     async def test_no_phantom_edge_targets(self, ecg_source):
@@ -567,9 +585,7 @@ class TestDataFlowEdges:
 
         node_ids = {n.node_id for n in bundle.cdg.nodes}
         for edge in bundle.cdg.edges:
-            assert edge.target_id in node_ids, (
-                f"phantom target: {edge.target_id}"
-            )
+            assert edge.target_id in node_ids, f"phantom target: {edge.target_id}"
 
     @pytest.mark.asyncio
     async def test_edges_match_actual_data_flow(self, ecg_source):
@@ -597,11 +613,9 @@ class TestDataFlowEdges:
             # filter -> extract (filtered signal for templates)
             ("bandpass_filter", "template_extraction", "filtered", "filtered"),
             # correct -> extract (corrected rpeaks for template windows)
-            ("peak_correction", "template_extraction",
-             "rpeaks_corrected", "rpeaks"),
+            ("peak_correction", "template_extraction", "rpeaks_corrected", "rpeaks"),
             # correct -> heart_rate (corrected rpeaks for R-R intervals)
-            ("peak_correction", "heart_rate_computation",
-             "rpeaks_corrected", "rpeaks"),
+            ("peak_correction", "heart_rate_computation", "rpeaks_corrected", "rpeaks"),
         }
 
         assert data_edge_set == expected
@@ -613,8 +627,7 @@ class TestDataFlowEdges:
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
 
         data_edges = [
-            e for e in bundle.cdg.edges
-            if e.source_type != "ECGPipelineState"
+            e for e in bundle.cdg.edges if e.source_type != "ECGPipelineState"
         ]
         for edge in data_edges:
             assert edge.source_type == "np.ndarray"
@@ -627,8 +640,7 @@ class TestDataFlowEdges:
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
 
         state_edges = [
-            e for e in bundle.cdg.edges
-            if e.source_type == "ECGPipelineState"
+            e for e in bundle.cdg.edges if e.source_type == "ECGPipelineState"
         ]
         assert len(state_edges) > 0
         for edge in state_edges:
@@ -667,14 +679,14 @@ class TestGeneratedCode:
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
 
         tree = ast.parse(bundle.generated_atoms)
-        fn_names = [
-            n.name for n in ast.walk(tree)
-            if isinstance(n, ast.FunctionDef)
-        ]
+        fn_names = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
         assert len(fn_names) == 5
         assert set(fn_names) == {
-            "bandpass_filter", "r_peak_detection", "peak_correction",
-            "template_extraction", "heart_rate_computation",
+            "bandpass_filter",
+            "r_peak_detection",
+            "peak_correction",
+            "template_extraction",
+            "heart_rate_computation",
         }
 
     @pytest.mark.asyncio
@@ -689,10 +701,7 @@ class TestGeneratedCode:
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
 
         tree = ast.parse(bundle.generated_witnesses)
-        fn_names = [
-            n.name for n in ast.walk(tree)
-            if isinstance(n, ast.FunctionDef)
-        ]
+        fn_names = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
         assert len(fn_names) == 5
         for name in fn_names:
             assert name.startswith("witness_")

@@ -17,7 +17,6 @@ from ageom.architect.models import DependencyEdge
 from ageom.ingester.base_extractor import SourceLanguage
 from ageom.ingester.models import MethodFact, OracleEdge, RawDataFlowGraph
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -160,18 +159,31 @@ _JULIA_ORACLE_CALL_QUERY = """
 ) @julia.oracle_call
 """
 
-_ORACLE_CALL_METHOD_HINTS: frozenset[str] = frozenset({
-    "log_prob", "logprob", "logdensity", "log_density", "log_likelihood",
-    "likelihood", "evaluate_likelihood", "score", "gradient", "grad",
-    "value_and_grad", "value_and_gradient",
-})
+_ORACLE_CALL_METHOD_HINTS: frozenset[str] = frozenset(
+    {
+        "log_prob",
+        "logprob",
+        "logdensity",
+        "log_density",
+        "log_likelihood",
+        "likelihood",
+        "evaluate_likelihood",
+        "score",
+        "gradient",
+        "grad",
+        "value_and_grad",
+        "value_and_gradient",
+    }
+)
 
 
 def _node_key(node: TSNode) -> tuple[int, int, int, int]:
     """Stable tuple key for a tree-sitter node."""
     return (
-        node.start_point[0], node.start_point[1],
-        node.end_point[0], node.end_point[1],
+        node.start_point[0],
+        node.start_point[1],
+        node.end_point[0],
+        node.end_point[1],
     )
 
 
@@ -204,7 +216,10 @@ def _oracle_outputs_for_method(method_name: str) -> list[str]:
     """Infer oracle output channels from method names."""
     name = method_name.lower()
     outputs: list[str] = []
-    if any(tok in name for tok in ("log_prob", "logprob", "logdensity", "log_density", "score")):
+    if any(
+        tok in name
+        for tok in ("log_prob", "logprob", "logdensity", "log_density", "score")
+    ):
         outputs.append("log_prob")
     if any(tok in name for tok in ("likelihood",)):
         outputs.append("likelihood")
@@ -221,8 +236,12 @@ def _add_edge_if_new(
     edge: DependencyEdge,
 ) -> None:
     key = (
-        edge.source_id, edge.target_id, edge.output_name, edge.input_name,
-        edge.source_type, edge.target_type,
+        edge.source_id,
+        edge.target_id,
+        edge.output_name,
+        edge.input_name,
+        edge.source_type,
+        edge.target_type,
     )
     if key not in seen:
         seen.add(key)
@@ -298,8 +317,11 @@ class _CppClassVisitor:
             if child.type == "field_identifier":
                 field_name = _node_text(child)
             elif child.type in (
-                "primitive_type", "type_identifier", "qualified_identifier",
-                "sized_type_specifier", "template_type",
+                "primitive_type",
+                "type_identifier",
+                "qualified_identifier",
+                "sized_type_specifier",
+                "template_type",
             ):
                 type_parts.append(_node_text(child))
         if field_name:
@@ -321,8 +343,11 @@ class _CppClassVisitor:
                     elif fc.type == "parameter_list":
                         params = self._extract_params(fc)
             elif child.type in (
-                "primitive_type", "type_identifier", "qualified_identifier",
-                "sized_type_specifier", "template_type",
+                "primitive_type",
+                "type_identifier",
+                "qualified_identifier",
+                "sized_type_specifier",
+                "template_type",
             ):
                 return_type = _node_text(child)
 
@@ -360,15 +385,17 @@ class _CppClassVisitor:
 
         is_constructor = method_name == self.class_name
 
-        self.methods.append(MethodFact(
-            name="__init__" if is_constructor else method_name,
-            params=params,
-            return_type=return_type,
-            reads=sorted(reads),
-            writes=sorted(writes),
-            calls=sorted(calls),
-            source_code=method_source,
-        ))
+        self.methods.append(
+            MethodFact(
+                name="__init__" if is_constructor else method_name,
+                params=params,
+                return_type=return_type,
+                reads=sorted(reads),
+                writes=sorted(writes),
+                calls=sorted(calls),
+                source_code=method_source,
+            )
+        )
 
     def _extract_params(self, param_list: TSNode) -> list[str]:
         """Extract parameter names from a parameter_list node."""
@@ -463,14 +490,31 @@ class _CppClassVisitor:
 
 # Known Julia types that form Cartesian product components in Bayesian
 # samplers (e.g., AdvancedHMC.jl composes Metric × Integrator × TrajectorySampler).
-_JULIA_CARTESIAN_PRODUCT_TYPES: frozenset[str] = frozenset({
-    "Metric", "AbstractMetric", "DenseEuclideanMetric", "DiagEuclideanMetric", "UnitEuclideanMetric",
-    "Integrator", "AbstractIntegrator", "Leapfrog", "JitteredLeapfrog", "TemperedLeapfrog",
-    "TrajectorySampler", "AbstractTrajectorySampler", "MultinomialTS", "SliceTS",
-    "AbstractAdaptor", "StanHMCAdaptor", "NesterovDualAveraging",
-    "Hamiltonian", "AbstractHamiltonian",
-    "AbstractMCMCKernel", "HMCKernel",
-})
+_JULIA_CARTESIAN_PRODUCT_TYPES: frozenset[str] = frozenset(
+    {
+        "Metric",
+        "AbstractMetric",
+        "DenseEuclideanMetric",
+        "DiagEuclideanMetric",
+        "UnitEuclideanMetric",
+        "Integrator",
+        "AbstractIntegrator",
+        "Leapfrog",
+        "JitteredLeapfrog",
+        "TemperedLeapfrog",
+        "TrajectorySampler",
+        "AbstractTrajectorySampler",
+        "MultinomialTS",
+        "SliceTS",
+        "AbstractAdaptor",
+        "StanHMCAdaptor",
+        "NesterovDualAveraging",
+        "Hamiltonian",
+        "AbstractHamiltonian",
+        "AbstractMCMCKernel",
+        "HMCKernel",
+    }
+)
 
 
 class _JuliaStructVisitor:
@@ -540,10 +584,18 @@ class _JuliaStructVisitor:
                 # Type parameter — could be bounded by a product type.
                 # Heuristic: field name hints (metric, integrator, sampler, etc.)
                 hint_lower = field_name.lower()
-                if any(kw in hint_lower for kw in (
-                    "metric", "integrator", "sampler", "adaptor",
-                    "hamiltonian", "kernel", "trajectory",
-                )):
+                if any(
+                    kw in hint_lower
+                    for kw in (
+                        "metric",
+                        "integrator",
+                        "sampler",
+                        "adaptor",
+                        "hamiltonian",
+                        "kernel",
+                        "trajectory",
+                    )
+                ):
                     product_group.append(field_name)
         if len(product_group) >= 2:
             self.cartesian_product_fields.append(product_group)
@@ -682,7 +734,8 @@ class _JuliaFunctionVisitor:
                 # Check if this is an assignment target
                 parent = node.parent
                 if parent and parent.type in (
-                    "assignment_expression", "assignment",
+                    "assignment_expression",
+                    "assignment",
                 ):
                     # LHS of assignment → write
                     lhs = parent.children[0] if parent.children else None
@@ -698,13 +751,27 @@ class _JuliaFunctionVisitor:
 
 # Known kthohr/mcmc algorithm entry points that accept a kernel function pointer.
 # Pattern: mcmc::algo(initial_vals, kernel_func, ...) or algo(init, kernel_func, settings)
-_MCMC_ALGO_IDENTIFIERS: frozenset[str] = frozenset({
-    "rwmh", "mala", "hmc", "rmhmc", "aees", "de",
-    "nuts", "hmc_int", "mala_int",
-    # Qualified names: mcmc::algo
-    "mcmc::rwmh", "mcmc::mala", "mcmc::hmc", "mcmc::rmhmc",
-    "mcmc::aees", "mcmc::de", "mcmc::nuts",
-})
+_MCMC_ALGO_IDENTIFIERS: frozenset[str] = frozenset(
+    {
+        "rwmh",
+        "mala",
+        "hmc",
+        "rmhmc",
+        "aees",
+        "de",
+        "nuts",
+        "hmc_int",
+        "mala_int",
+        # Qualified names: mcmc::algo
+        "mcmc::rwmh",
+        "mcmc::mala",
+        "mcmc::hmc",
+        "mcmc::rmhmc",
+        "mcmc::aees",
+        "mcmc::de",
+        "mcmc::nuts",
+    }
+)
 
 
 def _scan_cpp_oracle_edges(root: TSNode, source_code: str) -> list[OracleEdge]:
@@ -732,8 +799,7 @@ def _scan_cpp_oracle_edges(root: TSNode, source_code: str) -> list[OracleEdge]:
         normalized = func_name.lower().replace(" ", "")
         # Check if this is a known MCMC algorithm entry point
         is_mcmc_call = (
-            normalized in _MCMC_ALGO_IDENTIFIERS
-            or func_name in _MCMC_ALGO_IDENTIFIERS
+            normalized in _MCMC_ALGO_IDENTIFIERS or func_name in _MCMC_ALGO_IDENTIFIERS
         )
         if not is_mcmc_call:
             continue
@@ -749,19 +815,18 @@ def _scan_cpp_oracle_edges(root: TSNode, source_code: str) -> list[OracleEdge]:
             continue
 
         # Extract arguments (skip commas and parens)
-        args = [
-            c for c in arg_list.children
-            if c.type not in (",", "(", ")")
-        ]
+        args = [c for c in arg_list.children if c.type not in (",", "(", ")")]
 
         # The kernel function pointer is typically the 2nd argument
         if len(args) >= 2:
             oracle_ref = _node_text(args[1])
-            oracle_edges.append(OracleEdge(
-                caller=func_name,
-                oracle_ref=oracle_ref,
-                call_site=_node_text(call_node),
-            ))
+            oracle_edges.append(
+                OracleEdge(
+                    caller=func_name,
+                    oracle_ref=oracle_ref,
+                    call_site=_node_text(call_node),
+                )
+            )
 
     return oracle_edges
 
@@ -789,7 +854,8 @@ def _extract_cpp_functions(root: TSNode, source_code: str) -> list[MethodFact]:
                                         if pcc.type == "identifier":
                                             params.append(_node_text(pcc))
                 elif fc.type in (
-                    "primitive_type", "type_identifier",
+                    "primitive_type",
+                    "type_identifier",
                     "qualified_identifier",
                 ):
                     return_type = _node_text(fc)
@@ -799,12 +865,14 @@ def _extract_cpp_functions(root: TSNode, source_code: str) -> list[MethodFact]:
             source = "\n".join(source_lines[start:end])
 
             if func_name:
-                methods.append(MethodFact(
-                    name=func_name,
-                    params=params,
-                    return_type=return_type,
-                    source_code=source,
-                ))
+                methods.append(
+                    MethodFact(
+                        name=func_name,
+                        params=params,
+                        return_type=return_type,
+                        source_code=source,
+                    )
+                )
 
     return methods
 
@@ -820,18 +888,17 @@ def _scan_julia_bijectors(source_code: str) -> bool:
     When constrained variables are present, the model requires a
     log-determinant Jacobian correction for correct posterior inference.
     """
-    import re
     # Direct Bijectors.jl API calls and types
     bijector_patterns = [
-        r'\bBijectors\b',
-        r'\bbijector\s*\(',
-        r'\binverse\s*\(\s*\w*[Bb]ij',
-        r'\blogabsdetjac\b',
-        r'\bwith_logabsdet_jacobian\b',
-        r'\bTransformed\s*\(',
-        r'\btransformed\s*\(',
+        r"\bBijectors\b",
+        r"\bbijector\s*\(",
+        r"\binverse\s*\(\s*\w*[Bb]ij",
+        r"\blogabsdetjac\b",
+        r"\bwith_logabsdet_jacobian\b",
+        r"\bTransformed\s*\(",
+        r"\btransformed\s*\(",
         # Common bijector constructors
-        r'\b(?:Logit|Log|Exp|Softplus|OrderedBijector|Stacked)\s*\(',
+        r"\b(?:Logit|Log|Exp|Softplus|OrderedBijector|Stacked)\s*\(",
     ]
     for pat in bijector_patterns:
         if re.search(pat, source_code):
@@ -844,10 +911,10 @@ def _scan_julia_bijectors(source_code: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-
 # ---------------------------------------------------------------------------
 # Rust visitors
 # ---------------------------------------------------------------------------
+
 
 class _RustStructVisitor:
     def __init__(self, node: TSNode) -> None:
@@ -867,7 +934,11 @@ class _RustStructVisitor:
                     for fc in field.children:
                         if fc.type == "field_identifier":
                             fname = _node_text(fc)
-                        elif fc.type in ("type_identifier", "primitive_type", "generic_type"):
+                        elif fc.type in (
+                            "type_identifier",
+                            "primitive_type",
+                            "generic_type",
+                        ):
                             ftype = _node_text(fc)
                     if fname:
                         self.fields.append((fname, ftype or "Any"))
@@ -878,11 +949,11 @@ class _RustStructVisitor:
 
     def _scan_static_shape(self, type_str: str) -> None:
         """Extract compile-time dimension literals from nalgebra types."""
-        import re
+
         # Match SMatrix<scalar, R, C>, SVector<scalar, N>, etc.
         for m in re.finditer(
-            r'\b(?:SMatrix|SVector|OMatrix|OVector)\s*<\s*\w+\s*,'
-            r'\s*(\w+)\s*(?:,\s*(\w+)\s*)?(?:,\s*\w+\s*)*>',
+            r"\b(?:SMatrix|SVector|OMatrix|OVector)\s*<\s*\w+\s*,"
+            r"\s*(\w+)\s*(?:,\s*(\w+)\s*)?(?:,\s*\w+\s*)*>",
             type_str,
         ):
             dim1 = m.group(1)
@@ -893,23 +964,28 @@ class _RustStructVisitor:
             if dim2 and dim2 not in ("f32", "f64", "i32", "i64"):
                 self.static_shape.setdefault(dim2, dim2)
 
+
 # Trait bounds that indicate oracle (stateless log-density/gradient) implementations
-_ORACLE_TRAIT_BOUNDS: frozenset[str] = frozenset({
-    "BatchedGradientTarget",
-    "GradientTarget",
-    "LogDensityTarget",
-    "LogDensity",
-    "DiffFn",
-})
+_ORACLE_TRAIT_BOUNDS: frozenset[str] = frozenset(
+    {
+        "BatchedGradientTarget",
+        "GradientTarget",
+        "LogDensityTarget",
+        "LogDensity",
+        "DiffFn",
+    }
+)
 
 # Trait bounds that indicate conjugate/analytical update implementations
-_CONJUGATE_TRAIT_BOUNDS: frozenset[str] = frozenset({
-    "Estimator",
-    "ConjugateUpdate",
-    "ConjugatePrior",
-    "AnalyticalPosterior",
-    "SufficientStatistic",
-})
+_CONJUGATE_TRAIT_BOUNDS: frozenset[str] = frozenset(
+    {
+        "Estimator",
+        "ConjugateUpdate",
+        "ConjugatePrior",
+        "AnalyticalPosterior",
+        "SufficientStatistic",
+    }
+)
 
 
 class _RustFunctionVisitor:
@@ -963,6 +1039,7 @@ class _RustFunctionVisitor:
             is_conjugate=self.is_conjugate,
         )
 
+
 class TreeSitterExtractor:
     """Extract data-flow graphs from C++ or Julia source via tree-sitter."""
 
@@ -986,8 +1063,12 @@ class TreeSitterExtractor:
             self._rust_trait_query = self._compile_query(_RUST_TRAIT_BOUNDS_QUERY)
             self._rust_oracle_call_query = self._compile_query(_RUST_ORACLE_CALL_QUERY)
         elif language == SourceLanguage.JULIA:
-            self._julia_dispatch_query = self._compile_query(_JULIA_TYPED_DISPATCH_QUERY)
-            self._julia_oracle_call_query = self._compile_query(_JULIA_ORACLE_CALL_QUERY)
+            self._julia_dispatch_query = self._compile_query(
+                _JULIA_TYPED_DISPATCH_QUERY
+            )
+            self._julia_oracle_call_query = self._compile_query(
+                _JULIA_ORACLE_CALL_QUERY
+            )
 
     def _compile_query(self, query_src: str):
         """Compile a tree-sitter query. Returns None if unsupported."""
@@ -1005,6 +1086,7 @@ class TreeSitterExtractor:
             # tree-sitter >= 0.25: Query no longer has .captures();
             # use QueryCursor instead.
             from tree_sitter import QueryCursor
+
             cursor = QueryCursor(query)
             return cursor.captures(root)
         except Exception:
@@ -1044,7 +1126,9 @@ class TreeSitterExtractor:
             if func_expr is None or func_expr.type != "field_expression":
                 continue
 
-            method_nodes = [c for c in func_expr.children if c.type == "field_identifier"]
+            method_nodes = [
+                c for c in func_expr.children if c.type == "field_identifier"
+            ]
             if not method_nodes:
                 continue
             oracle_method = _node_text(method_nodes[-1]).strip()
@@ -1058,22 +1142,32 @@ class TreeSitterExtractor:
             if not oracle_obj:
                 continue
 
-            oracle_anchor = re.sub(r"[^A-Za-z0-9_]+", "_", oracle_obj).strip("_") or "oracle"
-            oracle_node_id = f"oracle_subgraph::{trait_label}::{caller_name}::{oracle_anchor}"
+            oracle_anchor = (
+                re.sub(r"[^A-Za-z0-9_]+", "_", oracle_obj).strip("_") or "oracle"
+            )
+            oracle_node_id = (
+                f"oracle_subgraph::{trait_label}::{caller_name}::{oracle_anchor}"
+            )
 
             edge_key = (caller_name, oracle_node_id)
             if edge_key not in seen_oracle_edges:
                 seen_oracle_edges.add(edge_key)
-                oracle_edges.append(OracleEdge(
-                    caller=caller_name,
-                    oracle_ref=oracle_node_id,
-                    call_site=_node_text(call_node),
-                ))
+                oracle_edges.append(
+                    OracleEdge(
+                        caller=caller_name,
+                        oracle_ref=oracle_node_id,
+                        call_site=_node_text(call_node),
+                    )
+                )
 
-            args_node = next((c for c in call_node.children if c.type == "arguments"), None)
+            args_node = next(
+                (c for c in call_node.children if c.type == "arguments"), None
+            )
             state_vars: list[str] = []
             if args_node is not None:
-                obj_tokens = {tok for tok in re.split(r"[^A-Za-z0-9_]+", oracle_obj) if tok}
+                obj_tokens = {
+                    tok for tok in re.split(r"[^A-Za-z0-9_]+", oracle_obj) if tok
+                }
                 for ident in _extract_identifiers_from_args(args_node):
                     if ident in obj_tokens:
                         continue
@@ -1114,7 +1208,9 @@ class TreeSitterExtractor:
 
         return oracle_edges, inferred_edges, method_state_vars, method_outputs
 
-    def _julia_dispatch_function_keys(self, root: TSNode) -> set[tuple[int, int, int, int]]:
+    def _julia_dispatch_function_keys(
+        self, root: TSNode
+    ) -> set[tuple[int, int, int, int]]:
         """Return function-definition nodes using typed or where-dispatched signatures."""
         captures = self._query_captures(root, self._julia_dispatch_query)
         fn_nodes = captures.get("julia.dispatch_fn", [])
@@ -1189,17 +1285,23 @@ class TreeSitterExtractor:
             if oracle_method.lower() not in _ORACLE_CALL_METHOD_HINTS:
                 continue
 
-            oracle_anchor = re.sub(r"[^A-Za-z0-9_]+", "_", oracle_obj).strip("_") or "oracle"
-            oracle_node_id = f"oracle_subgraph::JuliaDispatch::{caller_name}::{oracle_anchor}"
+            oracle_anchor = (
+                re.sub(r"[^A-Za-z0-9_]+", "_", oracle_obj).strip("_") or "oracle"
+            )
+            oracle_node_id = (
+                f"oracle_subgraph::JuliaDispatch::{caller_name}::{oracle_anchor}"
+            )
 
             edge_key = (caller_name, oracle_node_id)
             if edge_key not in seen_oracle_edges:
                 seen_oracle_edges.add(edge_key)
-                oracle_edges.append(OracleEdge(
-                    caller=caller_name,
-                    oracle_ref=oracle_node_id,
-                    call_site=_node_text(call_node),
-                ))
+                oracle_edges.append(
+                    OracleEdge(
+                        caller=caller_name,
+                        oracle_ref=oracle_node_id,
+                        call_site=_node_text(call_node),
+                    )
+                )
 
             for ident in _extract_identifiers_from_args(args_node):
                 if ident in {oracle_obj, oracle_method}:
@@ -1276,13 +1378,13 @@ class TreeSitterExtractor:
             methods = _extract_cpp_functions(root, source_code)
             oracle_edges = _scan_cpp_oracle_edges(root, source_code)
         elif self.language == SourceLanguage.JULIA:
-            methods, oracle_edges, inferred_edges = self._extract_julia_functions_procedural(
-                root, source_code
+            methods, oracle_edges, inferred_edges = (
+                self._extract_julia_functions_procedural(root, source_code)
             )
             requires_logdet_jacobian = _scan_julia_bijectors(source_code)
         else:
-            methods, oracle_edges, inferred_edges = self._extract_rust_functions_procedural(
-                root, source_code
+            methods, oracle_edges, inferred_edges = (
+                self._extract_rust_functions_procedural(root, source_code)
             )
 
         # Build all_attributes from method reads/writes
@@ -1356,15 +1458,17 @@ class TreeSitterExtractor:
             start = child.start_point[0]
             end = child.end_point[0] + 1
             source = "\n".join(source_lines[start:end])
-            methods.append(MethodFact(
-                name=fv.func_name,
-                params=fv.params,
-                return_type=fv.return_type,
-                reads=sorted(set(fv.reads) | state_vars),
-                writes=sorted(set(fv.writes) | oracle_outputs),
-                source_code=source,
-                is_oracle=is_oracle,
-            ))
+            methods.append(
+                MethodFact(
+                    name=fv.func_name,
+                    params=fv.params,
+                    return_type=fv.return_type,
+                    reads=sorted(set(fv.reads) | state_vars),
+                    writes=sorted(set(fv.writes) | oracle_outputs),
+                    source_code=source,
+                    is_oracle=is_oracle,
+                )
+            )
 
         return methods, oracle_edges, inferred_edges
 
@@ -1400,9 +1504,7 @@ class TreeSitterExtractor:
                 all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
 
         # Init chain from constructor
-        init_method = next(
-            (m for m in visitor.methods if m.name == "__init__"), None
-        )
+        init_method = next((m for m in visitor.methods if m.name == "__init__"), None)
         init_chain = list(init_method.writes) if init_method else []
 
         # Internal call graph
@@ -1453,8 +1555,7 @@ class TreeSitterExtractor:
 
         struct_names = {sv.struct_name for sv in struct_visitors}
         struct_fields = {
-            sv.struct_name: {f[0] for f in sv.fields}
-            for sv in struct_visitors
+            sv.struct_name: {f[0] for f in sv.fields} for sv in struct_visitors
         }
         dispatch_fn_keys = self._julia_dispatch_function_keys(root)
 
@@ -1494,15 +1595,17 @@ class TreeSitterExtractor:
                         for edge in sub_inferred_edges:
                             _add_edge_if_new(inferred_edges, seen_inferred, edge)
 
-                    methods.append(MethodFact(
-                        name=fv.func_name,
-                        params=params,
-                        return_type=fv.return_type,
-                        reads=sorted(set(fv.reads) | state_vars),
-                        writes=sorted(set(fv.writes) | oracle_outputs),
-                        source_code=source,
-                        is_oracle=is_oracle,
-                    ))
+                    methods.append(
+                        MethodFact(
+                            name=fv.func_name,
+                            params=params,
+                            return_type=fv.return_type,
+                            reads=sorted(set(fv.reads) | state_vars),
+                            writes=sorted(set(fv.writes) | oracle_outputs),
+                            source_code=source,
+                            is_oracle=is_oracle,
+                        )
+                    )
 
         # Build all_attributes
         all_attributes: dict[str, list[str]] = {}
@@ -1526,7 +1629,10 @@ class TreeSitterExtractor:
             oracle_edges=oracle_edges,
             inferred_edges=inferred_edges,
         )
-    def _extract_rust_struct(self, root: TSNode, source_code: str, name: str) -> RawDataFlowGraph:
+
+    def _extract_rust_struct(
+        self, root: TSNode, source_code: str, name: str
+    ) -> RawDataFlowGraph:
         struct_nodes = _find_descendants(root, "struct_item")
         target = None
         for sn in struct_nodes:
@@ -1560,9 +1666,7 @@ class TreeSitterExtractor:
 
             if is_target:
                 trait_bounds = self._rust_trait_bounds_for_node(im)
-                oracle_traits = {
-                    t for t in trait_bounds if t in _ORACLE_TRAIT_BOUNDS
-                }
+                oracle_traits = {t for t in trait_bounds if t in _ORACLE_TRAIT_BOUNDS}
                 conjugate_traits = {
                     t for t in trait_bounds if t in _CONJUGATE_TRAIT_BOUNDS
                 }
@@ -1589,10 +1693,12 @@ class TreeSitterExtractor:
                         oracle_edges.extend(sub_oracle_edges)
                         for edge in sub_inferred_edges:
                             _add_edge_if_new(inferred_edges, seen_inferred, edge)
-                        fact = fact.model_copy(update={
-                            "reads": sorted(set(fact.reads) | state_vars),
-                            "writes": sorted(set(fact.writes) | oracle_outputs),
-                        })
+                        fact = fact.model_copy(
+                            update={
+                                "reads": sorted(set(fact.reads) | state_vars),
+                                "writes": sorted(set(fact.writes) | oracle_outputs),
+                            }
+                        )
 
                     methods.append(fact)
 
@@ -1628,7 +1734,9 @@ class TreeSitterExtractor:
                 fv.visit()
                 fn_traits = self._rust_trait_bounds_for_node(fn)
                 oracle_traits = {t for t in fn_traits if t in _ORACLE_TRAIT_BOUNDS}
-                conjugate_traits = {t for t in fn_traits if t in _CONJUGATE_TRAIT_BOUNDS}
+                conjugate_traits = {
+                    t for t in fn_traits if t in _CONJUGATE_TRAIT_BOUNDS
+                }
                 if oracle_traits:
                     fv.is_oracle = True
                 if conjugate_traits:
@@ -1641,16 +1749,16 @@ class TreeSitterExtractor:
                         sub_inferred_edges,
                         state_vars,
                         oracle_outputs,
-                    ) = self._build_rust_oracle_subgraph(
-                        fn, fact.name, oracle_traits
-                    )
+                    ) = self._build_rust_oracle_subgraph(fn, fact.name, oracle_traits)
                     oracle_edges.extend(sub_oracle_edges)
                     for edge in sub_inferred_edges:
                         _add_edge_if_new(inferred_edges, seen_inferred, edge)
-                    fact = fact.model_copy(update={
-                        "reads": sorted(set(fact.reads) | state_vars),
-                        "writes": sorted(set(fact.writes) | oracle_outputs),
-                    })
+                    fact = fact.model_copy(
+                        update={
+                            "reads": sorted(set(fact.reads) | state_vars),
+                            "writes": sorted(set(fact.writes) | oracle_outputs),
+                        }
+                    )
 
                 methods.append(fact)
         return methods, oracle_edges, inferred_edges

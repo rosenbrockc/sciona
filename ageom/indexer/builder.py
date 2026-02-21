@@ -89,9 +89,7 @@ class SemanticIndexImpl:
         query_vec = self._embedder.embed(query_text)
         return self._store.search(query_vec, k=k)
 
-    def search_by_type(
-        self, type_signature: str, k: int = 10
-    ) -> list[Declaration]:
+    def search_by_type(self, type_signature: str, k: int = 10) -> list[Declaration]:
         """Search by type signature.
 
         For Lean: delegates to lean-explore's hybrid search.

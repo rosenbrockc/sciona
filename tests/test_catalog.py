@@ -1,7 +1,6 @@
 """Tests for ageom.architect.catalog — PrimitiveCatalog."""
 
 import pytest
-from pathlib import Path
 
 from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import (
@@ -9,7 +8,6 @@ from ageom.architect.models import (
     AlgorithmicPrimitive,
     ConceptType,
     IOSpec,
-    NodeStatus,
 )
 
 

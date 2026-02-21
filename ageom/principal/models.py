@@ -23,9 +23,7 @@ class NodeTelemetry(BaseModel, frozen=True):
     execution_time_ms: float = Field(
         ..., description="Wall-clock execution time in milliseconds."
     )
-    peak_memory_bytes: int = Field(
-        ..., description="Peak resident memory in bytes."
-    )
+    peak_memory_bytes: int = Field(..., description="Peak resident memory in bytes.")
     error_expansion: float = Field(
         ...,
         description="Numerical error expansion factor relative to reference.",

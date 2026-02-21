@@ -15,7 +15,6 @@ from langgraph.graph import END, StateGraph
 
 from ageom.architect.graph import DecompositionAgent
 from ageom.architect.handoff import CDGExport
-from ageom.architect.models import NodeStatus
 from ageom.principal.backprop import CreditAssigner
 from ageom.principal.evaluator import ExecutionSandbox
 from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
@@ -122,7 +121,9 @@ async def evaluate_run(state: PrincipalState, config: dict) -> dict:
 
     sandbox = deps.sandbox
     benchmark = await sandbox.evaluate(
-        state.export_bundle, state.dataset_path, state.metric,
+        state.export_bundle,
+        state.dataset_path,
+        state.metric,
     )
     state.benchmark = benchmark
 
@@ -131,14 +132,17 @@ async def evaluate_run(state: PrincipalState, config: dict) -> dict:
         state.best_loss = benchmark.global_loss
         logger.info(
             "Trial %d: new best loss = %.6f",
-            state.current_trial, benchmark.global_loss,
+            state.current_trial,
+            benchmark.global_loss,
         )
 
-    state.trial_history.append({
-        "trial": state.current_trial,
-        "loss": benchmark.global_loss,
-        "thread_id": state.thread_id,
-    })
+    state.trial_history.append(
+        {
+            "trial": state.current_trial,
+            "loss": benchmark.global_loss,
+            "thread_id": state.thread_id,
+        }
+    )
 
     return {"benchmark": benchmark}
 
@@ -150,7 +154,10 @@ async def compute_gradients(state: PrincipalState, config: dict) -> dict:
 
     assigner = CreditAssigner()
     gradients = assigner.compute_gradients(
-        state.cdg, state.benchmark, state.ghost_report, state.metric,
+        state.cdg,
+        state.benchmark,
+        state.ghost_report,
+        state.metric,
     )
 
     if not gradients:
@@ -164,7 +171,9 @@ async def compute_gradients(state: PrincipalState, config: dict) -> dict:
 
     logger.info(
         "Trial %d bottleneck: %s (%.1f%%)",
-        state.current_trial, top.node_id, top.gradient_score,
+        state.current_trial,
+        top.node_id,
+        top.gradient_score,
     )
     return {
         "top_gradient": top,
@@ -231,7 +240,8 @@ async def time_travel_update(state: PrincipalState, config: dict) -> dict:
 
     logger.info(
         "Time-travel: forked at checkpoint %s -> thread %s",
-        target_cp, new_thread_id,
+        target_cp,
+        new_thread_id,
     )
 
     return {"cdg": cdg, "thread_id": new_thread_id}
@@ -284,7 +294,7 @@ class PrincipalDeps:
     architect: DecompositionAgent
     sandbox: ExecutionSandbox
     match_results_fn: Any = None  # Callable[[CDGExport], list[MatchResult]]
-    synthesize_fn: Any = None     # Callable[[CDGExport, list], Awaitable[ExportBundle]]
+    synthesize_fn: Any = None  # Callable[[CDGExport, list], Awaitable[ExportBundle]]
 
 
 # ---------------------------------------------------------------------------
@@ -305,16 +315,19 @@ def build_principal_graph() -> StateGraph:
     graph.set_entry_point("seed")
     graph.add_edge("seed", "forward")
     graph.add_conditional_edges(
-        "forward", route_after_forward,
+        "forward",
+        route_after_forward,
         {"evaluate": "evaluate", "time_travel": "time_travel", "end": END},
     )
     graph.add_edge("evaluate", "gradients")
     graph.add_conditional_edges(
-        "gradients", route_after_gradients,
+        "gradients",
+        route_after_gradients,
         {"time_travel": "time_travel", "end": END},
     )
     graph.add_conditional_edges(
-        "time_travel", route_after_update,
+        "time_travel",
+        route_after_update,
         {"forward": "forward", "end": END},
     )
 

@@ -8,7 +8,6 @@ import pytest
 
 from ageom.ingester.extractor import extract_data_flow
 
-
 # ---------------------------------------------------------------------------
 # Fixtures: write minimal Python classes to tmp_path
 # ---------------------------------------------------------------------------

@@ -6,7 +6,6 @@ for Bayesian atoms, and chunker prompt content.
 
 from __future__ import annotations
 
-import pytest
 
 from ageom.architect.models import ConceptType, IOSpec
 from ageom.ingester.models import (
@@ -24,7 +23,6 @@ from ageom.ingester.emitter import (
     emit_ingestion_bundle,
 )
 from ageom.ingester.prompts import SEMANTIC_CHUNK_SYSTEM
-
 
 # ---------------------------------------------------------------------------
 # ConceptType enums
@@ -111,8 +109,13 @@ class TestStochasticTraceSpec:
 
 class TestChunkerPrompts:
     def test_prompt_contains_bayesian_types(self):
-        for keyword in ["sampler", "log_prob", "posterior_update",
-                        "variational_inference", "prior_init"]:
+        for keyword in [
+            "sampler",
+            "log_prob",
+            "posterior_update",
+            "variational_inference",
+            "prior_init",
+        ]:
             assert keyword in SEMANTIC_CHUNK_SYSTEM
 
     def test_prompt_contains_bayesian_patterns(self):
@@ -145,7 +148,9 @@ def _make_atom(name: str, concept_type: ConceptType) -> MacroAtomSpec:
 class TestBayesianWitnessGeneration:
     def test_prior_init_witness(self):
         atom = _make_atom("Init Prior", ConceptType.PRIOR_INIT)
-        lines = _generate_bayesian_witness(atom, "init_prior", "witness_init_prior", False)
+        lines = _generate_bayesian_witness(
+            atom, "init_prior", "witness_init_prior", False
+        )
         code = "\n".join(lines)
         assert "AbstractDistribution" in code
         assert "event_shape" in code
@@ -153,7 +158,9 @@ class TestBayesianWitnessGeneration:
 
     def test_log_prob_witness(self):
         atom = _make_atom("Evaluate Log Prob", ConceptType.LOG_PROB)
-        lines = _generate_bayesian_witness(atom, "evaluate_log_prob", "witness_evaluate_log_prob", False)
+        lines = _generate_bayesian_witness(
+            atom, "evaluate_log_prob", "witness_evaluate_log_prob", False
+        )
         code = "\n".join(lines)
         assert "AbstractScalar" in code
         assert "dist" in code
@@ -161,7 +168,9 @@ class TestBayesianWitnessGeneration:
 
     def test_sampler_witness(self):
         atom = _make_atom("MCMC Step", ConceptType.SAMPLER)
-        lines = _generate_bayesian_witness(atom, "mcmc_step", "witness_mcmc_step", False)
+        lines = _generate_bayesian_witness(
+            atom, "mcmc_step", "witness_mcmc_step", False
+        )
         code = "\n".join(lines)
         assert "AbstractMCMCTrace" in code
         assert "AbstractRNGState" in code
@@ -169,14 +178,18 @@ class TestBayesianWitnessGeneration:
 
     def test_posterior_update_witness(self):
         atom = _make_atom("Update Posterior", ConceptType.POSTERIOR_UPDATE)
-        lines = _generate_bayesian_witness(atom, "update_posterior", "witness_update_posterior", False)
+        lines = _generate_bayesian_witness(
+            atom, "update_posterior", "witness_update_posterior", False
+        )
         code = "\n".join(lines)
         assert "assert_conjugate_to" in code
         assert "prior" in code
 
     def test_vi_elbo_witness(self):
         atom = _make_atom("Compute ELBO", ConceptType.VARIATIONAL_INFERENCE)
-        lines = _generate_bayesian_witness(atom, "compute_elbo", "witness_compute_elbo", False)
+        lines = _generate_bayesian_witness(
+            atom, "compute_elbo", "witness_compute_elbo", False
+        )
         code = "\n".join(lines)
         assert "q_dist" in code
         assert "p_dist" in code

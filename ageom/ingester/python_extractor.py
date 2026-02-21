@@ -23,19 +23,40 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 # AST patterns indicating marginal computation via broadcasting / np.sum(axis=...)
-_MARGINAL_CALL_PATTERNS: frozenset[str] = frozenset({
-    "np.sum", "numpy.sum", "jnp.sum", "jax.numpy.sum",
-    "np.einsum", "numpy.einsum", "jnp.einsum",
-    "np.tensordot", "numpy.tensordot", "jnp.tensordot",
-    "logsumexp", "scipy.special.logsumexp", "jax.scipy.special.logsumexp",
-})
+_MARGINAL_CALL_PATTERNS: frozenset[str] = frozenset(
+    {
+        "np.sum",
+        "numpy.sum",
+        "jnp.sum",
+        "jax.numpy.sum",
+        "np.einsum",
+        "numpy.einsum",
+        "jnp.einsum",
+        "np.tensordot",
+        "numpy.tensordot",
+        "jnp.tensordot",
+        "logsumexp",
+        "scipy.special.logsumexp",
+        "jax.scipy.special.logsumexp",
+    }
+)
 
 # Keywords in function/variable names hinting at factor-graph structure
-_FACTOR_GRAPH_HINTS: frozenset[str] = frozenset({
-    "message", "factor", "variable_node", "factor_node",
-    "belief", "marginal", "normalize_message", "sum_product",
-    "bp_", "belief_prop", "factor_graph",
-})
+_FACTOR_GRAPH_HINTS: frozenset[str] = frozenset(
+    {
+        "message",
+        "factor",
+        "variable_node",
+        "factor_node",
+        "belief",
+        "marginal",
+        "normalize_message",
+        "sum_product",
+        "bp_",
+        "belief_prop",
+        "factor_graph",
+    }
+)
 
 
 def _detect_factor_graph_patterns(source_code: str) -> list[str]:
@@ -56,7 +77,6 @@ def _detect_factor_graph_patterns(source_code: str) -> list[str]:
             continue
 
         method_name = node.name
-        method_source = ast.get_source_segment(source_code, node) or ""
 
         # Check 1: function name hints at factor graph
         name_lower = method_name.lower()
@@ -130,9 +150,12 @@ def _enrich_with_factor_graph_metadata(dfg: RawDataFlowGraph) -> RawDataFlowGrap
 # ---------------------------------------------------------------------------
 
 # JAX primitives that map to oracle (stateless log-density/gradient) nodes
-_JAX_ORACLE_PRIMITIVES: frozenset[str] = frozenset({
-    "custom_jvp_call", "custom_vjp_call",
-})
+_JAX_ORACLE_PRIMITIVES: frozenset[str] = frozenset(
+    {
+        "custom_jvp_call",
+        "custom_vjp_call",
+    }
+)
 
 
 class JAXprExtractor:
@@ -206,7 +229,7 @@ def _extract_jaxpr_facts(source_code: str) -> dict:
         # Detect jax.grad(target_fn) or jax.value_and_grad(target_fn)
         if isinstance(node, ast.Call):
             call_src = ast.get_source_segment(source_code, node) or ""
-            if re.search(r'jax\.(value_and_)?grad\s*\(', call_src):
+            if re.search(r"jax\.(value_and_)?grad\s*\(", call_src):
                 # The first positional arg is the target function
                 if node.args:
                     arg = node.args[0]
@@ -217,7 +240,7 @@ def _extract_jaxpr_facts(source_code: str) -> dict:
         # Detect functions that contain jax.grad calls
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             func_src = ast.get_source_segment(source_code, node) or ""
-            if re.search(r'jax\.(value_and_)?grad\s*\(', func_src):
+            if re.search(r"jax\.(value_and_)?grad\s*\(", func_src):
                 grad_closure_funcs.add(node.name)
 
     facts["oracle_functions"] = sorted(grad_wrapped)
@@ -227,40 +250,57 @@ def _extract_jaxpr_facts(source_code: str) -> dict:
     # z, Z, noise, eps, epsilon that are assigned with jax.random.* or
     # np.random.* calls.
     noise_pattern = re.compile(
-        r'^(\w+)\s*=\s*(?:jax\.random\.\w+|np\.random\.\w+|'
-        r'numpy\.random\.\w+|jnp\.\w+)',
+        r"^(\w+)\s*=\s*(?:jax\.random\.\w+|np\.random\.\w+|"
+        r"numpy\.random\.\w+|jnp\.\w+)",
         re.MULTILINE,
     )
-    noise_name_hints = {"z", "Z", "noise", "eps", "epsilon", "eta", "xi",
-                        "noise_matrix", "z_samples", "z_noise", "static_noise"}
+    noise_name_hints = {
+        "z",
+        "Z",
+        "noise",
+        "eps",
+        "epsilon",
+        "eta",
+        "xi",
+        "noise_matrix",
+        "z_samples",
+        "z_noise",
+        "static_noise",
+    }
 
     for m in noise_pattern.finditer(source_code):
         var_name = m.group(1)
         # Check if the variable name hints at frozen stochasticity
-        if var_name in noise_name_hints or var_name.lower().startswith(("z_", "noise_", "eps_")):
+        if var_name in noise_name_hints or var_name.lower().startswith(
+            ("z_", "noise_", "eps_")
+        ):
             # Check it's not inside a grad-wrapped function
-            line_no = source_code[:m.start()].count("\n")
+            line_no = source_code[: m.start()].count("\n")
             is_inside_grad = False
             try:
                 parsed = ast.parse(source_code)
                 for func_node in ast.walk(parsed):
                     if isinstance(func_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        if (func_node.name in grad_wrapped
-                                and hasattr(func_node, 'lineno')
-                                and func_node.lineno <= line_no + 1
-                                and hasattr(func_node, 'end_lineno')
-                                and (func_node.end_lineno or 0) >= line_no + 1):
+                        if (
+                            func_node.name in grad_wrapped
+                            and hasattr(func_node, "lineno")
+                            and func_node.lineno <= line_no + 1
+                            and hasattr(func_node, "end_lineno")
+                            and (func_node.end_lineno or 0) >= line_no + 1
+                        ):
                             is_inside_grad = True
                             break
             except SyntaxError:
                 pass
 
             if not is_inside_grad:
-                facts["static_init_edges"].append({
-                    "var_name": var_name,
-                    "line": line_no + 1,
-                    "context": "frozen_stochasticity",
-                })
+                facts["static_init_edges"].append(
+                    {
+                        "var_name": var_name,
+                        "line": line_no + 1,
+                        "context": "frozen_stochasticity",
+                    }
+                )
 
     return facts
 
@@ -289,17 +329,21 @@ def _merge_jaxpr_facts(dfg: RawDataFlowGraph, jaxpr_facts: dict) -> RawDataFlowG
         # method that references this variable
         for mf in dfg.methods:
             if var_name in mf.reads or var_name in (mf.source_code or ""):
-                new_edges.append(DependencyEdge(
-                    source_id=f"static_init:{var_name}",
-                    target_id=mf.name,
-                    output_name=var_name,
-                    input_name=var_name,
-                    source_type="ndarray",
-                    target_type="ndarray",
-                ))
+                new_edges.append(
+                    DependencyEdge(
+                        source_id=f"static_init:{var_name}",
+                        target_id=mf.name,
+                        output_name=var_name,
+                        input_name=var_name,
+                        source_type="ndarray",
+                        target_type="ndarray",
+                    )
+                )
                 break
 
-    return dfg.model_copy(update={
-        "methods": updated_methods,
-        "inferred_edges": new_edges,
-    })
+    return dfg.model_copy(
+        update={
+            "methods": updated_methods,
+            "inferred_edges": new_edges,
+        }
+    )

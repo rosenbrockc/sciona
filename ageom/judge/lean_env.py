@@ -90,7 +90,9 @@ def _parse_lean_output(raw: str) -> CompilerFeedback:
             errors.append(line_stripped)
         elif "warning" in line_stripped.lower():
             warnings.append(line_stripped)
-        elif re.match(r"^⊢", line_stripped) or "unsolved goals" in line_stripped.lower():
+        elif (
+            re.match(r"^⊢", line_stripped) or "unsolved goals" in line_stripped.lower()
+        ):
             goals.append(line_stripped)
 
     return CompilerFeedback(

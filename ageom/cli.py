@@ -6,11 +6,25 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
+import socketserver
 import sys
+import threading
+import webbrowser
+from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ageom.config import AgeomConfig
+    from ageom.hunter.llm import LLMClient
+    from ageom.protocols import ProofEnvironment
+    from ageom.types import Prover
 
 
-def _create_llm(args: argparse.Namespace, config: "AgeomConfig", round_name: str) -> "LLMClient":
+def _create_llm(
+    args: argparse.Namespace, config: "AgeomConfig", round_name: str
+) -> "LLMClient":
     """Create an LLM client with per-round provider/model overrides.
 
     Args:
@@ -18,7 +32,7 @@ def _create_llm(args: argparse.Namespace, config: "AgeomConfig", round_name: str
         config: The AgeomConfig instance.
         round_name: One of "architect", "hunter", "synthesizer" to select per-round overrides.
     """
-    from ageom.hunter.llm import LLMClient, create_llm_client
+    from ageom.hunter.llm import create_llm_client
 
     provider_attr = f"{round_name}_llm_provider"
     model_attr = f"{round_name}_llm_model"
@@ -109,15 +123,18 @@ def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironm
     """
     if prover.value == "lean4":
         from ageom.judge.lean_env import LeanEnvironment
+
         return LeanEnvironment(config.lean_toolchain)
     elif prover.value == "python":
         from ageom.judge.python_env import PythonEnvironment
+
         return PythonEnvironment(
             mypy_path=config.python_mypy_path,
             python_path=config.python_path,
         )
     else:
         from ageom.judge.coq_env import CoqEnvironment
+
         return CoqEnvironment(config.coq_project_path)
 
 
@@ -134,26 +151,41 @@ def main() -> None:
 
     build_parser = index_sub.add_parser("build", help="Build FAISS index from library")
     build_parser.add_argument(
-        "--prover", choices=["lean4", "coq", "python"], required=True, help="Proof assistant"
+        "--prover",
+        choices=["lean4", "coq", "python"],
+        required=True,
+        help="Proof assistant",
     )
     build_parser.add_argument(
         "--path", type=str, default="", help="Path to Coq project (for --prover coq)"
     )
     build_parser.add_argument(
-        "--packages", type=str, default=None,
+        "--packages",
+        type=str,
+        default=None,
         help="Comma-separated Python packages to index (for --prover python, default: numpy,scipy)",
     )
     build_parser.add_argument(
-        "--output", type=str, default=None, help="Output directory for index (default: from .env)"
+        "--output",
+        type=str,
+        default=None,
+        help="Output directory for index (default: from .env)",
     )
 
     # --- skill ---
-    skill_parser = subparsers.add_parser("skill", help="Manage the algorithmic skill catalog")
+    skill_parser = subparsers.add_parser(
+        "skill", help="Manage the algorithmic skill catalog"
+    )
     skill_sub = skill_parser.add_subparsers(dest="skill_command")
 
-    ingest_parser = skill_sub.add_parser("ingest", help="Ingest primitives from a source")
+    ingest_parser = skill_sub.add_parser(
+        "ingest", help="Ingest primitives from a source"
+    )
     ingest_parser.add_argument(
-        "--source", choices=["clrs", "coq100"], required=True, help="Source to ingest from"
+        "--source",
+        choices=["clrs", "coq100"],
+        required=True,
+        help="Source to ingest from",
     )
     ingest_parser.add_argument(
         "--path", type=str, required=True, help="Path to the cloned source repo"
@@ -162,9 +194,14 @@ def main() -> None:
         "--output", type=str, default=None, help="Output path for catalog JSON"
     )
 
-    skill_index_parser = skill_sub.add_parser("index", help="Build FAISS skill index from catalog")
+    skill_index_parser = skill_sub.add_parser(
+        "index", help="Build FAISS skill index from catalog"
+    )
     skill_index_parser.add_argument(
-        "--catalog", type=str, default=None, help="Path to catalog JSON (default: auto-detect)"
+        "--catalog",
+        type=str,
+        default=None,
+        help="Path to catalog JSON (default: auto-detect)",
     )
     skill_index_parser.add_argument(
         "--output", type=str, default=None, help="Output directory for skill index"
@@ -185,16 +222,24 @@ def main() -> None:
     )
     decompose_parser.add_argument("goal", type=str, help="High-level goal to decompose")
     decompose_parser.add_argument(
-        "--max-depth", type=int, default=None, help="Max decomposition depth (default: from config)"
+        "--max-depth",
+        type=int,
+        default=None,
+        help="Max decomposition depth (default: from config)",
     )
     decompose_parser.add_argument(
         "--output", type=str, default=None, help="Output path for CDG JSON"
     )
     decompose_parser.add_argument(
-        "--catalog", type=str, default=None, help="Path to catalog JSON (default: auto-detect)"
+        "--catalog",
+        type=str,
+        default=None,
+        help="Path to catalog JSON (default: auto-detect)",
     )
     decompose_parser.add_argument(
-        "--thread-id", type=str, default=None,
+        "--thread-id",
+        type=str,
+        default=None,
         help="Checkpoint thread ID (auto-generated if omitted)",
     )
     decompose_parser.add_argument(
@@ -216,11 +261,15 @@ def main() -> None:
         help="Max output tokens for decomposition LLM calls",
     )
     decompose_parser.add_argument(
-        "--no-persist", action="store_true", default=False,
+        "--no-persist",
+        action="store_true",
+        default=False,
         help="Disable PostgreSQL persistence (use in-memory only)",
     )
     decompose_parser.add_argument(
-        "--trace", action="store_true", default=False,
+        "--trace",
+        action="store_true",
+        default=False,
         help="Write pipeline event trace to {output_dir}/trace.jsonl",
     )
 
@@ -235,15 +284,21 @@ def main() -> None:
         "visualize", help="Open browser-based CDG visualization"
     )
     viz_parser.add_argument(
-        "cdg_file", nargs="?", default=None,
+        "cdg_file",
+        nargs="?",
+        default=None,
         help="Path to CDG JSON to pre-load (optional)",
     )
     viz_parser.add_argument(
-        "--port", type=int, default=0,
+        "--port",
+        type=int,
+        default=0,
         help="HTTP server port (default: auto-pick)",
     )
     viz_parser.add_argument(
-        "--no-serve", action="store_true", default=False,
+        "--no-serve",
+        action="store_true",
+        default=False,
         help="Open file:// directly instead of starting a local server",
     )
 
@@ -256,13 +311,18 @@ def main() -> None:
         "matches_file", type=str, help="Path to match results JSON"
     )
     assemble_parser.add_argument(
-        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
+        "--prover",
+        choices=["lean4", "coq", "python"],
+        default="lean4",
+        help="Proof assistant",
     )
     assemble_parser.add_argument(
         "--output", type=str, default=None, help="Output path for generated source file"
     )
     assemble_parser.add_argument(
-        "--check", action="store_true", default=False,
+        "--check",
+        action="store_true",
+        default=False,
         help="Also compile the skeleton and report errors",
     )
 
@@ -275,13 +335,18 @@ def main() -> None:
         "matches_file", type=str, help="Path to match results JSON"
     )
     synth_parser.add_argument(
-        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
+        "--prover",
+        choices=["lean4", "coq", "python"],
+        default="lean4",
+        help="Proof assistant",
     )
     synth_parser.add_argument(
         "--output", type=str, default=None, help="Output path for final verified source"
     )
     synth_parser.add_argument(
-        "--max-iterations", type=int, default=None,
+        "--max-iterations",
+        type=int,
+        default=None,
         help="Max repair iterations (default: from config)",
     )
     synth_parser.add_argument(
@@ -291,15 +356,21 @@ def main() -> None:
         help="LLM provider override (default: from config)",
     )
     synth_parser.add_argument(
-        "--llm-model", type=str, default=None,
+        "--llm-model",
+        type=str,
+        default=None,
         help="LLM model override (default: from config)",
     )
     synth_parser.add_argument(
-        "--llm-max-tokens", type=int, default=None,
+        "--llm-max-tokens",
+        type=int,
+        default=None,
         help="Max output tokens for LLM calls",
     )
     synth_parser.add_argument(
-        "--trace", action="store_true", default=False,
+        "--trace",
+        action="store_true",
+        default=False,
         help="Write pipeline event trace to {output_dir}/trace.jsonl",
     )
 
@@ -309,7 +380,10 @@ def main() -> None:
     )
     run_parser.add_argument("goal", type=str, help="High-level goal")
     run_parser.add_argument(
-        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
+        "--prover",
+        choices=["lean4", "coq", "python"],
+        default="lean4",
+        help="Proof assistant",
     )
     run_parser.add_argument(
         "--max-rounds", type=int, default=3, help="Max refinement rounds (default: 3)"
@@ -321,19 +395,28 @@ def main() -> None:
         "--catalog", type=str, default=None, help="Path to catalog JSON"
     )
     run_parser.add_argument(
-        "--llm-provider", choices=["anthropic", "codex", "llama_cpp"], default=None,
+        "--llm-provider",
+        choices=["anthropic", "codex", "llama_cpp"],
+        default=None,
         help="LLM provider override",
     )
-    run_parser.add_argument("--llm-model", type=str, default=None, help="LLM model override")
-    run_parser.add_argument("--llm-max-tokens", type=int, default=None, help="Max output tokens")
-    run_parser.add_argument("--trace", action="store_true", default=False, help="Write trace.jsonl")
+    run_parser.add_argument(
+        "--llm-model", type=str, default=None, help="LLM model override"
+    )
+    run_parser.add_argument(
+        "--llm-max-tokens", type=int, default=None, help="Max output tokens"
+    )
+    run_parser.add_argument(
+        "--trace", action="store_true", default=False, help="Write trace.jsonl"
+    )
 
     # --- export ---
     export_parser = subparsers.add_parser(
         "export", help="Export verified source to compiled artifacts and FFI bindings"
     )
     export_parser.add_argument(
-        "source_file", type=str,
+        "source_file",
+        type=str,
         help="Path to verified .lean/.v file or SynthesisResult JSON",
     )
     export_parser.add_argument(
@@ -343,15 +426,21 @@ def main() -> None:
         help="Export target (default: lean-lib)",
     )
     export_parser.add_argument(
-        "--output-dir", type=str, default=None,
+        "--output-dir",
+        type=str,
+        default=None,
         help="Output directory (default: from config)",
     )
     export_parser.add_argument(
-        "--optimize", action="store_true", default=False,
+        "--optimize",
+        action="store_true",
+        default=False,
         help="Run hot-path optimizer before export",
     )
     export_parser.add_argument(
-        "--prover", choices=["lean4", "coq", "python"], default="lean4",
+        "--prover",
+        choices=["lean4", "coq", "python"],
+        default="lean4",
         help="Proof assistant (default: lean4)",
     )
 
@@ -361,7 +450,9 @@ def main() -> None:
     )
     optimize_parser.add_argument("goal", type=str, help="High-level goal to optimise")
     optimize_parser.add_argument(
-        "--benchmark", type=str, required=True,
+        "--benchmark",
+        type=str,
+        required=True,
         help="Path to benchmark dataset (CSV or JSON)",
     )
     optimize_parser.add_argument(
@@ -371,43 +462,65 @@ def main() -> None:
         help="Optimisation metric (default: latency)",
     )
     optimize_parser.add_argument(
-        "--trials", type=int, default=50,
+        "--trials",
+        type=int,
+        default=50,
         help="Number of optimisation trials (default: 50)",
     )
     optimize_parser.add_argument(
-        "--prover", choices=["lean4", "coq", "python"], default="python",
+        "--prover",
+        choices=["lean4", "coq", "python"],
+        default="python",
         help="Proof assistant (default: python)",
     )
     optimize_parser.add_argument(
-        "--catalog", type=str, default=None,
+        "--catalog",
+        type=str,
+        default=None,
         help="Path to catalog JSON",
     )
     optimize_parser.add_argument(
-        "--llm-provider", choices=["anthropic", "codex", "llama_cpp"], default=None,
+        "--llm-provider",
+        choices=["anthropic", "codex", "llama_cpp"],
+        default=None,
         help="LLM provider override",
     )
-    optimize_parser.add_argument("--llm-model", type=str, default=None, help="LLM model override")
-    optimize_parser.add_argument("--llm-max-tokens", type=int, default=None, help="Max output tokens")
     optimize_parser.add_argument(
-        "--no-persist", action="store_true", default=False,
+        "--llm-model", type=str, default=None, help="LLM model override"
+    )
+    optimize_parser.add_argument(
+        "--llm-max-tokens", type=int, default=None, help="Max output tokens"
+    )
+    optimize_parser.add_argument(
+        "--no-persist",
+        action="store_true",
+        default=False,
         help="Disable PostgreSQL persistence",
     )
     optimize_parser.add_argument(
-        "--timeout", type=float, default=120.0,
+        "--timeout",
+        type=float,
+        default=120.0,
         help="Per-trial subprocess timeout in seconds (default: 120)",
     )
 
     # --- ingest ---
     ingest_parser = subparsers.add_parser(
-        "ingest", help="Ingest an existing Python class into the atom framework (Round 0)"
+        "ingest",
+        help="Ingest an existing Python class into the atom framework (Round 0)",
     )
     ingest_parser.add_argument("source", type=str, help="Path to Python source file")
     ingest_parser.add_argument(
-        "--class", dest="class_name", type=str, required=True,
+        "--class",
+        dest="class_name",
+        type=str,
+        required=True,
         help="Name of the class to ingest",
     )
     ingest_parser.add_argument(
-        "--output", type=str, default=None,
+        "--output",
+        type=str,
+        default=None,
         help="Output directory for generated files",
     )
     ingest_parser.add_argument(
@@ -417,23 +530,35 @@ def main() -> None:
         help="LLM provider override (default: from config)",
     )
     ingest_parser.add_argument(
-        "--llm-model", type=str, default=None,
+        "--llm-model",
+        type=str,
+        default=None,
         help="LLM model override (default: from config)",
     )
     ingest_parser.add_argument(
-        "--trace", action="store_true", default=False,
+        "--trace",
+        action="store_true",
+        default=False,
         help="Write pipeline event trace to {output_dir}/trace.jsonl",
     )
 
     # --- match ---
-    match_parser = subparsers.add_parser("match", help="Match predicates to library functions")
+    match_parser = subparsers.add_parser(
+        "match", help="Match predicates to library functions"
+    )
     match_parser.add_argument("--statement", type=str, help="Single statement to match")
     match_parser.add_argument("--pdg-file", type=str, help="JSON file with PDG nodes")
     match_parser.add_argument(
-        "--prover", choices=["lean4", "coq", "python"], default="lean4", help="Proof assistant"
+        "--prover",
+        choices=["lean4", "coq", "python"],
+        default="lean4",
+        help="Proof assistant",
     )
     match_parser.add_argument(
-        "--index-dir", type=str, default=None, help="Directory containing FAISS index (default: from .env)"
+        "--index-dir",
+        type=str,
+        default=None,
+        help="Directory containing FAISS index (default: from .env)",
     )
     match_parser.add_argument(
         "--llm-provider",
@@ -454,7 +579,9 @@ def main() -> None:
         help="Max output tokens for matching LLM calls",
     )
     match_parser.add_argument(
-        "--trace", action="store_true", default=False,
+        "--trace",
+        action="store_true",
+        default=False,
         help="Write pipeline event trace to trace.jsonl",
     )
 
@@ -471,7 +598,10 @@ def main() -> None:
         elif skill_cmd == "search":
             _cmd_skill_search(args)
         else:
-            print("Error: provide a skill subcommand (ingest, index, search)", file=sys.stderr)
+            print(
+                "Error: provide a skill subcommand (ingest, index, search)",
+                file=sys.stderr,
+            )
             sys.exit(1)
     elif args.command == "optimize":
         asyncio.run(_cmd_optimize(args))
@@ -553,7 +683,10 @@ def _cmd_skill_index(args: argparse.Namespace) -> None:
                     catalog.add(prim)
 
     if catalog.size == 0:
-        print("Error: no primitives found. Run 'ageom skill ingest' first.", file=sys.stderr)
+        print(
+            "Error: no primitives found. Run 'ageom skill ingest' first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     print(f"Building skill index from {catalog.size} primitives...")
@@ -572,8 +705,10 @@ def _cmd_skill_search(args: argparse.Namespace) -> None:
     index_dir = Path(args.index_dir) if args.index_dir else config.skill_index_dir
 
     if not index_dir.exists():
-        print(f"Error: skill index not found at {index_dir}. Run 'ageom skill index' first.",
-              file=sys.stderr)
+        print(
+            f"Error: skill index not found at {index_dir}. Run 'ageom skill index' first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     index = SkillIndex.load(index_dir)
@@ -621,7 +756,11 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
     elif prover == Prover.PYTHON:
         from ageom.indexer.python_source import PythonDeclarationSource
 
-        packages = args.packages.split(",") if getattr(args, "packages", None) else config.python_packages.split(",")
+        packages = (
+            args.packages.split(",")
+            if getattr(args, "packages", None)
+            else config.python_packages.split(",")
+        )
         py_source = PythonDeclarationSource()
         declarations = []
         for pkg in packages:
@@ -665,10 +804,19 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             INGESTER_OPAQUE_WITNESS,
         )
 
-        llm = _create_llm_router(args, config, "ingester", [
-            INGESTER_CHUNK, INGESTER_HOIST_STATE, INGESTER_ABSTRACT,
-            INGESTER_FIX_TYPE, INGESTER_FIX_GHOST, INGESTER_OPAQUE_WITNESS,
-        ])
+        llm = _create_llm_router(
+            args,
+            config,
+            "ingester",
+            [
+                INGESTER_CHUNK,
+                INGESTER_HOIST_STATE,
+                INGESTER_ABSTRACT,
+                INGESTER_FIX_TYPE,
+                INGESTER_FIX_GHOST,
+                INGESTER_OPAQUE_WITNESS,
+            ],
+        )
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -687,8 +835,8 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             store = FAISSStore.load(config.index_dir)
             embedder = UniXcoderEmbedder(config.embedding_model)
             faiss_index = SemanticIndexImpl(store, embedder)
-        except Exception:
-            pass  # Proceed without index
+        except Exception as exc:
+            print(f"Warning: failed to load FAISS index: {exc}", file=sys.stderr)
 
     output_dir = Path(args.output) if args.output else Path("output") / args.class_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -714,6 +862,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
 
         # Write CDG JSON
         from ageom.architect.handoff import save_json
+
         save_json(bundle.cdg, output_dir / "cdg.json")
 
         # Write match results
@@ -722,7 +871,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             with open(output_dir / "matches.json", "w") as f:
                 json.dump(matches_data, f, indent=2)
 
-        print(f"\nIngestion complete:")
+        print("\nIngestion complete:")
         print(f"  CDG: {len(bundle.cdg.nodes)} nodes, {len(bundle.cdg.edges)} edges")
         print(f"  Matches: {len(bundle.match_results)}")
         print(f"  mypy passed: {bundle.mypy_passed}")
@@ -736,7 +885,9 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             event_log = get_event_log()
             if len(event_log) > 0:
                 event_log.save(output_dir / "trace.jsonl")
-                print(f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)")
+                print(
+                    f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)"
+                )
     finally:
         await proof_env.close()
 
@@ -748,7 +899,6 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
-    from ageom.architect.models import NodeStatus
     from ageom.config import AgeomConfig
 
     config = AgeomConfig()
@@ -768,16 +918,18 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
                     catalog.add(prim)
 
     if catalog.size == 0:
-        print("Warning: no catalog loaded. Decomposition will have no atomic stop conditions.",
-              file=sys.stderr)
+        print(
+            "Warning: no catalog loaded. Decomposition will have no atomic stop conditions.",
+            file=sys.stderr,
+        )
 
     # Load skill index (falls back to empty)
     skill_index = SkillIndex(index_dir=config.skill_index_dir)
     if config.skill_index_dir.exists():
         try:
             skill_index = SkillIndex.load(config.skill_index_dir)
-        except Exception:
-            pass  # Use empty index
+        except Exception as exc:
+            print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
 
     # Set up LLM
     try:
@@ -787,9 +939,16 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             ARCHITECT_STRATEGY,
         )
 
-        llm = _create_llm_router(args, config, "architect", [
-            ARCHITECT_STRATEGY, ARCHITECT_DECOMPOSE, ARCHITECT_CRITIQUE,
-        ])
+        llm = _create_llm_router(
+            args,
+            config,
+            "architect",
+            [
+                ARCHITECT_STRATEGY,
+                ARCHITECT_DECOMPOSE,
+                ARCHITECT_CRITIQUE,
+            ],
+        )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -823,7 +982,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             status = node.status.value
             by_status[status] = by_status.get(status, 0) + 1
 
-        print(f"\nDecomposition complete:")
+        print("\nDecomposition complete:")
         print(f"  Nodes: {len(cdg.nodes)}, Edges: {len(cdg.edges)}")
         for status, count in sorted(by_status.items()):
             print(f"    {status}: {count}")
@@ -893,7 +1052,10 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     # Load index
     index_dir = Path(args.index_dir) if args.index_dir else config.index_dir
     if not index_dir.exists():
-        print(f"Error: index directory {index_dir} not found. Run 'ageom index build' first.", file=sys.stderr)
+        print(
+            f"Error: index directory {index_dir} not found. Run 'ageom index build' first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     store = FAISSStore.load(index_dir)
@@ -918,9 +1080,16 @@ async def _cmd_match(args: argparse.Namespace) -> None:
             HUNTER_SCORE,
         )
 
-        llm = _create_llm_router(args, config, "hunter", [
-            HUNTER_SCORE, HUNTER_REFORMULATE, HUNTER_ANALYZE_FAILURE,
-        ])
+        llm = _create_llm_router(
+            args,
+            config,
+            "hunter",
+            [
+                HUNTER_SCORE,
+                HUNTER_REFORMULATE,
+                HUNTER_ANALYZE_FAILURE,
+            ],
+        )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -977,11 +1146,15 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         if result.success:
             assert result.verified_match is not None
             print(f"  VERIFIED: {result.verified_match.candidate.declaration.name}")
-            print(f"  Type: {result.verified_match.candidate.declaration.type_signature}")
+            print(
+                f"  Type: {result.verified_match.candidate.declaration.type_signature}"
+            )
         else:
             print(f"  NO MATCH FOUND ({len(result.all_candidates)} candidates tried)")
             for vr in result.all_verifications:
-                print(f"    - {vr.candidate.declaration.name}: {vr.error_message[:100]}")
+                print(
+                    f"    - {vr.candidate.declaration.name}: {vr.error_message[:100]}"
+                )
 
 
 async def _cmd_assemble(args: argparse.Namespace) -> None:
@@ -1111,20 +1284,20 @@ async def _cmd_export(args: argparse.Namespace) -> None:
     print(f"Exporting to {target.value} in {output_dir}/...")
     bundle = await extractor.extract(synthesis_result, target, output_dir)
 
-    print(f"\nExport complete:")
+    print("\nExport complete:")
     print(f"  Target: {bundle.target}")
     print(f"  Source: {bundle.source_path}")
     if bundle.compiled_artifact:
         print(f"  Artifact: {bundle.compiled_artifact}")
     if bundle.ffi_files:
-        print(f"  FFI files:")
+        print("  FFI files:")
         for f in bundle.ffi_files:
             print(f"    {f}")
     if bundle.certificate:
         print(f"  Certificate: {output_dir / 'certificate.json'}")
         print(f"    Source hash: {bundle.certificate.source_hash[:16]}...")
     if bundle.errors:
-        print(f"  Errors:")
+        print("  Errors:")
         for err in bundle.errors:
             print(f"    {err}")
 
@@ -1168,7 +1341,9 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
         print(f"Error assembling skeleton: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Assembled skeleton: {len(skeleton.units)} units, {skeleton.sorry_count} sorrys")
+    print(
+        f"Assembled skeleton: {len(skeleton.units)} units, {skeleton.sorry_count} sorrys"
+    )
 
     # Set up ProofEnvironment
     env = _create_proof_env(prover, config)
@@ -1177,9 +1352,15 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     try:
         from ageom.llm_router import SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC
 
-        llm = _create_llm_router(args, config, "synthesizer", [
-            SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC,
-        ])
+        llm = _create_llm_router(
+            args,
+            config,
+            "synthesizer",
+            [
+                SYNTHESIZER_REPAIR,
+                SYNTHESIZER_TACTIC,
+            ],
+        )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1192,7 +1373,7 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     try:
         agent = SynthesizerAgent(env=env, llm=llm, max_iterations=max_iterations)
         print(f"Starting repair loop (max {max_iterations} iterations)...")
-        result = agent_result = await agent.synthesize(skeleton)
+        result = await agent.synthesize(skeleton)
 
         # Output
         if prover == Prover.LEAN4:
@@ -1213,7 +1394,7 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
         print(f"  Sorry remaining: {result.sorry_remaining}")
 
         if result.error_history:
-            print(f"  Errors encountered:")
+            print("  Errors encountered:")
             for it, cat, text in result.error_history:
                 print(f"    [{it}] {cat}: {text[:80]}")
 
@@ -1266,8 +1447,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     if config.skill_index_dir.exists():
         try:
             skill_index = SkillIndex.load(config.skill_index_dir)
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
 
     # Set up LLM
     try:
@@ -1278,10 +1459,17 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             ORCHESTRATOR_REFINE,
         )
 
-        llm = _create_llm_router(args, config, "architect", [
-            ARCHITECT_STRATEGY, ARCHITECT_DECOMPOSE, ARCHITECT_CRITIQUE,
-            ORCHESTRATOR_REFINE,
-        ])
+        llm = _create_llm_router(
+            args,
+            config,
+            "architect",
+            [
+                ARCHITECT_STRATEGY,
+                ARCHITECT_DECOMPOSE,
+                ARCHITECT_CRITIQUE,
+                ORCHESTRATOR_REFINE,
+            ],
+        )
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1289,11 +1477,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     # Step 1: Decompose
     print(f"Decomposing: {args.goal}")
 
-    from ageom.architect.checkpointer import create_checkpointer
     async with create_checkpointer("") as checkpointer:
         architect = DecompositionAgent(
-            catalog=catalog, skill_index=skill_index,
-            llm=llm, checkpointer=checkpointer,
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            checkpointer=checkpointer,
         )
         cdg = await architect.decompose(args.goal)
 
@@ -1302,8 +1491,10 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     # Step 2: Set up Hunter
     index_dir = config.index_dir
     if not index_dir.exists():
-        print(f"Error: index directory {index_dir} not found. Run 'ageom index build' first.",
-              file=sys.stderr)
+        print(
+            f"Error: index directory {index_dir} not found. Run 'ageom index build' first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     store = FAISSStore.load(index_dir)
@@ -1325,15 +1516,24 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             HUNTER_SCORE,
         )
 
-        hunter_llm = _create_llm_router(args, config, "hunter", [
-            HUNTER_SCORE, HUNTER_REFORMULATE, HUNTER_ANALYZE_FAILURE,
-        ])
+        hunter_llm = _create_llm_router(
+            args,
+            config,
+            "hunter",
+            [
+                HUNTER_SCORE,
+                HUNTER_REFORMULATE,
+                HUNTER_ANALYZE_FAILURE,
+            ],
+        )
     except (ValueError, ImportError) as exc:
         print(f"Error setting up hunter LLM: {exc}", file=sys.stderr)
         sys.exit(1)
 
     hunter = HunterAgent(
-        index=index, oracle=oracle, llm=hunter_llm,
+        index=index,
+        oracle=oracle,
+        llm=hunter_llm,
         max_iterations=config.hunter_max_iterations,
         top_k_verify=config.hunter_top_k_verify,
         search_k=config.hunter_search_k,
@@ -1348,16 +1548,21 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     print(f"Running orchestration (max {args.max_rounds} rounds)...")
     try:
         result = await run_orchestration(
-            cdg, hunter_agent=hunter, llm=llm,
-            prover=prover, max_rounds=args.max_rounds,
+            cdg,
+            hunter_agent=hunter,
+            llm=llm,
+            prover=prover,
+            max_rounds=args.max_rounds,
         )
     finally:
         await env.close()
 
     # Output
-    print(f"\nOrchestration complete:")
+    print("\nOrchestration complete:")
     print(f"  Rounds used: {result.rounds_used}")
-    print(f"  Matches: {sum(1 for mr in result.match_results if mr.success)}/{len(result.match_results)}")
+    print(
+        f"  Matches: {sum(1 for mr in result.match_results if mr.success)}/{len(result.match_results)}"
+    )
     if result.ungroundable:
         print(f"  Ungroundable: {result.ungroundable}")
 
@@ -1366,7 +1571,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     save_json(result.cdg, output_dir / "cdg.json")
 
     if result.match_results:
-        import json
+
         matches_data = [mr.to_dict() for mr in result.match_results]
         with open(output_dir / "matches.json", "w") as f:
             json.dump(matches_data, f, indent=2)
@@ -1375,6 +1580,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
     if getattr(args, "trace", False):
         from ageom.telemetry import get_event_log
+
         event_log = get_event_log()
         if len(event_log) > 0:
             event_log.save(output_dir / "trace.jsonl")
@@ -1388,9 +1594,11 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
     from ageom.config import AgeomConfig
-    from ageom.principal.backprop import CreditAssigner
     from ageom.principal.evaluator import ExecutionSandbox
-    from ageom.principal.graph import PrincipalDeps, PrincipalState, build_principal_graph
+    from ageom.principal.graph import (
+        PrincipalDeps,
+        build_principal_graph,
+    )
     from ageom.principal.models import OptimizationMetric
 
     config = AgeomConfig()
@@ -1412,8 +1620,8 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     if config.skill_index_dir.exists():
         try:
             skill_index = SkillIndex.load(config.skill_index_dir)
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
 
     # LLM
     try:
@@ -1423,9 +1631,16 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             ARCHITECT_STRATEGY,
         )
 
-        llm = _create_llm_router(args, config, "architect", [
-            ARCHITECT_STRATEGY, ARCHITECT_DECOMPOSE, ARCHITECT_CRITIQUE,
-        ])
+        llm = _create_llm_router(
+            args,
+            config,
+            "architect",
+            [
+                ARCHITECT_STRATEGY,
+                ARCHITECT_DECOMPOSE,
+                ARCHITECT_CRITIQUE,
+            ],
+        )
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1433,7 +1648,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     metric = OptimizationMetric(args.metric)
     postgres_uri = "" if args.no_persist else config.postgres_uri
 
-    print(f"Principal optimisation loop")
+    print("Principal optimisation loop")
     print(f"  Goal: {args.goal}")
     print(f"  Metric: {metric.value}")
     print(f"  Trials: {args.trials}")
@@ -1465,23 +1680,18 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         final_state = await graph.ainvoke(initial_state, config=config_dict)
 
     # Report
-    print(f"\nOptimisation complete:")
+    print("\nOptimisation complete:")
     print(f"  Trials run: {final_state.get('current_trial', 0)}")
     print(f"  Best loss: {final_state.get('best_loss', float('inf')):.6f}")
     history = final_state.get("trial_history", [])
     if history:
-        print(f"  Trial history:")
+        print("  Trial history:")
         for entry in history:
             print(f"    Trial {entry['trial']}: loss={entry['loss']:.6f}")
 
 
 def _cmd_visualize(args: argparse.Namespace) -> None:
     """Open browser-based CDG visualization."""
-    import shutil
-    import socketserver
-    import threading
-    import webbrowser
-    from http.server import SimpleHTTPRequestHandler
 
     static_dir = Path(__file__).resolve().parent / "static"
     if not static_dir.exists():

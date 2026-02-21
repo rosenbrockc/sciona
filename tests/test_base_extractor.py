@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from ageom.ingester.base_extractor import (
     EXTENSION_MAP,
@@ -10,10 +9,8 @@ from ageom.ingester.base_extractor import (
     SourceLanguage,
 )
 from ageom.ingester.graph import _get_extractor
-from ageom.ingester.models import RawDataFlowGraph
 from ageom.ingester.python_extractor import PythonASTExtractor
 from ageom.ingester.treesitter_extractor import TreeSitterExtractor
-
 
 # ---------------------------------------------------------------------------
 # SourceLanguage enum

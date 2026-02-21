@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -125,12 +124,14 @@ class TestOptimizer:
         assert candidates[0].rule.replacement_symbol == "fftw_execute"
 
     def test_scan_no_match(self):
-        units = [AssemblyUnit(
-            node_id="n10",
-            name="binary_search",
-            declaration_name="BinarySearch.find",
-            type_signature="List Nat → Nat → Option Nat",
-        )]
+        units = [
+            AssemblyUnit(
+                node_id="n10",
+                name="binary_search",
+                declaration_name="BinarySearch.find",
+                type_signature="List Nat → Nat → Option Nat",
+            )
+        ]
         skeleton = _make_skeleton(units=units)
         optimizer = Optimizer()
         candidates = optimizer.scan(skeleton)
@@ -377,7 +378,9 @@ class TestExtractor:
         extractor = Extractor(config)
         result = _make_synthesis_result()
 
-        with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
+        with patch(
+            "asyncio.create_subprocess_exec", new_callable=AsyncMock
+        ) as mock_proc:
             proc = AsyncMock()
             proc.returncode = 1
             proc.communicate = AsyncMock(return_value=(b"", b"lake not available"))
@@ -400,7 +403,9 @@ class TestExtractor:
         extractor = Extractor(config)
         result = _make_synthesis_result()
 
-        with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
+        with patch(
+            "asyncio.create_subprocess_exec", new_callable=AsyncMock
+        ) as mock_proc:
             proc = AsyncMock()
             proc.returncode = 1
             proc.communicate = AsyncMock(return_value=(b"", b"lake not found"))
@@ -421,7 +426,9 @@ class TestExtractor:
         extractor = Extractor(config)
         result = _make_synthesis_result()
 
-        with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
+        with patch(
+            "asyncio.create_subprocess_exec", new_callable=AsyncMock
+        ) as mock_proc:
             proc = AsyncMock()
             proc.returncode = 1
             proc.communicate = AsyncMock(return_value=(b"", b"lake not found"))
@@ -448,7 +455,9 @@ class TestExtractor:
         )
         result = _make_synthesis_result(skeleton=skeleton)
 
-        with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
+        with patch(
+            "asyncio.create_subprocess_exec", new_callable=AsyncMock
+        ) as mock_proc:
             proc = AsyncMock()
             proc.returncode = 1
             proc.communicate = AsyncMock(return_value=(b"", b"coqc not found"))
@@ -467,7 +476,9 @@ class TestExtractor:
         extractor = Extractor(config)
         result = _make_synthesis_result()
 
-        with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
+        with patch(
+            "asyncio.create_subprocess_exec", new_callable=AsyncMock
+        ) as mock_proc:
             proc = AsyncMock()
             proc.returncode = 1
             proc.communicate = AsyncMock(return_value=(b"", b""))
