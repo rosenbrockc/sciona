@@ -31,6 +31,10 @@ class TestSkeletonRegistry:
             ConceptType.SIGNAL_TRANSFORM,
             ConceptType.SIGNAL_FILTER,
             ConceptType.GRAPH_SIGNAL_PROCESSING,
+            ConceptType.MCMC_KERNEL,
+            ConceptType.VI_ELBO,
+            ConceptType.SEQUENTIAL_FILTER,
+            ConceptType.MESSAGE_PASSING,
         }
         assert set(SKELETON_TEMPLATES.keys()) == expected
 
@@ -70,14 +74,28 @@ class TestSkeletonWellFormedness:
         ids = [n.node_id for n in skel.template_nodes]
         assert len(ids) == len(set(ids)), f"Duplicate node IDs in {skel.name}"
 
+    # Bayesian skeletons intentionally mix concept types to enforce
+    # Oracle Isolation (stateless oracle nodes) and Conjugate Update
+    # semantics within a parent paradigm skeleton.
+    _ALLOWED_HETEROGENEOUS: dict[ConceptType, set[ConceptType]] = {
+        ConceptType.MCMC_KERNEL: {ConceptType.MCMC_KERNEL, ConceptType.PROBABILISTIC_ORACLE},
+        ConceptType.VI_ELBO: {ConceptType.VI_ELBO, ConceptType.PROBABILISTIC_ORACLE},
+        ConceptType.SEQUENTIAL_FILTER: {
+            ConceptType.SEQUENTIAL_FILTER, ConceptType.PROBABILISTIC_ORACLE,
+            ConceptType.CONJUGATE_UPDATE,
+        },
+        ConceptType.MESSAGE_PASSING: {ConceptType.MESSAGE_PASSING},
+    }
+
     @pytest.mark.parametrize("concept_type", list(SKELETON_TEMPLATES.keys()))
     def test_nodes_match_paradigm(self, concept_type):
         skel = SKELETON_TEMPLATES[concept_type]
         assert skel.paradigm == concept_type
+        allowed = self._ALLOWED_HETEROGENEOUS.get(concept_type, {concept_type})
         for node in skel.template_nodes:
-            assert node.concept_type == concept_type, (
+            assert node.concept_type in allowed, (
                 f"Node {node.name} has type {node.concept_type} "
-                f"but skeleton paradigm is {concept_type}"
+                f"but skeleton paradigm {concept_type} allows {allowed}"
             )
 
     @pytest.mark.parametrize("concept_type", list(SKELETON_TEMPLATES.keys()))

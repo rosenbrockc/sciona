@@ -35,6 +35,12 @@ class ConceptType(str, Enum):
     POSTERIOR_UPDATE = "posterior_update"
     VARIATIONAL_INFERENCE = "variational_inference"
     PRIOR_INIT = "prior_init"
+    PROBABILISTIC_ORACLE = "probabilistic_oracle"
+    MCMC_KERNEL = "mcmc_kernel"
+    VI_ELBO = "vi_elbo"
+    SEQUENTIAL_FILTER = "sequential_filter"
+    MESSAGE_PASSING = "message_passing"
+    CONJUGATE_UPDATE = "conjugate_update"
     CUSTOM = "custom"
     EXTERNAL_TOOL = "external_tool"
 
@@ -75,6 +81,7 @@ class AlgorithmicNode(BaseModel):
     is_optional: bool = False  # Config-gated branches
     is_opaque: bool = False  # DL boundary: skip internal decomposition
     is_external: bool = False  # External tool call
+    parallelizable: bool = False  # Supports parallel execution (e.g., particle swarms)
     conceptual_summary: str = ""
     critic_notes: str = ""
     decomposition_rationale: str = ""
