@@ -143,7 +143,22 @@ class MacroAtomSpec(BaseModel):
     is_optional: bool = False
     is_opaque: bool = False
     is_external: bool = False
-    is_external: bool = False
+    is_stochastic: bool = Field(
+        default=False,
+        description="True when atom performs stochastic sampling/transitions.",
+    )
+    requires_rng_key: bool = Field(
+        default=False,
+        description="True when atom expects an RNG key/seed input.",
+    )
+    requires_autodiff: bool = Field(
+        default=False,
+        description="True when atom depends on automatic differentiation.",
+    )
+    autodiff_backend: str = Field(
+        default="",
+        description="Optional AD backend/runtime, e.g. 'jax' or 'LogDensityProblems.jl'.",
+    )
     conceptual_profile: ConceptualProfile | None = Field(
         default=None,
         description="Domain-agnostic abstraction for cross-domain retrieval",

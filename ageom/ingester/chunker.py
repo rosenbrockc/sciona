@@ -201,6 +201,10 @@ def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
             config_params=item.get("config_params", []),
             concept_type=concept,
             is_optional=item.get("is_optional", False),
+            is_stochastic=item.get("is_stochastic", False),
+            requires_rng_key=item.get("requires_rng_key", False),
+            requires_autodiff=item.get("requires_autodiff", False),
+            autodiff_backend=item.get("autodiff_backend", ""),
         ))
     return atoms
 

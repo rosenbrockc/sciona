@@ -27,9 +27,11 @@ class TestConceptType:
             "signal_transform", "signal_filter", "graph_signal_processing",
             "neural_network",
             "sampler", "log_prob", "posterior_update",
-            "variational_inference", "prior_init",
-            "probabilistic_oracle", "mcmc_kernel", "vi_elbo",
-            "sequential_filter", "message_passing", "conjugate_update",
+            "variational_inference", "prior_init", "prior_distribution",
+            "likelihood_evaluation", "probabilistic_oracle", "oracle_gradient",
+            "mcmc_kernel", "mcmc_proposal", "vi_elbo",
+            "sequential_filter", "smc_reweight", "message_passing",
+            "conjugate_update",
             "custom", "external_tool",
         }
         assert {ct.value for ct in ConceptType} == expected
