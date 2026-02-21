@@ -53,7 +53,21 @@ class MethodFact(BaseModel):
     decorators: list[str] = Field(default_factory=list)
     is_opaque: bool = False
     is_external: bool = False
-    is_external: bool = False
+    # Bayesian metadata flags (set by tree-sitter extractors)
+    is_oracle: bool = False  # Implements a stateless log-density/gradient target
+    is_conjugate: bool = False  # Implements an analytical conjugate update
+
+
+class OracleEdge(BaseModel):
+    """An explicit dependency on a stateless oracle (log-density/gradient).
+
+    Extracted from C++ functional APIs like kthohr/mcmc where a kernel
+    function pointer is passed to an algorithm entry point.
+    """
+
+    caller: str  # Function or algorithm that consumes the oracle
+    oracle_ref: str  # Name/identifier of the oracle function/pointer
+    call_site: str = ""  # Optional: the call expression text
 
 
 class RawDataFlowGraph(BaseModel):
@@ -71,8 +85,28 @@ class RawDataFlowGraph(BaseModel):
     source_language: str = "python"
     is_opaque: bool = False
     is_external: bool = False
-    is_external: bool = False
     opaque_base_classes: list[str] = Field(default_factory=list)
+
+    # Bayesian / probabilistic metadata (populated by tree-sitter extractors)
+    static_shape: dict[str, str] = Field(
+        default_factory=dict,
+        description="Compile-time static matrix dimensions, e.g. {'N': '6', 'M': '3'} "
+                    "from nalgebra SMatrix<f64, N, M>",
+    )
+    requires_logdet_jacobian: bool = Field(
+        default=False,
+        description="True when constrained variables use Bijectors.jl transforms",
+    )
+    cartesian_product_fields: list[list[str]] = Field(
+        default_factory=list,
+        description="Groups of struct fields forming Cartesian type products "
+                    "(e.g. [['metric', 'integrator', 'trajectory_sampler']]). "
+                    "Each group should be emitted as distinct swappable subgraph inputs.",
+    )
+    oracle_edges: list[OracleEdge] = Field(
+        default_factory=list,
+        description="Explicit oracle dependencies extracted from functional MCMC APIs",
+    )
 
 
 # ---------------------------------------------------------------------------

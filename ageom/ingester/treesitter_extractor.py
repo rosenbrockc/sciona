@@ -13,7 +13,7 @@ from tree_sitter import Node as TSNode
 from tree_sitter_language_pack import get_parser
 
 from ageom.ingester.base_extractor import SourceLanguage
-from ageom.ingester.models import MethodFact, RawDataFlowGraph
+from ageom.ingester.models import MethodFact, OracleEdge, RawDataFlowGraph
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +275,18 @@ class _CppClassVisitor:
 # ---------------------------------------------------------------------------
 
 
+# Known Julia types that form Cartesian product components in Bayesian
+# samplers (e.g., AdvancedHMC.jl composes Metric × Integrator × TrajectorySampler).
+_JULIA_CARTESIAN_PRODUCT_TYPES: frozenset[str] = frozenset({
+    "Metric", "AbstractMetric", "DenseEuclideanMetric", "DiagEuclideanMetric", "UnitEuclideanMetric",
+    "Integrator", "AbstractIntegrator", "Leapfrog", "JitteredLeapfrog", "TemperedLeapfrog",
+    "TrajectorySampler", "AbstractTrajectorySampler", "MultinomialTS", "SliceTS",
+    "AbstractAdaptor", "StanHMCAdaptor", "NesterovDualAveraging",
+    "Hamiltonian", "AbstractHamiltonian",
+    "AbstractMCMCKernel", "HMCKernel",
+})
+
+
 class _JuliaStructVisitor:
     """Extract struct metadata from a ``struct_definition`` tree-sitter node."""
 
@@ -283,6 +295,7 @@ class _JuliaStructVisitor:
         self.struct_name = ""
         self.type_params: list[str] = []
         self.fields: list[tuple[str, str]] = []  # (name, type)
+        self.cartesian_product_fields: list[list[str]] = []
 
     def visit(self) -> None:
         for child in self.struct_node.children:
@@ -294,6 +307,9 @@ class _JuliaStructVisitor:
                     self.struct_name = _node_text(child)
             elif child.type == "typed_expression":
                 self._visit_field(child)
+
+        # After collecting all fields, detect Cartesian product groups
+        self._detect_cartesian_products()
 
     def _visit_type_head(self, node: TSNode) -> None:
         for child in node.children:
@@ -318,6 +334,33 @@ class _JuliaStructVisitor:
             self.fields.append((field_name, field_type))
         elif len(parts) == 1:
             self.fields.append((_node_text(parts[0]), "Any"))
+
+    def _detect_cartesian_products(self) -> None:
+        """Detect groups of fields whose types are known Cartesian product components.
+
+        For example, an AdvancedHMC.jl sampler struct with fields
+        ``metric::M``, ``integrator::I``, ``ts::S`` where M/I/S are bounded
+        by abstract types in _JULIA_CARTESIAN_PRODUCT_TYPES — these should
+        be emitted as distinct swappable subgraph inputs.
+        """
+        # A field is a product component if its type (or the type param it
+        # binds to) matches a known abstract Bayesian sampler component.
+        # We check both the concrete type annotation and the type parameter.
+        product_group: list[str] = []
+        for field_name, field_type in self.fields:
+            if field_type in _JULIA_CARTESIAN_PRODUCT_TYPES:
+                product_group.append(field_name)
+            elif field_type in self.type_params:
+                # Type parameter — could be bounded by a product type.
+                # Heuristic: field name hints (metric, integrator, sampler, etc.)
+                hint_lower = field_name.lower()
+                if any(kw in hint_lower for kw in (
+                    "metric", "integrator", "sampler", "adaptor",
+                    "hamiltonian", "kernel", "trajectory",
+                )):
+                    product_group.append(field_name)
+        if len(product_group) >= 2:
+            self.cartesian_product_fields.append(product_group)
 
 
 class _JuliaFunctionVisitor:
@@ -444,6 +487,75 @@ class _JuliaFunctionVisitor:
 # C++ procedural extraction
 # ---------------------------------------------------------------------------
 
+# Known kthohr/mcmc algorithm entry points that accept a kernel function pointer.
+# Pattern: mcmc::algo(initial_vals, kernel_func, ...) or algo(init, kernel_func, settings)
+_MCMC_ALGO_IDENTIFIERS: frozenset[str] = frozenset({
+    "rwmh", "mala", "hmc", "rmhmc", "aees", "de",
+    "nuts", "hmc_int", "mala_int",
+    # Qualified names: mcmc::algo
+    "mcmc::rwmh", "mcmc::mala", "mcmc::hmc", "mcmc::rmhmc",
+    "mcmc::aees", "mcmc::de", "mcmc::nuts",
+})
+
+
+def _scan_cpp_oracle_edges(root: TSNode, source_code: str) -> list[OracleEdge]:
+    """Scan C++ source for kthohr/mcmc-style functional API calls.
+
+    Looks for patterns like:
+        mcmc::hmc(initial_vals, log_target, settings)
+        algo(init_vals, kernel_func_ptr, data, settings)
+
+    The second argument (kernel function pointer) is extracted as an
+    explicit oracle dependency.
+    """
+    oracle_edges: list[OracleEdge] = []
+    call_nodes = _find_descendants(root, "call_expression")
+
+    for call_node in call_nodes:
+        children = call_node.children
+        if len(children) < 2:
+            continue
+
+        func_node = children[0]
+        func_name = _node_text(func_node)
+
+        # Normalize: strip mcmc:: prefix for matching
+        normalized = func_name.lower().replace(" ", "")
+        # Check if this is a known MCMC algorithm entry point
+        is_mcmc_call = (
+            normalized in _MCMC_ALGO_IDENTIFIERS
+            or func_name in _MCMC_ALGO_IDENTIFIERS
+        )
+        if not is_mcmc_call:
+            continue
+
+        # Find the argument list
+        arg_list = None
+        for child in children:
+            if child.type == "argument_list":
+                arg_list = child
+                break
+
+        if arg_list is None:
+            continue
+
+        # Extract arguments (skip commas and parens)
+        args = [
+            c for c in arg_list.children
+            if c.type not in (",", "(", ")")
+        ]
+
+        # The kernel function pointer is typically the 2nd argument
+        if len(args) >= 2:
+            oracle_ref = _node_text(args[1])
+            oracle_edges.append(OracleEdge(
+                caller=func_name,
+                oracle_ref=oracle_ref,
+                call_site=_node_text(call_node),
+            ))
+
+    return oracle_edges
+
 
 def _extract_cpp_functions(root: TSNode, source_code: str) -> list[MethodFact]:
     """Extract top-level function definitions from C++ source."""
@@ -530,6 +642,36 @@ def _extract_julia_functions_procedural(
 
 
 # ---------------------------------------------------------------------------
+# Julia: Bijectors.jl detection
+# ---------------------------------------------------------------------------
+
+
+def _scan_julia_bijectors(source_code: str) -> bool:
+    """Scan Julia source for Bijectors.jl usages indicating constrained variables.
+
+    When constrained variables are present, the model requires a
+    log-determinant Jacobian correction for correct posterior inference.
+    """
+    import re
+    # Direct Bijectors.jl API calls and types
+    bijector_patterns = [
+        r'\bBijectors\b',
+        r'\bbijector\s*\(',
+        r'\binverse\s*\(\s*\w*[Bb]ij',
+        r'\blogabsdetjac\b',
+        r'\bwith_logabsdet_jacobian\b',
+        r'\bTransformed\s*\(',
+        r'\btransformed\s*\(',
+        # Common bijector constructors
+        r'\b(?:Logit|Log|Exp|Softplus|OrderedBijector|Stacked)\s*\(',
+    ]
+    for pat in bijector_patterns:
+        if re.search(pat, source_code):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
 # TreeSitterExtractor — public API
 # ---------------------------------------------------------------------------
 
@@ -543,7 +685,8 @@ class _RustStructVisitor:
     def __init__(self, node: TSNode) -> None:
         self.node = node
         self.struct_name = ""
-        self.fields: list[tuple[str, str]] = []
+        self.fields: list[tuple[str, str]] = []  # (name, type_str)
+        self.static_shape: dict[str, str] = {}  # e.g. {"N": "6", "M": "3"}
 
     def visit(self) -> None:
         for child in self.node.children:
@@ -560,6 +703,46 @@ class _RustStructVisitor:
                             ftype = _node_text(fc)
                     if fname:
                         self.fields.append((fname, ftype or "Any"))
+                        # Extract nalgebra static matrix dimensions
+                        # e.g. SMatrix<f64, N, M>, SVector<f64, N>
+                        if ftype:
+                            self._scan_static_shape(ftype)
+
+    def _scan_static_shape(self, type_str: str) -> None:
+        """Extract compile-time dimension literals from nalgebra types."""
+        import re
+        # Match SMatrix<scalar, R, C>, SVector<scalar, N>, etc.
+        for m in re.finditer(
+            r'\b(?:SMatrix|SVector|OMatrix|OVector)\s*<\s*\w+\s*,'
+            r'\s*(\w+)\s*(?:,\s*(\w+)\s*)?(?:,\s*\w+\s*)*>',
+            type_str,
+        ):
+            dim1 = m.group(1)
+            dim2 = m.group(2)
+            # Only store if they look like numeric literals or named constants
+            if dim1 and dim1 not in ("f32", "f64", "i32", "i64"):
+                self.static_shape.setdefault(dim1, dim1)
+            if dim2 and dim2 not in ("f32", "f64", "i32", "i64"):
+                self.static_shape.setdefault(dim2, dim2)
+
+# Trait bounds that indicate oracle (stateless log-density/gradient) implementations
+_ORACLE_TRAIT_BOUNDS: frozenset[str] = frozenset({
+    "BatchedGradientTarget",
+    "GradientTarget",
+    "LogDensityTarget",
+    "LogDensity",
+    "DiffFn",
+})
+
+# Trait bounds that indicate conjugate/analytical update implementations
+_CONJUGATE_TRAIT_BOUNDS: frozenset[str] = frozenset({
+    "Estimator",
+    "ConjugateUpdate",
+    "ConjugatePrior",
+    "AnalyticalPosterior",
+    "SufficientStatistic",
+})
+
 
 class _RustFunctionVisitor:
     def __init__(self, node: TSNode, source_code: str) -> None:
@@ -571,6 +754,8 @@ class _RustFunctionVisitor:
         self.return_type = ""
         self.reads: set[str] = set()
         self.writes: set[str] = set()
+        self.is_oracle = False
+        self.is_conjugate = False
 
     def visit(self) -> None:
         for child in self.node.children:
@@ -581,8 +766,20 @@ class _RustFunctionVisitor:
                     for pc in param.children:
                         if pc.type == "identifier":
                             self.params.append(_node_text(pc))
-            elif child.type == "type_identifier": # Return type
+            elif child.type == "type_identifier":  # Return type
                 self.return_type = _node_text(child)
+
+    def detect_trait_bounds(self, impl_node: TSNode) -> None:
+        """Scan the parent impl block for trait bounds on the impl or where clause."""
+        impl_text = _node_text(impl_node)
+        for trait in _ORACLE_TRAIT_BOUNDS:
+            if trait in impl_text:
+                self.is_oracle = True
+                break
+        for trait in _CONJUGATE_TRAIT_BOUNDS:
+            if trait in impl_text:
+                self.is_conjugate = True
+                break
 
     def get_fact(self) -> MethodFact:
         start = self.node.start_point[0]
@@ -594,6 +791,8 @@ class _RustFunctionVisitor:
             reads=sorted(self.reads),
             writes=sorted(self.writes),
             source_code="\n".join(self.source_lines[start:end]),
+            is_oracle=self.is_oracle,
+            is_conjugate=self.is_conjugate,
         )
 
 class TreeSitterExtractor:
@@ -658,12 +857,23 @@ class TreeSitterExtractor:
             for attr in mf.writes:
                 all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
 
+        # Language-specific enrichment
+        oracle_edges: list[OracleEdge] = []
+        requires_logdet_jacobian = False
+
+        if self.language == SourceLanguage.CPP:
+            oracle_edges = _scan_cpp_oracle_edges(root, source_code)
+        elif self.language == SourceLanguage.JULIA:
+            requires_logdet_jacobian = _scan_julia_bijectors(source_code)
+
         return RawDataFlowGraph(
             class_name=name,
             source_code=source_code,
             methods=methods,
             all_attributes=all_attributes,
             source_language=self.language.value,
+            oracle_edges=oracle_edges,
+            requires_logdet_jacobian=requires_logdet_jacobian,
         )
 
     # --- C++ extraction ---
@@ -711,6 +921,9 @@ class TreeSitterExtractor:
             if internal_calls:
                 internal_call_graph[mf.name] = internal_calls
 
+        # Scan for kthohr/mcmc functional oracle edges
+        oracle_edges = _scan_cpp_oracle_edges(target, source_code)
+
         return RawDataFlowGraph(
             class_name=class_name,
             source_code=source_code,
@@ -719,6 +932,7 @@ class TreeSitterExtractor:
             init_chain=init_chain,
             internal_call_graph=internal_call_graph,
             source_language="cpp",
+            oracle_edges=oracle_edges,
         )
 
     # --- Julia extraction ---
@@ -783,12 +997,17 @@ class TreeSitterExtractor:
             for attr in mf.writes:
                 all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
 
+        # Detect Bijectors.jl usage (constrained variables requiring log-det Jacobian)
+        requires_logdet_jacobian = _scan_julia_bijectors(source_code)
+
         return RawDataFlowGraph(
             class_name=struct_name,
             source_code=source_code,
             methods=methods,
             all_attributes=all_attributes,
             source_language="julia",
+            cartesian_product_fields=target_sv.cartesian_product_fields,
+            requires_logdet_jacobian=requires_logdet_jacobian,
         )
     def _extract_rust_struct(self, root: TSNode, source_code: str, name: str) -> RawDataFlowGraph:
         struct_nodes = _find_descendants(root, "struct_item")
@@ -799,11 +1018,11 @@ class TreeSitterExtractor:
             if v.struct_name == name:
                 target = v
                 break
-        
+
         if not target:
             raise ValueError(f"Rust struct {name} not found")
 
-        methods = []
+        methods: list[MethodFact] = []
         impl_nodes = _find_descendants(root, "impl_item")
         for im in impl_nodes:
             is_target = False
@@ -811,19 +1030,22 @@ class TreeSitterExtractor:
                 if child.type == "type_identifier" and _node_text(child) == name:
                     is_target = True
                     break
-            
+
             if is_target:
                 for child in im.children:
                     if child.type == "function_item":
                         fv = _RustFunctionVisitor(child, source_code)
                         fv.visit()
+                        # Detect trait bounds from the enclosing impl block
+                        fv.detect_trait_bounds(im)
                         methods.append(fv.get_fact())
 
         return RawDataFlowGraph(
             class_name=name,
             source_code=source_code,
             methods=methods,
-            source_language="rust"
+            source_language="rust",
+            static_shape=target.static_shape,
         )
 
     def _extract_rust_functions_procedural(self, root: TSNode, source_code: str) -> list[MethodFact]:
