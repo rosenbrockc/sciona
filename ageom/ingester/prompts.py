@@ -11,83 +11,67 @@ from __future__ import annotations
 # ---------------------------------------------------------------------------
 
 SEMANTIC_CHUNK_SYSTEM = """\
-You are an expert software architect specializing in converting stateful \
-Python classes into stateless functional pipelines.
+You are an expert software architect converting stateful classes into \
+pure functional algorithm graphs.
 
-Given the data-flow analysis of a Python class (method summaries, self.* \
-attribute graph, config-gated branches), your task is to group the methods \
-into **macro-atoms** — coarse functional units named by intent, not \
-implementation.
+Given method summaries, self.* attribute access, and config-gated branches, \
+group methods into MacroAtomSpecs named by intent, not implementation.
 
-Rules:
-1. Each method must appear in exactly one macro-atom.
-2. Private helper methods (_foo) should be grouped with their caller.
-3. __init__ preprocessing steps may form their own macro-atom or be grouped \
-   with the first processing stage.
-4. Config-gated branches become optional nodes (is_optional=true).
-5. Name atoms by WHAT they do, not HOW: "Signal Conditioner" not "Apply Butter Filter".
-6. Choose concept_type from: sorting, searching, divide_and_conquer, greedy, \
+Core rules:
+1. Every method appears in exactly one macro-atom.
+2. Private helpers (_foo) are grouped with their caller.
+3. __init__ setup may be its own atom or grouped with the first stage.
+4. Config branches become optional nodes (is_optional=true).
+5. Choose concept_type from: sorting, searching, divide_and_conquer, greedy, \
    dynamic_programming, graph_traversal, graph_optimization, string_matching, \
    geometry, arithmetic, number_theory, combinatorics, algebra, analysis, \
    set_theory, signal_transform, signal_filter, graph_signal_processing, \
    sampler, log_prob, posterior_update, variational_inference, prior_init, \
-   probabilistic_oracle, mcmc_kernel, vi_elbo, sequential_filter, \
-   message_passing, conjugate_update, custom.
+   prior_distribution, likelihood_evaluation, probabilistic_oracle, \
+   oracle_gradient, mcmc_kernel, mcmc_proposal, vi_elbo, sequential_filter, \
+   smc_reweight, message_passing, conjugate_update, custom.
+
+Bayesian/state-space detection requirements (MANDATORY):
+1. Detect distinct state-space structures and name them explicitly: \
+   covariance (P, Q, R), latent mean/variance, particles, weights, \
+   ancestors, momenta, mass matrix, trace, RNG state, PRNGKey.
+2. Any structure that persists across calls MUST be treated as immutable \
+   flowing state, never hidden mutation. If an atom both reads and writes \
+   one of these values, model it as state_in -> state_out with a new object.
+3. Transition kernels must be pure functions. For Kalman-like algorithms, \
+   force decomposition into Predict and Update kernels (or equivalent) where \
+   each consumes a StateModelSpec and returns a brand new StateModelSpec.
+4. Particle filter flow must be explicit (e.g., propagate/propose -> \
+   reweight -> resample) with particles/weights threaded as immutable state.
+5. JAX functional purity is the canonical stochastic pattern: thread \
+   ``jax.random.PRNGKey`` explicitly as input and output (split keys), never \
+   as implicit global state.
 
 Bayesian / probabilistic inference patterns:
-- **prior_init**: Methods that initialize prior distributions, set hyperparameters, \
-  or create initial parameter distributions. Look for: ``dist = Normal(...)``, \
-  ``prior = Dirichlet(alpha)``, ``self.mu_0``, ``self.sigma_0``.
-- **log_prob**: Methods that evaluate log-probability, log-likelihood, or score \
-  functions. Look for: ``log_pdf``, ``logp``, ``log_likelihood``, \
-  ``-0.5 * (x - mu)**2 / sigma**2``, ``scipy.stats.*.logpdf``.
-- **sampler**: Methods that draw samples from distributions or advance MCMC chains. \
-  Look for: ``np.random.``, ``rng.normal``, ``jax.random.``, Metropolis-Hastings \
-  accept/reject logic (``alpha = min(1, p_new/p_old)``), HMC leapfrog steps, \
-  Gibbs conditional sampling.
-- **posterior_update**: Methods that perform Bayesian updates — conjugate updates \
-  (``mu_n = (sigma_0^2 * x_bar + sigma^2 * mu_0) / ...``), particle filter \
-  reweighting, Kalman filter update steps.
-- **variational_inference**: Methods that compute ELBO, KL divergence, \
-  reparameterization trick (``z = mu + sigma * eps``), or optimize variational \
-  parameters.
+- **prior_init**: initialize prior distributions or hyperparameter priors \
+  (Normal/Dirichlet, mu_0/sigma_0, etc.).
+- **log_prob** / **likelihood_evaluation**: evaluate log-probability, \
+  log_likelihood, score, density.
+- **sampler** / **mcmc_kernel** / **mcmc_proposal**: stochastic transition \
+  steps (Metropolis-Hastings accept/reject, HMC leapfrog, Gibbs).
+- **posterior_update** / **smc_reweight**: conjugate updates, Kalman update, \
+  particle weight update and normalization.
+- **variational_inference** / **vi_elbo**: ELBO/KL/reparameterization updates.
 
-When you detect these patterns, group them into atoms with the corresponding \
-concept_type. Methods managing RNG state (seed, key splitting) should be grouped \
-with the sampler atom that consumes them.
+Oracle isolation requirements:
+1. If method metadata has ``is_oracle=True`` or behavior is stateless \
+   log-density/gradient/likelihood evaluation, isolate it as a pure oracle \
+   atom (no persistent state writes).
+2. Oracle outputs must be explicit (log_prob, gradient, likelihood) and fed \
+   by explicit state/input edges.
+3. If ``is_conjugate=True``, classify as analytical posterior_update \
+   (closed form hyperparameter update, not sampler output).
 
-BAYESIAN EXTRACTION RULES — MANDATORY:
-
-1. **Oracle Isolation**: If a method's metadata has ``is_oracle=True``, or if the \
-   method implements a stateless log-density, gradient, or likelihood evaluation, \
-   isolate it into a **pure** MacroAtomSpec with ZERO state mutation between calls. \
-   The atom must have no ``writes`` to any cross-window state. Its only outputs are \
-   the computed log-probability, gradient, or likelihood values. Concept type must \
-   be ``log_prob`` or ``custom`` with a description stating "stateless oracle".
-
-2. **State Decoupling**: Covariance matrices (Kalman P, mass matrices, Fisher \
-   information), particle swarms (weight arrays, particle arrays), and MCMC chain \
-   state (trace arrays, acceptance counters) must NEVER be hidden internal state. \
-   Treat them strictly as **immutable flowing StateModelSpecs** — they enter and \
-   exit atoms via explicit typed edges. If you see ``self.P``, ``self.particles``, \
-   ``self.trace``, or ``self.cov`` being read AND written within the same atom, \
-   you MUST split that atom so that the state flows as an input→output edge.
-
-3. **Conjugate Short-Circuit**: If ``is_conjugate=True`` is detected on a method, \
-   the atom is an analytical closed-form update. Mark its concept_type as \
-   ``posterior_update`` and ensure its output is the updated hyperparameter tuple, \
-   not a sample. Do not group it with stochastic samplers.
-
-4. **Frozen Stochasticity**: If a noise matrix (Z, epsilon, eta) is initialised \
-   once and reused across iterations (common in ADVI reparameterization), mark it \
-   as a static initialization input to the atom — NOT as internal mutable state. \
-   The atom that consumes it must declare it as a named input with \
-   constraints="static standard normal noise".
-
-5. **Factor Graph Marginals**: Methods performing ``np.sum(axis=...)`` or \
-   ``einsum`` over tensor products of incoming messages are **Marginal Computation** \
-   atoms. Tag them with concept_type ``custom`` and include "marginal_computation" \
-   in the description. They must be stateless.
+Additional guidance:
+- Frozen stochasticity (e.g., static Z/epsilon noise) is a static input, not \
+  mutable state.
+- Marginal computations (sum-product, ``np.sum(axis=...)``, ``einsum``) are \
+  stateless atoms.
 
 Return valid JSON only."""
 
@@ -137,12 +121,29 @@ Return JSON:
 # ---------------------------------------------------------------------------
 
 HOIST_STATE_SYSTEM = """\
-You are a software architect. Given a macro-atom plan and the list of \
-cross-window attributes (attributes read/written across invocations), \
-generate Pydantic state model specifications.
+You are a software architect generating StateModelSpecs for immutable \
+state threading between pure macro-atoms.
 
-Each state model externalizes cross-window state so that atoms remain \
-stateless. The graph carries state as typed edges.
+Input: macro-atom plan + cross-window attributes.
+Output: one or more StateModelSpecs that externalize ALL persistent state.
+
+Mandatory state-hoisting rules:
+1. Hoist every cross-window mutable attribute into a StateModelSpec field. \
+   No hidden in-place state may remain inside atoms.
+2. Group fields by coherent state-space structure. Examples: \
+   ``KalmanState`` (x, P, Q, R), ``ParticleState`` (particles, weights, \
+   ancestors), ``HMCState`` (position, momenta, mass_matrix, step_size), \
+   ``VIState`` (variational params, optimizer state).
+3. For each transition kernel atom (Predict/Update, propagate/reweight/\
+resample, leapfrog/update), require input state model and output state model \
+to represent a NEW state value, not mutation of old state.
+4. Treat stochastic state using JAX functional standards when applicable: \
+   include explicit RNG fields (e.g., ``rng_key`` typed as \
+   ``jax.random.PRNGKey``) that are threaded through state in/out.
+5. Include enough typed fields to reconstruct state transitions without \
+   consulting hidden class members.
+6. ``source_attrs`` must map directly to original ``self.*`` attributes.
+7. ``docstring`` must briefly describe state semantics and invariants.
 
 Return valid JSON only."""
 

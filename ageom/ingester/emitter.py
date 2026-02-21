@@ -54,6 +54,7 @@ _BAYESIAN_CONCEPT_TYPES = frozenset({
     ConceptType.SAMPLER,
     ConceptType.LOG_PROB,
     ConceptType.POSTERIOR_UPDATE,
+    ConceptType.CONJUGATE_UPDATE,
     ConceptType.VARIATIONAL_INFERENCE,
     ConceptType.PRIOR_INIT,
 })
@@ -545,6 +546,23 @@ def _generate_bayesian_witness(
         lines.append(f"        is_discrete=prior.is_discrete,")
         lines.append(f"    )")
 
+    elif ct == ConceptType.CONJUGATE_UPDATE:
+        params = [
+            "prior: AbstractDistribution",
+            "sufficient_stats: AbstractArray",
+        ]
+        lines.append(f"def {witness_name}({', '.join(params)}) -> AbstractDistribution:")
+        lines.append(f'    """Ghost witness for closed-form conjugate update: {atom.name}."""')
+        lines.append(f"    # Closed-form update: no sampling trace or RNG threading required.")
+        lines.append(f"    return AbstractDistribution(")
+        lines.append(f"        family=prior.family,")
+        lines.append(f"        event_shape=prior.event_shape,")
+        lines.append(f"        batch_shape=prior.batch_shape,")
+        lines.append(f"        support_lower=prior.support_lower,")
+        lines.append(f"        support_upper=prior.support_upper,")
+        lines.append(f"        is_discrete=prior.is_discrete,")
+        lines.append(f"    )")
+
     elif ct == ConceptType.VARIATIONAL_INFERENCE:
         params = [
             "q_dist: AbstractDistribution",
@@ -583,6 +601,7 @@ def generate_ghost_witnesses(
     """
     has_state = bool(state_models)
     has_bayesian = any(a.concept_type in _BAYESIAN_CONCEPT_TYPES for a in macro_atoms)
+    has_sampler = any(a.concept_type == ConceptType.SAMPLER for a in macro_atoms)
 
     lines = [
         '"""Auto-generated ghost witness functions for abstract simulation."""',
@@ -600,13 +619,14 @@ def generate_ghost_witnesses(
         "    from ageoa.ghost.abstract import AbstractSignal, AbstractArray, AbstractScalar",
     ]
     if has_bayesian:
-        lines.append(
-            "    from ageoa.ghost.abstract import ("
-        )
-        lines.append("        AbstractDistribution,")
-        lines.append("        AbstractMCMCTrace,")
-        lines.append("        AbstractRNGState,")
-        lines.append("    )")
+        lines.extend([
+            "    from ageoa.ghost.abstract import AbstractDistribution",
+        ])
+    if has_sampler:
+        lines.extend([
+            "    from ageoa.ghost.abstract import AbstractMCMCTrace",
+            "    from ageoa.ghost.abstract import AbstractRNGState",
+        ])
     lines.extend([
         "except ImportError:",
         "    pass",
@@ -913,6 +933,116 @@ def build_procedural_plan(
     return ValidatedMacroPlan(plan=plan, all_attrs_accounted=True)
 
 
+def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPlan:
+    """Ensure conjugate updates follow data->update->distribution edges."""
+    atoms = plan.plan.macro_atoms
+    if not atoms:
+        return plan
+
+    edges = list(plan.plan.edge_definitions)
+    seen = {
+        (
+            e.source_id, e.target_id, e.output_name, e.input_name,
+            e.source_type, e.target_type,
+        )
+        for e in edges
+    }
+
+    def pick_output(atom: MacroAtomSpec) -> tuple[str, str]:
+        if atom.outputs:
+            pref = next(
+                (o for o in atom.outputs if any(
+                    h in o.name.lower() for h in ("data", "obs", "sample", "stats", "posterior", "params")
+                )),
+                atom.outputs[0],
+            )
+            return pref.name, pref.type_desc
+        return "result", "Any"
+
+    def pick_input(atom: MacroAtomSpec, out_name: str) -> tuple[str, str]:
+        if atom.inputs:
+            for inp in atom.inputs:
+                if inp.name == out_name:
+                    return inp.name, inp.type_desc
+            pref = next(
+                (i for i in atom.inputs if any(
+                    h in i.name.lower() for h in ("data", "obs", "sample", "stats", "posterior", "params")
+                )),
+                atom.inputs[0],
+            )
+            return pref.name, pref.type_desc
+        return out_name, "Any"
+
+    def add_edge(edge: DependencyEdge) -> None:
+        key = (
+            edge.source_id, edge.target_id, edge.output_name, edge.input_name,
+            edge.source_type, edge.target_type,
+        )
+        if key not in seen:
+            seen.add(key)
+            edges.append(edge)
+
+    for conj in [a for a in atoms if a.concept_type == ConceptType.CONJUGATE_UPDATE]:
+        conj_id = _snake_case(conj.name)
+        incoming = [e for e in edges if e.target_id == conj_id]
+        outgoing = [e for e in edges if e.source_id == conj_id]
+
+        if not incoming:
+            data_atom = next(
+                (
+                    a for a in atoms
+                    if a.concept_type != ConceptType.CONJUGATE_UPDATE
+                    and _snake_case(a.name) != conj_id
+                    and (
+                        "data" in a.name.lower()
+                        or "ingest" in a.name.lower()
+                        or any(h in o.name.lower() for o in a.outputs for h in ("data", "obs", "sample", "stats"))
+                    )
+                ),
+                None,
+            )
+            if data_atom is not None:
+                out_name, out_type = pick_output(data_atom)
+                in_name, in_type = pick_input(conj, out_name)
+                add_edge(DependencyEdge(
+                    source_id=_snake_case(data_atom.name),
+                    target_id=conj_id,
+                    output_name=out_name,
+                    input_name=in_name,
+                    source_type=out_type,
+                    target_type=in_type,
+                ))
+
+        if not outgoing:
+            dist_atom = next(
+                (
+                    a for a in atoms
+                    if _snake_case(a.name) != conj_id
+                    and (
+                        a.concept_type in {ConceptType.PRIOR_DISTRIBUTION, ConceptType.PRIOR_INIT}
+                        or "distribution" in a.name.lower()
+                        or "posterior" in a.name.lower()
+                        or "construct" in a.name.lower()
+                    )
+                ),
+                None,
+            )
+            if dist_atom is not None:
+                out_name, out_type = pick_output(conj)
+                in_name, in_type = pick_input(dist_atom, out_name)
+                add_edge(DependencyEdge(
+                    source_id=conj_id,
+                    target_id=_snake_case(dist_atom.name),
+                    output_name=out_name,
+                    input_name=in_name,
+                    source_type=out_type,
+                    target_type=in_type,
+                ))
+
+    updated = plan.plan.model_copy(update={"edge_definitions": edges})
+    return plan.model_copy(update={"plan": updated})
+
+
 # ---------------------------------------------------------------------------
 # Top-level emitter
 # ---------------------------------------------------------------------------
@@ -925,6 +1055,10 @@ def emit_ingestion_bundle(
     source_language: str = "python",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
+    # Conjugate updates should follow deterministic
+    # data->hyperparameter update->distribution construction flow.
+    plan = _linearize_conjugate_sequence(plan)
+
     # Check for opaque atoms
     has_opaque = any(a.is_opaque for a in plan.plan.macro_atoms)
 
@@ -994,4 +1128,3 @@ def emit_ingestion_bundle(
         generated_witnesses=witness_source,
         match_results=match_results,
     )
-

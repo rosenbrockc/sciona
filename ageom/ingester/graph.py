@@ -19,6 +19,7 @@ from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
 
 from ageom.architect.handoff import CDGExport
+from ageom.architect.models import ConceptType, DependencyEdge
 from ageom.hunter.llm import LLMClient
 from ageom.ingester.chunker import ChunkerDeps, ChunkerState, build_chunker_graph
 from ageom.ingester.base_extractor import EXTENSION_MAP, BaseExtractor, SourceLanguage
@@ -47,6 +48,26 @@ from ageom.protocols import ProofEnvironment, SemanticIndex
 logger = logging.getLogger(__name__)
 
 _MAX_REPAIR_RETRIES = 3
+
+_CONJUGATE_METHOD_HINTS: frozenset[str] = frozenset({
+    "fit", "posterior", "posterior_update", "update_hyperparameters",
+    "update_params", "update_alpha", "update_beta", "update_conjugate",
+})
+_SUFF_STAT_HINTS: frozenset[str] = frozenset({
+    "sufficient", "stat", "sum", "mean", "count", "accumulate", "aggregate",
+    "n_obs", "n_samples", "successes", "failures",
+})
+_DISTRIBUTION_HINTS: frozenset[str] = frozenset({
+    "beta", "bernoulli", "binomial", "dirichlet", "categorical", "multinomial",
+    "gamma", "poisson", "normal", "gaussian", "wishart", "student",
+    "distribution", "prior", "posterior", "hyperparameter", "alpha", "theta",
+})
+_DATA_EDGE_HINTS: frozenset[str] = frozenset({
+    "data", "observation", "sample", "batch", "stats", "count",
+})
+_DIST_EDGE_HINTS: frozenset[str] = frozenset({
+    "posterior", "distribution", "prior", "params", "hyper", "alpha", "beta",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +138,187 @@ def _get_extractor(source_path: str) -> BaseExtractor:
 
 
 # ---------------------------------------------------------------------------
+# Conjugate heuristics
+# ---------------------------------------------------------------------------
+
+
+def _atom_id(name: str) -> str:
+    return name.lower().replace(" ", "_").replace("-", "_")
+
+
+def _edge_key(e: DependencyEdge) -> tuple[str, str, str, str, str, str]:
+    return (
+        e.source_id, e.target_id, e.output_name, e.input_name,
+        e.source_type, e.target_type,
+    )
+
+
+def _contains_hint(text: str, hints: frozenset[str]) -> bool:
+    lower = text.lower()
+    return any(h in lower for h in hints)
+
+
+def _method_has_sufficient_stats(mf) -> bool:
+    """Heuristic for sufficient-stat accumulation methods."""
+    name = mf.name.lower()
+    src = (mf.source_code or "").lower()
+    if _contains_hint(name, _SUFF_STAT_HINTS):
+        return True
+    if _contains_hint(src, _SUFF_STAT_HINTS):
+        return True
+    # Common aggregation patterns in closed-form updates
+    patterns = ("sum(", ".sum(", "mean(", ".mean(", "count(", "len(", "+=", "for ")
+    return any(p in src for p in patterns)
+
+
+def _method_has_distribution_context(mf) -> bool:
+    text = " ".join([
+        mf.name or "",
+        mf.return_type or "",
+        mf.docstring or "",
+        mf.source_code or "",
+    ])
+    return _contains_hint(text, _DISTRIBUTION_HINTS)
+
+
+def _method_is_fit_or_posterior(mf) -> bool:
+    if _contains_hint(mf.name, _CONJUGATE_METHOD_HINTS):
+        return True
+    return any(_contains_hint(c, _CONJUGATE_METHOD_HINTS) for c in mf.calls)
+
+
+def _choose_output(atom) -> tuple[str, str]:
+    if atom.outputs:
+        preferred = next(
+            (o for o in atom.outputs if _contains_hint(o.name, _DATA_EDGE_HINTS | _DIST_EDGE_HINTS)),
+            atom.outputs[0],
+        )
+        return preferred.name, preferred.type_desc
+    return "result", "Any"
+
+
+def _choose_input(atom, output_name: str) -> tuple[str, str]:
+    if atom.inputs:
+        for inp in atom.inputs:
+            if inp.name == output_name:
+                return inp.name, inp.type_desc
+        preferred = next(
+            (i for i in atom.inputs if _contains_hint(i.name, _DATA_EDGE_HINTS | _DIST_EDGE_HINTS)),
+            atom.inputs[0],
+        )
+        return preferred.name, preferred.type_desc
+    return output_name, "Any"
+
+
+def _select_data_atom(macro_atoms, conjugate_id: str):
+    for atom in macro_atoms:
+        aid = _atom_id(atom.name)
+        if aid == conjugate_id:
+            continue
+        if _contains_hint(atom.name, frozenset({"data", "ingest", "observation", "evidence", "stats"})):
+            return atom
+        if any(_contains_hint(o.name, _DATA_EDGE_HINTS) for o in atom.outputs):
+            return atom
+    return None
+
+
+def _select_distribution_atom(macro_atoms, conjugate_id: str):
+    for atom in macro_atoms:
+        aid = _atom_id(atom.name)
+        if aid == conjugate_id:
+            continue
+        if atom.concept_type in {ConceptType.PRIOR_INIT, ConceptType.PRIOR_DISTRIBUTION}:
+            return atom
+        if _contains_hint(atom.name, frozenset({"distribution", "posterior", "construct", "build"})):
+            return atom
+        if any(_contains_hint(i.name, _DIST_EDGE_HINTS) for i in atom.inputs):
+            return atom
+    return None
+
+
+def apply_conjugate_heuristics(
+    dfg: RawDataFlowGraph,
+    validated: ValidatedMacroPlan,
+) -> ValidatedMacroPlan:
+    """Promote closed-form posterior logic to CONJUGATE_UPDATE and linearize edges."""
+    plan = validated.plan
+    if not plan.macro_atoms:
+        return validated
+
+    by_method = {m.name: m for m in dfg.methods}
+    updated_atoms = []
+    conjugate_ids: list[str] = []
+
+    for atom in plan.macro_atoms:
+        methods = [by_method[m] for m in atom.method_names if m in by_method]
+        has_explicit = any(m.is_conjugate for m in methods)
+        has_fit_like = any(_method_is_fit_or_posterior(m) for m in methods)
+        has_suff_stats = any(_method_has_sufficient_stats(m) for m in methods)
+        has_distribution = any(_method_has_distribution_context(m) for m in methods)
+
+        should_promote = has_explicit or (has_fit_like and has_suff_stats and has_distribution)
+        if should_promote and atom.concept_type != ConceptType.CONJUGATE_UPDATE:
+            atom = atom.model_copy(update={"concept_type": ConceptType.CONJUGATE_UPDATE})
+
+        if atom.concept_type == ConceptType.CONJUGATE_UPDATE:
+            conjugate_ids.append(_atom_id(atom.name))
+        updated_atoms.append(atom)
+
+    edges = list(plan.edge_definitions)
+    seen = {_edge_key(e) for e in edges}
+    atom_by_id = {_atom_id(a.name): a for a in updated_atoms}
+
+    for conj_id in conjugate_ids:
+        conj_atom = atom_by_id.get(conj_id)
+        if conj_atom is None:
+            continue
+
+        incoming_exists = any(e.target_id == conj_id for e in edges)
+        if not incoming_exists:
+            data_atom = _select_data_atom(updated_atoms, conj_id)
+            if data_atom is not None:
+                out_name, out_type = _choose_output(data_atom)
+                in_name, in_type = _choose_input(conj_atom, out_name)
+                edge = DependencyEdge(
+                    source_id=_atom_id(data_atom.name),
+                    target_id=conj_id,
+                    output_name=out_name,
+                    input_name=in_name,
+                    source_type=out_type,
+                    target_type=in_type,
+                )
+                key = _edge_key(edge)
+                if key not in seen:
+                    seen.add(key)
+                    edges.append(edge)
+
+        outgoing_exists = any(e.source_id == conj_id for e in edges)
+        if not outgoing_exists:
+            dist_atom = _select_distribution_atom(updated_atoms, conj_id)
+            if dist_atom is not None:
+                out_name, out_type = _choose_output(conj_atom)
+                in_name, in_type = _choose_input(dist_atom, out_name)
+                edge = DependencyEdge(
+                    source_id=conj_id,
+                    target_id=_atom_id(dist_atom.name),
+                    output_name=out_name,
+                    input_name=in_name,
+                    source_type=out_type,
+                    target_type=in_type,
+                )
+                key = _edge_key(edge)
+                if key not in seen:
+                    seen.add(key)
+                    edges.append(edge)
+
+    updated_plan = plan.model_copy(update={
+        "macro_atoms": updated_atoms,
+        "edge_definitions": edges,
+    })
+    return validated.model_copy(update={"plan": updated_plan})
+
+
+# ---------------------------------------------------------------------------
 # Graph nodes
 # ---------------------------------------------------------------------------
 
@@ -172,6 +374,20 @@ async def phase2_chunk(
         )
 
     return {"validated_plan": validated}
+
+
+async def phase2_conjugate_heuristics(
+    state: IngesterState, config: RunnableConfig
+) -> dict[str, Any]:
+    """Deterministic pass: detect closed-form conjugate update logic."""
+    if state.get("error"):
+        return {}
+    validated = state.get("validated_plan")
+    dfg = state.get("raw_dfg")
+    if validated is None or dfg is None:
+        return {}
+    updated = apply_conjugate_heuristics(dfg, validated)
+    return {"validated_plan": updated}
 
 
 async def phase3_emit(
@@ -389,6 +605,7 @@ def build_ingester_graph() -> StateGraph:
 
     graph.add_node("phase1_extract", phase1_extract)
     graph.add_node("phase2_chunk", phase2_chunk)
+    graph.add_node("phase2_conjugate_heuristics", phase2_conjugate_heuristics)
     graph.add_node("phase3_emit", phase3_emit)
     graph.add_node("verify_types", verify_types)
     graph.add_node("verify_ghost", verify_ghost)
@@ -397,7 +614,8 @@ def build_ingester_graph() -> StateGraph:
 
     graph.set_entry_point("phase1_extract")
     graph.add_edge("phase1_extract", "phase2_chunk")
-    graph.add_edge("phase2_chunk", "phase3_emit")
+    graph.add_edge("phase2_chunk", "phase2_conjugate_heuristics")
+    graph.add_edge("phase2_conjugate_heuristics", "phase3_emit")
     graph.add_edge("phase3_emit", "verify_types")
 
     graph.add_conditional_edges(
