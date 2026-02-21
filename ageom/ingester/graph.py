@@ -40,6 +40,8 @@ from ageom.ingester.models import (
 from ageom.ingester.prompts import (
     FIX_GHOST_ERROR_SYSTEM,
     FIX_GHOST_ERROR_USER,
+    FIX_MESSAGE_CYCLE_SYSTEM,
+    FIX_MESSAGE_CYCLE_USER,
     FIX_TYPE_ERROR_SYSTEM,
     FIX_TYPE_ERROR_USER,
 )
@@ -480,6 +482,9 @@ async def verify_ghost(
                 "error_node": report.error_node,
                 "error_function": report.error_function,
                 "coverage": report.coverage,
+                "cyclic_deadlock": report.cyclic_deadlock,
+                "deadlock_nodes": report.deadlock_nodes,
+                "iterations_used": report.iterations_used,
             },
         })
         passed = report.passed or not report.ran
@@ -573,6 +578,56 @@ async def repair_ghost(
     return {"ghost_repair_count": state.get("ghost_repair_count", 0) + 1}
 
 
+async def repair_message_cycle(
+    state: IngesterState, config: RunnableConfig
+) -> dict[str, Any]:
+    """LLM-assisted repair of cyclic deadlocks in message-passing topologies."""
+    deps: IngesterDeps = config["configurable"]["deps"]
+    bundle: IngestionBundle = state["bundle"]
+    report = bundle.ghost_sim_report
+
+    # Collect cycle edges for the prompt
+    deadlock_nodes = report.get("deadlock_nodes", [])
+    cycle_edges = []
+    for edge in bundle.cdg.edges:
+        if edge.source_id in deadlock_nodes or edge.target_id in deadlock_nodes:
+            cycle_edges.append(f"{edge.source_id} -> {edge.target_id}")
+
+    user_prompt = FIX_MESSAGE_CYCLE_USER.format(
+        deadlock_nodes=", ".join(deadlock_nodes),
+        cycle_edges="\n".join(cycle_edges),
+        witness_source=bundle.generated_witnesses,
+    )
+
+    from ageom.llm_router import INGESTER_FIX_MESSAGE_CYCLE, select_llm
+
+    response = await select_llm(deps.llm, INGESTER_FIX_MESSAGE_CYCLE).complete(
+        FIX_MESSAGE_CYCLE_SYSTEM, user_prompt
+    )
+
+    try:
+        fixes = json.loads(response)
+        if isinstance(fixes, list) and fixes:
+            lines = bundle.generated_witnesses.splitlines()
+            for fix in sorted(fixes, key=lambda f: f.get("line_start", 0), reverse=True):
+                start = fix.get("line_start", 1) - 1
+                end = fix.get("line_end", start + 1)
+                replacement = fix.get("replacement", "")
+                lines[start:end] = replacement.splitlines()
+            updated_witnesses = "\n".join(lines)
+            updated_bundle = bundle.model_copy(update={
+                "generated_witnesses": updated_witnesses,
+            })
+            return {
+                "bundle": updated_bundle,
+                "ghost_repair_count": state.get("ghost_repair_count", 0) + 1,
+            }
+    except (json.JSONDecodeError, KeyError, IndexError) as exc:
+        logger.warning("Failed to parse message cycle repair response: %s", exc)
+
+    return {"ghost_repair_count": state.get("ghost_repair_count", 0) + 1}
+
+
 # ---------------------------------------------------------------------------
 # Routing
 # ---------------------------------------------------------------------------
@@ -591,6 +646,14 @@ def route_after_ghost(state: IngesterState) -> str:
         return "end"
     if state.get("ghost_repair_count", 0) >= _MAX_REPAIR_RETRIES:
         return "end"
+
+    # Check for cyclic deadlock — route to specialized repair
+    bundle: IngestionBundle | None = state.get("bundle")
+    if bundle is not None:
+        report = getattr(bundle, "ghost_sim_report", None) or {}
+        if isinstance(report, dict) and report.get("cyclic_deadlock"):
+            return "repair_message_cycle"
+
     return "repair_ghost"
 
 
@@ -611,6 +674,7 @@ def build_ingester_graph() -> StateGraph:
     graph.add_node("verify_ghost", verify_ghost)
     graph.add_node("repair_types", repair_types)
     graph.add_node("repair_ghost", repair_ghost)
+    graph.add_node("repair_message_cycle", repair_message_cycle)
 
     graph.set_entry_point("phase1_extract")
     graph.add_edge("phase1_extract", "phase2_chunk")
@@ -635,9 +699,11 @@ def build_ingester_graph() -> StateGraph:
         {
             "end": END,
             "repair_ghost": "repair_ghost",
+            "repair_message_cycle": "repair_message_cycle",
         },
     )
     graph.add_edge("repair_ghost", "verify_types")
+    graph.add_edge("repair_message_cycle", "verify_types")
 
     return graph
 

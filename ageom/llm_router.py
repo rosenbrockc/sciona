@@ -36,6 +36,7 @@ INGESTER_ABSTRACT = "ingester_abstract"
 INGESTER_FIX_TYPE = "ingester_fix_type"
 INGESTER_FIX_GHOST = "ingester_fix_ghost"
 INGESTER_OPAQUE_WITNESS = "ingester_opaque_witness"
+INGESTER_FIX_MESSAGE_CYCLE = "ingester_fix_message_cycle"
 
 # Orchestrator
 ORCHESTRATOR_REFINE = "orchestrator_refine"
@@ -55,6 +56,7 @@ ALL_PROMPT_KEYS = [
     INGESTER_FIX_TYPE,
     INGESTER_FIX_GHOST,
     INGESTER_OPAQUE_WITNESS,
+    INGESTER_FIX_MESSAGE_CYCLE,
     ORCHESTRATOR_REFINE,
 ]
 

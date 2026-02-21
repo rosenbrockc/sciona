@@ -295,6 +295,35 @@ Return JSON array of fixes:
 # Phase 3: Opaque DL boundary witness drafting
 # ---------------------------------------------------------------------------
 
+FIX_MESSAGE_CYCLE_SYSTEM = """\
+You are fixing a cyclic deadlock in a factor graph message-passing topology.
+The ghost simulation detected that messages are not converging during \
+iterative belief propagation. Your task is to modify the memoization \
+witness to break the cycle by adding damping, convergence epsilon checks, \
+or iteration caps.
+
+Return valid JSON only."""
+
+FIX_MESSAGE_CYCLE_USER = """\
+Deadlocked nodes: {deadlock_nodes}
+Cycle edges: {cycle_edges}
+Current witness source:
+```python
+{witness_source}
+```
+
+Fix the memoization witness to break the cycle (add damping, convergence \
+epsilon, or iteration cap).
+Return JSON array of patches:
+[
+  {{
+    "line_start": <int>,
+    "line_end": <int>,
+    "replacement": "<fixed code>"
+  }}
+]"""
+
+
 DRAFT_OPAQUE_WITNESS_SYSTEM = """\
 You are a shape-inference expert for deep-learning modules. Given the \
 forward signature of an opaque DL module, draft an AbstractArray-based \

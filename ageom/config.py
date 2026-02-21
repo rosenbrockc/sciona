@@ -112,6 +112,8 @@ class AgeomConfig(BaseSettings):
     ingester_fix_ghost_llm_model: str = ""
     ingester_opaque_witness_llm_provider: str = ""
     ingester_opaque_witness_llm_model: str = ""
+    ingester_fix_message_cycle_llm_provider: str = ""
+    ingester_fix_message_cycle_llm_model: str = ""
 
     # Orchestrator per-prompt
     orchestrator_refine_llm_provider: str = ""

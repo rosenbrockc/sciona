@@ -59,6 +59,9 @@ _BAYESIAN_CONCEPT_TYPES = frozenset({
     ConceptType.PRIOR_INIT,
 })
 
+# Message-passing concept types that get memoized witness templates
+_MESSAGE_PASSING_CONCEPT_TYPES = frozenset({ConceptType.MESSAGE_PASSING})
+
 
 # ---------------------------------------------------------------------------
 # Opaque DL boundary witness generation
@@ -315,6 +318,22 @@ def generate_atom_wrappers(
         lines.append(f"# Witness functions should be imported from the generated witnesses module")
         lines.append("")
 
+    # Memoization preamble for message-passing atoms
+    has_message_passing = any(
+        a.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES for a in macro_atoms
+    )
+    if has_message_passing:
+        lines.extend([
+            "_MEMO: dict = {}",
+            "",
+            "",
+            "def _memo_key(name: str, *args) -> tuple:",
+            '    """Build a memoization cache key from name and argument ids."""',
+            "    return (name,) + tuple(id(a) for a in args)",
+            "",
+            "",
+        ])
+
     for atom in macro_atoms:
         fn_name = _snake_case(atom.name)
         witness_fn = witness_names.get(atom.name, f"witness_{fn_name}")
@@ -338,9 +357,20 @@ def generate_atom_wrappers(
             lines.append(deco)
         lines.append(f"@register_atom({witness_fn})")
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
-        if atom.description:
-            lines.append(f'    """{atom.description}"""')
-        lines.append(f"    raise NotImplementedError(\"Wire to original implementation\")")
+
+        # Message-passing atoms get memoized wrappers
+        if atom.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES:
+            desc = atom.description or f"Compute {atom.name} with memoization."
+            lines.append(f'    """{desc}"""')
+            arg_names = ", ".join(inp.name for inp in atom.inputs)
+            lines.append(f'    _key = _memo_key("{fn_name}", {arg_names})')
+            lines.append(f"    if _key in _MEMO:")
+            lines.append(f"        return _MEMO[_key]")
+            lines.append(f"    raise NotImplementedError(\"Wire to original implementation\")")
+        else:
+            if atom.description:
+                lines.append(f'    """{atom.description}"""')
+            lines.append(f"    raise NotImplementedError(\"Wire to original implementation\")")
         lines.append("")
 
     return "\n".join(lines)
@@ -582,6 +612,95 @@ def _generate_bayesian_witness(
     return lines
 
 
+def _generate_message_passing_witness(
+    atom: MacroAtomSpec,
+    fn_name: str,
+    witness_name: str,
+) -> list[str]:
+    """Generate a memoized witness for a MESSAGE_PASSING atom.
+
+    Routes based on atom name heuristics to produce the appropriate
+    witness template for variable-to-factor, factor-to-variable,
+    marginal computation, or memoization state nodes.
+    """
+    lines: list[str] = []
+    name_lower = atom.name.lower()
+
+    # Distinguish "Variable to Factor" vs "Factor to Variable" by word order
+    var_idx = name_lower.find("variable")
+    fac_idx = name_lower.find("factor")
+    is_var_to_fac = var_idx >= 0 and fac_idx >= 0 and var_idx < fac_idx
+    is_fac_to_var = fac_idx >= 0 and var_idx >= 0 and fac_idx < var_idx
+
+    if is_var_to_fac:
+        # Variable-to-Factor message witness
+        lines.append(f"def {witness_name}(incoming_messages: dict[str, AbstractArray], memo_state: dict[str, AbstractArray]) -> dict[str, AbstractArray]:")
+        lines.append(f'    """Ghost witness for message-passing: Variable to Factor."""')
+        lines.append(f'    _cache_key = ("variable_to_factor", id(incoming_messages), id(memo_state))')
+        lines.append(f"    if _cache_key in _MEMO_CACHE:")
+        lines.append(f"        return _MEMO_CACHE[_cache_key]")
+        lines.append(f"    result = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in incoming_messages.items()}}")
+        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
+        lines.append(f"    return result")
+
+    elif is_fac_to_var:
+        # Factor-to-Variable message witness
+        lines.append(f"def {witness_name}(var_messages: dict[str, AbstractArray], factor_potentials: dict[str, AbstractArray], memo_state: dict[str, AbstractArray]) -> dict[str, AbstractArray]:")
+        lines.append(f'    """Ghost witness for message-passing: Factor to Variable."""')
+        lines.append(f'    _cache_key = ("factor_to_variable", id(var_messages), id(factor_potentials), id(memo_state))')
+        lines.append(f"    if _cache_key in _MEMO_CACHE:")
+        lines.append(f"        return _MEMO_CACHE[_cache_key]")
+        lines.append(f"    result = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in var_messages.items()}}")
+        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
+        lines.append(f"    return result")
+
+    elif "marginal" in name_lower:
+        # Marginal computation witness
+        lines.append(f"def {witness_name}(factor_messages: dict[str, AbstractArray], var_messages: dict[str, AbstractArray]) -> dict[str, AbstractArray]:")
+        lines.append(f'    """Ghost witness for message-passing: Marginal Computation."""')
+        lines.append(f'    _cache_key = ("marginal", id(factor_messages), id(var_messages))')
+        lines.append(f"    if _cache_key in _MEMO_CACHE:")
+        lines.append(f"        return _MEMO_CACHE[_cache_key]")
+        lines.append(f"    result = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in factor_messages.items()}}")
+        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
+        lines.append(f"    return result")
+
+    elif "memo" in name_lower:
+        # Memoization state witness
+        lines.append(f"def {witness_name}(var_messages: dict[str, AbstractArray], factor_messages: dict[str, AbstractArray]) -> tuple[dict[str, AbstractArray], bool]:")
+        lines.append(f'    """Ghost witness for message-passing: Memoization State."""')
+        lines.append(f'    _cache_key = ("memo_state", id(var_messages), id(factor_messages))')
+        lines.append(f"    if _cache_key in _MEMO_CACHE:")
+        lines.append(f"        return _MEMO_CACHE[_cache_key]")
+        lines.append(f"    memo_state = {{k: AbstractArray(shape=v.shape, dtype=v.dtype) for k, v in var_messages.items()}}")
+        lines.append(f"    converged = False")
+        lines.append(f"    result = (memo_state, converged)")
+        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
+        lines.append(f"    return result")
+
+    else:
+        # Generic message-passing witness fallback
+        params = []
+        for inp in atom.inputs:
+            params.append(f"{inp.name}: AbstractArray")
+        param_str = ", ".join(params) if params else ""
+        lines.append(f"def {witness_name}({param_str}) -> AbstractArray:")
+        lines.append(f'    """Ghost witness for message-passing: {atom.name}."""')
+        lines.append(f'    _cache_key = ("{fn_name}",)')
+        lines.append(f"    if _cache_key in _MEMO_CACHE:")
+        lines.append(f"        return _MEMO_CACHE[_cache_key]")
+        if atom.inputs:
+            first = atom.inputs[0].name
+            lines.append(f"    result = AbstractArray(shape={first}.shape, dtype={first}.dtype)")
+        else:
+            lines.append(f'    result = AbstractArray(shape=(), dtype="float32")')
+        lines.append(f"    _MEMO_CACHE[_cache_key] = result")
+        lines.append(f"    return result")
+
+    lines.append("")
+    return lines
+
+
 def generate_ghost_witnesses(
     macro_atoms: list[MacroAtomSpec],
     state_models: list[StateModelSpec] | None = None,
@@ -602,6 +721,9 @@ def generate_ghost_witnesses(
     has_state = bool(state_models)
     has_bayesian = any(a.concept_type in _BAYESIAN_CONCEPT_TYPES for a in macro_atoms)
     has_sampler = any(a.concept_type == ConceptType.SAMPLER for a in macro_atoms)
+    has_message_passing = any(
+        a.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES for a in macro_atoms
+    )
 
     lines = [
         '"""Auto-generated ghost witness functions for abstract simulation."""',
@@ -633,6 +755,19 @@ def generate_ghost_witnesses(
         "",
     ])
 
+    # Memoization cache preamble for message-passing witnesses
+    if has_message_passing:
+        lines.extend([
+            "_MEMO_CACHE: dict = {}",
+            "",
+            "",
+            "def _clear_memo_cache() -> None:",
+            '    """Reset the memoization cache between iterations."""',
+            "    _MEMO_CACHE.clear()",
+            "",
+            "",
+        ])
+
     name_map: dict[str, str] = {}
 
     for atom in macro_atoms:
@@ -641,6 +776,13 @@ def generate_ghost_witnesses(
         fn_name = _snake_case(atom.name)
         witness_name = f"witness_{fn_name}"
         name_map[atom.name] = witness_name
+
+        # Message-passing atoms get memoized witness templates
+        if atom.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES:
+            lines.extend(_generate_message_passing_witness(
+                atom, fn_name, witness_name
+            ))
+            continue
 
         # Bayesian atoms get specialized witness templates
         if atom.concept_type in _BAYESIAN_CONCEPT_TYPES:

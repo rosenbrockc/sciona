@@ -14,8 +14,10 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from collections import deque
+
 from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, DependencyEdge, NodeStatus
+from ageom.architect.models import AlgorithmicNode, ConceptType, DependencyEdge, NodeStatus
 from ageom.synthesizer.toposort import toposort_nodes
 from ageom.types import MatchResult
 
@@ -68,6 +70,12 @@ class GhostSimReport:
     """Ratio of simulable / total atomic nodes (0.0 - 1.0)."""
     precision_gradients: dict[str, float] = field(default_factory=dict)
     """Per-node error expansion (output interval width - input interval width)."""
+    cyclic_deadlock: bool = False
+    """True if iterative message passing detected an unbroken cycle."""
+    deadlock_nodes: list[str] = field(default_factory=list)
+    """Node names involved in the deadlocked cycle."""
+    iterations_used: int = 0
+    """Number of message-passing iterations before convergence/deadlock."""
 
 
 def _extract_atom_name(declaration_name: str) -> str:
@@ -320,6 +328,140 @@ def _compute_precision_gradients(
     return gradients
 
 
+def _detect_message_passing_cycle(
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+) -> tuple[set[str], bool]:
+    """Detect whether a cycle is a valid MESSAGE_PASSING factor graph cycle.
+
+    Returns (cycle_node_ids, is_message_passing).  If Kahn's algorithm
+    completes, returns (empty set, False).  If it doesn't, collects the
+    remaining nodes and checks whether ALL of them have
+    concept_type == MESSAGE_PASSING.
+    """
+    node_ids = {n.node_id for n in nodes}
+    node_map = {n.node_id: n for n in nodes}
+
+    in_degree: dict[str, int] = {nid: 0 for nid in node_ids}
+    successors: dict[str, list[str]] = {nid: [] for nid in node_ids}
+
+    for edge in edges:
+        if edge.source_id in node_ids and edge.target_id in node_ids:
+            successors[edge.source_id].append(edge.target_id)
+            in_degree[edge.target_id] += 1
+
+    queue: deque[str] = deque()
+    for nid in node_ids:
+        if in_degree[nid] == 0:
+            queue.append(nid)
+
+    visited: set[str] = set()
+    while queue:
+        nid = queue.popleft()
+        visited.add(nid)
+        for succ in successors[nid]:
+            in_degree[succ] -= 1
+            if in_degree[succ] == 0:
+                queue.append(succ)
+
+    if len(visited) == len(node_ids):
+        return set(), False
+
+    # Remaining nodes are in the cycle
+    cycle_ids = node_ids - visited
+
+    # Check if ALL cycle nodes are MESSAGE_PASSING
+    is_mp = all(
+        getattr(node_map.get(nid), "concept_type", None) == ConceptType.MESSAGE_PASSING
+        for nid in cycle_ids
+        if nid in node_map
+    )
+
+    return cycle_ids, is_mp
+
+
+def _simulate_message_passing_iterative(
+    sim_nodes: list[Any],
+    initial_state: dict[str, Any],
+    max_iterations: int = 100,
+    convergence_tol: float = 1e-8,
+) -> tuple[Any, int, bool, list[str]]:
+    """Run iterative message passing instead of topological sort.
+
+    Returns (SimResult, iterations_used, deadlocked, deadlock_node_names).
+    """
+    if not _GHOST_AVAILABLE:
+        raise RuntimeError("ageoa package required for iterative simulation")
+
+    state = dict(initial_state)
+    trace: list[str] = []
+    iterations_used = 0
+
+    for iteration in range(max_iterations):
+        iterations_used = iteration + 1
+        prev_state = dict(state)
+
+        # Execute each node in round-robin order
+        for node in sim_nodes:
+            try:
+                res = simulate_graph([node], state)
+                state.update(res.final_state)
+                if iteration == 0:
+                    trace.append(node.name)
+            except PlanError:
+                raise
+            except Exception as exc:
+                raise PlanError(
+                    node_name=node.name,
+                    function_name=node.function_name,
+                    detail=f"Iterative simulation error: {exc}",
+                )
+
+        # Check for convergence via memoization state node
+        converged = False
+        for node in sim_nodes:
+            if node.output_name and "converged" in node.output_name.lower():
+                val = state.get(node.output_name)
+                if val is True:
+                    converged = True
+                    break
+            # Also check tuple outputs from memo nodes
+            if "memo" in node.name.lower() and node.output_name:
+                val = state.get(node.output_name)
+                if isinstance(val, tuple) and len(val) == 2 and val[1] is True:
+                    converged = True
+                    break
+
+        if converged:
+            return (
+                SimResult(node_count=len(sim_nodes), final_state=state, trace=trace),
+                iterations_used,
+                False,
+                [],
+            )
+
+        # Deadlock detection: no state change and not converged
+        state_unchanged = all(
+            state.get(k) is prev_state.get(k)
+            for k in state
+        )
+        if state_unchanged and iteration > 0:
+            deadlock_names = [n.name for n in sim_nodes]
+            raise PlanError(
+                node_name=sim_nodes[0].name if sim_nodes else "unknown",
+                function_name="iterative_message_passing",
+                detail="Cyclic deadlock: messages unchanged but convergence not reached",
+            )
+
+    # Max iterations reached — treat as convergence
+    return (
+        SimResult(node_count=len(sim_nodes), final_state=state, trace=trace),
+        iterations_used,
+        False,
+        [],
+    )
+
+
 def run_ghost_simulation(
     cdg: CDGExport,
     match_results: list[MatchResult],
@@ -346,12 +488,32 @@ def run_ghost_simulation(
         match_map[mr.pdg_node.predicate_id] = mr
 
     # Topological sort (needed by both precision gradients and ghost sim)
+    cycle_ids: set[str] = set()
+    is_message_passing_cycle = False
     try:
         sorted_ids = toposort_nodes(cdg.nodes, cdg.edges)
-    except ValueError as exc:
-        report.ran = True
-        report.error = f"Topological sort failed: {exc}"
-        return report
+    except ValueError:
+        # Topological sort failed — check if this is a valid factor graph cycle
+        cycle_ids, is_message_passing_cycle = _detect_message_passing_cycle(
+            cdg.nodes, cdg.edges
+        )
+        if not is_message_passing_cycle:
+            report.ran = True
+            report.error = f"Cycle detected in non-message-passing nodes: {cycle_ids}"
+            return report
+        # For message-passing cycles, build a partial order for acyclic nodes
+        # and use the cycle node ids for iterative simulation
+        acyclic_nodes = [n for n in cdg.nodes if n.node_id not in cycle_ids]
+        acyclic_edges = [
+            e for e in cdg.edges
+            if e.source_id not in cycle_ids and e.target_id not in cycle_ids
+        ]
+        try:
+            sorted_ids = toposort_nodes(acyclic_nodes, acyclic_edges)
+        except ValueError:
+            sorted_ids = [n.node_id for n in acyclic_nodes]
+        # Append cycle node ids at the end (they'll be simulated iteratively)
+        sorted_ids.extend(sorted(cycle_ids))
 
     # Precision gradients — runs independently of ageoa
     try:
@@ -476,25 +638,70 @@ def run_ghost_simulation(
             output_name=output_name,
         ))
 
-    # Run the simulation with Bayesian verification checks
+    # Run the simulation
     report.ran = True
-    try:
-        result = _simulate_with_bayesian_checks(sim_nodes, initial_state)
-        report.passed = True
-        report.node_count = result.node_count
-        report.trace = result.trace
-        logger.info(
-            "Ghost simulation passed: %d nodes simulated, trace: %s",
-            result.node_count, result.trace,
-        )
-    except PlanError as exc:
-        report.error = str(exc)
-        report.error_node = exc.node_name
-        report.error_function = exc.function_name
-        logger.warning("Ghost simulation failed: %s", exc)
-    except Exception as exc:
-        report.error = f"Unexpected error: {exc}"
-        logger.warning("Ghost simulation unexpected error: %s", exc)
+
+    if is_message_passing_cycle:
+        # Split sim_nodes into acyclic (run once) and cyclic (run iteratively)
+        cyclic_sim_nodes = [n for n in sim_nodes if any(
+            nid in cycle_ids for nid in simulable_nodes
+            if node_map.get(nid, AlgorithmicNode(node_id="")).name == n.name
+        )]
+        acyclic_sim_nodes = [n for n in sim_nodes if n not in cyclic_sim_nodes]
+
+        # If we can't cleanly separate, treat all as cyclic
+        if not cyclic_sim_nodes:
+            cyclic_sim_nodes = sim_nodes
+            acyclic_sim_nodes = []
+
+        try:
+            # Run acyclic nodes first
+            if acyclic_sim_nodes:
+                result = _simulate_with_bayesian_checks(acyclic_sim_nodes, initial_state)
+                initial_state.update(result.final_state)
+
+            # Run cyclic nodes iteratively
+            result, iters, deadlocked, dl_names = _simulate_message_passing_iterative(
+                cyclic_sim_nodes, initial_state
+            )
+            report.passed = True
+            report.node_count = result.node_count + len(acyclic_sim_nodes)
+            report.trace = [n.name for n in acyclic_sim_nodes] + result.trace
+            report.iterations_used = iters
+            logger.info(
+                "Ghost simulation (iterative) passed: %d nodes, %d iterations",
+                report.node_count, iters,
+            )
+        except PlanError as exc:
+            if "deadlock" in str(exc).lower():
+                report.cyclic_deadlock = True
+                report.deadlock_nodes = [n.name for n in cyclic_sim_nodes]
+            report.error = str(exc)
+            report.error_node = getattr(exc, "node_name", "")
+            report.error_function = getattr(exc, "function_name", "")
+            logger.warning("Ghost simulation (iterative) failed: %s", exc)
+        except Exception as exc:
+            report.error = f"Unexpected error: {exc}"
+            logger.warning("Ghost simulation unexpected error: %s", exc)
+    else:
+        # Standard topological simulation
+        try:
+            result = _simulate_with_bayesian_checks(sim_nodes, initial_state)
+            report.passed = True
+            report.node_count = result.node_count
+            report.trace = result.trace
+            logger.info(
+                "Ghost simulation passed: %d nodes simulated, trace: %s",
+                result.node_count, result.trace,
+            )
+        except PlanError as exc:
+            report.error = str(exc)
+            report.error_node = exc.node_name
+            report.error_function = exc.function_name
+            logger.warning("Ghost simulation failed: %s", exc)
+        except Exception as exc:
+            report.error = f"Unexpected error: {exc}"
+            logger.warning("Ghost simulation unexpected error: %s", exc)
 
     return report
 
