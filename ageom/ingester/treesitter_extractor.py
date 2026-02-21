@@ -1002,9 +1002,17 @@ class TreeSitterExtractor:
         if query is None:
             return {}
         try:
-            return query.captures(root)
+            # tree-sitter >= 0.25: Query no longer has .captures();
+            # use QueryCursor instead.
+            from tree_sitter import QueryCursor
+            cursor = QueryCursor(query)
+            return cursor.captures(root)
         except Exception:
-            return {}
+            # Fallback for older tree-sitter versions
+            try:
+                return query.captures(root)
+            except Exception:
+                return {}
 
     def _rust_trait_bounds_for_node(self, node: TSNode) -> set[str]:
         """Extract trait-bound names from a Rust impl/function node."""
