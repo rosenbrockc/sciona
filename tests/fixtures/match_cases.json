@@ -1,0 +1,70 @@
+{
+  "cases": [
+    {
+      "id": "pulsar_pipeline",
+      "cdg_path": "../ageo-atoms/ageoa/pulsar/pipeline_cdg.json",
+      "witness_test_path": "../ageo-atoms/tests/test_pulsar.py",
+      "expected_matches": {
+        "delay_from_dm": "ageoa.pulsar.pipeline.delay_from_DM",
+        "de_disperse": "ageoa.pulsar.pipeline.de_disperse",
+        "fold_signal": "ageoa.pulsar.pipeline.fold_signal",
+        "snr": "ageoa.pulsar.pipeline.SNR"
+      },
+      "aliases": {
+        "delay_from_dm": [
+          "ageoa.pulsar.pipeline.delay_from_DM"
+        ],
+        "de_disperse": [
+          "ageoa.pulsar.pipeline.de_disperse"
+        ],
+        "fold_signal": [
+          "ageoa.pulsar.pipeline.fold_signal"
+        ],
+        "snr": [
+          "ageoa.pulsar.pipeline.SNR"
+        ]
+      },
+      "live_runs": 3,
+      "live_thresholds": {
+        "min_success_rate": 0.8,
+        "min_alias_hit_rate": 0.8,
+        "min_run_stability": 0.7
+      }
+    },
+    {
+      "id": "biosppy_ecg",
+      "cdg_path": "../ageo-atoms/ageoa/biosppy/ecg_cdg.json",
+      "witness_test_path": "../ageo-atoms/tests/test_biosppy_advanced.py",
+      "expected_matches": {
+        "bandpass_filter": "ageoa.biosppy.ecg.bandpass_filter",
+        "r_peak_detection": "ageoa.biosppy.ecg.r_peak_detection",
+        "peak_correction": "ageoa.biosppy.ecg.peak_correction",
+        "template_extraction": "ageoa.biosppy.ecg.template_extraction",
+        "heart_rate_computation": "ageoa.biosppy.ecg.heart_rate_computation"
+      },
+      "aliases": {
+        "bandpass_filter": [
+          "ageoa.biosppy.ecg.bandpass_filter"
+        ],
+        "r_peak_detection": [
+          "ageoa.biosppy.ecg.r_peak_detection"
+        ],
+        "peak_correction": [
+          "ageoa.biosppy.ecg.peak_correction"
+        ],
+        "template_extraction": [
+          "ageoa.biosppy.ecg.template_extraction"
+        ],
+        "heart_rate_computation": [
+          "ageoa.biosppy.ecg.heart_rate_computation"
+        ]
+      },
+      "live_runs": 3,
+      "live_thresholds": {
+        "min_success_rate": 0.8,
+        "min_alias_hit_rate": 0.8,
+        "min_run_stability": 0.7
+      }
+    }
+  ]
+}

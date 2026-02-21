@@ -70,6 +70,8 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
     "slow: marks tests as slow (require model downloads)",
+    "match_regression_deterministic: deterministic Hunter regression suite using fixture-backed cases",
+    "match_regression_live: live Hunter regression suite using a local llama server",
 ]
 
 [tool.mypy]

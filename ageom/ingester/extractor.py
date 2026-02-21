@@ -494,7 +494,7 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
     def __init__(self, known_functions: set[str]) -> None:
         self.known_functions = known_functions
         self.call_sites: list[_CallSite] = []
-        self.var_producers: dict[str, str] = {}  # var_name -> producer_func_id
+        self.var_producers: dict[str, _CallSite | str] = {}  # var_name -> producer
         self.inferred_edges: list[DependencyEdge] = []
         self.external_tools: list[MethodFact] = []
 
@@ -524,16 +524,23 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
         is_external = full_func_name in {'subprocess.run', 'subprocess.call', 'subprocess.check_output', 'os.system'}
         
         if not (is_known or is_external):
+            # For unknown calls, still mark targets as INTERNAL_VAR
+            targets = self._collect_targets(targets_nodes)
+            for t in targets:
+                self.var_producers[t] = "INTERNAL_VAR"
             return
 
         # 1. CONSUME: Arguments read prior to the call
         args = self._collect_arg_names(call_node)
         for arg_var in args:
-            producer_id = self.var_producers.get(arg_var)
-            if producer_id and producer_id != "INTERNAL_VAR":
+            producer = self.var_producers.get(arg_var)
+            if producer and producer != "INTERNAL_VAR":
+                # Determine source_id (string)
+                source_id = producer.func_name if hasattr(producer, "func_name") else str(producer)
+
                 from ageom.architect.models import DependencyEdge
                 edge = DependencyEdge(
-                    source_id=producer_id,
+                    source_id=source_id,
                     target_id=func_name if is_known else full_func_name,
                     output_name=arg_var,
                     input_name=arg_var,
@@ -545,9 +552,8 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
 
         # 2. PRODUCE: Targets assigned by the call
         targets = self._collect_targets(targets_nodes)
-        for t in targets:
-            self.var_producers[t] = func_name if is_known else full_func_name
-
+        
+        cs = None
         if is_known:
             cs = _CallSite(
                 func_name=func_name,
@@ -556,6 +562,12 @@ class _ProceduralBlockVisitor(ast.NodeVisitor):
                 lineno=lineno,
             )
             self.call_sites.append(cs)
+        
+        for t in targets:
+            if cs:
+                self.var_producers[t] = cs
+            else:
+                self.var_producers[t] = full_func_name if is_external else "INTERNAL_VAR"
         
         if is_external:
             # Wrap as ExternalToolAtom

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import textwrap
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -105,6 +105,15 @@ _REPAIR_RESPONSE = json.dumps([
     },
 ])
 
+_ABSTRACT_RESPONSE = json.dumps({
+    "abstract_name": "ConceptualAtom",
+    "conceptual_transform": "Transform data",
+    "abstract_inputs": [],
+    "abstract_outputs": [],
+    "algorithmic_properties": [],
+    "cross_disciplinary_applications": [],
+})
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -151,10 +160,18 @@ class TestOptionalCDGNode:
     @pytest.mark.asyncio
     async def test_cdg_has_two_atomic_nodes(self, sample_source):
         mock_llm = AsyncMock()
-        mock_llm.complete.side_effect = [_CHUNK_RESPONSE, _HOIST_RESPONSE]
+        mock_llm.complete.side_effect = [
+            _CHUNK_RESPONSE,
+            _HOIST_RESPONSE,
+            _ABSTRACT_RESPONSE,
+            _ABSTRACT_RESPONSE
+        ]
 
-        agent = IngesterAgent(llm=mock_llm)
-        bundle = await agent.ingest(sample_source, "SmoothedEstimator")
+        mock_ghost_mod = MagicMock()
+        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            agent = IngesterAgent(llm=mock_llm)
+            bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
         atomic = [n for n in bundle.cdg.nodes if n.status == NodeStatus.ATOMIC]
         assert len(atomic) == 2
@@ -162,10 +179,18 @@ class TestOptionalCDGNode:
     @pytest.mark.asyncio
     async def test_data_smoother_is_optional(self, sample_source):
         mock_llm = AsyncMock()
-        mock_llm.complete.side_effect = [_CHUNK_RESPONSE, _HOIST_RESPONSE]
+        mock_llm.complete.side_effect = [
+            _CHUNK_RESPONSE,
+            _HOIST_RESPONSE,
+            _ABSTRACT_RESPONSE,
+            _ABSTRACT_RESPONSE
+        ]
 
-        agent = IngesterAgent(llm=mock_llm)
-        bundle = await agent.ingest(sample_source, "SmoothedEstimator")
+        mock_ghost_mod = MagicMock()
+        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            agent = IngesterAgent(llm=mock_llm)
+            bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
         smoother = next(
             (n for n in bundle.cdg.nodes if n.name == "Data Smoother"), None
@@ -176,10 +201,18 @@ class TestOptionalCDGNode:
     @pytest.mark.asyncio
     async def test_estimator_is_not_optional(self, sample_source):
         mock_llm = AsyncMock()
-        mock_llm.complete.side_effect = [_CHUNK_RESPONSE, _HOIST_RESPONSE]
+        mock_llm.complete.side_effect = [
+            _CHUNK_RESPONSE,
+            _HOIST_RESPONSE,
+            _ABSTRACT_RESPONSE,
+            _ABSTRACT_RESPONSE
+        ]
 
-        agent = IngesterAgent(llm=mock_llm)
-        bundle = await agent.ingest(sample_source, "SmoothedEstimator")
+        mock_ghost_mod = MagicMock()
+        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            agent = IngesterAgent(llm=mock_llm)
+            bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
         estimator = next(
             (n for n in bundle.cdg.nodes if n.name == "Estimator"), None
@@ -211,12 +244,17 @@ class TestMypyRepairLoop:
         mock_llm.complete.side_effect = [
             _CHUNK_RESPONSE,
             _HOIST_RESPONSE,
+            _ABSTRACT_RESPONSE,
+            _ABSTRACT_RESPONSE,
             _REPAIR_RESPONSE,
             "[]",  # fallback for any further calls
         ]
 
-        agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
-        bundle = await agent.ingest(sample_source, "SmoothedEstimator")
+        mock_ghost_mod = MagicMock()
+        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
+            bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
         assert isinstance(bundle, IngestionBundle)
         # Verify LLM was called at least 3 times: chunk + hoist + repair
@@ -239,12 +277,17 @@ class TestMypyRepairLoop:
         mock_llm.complete.side_effect = [
             _CHUNK_RESPONSE,
             _HOIST_RESPONSE,
+            _ABSTRACT_RESPONSE,
+            _ABSTRACT_RESPONSE,
             _REPAIR_RESPONSE,
             "[]",
         ]
 
-        agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
-        bundle = await agent.ingest(sample_source, "SmoothedEstimator")
+        mock_ghost_mod = MagicMock()
+        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+            mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(passed=True, ran=True, error="")
+            agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
+            bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
         # Bundle should still have correct CDG structure
         assert len(bundle.cdg.nodes) > 0

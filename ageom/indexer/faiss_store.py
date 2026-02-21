@@ -84,7 +84,7 @@ class FAISSStore:
             vecs.append(entry.embedding)
 
         id_array = np.array(ids, dtype=np.int64)
-        vec_array = np.vstack(vecs).astype(np.float32)
+        vec_array = np.ascontiguousarray(np.vstack(vecs), dtype=np.float32)
         self._index.add_with_ids(vec_array, id_array)
 
     def search(
@@ -94,7 +94,7 @@ class FAISSStore:
 
         Returns list of (Declaration, score) sorted by descending similarity.
         """
-        query = query_vec.reshape(1, -1).astype(np.float32)
+        query = np.ascontiguousarray(query_vec.reshape(1, -1), dtype=np.float32)
         k = min(k, self.size) if self.size > 0 else 0
         if k == 0:
             return []
