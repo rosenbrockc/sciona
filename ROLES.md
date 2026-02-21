@@ -321,6 +321,49 @@ Supports export targets: LEAN_LIB, COQ_LIB, PYTHON_PKG, C_HEADER, RUST_FFI.
 
 ---
 
+## Principal
+
+**Problem solved:** Finding the best decomposition structure and synthesis
+configuration for a given goal, without requiring the user to manually tune
+hyperparameters or guess which paradigm works best.
+
+**What it does:** A LangGraph state machine that wraps the entire four-round
+pipeline in a NAS-style optimisation loop:
+
+1. **Seed** -- Uses Optuna to suggest trial parameters. The Architect decomposes
+   the goal under a fresh checkpoint thread.
+2. **Forward** -- Ghost simulation for early pruning (aborts trials with
+   structural failures or infinite error bounds). If not pruned, runs the full
+   synthesis pipeline to produce an ExportBundle with telemetry instrumentation.
+3. **Evaluate** -- `ExecutionSandbox` runs the instrumented artifact as a
+   subprocess, parses `trace.jsonl` into per-node `NodeTelemetry`, and computes a
+   scalar loss (latency, memory, precision, or FLOP count).
+4. **Backward** -- `CreditAssigner` computes per-node optimisation gradients,
+   identifying the top bottleneck (e.g., "Node 'sort_array' consumed 85% of total
+   execution time").
+5. **Update** -- Walks the Architect's checkpoint history, finds the checkpoint
+   just before the bottleneck node was created, forks a new thread via
+   `architect.fork()`, injects a CONSTRAINT describing the bottleneck into the
+   forked goal, and re-decomposes. Loops back to step 2.
+
+The loop terminates when the trial budget is exhausted, no gradients can be
+computed, or a non-recoverable error occurs.
+
+**Interacts with:**
+- **Architect** -- invokes decomposition; uses `get_state_history()` and `fork()`
+  for time-travel coordinate descent
+- **Synthesizer** -- ghost simulation for early pruning; precision gradients for
+  credit assignment; telemetry instrumentation via `with_telemetry=True`
+- **Optuna** -- study management, early pruning, fANOVA parameter importance
+- **User** -- receives the goal and benchmark dataset, returns the best trial's
+  artifact
+
+**Key files:** `ageom/principal/graph.py`, `ageom/principal/evaluator.py`,
+`ageom/principal/backprop.py`, `ageom/principal/hpo.py`,
+`ageom/principal/models.py`
+
+---
+
 ## FFI Emitter (ingester)
 
 **Problem solved:** Generating Python-callable wrappers for foreign-language

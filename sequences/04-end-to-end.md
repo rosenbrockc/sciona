@@ -113,6 +113,40 @@ sequenceDiagram
     Note over User: output/<br/>  Verified.lean (source)<br/>  .lake/build/ (compiled)<br/>  certificate.json (SHA-256)<br/>  trace.jsonl (optional)
 ```
 
+## With Principal (optimised pipeline)
+
+When invoked via `ageom optimize`, the Principal wraps the above pipeline in a
+meta-optimisation loop. See [05-principal.md](05-principal.md) for the detailed
+sequence diagram.
+
+```
+Goal + Benchmark dataset
+  |
+  |  Principal: seed (Optuna suggests parameters)
+  v
+Architect decomposes goal (new thread)
+  |
+  |  Principal: forward (ghost sim + synthesis)
+  v
+ExportBundle (instrumented)
+  |
+  |  Principal: evaluate (subprocess benchmark)
+  v
+BenchmarkResult (global_loss + per-node telemetry)
+  |
+  |  Principal: backward (credit assignment)
+  v
+NodeGradient[] (bottleneck identified)
+  |
+  |  Principal: time-travel update (fork Architect checkpoint)
+  v
+New CDG with constraint injected
+  |
+  |  (loop back to forward)
+  v
+Best trial's artifact after budget exhausted
+```
+
 ## Pipeline phases summary
 
 ```
@@ -132,24 +166,30 @@ CDGExport (refined) + list[MatchResult]
   |  Ghost Sim + Assembler + Repair Agent + Extractor
   v
 ExportBundle (verified source + compiled artifact + certificate)
+  |
+  |  (Optional) PRINCIPAL META-OPTIMISATION
+  |  Evaluator + CreditAssigner + Optuna + Time-Travel
+  v
+Best ExportBundle across all trials
 ```
 
 ## Role participation by phase
 
-| Role | Round 1 | Round 2 | Round 3 |
-|------|---------|---------|---------|
-| **Orchestrator** | Invokes Architect | Drives match loop + refinement | Drives assembly + repair + export |
-| **Architect** | Decomposes goal | Refines on failure | -- |
-| **Critic** | Validates decompositions | -- | -- |
-| **Catalog** | Atomicity oracle | -- | -- |
-| **Skill Index** | Semantic primitive search | -- | -- |
-| **Hunter** | -- | Searches + ranks candidates | -- |
-| **Index** | -- | Candidate retrieval | -- |
-| **Judge** | -- | Type-checks candidates | Compiles skeleton each repair iteration |
-| **Ghost Simulator** | -- | -- | Pre-assembly structural validation |
-| **Assembler** | -- | -- | CDG + matches -> SkeletonFile |
-| **Repair Agent** | -- | -- | Iterative compilation + patching |
-| **Extractor** | -- | -- | Artifact build + certificate |
+| Role | Round 1 | Round 2 | Round 3 | Principal |
+|------|---------|---------|---------|-----------|
+| **Orchestrator** | Invokes Architect | Drives match loop + refinement | Drives assembly + repair + export | -- |
+| **Architect** | Decomposes goal | Refines on failure | -- | Time-travel fork + re-decompose |
+| **Critic** | Validates decompositions | -- | -- | -- |
+| **Catalog** | Atomicity oracle | -- | -- | -- |
+| **Skill Index** | Semantic primitive search | -- | -- | -- |
+| **Hunter** | -- | Searches + ranks candidates | -- | -- |
+| **Index** | -- | Candidate retrieval | -- | -- |
+| **Judge** | -- | Type-checks candidates | Compiles skeleton each repair iteration | -- |
+| **Ghost Simulator** | -- | -- | Pre-assembly structural validation | Early pruning + precision gradients |
+| **Assembler** | -- | -- | CDG + matches -> SkeletonFile | Telemetry instrumentation |
+| **Repair Agent** | -- | -- | Iterative compilation + patching | -- |
+| **Extractor** | -- | -- | Artifact build + certificate | -- |
+| **Principal** | -- | -- | -- | Outer optimisation loop |
 
 ## Feedback loops
 
@@ -159,3 +199,4 @@ ExportBundle (verified source + compiled artifact + certificate)
 | **Orchestrator refinement** | Hunter fails to match a node | LLM splits node into sub-predicates | 3 rounds |
 | **Hunter reformulation** | Verification fails | LLM analyzes errors, generates new queries | 5 per node |
 | **Repair iteration** | Compilation fails | DeterministicFix / LLMRepair / SorryElimination | 10 iterations |
+| **Principal trial** | Bottleneck identified | Time-travel fork + constraint injection | configurable (default 50) |

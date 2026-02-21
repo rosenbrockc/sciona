@@ -6,7 +6,7 @@ Given a predicate like `forall n m : Nat, n + m = m + n`, AGEO-Matcher searches 
 
 ## How it works
 
-The system implements an **Agentic Development Cycle** with four rounds:
+The system implements an **Agentic Development Cycle** with four rounds, wrapped by an optional **Principal** meta-optimizer:
 
 **Round 0 -- Ingester** (Smart Ingester): parses existing source code (Python, C++, Julia, Rust) into `RawDataFlowGraph` models via language-specific extractors. Dispatches by file extension: Python uses `ast`, foreign languages use tree-sitter. The output feeds into LLM-driven semantic chunking, then deterministic code generation of `@register_atom` wrappers, Pydantic state models, ghost witnesses, and FFI bindings (ctypes for C++/Rust, juliacall for Julia). External atoms and decorator metadata are preserved through the pipeline.
 
@@ -21,6 +21,8 @@ The system implements an **Agentic Development Cycle** with four rounds:
 **Round 3 -- Synthesizer** (Assembly + Verification): assembles matched atoms into compilable skeleton files, with an optional **ghost witness simulation pass** that catches structural mismatches (shape, dtype, domain) before expensive compilation.
 
 The handoff between rounds is validated: every atomic leaf must have a `type_signature` and `description` before conversion to PDG nodes. DSP atoms are also checked via ghost witness simulation when the `ageoa` package is installed.
+
+**Principal** (Meta-Optimizer): wraps the four rounds in a NAS-style optimisation loop (Forward → Evaluate → Backward → Update). Uses Optuna for HPO, ghost simulation for early pruning, interval-arithmetic precision gradients for credit assignment, and the Architect's checkpoint time-travel for coordinate descent over decomposition structure.
 
 See [ARCH.md](ARCH.md) for the full architecture.
 
@@ -107,6 +109,18 @@ ageom decompose "Sort and search" --thread-id my-run-01
 ageom history my-run-01
 ```
 
+### Optimize a goal (Principal)
+
+```bash
+# Run the NAS-style optimisation loop over a benchmark
+ageom optimize "Implement merge sort" --benchmark data/bench.json --metric latency --trials 20
+
+# With Codex and a custom timeout
+ageom optimize "FFT spectral analysis" --benchmark data/fft_bench.json \
+  --metric precision --trials 50 --timeout 300 \
+  --llm-provider codex --llm-model codex-mini-latest
+```
+
 ### Match predicates (Round 2)
 
 ```bash
@@ -151,7 +165,7 @@ ageom/
   types.py          Shared domain types (Declaration, PDGNode, MatchResult, ...)
   protocols.py      Protocol interfaces (SemanticIndex, ProofEnvironment, ...)
   config.py         AgeomConfig (pydantic-settings, reads .env)
-  cli.py            CLI entrypoint (decompose, history, match, index, assemble)
+  cli.py            CLI entrypoint (decompose, history, match, index, assemble, optimize)
   architect/        Round 1 -- Conceptual Dependency Agent
     models.py         CDG node/edge Pydantic models, ConceptType enum (incl. DSP types)
     catalog.py        PrimitiveCatalog (CLRS-30, coq-100-theorems)
@@ -191,6 +205,12 @@ ageom/
     ffi_emitter.py    FFI binding generation (ctypes for C++/Rust, juliacall for Julia)
     graph.py          IngesterAgent state machine + extractor dispatch (_get_extractor)
     prompts.py        LLM prompt templates for chunker/repair
+  principal/        Meta-Optimizer (NAS-style loop over the pipeline)
+    models.py         OptimizationMetric, NodeTelemetry, BenchmarkResult, NodeGradient
+    evaluator.py      ExecutionSandbox (subprocess benchmark + trace parsing)
+    backprop.py       CreditAssigner (per-node gradient computation)
+    hpo.py            OptunaManager (early pruning, fANOVA importance)
+    graph.py          Principal StateGraph (seed → forward → evaluate → gradients → time_travel)
   synthesizer/      Round 3 -- Assembly + Verification
     pipeline.py       assemble_and_check() orchestration (with ghost simulation pass)
     ghost_sim.py      CDG -> SimNode conversion, run_ghost_simulation()

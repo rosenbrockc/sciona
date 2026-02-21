@@ -1,11 +1,12 @@
 # Architecture
 
-AGEO-Matcher implements a four-round Agentic Development Cycle:
+AGEO-Matcher implements a four-round Agentic Development Cycle, wrapped by an optional **Principal** meta-optimizer:
 
 - **Round 0 (Ingester)**: Parses existing source code (Python, C++, Julia, Rust) into data-flow graphs, semantically chunks them into macro-atoms, and generates `@register_atom` wrappers, state models, ghost witnesses, and FFI bindings. Produces `IngestionBundle`s that feed directly into the Synthesizer.
 - **Round 1 (Architect)**: Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) via LangGraph, with PostgreSQL-backed persistence for checkpoint time-travel and forking.
 - **Round 2 (Hunter)**: Grounds each atomic CDG leaf into a verified library function in Lean 4/Mathlib or Coq/Rocq.
 - **Round 3 (Synthesizer)**: Assembles matched atoms into compilable skeleton files. Runs an optional ghost witness simulation pass (via `ageoa`) to catch structural mismatches before expensive compilation, then compiles, repairs, and exports.
+- **Principal (Meta-Optimizer)**: Wraps all four rounds in a NAS-style optimisation loop. Uses Optuna HPO, ghost-simulation early pruning, interval-arithmetic precision gradients, per-node credit assignment, and the Architect's checkpoint time-travel for coordinate descent over decomposition structure.
 
 ## Design principle
 
@@ -56,9 +57,24 @@ MatchResult
   |
   v
 SkeletonFile + VerificationCertificate
+  |
+  v
+[Principal Evaluator]   deterministic -- subprocess benchmark + trace parsing
+  |
+  v
+[Credit Assigner]       deterministic -- per-node gradient computation
+  |
+  v
+[Optuna HPO]            deterministic -- early pruning, parameter importance
+  |
+  v
+[Time-Travel Update]    deterministic -- fork Architect checkpoint, inject constraint
+  |
+  v
+ (loop back to Architect decomposition)
 ```
 
-LLMs are confined to agentic layers. The indexer, oracle, ghost simulation, assembler, and handoff validation are pure functions of their inputs -- no hallucination surface.
+LLMs are confined to agentic layers. The indexer, oracle, ghost simulation, assembler, handoff validation, evaluator, credit assigner, and HPO are pure functions of their inputs -- no hallucination surface.
 
 ## Components
 
@@ -323,6 +339,55 @@ ageoa (ageo-atoms)                    ageom (ageo-matcher)
 | `repair.py` | Compile-analyze-patch loop (fills `sorry` / `Admitted` / `NotImplementedError` stubs) |
 | `extractor.py` | FFI export and verification certificate generation |
 
+### Principal Meta-Optimizer (`ageom/principal/`)
+
+Wraps the four-round pipeline in a NAS-style optimisation loop: Forward → Evaluate → Backward → Update.
+
+#### Graph topology
+
+```
+seed ──> forward ──> evaluate ──> gradients ──> time_travel ──> forward (loop)
+                        |              |              |
+                   (pruned early)   (no grads)     (done/budget)
+                        |              |              |
+                        v              v              v
+                    time_travel       END            END
+```
+
+#### Key modules
+
+| Module | Role |
+|--------|------|
+| `models.py` | `OptimizationMetric` (LATENCY, MEMORY, PRECISION, FLOP_COUNT), `NodeTelemetry`, `BenchmarkResult`, `NodeGradient` |
+| `evaluator.py` | `ExecutionSandbox` -- runs instrumented artifacts as subprocesses, parses `trace.jsonl` into `NodeTelemetry`, computes scalar loss |
+| `backprop.py` | `CreditAssigner` -- per-node optimisation gradients (latency %, memory %, precision via ghost-sim intervals or telemetry error expansion) |
+| `hpo.py` | `OptunaManager` -- wraps `optuna.Study`, early pruning via `GhostSimReport`, fANOVA parameter importance |
+| `graph.py` | `PrincipalState`, `PrincipalDeps`, 5 async node functions, 3 routing functions, `build_principal_graph()` |
+
+#### Optimisation loop
+
+1. **seed_population** -- Optuna suggests paradigm parameters; Architect decomposes goal under a fresh thread.
+2. **execute_forward** -- Ghost simulation for early pruning (raises `TrialPrunedEarly` on structural failure or inf/NaN error bounds). If not pruned, delegates to `synthesize_fn` for the full synthesis pipeline.
+3. **evaluate_run** -- `ExecutionSandbox` runs the instrumented artifact, parses trace telemetry, computes global loss.
+4. **compute_gradients** -- `CreditAssigner` identifies the top bottleneck node by metric-specific credit assignment.
+5. **time_travel_update** -- Walks the Architect's checkpoint history, finds the checkpoint just before the bottleneck node was created, forks a new thread, injects a CONSTRAINT describing the bottleneck, and re-decomposes.
+
+#### Early pruning
+
+`OptunaManager.check_early_prune(ghost_report)` aborts trials when:
+- Ghost simulation ran and failed (structural mismatch)
+- Any node's precision gradient is infinite or NaN
+
+This avoids expensive compilation and benchmarking for structurally broken trials.
+
+#### Precision gradients
+
+Interval arithmetic in `ghost_sim.py` computes per-node error expansion (output interval width − input interval width) using known error factors for 18 common atoms (FFT, SVD, Cholesky, etc.). These feed into `CreditAssigner._gradient_precision()` as the primary signal, with telemetry `error_expansion` as fallback.
+
+#### Assembly instrumentation
+
+The `Assembler` supports a `with_telemetry=True` flag that wraps each atomic call in a `_ageom_probe()` helper emitting `trace.jsonl` records with `node_id`, `execution_time_ms`, `peak_memory_bytes`, and `error_expansion`. The `ExecutionSandbox` parses these traces after subprocess execution.
+
 ## Configuration
 
 `AgeomConfig` (pydantic-settings) reads from `.env` with prefix `AGEOM_`:
@@ -431,6 +496,40 @@ If step 4 fails for all candidates, `ReformulateQuery` asks the LLM to analyze t
 5. Result: SkeletonFile + VerificationCertificate
 ```
 
+### Principal: Optimisation
+
+```
+1. seed_population:
+   - Optuna suggests trial parameters
+   - Architect decomposes goal under new thread_id
+
+2. execute_forward:
+   - Ghost simulation -> GhostSimReport
+   - OptunaManager.check_early_prune() -- abort on structural failure / inf bounds
+   - If not pruned: synthesize_fn(cdg, matches) -> ExportBundle
+
+3. evaluate_run:
+   - ExecutionSandbox runs instrumented artifact (subprocess)
+   - Parses trace.jsonl -> NodeTelemetry per node
+   - _compute_loss(telemetry, metric) -> global_loss
+   - Tracks best_loss across trials
+
+4. compute_gradients:
+   - CreditAssigner.compute_gradients(cdg, benchmark, ghost_report, metric)
+   - LATENCY/FLOP_COUNT: % of total execution time per node
+   - MEMORY: % of total peak memory per node
+   - PRECISION: ghost-sim interval gradients (primary) + error_expansion (fallback)
+   - Returns sorted NodeGradient[] -- top = bottleneck
+
+5. time_travel_update:
+   - Walk Architect checkpoint history
+   - Find checkpoint before bottleneck node was created
+   - architect.fork(thread_id, checkpoint_id) -> new thread
+   - Inject CONSTRAINT into forked goal
+   - Re-decompose -> new CDG
+   - Loop back to step 2
+```
+
 ## Dependency graph
 
 ```
@@ -447,6 +546,8 @@ ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
          +-------+-------+-----+----+
                  |              |
            synthesizer/        |               (ageoa [optional])
+                 |             |
+           principal/          |               (optuna)
                  |             |
                cli.py          |
                                |
@@ -469,4 +570,4 @@ ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
            ageom/ingester/emitter.py
 ```
 
-The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The ingester is independent of the hunter/indexer/judge -- it produces `IngestionBundle`s (CDG + generated source + match results) that the Synthesizer can consume directly. For non-Python sources, the ingester uses tree-sitter for extraction and generates FFI bindings (ctypes for C++/Rust, juliacall for Julia). The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `ageoa` for ghost witness simulation. If `ageoa` is not installed, the synthesizer works normally without the simulation pass.
+The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The ingester is independent of the hunter/indexer/judge -- it produces `IngestionBundle`s (CDG + generated source + match results) that the Synthesizer can consume directly. For non-Python sources, the ingester uses tree-sitter for extraction and generates FFI bindings (ctypes for C++/Rust, juliacall for Julia). The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `ageoa` for ghost witness simulation. If `ageoa` is not installed, the synthesizer works normally without the simulation pass. The principal depends on the architect (for time-travel forking), synthesizer (ghost simulation + assembly), and optuna for HPO. It is the outermost layer: all other components are unaware of the principal's existence.

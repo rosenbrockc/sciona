@@ -43,8 +43,10 @@ sequenceDiagram
         GhostSim->>GhostSim: Propagate output to downstream nodes
     end
 
+    GhostSim->>GhostSim: Compute precision gradients<br/>(interval arithmetic over known<br/>atom error factors)
+
     alt Simulation passes
-        GhostSim-->>Orchestrator: GhostSimReport(passed=true, coverage)
+        GhostSim-->>Orchestrator: GhostSimReport(passed=true,<br/>coverage, precision_gradients)
     else Structural mismatch detected
         GhostSim-->>Orchestrator: GhostSimReport(passed=false,<br/>error_node, error_function)
     end
@@ -57,6 +59,9 @@ sequenceDiagram
     Assembler->>Assembler: Infer GlueEdges + cast expressions
     Assembler->>Assembler: Topological sort
     Assembler->>Assembler: Emit language-specific source<br/>(Lean 4 / Python / Coq)
+    opt with_telemetry = true
+        Assembler->>Assembler: Wrap atomic calls in _ageom_probe()<br/>(emits trace.jsonl with timing + memory)
+    end
     Assembler->>Assembler: Generate composition functions<br/>for root/decomposed nodes
 
     Assembler-->>Orchestrator: SkeletonFile(source_code,<br/>units, glue_edges, sorry_count)
@@ -120,7 +125,7 @@ sequenceDiagram
 
 | Phase | Input | Output | LLM? | Compiler? |
 |-------|-------|--------|------|-----------|
-| Ghost Simulation | CDG + MatchResults | GhostSimReport | No | No |
+| Ghost Simulation | CDG + MatchResults | GhostSimReport (+ precision_gradients) | No | No |
 | Assembly | CDG + MatchResults | SkeletonFile | No | No |
 | Repair Loop | SkeletonFile | SkeletonFile (repaired) | Yes | Yes (each iteration) |
 | Export | SynthesisResult | ExportBundle + Certificate | No | Yes (final build) |
