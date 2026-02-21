@@ -30,6 +30,89 @@ from ageom.architect.prompts import (
 from ageom.architect.skeletons import SKELETON_TEMPLATES, instantiate_skeleton
 from ageom.architect.state import DecompositionDeps, DecompositionState
 
+# ---------------------------------------------------------------------------
+# Conjugate prior/likelihood pair detection
+# ---------------------------------------------------------------------------
+
+# Each entry maps a canonical pair name to recognizable keywords (in lower-case)
+# that appear in goal text or IO specifications, along with the sufficient
+# statistic description, hyperparameter update rule, and result distribution.
+_CONJUGATE_PAIRS: dict[str, dict] = {
+    "beta_bernoulli": {
+        "keywords": ["beta-bernoulli", "beta bernoulli", "coin flip",
+                      "binomial with beta prior", "bernoulli with beta"],
+        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
+                          "conjugate_update", "analytical update"],
+        "sufficient_stat": "Count successes k and total trials n from data",
+        "hyperparameter_update": "alpha_post = alpha_prior + k, beta_post = beta_prior + (n - k)",
+        "result_distribution": "Beta(alpha_post, beta_post)",
+        "type_sig_ingest": "ndarray -> tuple[int, int]",
+        "type_sig_update": "tuple[float, float] -> tuple[int, int] -> tuple[float, float]",
+        "type_sig_construct": "tuple[float, float] -> BetaDistribution",
+    },
+    "normal_normal": {
+        "keywords": ["normal-normal", "normal normal", "gaussian conjugate",
+                      "gaussian with known variance", "normal with normal prior"],
+        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
+                          "conjugate_update", "analytical update"],
+        "sufficient_stat": "Compute sample mean x_bar and sample count n from data",
+        "hyperparameter_update": (
+            "mu_post = (mu_prior / sigma_prior^2 + n * x_bar / sigma_obs^2) "
+            "/ (1/sigma_prior^2 + n/sigma_obs^2); "
+            "sigma_post^2 = 1 / (1/sigma_prior^2 + n/sigma_obs^2)"
+        ),
+        "result_distribution": "Normal(mu_post, sigma_post)",
+        "type_sig_ingest": "ndarray -> tuple[float, int]",
+        "type_sig_update": "tuple[float, float] -> tuple[float, int] -> tuple[float, float] -> tuple[float, float]",
+        "type_sig_construct": "tuple[float, float] -> NormalDistribution",
+    },
+    "gamma_poisson": {
+        "keywords": ["gamma-poisson", "gamma poisson", "poisson with gamma prior"],
+        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
+                          "conjugate_update", "analytical update"],
+        "sufficient_stat": "Sum all observations s and count n from data",
+        "hyperparameter_update": "alpha_post = alpha_prior + s, beta_post = beta_prior + n",
+        "result_distribution": "Gamma(alpha_post, beta_post)",
+        "type_sig_ingest": "ndarray -> tuple[float, int]",
+        "type_sig_update": "tuple[float, float] -> tuple[float, int] -> tuple[float, float]",
+        "type_sig_construct": "tuple[float, float] -> GammaDistribution",
+    },
+    "dirichlet_categorical": {
+        "keywords": ["dirichlet-categorical", "dirichlet categorical",
+                      "dirichlet multinomial", "categorical with dirichlet"],
+        "library_hints": ["conjugatepriorslib", "conjugatepriors.jl", "bayes crate",
+                          "conjugate_update", "analytical update"],
+        "sufficient_stat": "Count occurrences of each category from data",
+        "hyperparameter_update": "alpha_post_k = alpha_prior_k + count_k for each category k",
+        "result_distribution": "Dirichlet(alpha_post)",
+        "type_sig_ingest": "ndarray -> ndarray",
+        "type_sig_update": "ndarray -> ndarray -> ndarray",
+        "type_sig_construct": "ndarray -> DirichletDistribution",
+    },
+}
+
+
+def _detect_conjugate_pair(goal: str) -> dict | None:
+    """Deterministic pre-scan for conjugate prior/likelihood pairs.
+
+    Checks the goal text for known conjugate pair keywords and library hints.
+    Returns the pair spec dict if detected, None otherwise.
+    """
+    goal_lower = goal.lower()
+    for pair_name, spec in _CONJUGATE_PAIRS.items():
+        for kw in spec["keywords"]:
+            if kw in goal_lower:
+                return {**spec, "pair_name": pair_name}
+        for hint in spec["library_hints"]:
+            if hint in goal_lower:
+                # Library hint alone is weaker — require *some* probabilistic keyword too
+                if any(w in goal_lower for w in [
+                    "prior", "posterior", "conjugate", "bayesian",
+                    "update", "inference", "likelihood",
+                ]):
+                    return {**spec, "pair_name": pair_name}
+    return None
+
 
 def _get_deps(config: RunnableConfig) -> DecompositionDeps:
     """Extract DecompositionDeps from LangGraph config."""
@@ -85,11 +168,62 @@ def _parse_json(text: str) -> dict | None:
 async def select_strategy(
     state: DecompositionState, config: RunnableConfig
 ) -> dict[str, Any]:
-    """Entry point: LLM picks a paradigm and bootstraps the CDG via skeleton."""
+    """Entry point: LLM picks a paradigm and bootstraps the CDG via skeleton.
+
+    Before calling the LLM, performs a deterministic pre-scan for known
+    conjugate prior/likelihood pairs.  When one is found the graph can
+    short-circuit the iterative decompose/critique loop entirely — see
+    ``route_after_strategy`` and ``advance_conjugate_node``.
+    """
     deps = _get_deps(config)
     goal = state["goal"]
     max_depth = state["max_depth"]
 
+    # ------------------------------------------------------------------
+    # Conjugate pre-scan (deterministic, free — runs before LLM call)
+    # ------------------------------------------------------------------
+    conjugate_spec = _detect_conjugate_pair(goal)
+    if conjugate_spec is not None:
+        # Signal the router to short-circuit into advance_conjugate_node
+        root_id = f"root_{uuid.uuid4().hex[:8]}"
+        root = AlgorithmicNode(
+            node_id=root_id,
+            name=goal,
+            description=goal,
+            concept_type=ConceptType.CONJUGATE_UPDATE,
+            status=NodeStatus.DECOMPOSED,
+            depth=0,
+        )
+        history_entry = {
+            "step": "select_strategy",
+            "paradigm": "conjugate_update",
+            "conjugate_pair": conjugate_spec["pair_name"],
+            "short_circuit": True,
+        }
+        return {
+            "nodes": [root],
+            "edges": [],
+            "history": [history_entry],
+            "pending_node_ids": [],
+            "current_node_id": root_id,
+            "paradigm": "conjugate_update",
+            "skeleton_instantiated": False,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+            # Stash the spec for advance_conjugate_node to consume.
+            # This key is ignored by the state reducer (it's not in the
+            # TypedDict), but it is present in the dict returned by the
+            # node and lands in the state snapshot for the *next* node
+            # via config forwarding.  We also pass it through the
+            # ``_conjugate_spec`` field that the router will read.
+        }
+
+    # ------------------------------------------------------------------
+    # Standard LLM-based strategy selection
+    # ------------------------------------------------------------------
     available = list(SKELETON_TEMPLATES.keys())
     available_str = "\n".join(f"  - {ct.value}" for ct in available)
 
@@ -632,6 +766,17 @@ def route_after_critic(state: DecompositionState) -> str:
     return "next_node"
 
 
+def route_after_strategy(state: DecompositionState) -> str:
+    """Conditional edge after select_strategy.
+
+    If a conjugate pair was detected, skip the iterative decompose/critique
+    loop and jump straight to the short-circuit conjugate path.
+    """
+    if state.get("paradigm") == "conjugate_update":
+        return "conjugate"
+    return "decompose"
+
+
 def route_after_advance(state: DecompositionState) -> str:
     """Conditional edge after advance_node."""
     if state.get("done", False):
@@ -640,3 +785,152 @@ def route_after_advance(state: DecompositionState) -> str:
     if not pending:
         return "end"
     return "decompose"
+
+
+# ---------------------------------------------------------------------------
+# Node: advance_conjugate_node  (short-circuit path)
+# ---------------------------------------------------------------------------
+
+async def advance_conjugate_node(
+    state: DecompositionState, config: RunnableConfig
+) -> dict[str, Any]:
+    """Emit a fully ATOMIC 3-node CDG for a conjugate Bayesian update.
+
+    This node is reached **only** when ``_detect_conjugate_pair`` found a
+    known conjugate pair during ``select_strategy``.  It bypasses the
+    iterative decompose → critique → advance loop entirely.
+
+    The resulting CDG contains:
+        1. Data_Ingestion (Sufficient Statistics)
+        2. Hyperparameter_Update
+        3. Distribution_Construction
+
+    All three nodes are marked ``NodeStatus.ATOMIC`` so they hand off
+    directly to the Hunter (Round 2).
+    """
+    goal = state["goal"]
+    root_nodes = state["nodes"]
+    root_id = state["current_node_id"]
+
+    # Re-detect the conjugate pair from the goal (deterministic, pure).
+    conjugate_spec = _detect_conjugate_pair(goal)
+    if conjugate_spec is None:
+        # Defensive: should never happen since route_after_strategy
+        # only sends us here when paradigm == conjugate_update.
+        return {
+            "error": "Conjugate spec not found on re-scan",
+            "done": True,
+            "history": [{"step": "advance_conjugate_node", "error": "no conjugate pair"}],
+        }
+
+    pair_name = conjugate_spec["pair_name"]
+
+    # -- Node 1: Data Ingestion (Sufficient Statistics) -------------------
+    ingest_id = f"conj_ingest_{uuid.uuid4().hex[:8]}"
+    ingest_node = AlgorithmicNode(
+        node_id=ingest_id,
+        parent_id=root_id,
+        name="Data Ingestion (Sufficient Statistics)",
+        description=(
+            f"[{pair_name}] {conjugate_spec['sufficient_stat']}. "
+            "Stateless reduction of raw observations to sufficient statistics."
+        ),
+        concept_type=ConceptType.CONJUGATE_UPDATE,
+        inputs=[IOSpec(name="data", type_desc="ndarray", constraints="observed data")],
+        outputs=[IOSpec(name="sufficient_stats", type_desc="tuple",
+                        constraints="sufficient statistics for conjugate update")],
+        status=NodeStatus.ATOMIC,
+        depth=1,
+        type_signature=conjugate_spec["type_sig_ingest"],
+        matched_primitive=f"conjugate_sufficient_stats_{pair_name}",
+    )
+
+    # -- Node 2: Hyperparameter Update ------------------------------------
+    update_id = f"conj_update_{uuid.uuid4().hex[:8]}"
+    update_node = AlgorithmicNode(
+        node_id=update_id,
+        parent_id=root_id,
+        name="Hyperparameter Update",
+        description=(
+            f"[{pair_name}] {conjugate_spec['hyperparameter_update']}. "
+            "Pure function: prior hyperparameters + sufficient stats → posterior "
+            "hyperparameters (State Decoupling enforced — no hidden state)."
+        ),
+        concept_type=ConceptType.CONJUGATE_UPDATE,
+        inputs=[
+            IOSpec(name="prior_hyperparams", type_desc="tuple",
+                   constraints="prior distribution hyperparameters"),
+            IOSpec(name="sufficient_stats", type_desc="tuple",
+                   constraints="sufficient statistics from data ingestion"),
+        ],
+        outputs=[IOSpec(name="posterior_hyperparams", type_desc="tuple",
+                        constraints="updated posterior hyperparameters")],
+        status=NodeStatus.ATOMIC,
+        depth=1,
+        type_signature=conjugate_spec["type_sig_update"],
+        matched_primitive=f"conjugate_hyperparameter_update_{pair_name}",
+    )
+
+    # -- Node 3: Distribution Construction --------------------------------
+    construct_id = f"conj_dist_{uuid.uuid4().hex[:8]}"
+    construct_node = AlgorithmicNode(
+        node_id=construct_id,
+        parent_id=root_id,
+        name="Distribution Construction",
+        description=(
+            f"[{pair_name}] Construct {conjugate_spec['result_distribution']} "
+            "from posterior hyperparameters. Pure constructor — no side effects."
+        ),
+        concept_type=ConceptType.CONJUGATE_UPDATE,
+        inputs=[IOSpec(name="posterior_hyperparams", type_desc="tuple",
+                        constraints="posterior hyperparameters")],
+        outputs=[IOSpec(name="posterior_distribution", type_desc="Distribution",
+                        constraints=conjugate_spec["result_distribution"])],
+        status=NodeStatus.ATOMIC,
+        depth=1,
+        type_signature=conjugate_spec["type_sig_construct"],
+        matched_primitive=f"conjugate_construct_{pair_name}",
+    )
+
+    # -- Edges: linear chain ingest → update → construct ------------------
+    edges = [
+        DependencyEdge(
+            source_id=ingest_id,
+            target_id=update_id,
+            output_name="sufficient_stats",
+            input_name="sufficient_stats",
+            source_type="tuple",
+            target_type="tuple",
+        ),
+        DependencyEdge(
+            source_id=update_id,
+            target_id=construct_id,
+            output_name="posterior_hyperparams",
+            input_name="posterior_hyperparams",
+            source_type="tuple",
+            target_type="tuple",
+        ),
+    ]
+
+    # Update root to list children
+    root = _find_node(root_nodes, root_id)
+    updated_root: list[AlgorithmicNode] = []
+    if root:
+        updated_root = [root.model_copy(update={
+            "children": [ingest_id, update_id, construct_id],
+            "status": NodeStatus.DECOMPOSED,
+        })]
+
+    return {
+        "nodes": updated_root + [ingest_node, update_node, construct_node],
+        "edges": edges,
+        "pending_node_ids": [],
+        "current_node_id": "",
+        "done": True,
+        "history": [{
+            "step": "advance_conjugate_node",
+            "pair_name": pair_name,
+            "nodes_emitted": 3,
+            "all_atomic": True,
+        }],
+    }

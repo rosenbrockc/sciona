@@ -11,12 +11,14 @@ from langgraph.graph import END, StateGraph
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import NodeStatus
 from ageom.architect.nodes import (
+    advance_conjugate_node,
     advance_node,
     critique_decomposition,
     decompose_node,
     prepare_retry,
     route_after_advance,
     route_after_critic,
+    route_after_strategy,
     select_strategy,
 )
 from ageom.architect.state import DecompositionDeps, DecompositionState
@@ -32,9 +34,17 @@ def build_graph() -> StateGraph:
     graph.add_node("critique", critique_decomposition)
     graph.add_node("advance_node", advance_node)
     graph.add_node("prepare_retry", prepare_retry)
+    graph.add_node("advance_conjugate_node", advance_conjugate_node)
 
     graph.set_entry_point("select_strategy")
-    graph.add_edge("select_strategy", "decompose_node")
+    # After strategy selection, either short-circuit to conjugate path
+    # or continue with the standard decompose/critique loop.
+    graph.add_conditional_edges(
+        "select_strategy",
+        route_after_strategy,
+        {"conjugate": "advance_conjugate_node", "decompose": "decompose_node"},
+    )
+    graph.add_edge("advance_conjugate_node", END)
     graph.add_edge("decompose_node", "critique")
     graph.add_conditional_edges(
         "critique",
