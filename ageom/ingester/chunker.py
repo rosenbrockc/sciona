@@ -266,7 +266,9 @@ async def propose_macro_atoms(
         retry_context=retry_context,
     )
 
-    response = await deps.llm.complete(SEMANTIC_CHUNK_SYSTEM, user_prompt)
+    from ageom.llm_router import INGESTER_CHUNK, select_llm
+
+    response = await select_llm(deps.llm, INGESTER_CHUNK).complete(SEMANTIC_CHUNK_SYSTEM, user_prompt)
 
     try:
         raw = json.loads(response)
@@ -339,7 +341,9 @@ async def hoist_state(
         macro_plan_json=macro_plan_json,
     )
 
-    response = await deps.llm.complete(HOIST_STATE_SYSTEM, user_prompt)
+    from ageom.llm_router import INGESTER_HOIST_STATE, select_llm
+
+    response = await select_llm(deps.llm, INGESTER_HOIST_STATE).complete(HOIST_STATE_SYSTEM, user_prompt)
 
     try:
         raw = json.loads(response)
@@ -521,7 +525,9 @@ async def abstract_atoms(
         )
 
         try:
-            response = await deps.llm.complete(
+            from ageom.llm_router import INGESTER_ABSTRACT, select_llm
+
+            response = await select_llm(deps.llm, INGESTER_ABSTRACT).complete(
                 CONCEPTUAL_ABSTRACT_SYSTEM, user_prompt
             )
             raw = json.loads(response)

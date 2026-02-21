@@ -147,7 +147,9 @@ async def generate_opaque_witnesses(
                     param_specs=param_specs,
                     return_type_spec="AbstractArray",
                 )
-                response = await llm.complete(
+                from ageom.llm_router import INGESTER_OPAQUE_WITNESS, select_llm
+
+                response = await select_llm(llm, INGESTER_OPAQUE_WITNESS).complete(
                     DRAFT_OPAQUE_WITNESS_SYSTEM, user_prompt
                 )
                 raw = json.loads(response)

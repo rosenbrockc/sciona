@@ -227,7 +227,9 @@ async def select_strategy(
     available = list(SKELETON_TEMPLATES.keys())
     available_str = "\n".join(f"  - {ct.value}" for ct in available)
 
-    response = await deps.llm.complete(
+    from ageom.llm_router import ARCHITECT_STRATEGY, select_llm
+
+    response = await select_llm(deps.llm, ARCHITECT_STRATEGY).complete(
         SELECT_STRATEGY_SYSTEM.format(available_paradigms=available_str),
         SELECT_STRATEGY_USER.format(goal=goal),
     )
@@ -375,7 +377,9 @@ async def decompose_node(
             "Please fix the issues and try again."
         )
 
-    response = await deps.llm.complete(
+    from ageom.llm_router import ARCHITECT_DECOMPOSE, select_llm
+
+    response = await select_llm(deps.llm, ARCHITECT_DECOMPOSE).complete(
         DECOMPOSE_NODE_SYSTEM,
         DECOMPOSE_NODE_USER.format(
             node_name=node.name,
@@ -582,7 +586,9 @@ async def critique_decomposition(
 
     catalog_prims = deps.catalog.find_matching_primitives(parent, k=5)
 
-    response = await deps.llm.complete(
+    from ageom.llm_router import ARCHITECT_CRITIQUE, select_llm
+
+    response = await select_llm(deps.llm, ARCHITECT_CRITIQUE).complete(
         CRITIQUE_SYSTEM,
         CRITIQUE_USER.format(
             parent_name=parent.name,

@@ -147,8 +147,10 @@ class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
         )
 
         try:
+            from ageom.llm_router import HUNTER_SCORE, select_llm
+
             response = await _complete_with_optional_grammar(
-                deps.llm,
+                select_llm(deps.llm, HUNTER_SCORE),
                 system=SCORE_CANDIDATES_SYSTEM,
                 user=user_msg,
                 grammar=_INT_ARRAY_GBNF,
@@ -267,7 +269,9 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
                 compiler_output=last_fail.compiler_output,
             )
             try:
-                analysis = await deps.llm.complete(ANALYZE_FAILURE_SYSTEM, analyze_msg)
+                from ageom.llm_router import HUNTER_ANALYZE_FAILURE, select_llm
+
+                analysis = await select_llm(deps.llm, HUNTER_ANALYZE_FAILURE).complete(ANALYZE_FAILURE_SYSTEM, analyze_msg)
             except Exception:
                 analysis = ""
 
@@ -293,8 +297,10 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
                     "that maximize synonym and namespace coverage."
                 )
 
+            from ageom.llm_router import HUNTER_REFORMULATE, select_llm
+
             response = await _complete_with_optional_grammar(
-                deps.llm,
+                select_llm(deps.llm, HUNTER_REFORMULATE),
                 system=REFORMULATE_QUERY_SYSTEM,
                 user=reformulate_msg,
                 grammar=_STRING_ARRAY_GBNF,

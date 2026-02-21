@@ -259,9 +259,11 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             else ANALYZE_ERROR_SYSTEM
         )
 
+        from ageom.llm_router import SYNTHESIZER_REPAIR, select_llm
+
         state.llm_attempts += 1
         try:
-            response = await deps.llm.complete(system_prompt, user_msg)
+            response = await select_llm(deps.llm, SYNTHESIZER_REPAIR).complete(system_prompt, user_msg)
             patch = _parse_patch_response(response)
             if patch is not None:
                 state.skeleton.source_code = apply_patches(
@@ -323,9 +325,11 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             else GENERATE_TACTIC_SYSTEM
         )
 
+        from ageom.llm_router import SYNTHESIZER_TACTIC, select_llm
+
         state.llm_attempts += 1
         try:
-            response = await deps.llm.complete(system_prompt, user_msg)
+            response = await select_llm(deps.llm, SYNTHESIZER_TACTIC).complete(system_prompt, user_msg)
             tactic_body = response.strip()
             if tactic_body and "sorry" not in tactic_body.lower():
                 patch = Patch(

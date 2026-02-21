@@ -52,6 +52,54 @@ def _create_llm(args: argparse.Namespace, config: "AgeomConfig", round_name: str
     )
 
 
+def _create_llm_router(
+    args: argparse.Namespace,
+    config: "AgeomConfig",
+    round_name: str,
+    prompt_keys: list[str],
+) -> "LLMClient":
+    """Create an ``LLMRouter`` wrapping the default client with per-prompt overrides.
+
+    For each *prompt_key* in *prompt_keys*, if the config has a non-empty
+    ``{prompt_key}_llm_provider``, a dedicated ``LLMClient`` is created.
+    Clients with matching (provider, model) pairs are deduplicated.
+    """
+    from ageom.hunter.llm import create_llm_client
+    from ageom.llm_router import LLMRouter
+
+    default = _create_llm(args, config, round_name)
+    overrides: dict[str, "LLMClient"] = {}
+    # Cache by (provider, model) to avoid redundant connections
+    client_cache: dict[tuple[str, str], "LLMClient"] = {}
+
+    for key in prompt_keys:
+        provider = getattr(config, f"{key}_llm_provider", "")
+        model = getattr(config, f"{key}_llm_model", "")
+        if not provider:
+            continue
+        # Fall back model to global if only provider is set
+        if not model:
+            model = config.llm_model
+
+        cache_key = (provider, model)
+        if cache_key not in client_cache:
+            client_cache[cache_key] = create_llm_client(
+                provider=provider,
+                model=model,
+                max_tokens=config.llm_max_tokens,
+                anthropic_api_key=config.anthropic_api_key,
+                openai_api_key=config.openai_api_key,
+                openai_base_url=config.openai_base_url,
+                llama_cpp_base_url=config.llama_cpp_base_url,
+                llama_cpp_api_key=config.llama_cpp_api_key,
+            )
+        overrides[key] = client_cache[cache_key]
+
+    if not overrides:
+        return default
+    return LLMRouter(default=default, overrides=overrides)
+
+
 def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironment":
     """Create the appropriate ProofEnvironment for the given prover.
 
@@ -608,7 +656,19 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
 
     # Set up LLM
     try:
-        llm = _create_llm(args, config, "ingester")
+        from ageom.llm_router import (
+            INGESTER_ABSTRACT,
+            INGESTER_CHUNK,
+            INGESTER_FIX_GHOST,
+            INGESTER_FIX_TYPE,
+            INGESTER_HOIST_STATE,
+            INGESTER_OPAQUE_WITNESS,
+        )
+
+        llm = _create_llm_router(args, config, "ingester", [
+            INGESTER_CHUNK, INGESTER_HOIST_STATE, INGESTER_ABSTRACT,
+            INGESTER_FIX_TYPE, INGESTER_FIX_GHOST, INGESTER_OPAQUE_WITNESS,
+        ])
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -721,7 +781,15 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
 
     # Set up LLM
     try:
-        llm = _create_llm(args, config, "architect")
+        from ageom.llm_router import (
+            ARCHITECT_CRITIQUE,
+            ARCHITECT_DECOMPOSE,
+            ARCHITECT_STRATEGY,
+        )
+
+        llm = _create_llm_router(args, config, "architect", [
+            ARCHITECT_STRATEGY, ARCHITECT_DECOMPOSE, ARCHITECT_CRITIQUE,
+        ])
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -844,7 +912,15 @@ async def _cmd_match(args: argparse.Namespace) -> None:
 
     # Set up LLM
     try:
-        llm = _create_llm(args, config, "hunter")
+        from ageom.llm_router import (
+            HUNTER_ANALYZE_FAILURE,
+            HUNTER_REFORMULATE,
+            HUNTER_SCORE,
+        )
+
+        llm = _create_llm_router(args, config, "hunter", [
+            HUNTER_SCORE, HUNTER_REFORMULATE, HUNTER_ANALYZE_FAILURE,
+        ])
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1099,7 +1175,11 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
 
     # Set up LLM
     try:
-        llm = _create_llm(args, config, "synthesizer")
+        from ageom.llm_router import SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC
+
+        llm = _create_llm_router(args, config, "synthesizer", [
+            SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC,
+        ])
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1191,7 +1271,17 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
     # Set up LLM
     try:
-        llm = _create_llm(args, config, "architect")
+        from ageom.llm_router import (
+            ARCHITECT_CRITIQUE,
+            ARCHITECT_DECOMPOSE,
+            ARCHITECT_STRATEGY,
+            ORCHESTRATOR_REFINE,
+        )
+
+        llm = _create_llm_router(args, config, "architect", [
+            ARCHITECT_STRATEGY, ARCHITECT_DECOMPOSE, ARCHITECT_CRITIQUE,
+            ORCHESTRATOR_REFINE,
+        ])
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1229,7 +1319,15 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         oracle = VerificationOracleImpl(coq_env=env)
 
     try:
-        hunter_llm = _create_llm(args, config, "hunter")
+        from ageom.llm_router import (
+            HUNTER_ANALYZE_FAILURE,
+            HUNTER_REFORMULATE,
+            HUNTER_SCORE,
+        )
+
+        hunter_llm = _create_llm_router(args, config, "hunter", [
+            HUNTER_SCORE, HUNTER_REFORMULATE, HUNTER_ANALYZE_FAILURE,
+        ])
     except (ValueError, ImportError) as exc:
         print(f"Error setting up hunter LLM: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1319,7 +1417,15 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     # LLM
     try:
-        llm = _create_llm(args, config, "architect")
+        from ageom.llm_router import (
+            ARCHITECT_CRITIQUE,
+            ARCHITECT_DECOMPOSE,
+            ARCHITECT_STRATEGY,
+        )
+
+        llm = _create_llm_router(args, config, "architect", [
+            ARCHITECT_STRATEGY, ARCHITECT_DECOMPOSE, ARCHITECT_CRITIQUE,
+        ])
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)

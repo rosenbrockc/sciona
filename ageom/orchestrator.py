@@ -87,7 +87,9 @@ async def refine_on_failure(
         )
 
         try:
-            response = await llm.complete(system_prompt, user_prompt)
+            from ageom.llm_router import ORCHESTRATOR_REFINE, select_llm
+
+            response = await select_llm(llm, ORCHESTRATOR_REFINE).complete(system_prompt, user_prompt)
             import json
 
             # Parse JSON from response

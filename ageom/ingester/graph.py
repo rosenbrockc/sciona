@@ -289,7 +289,9 @@ async def repair_types(
         source_code=bundle.generated_atoms,
     )
 
-    response = await deps.llm.complete(FIX_TYPE_ERROR_SYSTEM, user_prompt)
+    from ageom.llm_router import INGESTER_FIX_TYPE, select_llm
+
+    response = await select_llm(deps.llm, INGESTER_FIX_TYPE).complete(FIX_TYPE_ERROR_SYSTEM, user_prompt)
 
     try:
         fixes = json.loads(response)
@@ -329,7 +331,9 @@ async def repair_ghost(
         witness_source=bundle.generated_witnesses,
     )
 
-    response = await deps.llm.complete(FIX_GHOST_ERROR_SYSTEM, user_prompt)
+    from ageom.llm_router import INGESTER_FIX_GHOST, select_llm
+
+    response = await select_llm(deps.llm, INGESTER_FIX_GHOST).complete(FIX_GHOST_ERROR_SYSTEM, user_prompt)
 
     try:
         fixes = json.loads(response)

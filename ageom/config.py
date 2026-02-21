@@ -75,6 +75,48 @@ class AgeomConfig(BaseSettings):
     ingester_llm_provider: str = ""  # falls back to llm_provider
     ingester_llm_model: str = "claude-sonnet-4-5-20250929"
 
+    # --- Per-prompt LLM overrides (empty = fall back to agent-level) ---
+
+    # Architect per-prompt
+    architect_strategy_llm_provider: str = ""
+    architect_strategy_llm_model: str = ""
+    architect_decompose_llm_provider: str = ""
+    architect_decompose_llm_model: str = ""
+    architect_critique_llm_provider: str = ""
+    architect_critique_llm_model: str = ""
+
+    # Hunter per-prompt
+    hunter_score_llm_provider: str = ""
+    hunter_score_llm_model: str = ""
+    hunter_reformulate_llm_provider: str = ""
+    hunter_reformulate_llm_model: str = ""
+    hunter_analyze_failure_llm_provider: str = ""
+    hunter_analyze_failure_llm_model: str = ""
+
+    # Synthesizer per-prompt
+    synthesizer_repair_llm_provider: str = ""
+    synthesizer_repair_llm_model: str = ""
+    synthesizer_tactic_llm_provider: str = ""
+    synthesizer_tactic_llm_model: str = ""
+
+    # Ingester per-prompt
+    ingester_chunk_llm_provider: str = ""
+    ingester_chunk_llm_model: str = ""
+    ingester_hoist_state_llm_provider: str = ""
+    ingester_hoist_state_llm_model: str = ""
+    ingester_abstract_llm_provider: str = ""
+    ingester_abstract_llm_model: str = ""
+    ingester_fix_type_llm_provider: str = ""
+    ingester_fix_type_llm_model: str = ""
+    ingester_fix_ghost_llm_provider: str = ""
+    ingester_fix_ghost_llm_model: str = ""
+    ingester_opaque_witness_llm_provider: str = ""
+    ingester_opaque_witness_llm_model: str = ""
+
+    # Orchestrator per-prompt
+    orchestrator_refine_llm_provider: str = ""
+    orchestrator_refine_llm_model: str = ""
+
     # Python target
     python_path: str = "python"
     python_mypy_path: str = "mypy"
