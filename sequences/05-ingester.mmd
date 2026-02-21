@@ -1,0 +1,79 @@
+sequenceDiagram
+    participant User
+    participant Orchestrator
+    participant Ingester
+    participant Extractor
+    participant LLM as Ingester LLM
+    participant Index as FAISS Index
+    participant Emitter
+    participant Judge
+    participant GhostSim as Ghost Simulator
+
+    User->>Orchestrator: ageom ingest "ppg.py" --class PPGProcessor
+    Orchestrator->>Ingester: ingest(source, class_name)
+
+    Note over Ingester,Extractor: Phase 1: Deterministic Extraction
+
+    Ingester->>Extractor: extract_ast_data_flow()
+    Extractor->>Extractor: Parse AST, trace `self.*` reads/writes
+    Extractor->>Extractor: Detect config-gated branches (if self.options.X)
+    Extractor-->>Ingester: RawDataFlowGraph
+
+    Note over Ingester,Index: Phase 2: Agentic Semantic Chunking
+
+    loop LangGraph: Propose & Critique (max 3 retries)
+        Ingester->>LLM: Group methods into Macro-Atoms<br/>(SEMANTIC_CHUNK prompt + DFG)
+        LLM-->>Ingester: ProposedMacroPlan
+
+        Ingester->>LLM: Hoist persistent state into typed models<br/>(HOIST_STATE prompt)
+        LLM-->>Ingester: Pydantic Edge Definitions
+
+        loop For internal operations
+            Ingester->>Index: search_by_embedding(operation)
+            Index-->>Ingester: Existing catalog primitives
+            Ingester->>Ingester: Map to "zoom-in" sub-graph
+        end
+
+        Ingester->>Ingester: Critic: verify all `self.*` state is preserved
+
+        alt Validation passes
+            Note over Ingester: ValidatedMacroPlan ready
+        else Validation fails
+            Ingester->>Ingester: Prepare retry context with missing state
+        end
+    end
+
+    Note over Ingester,GhostSim: Phase 3: Emission & Verification
+
+    loop Repair Loop (max 3 retries)
+        Ingester->>Emitter: generate_artifacts(ValidatedMacroPlan)
+        Emitter->>Emitter: Emit Pydantic models (History as an Edge)
+        Emitter->>Emitter: Emit stateless @register_atom wrappers
+        Emitter->>Emitter: Emit Ghost Witnesses
+        Emitter->>Emitter: Build macro CDGExport + sub-graphs
+        Emitter-->>Ingester: IngestionBundle
+
+        Ingester->>Judge: verify_types(source_code)
+        Note over Judge: Uses Python ProofEnv (mypy --strict)
+        Judge-->>Ingester: VerificationResult
+
+        alt Compilation successful
+            Ingester->>GhostSim: run_ghost_simulation(cdg, witnesses)
+            GhostSim-->>Ingester: GhostSimReport
+
+            alt Simulation passed
+                Note over Ingester: Break repair loop
+            else Structural mismatch
+                Ingester->>LLM: Fix edge shapes/types<br/>(FIX_GHOST_ERROR prompt)
+                LLM-->>Ingester: Patched code plan
+            end
+        else Type checking failed
+            Ingester->>LLM: Fix type annotations<br/>(FIX_TYPE_ERROR prompt)
+            LLM-->>Ingester: Patched code plan
+        end
+    end
+
+    Ingester-->>Orchestrator: IngestionBundle
+    Orchestrator->>Orchestrator: Write extracted library to disk
+    Orchestrator->>Index: Trigger index build for new atoms
+    Orchestrator-->>User: Extracted Library Atoms + Composable CDG
