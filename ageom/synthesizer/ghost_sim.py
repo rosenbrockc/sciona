@@ -31,6 +31,19 @@ except ImportError:
 
 
 @dataclass
+class ErrorInterval:
+    """Interval arithmetic bounds for numerical approximation error."""
+
+    lo: float = 0.0
+    hi: float = 0.0
+
+    @property
+    def width(self) -> float:
+        """Width of the error interval (hi - lo)."""
+        return self.hi - self.lo
+
+
+@dataclass
 class GhostSimReport:
     """Result of the ghost simulation pass."""
 
@@ -52,6 +65,8 @@ class GhostSimReport:
     """Function name where the simulation failed."""
     coverage: float = 0.0
     """Ratio of simulable / total atomic nodes (0.0 - 1.0)."""
+    precision_gradients: dict[str, float] = field(default_factory=dict)
+    """Per-node error expansion (output interval width - input interval width)."""
 
 
 def _extract_atom_name(declaration_name: str) -> str:
@@ -179,6 +194,131 @@ def _build_initial_value(param_name: str, type_desc: str, constraints: str) -> A
     return _build_abstract_value(type_desc, constraints)
 
 
+# ---------------------------------------------------------------------------
+# Interval arithmetic for precision gradient
+# ---------------------------------------------------------------------------
+
+# Known per-atom error expansion factors.  Each value is a multiplier
+# applied to the incoming interval width.  Missing atoms are treated
+# as identity (factor = 1.0).
+_ATOM_ERROR_FACTORS: dict[str, float] = {
+    "fft": 1.5,        # O(n log n) rounding accumulation
+    "ifft": 1.5,
+    "rfft": 1.3,
+    "irfft": 1.3,
+    "stft": 1.6,
+    "istft": 1.6,
+    "butter": 1.1,     # filter design — coefficient quantisation
+    "cheby1": 1.3,
+    "cheby2": 1.3,
+    "ellip": 1.4,
+    "lfilter": 2.0,    # IIR recursive application amplifies error
+    "sosfilt": 1.4,    # SOS form is more stable than TF
+    "firwin": 1.05,
+    "convolve": 1.2,
+    "correlate": 1.2,
+    "resample": 1.3,
+    "hilbert": 1.4,
+    "welch": 1.2,
+}
+
+
+def _parse_error_bounds(constraints: str) -> ErrorInterval:
+    """Extract ``error_bounds=(lo,hi)`` from an IOSpec constraints string.
+
+    Falls back to a zero-width interval when no bounds are declared.
+    """
+    import re
+
+    match = re.search(r"error_bounds\s*=\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)", constraints)
+    if match:
+        try:
+            return ErrorInterval(lo=float(match.group(1)), hi=float(match.group(2)))
+        except ValueError:
+            pass
+    return ErrorInterval(0.0, 0.0)
+
+
+def _compute_precision_gradients(
+    cdg: CDGExport,
+    match_map: dict[str, MatchResult],
+    sorted_ids: list[str],
+) -> dict[str, float]:
+    """Propagate error intervals through the CDG and return per-node expansion.
+
+    Works without ageoa — purely based on IOSpec metadata and known atom
+    error factors.  Returns an empty dict when no nodes carry error metadata.
+    """
+    node_map: dict[str, AlgorithmicNode] = {n.node_id: n for n in cdg.nodes}
+    atomic_leaves = {n.node_id for n in cdg.nodes if n.status == NodeStatus.ATOMIC}
+
+    # Build edge index: target_id -> list of incoming edges
+    incoming: dict[str, list[DependencyEdge]] = {nid: [] for nid in node_map}
+    for edge in cdg.edges:
+        if edge.target_id in incoming:
+            incoming[edge.target_id].append(edge)
+
+    # Track the output error interval per node
+    output_intervals: dict[str, ErrorInterval] = {}
+    gradients: dict[str, float] = {}
+
+    for nid in sorted_ids:
+        if nid not in atomic_leaves:
+            continue
+        node = node_map[nid]
+
+        # Determine input interval: merge from incoming edges or parse from IOSpec
+        input_interval = ErrorInterval(0.0, 0.0)
+        in_edges = incoming.get(nid, [])
+        upstream_intervals = [
+            output_intervals[e.source_id]
+            for e in in_edges
+            if e.source_id in output_intervals
+        ]
+        if upstream_intervals:
+            # Union of all upstream intervals
+            input_interval = ErrorInterval(
+                lo=min(iv.lo for iv in upstream_intervals),
+                hi=max(iv.hi for iv in upstream_intervals),
+            )
+        elif node.inputs:
+            # No upstream — seed from the first input's constraints
+            parsed = _parse_error_bounds(node.inputs[0].constraints)
+            if parsed.width > 0:
+                input_interval = parsed
+
+        # Look up error factor for this atom
+        mr = match_map.get(nid)
+        if mr and mr.success:
+            atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
+            factor = _ATOM_ERROR_FACTORS.get(atom_name, 1.0)
+        else:
+            factor = 1.0
+
+        # Compute output interval
+        if input_interval.width > 0:
+            out = ErrorInterval(
+                lo=input_interval.lo * factor,
+                hi=input_interval.hi * factor,
+            )
+        elif node.outputs:
+            # Seed from output constraints if present
+            out = _parse_error_bounds(node.outputs[0].constraints)
+            if out.width == 0:
+                out = ErrorInterval(0.0, 0.0)
+        else:
+            out = ErrorInterval(0.0, 0.0)
+
+        output_intervals[nid] = out
+
+        # Precision gradient = output width - input width
+        delta = out.width - input_interval.width
+        if delta != 0.0 or input_interval.width > 0 or out.width > 0:
+            gradients[nid] = delta
+
+    return gradients
+
+
 def run_ghost_simulation(
     cdg: CDGExport,
     match_results: list[MatchResult],
@@ -199,6 +339,27 @@ def run_ghost_simulation(
     """
     report = GhostSimReport()
 
+    # Index match results by node_id (predicate_id)
+    match_map: dict[str, MatchResult] = {}
+    for mr in match_results:
+        match_map[mr.pdg_node.predicate_id] = mr
+
+    # Topological sort (needed by both precision gradients and ghost sim)
+    try:
+        sorted_ids = toposort_nodes(cdg.nodes, cdg.edges)
+    except ValueError as exc:
+        report.ran = True
+        report.error = f"Topological sort failed: {exc}"
+        return report
+
+    # Precision gradients — runs independently of ageoa
+    try:
+        report.precision_gradients = _compute_precision_gradients(
+            cdg, match_map, sorted_ids,
+        )
+    except Exception as exc:
+        logger.warning("Precision gradient computation failed: %s", exc)
+
     if not _GHOST_AVAILABLE:
         logger.info("Ghost simulation skipped: ageoa package not installed")
         return report
@@ -211,11 +372,6 @@ def run_ghost_simulation(
         logger.info("Ghost simulation skipped: no witnesses registered")
         return report
 
-    # Index match results by node_id (predicate_id)
-    match_map: dict[str, MatchResult] = {}
-    for mr in match_results:
-        match_map[mr.pdg_node.predicate_id] = mr
-
     # Index nodes by id
     node_map: dict[str, AlgorithmicNode] = {n.node_id: n for n in cdg.nodes}
 
@@ -227,14 +383,6 @@ def run_ghost_simulation(
     for edge in cdg.edges:
         if edge.target_id in incoming_edges:
             incoming_edges[edge.target_id].append(edge)
-
-    # Topological sort
-    try:
-        sorted_ids = toposort_nodes(cdg.nodes, cdg.edges)
-    except ValueError as exc:
-        report.ran = True
-        report.error = f"Topological sort failed: {exc}"
-        return report
 
     # Determine which nodes have witnesses
     simulable_nodes: list[str] = []
