@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from ageoa.ghost.simulator import SimNode, SimResult, simulate_graph, PlanError
+    from ageoa.ghost.abstract import AbstractDistribution, AbstractSignal, AbstractMatrix
     from ageoa.ghost.registry import REGISTRY, list_registered
 
     _GHOST_AVAILABLE = True
@@ -475,12 +476,10 @@ def run_ghost_simulation(
             output_name=output_name,
         ))
 
-    # Run the simulation
+    # Run the simulation with Bayesian verification checks
     report.ran = True
     try:
-        result: SimResult = simulate_graph(
-            sim_nodes, initial_state,
-        )
+        result = _simulate_with_bayesian_checks(sim_nodes, initial_state)
         report.passed = True
         report.node_count = result.node_count
         report.trace = result.trace
@@ -498,6 +497,113 @@ def run_ghost_simulation(
         logger.warning("Ghost simulation unexpected error: %s", exc)
 
     return report
+
+
+# ---------------------------------------------------------------------------
+# Bayesian-aware simulation (refactored from ageo-atoms)
+# ---------------------------------------------------------------------------
+
+# Witness functions that produce reparameterized outputs.
+_REPARAM_WITNESSES = frozenset({
+    "witness_reparameterized_sample",
+    "reparameterized_sample",
+})
+
+# Witness functions that produce bijector outputs (carry Jacobian).
+_BIJECTOR_WITNESSES = frozenset({
+    "witness_bijector_transform",
+    "bijector_transform",
+})
+
+# Witness functions that require reparameterized / bijector inputs.
+_ELBO_WITNESSES = frozenset({
+    "witness_vi_elbo",
+    "vi_elbo",
+})
+
+# Abstract types allowed as inputs to stateless MCMC oracle nodes.
+_ORACLE_ALLOWED_TYPES: tuple[type, ...] = (float, int, str)
+if _GHOST_AVAILABLE:
+    _ORACLE_ALLOWED_TYPES = (AbstractDistribution, AbstractSignal, AbstractMatrix, float, int, str)
+
+
+def _simulate_with_bayesian_checks(
+    nodes: list[Any],
+    initial_state: dict[str, Any],
+) -> Any:
+    """Run ghost simulation with Bayesian verification.
+
+    Extends the standard ``simulate_graph`` pass with:
+    1. **VI ELBO provenance check** — inputs must originate from
+       reparameterized traces or bijector outputs.
+    2. **MCMC Oracle isolation check** — oracle nodes must be stateless
+       (only receive abstract types and scalars).
+    3. **Provenance tracking** — propagates ``is_reparameterized`` and
+       ``has_jacobian`` flags through the graph.
+
+    Raises ``PlanError`` on violations.
+    """
+    state = dict(initial_state)
+
+    # Provenance: state_key -> {"is_reparameterized": bool, "has_jacobian": bool}
+    provenance: dict[str, dict[str, bool]] = {
+        key: {"is_reparameterized": False, "has_jacobian": False}
+        for key in state
+    }
+
+    trace: list[str] = []
+
+    for node in nodes:
+        # 1. VI ELBO provenance check
+        if node.function_name in _ELBO_WITNESSES:
+            for param, state_key in node.inputs.items():
+                prov = provenance.get(
+                    state_key,
+                    {"is_reparameterized": False, "has_jacobian": False},
+                )
+                if not (prov["is_reparameterized"] or prov["has_jacobian"]):
+                    raise PlanError(
+                        node_name=node.name,
+                        function_name=node.function_name,
+                        detail=(
+                            f"ELBO input '{param}' (key '{state_key}') must "
+                            f"originate from a reparameterized trace or a "
+                            f"bijector output (with Jacobian)."
+                        ),
+                    )
+
+        # 2. MCMC Oracle isolation check
+        if "ORACLE" in node.function_name.upper():
+            for param, state_key in node.inputs.items():
+                val = state.get(state_key)
+                if not isinstance(val, _ORACLE_ALLOWED_TYPES):
+                    raise PlanError(
+                        node_name=node.name,
+                        function_name=node.function_name,
+                        detail=(
+                            f"Oracle nodes must be stateless. Found state "
+                            f"input '{param}' of type {type(val).__name__}."
+                        ),
+                    )
+
+        # 3. Execute single-node simulation step
+        res = simulate_graph([node], state)
+        state.update(res.final_state)
+
+        # 4. Update provenance for this node's output
+        if node.output_name:
+            provenance[node.output_name] = {
+                "is_reparameterized": node.function_name in _REPARAM_WITNESSES,
+                "has_jacobian": node.function_name in _BIJECTOR_WITNESSES,
+            }
+
+        trace.append(node.name)
+
+    return SimResult(
+        node_count=len(nodes),
+        final_state=state,
+        trace=trace,
+    )
 
 
 def _ensure_atoms_imported() -> None:
