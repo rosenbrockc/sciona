@@ -307,6 +307,48 @@ def main() -> None:
         help="Proof assistant (default: lean4)",
     )
 
+    # --- optimize (Principal) ---
+    optimize_parser = subparsers.add_parser(
+        "optimize", help="Run NAS/AutoML optimisation loop (Principal role)"
+    )
+    optimize_parser.add_argument("goal", type=str, help="High-level goal to optimise")
+    optimize_parser.add_argument(
+        "--benchmark", type=str, required=True,
+        help="Path to benchmark dataset (CSV or JSON)",
+    )
+    optimize_parser.add_argument(
+        "--metric",
+        choices=["latency", "memory", "precision", "flop_count"],
+        default="latency",
+        help="Optimisation metric (default: latency)",
+    )
+    optimize_parser.add_argument(
+        "--trials", type=int, default=50,
+        help="Number of optimisation trials (default: 50)",
+    )
+    optimize_parser.add_argument(
+        "--prover", choices=["lean4", "coq", "python"], default="python",
+        help="Proof assistant (default: python)",
+    )
+    optimize_parser.add_argument(
+        "--catalog", type=str, default=None,
+        help="Path to catalog JSON",
+    )
+    optimize_parser.add_argument(
+        "--llm-provider", choices=["anthropic", "codex", "llama_cpp"], default=None,
+        help="LLM provider override",
+    )
+    optimize_parser.add_argument("--llm-model", type=str, default=None, help="LLM model override")
+    optimize_parser.add_argument("--llm-max-tokens", type=int, default=None, help="Max output tokens")
+    optimize_parser.add_argument(
+        "--no-persist", action="store_true", default=False,
+        help="Disable PostgreSQL persistence",
+    )
+    optimize_parser.add_argument(
+        "--timeout", type=float, default=120.0,
+        help="Per-trial subprocess timeout in seconds (default: 120)",
+    )
+
     # --- ingest ---
     ingest_parser = subparsers.add_parser(
         "ingest", help="Ingest an existing Python class into the atom framework (Round 0)"
@@ -383,6 +425,8 @@ def main() -> None:
         else:
             print("Error: provide a skill subcommand (ingest, index, search)", file=sys.stderr)
             sys.exit(1)
+    elif args.command == "optimize":
+        asyncio.run(_cmd_optimize(args))
     elif args.command == "decompose":
         asyncio.run(_cmd_decompose(args))
     elif args.command == "history":
@@ -1237,6 +1281,92 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         if len(event_log) > 0:
             event_log.save(output_dir / "trace.jsonl")
             print(f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)")
+
+
+async def _cmd_optimize(args: argparse.Namespace) -> None:
+    """Run the Principal NAS/AutoML optimisation loop."""
+    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.checkpointer import create_checkpointer
+    from ageom.architect.embedder import SkillIndex
+    from ageom.architect.graph import DecompositionAgent
+    from ageom.config import AgeomConfig
+    from ageom.principal.backprop import CreditAssigner
+    from ageom.principal.evaluator import ExecutionSandbox
+    from ageom.principal.graph import PrincipalDeps, PrincipalState, build_principal_graph
+    from ageom.principal.models import OptimizationMetric
+
+    config = AgeomConfig()
+
+    # Load catalog
+    catalog = PrimitiveCatalog()
+    if args.catalog:
+        catalog = PrimitiveCatalog.load(args.catalog)
+    else:
+        search_dir = config.skill_index_dir
+        if search_dir.exists():
+            for cat_file in sorted(search_dir.glob("catalog_*.json")):
+                partial = PrimitiveCatalog.load(cat_file)
+                for prim in partial.all_primitives():
+                    catalog.add(prim)
+
+    # Load skill index
+    skill_index = SkillIndex(index_dir=config.skill_index_dir)
+    if config.skill_index_dir.exists():
+        try:
+            skill_index = SkillIndex.load(config.skill_index_dir)
+        except Exception:
+            pass
+
+    # LLM
+    try:
+        llm = _create_llm(args, config, "architect")
+    except (ValueError, ImportError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    metric = OptimizationMetric(args.metric)
+    postgres_uri = "" if args.no_persist else config.postgres_uri
+
+    print(f"Principal optimisation loop")
+    print(f"  Goal: {args.goal}")
+    print(f"  Metric: {metric.value}")
+    print(f"  Trials: {args.trials}")
+    print(f"  Benchmark: {args.benchmark}")
+    print()
+
+    async with create_checkpointer(postgres_uri) as checkpointer:
+        architect = DecompositionAgent(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            checkpointer=checkpointer,
+        )
+
+        sandbox = ExecutionSandbox(timeout_s=args.timeout)
+        deps = PrincipalDeps(architect=architect, sandbox=sandbox)
+
+        graph = build_principal_graph().compile()
+
+        initial_state = {
+            "goal": args.goal,
+            "metric": metric,
+            "dataset_path": args.benchmark,
+            "max_trials": args.trials,
+        }
+
+        config_dict = {"configurable": {"deps": deps}}
+
+        final_state = await graph.ainvoke(initial_state, config=config_dict)
+
+    # Report
+    print(f"\nOptimisation complete:")
+    print(f"  Trials run: {final_state.get('current_trial', 0)}")
+    print(f"  Best loss: {final_state.get('best_loss', float('inf')):.6f}")
+    history = final_state.get("trial_history", [])
+    if history:
+        print(f"  Trial history:")
+        for entry in history:
+            print(f"    Trial {entry['trial']}: loss={entry['loss']:.6f}")
 
 
 def _cmd_visualize(args: argparse.Namespace) -> None:
