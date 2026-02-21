@@ -31,7 +31,8 @@ Rules:
    geometry, arithmetic, number_theory, combinatorics, algebra, analysis, \
    set_theory, signal_transform, signal_filter, graph_signal_processing, \
    sampler, log_prob, posterior_update, variational_inference, prior_init, \
-   custom.
+   probabilistic_oracle, mcmc_kernel, vi_elbo, sequential_filter, \
+   message_passing, conjugate_update, custom.
 
 Bayesian / probabilistic inference patterns:
 - **prior_init**: Methods that initialize prior distributions, set hyperparameters, \
@@ -54,6 +55,39 @@ Bayesian / probabilistic inference patterns:
 When you detect these patterns, group them into atoms with the corresponding \
 concept_type. Methods managing RNG state (seed, key splitting) should be grouped \
 with the sampler atom that consumes them.
+
+BAYESIAN EXTRACTION RULES — MANDATORY:
+
+1. **Oracle Isolation**: If a method's metadata has ``is_oracle=True``, or if the \
+   method implements a stateless log-density, gradient, or likelihood evaluation, \
+   isolate it into a **pure** MacroAtomSpec with ZERO state mutation between calls. \
+   The atom must have no ``writes`` to any cross-window state. Its only outputs are \
+   the computed log-probability, gradient, or likelihood values. Concept type must \
+   be ``log_prob`` or ``custom`` with a description stating "stateless oracle".
+
+2. **State Decoupling**: Covariance matrices (Kalman P, mass matrices, Fisher \
+   information), particle swarms (weight arrays, particle arrays), and MCMC chain \
+   state (trace arrays, acceptance counters) must NEVER be hidden internal state. \
+   Treat them strictly as **immutable flowing StateModelSpecs** — they enter and \
+   exit atoms via explicit typed edges. If you see ``self.P``, ``self.particles``, \
+   ``self.trace``, or ``self.cov`` being read AND written within the same atom, \
+   you MUST split that atom so that the state flows as an input→output edge.
+
+3. **Conjugate Short-Circuit**: If ``is_conjugate=True`` is detected on a method, \
+   the atom is an analytical closed-form update. Mark its concept_type as \
+   ``posterior_update`` and ensure its output is the updated hyperparameter tuple, \
+   not a sample. Do not group it with stochastic samplers.
+
+4. **Frozen Stochasticity**: If a noise matrix (Z, epsilon, eta) is initialised \
+   once and reused across iterations (common in ADVI reparameterization), mark it \
+   as a static initialization input to the atom — NOT as internal mutable state. \
+   The atom that consumes it must declare it as a named input with \
+   constraints="static standard normal noise".
+
+5. **Factor Graph Marginals**: Methods performing ``np.sum(axis=...)`` or \
+   ``einsum`` over tensor products of incoming messages are **Marginal Computation** \
+   atoms. Tag them with concept_type ``custom`` and include "marginal_computation" \
+   in the description. They must be stateless.
 
 Return valid JSON only."""
 

@@ -28,7 +28,7 @@ from ageom.ingester.emitter import (
     generate_opaque_witnesses,
 )
 from ageom.ingester.extractor import extract_data_flow, extract_procedural_data_flow
-from ageom.ingester.python_extractor import PythonASTExtractor
+from ageom.ingester.python_extractor import JAXprExtractor, PythonASTExtractor
 from ageom.ingester.treesitter_extractor import TreeSitterExtractor
 from ageom.ingester.models import (
     IngestionBundle,
@@ -84,11 +84,34 @@ class IngesterDeps:
 # ---------------------------------------------------------------------------
 
 
+def _has_jax_import(source_path: str) -> bool:
+    """Quick check whether a Python file imports JAX."""
+    try:
+        text = Path(source_path).read_text(errors="replace")
+        # Match `import jax`, `from jax import ...`, `import jax.numpy`
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            if stripped.startswith(("import jax", "from jax ")):
+                return True
+    except OSError:
+        pass
+    return False
+
+
 def _get_extractor(source_path: str) -> BaseExtractor:
-    """Return the appropriate extractor for *source_path* based on extension."""
+    """Return the appropriate extractor for *source_path* based on extension.
+
+    For ``.py`` files that ``import jax``, returns a ``JAXprExtractor`` that
+    enriches the standard AST graph with jaxpr-level metadata (frozen
+    stochasticity tracking, grad-target oracle detection).
+    """
     ext = Path(source_path).suffix.lower()
     lang = EXTENSION_MAP.get(ext, SourceLanguage.PYTHON)
     if lang == SourceLanguage.PYTHON:
+        if _has_jax_import(source_path):
+            return JAXprExtractor()
         return PythonASTExtractor()
     return TreeSitterExtractor(lang)
 
