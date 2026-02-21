@@ -18,7 +18,12 @@ from ageom.synthesizer.ghost_sim import (
     GhostSimReport,
     _extract_atom_name,
     _build_abstract_value,
+    _GHOST_AVAILABLE,
     run_ghost_simulation,
+)
+
+_requires_ageoa = pytest.mark.skipif(
+    not _GHOST_AVAILABLE, reason="ageoa package not installed"
 )
 from ageom.types import (
     CandidateMatch,
@@ -71,6 +76,7 @@ class TestExtractAtomName:
 # ---------------------------------------------------------------------------
 
 
+@_requires_ageoa
 class TestBuildAbstractValue:
     def test_signal_default(self):
         val = _build_abstract_value("np.ndarray", "time domain")
@@ -115,6 +121,7 @@ class TestGhostSimReport:
 # ---------------------------------------------------------------------------
 
 
+@_requires_ageoa
 class TestRunGhostSimulationFFT:
     """Test ghost simulation with a simple FFT -> IFFT pipeline."""
 
@@ -186,6 +193,7 @@ class TestRunGhostSimulationFFT:
         assert report.trace == ["Forward FFT", "Inverse FFT"]
 
 
+@_requires_ageoa
 class TestRunGhostSimulationDomainMismatch:
     """Test that domain mismatches are caught."""
 
@@ -253,6 +261,7 @@ class TestRunGhostSimulationDomainMismatch:
         assert report.error_function == "fft"
 
 
+@_requires_ageoa
 class TestRunGhostSimulationNoWitness:
     """Test behaviour when atoms have no registered witness."""
 
@@ -284,6 +293,7 @@ class TestRunGhostSimulationNoWitness:
         assert report.skipped_nodes == ["Custom Op"]
 
 
+@_requires_ageoa
 class TestRunGhostSimulationFilter:
     """Test ghost simulation with a filter design -> apply pipeline."""
 
@@ -356,6 +366,7 @@ class TestRunGhostSimulationFilter:
         assert report.node_count == 2
 
 
+@_requires_ageoa
 class TestRunGhostSimulationMixed:
     """Test CDG with a mix of DSP and non-DSP nodes."""
 
