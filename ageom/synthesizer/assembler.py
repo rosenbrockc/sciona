@@ -12,6 +12,36 @@ from ageom.synthesizer.toposort import toposort_nodes
 from ageom.types import MatchResult, Prover
 
 
+# ---------------------------------------------------------------------------
+# Telemetry helper emitted into instrumented Python skeletons
+# ---------------------------------------------------------------------------
+
+_PYTHON_TELEMETRY_HELPER: list[str] = [
+    "",
+    "_AGEOM_TRACE_PATH = 'trace.jsonl'",
+    "",
+    "",
+    "def _ageom_probe(node_id: str, fn):",
+    '    """Execute *fn* and append a JSON-lines telemetry record."""',
+    "    tracemalloc.start()",
+    "    t0 = time.perf_counter()",
+    "    try:",
+    "        result = fn()",
+    "    finally:",
+    "        elapsed_ms = (time.perf_counter() - t0) * 1000.0",
+    "        _, peak = tracemalloc.get_traced_memory()",
+    "        tracemalloc.stop()",
+    "        record = {",
+    '            "node_id": node_id,',
+    '            "execution_time_ms": elapsed_ms,',
+    '            "peak_memory_bytes": peak,',
+    "        }",
+    "        with open(_AGEOM_TRACE_PATH, 'a') as _f:",
+    "            _f.write(json.dumps(record) + '\\n')",
+    "    return result",
+]
+
+
 class AssemblyError(Exception):
     """Raised when assembly fails due to missing or invalid inputs."""
 
@@ -66,16 +96,19 @@ def _infer_cast(source_type: str, target_type: str) -> str:
 class Assembler:
     """Assembles a CDG and match results into a compilable skeleton."""
 
-    def __init__(self, prover: Prover | str) -> None:
+    def __init__(self, prover: Prover | str, *, with_telemetry: bool = False) -> None:
         if isinstance(prover, str):
             self._prover = Prover(prover)
         else:
             self._prover = prover
+        self._with_telemetry = with_telemetry
 
     def assemble(
         self,
         cdg: CDGExport,
         match_results: list[MatchResult],
+        *,
+        with_telemetry: bool | None = None,
     ) -> SkeletonFile:
         """Build a SkeletonFile from a CDG and its match results."""
         # Index match results by predicate_id (= node_id)
@@ -151,17 +184,22 @@ class Assembler:
         metadata = dict(cdg.metadata) if cdg.metadata else {}
         metadata["timestamp"] = datetime.now(timezone.utc).isoformat()
 
+        telemetry = with_telemetry if with_telemetry is not None else self._with_telemetry
+
         if self._prover == Prover.LEAN4:
             source, sorry_count = self._emit_lean4(
-                sorted_units, glue_edges, root_nodes, metadata
+                sorted_units, glue_edges, root_nodes, metadata,
+                telemetry=telemetry,
             )
         elif self._prover == Prover.PYTHON:
             source, sorry_count = self._emit_python(
-                sorted_units, glue_edges, root_nodes, metadata
+                sorted_units, glue_edges, root_nodes, metadata,
+                telemetry=telemetry,
             )
         else:
             source, sorry_count = self._emit_coq(
-                sorted_units, glue_edges, root_nodes, metadata
+                sorted_units, glue_edges, root_nodes, metadata,
+                telemetry=telemetry,
             )
 
         return SkeletonFile(
@@ -327,8 +365,17 @@ class Assembler:
         glue_edges: list[GlueEdge],
         root_nodes: list[AlgorithmicNode],
         metadata: dict,
+        *,
+        telemetry: bool = False,
     ) -> tuple[str, int]:
         """Generate Lean 4 source. Returns (source_code, sorry_count)."""
+        if telemetry:
+            raise NotImplementedError(
+                "Lean 4 telemetry instrumentation is not yet implemented. "
+                "Lean's `timeit` tactic and custom `IO.monoMsNow` wrappers "
+                "will be integrated here."
+            )
+
         lines: list[str] = []
         sorry_count = 0
 
@@ -382,6 +429,8 @@ class Assembler:
         glue_edges: list[GlueEdge],
         root_nodes: list[AlgorithmicNode],
         metadata: dict,
+        *,
+        telemetry: bool = False,
     ) -> tuple[str, int]:
         """Generate Python source. Returns (source_code, sorry_count)."""
         lines: list[str] = []
@@ -416,7 +465,19 @@ class Assembler:
                 imports_seen.add(pkg)
                 lines.append(f"import {pkg}")
 
+        # Telemetry imports
+        if telemetry:
+            lines.append("import json")
+            lines.append("import time")
+            lines.append("import tracemalloc")
+
         lines.append("")
+
+        # Telemetry helper
+        if telemetry:
+            lines.extend(_PYTHON_TELEMETRY_HELPER)
+            lines.append("")
+
         lines.append("")
 
         # Emit atomic leaf definitions
@@ -443,7 +504,12 @@ class Assembler:
             if unit.type_signature:
                 lines.append(f'    """Type: {unit.type_signature}"""')
 
-            lines.append(f"    return {unit.declaration_name}({', '.join(inp.name for inp in unit.inputs)})")
+            if telemetry:
+                arg_str = ", ".join(inp.name for inp in unit.inputs)
+                call_expr = f"{unit.declaration_name}({arg_str})"
+                lines.append(f"    return _ageom_probe({unit.node_id!r}, lambda: {call_expr})")
+            else:
+                lines.append(f"    return {unit.declaration_name}({', '.join(inp.name for inp in unit.inputs)})")
             lines.append("")
             lines.append("")
 
@@ -487,8 +553,15 @@ class Assembler:
         glue_edges: list[GlueEdge],
         root_nodes: list[AlgorithmicNode],
         metadata: dict,
+        *,
+        telemetry: bool = False,
     ) -> tuple[str, int]:
         """Generate Coq source. Returns (source_code, sorry_count)."""
+        if telemetry:
+            raise NotImplementedError(
+                "Coq telemetry instrumentation is not yet implemented. "
+                "Coq's `Time` vernacular command will be integrated here."
+            )
         lines: list[str] = []
         sorry_count = 0
 
