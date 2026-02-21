@@ -89,6 +89,19 @@ FREE_FUNCTIONS_JL = textwrap.dedent("""\
 """)
 
 
+ORACLE_DISPATCH_JL = textwrap.dedent("""\
+    struct SamplerState
+        theta::Float64
+    end
+
+    function AbstractMCMC.step(rng::AbstractRNG, model::DensityModel, state::SamplerState)
+        lp = model.logdensity(state.theta)
+        g = model.gradient(state.theta)
+        return lp, g
+    end
+""")
+
+
 @pytest.fixture
 def extractor():
     return TreeSitterExtractor(SourceLanguage.JULIA)
@@ -119,6 +132,13 @@ def multi_struct_source(tmp_path):
 def free_functions_source(tmp_path):
     p = tmp_path / "funcs.jl"
     p.write_text(FREE_FUNCTIONS_JL)
+    return str(p)
+
+
+@pytest.fixture
+def oracle_dispatch_source(tmp_path):
+    p = tmp_path / "oracle_step.jl"
+    p.write_text(ORACLE_DISPATCH_JL)
     return str(p)
 
 
@@ -290,6 +310,37 @@ class TestJuliaProcedural:
     async def test_procedural_source_language(self, extractor, free_functions_source):
         dfg = await extractor.extract_procedural(free_functions_source)
         assert dfg.source_language == "julia"
+
+    @pytest.mark.asyncio
+    async def test_oracle_interface_dispatch_emits_oracle_subgraph(
+        self, extractor, oracle_dispatch_source
+    ):
+        dfg = await extractor.extract_procedural(oracle_dispatch_source)
+
+        step = next(m for m in dfg.methods if m.name == "step")
+        assert step.is_oracle is True
+        assert any(e.caller == "step" for e in dfg.oracle_edges)
+        assert any("oracle_subgraph::JuliaDispatch::step::model" in e.oracle_ref for e in dfg.oracle_edges)
+
+        # state -> oracle routing edges
+        assert any(
+            e.source_id.startswith("state:")
+            and "oracle_subgraph::JuliaDispatch::step::model" in e.target_id
+            for e in dfg.inferred_edges
+        )
+        # oracle -> caller outputs
+        assert any(
+            "oracle_subgraph::JuliaDispatch::step::model" in e.source_id
+            and e.target_id == "step"
+            and e.output_name == "log_prob"
+            for e in dfg.inferred_edges
+        )
+        assert any(
+            "oracle_subgraph::JuliaDispatch::step::model" in e.source_id
+            and e.target_id == "step"
+            and e.output_name == "gradient"
+            for e in dfg.inferred_edges
+        )
 
 
 # ---------------------------------------------------------------------------

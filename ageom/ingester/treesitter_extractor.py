@@ -8,10 +8,12 @@ downstream phases (chunker, emitter) to work unchanged.
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from tree_sitter import Node as TSNode
 from tree_sitter_language_pack import get_parser
 
+from ageom.architect.models import DependencyEdge
 from ageom.ingester.base_extractor import SourceLanguage
 from ageom.ingester.models import MethodFact, OracleEdge, RawDataFlowGraph
 
@@ -41,6 +43,190 @@ def _find_descendants(node: TSNode, type_name: str) -> list[TSNode]:
             result.append(n)
         stack.extend(n.children)
     return result
+
+
+# Tree-sitter queries for probabilistic/oracle interfaces.
+_RUST_TRAIT_BOUNDS_QUERY = """
+(impl_item
+  (type_parameters
+    (type_parameter
+      (type_identifier) @rust.typevar
+      (trait_bounds
+        [
+          (type_identifier) @rust.trait_bound
+          (scoped_type_identifier) @rust.trait_bound
+        ]))) @rust.impl_type_bound)
+
+(impl_item
+  (where_clause
+    (where_predicate
+      (type_identifier) @rust.where_typevar
+      (trait_bounds
+        [
+          (type_identifier) @rust.trait_bound
+          (scoped_type_identifier) @rust.trait_bound
+        ]))) @rust.impl_where_bound)
+
+(function_item
+  (type_parameters
+    (type_parameter
+      (type_identifier) @rust.fn_typevar
+      (trait_bounds
+        [
+          (type_identifier) @rust.trait_bound
+          (scoped_type_identifier) @rust.trait_bound
+        ]))) @rust.fn_type_bound)
+
+(function_item
+  (where_clause
+    (where_predicate
+      (type_identifier) @rust.fn_where_typevar
+      (trait_bounds
+        [
+          (type_identifier) @rust.trait_bound
+          (scoped_type_identifier) @rust.trait_bound
+        ]))) @rust.fn_where_bound)
+"""
+
+_RUST_ORACLE_CALL_QUERY = """
+(call_expression
+  (field_expression) @rust.oracle_function
+  (arguments) @rust.oracle_args
+) @rust.oracle_call
+"""
+
+_JULIA_TYPED_DISPATCH_QUERY = """
+((function_definition
+   (signature
+     (call_expression
+       [
+         (identifier) @julia.dispatch_name
+         (field_expression
+           (identifier) @julia.dispatch_module
+           (identifier) @julia.dispatch_name
+         )
+       ]
+       (argument_list
+         (typed_expression) @julia.typed_param
+       )
+     )
+   )
+ ) @julia.dispatch_fn)
+
+((function_definition
+   (signature
+     (where_expression
+       (call_expression
+         [
+           (identifier) @julia.dispatch_name
+           (field_expression
+             (identifier) @julia.dispatch_module
+             (identifier) @julia.dispatch_name
+           )
+         ]
+         (argument_list
+           (typed_expression) @julia.typed_param
+         )
+       )
+       (curly_expression
+         (binary_expression
+           (identifier) @julia.typevar
+           (operator)
+           [
+             (identifier) @julia.type_bound
+             (field_expression) @julia.type_bound
+           ]
+         )
+       )
+     )
+   )
+ ) @julia.dispatch_fn)
+"""
+
+_JULIA_ORACLE_CALL_QUERY = """
+(call_expression
+  (field_expression
+    (identifier) @julia.oracle_obj
+    (identifier) @julia.oracle_method
+  )
+  (argument_list) @julia.oracle_args
+) @julia.oracle_call
+
+(call_expression
+  (identifier) @julia.oracle_method
+  (argument_list
+    (identifier) @julia.oracle_obj
+  )
+) @julia.oracle_call
+"""
+
+_ORACLE_CALL_METHOD_HINTS: frozenset[str] = frozenset({
+    "log_prob", "logprob", "logdensity", "log_density", "log_likelihood",
+    "likelihood", "evaluate_likelihood", "score", "gradient", "grad",
+    "value_and_grad", "value_and_gradient",
+})
+
+
+def _node_key(node: TSNode) -> tuple[int, int, int, int]:
+    """Stable tuple key for a tree-sitter node."""
+    return (
+        node.start_point[0], node.start_point[1],
+        node.end_point[0], node.end_point[1],
+    )
+
+
+def _normalize_trait_name(trait_name: str) -> str:
+    """Normalize Rust trait bounds like ``foo::Bar`` to ``Bar``."""
+    return trait_name.split("::")[-1].strip()
+
+
+def _normalize_type_name(type_name: str) -> str:
+    """Normalize Julia type expressions to a base identifier."""
+    base = type_name.strip()
+    if "{" in base:
+        base = base.split("{", 1)[0]
+    if "." in base:
+        base = base.split(".")[-1]
+    return base
+
+
+def _extract_identifiers_from_args(arg_node: TSNode) -> list[str]:
+    """Extract identifier tokens from a call argument list node."""
+    names: list[str] = []
+    for ident in _find_descendants(arg_node, "identifier"):
+        name = _node_text(ident).strip()
+        if name and name not in names:
+            names.append(name)
+    return names
+
+
+def _oracle_outputs_for_method(method_name: str) -> list[str]:
+    """Infer oracle output channels from method names."""
+    name = method_name.lower()
+    outputs: list[str] = []
+    if any(tok in name for tok in ("log_prob", "logprob", "logdensity", "log_density", "score")):
+        outputs.append("log_prob")
+    if any(tok in name for tok in ("likelihood",)):
+        outputs.append("likelihood")
+    if any(tok in name for tok in ("gradient", "grad")):
+        outputs.append("gradient")
+    if not outputs:
+        outputs.append("oracle_value")
+    return outputs
+
+
+def _add_edge_if_new(
+    edges: list[DependencyEdge],
+    seen: set[tuple[str, str, str, str, str, str]],
+    edge: DependencyEdge,
+) -> None:
+    key = (
+        edge.source_id, edge.target_id, edge.output_name, edge.input_name,
+        edge.source_type, edge.target_type,
+    )
+    if key not in seen:
+        seen.add(key)
+        edges.append(edge)
 
 
 # ---------------------------------------------------------------------------
@@ -381,6 +567,7 @@ class _JuliaFunctionVisitor:
 
         self.func_name = ""
         self.params: list[str] = []
+        self.param_types: dict[str, str] = {}
         self.return_type = ""
         self.associated_struct: str | None = None
         self.self_param_name: str | None = None
@@ -403,11 +590,16 @@ class _JuliaFunctionVisitor:
         # The signature can be:
         #   call_expression (no return type) or
         #   typed_expression wrapping call_expression (with return type)
+        #   where_expression wrapping call_expression with type bounds
         for child in sig_node.children:
             if child.type == "call_expression":
                 self._visit_call_sig(child)
             elif child.type == "typed_expression":
                 self._visit_typed_sig(child)
+            elif child.type == "where_expression":
+                for wc in child.children:
+                    if wc.type == "call_expression":
+                        self._visit_call_sig(wc)
 
     def _visit_typed_sig(self, node: TSNode) -> None:
         """Handle ``func_name(params)::ReturnType``."""
@@ -423,6 +615,11 @@ class _JuliaFunctionVisitor:
         for child in node.children:
             if child.type == "identifier":
                 self.func_name = _node_text(child)
+            elif child.type == "field_expression":
+                id_children = [c for c in child.children if c.type == "identifier"]
+                if id_children:
+                    # Module-qualified dispatch: AbstractMCMC.step -> step
+                    self.func_name = _node_text(id_children[-1])
             elif child.type == "argument_list":
                 self._visit_arg_list(child)
 
@@ -431,17 +628,29 @@ class _JuliaFunctionVisitor:
         first_param = True
         for child in node.children:
             if child.type == "typed_expression":
-                parts = [c for c in child.children if c.type == "identifier"]
-                if len(parts) >= 2:
-                    param_name = _node_text(parts[0])
-                    param_type = _node_text(parts[1])
+                typed_text = _node_text(child)
+                if "::" in typed_text:
+                    lhs, rhs = typed_text.split("::", 1)
+                    param_name = lhs.strip()
+                    param_type = rhs.strip()
+                else:
+                    parts = [c for c in child.children if c.type == "identifier"]
+                    if parts:
+                        param_name = _node_text(parts[0])
+                        param_type = _node_text(parts[1]) if len(parts) >= 2 else ""
+                    else:
+                        param_name = ""
+                        param_type = ""
+
+                if param_name:
                     self.params.append(param_name)
+                    if param_type:
+                        self.param_types[param_name] = param_type
+                    normalized_type = _normalize_type_name(param_type)
                     # Check if first param is typed as a known struct
-                    if first_param and param_type in self.struct_names:
-                        self.associated_struct = param_type
+                    if first_param and normalized_type in self.struct_names:
+                        self.associated_struct = normalized_type
                         self.self_param_name = param_name
-                elif len(parts) == 1:
-                    self.params.append(_node_text(parts[0]))
                 first_param = False
             elif child.type == "identifier":
                 self.params.append(_node_text(child))
@@ -594,47 +803,6 @@ def _extract_cpp_functions(root: TSNode, source_code: str) -> list[MethodFact]:
                     name=func_name,
                     params=params,
                     return_type=return_type,
-                    source_code=source,
-                ))
-
-    return methods
-
-
-# ---------------------------------------------------------------------------
-# Julia procedural extraction
-# ---------------------------------------------------------------------------
-
-
-def _extract_julia_functions_procedural(
-    root: TSNode,
-    source_code: str,
-) -> list[MethodFact]:
-    """Extract top-level functions not associated with any struct."""
-    source_lines = source_code.splitlines()
-
-    # Collect struct names
-    struct_names: set[str] = set()
-    for child in root.children:
-        if child.type == "struct_definition":
-            v = _JuliaStructVisitor(child)
-            v.visit()
-            if v.struct_name:
-                struct_names.add(v.struct_name)
-
-    methods: list[MethodFact] = []
-    for child in root.children:
-        if child.type == "function_definition":
-            fv = _JuliaFunctionVisitor(child, source_code, struct_names, {})
-            fv.visit()
-            # Only include functions NOT associated with a struct
-            if fv.associated_struct is None and fv.func_name:
-                start = child.start_point[0]
-                end = child.end_point[0] + 1
-                source = "\n".join(source_lines[start:end])
-                methods.append(MethodFact(
-                    name=fv.func_name,
-                    params=fv.params,
-                    return_type=fv.return_type,
                     source_code=source,
                 ))
 
@@ -809,6 +977,256 @@ class TreeSitterExtractor:
         else:
             lang_key = "rust"
         self._parser = get_parser(lang_key)
+        self._rust_trait_query = None
+        self._rust_oracle_call_query = None
+        self._julia_dispatch_query = None
+        self._julia_oracle_call_query = None
+
+        if language == SourceLanguage.RUST:
+            self._rust_trait_query = self._compile_query(_RUST_TRAIT_BOUNDS_QUERY)
+            self._rust_oracle_call_query = self._compile_query(_RUST_ORACLE_CALL_QUERY)
+        elif language == SourceLanguage.JULIA:
+            self._julia_dispatch_query = self._compile_query(_JULIA_TYPED_DISPATCH_QUERY)
+            self._julia_oracle_call_query = self._compile_query(_JULIA_ORACLE_CALL_QUERY)
+
+    def _compile_query(self, query_src: str):
+        """Compile a tree-sitter query. Returns None if unsupported."""
+        try:
+            return self._parser.language.query(query_src)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _query_captures(root: TSNode, query) -> dict[str, list[TSNode]]:
+        """Execute query and return capture-name -> nodes mapping."""
+        if query is None:
+            return {}
+        try:
+            return query.captures(root)
+        except Exception:
+            return {}
+
+    def _rust_trait_bounds_for_node(self, node: TSNode) -> set[str]:
+        """Extract trait-bound names from a Rust impl/function node."""
+        captures = self._query_captures(node, self._rust_trait_query)
+        trait_nodes = captures.get("rust.trait_bound", [])
+        return {_normalize_trait_name(_node_text(tn)) for tn in trait_nodes}
+
+    def _build_rust_oracle_subgraph(
+        self,
+        fn_node: TSNode,
+        caller_name: str,
+        oracle_traits: set[str],
+    ) -> tuple[list[OracleEdge], list[DependencyEdge], set[str], set[str]]:
+        """Build oracle subgraph dependencies for trait-bound Rust calls."""
+        captures = self._query_captures(fn_node, self._rust_oracle_call_query)
+        call_nodes = captures.get("rust.oracle_call", [])
+
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
+        seen_oracle_edges: set[tuple[str, str]] = set()
+        method_state_vars: set[str] = set()
+        method_outputs: set[str] = set()
+
+        trait_label = sorted(oracle_traits)[0] if oracle_traits else "OracleInterface"
+
+        for call_node in call_nodes:
+            func_expr = call_node.children[0] if call_node.children else None
+            if func_expr is None or func_expr.type != "field_expression":
+                continue
+
+            method_nodes = [c for c in func_expr.children if c.type == "field_identifier"]
+            if not method_nodes:
+                continue
+            oracle_method = _node_text(method_nodes[-1]).strip()
+            if oracle_method.lower() not in _ORACLE_CALL_METHOD_HINTS:
+                continue
+
+            obj_node = func_expr.children[0] if func_expr.children else None
+            if obj_node is None:
+                continue
+            oracle_obj = _node_text(obj_node).strip()
+            if not oracle_obj:
+                continue
+
+            oracle_anchor = re.sub(r"[^A-Za-z0-9_]+", "_", oracle_obj).strip("_") or "oracle"
+            oracle_node_id = f"oracle_subgraph::{trait_label}::{caller_name}::{oracle_anchor}"
+
+            edge_key = (caller_name, oracle_node_id)
+            if edge_key not in seen_oracle_edges:
+                seen_oracle_edges.add(edge_key)
+                oracle_edges.append(OracleEdge(
+                    caller=caller_name,
+                    oracle_ref=oracle_node_id,
+                    call_site=_node_text(call_node),
+                ))
+
+            args_node = next((c for c in call_node.children if c.type == "arguments"), None)
+            state_vars: list[str] = []
+            if args_node is not None:
+                obj_tokens = {tok for tok in re.split(r"[^A-Za-z0-9_]+", oracle_obj) if tok}
+                for ident in _extract_identifiers_from_args(args_node):
+                    if ident in obj_tokens:
+                        continue
+                    if ident == oracle_method:
+                        continue
+                    state_vars.append(ident)
+
+            for state_var in state_vars:
+                method_state_vars.add(state_var)
+                _add_edge_if_new(
+                    inferred_edges,
+                    seen_inferred,
+                    DependencyEdge(
+                        source_id=f"state:{state_var}",
+                        target_id=oracle_node_id,
+                        output_name=state_var,
+                        input_name=state_var,
+                        source_type="StateVar",
+                        target_type="Any",
+                    ),
+                )
+
+            for out_name in _oracle_outputs_for_method(oracle_method):
+                method_outputs.add(out_name)
+                out_type = "ndarray" if out_name == "gradient" else "AbstractScalar"
+                _add_edge_if_new(
+                    inferred_edges,
+                    seen_inferred,
+                    DependencyEdge(
+                        source_id=oracle_node_id,
+                        target_id=caller_name,
+                        output_name=out_name,
+                        input_name=out_name,
+                        source_type=out_type,
+                        target_type=out_type,
+                    ),
+                )
+
+        return oracle_edges, inferred_edges, method_state_vars, method_outputs
+
+    def _julia_dispatch_function_keys(self, root: TSNode) -> set[tuple[int, int, int, int]]:
+        """Return function-definition nodes using typed or where-dispatched signatures."""
+        captures = self._query_captures(root, self._julia_dispatch_query)
+        fn_nodes = captures.get("julia.dispatch_fn", [])
+        return {_node_key(node) for node in fn_nodes}
+
+    def _is_julia_oracle_interface(
+        self,
+        source_node: TSNode,
+        fv: _JuliaFunctionVisitor,
+        dispatch_fn_keys: set[tuple[int, int, int, int]],
+    ) -> bool:
+        """Determine whether a Julia function acts as a probabilistic oracle interface."""
+        if _node_key(source_node) not in dispatch_fn_keys:
+            return False
+
+        type_hints = [t.lower() for t in fv.param_types.values()]
+        bound_hints = _node_text(source_node).lower()
+        if any(
+            "abstractmcmc" in th
+            or "abstract" in th
+            or "density" in th
+            or "logdensityproblems" in th
+            for th in type_hints
+        ):
+            return True
+        if "where" in bound_hints and "<:" in bound_hints and "abstract" in bound_hints:
+            return True
+        return fv.func_name.lower() in {"step", "logdensity", "log_prob", "gradient"}
+
+    def _build_julia_oracle_subgraph(
+        self,
+        fn_node: TSNode,
+        caller_name: str,
+    ) -> tuple[list[OracleEdge], list[DependencyEdge], set[str], set[str]]:
+        """Build oracle subgraph dependencies for Julia type-dispatched interfaces."""
+        captures = self._query_captures(fn_node, self._julia_oracle_call_query)
+        call_nodes = captures.get("julia.oracle_call", [])
+
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
+        seen_oracle_edges: set[tuple[str, str]] = set()
+        method_state_vars: set[str] = set()
+        method_outputs: set[str] = set()
+
+        for call_node in call_nodes:
+            children = [c for c in call_node.children if c.type not in ("(", ")", ",")]
+            if len(children) < 2:
+                continue
+
+            func_expr = children[0]
+            args_node = next((c for c in children if c.type == "argument_list"), None)
+            if args_node is None:
+                continue
+
+            oracle_obj = ""
+            oracle_method = ""
+
+            if func_expr.type == "field_expression":
+                id_parts = [c for c in func_expr.children if c.type == "identifier"]
+                if len(id_parts) >= 2:
+                    oracle_obj = _node_text(id_parts[0]).strip()
+                    oracle_method = _node_text(id_parts[-1]).strip()
+            elif func_expr.type == "identifier":
+                oracle_method = _node_text(func_expr).strip()
+                arg_idents = _extract_identifiers_from_args(args_node)
+                if arg_idents:
+                    oracle_obj = arg_idents[0]
+
+            if not oracle_obj or not oracle_method:
+                continue
+            if oracle_method.lower() not in _ORACLE_CALL_METHOD_HINTS:
+                continue
+
+            oracle_anchor = re.sub(r"[^A-Za-z0-9_]+", "_", oracle_obj).strip("_") or "oracle"
+            oracle_node_id = f"oracle_subgraph::JuliaDispatch::{caller_name}::{oracle_anchor}"
+
+            edge_key = (caller_name, oracle_node_id)
+            if edge_key not in seen_oracle_edges:
+                seen_oracle_edges.add(edge_key)
+                oracle_edges.append(OracleEdge(
+                    caller=caller_name,
+                    oracle_ref=oracle_node_id,
+                    call_site=_node_text(call_node),
+                ))
+
+            for ident in _extract_identifiers_from_args(args_node):
+                if ident in {oracle_obj, oracle_method}:
+                    continue
+                method_state_vars.add(ident)
+                _add_edge_if_new(
+                    inferred_edges,
+                    seen_inferred,
+                    DependencyEdge(
+                        source_id=f"state:{ident}",
+                        target_id=oracle_node_id,
+                        output_name=ident,
+                        input_name=ident,
+                        source_type="StateVar",
+                        target_type="Any",
+                    ),
+                )
+
+            for out_name in _oracle_outputs_for_method(oracle_method):
+                method_outputs.add(out_name)
+                out_type = "ndarray" if out_name == "gradient" else "AbstractScalar"
+                _add_edge_if_new(
+                    inferred_edges,
+                    seen_inferred,
+                    DependencyEdge(
+                        source_id=oracle_node_id,
+                        target_id=caller_name,
+                        output_name=out_name,
+                        input_name=out_name,
+                        source_type=out_type,
+                        target_type=out_type,
+                    ),
+                )
+
+        return oracle_edges, inferred_edges, method_state_vars, method_outputs
 
     async def extract_class(
         self, source_path: str, class_name: str
@@ -842,12 +1260,22 @@ class TreeSitterExtractor:
         tree = self._parser.parse(source_code.encode("utf-8"))
         root = tree.root_node
 
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        requires_logdet_jacobian = False
+
         if self.language == SourceLanguage.CPP:
             methods = _extract_cpp_functions(root, source_code)
+            oracle_edges = _scan_cpp_oracle_edges(root, source_code)
         elif self.language == SourceLanguage.JULIA:
-            methods = _extract_julia_functions_procedural(root, source_code)
+            methods, oracle_edges, inferred_edges = self._extract_julia_functions_procedural(
+                root, source_code
+            )
+            requires_logdet_jacobian = _scan_julia_bijectors(source_code)
         else:
-            methods = self._extract_rust_functions_procedural(root, source_code)
+            methods, oracle_edges, inferred_edges = self._extract_rust_functions_procedural(
+                root, source_code
+            )
 
         # Build all_attributes from method reads/writes
         all_attributes: dict[str, list[str]] = {}
@@ -857,15 +1285,6 @@ class TreeSitterExtractor:
             for attr in mf.writes:
                 all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
 
-        # Language-specific enrichment
-        oracle_edges: list[OracleEdge] = []
-        requires_logdet_jacobian = False
-
-        if self.language == SourceLanguage.CPP:
-            oracle_edges = _scan_cpp_oracle_edges(root, source_code)
-        elif self.language == SourceLanguage.JULIA:
-            requires_logdet_jacobian = _scan_julia_bijectors(source_code)
-
         return RawDataFlowGraph(
             class_name=name,
             source_code=source_code,
@@ -873,8 +1292,73 @@ class TreeSitterExtractor:
             all_attributes=all_attributes,
             source_language=self.language.value,
             oracle_edges=oracle_edges,
+            inferred_edges=inferred_edges,
             requires_logdet_jacobian=requires_logdet_jacobian,
         )
+
+    def _extract_julia_functions_procedural(
+        self,
+        root: TSNode,
+        source_code: str,
+    ) -> tuple[list[MethodFact], list[OracleEdge], list[DependencyEdge]]:
+        """Extract top-level Julia functions plus Oracle subgraph dependencies."""
+        source_lines = source_code.splitlines()
+
+        # Collect struct names for method association filtering
+        struct_names: set[str] = set()
+        for child in root.children:
+            if child.type == "struct_definition":
+                v = _JuliaStructVisitor(child)
+                v.visit()
+                if v.struct_name:
+                    struct_names.add(v.struct_name)
+
+        dispatch_fn_keys = self._julia_dispatch_function_keys(root)
+
+        methods: list[MethodFact] = []
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
+
+        for child in root.children:
+            if child.type != "function_definition":
+                continue
+
+            fv = _JuliaFunctionVisitor(child, source_code, struct_names, {})
+            fv.visit()
+
+            # Only include free/procedural functions (exclude struct-associated methods)
+            if fv.associated_struct is not None or not fv.func_name:
+                continue
+
+            is_oracle = self._is_julia_oracle_interface(child, fv, dispatch_fn_keys)
+            state_vars: set[str] = set()
+            oracle_outputs: set[str] = set()
+            if is_oracle:
+                (
+                    sub_oracle_edges,
+                    sub_inferred_edges,
+                    state_vars,
+                    oracle_outputs,
+                ) = self._build_julia_oracle_subgraph(child, fv.func_name)
+                oracle_edges.extend(sub_oracle_edges)
+                for edge in sub_inferred_edges:
+                    _add_edge_if_new(inferred_edges, seen_inferred, edge)
+
+            start = child.start_point[0]
+            end = child.end_point[0] + 1
+            source = "\n".join(source_lines[start:end])
+            methods.append(MethodFact(
+                name=fv.func_name,
+                params=fv.params,
+                return_type=fv.return_type,
+                reads=sorted(set(fv.reads) | state_vars),
+                writes=sorted(set(fv.writes) | oracle_outputs),
+                source_code=source,
+                is_oracle=is_oracle,
+            ))
+
+        return methods, oracle_edges, inferred_edges
 
     # --- C++ extraction ---
 
@@ -964,9 +1448,13 @@ class TreeSitterExtractor:
             sv.struct_name: {f[0] for f in sv.fields}
             for sv in struct_visitors
         }
+        dispatch_fn_keys = self._julia_dispatch_function_keys(root)
 
         # Find functions associated with this struct
         methods: list[MethodFact] = []
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
         source_lines = source_code.splitlines()
         for child in root.children:
             if child.type == "function_definition":
@@ -980,13 +1468,32 @@ class TreeSitterExtractor:
                     source = "\n".join(source_lines[start:end])
                     # Params: skip the self-like first param
                     params = fv.params[1:] if fv.params else []
+                    is_oracle = self._is_julia_oracle_interface(
+                        child, fv, dispatch_fn_keys
+                    )
+                    sub_oracle_edges: list[OracleEdge] = []
+                    sub_inferred_edges: list[DependencyEdge] = []
+                    state_vars: set[str] = set()
+                    oracle_outputs: set[str] = set()
+                    if is_oracle:
+                        (
+                            sub_oracle_edges,
+                            sub_inferred_edges,
+                            state_vars,
+                            oracle_outputs,
+                        ) = self._build_julia_oracle_subgraph(child, fv.func_name)
+                        oracle_edges.extend(sub_oracle_edges)
+                        for edge in sub_inferred_edges:
+                            _add_edge_if_new(inferred_edges, seen_inferred, edge)
+
                     methods.append(MethodFact(
                         name=fv.func_name,
                         params=params,
                         return_type=fv.return_type,
-                        reads=sorted(fv.reads),
-                        writes=sorted(fv.writes),
+                        reads=sorted(set(fv.reads) | state_vars),
+                        writes=sorted(set(fv.writes) | oracle_outputs),
                         source_code=source,
+                        is_oracle=is_oracle,
                     ))
 
         # Build all_attributes
@@ -1008,6 +1515,8 @@ class TreeSitterExtractor:
             source_language="julia",
             cartesian_product_fields=target_sv.cartesian_product_fields,
             requires_logdet_jacobian=requires_logdet_jacobian,
+            oracle_edges=oracle_edges,
+            inferred_edges=inferred_edges,
         )
     def _extract_rust_struct(self, root: TSNode, source_code: str, name: str) -> RawDataFlowGraph:
         struct_nodes = _find_descendants(root, "struct_item")
@@ -1023,6 +1532,9 @@ class TreeSitterExtractor:
             raise ValueError(f"Rust struct {name} not found")
 
         methods: list[MethodFact] = []
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
         impl_nodes = _find_descendants(root, "impl_item")
         for im in impl_nodes:
             is_target = False
@@ -1030,30 +1542,107 @@ class TreeSitterExtractor:
                 if child.type == "type_identifier" and _node_text(child) == name:
                     is_target = True
                     break
+                if child.type == "generic_type":
+                    for tid in _find_descendants(child, "type_identifier"):
+                        if _node_text(tid) == name:
+                            is_target = True
+                            break
+                    if is_target:
+                        break
 
             if is_target:
-                for child in im.children:
-                    if child.type == "function_item":
-                        fv = _RustFunctionVisitor(child, source_code)
-                        fv.visit()
-                        # Detect trait bounds from the enclosing impl block
-                        fv.detect_trait_bounds(im)
-                        methods.append(fv.get_fact())
+                trait_bounds = self._rust_trait_bounds_for_node(im)
+                oracle_traits = {
+                    t for t in trait_bounds if t in _ORACLE_TRAIT_BOUNDS
+                }
+                conjugate_traits = {
+                    t for t in trait_bounds if t in _CONJUGATE_TRAIT_BOUNDS
+                }
+                for fn_node in _find_descendants(im, "function_item"):
+                    fv = _RustFunctionVisitor(fn_node, source_code)
+                    fv.visit()
+                    # Detect trait bounds from the enclosing impl block
+                    fv.detect_trait_bounds(im)
+                    if oracle_traits:
+                        fv.is_oracle = True
+                    if conjugate_traits:
+                        fv.is_conjugate = True
+                    fact = fv.get_fact()
+
+                    if fact.is_oracle:
+                        (
+                            sub_oracle_edges,
+                            sub_inferred_edges,
+                            state_vars,
+                            oracle_outputs,
+                        ) = self._build_rust_oracle_subgraph(
+                            fn_node, fact.name, oracle_traits
+                        )
+                        oracle_edges.extend(sub_oracle_edges)
+                        for edge in sub_inferred_edges:
+                            _add_edge_if_new(inferred_edges, seen_inferred, edge)
+                        fact = fact.model_copy(update={
+                            "reads": sorted(set(fact.reads) | state_vars),
+                            "writes": sorted(set(fact.writes) | oracle_outputs),
+                        })
+
+                    methods.append(fact)
+
+        all_attributes: dict[str, list[str]] = {}
+        for mf in methods:
+            for attr in mf.reads:
+                all_attributes.setdefault(attr, []).append(f"read:{mf.name}")
+            for attr in mf.writes:
+                all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
 
         return RawDataFlowGraph(
             class_name=name,
             source_code=source_code,
             methods=methods,
+            all_attributes=all_attributes,
             source_language="rust",
             static_shape=target.static_shape,
+            oracle_edges=oracle_edges,
+            inferred_edges=inferred_edges,
         )
 
-    def _extract_rust_functions_procedural(self, root: TSNode, source_code: str) -> list[MethodFact]:
+    def _extract_rust_functions_procedural(
+        self, root: TSNode, source_code: str
+    ) -> tuple[list[MethodFact], list[OracleEdge], list[DependencyEdge]]:
         func_nodes = _find_descendants(root, "function_item")
-        methods = []
+        methods: list[MethodFact] = []
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
         for fn in func_nodes:
             if fn.parent and fn.parent.type == "source_file":
                 fv = _RustFunctionVisitor(fn, source_code)
                 fv.visit()
-                methods.append(fv.get_fact())
-        return methods
+                fn_traits = self._rust_trait_bounds_for_node(fn)
+                oracle_traits = {t for t in fn_traits if t in _ORACLE_TRAIT_BOUNDS}
+                conjugate_traits = {t for t in fn_traits if t in _CONJUGATE_TRAIT_BOUNDS}
+                if oracle_traits:
+                    fv.is_oracle = True
+                if conjugate_traits:
+                    fv.is_conjugate = True
+                fact = fv.get_fact()
+
+                if fact.is_oracle:
+                    (
+                        sub_oracle_edges,
+                        sub_inferred_edges,
+                        state_vars,
+                        oracle_outputs,
+                    ) = self._build_rust_oracle_subgraph(
+                        fn, fact.name, oracle_traits
+                    )
+                    oracle_edges.extend(sub_oracle_edges)
+                    for edge in sub_inferred_edges:
+                        _add_edge_if_new(inferred_edges, seen_inferred, edge)
+                    fact = fact.model_copy(update={
+                        "reads": sorted(set(fact.reads) | state_vars),
+                        "writes": sorted(set(fact.writes) | oracle_outputs),
+                    })
+
+                methods.append(fact)
+        return methods, oracle_edges, inferred_edges
