@@ -444,8 +444,8 @@ class TestConfigFields:
         config = AgeomConfig()
         assert hasattr(config, "ingester_fix_message_cycle_llm_provider")
         assert hasattr(config, "ingester_fix_message_cycle_llm_model")
-        assert config.ingester_fix_message_cycle_llm_provider == ""
-        assert config.ingester_fix_message_cycle_llm_model == ""
+        assert config.ingester_fix_message_cycle_llm_provider == "llama_cpp"
+        assert config.ingester_fix_message_cycle_llm_model == "qwen3:14b"
 
 
 # ---------------------------------------------------------------------------

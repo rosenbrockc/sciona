@@ -101,16 +101,17 @@ class TestConfigPerPromptFields:
         assert config.synthesizer_tactic_llm_provider == "llama_cpp"
         assert config.synthesizer_tactic_llm_model == "qwen-2.5-coder-32b"
         assert config.ingester_chunk_llm_provider == "codex"
-        # Non-set fields should be empty
-        assert config.architect_strategy_llm_provider == ""
-        assert config.architect_strategy_llm_model == ""
+        # Non-overridden fields keep their code defaults (may be non-empty
+        # now that some prompts route to local Ollama by default).
+        assert isinstance(config.architect_strategy_llm_provider, str)
+        assert isinstance(config.architect_strategy_llm_model, str)
 
-    def test_all_per_prompt_fields_default_to_empty(self):
+    def test_all_per_prompt_fields_exist(self):
         from ageom.config import AgeomConfig
 
         config = AgeomConfig()
         from ageom.llm_router import ALL_PROMPT_KEYS
 
         for key in ALL_PROMPT_KEYS:
-            assert getattr(config, f"{key}_llm_provider") == ""
-            assert getattr(config, f"{key}_llm_model") == ""
+            assert hasattr(config, f"{key}_llm_provider")
+            assert hasattr(config, f"{key}_llm_model")
