@@ -48,7 +48,7 @@ class AgeomConfig(BaseSettings):
 
     # Hunter agent parameters
     hunter_llm_provider: str = "llama_cpp"  # default local quantized worker
-    hunter_llm_model: str = "llama-3.1-8b-instruct"
+    hunter_llm_model: str = "qwen2.5-coder:7b"
     hunter_llm_max_tokens: int = 1024
     hunter_mode: str = "speculative_local"  # "standard" | "speculative_local"
     hunter_use_gbnf: bool = True
@@ -67,60 +67,63 @@ class AgeomConfig(BaseSettings):
     postgres_uri: str = ""
     architect_max_depth: int = 8
     architect_llm_provider: str = ""  # falls back to llm_provider when empty
-    architect_llm_model: str = "claude-sonnet-4-5-20250929"
+    architect_llm_model: str = ""
 
     # Synthesizer (Round 3)
     synthesizer_max_iterations: int = 10
     synthesizer_llm_provider: str = ""  # falls back to llm_provider
-    synthesizer_llm_model: str = "claude-sonnet-4-5-20250929"
+    synthesizer_llm_model: str = ""
 
     # Ingester (Round 0)
     ingester_llm_provider: str = ""  # falls back to llm_provider
-    ingester_llm_model: str = "claude-sonnet-4-5-20250929"
+    ingester_llm_model: str = ""
 
-    # --- Per-prompt LLM overrides (empty = fall back to agent-level) ---
+    # --- Per-prompt LLM overrides ---
+    # Light tier  → qwen2.5-coder:7b  (mechanical, high-volume, GBNF-safe)
+    # Medium tier → qwen3:14b          (structured output, diagnostics, creative)
+    # Heavy tier  → remote API          (falls back to agent/global default)
 
     # Architect per-prompt
-    architect_strategy_llm_provider: str = ""
-    architect_strategy_llm_model: str = ""
-    architect_decompose_llm_provider: str = ""
+    architect_strategy_llm_provider: str = "llama_cpp"
+    architect_strategy_llm_model: str = "qwen2.5-coder:7b"  # light: pick 1 from enum
+    architect_decompose_llm_provider: str = ""  # remote: graph design + type reasoning
     architect_decompose_llm_model: str = ""
-    architect_critique_llm_provider: str = ""
-    architect_critique_llm_model: str = ""
+    architect_critique_llm_provider: str = "llama_cpp"
+    architect_critique_llm_model: str = "qwen3:14b"  # medium: verification checklist
 
     # Hunter per-prompt
-    hunter_score_llm_provider: str = ""
-    hunter_score_llm_model: str = ""
-    hunter_reformulate_llm_provider: str = ""
-    hunter_reformulate_llm_model: str = ""
-    hunter_analyze_failure_llm_provider: str = ""
-    hunter_analyze_failure_llm_model: str = ""
+    hunter_score_llm_provider: str = "llama_cpp"
+    hunter_score_llm_model: str = "qwen2.5-coder:7b"  # light: ranking, GBNF-constrained
+    hunter_reformulate_llm_provider: str = "llama_cpp"
+    hunter_reformulate_llm_model: str = "qwen2.5-coder:7b"  # light: query diversity loop
+    hunter_analyze_failure_llm_provider: str = "llama_cpp"
+    hunter_analyze_failure_llm_model: str = "qwen3:14b"  # medium: compiler error diagnosis
 
-    # Synthesizer per-prompt
+    # Synthesizer per-prompt (all remote — proof/repair)
     synthesizer_repair_llm_provider: str = ""
     synthesizer_repair_llm_model: str = ""
     synthesizer_tactic_llm_provider: str = ""
     synthesizer_tactic_llm_model: str = ""
 
     # Ingester per-prompt
-    ingester_chunk_llm_provider: str = ""
+    ingester_chunk_llm_provider: str = ""  # remote: 70-line Bayesian state-space prompt
     ingester_chunk_llm_model: str = ""
-    ingester_hoist_state_llm_provider: str = ""
-    ingester_hoist_state_llm_model: str = ""
-    ingester_abstract_llm_provider: str = ""
-    ingester_abstract_llm_model: str = ""
-    ingester_fix_type_llm_provider: str = ""
-    ingester_fix_type_llm_model: str = ""
-    ingester_fix_ghost_llm_provider: str = ""
-    ingester_fix_ghost_llm_model: str = ""
-    ingester_opaque_witness_llm_provider: str = ""
-    ingester_opaque_witness_llm_model: str = ""
-    ingester_fix_message_cycle_llm_provider: str = ""
-    ingester_fix_message_cycle_llm_model: str = ""
+    ingester_hoist_state_llm_provider: str = "llama_cpp"
+    ingester_hoist_state_llm_model: str = "qwen3:14b"  # medium: structured rules from macro plan
+    ingester_abstract_llm_provider: str = "llama_cpp"
+    ingester_abstract_llm_model: str = "qwen3:14b"  # medium: creative writing, no code gen
+    ingester_fix_type_llm_provider: str = "llama_cpp"
+    ingester_fix_type_llm_model: str = "qwen2.5-coder:7b"  # light: mechanical mypy fixes
+    ingester_fix_ghost_llm_provider: str = "llama_cpp"
+    ingester_fix_ghost_llm_model: str = "qwen3:14b"  # medium: shape inference repair
+    ingester_opaque_witness_llm_provider: str = "llama_cpp"
+    ingester_opaque_witness_llm_model: str = "qwen3:14b"  # medium: DL shape propagation
+    ingester_fix_message_cycle_llm_provider: str = "llama_cpp"
+    ingester_fix_message_cycle_llm_model: str = "qwen3:14b"  # medium: BP cycle-breaking
 
     # Orchestrator per-prompt
-    orchestrator_refine_llm_provider: str = ""
-    orchestrator_refine_llm_model: str = ""
+    orchestrator_refine_llm_provider: str = "llama_cpp"
+    orchestrator_refine_llm_model: str = "qwen3:14b"  # medium: predicate splitting
 
     # Python target
     python_path: str = "python"
