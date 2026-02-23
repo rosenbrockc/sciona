@@ -14,6 +14,8 @@ import logging
 import re
 from dataclasses import dataclass, field
 
+from ageom.json_utils import extract_json
+
 from pydantic_graph import BaseNode, End, Graph, GraphRunContext
 
 from ageom.hunter.llm import LLMClient
@@ -376,24 +378,8 @@ def _extract_line_number(error_text: str) -> int:
 
 def _parse_patch_response(response: str) -> Patch | None:
     """Parse an LLM JSON response into a Patch."""
-    response = response.strip()
-    # Handle markdown code blocks
-    if "```" in response:
-        lines = response.splitlines()
-        json_lines: list[str] = []
-        in_block = False
-        for line in lines:
-            if line.strip().startswith("```") and not in_block:
-                in_block = True
-                continue
-            if line.strip() == "```" and in_block:
-                break
-            if in_block:
-                json_lines.append(line)
-        response = "\n".join(json_lines)
-
     try:
-        data = json.loads(response)
+        data = extract_json(response)
         return Patch(
             line_start=int(data["line_start"]),
             line_end=int(data["line_end"]),

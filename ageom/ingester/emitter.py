@@ -8,6 +8,8 @@ and edges, and pre-filled MatchResults.
 from __future__ import annotations
 
 import json
+
+from ageom.json_utils import extract_json
 import logging
 
 from ageom.hunter.llm import LLMClient
@@ -152,7 +154,7 @@ async def generate_opaque_witnesses(
                 response = await select_llm(llm, INGESTER_OPAQUE_WITNESS).complete(
                     DRAFT_OPAQUE_WITNESS_SYSTEM, user_prompt
                 )
-                raw = json.loads(response)
+                raw = extract_json(response)
                 witness_body = raw.get("witness_body")
             except Exception as exc:
                 logger.warning("LLM witness drafting failed for %s: %s", atom.name, exc)
@@ -290,6 +292,7 @@ def generate_atom_wrappers(
         "",
         "from __future__ import annotations",
         "",
+        "import numpy as np",
         "import torch",
         "import jax",
         "import jax.numpy as jnp",
@@ -357,15 +360,58 @@ def generate_atom_wrappers(
         else:
             ret_type = "None"
 
+        # Outermost: @register_atom (runs last)
+        lines.append(f"@register_atom({witness_fn})")
+
+        # 1. Add LLM-provided decorators
         for deco in getattr(atom, "decorators", []):
             lines.append(deco)
-        lines.append(f"@register_atom({witness_fn})")
+
+        # 2. Add default contracts (if missing) to satisfy the rule:
+        # "At least one @require and one @ensure per atom."
+        has_require = any("@icontract.require" in d for d in getattr(atom, "decorators", []))
+        has_ensure = any("@icontract.ensure" in d for d in getattr(atom, "decorators", []))
+
+        if not has_require:
+            # Add a basic type check for each input
+            for inp in atom.inputs:
+                if "np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc:
+                    lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
+                elif "float" in inp.type_desc:
+                    lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, (float, int, np.number)), "{inp.name} must be numeric")')
+            # If still no require, add a generic one
+            if not any("@icontract.require" in d for d in lines[-len(atom.inputs)-1:]):
+                for inp in atom.inputs:
+                    lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')
+
+        if not has_ensure:
+            if atom.outputs:
+                if len(atom.outputs) == 1:
+                    lines.append(f'@icontract.ensure(lambda result, **kwargs: result is not None, "{atom.name} output must not be None")')
+                else:
+                    lines.append(f'@icontract.ensure(lambda result, **kwargs: all(r is not None for r in result), "{atom.name} all outputs must not be None")')
+
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
 
         # Message-passing atoms get memoized wrappers
         if atom.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES:
             desc = atom.description or f"Compute {atom.name} with memoization."
-            lines.append(f'    """{desc}"""')
+            # Google-style docstring
+            lines.append(f'    """{desc}')
+            lines.append("")
+            if atom.inputs:
+                lines.append("    Args:")
+                for inp in atom.inputs:
+                    lines.append(f"        {inp.name}: {inp.constraints or 'Input data.'}")
+            if atom.outputs:
+                lines.append("")
+                lines.append("    Returns:")
+                if len(atom.outputs) == 1:
+                    lines.append(f"        {atom.outputs[0].constraints or 'Result data.'}")
+                else:
+                    for out in atom.outputs:
+                        lines.append(f"        {out.name}: {out.constraints or 'Result data.'}")
+            lines.append('    """')
             arg_names = ", ".join(inp.name for inp in atom.inputs)
             lines.append(f'    _key = _memo_key("{fn_name}", {arg_names})')
             lines.append("    if _key in _MEMO:")
@@ -375,7 +421,22 @@ def generate_atom_wrappers(
             )
         else:
             if atom.description:
-                lines.append(f'    """{atom.description}"""')
+                # Google-style docstring
+                lines.append(f'    """{atom.description}')
+                lines.append("")
+                if atom.inputs:
+                    lines.append("    Args:")
+                    for inp in atom.inputs:
+                        lines.append(f"        {inp.name}: {inp.constraints or 'Input data.'}")
+                if atom.outputs:
+                    lines.append("")
+                    lines.append("    Returns:")
+                    if len(atom.outputs) == 1:
+                        lines.append(f"        {atom.outputs[0].constraints or 'Result data.'}")
+                    else:
+                        for out in atom.outputs:
+                            lines.append(f"        {out.name}: {out.constraints or 'Result data.'}")
+                lines.append('    """')
             lines.append(
                 '    raise NotImplementedError("Wire to original implementation")'
             )
@@ -414,6 +475,7 @@ def generate_stateful_wrappers(
         "",
         "from __future__ import annotations",
         "",
+        "import numpy as np",
         "import torch",
         "import jax",
         "import jax.numpy as jnp",
@@ -459,19 +521,55 @@ def generate_stateful_wrappers(
             orig_ret = "None"
         ret_type = f"tuple[{orig_ret}, {state_type}]"
 
+        # Outermost: @register_atom (runs last)
+        lines.append(f"@register_atom({witness_fn})")
+
+        # LLM-provided + Default contracts
+        has_require = any("@icontract.require" in d for d in getattr(atom, "decorators", []))
+        has_ensure = any("@icontract.ensure" in d for d in getattr(atom, "decorators", []))
+
         for deco in getattr(atom, "decorators", []):
             lines.append(deco)
-        lines.append(f"@register_atom({witness_fn})")
+
+        if not has_require:
+            for inp in atom.inputs:
+                if "np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc:
+                    lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
+                elif "float" in inp.type_desc:
+                    lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, (float, int, np.number)), "{inp.name} must be numeric")')
+            if not any("@icontract.require" in d for d in lines[-len(atom.inputs)-1:]):
+                for inp in atom.inputs:
+                    lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')
+
+        if not has_ensure:
+            if atom.outputs:
+                if len(atom.outputs) == 1:
+                    lines.append(f'@icontract.ensure(lambda result, **kwargs: result is not None, "{atom.name} output must not be None")')
+                else:
+                    lines.append(f'@icontract.ensure(lambda result, **kwargs: all(r is not None for r in result), "{atom.name} all outputs must not be None")')
+
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
-        if atom.description:
-            lines.append('    """Stateless wrapper: Functional Core, Imperative Shell.')
+
+        # Google-style docstring
+        summary = atom.description or f"Compute {atom.name}."
+        lines.append('    """Stateless wrapper: Functional Core, Imperative Shell.')
+        lines.append("")
+        lines.append(f"    {summary}")
+        lines.append("")
+        if atom.inputs:
+            lines.append("    Args:")
+            for inp in atom.inputs:
+                lines.append(f"        {inp.name}: {inp.constraints or 'Input data.'}")
+        lines.append(f"        state: {state_type} object containing cross-window persistent state.")
+        if atom.outputs:
             lines.append("")
-            lines.append(f"    {atom.description}")
-            lines.append('    """')
-        else:
-            lines.append(
-                '    """Stateless wrapper: Functional Core, Imperative Shell."""'
-            )
+            lines.append("    Returns:")
+            if len(atom.outputs) == 1:
+                lines.append(f"        tuple[{atom.outputs[0].constraints or 'Result'}, {state_type}]:")
+            else:
+                lines.append(f"        tuple[tuple[{', '.join(o.name for o in atom.outputs)}], {state_type}]:")
+            lines.append(f"            The first element is the functional result, the second is the updated state.")
+        lines.append('    """')
 
         # Instantiate via __new__
         lines.append(f"    obj = {class_name}.__new__({class_name})")
@@ -851,22 +949,29 @@ def generate_ghost_witnesses(
             continue
 
         # Default DSP/generic witness
+        is_dsp = atom.concept_type in {
+            ConceptType.SIGNAL_FILTER,
+            ConceptType.SIGNAL_TRANSFORM,
+            ConceptType.GRAPH_SIGNAL_PROCESSING,
+        }
+        abstract_type = "AbstractSignal" if is_dsp else "AbstractArray"
+
         params = []
         for inp in atom.inputs:
-            params.append(f"{inp.name}: AbstractSignal")
+            params.append(f"{inp.name}: {abstract_type}")
         if has_state:
-            params.append("state: AbstractSignal")
+            params.append(f"state: {abstract_type}")
         param_str = ", ".join(params) if params else ""
 
         # Return type
         if has_state:
             if atom.outputs:
-                ret_type = "tuple[AbstractSignal, AbstractSignal]"
+                ret_type = f"tuple[{abstract_type}, {abstract_type}]"
             else:
-                ret_type = "tuple[None, AbstractSignal]"
+                ret_type = f"tuple[None, {abstract_type}]"
         else:
             if atom.outputs:
-                ret_type = "AbstractSignal"
+                ret_type = abstract_type
             else:
                 ret_type = "None"
 
@@ -875,13 +980,14 @@ def generate_ghost_witnesses(
 
         if atom.inputs and atom.outputs:
             first_input = atom.inputs[0].name
-            lines.append("    result = AbstractSignal(")
+            lines.append(f"    result = {abstract_type}(")
             lines.append(f"        shape={first_input}.shape,")
             lines.append('        dtype="float64",')
-            lines.append(
-                f"        sampling_rate=getattr({first_input}, 'sampling_rate', 44100.0),"
-            )
-            lines.append('        domain="time",')
+            if is_dsp:
+                lines.append(
+                    f"        sampling_rate=getattr({first_input}, 'sampling_rate', 44100.0),"
+                )
+                lines.append('        domain="time",')
             lines.append("    )")
             if has_state:
                 lines.append("    return result, state")

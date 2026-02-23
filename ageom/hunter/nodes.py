@@ -12,6 +12,8 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from ageom.json_utils import extract_json
+
 from pydantic_graph import BaseNode, End, GraphRunContext
 
 from ageom.hunter.deps import HunterDeps
@@ -164,7 +166,7 @@ class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
                 grammar=_INT_ARRAY_GBNF,
                 use_gbnf=state.use_gbnf,
             )
-            ranked_indices = json.loads(response)
+            ranked_indices = extract_json(response)
             # Reorder candidates
             reordered = []
             seen = set()
@@ -314,7 +316,7 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
                 grammar=_STRING_ARRAY_GBNF,
                 use_gbnf=state.use_gbnf,
             )
-            new_queries = json.loads(response)
+            new_queries = extract_json(response)
             if isinstance(new_queries, list) and new_queries:
                 deduped: list[str] = []
                 seen = set(state.queries_tried)

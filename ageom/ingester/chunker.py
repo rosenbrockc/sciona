@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import logging
+
+from ageom.json_utils import extract_json
 from dataclasses import dataclass
 from typing import Any
 
@@ -283,7 +285,7 @@ async def propose_macro_atoms(
     )
 
     try:
-        raw = json.loads(response)
+        raw = extract_json(response)
     except json.JSONDecodeError:
         logger.warning("Failed to parse LLM response as JSON, using empty plan")
         raw = {"macro_atoms": [], "edges": []}
@@ -351,7 +353,7 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
     )
 
     try:
-        raw = json.loads(response)
+        raw = extract_json(response)
     except json.JSONDecodeError:
         logger.warning("Failed to parse state hoisting response")
         return {"proposed_plan": plan}
@@ -531,7 +533,7 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
             response = await select_llm(deps.llm, INGESTER_ABSTRACT).complete(
                 CONCEPTUAL_ABSTRACT_SYSTEM, user_prompt
             )
-            raw = json.loads(response)
+            raw = extract_json(response)
             profile = _parse_conceptual_profile(raw)
         except Exception as exc:
             logger.warning("Conceptual abstraction failed for %s: %s", atom.name, exc)

@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ageom.json_utils import extract_json
+
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
@@ -590,7 +592,7 @@ async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str
     )
 
     try:
-        fixes = json.loads(response)
+        fixes = extract_json(response)
         if isinstance(fixes, list) and fixes:
             lines = bundle.generated_atoms.splitlines()
             for fix in fixes:
@@ -632,7 +634,7 @@ async def repair_ghost(state: IngesterState, config: RunnableConfig) -> dict[str
     )
 
     try:
-        fixes = json.loads(response)
+        fixes = extract_json(response)
         if isinstance(fixes, list) and fixes:
             updated_witnesses = bundle.generated_witnesses
             for fix in fixes:
@@ -681,7 +683,7 @@ async def repair_message_cycle(
     )
 
     try:
-        fixes = json.loads(response)
+        fixes = extract_json(response)
         if isinstance(fixes, list) and fixes:
             lines = bundle.generated_witnesses.splitlines()
             for fix in sorted(
