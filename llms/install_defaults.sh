@@ -20,7 +20,22 @@ if ! command -v ollama &>/dev/null; then
     fi
 fi
 
-echo "Ollama $(ollama --version) detected."
+echo "Ollama $(ollama --version 2>/dev/null) detected."
+
+# --- Fix Homebrew MLX linkage -------------------------------------------------
+# Homebrew's ollama formula depends on mlx-c but doesn't link the dylib into
+# its own bin/ directory, which is the only place the binary searches at runtime.
+OLLAMA_BIN="$(dirname "$(command -v ollama)")"
+OLLAMA_CELLAR_BIN="$(readlink -f "${OLLAMA_BIN}" 2>/dev/null || echo "${OLLAMA_BIN}")"
+
+if [[ "${OLLAMA_CELLAR_BIN}" == */Cellar/ollama/* ]]; then
+    for lib in libmlxc.dylib libmlx.dylib; do
+        if [[ ! -e "${OLLAMA_CELLAR_BIN}/${lib}" ]] && [[ -e "/opt/homebrew/lib/${lib}" ]]; then
+            echo "Symlinking ${lib} into Ollama bin (Homebrew MLX fix)…"
+            ln -sf "/opt/homebrew/lib/${lib}" "${OLLAMA_CELLAR_BIN}/${lib}"
+        fi
+    done
+fi
 echo
 
 # --- Pull default models ------------------------------------------------------
