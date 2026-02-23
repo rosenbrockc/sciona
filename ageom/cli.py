@@ -63,6 +63,7 @@ def _create_llm(
         openai_base_url=config.openai_base_url,
         llama_cpp_base_url=config.llama_cpp_base_url,
         llama_cpp_api_key=config.llama_cpp_api_key,
+        use_agent_layer=config.use_agent_layer,
     )
 
 
@@ -106,6 +107,7 @@ def _create_llm_router(
                 openai_base_url=config.openai_base_url,
                 llama_cpp_base_url=config.llama_cpp_base_url,
                 llama_cpp_api_key=config.llama_cpp_api_key,
+                use_agent_layer=config.use_agent_layer,
             )
         overrides[key] = client_cache[cache_key]
 
@@ -244,7 +246,7 @@ def main() -> None:
     )
     decompose_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -351,7 +353,7 @@ def main() -> None:
     )
     synth_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -396,7 +398,7 @@ def main() -> None:
     )
     run_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
         default=None,
         help="LLM provider override",
     )
@@ -481,7 +483,7 @@ def main() -> None:
     )
     optimize_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
         default=None,
         help="LLM provider override",
     )
@@ -542,7 +544,7 @@ def main() -> None:
     )
     ingest_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -579,7 +581,7 @@ def main() -> None:
     )
     match_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
         default=None,
         help="LLM provider override (default: from config)",
     )

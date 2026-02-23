@@ -38,6 +38,7 @@ class AgeomConfig(BaseSettings):
     llm_max_tokens: int = 4096
     llama_cpp_base_url: str = "http://127.0.0.1:8080/v1"
     llama_cpp_api_key: str = "local"
+    use_agent_layer: bool = False  # prefix CLI commands with `al` (Agent Layer)
 
     # Lean 4
     lean_toolchain: str = "leanprover/lean4:v4.14.0"

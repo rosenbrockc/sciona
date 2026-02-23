@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+import json
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -115,3 +116,206 @@ class TestConfigPerPromptFields:
         for key in ALL_PROMPT_KEYS:
             assert hasattr(config, f"{key}_llm_provider")
             assert hasattr(config, f"{key}_llm_model")
+
+
+# ---------------------------------------------------------------------------
+# SubprocessCLIClient tests
+# ---------------------------------------------------------------------------
+
+from ageom.hunter.llm import SubprocessCLIClient, create_llm_client
+
+
+def _fake_proc(stdout: bytes = b"", stderr: bytes = b"", returncode: int = 0):
+    """Return an AsyncMock that behaves like asyncio.subprocess.Process."""
+    proc = AsyncMock()
+    proc.communicate = AsyncMock(return_value=(stdout, stderr))
+    proc.returncode = returncode
+    return proc
+
+
+class TestSubprocessCLIClient:
+    # -- command construction ------------------------------------------------
+
+    def test_claude_cmd_basic(self):
+        c = SubprocessCLIClient(cli="claude", model="sonnet", max_tokens=2048)
+        cmd = c._build_cmd("You are helpful.")
+        assert cmd == [
+            "claude", "-p", "--output-format", "text",
+            "--system-prompt", "You are helpful.",
+            "--model", "sonnet",
+            "--max-tokens", "2048",
+        ]
+
+    def test_claude_cmd_no_system(self):
+        c = SubprocessCLIClient(cli="claude", model="sonnet", max_tokens=1024)
+        cmd = c._build_cmd("")
+        assert "--system-prompt" not in cmd
+
+    def test_codex_cmd_basic(self):
+        c = SubprocessCLIClient(cli="codex", model="o4-mini", max_tokens=4096)
+        cmd = c._build_cmd("sys")
+        assert cmd[:2] == ["codex", "exec"]
+        assert "--json" in cmd
+        assert "-o" in cmd
+        assert "-m" in cmd
+        assert "o4-mini" in cmd
+
+    def test_gemini_cmd_basic(self):
+        c = SubprocessCLIClient(cli="gemini", model="gemini-2.5-pro", max_tokens=4096)
+        cmd = c._build_cmd("sys")
+        assert cmd[0] == "gemini"
+        assert "-p" in cmd
+        assert "--model" in cmd
+        assert "gemini-2.5-pro" in cmd
+
+    def test_agent_layer_prefix(self):
+        c = SubprocessCLIClient(
+            cli="claude", model="sonnet", max_tokens=1024, use_agent_layer=True,
+        )
+        cmd = c._build_cmd("sys")
+        assert cmd[0] == "al"
+        assert cmd[1] == "claude"
+
+    def test_agent_layer_codex(self):
+        c = SubprocessCLIClient(
+            cli="codex", model="o4-mini", max_tokens=1024, use_agent_layer=True,
+        )
+        cmd = c._build_cmd("")
+        assert cmd[0] == "al"
+        assert cmd[1] == "codex"
+
+    def test_agent_layer_gemini(self):
+        c = SubprocessCLIClient(
+            cli="gemini", model="pro", max_tokens=1024, use_agent_layer=True,
+        )
+        cmd = c._build_cmd("")
+        assert cmd[0] == "al"
+        assert cmd[1] == "gemini"
+
+    # -- stdin content -------------------------------------------------------
+
+    def test_claude_stdin_is_user_only(self):
+        c = SubprocessCLIClient(cli="claude", model="m", max_tokens=1)
+        assert c._build_stdin("system text", "user text") == "user text"
+
+    def test_codex_stdin_prepends_system(self):
+        c = SubprocessCLIClient(cli="codex", model="m", max_tokens=1)
+        result = c._build_stdin("sys", "usr")
+        assert result == "[System]\nsys\n\nusr"
+
+    def test_gemini_stdin_prepends_system(self):
+        c = SubprocessCLIClient(cli="gemini", model="m", max_tokens=1)
+        result = c._build_stdin("sys", "usr")
+        assert result == "[System]\nsys\n\nusr"
+
+    def test_codex_stdin_no_system(self):
+        c = SubprocessCLIClient(cli="codex", model="m", max_tokens=1)
+        assert c._build_stdin("", "usr") == "usr"
+
+    # -- output parsing ------------------------------------------------------
+
+    def test_claude_parse_output_plain(self):
+        c = SubprocessCLIClient(cli="claude", model="m", max_tokens=1)
+        assert c._parse_output("  hello world  \n") == "hello world"
+
+    def test_gemini_parse_output_plain(self):
+        c = SubprocessCLIClient(cli="gemini", model="m", max_tokens=1)
+        assert c._parse_output("  result\n") == "result"
+
+    def test_codex_parse_output_jsonl(self):
+        c = SubprocessCLIClient(cli="codex", model="m", max_tokens=1)
+        events = "\n".join([
+            json.dumps({"role": "user", "content": "hi"}),
+            json.dumps({"role": "assistant", "content": "hello back"}),
+        ])
+        assert c._parse_output(events) == "hello back"
+
+    def test_codex_parse_output_message_field(self):
+        c = SubprocessCLIClient(cli="codex", model="m", max_tokens=1)
+        events = json.dumps({"message": "done"})
+        assert c._parse_output(events) == "done"
+
+    def test_codex_parse_output_fallback_raw(self):
+        c = SubprocessCLIClient(cli="codex", model="m", max_tokens=1)
+        assert c._parse_output("plain text") == "plain text"
+
+    # -- async complete ------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_complete_success_claude(self):
+        c = SubprocessCLIClient(cli="claude", model="sonnet", max_tokens=1024)
+        proc = _fake_proc(stdout=b"reply text\n", returncode=0)
+        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc) as mock_exec:
+            result = await c.complete("sys", "usr")
+        assert result == "reply text"
+        # Verify stdin was just the user prompt
+        proc.communicate.assert_awaited_once()
+        stdin_bytes = proc.communicate.call_args[0][0]
+        assert stdin_bytes == b"usr"
+
+    @pytest.mark.asyncio
+    async def test_complete_success_codex_jsonl(self):
+        c = SubprocessCLIClient(cli="codex", model="o4-mini", max_tokens=1024)
+        jsonl = json.dumps({"role": "assistant", "content": "answer"}) + "\n"
+        proc = _fake_proc(stdout=jsonl.encode(), returncode=0)
+        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+            result = await c.complete("sys", "usr")
+        assert result == "answer"
+
+    @pytest.mark.asyncio
+    async def test_complete_success_gemini(self):
+        c = SubprocessCLIClient(cli="gemini", model="pro", max_tokens=1024)
+        proc = _fake_proc(stdout=b"gemini reply", returncode=0)
+        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+            result = await c.complete("sys", "usr")
+        assert result == "gemini reply"
+
+    @pytest.mark.asyncio
+    async def test_complete_nonzero_exit_raises(self):
+        c = SubprocessCLIClient(cli="claude", model="m", max_tokens=1)
+        proc = _fake_proc(stderr=b"some error", returncode=1)
+        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+            with pytest.raises(RuntimeError, match="claude CLI exited with code 1"):
+                await c.complete("sys", "usr")
+
+    @pytest.mark.asyncio
+    async def test_complete_with_grammar_delegates(self):
+        c = SubprocessCLIClient(cli="claude", model="m", max_tokens=1)
+        proc = _fake_proc(stdout=b"ok", returncode=0)
+        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+            result = await c.complete_with_grammar("sys", "usr", "grammar")
+        assert result == "ok"
+
+
+class TestCreateLLMClientCLIProviders:
+    def test_claude_cli_creates_subprocess_client(self):
+        client = create_llm_client(
+            provider="claude_cli", model="sonnet", max_tokens=1024,
+        )
+        assert isinstance(client, SubprocessCLIClient)
+        assert client._cli == "claude"
+
+    def test_codex_cli_creates_subprocess_client(self):
+        client = create_llm_client(
+            provider="codex_cli", model="o4-mini", max_tokens=1024,
+        )
+        assert isinstance(client, SubprocessCLIClient)
+        assert client._cli == "codex"
+
+    def test_gemini_cli_creates_subprocess_client(self):
+        client = create_llm_client(
+            provider="gemini_cli", model="pro", max_tokens=1024,
+        )
+        assert isinstance(client, SubprocessCLIClient)
+        assert client._cli == "gemini"
+
+    def test_agent_layer_forwarded(self):
+        client = create_llm_client(
+            provider="claude_cli", model="m", max_tokens=1, use_agent_layer=True,
+        )
+        assert isinstance(client, SubprocessCLIClient)
+        assert client._use_agent_layer is True
+
+    def test_unknown_cli_variant_raises(self):
+        with pytest.raises(ValueError, match="Unknown CLI variant"):
+            SubprocessCLIClient(cli="unknown", model="m", max_tokens=1)
