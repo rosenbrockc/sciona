@@ -504,6 +504,23 @@ def main() -> None:
         help="Per-trial subprocess timeout in seconds (default: 120)",
     )
 
+    # --- sources ---
+    sources_parser = subparsers.add_parser(
+        "sources", help="Manage multi-repo atom sources"
+    )
+    sources_sub = sources_parser.add_subparsers(dest="sources_command")
+
+    sources_sub.add_parser("list", help="List resolved atom sources")
+    sources_sync_parser = sources_sub.add_parser(
+        "sync", help="Fetch / update git atom sources"
+    )
+    sources_sync_parser.add_argument(
+        "--name",
+        type=str,
+        default=None,
+        help="Sync only the named source (default: all)",
+    )
+
     # --- ingest ---
     ingest_parser = subparsers.add_parser(
         "ingest",
@@ -603,6 +620,18 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(1)
+    elif args.command == "sources":
+        sources_cmd = getattr(args, "sources_command", None)
+        if sources_cmd == "list":
+            _cmd_sources_list(args)
+        elif sources_cmd == "sync":
+            _cmd_sources_sync(args)
+        else:
+            print(
+                "Error: provide a sources subcommand (list, sync)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     elif args.command == "optimize":
         asyncio.run(_cmd_optimize(args))
     elif args.command == "decompose":
@@ -626,6 +655,55 @@ def main() -> None:
     else:
         parser.print_help()
         sys.exit(1)
+
+
+def _cmd_sources_list(args: argparse.Namespace) -> None:
+    """Print resolved atom sources table."""
+    from ageom.config import AgeomConfig
+    from ageom.sources import load_sources, resolve_source
+
+    config = AgeomConfig()
+    sources_cfg = load_sources(config.sources_file)
+
+    if not sources_cfg.sources:
+        print("No sources configured. Add entries to sources.yml.")
+        return
+
+    print(f"{'Name':<20} {'Package':<20} {'Type':<6} {'Resolved Path'}")
+    print("-" * 80)
+    for src in sources_cfg.sources:
+        kind = "git" if src.git else "path"
+        try:
+            resolved = resolve_source(src)
+            exists = resolved.exists()
+            status = str(resolved) if exists else f"{resolved} (NOT FOUND)"
+        except Exception as exc:
+            status = f"ERROR: {exc}"
+        print(f"{src.name:<20} {src.package:<20} {kind:<6} {status}")
+
+
+def _cmd_sources_sync(args: argparse.Namespace) -> None:
+    """Fetch / update git atom sources."""
+    from ageom.config import AgeomConfig
+    from ageom.sources import load_sources, sync_source
+
+    config = AgeomConfig()
+    sources_cfg = load_sources(config.sources_file)
+
+    targets = sources_cfg.sources
+    if args.name:
+        targets = [s for s in targets if s.name == args.name]
+        if not targets:
+            print(f"Error: source '{args.name}' not found in sources.yml", file=sys.stderr)
+            sys.exit(1)
+
+    for src in targets:
+        print(f"Syncing {src.name}...")
+        try:
+            resolved = sync_source(src)
+            print(f"  -> {resolved}")
+        except Exception as exc:
+            print(f"  ERROR: {exc}", file=sys.stderr)
 
 
 def _cmd_skill_ingest(args: argparse.Namespace) -> None:
@@ -755,19 +833,42 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
         print(f"Found {len(declarations)} declarations from {args.path}")
     elif prover == Prover.PYTHON:
         from ageom.indexer.python_source import PythonDeclarationSource
+        from ageom.sources import load_sources, resolve_source
 
-        packages = (
-            args.packages.split(",")
-            if getattr(args, "packages", None)
-            else config.python_packages.split(",")
-        )
         py_source = PythonDeclarationSource()
         declarations = []
-        for pkg in packages:
-            pkg = pkg.strip()
-            if pkg:
+
+        if getattr(args, "packages", None):
+            # Explicit --packages flag: use legacy behaviour
+            packages = [p.strip() for p in args.packages.split(",") if p.strip()]
+            for pkg in packages:
                 declarations.extend(py_source.get_declarations_from_package(pkg))
-        print(f"Found {len(declarations)} declarations from {', '.join(packages)}")
+            label = ", ".join(packages)
+        else:
+            # Use sources.yml
+            sources_cfg = load_sources(config.sources_file)
+            if sources_cfg.sources:
+                pkg_labels: list[str] = []
+                for src in sources_cfg.sources:
+                    root = resolve_source(src)
+                    declarations.extend(
+                        py_source.get_declarations_from_path(root, src.package)
+                    )
+                    pkg_labels.append(src.package)
+                label = ", ".join(pkg_labels)
+            else:
+                # Fallback to config.python_packages
+                packages = [
+                    p.strip()
+                    for p in config.python_packages.split(",")
+                    if p.strip()
+                ]
+                for pkg in packages:
+                    declarations.extend(
+                        py_source.get_declarations_from_package(pkg)
+                    )
+                label = ", ".join(packages)
+        print(f"Found {len(declarations)} declarations from {label}")
     else:
         print(f"Error: unsupported prover {prover}", file=sys.stderr)
         sys.exit(1)

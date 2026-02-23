@@ -2,6 +2,9 @@
   "cases": [
     {
       "id": "pulsar_pipeline",
+      "source_name": "ageo-atoms",
+      "cdg_rel_path": "ageoa/pulsar/pipeline_cdg.json",
+      "witness_test_rel_path": "tests/test_pulsar.py",
       "cdg_path": "../ageo-atoms/ageoa/pulsar/pipeline_cdg.json",
       "witness_test_path": "../ageo-atoms/tests/test_pulsar.py",
       "expected_matches": {
@@ -33,6 +36,9 @@
     },
     {
       "id": "biosppy_ecg",
+      "source_name": "ageo-atoms",
+      "cdg_rel_path": "ageoa/biosppy/ecg_cdg.json",
+      "witness_test_rel_path": "tests/test_biosppy_advanced.py",
       "cdg_path": "../ageo-atoms/ageoa/biosppy/ecg_cdg.json",
       "witness_test_path": "../ageo-atoms/tests/test_biosppy_advanced.py",
       "expected_matches": {

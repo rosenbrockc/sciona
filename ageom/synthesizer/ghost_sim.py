@@ -867,8 +867,18 @@ def _simulate_with_bayesian_checks(
 
 
 def _ensure_atoms_imported() -> None:
-    """Import atom modules to trigger @register_atom decorators."""
+    """Import atom packages from all configured sources to trigger @register_atom."""
+    from ageom.sources import load_sources, import_all_sources
 
+    try:
+        config = load_sources()
+        if config.sources:
+            import_all_sources(config)
+            return
+    except Exception:
+        logger.debug("Failed to load sources.yml, falling back to hardcoded imports", exc_info=True)
+
+    # Fallback: hardcoded imports for backwards compatibility
     modules = [
         "ageoa.numpy.fft",
         "ageoa.scipy.fft",

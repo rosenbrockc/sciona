@@ -31,6 +31,29 @@ class PythonFunctionInfo:
 class PythonDeclarationSource:
     """Extracts Declaration objects from Python packages using ast + inspect."""
 
+    def get_declarations_from_path(
+        self, repo_root: str | Path, package_name: str
+    ) -> list[Declaration]:
+        """Extract declarations from a package located at *repo_root*.
+
+        Temporarily inserts *repo_root* into ``sys.path`` so the package
+        can be imported, then delegates to ``get_declarations_from_package``.
+        """
+        import sys as _sys
+
+        root_str = str(Path(repo_root).resolve())
+        inserted = root_str not in _sys.path
+        if inserted:
+            _sys.path.insert(0, root_str)
+        try:
+            return self.get_declarations_from_package(package_name)
+        finally:
+            if inserted:
+                try:
+                    _sys.path.remove(root_str)
+                except ValueError:
+                    pass
+
     def get_declarations_from_package(self, package_name: str) -> list[Declaration]:
         """Extract declarations from all modules in a Python package."""
         declarations: list[Declaration] = []

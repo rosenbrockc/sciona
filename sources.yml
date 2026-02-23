@@ -1,0 +1,4 @@
+sources:
+  - name: ageo-atoms
+    path: ../ageo-atoms
+    package: ageoa

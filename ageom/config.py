@@ -18,6 +18,9 @@ class AgeomConfig(BaseSettings):
         extra="ignore",
     )
 
+    # Atom sources
+    sources_file: Path = Field(default=Path("sources.yml"))
+
     # Embedding model
     embedding_model: str = "microsoft/unixcoder-base"
     embedding_dim: int = 768

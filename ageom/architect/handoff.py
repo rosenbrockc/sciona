@@ -387,3 +387,18 @@ def load_json(path: str | Path) -> CDGExport:
     with open(path) as f:
         data = json.load(f)
     return CDGExport.model_validate(data)
+
+
+def find_cdg(name: str) -> Path | None:
+    """Search all configured atom sources for a CDG file matching *name*.
+
+    Delegates to :func:`ageom.sources.find_cdg`.  Returns ``None`` if
+    no match is found or sources.yml is not present.
+    """
+    try:
+        from ageom.sources import find_cdg as _find_cdg
+
+        return _find_cdg(name)
+    except Exception:
+        _logger.debug("find_cdg failed", exc_info=True)
+        return None
