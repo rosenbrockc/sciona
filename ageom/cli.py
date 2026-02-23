@@ -555,6 +555,12 @@ def main() -> None:
         help="LLM model override (default: from config)",
     )
     ingest_parser.add_argument(
+        "--procedural",
+        action="store_true",
+        default=False,
+        help="Use deterministic procedural extraction instead of LLM chunking",
+    )
+    ingest_parser.add_argument(
         "--trace",
         action="store_true",
         default=False,
@@ -901,6 +907,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         from ageom.llm_router import (
             INGESTER_ABSTRACT,
             INGESTER_CHUNK,
+            INGESTER_DECOMPOSE,
             INGESTER_FIX_GHOST,
             INGESTER_FIX_TYPE,
             INGESTER_HOIST_STATE,
@@ -918,6 +925,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
                 INGESTER_FIX_TYPE,
                 INGESTER_FIX_GHOST,
                 INGESTER_OPAQUE_WITNESS,
+                INGESTER_DECOMPOSE,
             ],
         )
     except (ValueError, ImportError) as exc:
@@ -950,10 +958,15 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             proof_env=proof_env,
             faiss_index=faiss_index,
             output_dir=str(output_dir),
+            max_depth=config.ingester_max_depth,
+            line_threshold=config.ingester_decompose_line_threshold,
         )
 
-        print(f"Ingesting class '{args.class_name}' from {source_path}")
-        bundle = await agent.ingest(str(source_path), args.class_name)
+        print(f"Ingesting {'class' if not getattr(args, 'procedural', False) else 'procedural'} '{args.class_name}' from {source_path}")
+        if getattr(args, "procedural", False):
+            bundle = await agent.ingest_procedural(str(source_path), args.class_name)
+        else:
+            bundle = await agent.ingest(str(source_path), args.class_name)
 
         # Write output files
         if bundle.generated_atoms:

@@ -356,7 +356,10 @@ class TestGraphWiring:
         graph = build_chunker_graph()
         compiled = graph.compile()
         graph_dict = compiled.get_graph()
-        # abstract_atoms should be reachable from critic_validate
+        # critic_validate routes through decompose_complex_atoms to abstract_atoms
         critic_edges = [e for e in graph_dict.edges if e.source == "critic_validate"]
-        target_nodes = {e.target for e in critic_edges}
-        assert "abstract_atoms" in target_nodes
+        critic_targets = {e.target for e in critic_edges}
+        assert "decompose_complex_atoms" in critic_targets
+        decompose_edges = [e for e in graph_dict.edges if e.source == "decompose_complex_atoms"]
+        decompose_targets = {e.target for e in decompose_edges}
+        assert "abstract_atoms" in decompose_targets

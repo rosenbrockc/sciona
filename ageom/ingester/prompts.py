@@ -117,6 +117,78 @@ Return JSON:
 
 
 # ---------------------------------------------------------------------------
+# Phase 2: Recursive atom decomposition
+# ---------------------------------------------------------------------------
+
+DECOMPOSE_ATOM_SYSTEM = """\
+You are an expert software architect decomposing a complex function body into \
+smaller pure-functional sub-steps.
+
+Given the full source code of a single function/method, split it into a \
+sequence of logical sub-atoms. Each sub-atom should represent one coherent \
+computational step (one transform, one filter, one aggregation, one model \
+call, etc.).
+
+Rules:
+1. Each sub-atom must be a pure function: explicit inputs, explicit outputs, \
+   no hidden side effects.
+2. Sub-atom names should describe the intent, not the implementation.
+3. Preserve the data flow: the outputs of one sub-atom feed the inputs of \
+   the next.
+4. Do NOT create trivially small sub-atoms (e.g. a single assignment). \
+   Group related lines.
+5. If the function calls internal helpers, each major helper call can be \
+   its own sub-atom.
+6. Choose concept_type from: sorting, searching, divide_and_conquer, greedy, \
+   dynamic_programming, graph_traversal, graph_optimization, string_matching, \
+   geometry, arithmetic, number_theory, combinatorics, algebra, analysis, \
+   set_theory, signal_transform, signal_filter, graph_signal_processing, \
+   sampler, log_prob, posterior_update, variational_inference, prior_init, \
+   prior_distribution, likelihood_evaluation, probabilistic_oracle, \
+   oracle_gradient, mcmc_kernel, mcmc_proposal, vi_elbo, sequential_filter, \
+   smc_reweight, message_passing, conjugate_update, custom.
+
+Return valid JSON only."""
+
+DECOMPOSE_ATOM_USER = """\
+Atom: {atom_name}
+Description: {atom_description}
+
+Current inputs: {current_inputs}
+Current outputs: {current_outputs}
+
+Internal calls: {internal_calls}
+
+Full source code:
+```
+{source_code}
+```
+
+Return JSON:
+{{
+  "sub_atoms": [
+    {{
+      "name": "<intent-based name>",
+      "description": "<what this sub-step accomplishes>",
+      "inputs": [{{"name": "<param>", "type_desc": "<type>", "constraints": ""}}],
+      "outputs": [{{"name": "<output>", "type_desc": "<type>", "constraints": ""}}],
+      "concept_type": "<category from rules above>"
+    }}
+  ],
+  "edges": [
+    {{
+      "source_id": "<sub_atom_name>",
+      "target_id": "<sub_atom_name>",
+      "output_name": "<output>",
+      "input_name": "<input>",
+      "source_type": "<type>",
+      "target_type": "<type>"
+    }}
+  ]
+}}"""
+
+
+# ---------------------------------------------------------------------------
 # Phase 2: State hoisting
 # ---------------------------------------------------------------------------
 

@@ -1027,8 +1027,42 @@ def _profile_to_summary(profile: ConceptualProfile | None) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _emit_atom_nodes(
+    atom: MacroAtomSpec,
+    parent_id: str,
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+    depth: int,
+) -> None:
+    """Recursively emit CDG nodes for an atom and its children."""
+    node_id = _snake_case(atom.name)
+    has_children = bool(atom.children)
+
+    node = AlgorithmicNode(
+        node_id=node_id,
+        parent_id=parent_id,
+        name=atom.name,
+        description=atom.description,
+        concept_type=atom.concept_type,
+        inputs=list(atom.inputs),
+        outputs=list(atom.outputs),
+        status=NodeStatus.DECOMPOSED if has_children else NodeStatus.ATOMIC,
+        children=[_snake_case(c.name) for c in atom.children] if has_children else [],
+        is_optional=atom.is_optional,
+        is_opaque=atom.is_opaque,
+        is_external=getattr(atom, "is_external", False),
+        type_signature=_build_type_signature(atom),
+        conceptual_summary=_profile_to_summary(atom.conceptual_profile),
+        depth=depth,
+    )
+    nodes.append(node)
+
+    for child in atom.children:
+        _emit_atom_nodes(child, node_id, nodes, edges, depth + 1)
+
+
 def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
-    """Build a CDGExport with root DECOMPOSED node + ATOMIC children."""
+    """Build a CDGExport with root DECOMPOSED node + recursive children."""
     root_node = AlgorithmicNode(
         node_id=f"{class_name}_root",
         name=class_name,
@@ -1039,31 +1073,15 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
         depth=0,
     )
 
-    child_nodes = []
-    for atom in plan.plan.macro_atoms:
-        node_id = _snake_case(atom.name)
-        child = AlgorithmicNode(
-            node_id=node_id,
-            parent_id=root_node.node_id,
-            name=atom.name,
-            description=atom.description,
-            concept_type=atom.concept_type,
-            inputs=list(atom.inputs),
-            outputs=list(atom.outputs),
-            status=NodeStatus.ATOMIC,
-            is_optional=atom.is_optional,
-            is_opaque=atom.is_opaque,
-            is_external=getattr(atom, "is_external", False),
-            type_signature=_build_type_signature(atom),
-            conceptual_summary=_profile_to_summary(atom.conceptual_profile),
-            depth=1,
-        )
-        child_nodes.append(child)
+    all_nodes: list[AlgorithmicNode] = [root_node]
+    all_edges: list[DependencyEdge] = []
 
-    # Build typed edges
-    edges = []
+    for atom in plan.plan.macro_atoms:
+        _emit_atom_nodes(atom, root_node.node_id, all_nodes, all_edges, depth=1)
+
+    # Build typed edges from plan
     for edge_def in plan.plan.edge_definitions:
-        edges.append(
+        all_edges.append(
             DependencyEdge(
                 source_id=_snake_case(_title_case(edge_def.source_id)),
                 target_id=_snake_case(_title_case(edge_def.target_id)),
@@ -1074,10 +1092,9 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
             )
         )
 
-    all_nodes = [root_node] + child_nodes
     return CDGExport(
         nodes=all_nodes,
-        edges=edges,
+        edges=all_edges,
         metadata={
             "source": "ingester",
             "class_name": class_name,

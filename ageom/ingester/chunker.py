@@ -32,6 +32,8 @@ from ageom.ingester.models import (
 from ageom.ingester.prompts import (
     CONCEPTUAL_ABSTRACT_SYSTEM,
     CONCEPTUAL_ABSTRACT_USER,
+    DECOMPOSE_ATOM_SYSTEM,
+    DECOMPOSE_ATOM_USER,
     HOIST_STATE_SYSTEM,
     HOIST_STATE_USER,
     SEMANTIC_CHUNK_SYSTEM,
@@ -40,6 +42,7 @@ from ageom.ingester.prompts import (
 from ageom.llm_router import (
     INGESTER_ABSTRACT,
     INGESTER_CHUNK,
+    INGESTER_DECOMPOSE,
     INGESTER_HOIST_STATE,
     select_llm,
 )
@@ -70,6 +73,8 @@ class ChunkerState(TypedDict):
 class ChunkerDeps:
     llm: LLMClient
     faiss_index: SemanticIndex | None = None
+    max_depth: int = 1
+    line_threshold: int = 30
 
 
 # ---------------------------------------------------------------------------
@@ -470,6 +475,197 @@ async def prepare_chunk_retry(
     return {"retry_count": state.get("retry_count", 0) + 1}
 
 
+# ---------------------------------------------------------------------------
+# Complexity heuristic + recursive decomposition
+# ---------------------------------------------------------------------------
+
+
+def is_atom_complex(
+    atom: MacroAtomSpec,
+    dfg: RawDataFlowGraph,
+    line_threshold: int = 30,
+) -> bool:
+    """Determine whether *atom* is too complex and should be decomposed.
+
+    An atom is complex when ANY of:
+    - Combined method source exceeds *line_threshold* lines
+    - Methods call 3+ internal sub-functions
+    - Any method body is ``NotImplementedError`` (skeleton stub)
+    """
+    total_lines = 0
+    total_internal_calls = 0
+    has_not_implemented = False
+
+    by_name = {m.name: m for m in dfg.methods}
+    for mname in atom.method_names:
+        mf = by_name.get(mname)
+        if mf is None:
+            continue
+        src = mf.source_code or ""
+        total_lines += len(src.strip().splitlines())
+        # Count calls to other methods in the same class
+        internal_methods = {m.name for m in dfg.methods}
+        total_internal_calls += sum(1 for c in mf.calls if c in internal_methods)
+        if "NotImplementedError" in src:
+            has_not_implemented = True
+
+    # Also honour the pre-populated source_lines field
+    if atom.source_lines > 0:
+        total_lines = max(total_lines, atom.source_lines)
+
+    return total_lines > line_threshold or total_internal_calls >= 3 or has_not_implemented
+
+
+def _gather_source_for_atom(
+    atom: MacroAtomSpec,
+    dfg: RawDataFlowGraph,
+) -> tuple[str, list[str]]:
+    """Return (combined_source, internal_calls) for an atom's methods."""
+    by_name = {m.name: m for m in dfg.methods}
+    sources: list[str] = []
+    all_calls: list[str] = []
+    for mname in atom.method_names:
+        mf = by_name.get(mname)
+        if mf and mf.source_code:
+            sources.append(mf.source_code)
+            all_calls.extend(mf.calls)
+    return "\n\n".join(sources), all_calls
+
+
+def _parse_sub_atoms(raw: dict, parent_depth: int) -> tuple[list[MacroAtomSpec], list[DependencyEdge]]:
+    """Parse LLM decomposition response into sub-atoms and edges."""
+    sub_atoms: list[MacroAtomSpec] = []
+    for item in raw.get("sub_atoms", []):
+        inputs = [
+            IOSpec(
+                name=io.get("name", ""),
+                type_desc=io.get("type_desc", ""),
+                constraints=io.get("constraints", ""),
+            )
+            for io in item.get("inputs", [])
+        ]
+        outputs = [
+            IOSpec(
+                name=io.get("name", ""),
+                type_desc=io.get("type_desc", ""),
+                constraints=io.get("constraints", ""),
+            )
+            for io in item.get("outputs", [])
+        ]
+        try:
+            concept = ConceptType(item.get("concept_type", "custom"))
+        except ValueError:
+            concept = ConceptType.CUSTOM
+        sub_atoms.append(
+            MacroAtomSpec(
+                name=item.get("name", ""),
+                description=item.get("description", ""),
+                inputs=inputs,
+                outputs=outputs,
+                concept_type=concept,
+                depth=parent_depth + 1,
+            )
+        )
+
+    edges: list[DependencyEdge] = []
+    for item in raw.get("edges", []):
+        edges.append(
+            DependencyEdge(
+                source_id=item.get("source_id", ""),
+                target_id=item.get("target_id", ""),
+                output_name=item.get("output_name", ""),
+                input_name=item.get("input_name", ""),
+                source_type=item.get("source_type", ""),
+                target_type=item.get("target_type", ""),
+            )
+        )
+    return sub_atoms, edges
+
+
+async def _decompose_single_atom(
+    atom: MacroAtomSpec,
+    dfg: RawDataFlowGraph,
+    llm: LLMClient,
+    max_depth: int,
+    line_threshold: int,
+    current_depth: int,
+) -> MacroAtomSpec:
+    """Recursively decompose a single atom if it exceeds complexity thresholds."""
+    if current_depth >= max_depth:
+        return atom
+
+    if not is_atom_complex(atom, dfg, line_threshold):
+        return atom
+
+    source_code, internal_calls = _gather_source_for_atom(atom, dfg)
+    if not source_code.strip():
+        return atom
+
+    inputs_str = ", ".join(f"{i.name}: {i.type_desc}" for i in atom.inputs) or "(none)"
+    outputs_str = ", ".join(f"{o.name}: {o.type_desc}" for o in atom.outputs) or "(none)"
+    calls_str = ", ".join(internal_calls) if internal_calls else "(none)"
+
+    user_prompt = DECOMPOSE_ATOM_USER.format(
+        atom_name=atom.name,
+        atom_description=atom.description,
+        current_inputs=inputs_str,
+        current_outputs=outputs_str,
+        internal_calls=calls_str,
+        source_code=source_code,
+    )
+
+    try:
+        response = await select_llm(llm, INGESTER_DECOMPOSE).complete(
+            DECOMPOSE_ATOM_SYSTEM, user_prompt
+        )
+        raw = extract_json(response)
+    except Exception as exc:
+        logger.warning("Decomposition failed for %s: %s", atom.name, exc)
+        return atom
+
+    children, _edges = _parse_sub_atoms(raw, current_depth)
+    if not children:
+        return atom
+
+    # Recurse into children
+    recursed_children: list[MacroAtomSpec] = []
+    for child in children:
+        recursed = await _decompose_single_atom(
+            child, dfg, llm, max_depth, line_threshold, current_depth + 1
+        )
+        recursed_children.append(recursed)
+
+    return atom.model_copy(update={"children": recursed_children})
+
+
+async def decompose_complex_atoms(
+    state: ChunkerState, config: RunnableConfig
+) -> dict[str, Any]:
+    """Recursively decompose complex atoms based on complexity heuristics."""
+    deps: ChunkerDeps = config["configurable"]["deps"]
+    validated = state["validated_plan"]
+    plan = validated.plan
+    dfg = state["raw_dfg"]
+
+    max_depth = deps.max_depth
+    line_threshold = deps.line_threshold
+
+    # At depth 1 (default), skip decomposition entirely for backward compat
+    if max_depth <= 1:
+        return {"validated_plan": validated}
+
+    decomposed_atoms: list[MacroAtomSpec] = []
+    for atom in plan.macro_atoms:
+        result = await _decompose_single_atom(
+            atom, dfg, deps.llm, max_depth, line_threshold, current_depth=1
+        )
+        decomposed_atoms.append(result)
+
+    new_plan = plan.model_copy(update={"macro_atoms": decomposed_atoms})
+    new_validated = validated.model_copy(update={"plan": new_plan})
+    return {"validated_plan": new_validated}
+
+
 def _format_io_specs(specs: list) -> str:
     """Format IOSpec list for the abstraction prompt."""
     if not specs:
@@ -576,8 +772,11 @@ def build_chunker_graph() -> StateGraph:
 
         propose_macro_atoms -> flatten_config -> hoist_state
         -> search_sub_atoms -> critic_validate
-        -> [abstract_atoms -> END | prepare_chunk_retry -> propose_macro_atoms]
+        -> [decompose_complex_atoms -> abstract_atoms -> END
+            | prepare_chunk_retry -> propose_macro_atoms]
 
+    The ``decompose_complex_atoms`` step recursively splits complex atoms
+    into sub-atoms (controlled by ``max_depth`` / ``line_threshold`` in deps).
     The ``abstract_atoms`` step runs the Conceptual Abstraction Agent on
     each atom after the plan is finalized (critic passed or budget exhausted),
     storing domain-agnostic profiles for cross-field semantic retrieval.
@@ -590,6 +789,7 @@ def build_chunker_graph() -> StateGraph:
     graph.add_node("search_sub_atoms", search_sub_atoms)
     graph.add_node("critic_validate", critic_validate)
     graph.add_node("prepare_chunk_retry", prepare_chunk_retry)
+    graph.add_node("decompose_complex_atoms", decompose_complex_atoms)
     graph.add_node("abstract_atoms", abstract_atoms)
 
     graph.set_entry_point("propose_macro_atoms")
@@ -602,11 +802,12 @@ def build_chunker_graph() -> StateGraph:
         "critic_validate",
         route_after_critic,
         {
-            "end": "abstract_atoms",
-            "end_best_effort": "abstract_atoms",
+            "end": "decompose_complex_atoms",
+            "end_best_effort": "decompose_complex_atoms",
             "retry": "prepare_chunk_retry",
         },
     )
+    graph.add_edge("decompose_complex_atoms", "abstract_atoms")
     graph.add_edge("abstract_atoms", END)
     graph.add_edge("prepare_chunk_retry", "propose_macro_atoms")
 

@@ -78,6 +78,8 @@ class AgeomConfig(BaseSettings):
     # Ingester (Round 0)
     ingester_llm_provider: str = ""  # falls back to llm_provider
     ingester_llm_model: str = ""
+    ingester_max_depth: int = 1  # max CDG depth (1 = current flat behavior)
+    ingester_decompose_line_threshold: int = 30  # method lines triggering sub-decomposition
 
     # --- Per-prompt LLM overrides ---
     # Light tier  → qwen2.5-coder:7b  (mechanical, high-volume, GBNF-safe)
@@ -121,6 +123,8 @@ class AgeomConfig(BaseSettings):
     ingester_opaque_witness_llm_model: str = "qwen3:14b"  # medium: DL shape propagation
     ingester_fix_message_cycle_llm_provider: str = "llama_cpp"
     ingester_fix_message_cycle_llm_model: str = "qwen3:14b"  # medium: BP cycle-breaking
+    ingester_decompose_llm_provider: str = ""  # remote: recursive atom decomposition
+    ingester_decompose_llm_model: str = ""
 
     # Orchestrator per-prompt
     orchestrator_refine_llm_provider: str = "llama_cpp"

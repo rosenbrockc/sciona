@@ -158,6 +158,8 @@ class IngesterDeps:
     proof_env: ProofEnvironment | None = None
     faiss_index: SemanticIndex | None = None
     output_dir: str | None = None
+    max_depth: int = 1
+    line_threshold: int = 30
 
 
 # ---------------------------------------------------------------------------
@@ -429,7 +431,12 @@ async def phase2_chunk(state: IngesterState, config: RunnableConfig) -> dict[str
     if state.get("error"):
         return {}
 
-    chunker_deps = ChunkerDeps(llm=deps.llm, faiss_index=deps.faiss_index)
+    chunker_deps = ChunkerDeps(
+        llm=deps.llm,
+        faiss_index=deps.faiss_index,
+        max_depth=deps.max_depth,
+        line_threshold=deps.line_threshold,
+    )
     chunker_graph = build_chunker_graph().compile()
 
     initial_state: dict[str, Any] = {
@@ -810,6 +817,8 @@ class IngesterAgent:
         faiss_index: SemanticIndex | None = None,
         output_dir: str | None = None,
         max_repair_retries: int = 3,
+        max_depth: int = 1,
+        line_threshold: int = 30,
     ) -> None:
         global _MAX_REPAIR_RETRIES
         _MAX_REPAIR_RETRIES = max_repair_retries
@@ -819,6 +828,8 @@ class IngesterAgent:
             proof_env=proof_env,
             faiss_index=faiss_index,
             output_dir=output_dir,
+            max_depth=max_depth,
+            line_threshold=line_threshold,
         )
         self._graph = build_ingester_graph().compile()
 

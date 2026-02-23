@@ -162,6 +162,18 @@ class MacroAtomSpec(BaseModel):
         default=None,
         description="Domain-agnostic abstraction for cross-domain retrieval",
     )
+    children: list["MacroAtomSpec"] = Field(
+        default_factory=list,
+        description="Sub-atoms from recursive decomposition",
+    )
+    depth: int = Field(
+        default=0,
+        description="Depth in the decomposition tree (0 = top-level)",
+    )
+    source_lines: int = Field(
+        default=0,
+        description="Line count of underlying method source (for complexity heuristic)",
+    )
 
 
 class StochasticTraceSpec(BaseModel):
