@@ -307,7 +307,7 @@ def main() -> None:
         "--api",
         action="store_true",
         default=False,
-        help="Start FastAPI server with Neo4j CDG browsing (requires neo4j connection)",
+        help="Start FastAPI server with Memgraph CDG browsing (requires Memgraph connection)",
     )
 
     # --- assemble ---
@@ -619,7 +619,7 @@ def main() -> None:
     # --- upsert-cdg ---
     upsert_cdg_parser = subparsers.add_parser(
         "upsert-cdg",
-        help="Upsert CDG JSON files into Neo4j graph store",
+        help="Upsert CDG JSON files into Memgraph graph store",
     )
     upsert_cdg_parser.add_argument(
         "repo_path",
@@ -633,10 +633,10 @@ def main() -> None:
         help="Repo namespace override (default: directory basename)",
     )
     upsert_cdg_parser.add_argument(
-        "--neo4j-uri",
+        "--memgraph-uri",
         type=str,
         default=None,
-        help="Neo4j bolt URI override (default: from config)",
+        help="Memgraph bolt URI override (default: from config)",
     )
 
     args = parser.parse_args()
@@ -1838,13 +1838,13 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
 
 async def _cmd_upsert_cdg(args: argparse.Namespace) -> None:
-    """Upsert CDG JSON files into Neo4j graph store."""
+    """Upsert CDG JSON files into Memgraph graph store."""
     from ageom.config import AgeomConfig
     from ageom.upsert_cdg import upsert_repo
 
     config = AgeomConfig()
-    if args.neo4j_uri:
-        config.neo4j_uri = args.neo4j_uri
+    if args.memgraph_uri:
+        config.memgraph_uri = args.memgraph_uri
 
     repo_path = Path(args.repo_path).expanduser().resolve()
     if not repo_path.is_dir():

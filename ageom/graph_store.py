@@ -1,4 +1,4 @@
-"""Neo4j graph store for CDG upsert pipeline."""
+"""Memgraph graph store for CDG upsert pipeline."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def _topo_hash(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], root_id
 
 
 # ---------------------------------------------------------------------------
-# Witness & contract metadata extraction (pure Python, no Neo4j dependency)
+# Witness & contract metadata extraction (pure Python, no Memgraph dependency)
 # ---------------------------------------------------------------------------
 
 def extract_witness_metadata(
@@ -149,7 +149,7 @@ def extract_contract_metadata(
 
 
 # ---------------------------------------------------------------------------
-# Cypher parameter builders (testable without Neo4j)
+# Cypher parameter builders (testable without Memgraph)
 # ---------------------------------------------------------------------------
 
 def build_atom_params(
@@ -229,11 +229,11 @@ def collect_stale_fqns(
 
 
 # ---------------------------------------------------------------------------
-# Neo4j async store
+# Memgraph async store
 # ---------------------------------------------------------------------------
 
-class Neo4jStore:
-    """Async context manager wrapping ``neo4j.AsyncDriver``."""
+class GraphStore:
+    """Async context manager wrapping ``neo4j.AsyncDriver`` (works with Memgraph)."""
 
     def __init__(self, uri: str, user: str, password: str) -> None:
         self._uri = uri
@@ -241,12 +241,11 @@ class Neo4jStore:
         self._password = password
         self._driver: Any = None
 
-    async def __aenter__(self) -> "Neo4jStore":
+    async def __aenter__(self) -> "GraphStore":
         from neo4j import AsyncGraphDatabase
 
-        self._driver = AsyncGraphDatabase.driver(
-            self._uri, auth=(self._user, self._password)
-        )
+        auth = (self._user, self._password) if self._user else None
+        self._driver = AsyncGraphDatabase.driver(self._uri, auth=auth)
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
@@ -254,18 +253,23 @@ class Neo4jStore:
             await self._driver.close()
 
     async def ensure_constraints(self) -> None:
-        """Create uniqueness constraints and indexes."""
-        statements = [
-            "CREATE CONSTRAINT atom_fqn IF NOT EXISTS FOR (a:Atom) REQUIRE a.fqn IS UNIQUE",
-            "CREATE CONSTRAINT input_port_id IF NOT EXISTS FOR (p:InputPort) REQUIRE p.port_id IS UNIQUE",
-            "CREATE CONSTRAINT output_port_id IF NOT EXISTS FOR (p:OutputPort) REQUIRE p.port_id IS UNIQUE",
-            "CREATE INDEX atom_concept_type IF NOT EXISTS FOR (a:Atom) ON (a.concept_type)",
-            "CREATE INDEX atom_abstract_type IF NOT EXISTS FOR (a:Atom) ON (a.abstract_type_class)",
-            "CREATE INDEX atom_repo IF NOT EXISTS FOR (a:Atom) ON (a.repo)",
+        """Create uniqueness constraints and indexes (Memgraph DDL)."""
+        constraints = [
+            "CREATE CONSTRAINT ON (a:Atom) ASSERT a.fqn IS UNIQUE",
+            "CREATE CONSTRAINT ON (p:InputPort) ASSERT p.port_id IS UNIQUE",
+            "CREATE CONSTRAINT ON (p:OutputPort) ASSERT p.port_id IS UNIQUE",
+        ]
+        indexes = [
+            "CREATE INDEX ON :Atom(concept_type)",
+            "CREATE INDEX ON :Atom(abstract_type_class)",
+            "CREATE INDEX ON :Atom(repo)",
         ]
         async with self._driver.session() as session:
-            for stmt in statements:
-                await session.run(stmt)
+            for stmt in constraints + indexes:
+                try:
+                    await session.run(stmt)
+                except Exception:
+                    pass  # Memgraph has no IF NOT EXISTS; ignore duplicates
 
     async def upsert_cdg(
         self,
@@ -274,7 +278,7 @@ class Neo4jStore:
         witness_meta: dict[str, dict[str, Any]],
         contract_meta: dict[str, dict[str, Any]],
     ) -> dict[str, int]:
-        """Idempotent upsert of a single CDG into Neo4j.
+        """Idempotent upsert of a single CDG into Memgraph.
 
         Returns counts: ``{atoms, input_ports, output_ports, data_flow, parent_of, deleted}``.
         """
@@ -321,7 +325,7 @@ class Neo4jStore:
 
                 # Add concept_type label
                 if concept_type:
-                    # Neo4j labels can't have hyphens; replace with underscore
+                    # Graph labels can't have hyphens; replace with underscore
                     safe_label = concept_type.replace("-", "_").replace(" ", "_")
                     cypher += f"SET a:`{safe_label}` "
 

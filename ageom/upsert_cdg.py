@@ -1,4 +1,4 @@
-"""Async entrypoint for upserting CDGs into Neo4j."""
+"""Async entrypoint for upserting CDGs into Memgraph."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 
 from ageom.config import AgeomConfig
 from ageom.graph_store import (
-    Neo4jStore,
+    GraphStore,
     extract_contract_metadata,
     extract_witness_metadata,
 )
@@ -41,10 +41,10 @@ async def upsert_repo(
     contract_meta = extract_contract_metadata(repo_path, all_node_ids)
 
     summary: dict[str, Any] = {}
-    async with Neo4jStore(
-        uri=config.neo4j_uri,
-        user=config.neo4j_user,
-        password=config.neo4j_password,
+    async with GraphStore(
+        uri=config.memgraph_uri,
+        user=config.memgraph_user,
+        password=config.memgraph_password,
     ) as store:
         await store.ensure_constraints()
 

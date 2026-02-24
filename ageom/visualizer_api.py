@@ -1,4 +1,4 @@
-"""FastAPI server for browsing CDGs stored in Neo4j."""
+"""FastAPI server for browsing CDGs stored in Memgraph."""
 
 from __future__ import annotations
 
@@ -12,14 +12,13 @@ from fastapi.staticfiles import StaticFiles
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    """Create Neo4j driver on startup, close on shutdown."""
+    """Create Memgraph driver on startup, close on shutdown."""
     from ageom.config import AgeomConfig
     from neo4j import AsyncGraphDatabase
 
     config = AgeomConfig()
-    driver = AsyncGraphDatabase.driver(
-        config.neo4j_uri, auth=(config.neo4j_user, config.neo4j_password)
-    )
+    auth = (config.memgraph_user, config.memgraph_password) if config.memgraph_user else None
+    driver = AsyncGraphDatabase.driver(config.memgraph_uri, auth=auth)
     app.state.driver = driver
     yield
     await driver.close()
@@ -125,7 +124,7 @@ async def get_cdg(repo: str) -> dict[str, Any]:
     nodes = []
     for rec in node_records:
         atom = dict(rec["a"])
-        # Strip Neo4j internal props, keep domain props
+        # Strip internal props, keep domain props
         node: dict[str, Any] = {
             "node_id": atom.get("node_id", ""),
             "name": atom.get("name", ""),

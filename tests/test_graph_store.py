@@ -1,6 +1,6 @@
 """Tests for ageom.graph_store — Cypher param generation, metadata extraction, idempotency.
 
-All tests are pure-Python (no live Neo4j required).
+All tests are pure-Python (no live Memgraph required).
 """
 
 from __future__ import annotations
