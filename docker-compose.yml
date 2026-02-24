@@ -7,6 +7,17 @@ services:
     volumes:
       - memgraph_data:/var/lib/memgraph
 
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ageom_architect
+      POSTGRES_USER: ageom
+      POSTGRES_PASSWORD: ageom_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   visualizer:
     build:
       context: .
@@ -22,3 +33,4 @@ services:
 
 volumes:
   memgraph_data:
+  postgres_data:
