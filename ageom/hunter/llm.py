@@ -230,6 +230,26 @@ class SubprocessCLIClient:
                     last_text = event.get("content", "")
                 elif isinstance(event.get("message"), str):
                     last_text = event["message"]
+                else:
+                    item = event.get("item")
+                    if isinstance(item, dict):
+                        item_type = str(item.get("type", "")).strip().lower()
+                        if item_type in {"agent_message", "assistant_message"}:
+                            if isinstance(item.get("text"), str):
+                                last_text = item["text"]
+                            elif isinstance(item.get("content"), str):
+                                last_text = item["content"]
+                            elif isinstance(item.get("content"), list):
+                                parts: list[str] = []
+                                for chunk in item["content"]:
+                                    if isinstance(chunk, str):
+                                        parts.append(chunk)
+                                    elif isinstance(chunk, dict):
+                                        text = chunk.get("text")
+                                        if isinstance(text, str):
+                                            parts.append(text)
+                                if parts:
+                                    last_text = "".join(parts)
             return last_text or raw.strip()
         
         # gemini / claude: raw stdout is the reply, but may have log preamble

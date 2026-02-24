@@ -235,6 +235,21 @@ class TestSubprocessCLIClient:
         events = json.dumps({"message": "done"})
         assert c._parse_output(events) == "done"
 
+    def test_codex_parse_output_item_completed_agent_message(self):
+        c = SubprocessCLIClient(cli="codex", model="m", max_tokens=1)
+        events = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "abc"}),
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {"type": "agent_message", "text": "parsed text"},
+                    }
+                ),
+            ]
+        )
+        assert c._parse_output(events) == "parsed text"
+
     def test_codex_parse_output_fallback_raw(self):
         c = SubprocessCLIClient(cli="codex", model="m", max_tokens=1)
         assert c._parse_output("plain text") == "plain text"
