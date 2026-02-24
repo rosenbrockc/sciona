@@ -419,6 +419,16 @@ async def decompose_node(
             "Please fix the issues and try again."
         )
 
+    # Retrieve similar decomposition examples from Memgraph
+    example_decompositions = ""
+    graph_retriever = getattr(deps, "graph_retriever", None)
+    if graph_retriever is not None:
+        from ageom.architect.graph_retrieval import format_examples_for_prompt
+
+        examples = await graph_retriever.find_similar(node, all_nodes, state["edges"])
+        if examples:
+            example_decompositions = format_examples_for_prompt(examples)
+
     response = await select_llm(deps.llm, ARCHITECT_DECOMPOSE).complete(
         DECOMPOSE_NODE_SYSTEM,
         DECOMPOSE_NODE_USER.format(
@@ -430,6 +440,7 @@ async def decompose_node(
             depth=node.depth,
             max_depth=max_depth,
             primitives=_format_primitives(all_prims),
+            example_decompositions=example_decompositions,
             retry_context=retry_context,
         ),
     )

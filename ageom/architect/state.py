@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import operator
-from dataclasses import dataclass
-from typing import Annotated
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Annotated
 
 from typing_extensions import TypedDict
 
@@ -12,6 +12,9 @@ from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.embedder import SkillIndex
 from ageom.architect.models import AlgorithmicNode, DependencyEdge
 from ageom.hunter.llm import LLMClient
+
+if TYPE_CHECKING:
+    from ageom.architect.graph_retrieval import CDGSubgraphRetriever
 
 
 def _merge_nodes(
@@ -65,3 +68,4 @@ class DecompositionDeps:
     catalog: PrimitiveCatalog
     skill_index: SkillIndex
     llm: LLMClient
+    graph_retriever: CDGSubgraphRetriever | None = field(default=None)

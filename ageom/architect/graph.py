@@ -76,11 +76,13 @@ class DecompositionAgent:
         llm: LLMClient,
         max_depth: int = 8,
         checkpointer: BaseCheckpointSaver | None = None,
+        graph_retriever: Any = None,
     ) -> None:
         self._deps = DecompositionDeps(
             catalog=catalog,
             skill_index=skill_index,
             llm=llm,
+            graph_retriever=graph_retriever,
         )
         self._max_depth = max_depth
         self._graph = build_graph().compile(checkpointer=checkpointer)

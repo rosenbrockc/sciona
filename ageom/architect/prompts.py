@@ -77,6 +77,8 @@ Node to decompose:
 Relevant primitives from the catalog:
 {primitives}
 
+{example_decompositions}
+
 {retry_context}
 
 Decompose this node into 2 or more sub-nodes with data-flow edges between them. \

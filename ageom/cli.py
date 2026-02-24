@@ -1167,6 +1167,37 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             await proof_env.close()
 
 
+async def _run_decompose(
+    agent: "DecompositionAgent",
+    args: argparse.Namespace,
+    max_depth: int,
+    catalog: "PrimitiveCatalog",
+) -> "CDGExport":
+    """Run decomposition and print summary — shared by retrieval on/off paths."""
+    from ageom.architect.handoff import CDGExport
+
+    print(f"Decomposing: {args.goal}")
+    print(f"  Max depth: {max_depth}, Catalog size: {catalog.size}")
+
+    cdg = await agent.decompose(args.goal, thread_id=args.thread_id)
+
+    thread_id = cdg.metadata.get("thread_id", "")
+    print(f"  Thread ID: {thread_id}")
+
+    by_status: dict[str, int] = {}
+    for node in cdg.nodes:
+        status = node.status.value
+        by_status[status] = by_status.get(status, 0) + 1
+
+    print("\nDecomposition complete:")
+    print(f"  Nodes: {len(cdg.nodes)}, Edges: {len(cdg.edges)}")
+    for status, count in sorted(by_status.items()):
+        print(f"    {status}: {count}")
+    print(f"  Complete: {cdg.is_complete()}")
+
+    return cdg
+
+
 async def _cmd_decompose(args: argparse.Namespace) -> None:
     """Decompose a goal into a Conceptual Dependency Graph."""
     from ageom.architect.catalog import PrimitiveCatalog
@@ -1234,34 +1265,41 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     # Determine persistence URI
     postgres_uri = "" if args.no_persist else config.postgres_uri
 
-    async with create_checkpointer(postgres_uri) as checkpointer:
-        agent = DecompositionAgent(
-            catalog=catalog,
-            skill_index=skill_index,
-            llm=llm,
-            max_depth=max_depth,
-            checkpointer=checkpointer,
+    # Set up graph retriever (opt-in)
+    retriever = None
+    graph_store_ctx = None
+    if config.graph_retrieval_enabled:
+        from ageom.architect.graph_retrieval import make_retriever
+        from ageom.graph_store import GraphStore
+
+        graph_store_ctx = GraphStore(
+            uri=config.memgraph_uri,
+            user=config.memgraph_user,
+            password=config.memgraph_password,
         )
 
-        print(f"Decomposing: {args.goal}")
-        print(f"  Max depth: {max_depth}, Catalog size: {catalog.size}")
-
-        cdg = await agent.decompose(args.goal, thread_id=args.thread_id)
-
-        thread_id = cdg.metadata.get("thread_id", "")
-        print(f"  Thread ID: {thread_id}")
-
-        # Print summary
-        by_status: dict[str, int] = {}
-        for node in cdg.nodes:
-            status = node.status.value
-            by_status[status] = by_status.get(status, 0) + 1
-
-        print("\nDecomposition complete:")
-        print(f"  Nodes: {len(cdg.nodes)}, Edges: {len(cdg.edges)}")
-        for status, count in sorted(by_status.items()):
-            print(f"    {status}: {count}")
-        print(f"  Complete: {cdg.is_complete()}")
+    async with create_checkpointer(postgres_uri) as checkpointer:
+        if graph_store_ctx is not None:
+            async with graph_store_ctx as store:
+                retriever = make_retriever(config, store, current_repo="")
+                agent = DecompositionAgent(
+                    catalog=catalog,
+                    skill_index=skill_index,
+                    llm=llm,
+                    max_depth=max_depth,
+                    checkpointer=checkpointer,
+                    graph_retriever=retriever,
+                )
+                cdg = await _run_decompose(agent, args, max_depth, catalog)
+        else:
+            agent = DecompositionAgent(
+                catalog=catalog,
+                skill_index=skill_index,
+                llm=llm,
+                max_depth=max_depth,
+                checkpointer=checkpointer,
+            )
+            cdg = await _run_decompose(agent, args, max_depth, catalog)
 
         # Save output
         if args.output:
@@ -1752,14 +1790,38 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     # Step 1: Decompose
     print(f"Decomposing: {args.goal}")
 
-    async with create_checkpointer("") as checkpointer:
-        architect = DecompositionAgent(
-            catalog=catalog,
-            skill_index=skill_index,
-            llm=llm,
-            checkpointer=checkpointer,
+    retriever = None
+    graph_store_ctx = None
+    if config.graph_retrieval_enabled:
+        from ageom.architect.graph_retrieval import make_retriever
+        from ageom.graph_store import GraphStore as _GraphStore
+
+        graph_store_ctx = _GraphStore(
+            uri=config.memgraph_uri,
+            user=config.memgraph_user,
+            password=config.memgraph_password,
         )
-        cdg = await architect.decompose(args.goal)
+
+    async with create_checkpointer("") as checkpointer:
+        if graph_store_ctx is not None:
+            async with graph_store_ctx as gstore:
+                retriever = make_retriever(config, gstore, current_repo="")
+                architect = DecompositionAgent(
+                    catalog=catalog,
+                    skill_index=skill_index,
+                    llm=llm,
+                    checkpointer=checkpointer,
+                    graph_retriever=retriever,
+                )
+                cdg = await architect.decompose(args.goal)
+        else:
+            architect = DecompositionAgent(
+                catalog=catalog,
+                skill_index=skill_index,
+                llm=llm,
+                checkpointer=checkpointer,
+            )
+            cdg = await architect.decompose(args.goal)
 
     print(f"  Decomposed: {len(cdg.nodes)} nodes, {len(cdg.edges)} edges")
 

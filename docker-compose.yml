@@ -1,6 +1,6 @@
 services:
   memgraph:
-    image: memgraph/memgraph
+    image: memgraph/memgraph-mage
     ports:
       - "7687:7687"
     command: ["--bolt-server-name-for-init=Neo4j/"]

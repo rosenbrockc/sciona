@@ -45,6 +45,12 @@ class AgeomConfig(BaseSettings):
     memgraph_user: str = ""
     memgraph_password: str = ""
 
+    # Graph retrieval (CDG subgraph similarity)
+    graph_retrieval_enabled: bool = False
+    graph_retrieval_timeout_ms: int = 1800
+    graph_retrieval_max_examples: int = 3
+    graph_retrieval_min_children: int = 2
+
     # Lean 4
     lean_toolchain: str = "leanprover/lean4:v4.14.0"
     mathlib_path: Path = Field(default=Path(""))

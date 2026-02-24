@@ -263,6 +263,7 @@ class GraphStore:
             "CREATE INDEX ON :Atom(concept_type)",
             "CREATE INDEX ON :Atom(abstract_type_class)",
             "CREATE INDEX ON :Atom(repo)",
+            "CREATE INDEX ON :Atom(topo_hash)",
         ]
         async with self._driver.session() as session:
             for stmt in constraints + indexes:
@@ -270,6 +271,129 @@ class GraphStore:
                     await session.run(stmt)
                 except Exception:
                     pass  # Memgraph has no IF NOT EXISTS; ignore duplicates
+
+    async def query_by_topo_hash(
+        self, topo_hash: str, exclude_repo: str, limit: int = 5
+    ) -> list[dict[str, Any]]:
+        """Layer 1: exact topo_hash match on Decomposed atoms."""
+        cypher = (
+            "MATCH (parent:Atom:Decomposed {topo_hash: $topo_hash}) "
+            "WHERE parent.repo <> $exclude_repo "
+            "MATCH (parent)-[:PARENT_OF]->(child:Atom) "
+            "OPTIONAL MATCH (child)-[df:DATA_FLOW]->(sibling:Atom) "
+            "  WHERE (parent)-[:PARENT_OF]->(sibling) "
+            "WITH parent, "
+            "     collect(DISTINCT {node_id: child.node_id, name: child.name, "
+            "       description: child.description, concept_type: child.concept_type, "
+            "       status: child.status, n_inputs: child.n_inputs, n_outputs: child.n_outputs, "
+            "       type_signature: child.type_signature}) AS children, "
+            "     collect(DISTINCT CASE WHEN df IS NOT NULL THEN {source_id: startNode(df).node_id, "
+            "       target_id: endNode(df).node_id, "
+            "       output_name: df.output_name, input_name: df.input_name} ELSE NULL END) AS raw_edges "
+            "WITH parent, children, [e IN raw_edges WHERE e IS NOT NULL] AS edges "
+            "RETURN parent.fqn AS fqn, parent.name AS name, parent.description AS description, "
+            "       parent.concept_type AS concept_type, parent.repo AS repo, "
+            "       parent.topo_hash AS topo_hash, children, edges "
+            "LIMIT $limit"
+        )
+        async with self._driver.session() as session:
+            result = await session.run(
+                cypher, topo_hash=topo_hash, exclude_repo=exclude_repo, limit=limit
+            )
+            return [dict(r) async for r in result]
+
+    async def query_by_structure(
+        self,
+        concept_type: str,
+        n_inputs: int,
+        n_outputs: int,
+        exclude_repo: str,
+        min_children: int = 2,
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        """Layer 2: structural match by concept_type and port arity (±1)."""
+        cypher = (
+            "MATCH (parent:Atom:Decomposed) "
+            "WHERE parent.concept_type = $concept_type "
+            "  AND parent.repo <> $exclude_repo "
+            "  AND abs(parent.n_inputs - $n_inputs) <= 1 "
+            "  AND abs(parent.n_outputs - $n_outputs) <= 1 "
+            "MATCH (parent)-[:PARENT_OF]->(child:Atom) "
+            "WITH parent, collect(child) AS child_list "
+            "WHERE size(child_list) >= $min_children "
+            "UNWIND child_list AS child "
+            "OPTIONAL MATCH (child)-[df:DATA_FLOW]->(sibling:Atom) "
+            "  WHERE (parent)-[:PARENT_OF]->(sibling) "
+            "WITH parent, "
+            "     collect(DISTINCT {node_id: child.node_id, name: child.name, "
+            "       description: child.description, concept_type: child.concept_type, "
+            "       status: child.status, n_inputs: child.n_inputs, n_outputs: child.n_outputs, "
+            "       type_signature: child.type_signature}) AS children, "
+            "     collect(DISTINCT CASE WHEN df IS NOT NULL THEN {source_id: startNode(df).node_id, "
+            "       target_id: endNode(df).node_id, "
+            "       output_name: df.output_name, input_name: df.input_name} ELSE NULL END) AS raw_edges "
+            "WITH parent, children, [e IN raw_edges WHERE e IS NOT NULL] AS edges "
+            "RETURN parent.fqn AS fqn, parent.name AS name, parent.description AS description, "
+            "       parent.concept_type AS concept_type, parent.repo AS repo, "
+            "       parent.topo_hash AS topo_hash, children, edges "
+            "ORDER BY size(children) DESC "
+            "LIMIT $limit"
+        )
+        async with self._driver.session() as session:
+            result = await session.run(
+                cypher,
+                concept_type=concept_type,
+                n_inputs=n_inputs,
+                n_outputs=n_outputs,
+                exclude_repo=exclude_repo,
+                min_children=min_children,
+                limit=limit,
+            )
+            return [dict(r) async for r in result]
+
+    async def query_jaccard_neighborhood(
+        self, fqn: str, exclude_repo: str, limit: int = 5
+    ) -> list[dict[str, Any]]:
+        """Layer 3: Jaccard pairwise similarity via MAGE node_similarity."""
+        cypher = (
+            "MATCH (query:Atom {fqn: $fqn})-[:PARENT_OF]->(qc:Atom) "
+            "WITH query, collect(qc) AS query_children "
+            "WHERE size(query_children) > 0 "
+            "MATCH (candidate:Atom:Decomposed)-[:PARENT_OF]->(cc:Atom) "
+            "WHERE candidate.repo <> $exclude_repo AND candidate.fqn <> $fqn "
+            "WITH query, query_children, candidate, collect(cc) AS cand_children "
+            "WHERE size(cand_children) > 0 "
+            "WITH query, candidate, "
+            "     [qc IN query_children | qc.concept_type] AS q_types, "
+            "     [cc IN cand_children | cc.concept_type] AS c_types "
+            "WITH candidate, "
+            "     toFloat(size([x IN q_types WHERE x IN c_types])) / "
+            "     toFloat(size(q_types + [y IN c_types WHERE NOT y IN q_types])) AS jaccard_score "
+            "WHERE jaccard_score > 0.3 "
+            "WITH candidate, jaccard_score "
+            "ORDER BY jaccard_score DESC "
+            "LIMIT $limit "
+            "MATCH (candidate)-[:PARENT_OF]->(child:Atom) "
+            "OPTIONAL MATCH (child)-[df:DATA_FLOW]->(sibling:Atom) "
+            "  WHERE (candidate)-[:PARENT_OF]->(sibling) "
+            "WITH candidate, jaccard_score, "
+            "     collect(DISTINCT {node_id: child.node_id, name: child.name, "
+            "       description: child.description, concept_type: child.concept_type, "
+            "       status: child.status, n_inputs: child.n_inputs, n_outputs: child.n_outputs, "
+            "       type_signature: child.type_signature}) AS children, "
+            "     collect(DISTINCT CASE WHEN df IS NOT NULL THEN {source_id: startNode(df).node_id, "
+            "       target_id: endNode(df).node_id, "
+            "       output_name: df.output_name, input_name: df.input_name} ELSE NULL END) AS raw_edges "
+            "WITH candidate, jaccard_score, children, [e IN raw_edges WHERE e IS NOT NULL] AS edges "
+            "RETURN candidate.fqn AS fqn, candidate.name AS name, candidate.description AS description, "
+            "       candidate.concept_type AS concept_type, candidate.repo AS repo, "
+            "       candidate.topo_hash AS topo_hash, children, edges, jaccard_score "
+        )
+        async with self._driver.session() as session:
+            result = await session.run(
+                cypher, fqn=fqn, exclude_repo=exclude_repo, limit=limit
+            )
+            return [dict(r) async for r in result]
 
     async def upsert_cdg(
         self,
