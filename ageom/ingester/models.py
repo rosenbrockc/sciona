@@ -166,6 +166,10 @@ class MacroAtomSpec(BaseModel):
         default_factory=list,
         description="Sub-atoms from recursive decomposition",
     )
+    sub_edges: list[DependencyEdge] = Field(
+        default_factory=list,
+        description="DATA_FLOW edges between children from recursive decomposition",
+    )
     depth: int = Field(
         default=0,
         description="Depth in the decomposition tree (0 = top-level)",

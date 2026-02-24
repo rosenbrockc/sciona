@@ -616,8 +616,8 @@ def _parse_sub_atoms(raw: dict, parent_depth: int) -> tuple[list[MacroAtomSpec],
     for item in raw.get("edges", []):
         edges.append(
             DependencyEdge(
-                source_id=item.get("source_id", ""),
-                target_id=item.get("target_id", ""),
+                source_id=_snake_case_id(item.get("source_id", "")),
+                target_id=_snake_case_id(item.get("target_id", "")),
                 output_name=item.get("output_name", ""),
                 input_name=item.get("input_name", ""),
                 source_type=item.get("source_type", ""),
@@ -625,6 +625,11 @@ def _parse_sub_atoms(raw: dict, parent_depth: int) -> tuple[list[MacroAtomSpec],
             )
         )
     return sub_atoms, edges
+
+
+def _snake_case_id(name: str) -> str:
+    """Normalize an edge endpoint to snake_case (matching _emit_atom_nodes)."""
+    return name.lower().replace(" ", "_").replace("-", "_")
 
 
 async def _decompose_single_atom(
@@ -680,7 +685,7 @@ async def _decompose_single_atom(
         logger.warning("Decomposition JSON parse failed for %s: %s", atom.name, exc)
         return atom
 
-    children, _edges = _parse_sub_atoms(raw, current_depth)
+    children, sub_edges = _parse_sub_atoms(raw, current_depth)
     if not children:
         return atom
 
@@ -698,7 +703,7 @@ async def _decompose_single_atom(
         )
         recursed_children.append(recursed)
 
-    return atom.model_copy(update={"children": recursed_children})
+    return atom.model_copy(update={"children": recursed_children, "sub_edges": sub_edges})
 
 
 async def decompose_complex_atoms(

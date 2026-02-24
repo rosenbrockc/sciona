@@ -1057,6 +1057,18 @@ def _emit_atom_nodes(
     )
     nodes.append(node)
 
+    for sub_edge in atom.sub_edges:
+        edges.append(
+            DependencyEdge(
+                source_id=_snake_case(sub_edge.source_id),
+                target_id=_snake_case(sub_edge.target_id),
+                output_name=sub_edge.output_name,
+                input_name=sub_edge.input_name,
+                source_type=sub_edge.source_type,
+                target_type=sub_edge.target_type,
+            )
+        )
+
     for child in atom.children:
         _emit_atom_nodes(child, node_id, nodes, edges, depth + 1)
 

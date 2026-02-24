@@ -292,6 +292,7 @@ class GraphStore:
             "data_flow": 0,
             "parent_of": 0,
             "deleted": 0,
+            "orphaned_ports": 0,
         }
 
         async with self._driver.session() as session:
@@ -338,11 +339,13 @@ class GraphStore:
                 counts["atoms"] += 1
 
             # 2. MERGE :InputPort / :OutputPort + HAS_INPUT / HAS_OUTPUT
+            expected_port_ids: set[str] = set()
             for node in nodes:
                 nid = node["node_id"]
                 fqn = f"{repo}.{nid}"
                 for io_spec in node.get("inputs", []) or []:
                     port_props = build_port_params(repo, nid, io_spec, "in")
+                    expected_port_ids.add(port_props["port_id"])
                     await session.run(
                         "MERGE (p:InputPort {port_id: $port_id}) "
                         "SET p += $props "
@@ -357,6 +360,7 @@ class GraphStore:
 
                 for io_spec in node.get("outputs", []) or []:
                     port_props = build_port_params(repo, nid, io_spec, "out")
+                    expected_port_ids.add(port_props["port_id"])
                     await session.run(
                         "MERGE (p:OutputPort {port_id: $port_id}) "
                         "SET p += $props "
@@ -368,6 +372,21 @@ class GraphStore:
                         fqn=fqn,
                     )
                     counts["output_ports"] += 1
+
+            # 2b. DELETE orphaned ports (stale from previous I/O spec)
+            if expected_port_ids:
+                result = await session.run(
+                    "MATCH (a:Atom {repo: $repo})-[r:HAS_INPUT|HAS_OUTPUT]->(p) "
+                    "WHERE NOT p.port_id IN $expected_port_ids "
+                    "DETACH DELETE p "
+                    "RETURN count(p) AS cnt",
+                    repo=repo,
+                    expected_port_ids=list(expected_port_ids),
+                )
+                record = await result.single()
+                counts["orphaned_ports"] = record["cnt"] if record else 0
+            else:
+                counts["orphaned_ports"] = 0
 
             # 3. MERGE PARENT_OF edges
             for node in nodes:
