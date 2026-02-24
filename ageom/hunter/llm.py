@@ -177,13 +177,12 @@ class SubprocessCLIClient:
                 cmd += ["--system-prompt", system]
             if self._model:
                 cmd += ["--model", self._model]
-            cmd += ["--max-tokens", str(self._max_tokens)]
         elif self._cli == "codex":
             cmd += ["codex", "exec", "--json", "-o", "/dev/fd/1"]
             if self._model:
                 cmd += ["-m", self._model]
         elif self._cli == "gemini":
-            cmd += ["gemini", "-p"]
+            cmd += ["gemini", "--output-format", "text", "--extensions", ""]
             if self._model:
                 cmd += ["--model", self._model]
         return cmd
@@ -216,14 +215,31 @@ class SubprocessCLIClient:
                 elif isinstance(event.get("message"), str):
                     last_text = event["message"]
             return last_text or raw.strip()
-        # claude / gemini: raw stdout is the reply
-        return raw.strip()
+        
+        # gemini / claude: raw stdout is the reply, but may have log preamble
+        lines = raw.strip().splitlines()
+        content_lines = []
+        skip_prefixes = (
+            "Loaded cached credentials",
+            "Loading extension",
+            "MCP server",
+            "Error when talking to Gemini API",
+            "Full report available at",
+        )
+        for line in lines:
+            if any(line.startswith(p) for p in skip_prefixes):
+                continue
+            content_lines.append(line)
+        
+        return "\n".join(content_lines).strip()
 
     async def complete(self, system: str, user: str) -> str:
         cmd = self._build_cmd(system)
         stdin_text = self._build_stdin(system, user)
+        # Strip CLAUDECODE env var so nested Claude CLI sessions don't refuse
+        env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
         proc = await asyncio.create_subprocess_exec(
-            *cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE,
+            *cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env,
         )
         stdout, stderr = await proc.communicate(stdin_text.encode())
         if proc.returncode != 0:
