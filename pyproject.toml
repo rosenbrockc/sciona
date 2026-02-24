@@ -50,6 +50,11 @@ ghost = [
 graph = [
     "neo4j>=5.0",
 ]
+visualizer = [
+    "ageo-matcher[graph]",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
 synthesizer = [
     "ageo-matcher[hunter]",
 ]

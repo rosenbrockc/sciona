@@ -19,6 +19,7 @@
 
   <!-- Toolbar -->
   <div id="toolbar">
+    <button id="btn-browse">Browse CDGs</button>
     <button id="btn-open">Open File...</button>
     <label for="layout-select">Layout:</label>
     <select id="layout-select">
@@ -29,6 +30,16 @@
     <button id="btn-fit">Fit</button>
     <button id="btn-reset">Reset</button>
     <span id="status-text">No data loaded</span>
+  </div>
+
+  <!-- CDG Browser panel -->
+  <div id="cdg-browser">
+    <div class="browser-header">
+      <h3>CDG Browser</h3>
+      <button id="btn-browser-close">&times;</button>
+    </div>
+    <input type="text" id="browser-search" placeholder="Search repos...">
+    <div id="browser-list"></div>
   </div>
 
   <!-- Main area -->

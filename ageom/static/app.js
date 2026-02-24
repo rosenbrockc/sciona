@@ -435,7 +435,120 @@
     });
   }
 
+  // --- CDG Browser (API mode) ---
+
+  var btnBrowse = document.getElementById("btn-browse");
+  var cdgBrowser = document.getElementById("cdg-browser");
+  var btnBrowserClose = document.getElementById("btn-browser-close");
+  var browserSearch = document.getElementById("browser-search");
+  var browserList = document.getElementById("browser-list");
+  var apiAvailable = false;
+
+  function fetchCDGList(filters) {
+    var params = new URLSearchParams();
+    if (filters && filters.q) params.set("q", filters.q);
+    if (filters && filters.concept_type) params.set("concept_type", filters.concept_type);
+    if (filters && filters.status) params.set("status", filters.status);
+
+    var url = "/api/cdgs";
+    var qs = params.toString();
+    if (qs) url += "?" + qs;
+
+    return fetch(url)
+      .then(function (res) {
+        if (!res.ok) throw new Error("API error " + res.status);
+        return res.json();
+      })
+      .then(function (cdgs) {
+        apiAvailable = true;
+        btnBrowse.style.display = "";
+        renderCDGList(cdgs);
+        return cdgs;
+      })
+      .catch(function () {
+        // API not available (e.g. file:// mode or static server)
+        apiAvailable = false;
+        btnBrowse.style.display = "none";
+        cdgBrowser.classList.remove("visible");
+      });
+  }
+
+  function renderCDGList(cdgs) {
+    browserList.innerHTML = "";
+    if (cdgs.length === 0) {
+      browserList.innerHTML = '<div class="browser-empty">No CDGs found</div>';
+      return;
+    }
+    cdgs.forEach(function (cdg) {
+      var item = document.createElement("div");
+      item.className = "browser-item";
+      item.addEventListener("click", function () {
+        fetchCDG(cdg.repo);
+      });
+
+      var title = document.createElement("div");
+      title.className = "browser-item-title";
+      title.textContent = cdg.repo;
+
+      var meta = document.createElement("div");
+      meta.className = "browser-item-meta";
+      meta.innerHTML = '<span class="node-count">' + cdg.node_count + ' nodes</span>';
+
+      var chips = document.createElement("div");
+      chips.className = "browser-item-chips";
+      cdg.concept_types.forEach(function (ct) {
+        var chip = document.createElement("span");
+        chip.className = "concept-chip";
+        chip.textContent = ct.replace(/_/g, " ");
+        chips.appendChild(chip);
+      });
+
+      item.appendChild(title);
+      item.appendChild(meta);
+      item.appendChild(chips);
+      browserList.appendChild(item);
+    });
+  }
+
+  function fetchCDG(repo) {
+    statusText.textContent = "Loading " + repo + "...";
+    fetch("/api/cdgs/" + encodeURIComponent(repo))
+      .then(function (res) {
+        if (!res.ok) throw new Error("CDG not found");
+        return res.json();
+      })
+      .then(function (data) {
+        validateAndLoad(data);
+        cdgBrowser.classList.remove("visible");
+      })
+      .catch(function (err) {
+        statusText.textContent = "Error: " + err.message;
+      });
+  }
+
+  // Browser panel toggle
+  btnBrowse.addEventListener("click", function () {
+    cdgBrowser.classList.toggle("visible");
+    if (cdgBrowser.classList.contains("visible")) {
+      fetchCDGList({ q: browserSearch.value || undefined });
+      browserSearch.focus();
+    }
+  });
+
+  btnBrowserClose.addEventListener("click", function () {
+    cdgBrowser.classList.remove("visible");
+  });
+
+  var searchTimeout = null;
+  browserSearch.addEventListener("input", function () {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(function () {
+      fetchCDGList({ q: browserSearch.value || undefined });
+    }, 300);
+  });
+
   // --- Init ---
 
+  fetchCDGList();
   tryLoadDefault();
 })();

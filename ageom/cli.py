@@ -303,6 +303,12 @@ def main() -> None:
         default=False,
         help="Open file:// directly instead of starting a local server",
     )
+    viz_parser.add_argument(
+        "--api",
+        action="store_true",
+        default=False,
+        help="Start FastAPI server with Neo4j CDG browsing (requires neo4j connection)",
+    )
 
     # --- assemble ---
     assemble_parser = subparsers.add_parser(
@@ -1863,6 +1869,34 @@ def _cmd_visualize(args: argparse.Namespace) -> None:
     if not static_dir.exists():
         print(f"Error: static directory not found at {static_dir}", file=sys.stderr)
         sys.exit(1)
+
+    # API mode: start FastAPI with uvicorn
+    if getattr(args, "api", False):
+        try:
+            import uvicorn
+        except ImportError:
+            print(
+                "Error: uvicorn not installed. Install with: pip install 'ageo-matcher[visualizer]'",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        port = args.port or 8080
+        url = f"http://127.0.0.1:{port}"
+        print(f"Starting CDG Visualizer API at {url}")
+        print("Press Ctrl+C to stop")
+
+        threading.Thread(
+            target=webbrowser.open, args=(url,), daemon=True
+        ).start()
+
+        uvicorn.run(
+            "ageom.visualizer_api:app",
+            host="127.0.0.1",
+            port=port,
+            log_level="info",
+        )
+        return
 
     default_cdg = static_dir / "default_cdg.json"
 
