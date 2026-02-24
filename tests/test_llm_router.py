@@ -156,7 +156,7 @@ class TestSubprocessCLIClient:
         cmd = c._build_cmd("sys")
         assert cmd[:2] == ["codex", "exec"]
         assert "--json" in cmd
-        assert "-o" in cmd
+        assert "-o" not in cmd
         assert "-m" in cmd
         assert "o4-mini" in cmd
 
@@ -301,6 +301,7 @@ class TestCreateLLMClientCLIProviders:
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "codex"
+        assert client._model == "o4-mini"
 
     def test_gemini_cli_creates_subprocess_client(self):
         client = create_llm_client(
@@ -308,6 +309,37 @@ class TestCreateLLMClientCLIProviders:
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "gemini"
+        assert client._model == "pro"
+
+    def test_codex_cli_falls_back_from_claude_model(self):
+        client = create_llm_client(
+            provider="codex_cli", model="claude-sonnet-4-5-20250929", max_tokens=1024,
+        )
+        assert isinstance(client, SubprocessCLIClient)
+        assert client._cli == "codex"
+        assert client._model == "gpt-5.3-codex"
+
+    def test_claude_cli_falls_back_from_codex_model(self):
+        client = create_llm_client(
+            provider="claude_cli", model="o4-mini", max_tokens=1024,
+        )
+        assert isinstance(client, SubprocessCLIClient)
+        assert client._cli == "claude"
+        assert client._model == "sonnet"
+
+    def test_gemini_cli_falls_back_from_codex_model(self):
+        client = create_llm_client(
+            provider="gemini_cli", model="o4-mini", max_tokens=1024,
+        )
+        assert isinstance(client, SubprocessCLIClient)
+        assert client._cli == "gemini"
+        assert client._model == "gemini-2.5-pro"
+
+    def test_codex_cli_invalid_model_raises(self):
+        with pytest.raises(ValueError, match="not codex-compatible"):
+            create_llm_client(
+                provider="codex_cli", model="not-a-real-model", max_tokens=1024,
+            )
 
     def test_agent_layer_forwarded(self):
         client = create_llm_client(

@@ -149,6 +149,8 @@ class SubprocessCLIClient:
     """LLM client that shells out to a CLI tool (claude, codex, gemini)."""
 
     _CLI_VARIANTS = {"claude", "codex", "gemini"}
+    _CODEX_MODEL_PREFIXES = ("gpt-", "o1", "o3", "o4", "codex")
+    _NON_CODEX_MODEL_PREFIXES = ("claude", "gemini", "llama", "qwen", "deepseek")
 
     def __init__(
         self,
@@ -165,6 +167,18 @@ class SubprocessCLIClient:
         self._max_tokens = max_tokens
         self._use_agent_layer = use_agent_layer
 
+    def _codex_model_arg(self) -> str:
+        """Return a codex-compatible model name, or empty when model should be omitted."""
+        model = self._model.strip()
+        if not model:
+            return ""
+        lowered = model.lower()
+        if lowered.startswith(self._NON_CODEX_MODEL_PREFIXES):
+            return ""
+        if lowered.startswith(self._CODEX_MODEL_PREFIXES):
+            return model
+        return ""
+
     def _build_cmd(self, system: str) -> list[str]:
         """Build the argv for the subprocess."""
         cmd: list[str] = []
@@ -178,9 +192,11 @@ class SubprocessCLIClient:
             if self._model:
                 cmd += ["--model", self._model]
         elif self._cli == "codex":
-            cmd += ["codex", "exec", "--json", "-o", "/dev/fd/1"]
-            if self._model:
-                cmd += ["-m", self._model]
+            # Rely on JSONL events from stdout; avoid output-file writes that can fail in sandboxes.
+            cmd += ["codex", "exec", "--json"]
+            model = self._codex_model_arg()
+            if model:
+                cmd += ["-m", model]
         elif self._cli == "gemini":
             cmd += ["gemini", "--output-format", "text", "--extensions", ""]
             if self._model:
@@ -254,6 +270,84 @@ class SubprocessCLIClient:
         return await self.complete(system, user)
 
 
+_DEFAULT_MODELS: dict[str, str] = {
+    "anthropic": "claude-sonnet-4-5-20250929",
+    "claude_cli": "sonnet",
+    "codex": "gpt-5.3-codex",
+    "codex_cli": "gpt-5.3-codex",
+    "gemini_cli": "gemini-2.5-pro",
+    "llama_cpp": "qwen2.5-coder:7b",
+    "local": "qwen2.5-coder:7b",
+}
+_CODEX_MODEL_PREFIXES = ("gpt-", "o1", "o3", "o4", "codex")
+_CLAUDE_MODEL_PREFIXES = ("claude",)
+_CLAUDE_MODEL_ALIASES = {"sonnet", "opus", "haiku"}
+_GEMINI_MODEL_PREFIXES = ("gemini",)
+_GEMINI_MODEL_ALIASES = {"pro", "flash", "flash-lite"}
+
+
+def _looks_like_codex_model(model: str) -> bool:
+    lowered = model.lower().strip()
+    return lowered.startswith(_CODEX_MODEL_PREFIXES)
+
+
+def _looks_like_claude_model(model: str) -> bool:
+    lowered = model.lower().strip()
+    return lowered.startswith(_CLAUDE_MODEL_PREFIXES) or lowered in _CLAUDE_MODEL_ALIASES
+
+
+def _looks_like_gemini_model(model: str) -> bool:
+    lowered = model.lower().strip()
+    return lowered.startswith(_GEMINI_MODEL_PREFIXES) or lowered in _GEMINI_MODEL_ALIASES
+
+
+def _normalized_model_for_provider(provider: str, model: str) -> str:
+    """Pick a provider-compatible model and validate obvious misconfigurations."""
+    cleaned = model.strip()
+    default_model = _DEFAULT_MODELS.get(provider, "").strip()
+
+    if provider in {"llama_cpp", "local"}:
+        return cleaned or default_model
+
+    if provider in {"codex", "codex_cli"}:
+        if not cleaned:
+            return default_model
+        if _looks_like_codex_model(cleaned):
+            return cleaned
+        if _looks_like_claude_model(cleaned) or _looks_like_gemini_model(cleaned):
+            return default_model
+        raise ValueError(
+            f"Model '{model}' is not codex-compatible for provider '{provider}'. "
+            f"Use a codex/openai model such as '{default_model}'."
+        )
+
+    if provider in {"anthropic", "claude_cli"}:
+        if not cleaned:
+            return default_model
+        if _looks_like_claude_model(cleaned):
+            return cleaned
+        if _looks_like_codex_model(cleaned) or _looks_like_gemini_model(cleaned):
+            return default_model
+        if provider == "claude_cli":
+            # Claude CLI accepts additional aliases/custom model names.
+            return cleaned
+        raise ValueError(
+            f"Model '{model}' is not claude-compatible for provider '{provider}'."
+        )
+
+    if provider == "gemini_cli":
+        if not cleaned:
+            return default_model
+        if _looks_like_gemini_model(cleaned):
+            return cleaned
+        if _looks_like_codex_model(cleaned) or _looks_like_claude_model(cleaned):
+            return default_model
+        # Gemini CLI also accepts provider-side aliases.
+        return cleaned
+
+    return cleaned or default_model
+
+
 def create_llm_client(
     *,
     provider: str,
@@ -268,13 +362,14 @@ def create_llm_client(
 ) -> LLMClient:
     """Construct an LLM client for the requested provider."""
     normalized = provider.lower().strip()
+    resolved_model = _normalized_model_for_provider(normalized, model)
 
     if normalized == "anthropic":
         if not anthropic_api_key:
             raise ValueError("AGEOM_ANTHROPIC_API_KEY not set")
         return ClaudeLLMClient(
             api_key=anthropic_api_key,
-            model=model,
+            model=resolved_model,
             max_tokens=max_tokens,
         )
 
@@ -283,14 +378,14 @@ def create_llm_client(
             raise ValueError("AGEOM_OPENAI_API_KEY not set")
         return CodexLLMClient(
             api_key=openai_api_key,
-            model=model,
+            model=resolved_model,
             max_tokens=max_tokens,
             base_url=openai_base_url,
         )
 
     if normalized in {"llama_cpp", "local"}:
         return LlamaCppLLMClient(
-            model=model,
+            model=resolved_model,
             max_tokens=max_tokens,
             base_url=llama_cpp_base_url or "http://127.0.0.1:8080/v1",
             api_key=llama_cpp_api_key or "local",
@@ -298,19 +393,19 @@ def create_llm_client(
 
     if normalized == "claude_cli":
         return SubprocessCLIClient(
-            cli="claude", model=model, max_tokens=max_tokens,
+            cli="claude", model=resolved_model, max_tokens=max_tokens,
             use_agent_layer=use_agent_layer,
         )
 
     if normalized == "codex_cli":
         return SubprocessCLIClient(
-            cli="codex", model=model, max_tokens=max_tokens,
+            cli="codex", model=resolved_model, max_tokens=max_tokens,
             use_agent_layer=use_agent_layer,
         )
 
     if normalized == "gemini_cli":
         return SubprocessCLIClient(
-            cli="gemini", model=model, max_tokens=max_tokens,
+            cli="gemini", model=resolved_model, max_tokens=max_tokens,
             use_agent_layer=use_agent_layer,
         )
 
