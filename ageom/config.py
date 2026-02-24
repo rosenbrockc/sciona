@@ -40,6 +40,11 @@ class AgeomConfig(BaseSettings):
     llama_cpp_api_key: str = "local"
     use_agent_layer: bool = False  # prefix CLI commands with `al` (Agent Layer)
 
+    # Neo4j graph store
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "ageom_dev"
+
     # Lean 4
     lean_toolchain: str = "leanprover/lean4:v4.14.0"
     mathlib_path: Path = Field(default=Path(""))

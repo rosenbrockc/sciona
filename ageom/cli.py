@@ -610,6 +610,29 @@ def main() -> None:
         help="Write pipeline event trace to trace.jsonl",
     )
 
+    # --- upsert-cdg ---
+    upsert_cdg_parser = subparsers.add_parser(
+        "upsert-cdg",
+        help="Upsert CDG JSON files into Neo4j graph store",
+    )
+    upsert_cdg_parser.add_argument(
+        "repo_path",
+        type=str,
+        help="Path to atoms repo directory (e.g. ~/personal/ageo-atoms/ageoa/biosppy)",
+    )
+    upsert_cdg_parser.add_argument(
+        "--repo-name",
+        type=str,
+        default=None,
+        help="Repo namespace override (default: directory basename)",
+    )
+    upsert_cdg_parser.add_argument(
+        "--neo4j-uri",
+        type=str,
+        default=None,
+        help="Neo4j bolt URI override (default: from config)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "index" and getattr(args, "index_command", None) == "build":
@@ -660,6 +683,8 @@ def main() -> None:
         asyncio.run(_cmd_export(args))
     elif args.command == "visualize":
         _cmd_visualize(args)
+    elif args.command == "upsert-cdg":
+        asyncio.run(_cmd_upsert_cdg(args))
     else:
         parser.print_help()
         sys.exit(1)
@@ -1804,6 +1829,31 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         print("  Trial history:")
         for entry in history:
             print(f"    Trial {entry['trial']}: loss={entry['loss']:.6f}")
+
+
+async def _cmd_upsert_cdg(args: argparse.Namespace) -> None:
+    """Upsert CDG JSON files into Neo4j graph store."""
+    from ageom.config import AgeomConfig
+    from ageom.upsert_cdg import upsert_repo
+
+    config = AgeomConfig()
+    if args.neo4j_uri:
+        config.neo4j_uri = args.neo4j_uri
+
+    repo_path = Path(args.repo_path).expanduser().resolve()
+    if not repo_path.is_dir():
+        print(f"Error: {repo_path} is not a directory", file=sys.stderr)
+        sys.exit(1)
+
+    repo_name = args.repo_name or repo_path.name
+    print(f"Upserting CDGs from {repo_path} as repo '{repo_name}'")
+
+    summary = await upsert_repo(repo_path, repo_name, config)
+    if summary:
+        total_atoms = sum(c["atoms"] for c in summary.values())
+        print(f"\nDone — {len(summary)} CDG(s), {total_atoms} atom(s) upserted.")
+    else:
+        print("No CDGs processed.")
 
 
 def _cmd_visualize(args: argparse.Namespace) -> None:

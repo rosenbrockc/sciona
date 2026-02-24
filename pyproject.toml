@@ -47,6 +47,9 @@ python-target = [
 ghost = [
     "ageoa>=0.1.0",
 ]
+graph = [
+    "neo4j>=5.0",
+]
 synthesizer = [
     "ageo-matcher[hunter]",
 ]
@@ -56,7 +59,7 @@ dev = [
     "mypy>=1.0",
 ]
 all = [
-    "ageo-matcher[indexer,lean,coq,hunter,architect,synthesizer,python-target,ghost,dev]",
+    "ageo-matcher[indexer,lean,coq,hunter,architect,synthesizer,python-target,ghost,graph,dev]",
 ]
 
 [project.scripts]
