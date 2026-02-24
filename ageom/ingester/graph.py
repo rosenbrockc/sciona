@@ -30,6 +30,7 @@ from ageom.ingester.emitter import (
     emit_ingestion_bundle,
     generate_opaque_witnesses,
 )
+from ageom.ingester.monitor import IngestMonitor
 from ageom.ingester.python_extractor import JAXprExtractor, PythonASTExtractor
 from ageom.ingester.treesitter_extractor import TreeSitterExtractor
 from ageom.ingester.models import (
@@ -160,6 +161,7 @@ class IngesterDeps:
     output_dir: str | None = None
     max_depth: int = 1
     line_threshold: int = 30
+    monitor: IngestMonitor | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +183,13 @@ def _has_jax_import(source_path: str) -> bool:
     except OSError:
         pass
     return False
+
+
+def _get_monitor(config: RunnableConfig) -> IngestMonitor | None:
+    deps = config.get("configurable", {}).get("deps")
+    if deps is None:
+        return None
+    return getattr(deps, "monitor", None)
 
 
 def _get_extractor(source_path: str) -> BaseExtractor:
@@ -416,17 +425,27 @@ async def phase1_extract(
     state: IngesterState, config: RunnableConfig
 ) -> dict[str, Any]:
     """Phase 1: Deterministic AST extraction."""
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("phase1_extract", step="extract")
     try:
         extractor = _get_extractor(state["source_path"])
         dfg = await extractor.extract_class(state["source_path"], state["class_name"])
+        if mon:
+            mon.phase_end("phase1_extract", step="ok")
         return {"raw_dfg": dfg, "is_opaque": dfg.is_opaque}
     except (FileNotFoundError, ValueError) as exc:
+        if mon:
+            mon.fail(error=str(exc), phase="phase1_extract")
         return {"error": str(exc), "done": True}
 
 
 async def phase2_chunk(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """Phase 2: Run the chunker sub-graph."""
     deps: IngesterDeps = config["configurable"]["deps"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("phase2_chunk", step="chunk")
 
     if state.get("error"):
         return {}
@@ -436,6 +455,7 @@ async def phase2_chunk(state: IngesterState, config: RunnableConfig) -> dict[str
         faiss_index=deps.faiss_index,
         max_depth=deps.max_depth,
         line_threshold=deps.line_threshold,
+        monitor=deps.monitor,
     )
     chunker_graph = build_chunker_graph().compile()
 
@@ -463,6 +483,8 @@ async def phase2_chunk(state: IngesterState, config: RunnableConfig) -> dict[str
             coverage_report=final_state.get("critique_reason", "best-effort"),
         )
 
+    if mon:
+        mon.phase_end("phase2_chunk", step="ok")
     return {"validated_plan": validated}
 
 
@@ -470,6 +492,9 @@ async def phase2_conjugate_heuristics(
     state: IngesterState, config: RunnableConfig
 ) -> dict[str, Any]:
     """Deterministic pass: detect closed-form conjugate update logic."""
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("phase2_conjugate_heuristics", step="heuristics")
     if state.get("error"):
         return {}
     validated = state.get("validated_plan")
@@ -477,11 +502,16 @@ async def phase2_conjugate_heuristics(
     if validated is None or dfg is None:
         return {}
     updated = apply_conjugate_heuristics(dfg, validated)
+    if mon:
+        mon.phase_end("phase2_conjugate_heuristics", step="ok")
     return {"validated_plan": updated}
 
 
 async def phase3_emit(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """Phase 3: Generate code and build IngestionBundle."""
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("phase3_emit", step="emit")
     if state.get("error"):
         return {}
 
@@ -512,6 +542,8 @@ async def phase3_emit(state: IngesterState, config: RunnableConfig) -> dict[str,
         except Exception as exc:
             logger.warning("Opaque witness generation failed: %s", exc)
 
+    if mon:
+        mon.phase_end("phase3_emit", step="ok")
     return {"bundle": bundle}
 
 
@@ -519,6 +551,9 @@ async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str
     """Write generated source to temp files and run mypy."""
     deps: IngesterDeps = config["configurable"]["deps"]
     bundle: IngestionBundle = state["bundle"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("verify_types", step="mypy")
 
     if state.get("error"):
         return {}
@@ -538,17 +573,26 @@ async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str
     try:
         ok, output = await deps.proof_env.check_proof(bundle.generated_atoms, "")
         if ok:
+            if mon:
+                mon.phase_end("verify_types", step="passed")
             return {"mypy_passed": True, "mypy_errors": ""}
         else:
+            if mon:
+                mon.phase_end("verify_types", step="failed")
             return {"mypy_passed": False, "mypy_errors": output}
     except Exception as exc:
         logger.warning("mypy verification failed: %s", exc)
+        if mon:
+            mon.phase_end("verify_types", step="error")
         return {"mypy_passed": False, "mypy_errors": str(exc)}
 
 
 async def verify_ghost(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
     """Run ghost simulation on the generated CDG."""
     bundle: IngestionBundle = state["bundle"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("verify_ghost", step="ghost_sim")
 
     if state.get("error"):
         return {}
@@ -575,12 +619,16 @@ async def verify_ghost(state: IngesterState, config: RunnableConfig) -> dict[str
         )
         passed = report.passed or not report.ran
         errors = report.error if not passed else ""
+        if mon:
+            mon.phase_end("verify_ghost", step="passed" if passed else "failed")
         return {
             "bundle": bundle_update,
             "ghost_passed": passed,
             "ghost_errors": errors,
         }
     except ImportError:
+        if mon:
+            mon.phase_end("verify_ghost", step="skipped")
         return {"ghost_passed": True, "ghost_errors": ""}
 
 
@@ -588,15 +636,27 @@ async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str
     """LLM-assisted repair of mypy type errors."""
     deps: IngesterDeps = config["configurable"]["deps"]
     bundle: IngestionBundle = state["bundle"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("repair_types", step="llm_fix_type")
 
     user_prompt = FIX_TYPE_ERROR_USER.format(
         mypy_errors=state.get("mypy_errors", ""),
         source_code=bundle.generated_atoms,
     )
 
-    response = await select_llm(deps.llm, INGESTER_FIX_TYPE).complete(
-        FIX_TYPE_ERROR_SYSTEM, user_prompt
-    )
+    if mon:
+        mon.llm_start(INGESTER_FIX_TYPE)
+    try:
+        response = await select_llm(deps.llm, INGESTER_FIX_TYPE).complete(
+            FIX_TYPE_ERROR_SYSTEM, user_prompt
+        )
+        if mon:
+            mon.llm_end(INGESTER_FIX_TYPE, ok=True)
+    except Exception as exc:
+        if mon:
+            mon.llm_end(INGESTER_FIX_TYPE, ok=False, error=str(exc))
+        raise
 
     try:
         fixes = extract_json(response)
@@ -613,6 +673,8 @@ async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str
                     "generated_atoms": updated_atoms,
                 }
             )
+            if mon:
+                mon.phase_end("repair_types", step="patched")
             return {
                 "bundle": updated_bundle,
                 "type_repair_count": state.get("type_repair_count", 0) + 1,
@@ -620,6 +682,8 @@ async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str
     except (json.JSONDecodeError, KeyError, IndexError) as exc:
         logger.warning("Failed to parse type repair response: %s", exc)
 
+    if mon:
+        mon.phase_end("repair_types", step="done")
     return {"type_repair_count": state.get("type_repair_count", 0) + 1}
 
 
@@ -628,6 +692,9 @@ async def repair_ghost(state: IngesterState, config: RunnableConfig) -> dict[str
     deps: IngesterDeps = config["configurable"]["deps"]
     bundle: IngestionBundle = state["bundle"]
     report = bundle.ghost_sim_report
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("repair_ghost", step="llm_fix_ghost")
 
     user_prompt = FIX_GHOST_ERROR_USER.format(
         error_node=report.get("error_node", ""),
@@ -636,9 +703,18 @@ async def repair_ghost(state: IngesterState, config: RunnableConfig) -> dict[str
         witness_source=bundle.generated_witnesses,
     )
 
-    response = await select_llm(deps.llm, INGESTER_FIX_GHOST).complete(
-        FIX_GHOST_ERROR_SYSTEM, user_prompt
-    )
+    if mon:
+        mon.llm_start(INGESTER_FIX_GHOST)
+    try:
+        response = await select_llm(deps.llm, INGESTER_FIX_GHOST).complete(
+            FIX_GHOST_ERROR_SYSTEM, user_prompt
+        )
+        if mon:
+            mon.llm_end(INGESTER_FIX_GHOST, ok=True)
+    except Exception as exc:
+        if mon:
+            mon.llm_end(INGESTER_FIX_GHOST, ok=False, error=str(exc))
+        raise
 
     try:
         fixes = extract_json(response)
@@ -654,6 +730,8 @@ async def repair_ghost(state: IngesterState, config: RunnableConfig) -> dict[str
                     "generated_witnesses": updated_witnesses,
                 }
             )
+            if mon:
+                mon.phase_end("repair_ghost", step="patched")
             return {
                 "bundle": updated_bundle,
                 "ghost_repair_count": state.get("ghost_repair_count", 0) + 1,
@@ -661,6 +739,8 @@ async def repair_ghost(state: IngesterState, config: RunnableConfig) -> dict[str
     except (json.JSONDecodeError, KeyError) as exc:
         logger.warning("Failed to parse ghost repair response: %s", exc)
 
+    if mon:
+        mon.phase_end("repair_ghost", step="done")
     return {"ghost_repair_count": state.get("ghost_repair_count", 0) + 1}
 
 
@@ -671,6 +751,9 @@ async def repair_message_cycle(
     deps: IngesterDeps = config["configurable"]["deps"]
     bundle: IngestionBundle = state["bundle"]
     report = bundle.ghost_sim_report
+    mon = _get_monitor(config)
+    if mon:
+        mon.phase_start("repair_message_cycle", step="llm_fix_message_cycle")
 
     # Collect cycle edges for the prompt
     deadlock_nodes = report.get("deadlock_nodes", [])
@@ -685,9 +768,18 @@ async def repair_message_cycle(
         witness_source=bundle.generated_witnesses,
     )
 
-    response = await select_llm(deps.llm, INGESTER_FIX_MESSAGE_CYCLE).complete(
-        FIX_MESSAGE_CYCLE_SYSTEM, user_prompt
-    )
+    if mon:
+        mon.llm_start(INGESTER_FIX_MESSAGE_CYCLE)
+    try:
+        response = await select_llm(deps.llm, INGESTER_FIX_MESSAGE_CYCLE).complete(
+            FIX_MESSAGE_CYCLE_SYSTEM, user_prompt
+        )
+        if mon:
+            mon.llm_end(INGESTER_FIX_MESSAGE_CYCLE, ok=True)
+    except Exception as exc:
+        if mon:
+            mon.llm_end(INGESTER_FIX_MESSAGE_CYCLE, ok=False, error=str(exc))
+        raise
 
     try:
         fixes = extract_json(response)
@@ -706,6 +798,8 @@ async def repair_message_cycle(
                     "generated_witnesses": updated_witnesses,
                 }
             )
+            if mon:
+                mon.phase_end("repair_message_cycle", step="patched")
             return {
                 "bundle": updated_bundle,
                 "ghost_repair_count": state.get("ghost_repair_count", 0) + 1,
@@ -713,6 +807,8 @@ async def repair_message_cycle(
     except (json.JSONDecodeError, KeyError, IndexError) as exc:
         logger.warning("Failed to parse message cycle repair response: %s", exc)
 
+    if mon:
+        mon.phase_end("repair_message_cycle", step="done")
     return {"ghost_repair_count": state.get("ghost_repair_count", 0) + 1}
 
 
@@ -819,6 +915,7 @@ class IngesterAgent:
         max_repair_retries: int = 3,
         max_depth: int = 1,
         line_threshold: int = 30,
+        monitor: IngestMonitor | None = None,
     ) -> None:
         global _MAX_REPAIR_RETRIES
         _MAX_REPAIR_RETRIES = max_repair_retries
@@ -830,10 +927,13 @@ class IngesterAgent:
             output_dir=output_dir,
             max_depth=max_depth,
             line_threshold=line_threshold,
+            monitor=monitor,
         )
         self._graph = build_ingester_graph().compile()
 
-    async def ingest(self, source_path: str, class_name: str) -> IngestionBundle:
+    async def ingest(
+        self, source_path: str, class_name: str, *, raise_on_error: bool = False
+    ) -> IngestionBundle:
         """Run the full ingester pipeline.
 
         Args:
@@ -865,6 +965,8 @@ class IngesterAgent:
         config: dict[str, Any] = {"configurable": {"deps": self._deps}}
 
         final_state = await self._graph.ainvoke(initial_state, config=config)
+        if raise_on_error and final_state.get("error"):
+            raise RuntimeError(str(final_state["error"]))
 
         bundle: IngestionBundle = final_state["bundle"]
         return bundle
@@ -885,12 +987,21 @@ class IngesterAgent:
             An ``IngestionBundle`` with CDG, generated source, and match results.
         """
         name = pipeline_name or Path(source_path).stem
+        mon = self._deps.monitor
+        if mon:
+            mon.phase_start("procedural_extract", step="extract")
         extractor = _get_extractor(source_path)
         dfg = await extractor.extract_procedural(source_path, name)
+        if mon:
+            mon.phase_end("procedural_extract", step="ok")
+            mon.phase_start("procedural_emit", step="emit")
         plan = build_procedural_plan(dfg, name)
-        return emit_ingestion_bundle(
+        bundle = emit_ingestion_bundle(
             plan,
             name,
             source_path,
             source_language=dfg.source_language,
         )
+        if mon:
+            mon.phase_end("procedural_emit", step="ok")
+        return bundle

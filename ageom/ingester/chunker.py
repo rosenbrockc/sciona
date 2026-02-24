@@ -19,6 +19,7 @@ from typing_extensions import TypedDict
 
 from ageom.hunter.llm import LLMClient
 from ageom.architect.models import ConceptType, IOSpec
+from ageom.ingester.monitor import IngestMonitor
 from ageom.ingester.models import (
     ConceptualProfile,
     DependencyEdge,
@@ -75,11 +76,19 @@ class ChunkerDeps:
     faiss_index: SemanticIndex | None = None
     max_depth: int = 1
     line_threshold: int = 30
+    monitor: IngestMonitor | None = None
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _get_monitor(config: RunnableConfig) -> IngestMonitor | None:
+    deps = config.get("configurable", {}).get("deps")
+    if deps is None:
+        return None
+    return getattr(deps, "monitor", None)
 
 
 def _build_method_summaries(dfg: RawDataFlowGraph) -> str:
@@ -252,6 +261,9 @@ async def propose_macro_atoms(
 ) -> dict[str, Any]:
     """LLM call: group methods into macro-atoms."""
     deps: ChunkerDeps = config["configurable"]["deps"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="propose_macro_atoms")
     dfg = state["raw_dfg"]
 
     # Opaque DL boundary: deterministic single-atom plan, no LLM cost
@@ -285,9 +297,18 @@ async def propose_macro_atoms(
         retry_context=retry_context,
     )
 
-    response = await select_llm(deps.llm, INGESTER_CHUNK).complete(
-        SEMANTIC_CHUNK_SYSTEM, user_prompt
-    )
+    if mon:
+        mon.llm_start(INGESTER_CHUNK)
+    try:
+        response = await select_llm(deps.llm, INGESTER_CHUNK).complete(
+            SEMANTIC_CHUNK_SYSTEM, user_prompt
+        )
+        if mon:
+            mon.llm_end(INGESTER_CHUNK, ok=True)
+    except Exception as exc:
+        if mon:
+            mon.llm_end(INGESTER_CHUNK, ok=False, error=str(exc))
+        raise
 
     try:
         raw = extract_json(response)
@@ -307,6 +328,9 @@ async def propose_macro_atoms(
 
 async def flatten_config(state: ChunkerState, config: RunnableConfig) -> dict[str, Any]:
     """Deterministic: Flatten config-gated branches into optional variants."""
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="flatten_config")
     plan = state["proposed_plan"]
     dfg = state["raw_dfg"]
 
@@ -341,6 +365,9 @@ async def flatten_config(state: ChunkerState, config: RunnableConfig) -> dict[st
 async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, Any]:
     """LLM call: identify cross-window attrs and generate state model specs."""
     deps: ChunkerDeps = config["configurable"]["deps"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="hoist_state")
     dfg = state["raw_dfg"]
     plan = state["proposed_plan"]
 
@@ -353,9 +380,18 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
         macro_plan_json=macro_plan_json,
     )
 
-    response = await select_llm(deps.llm, INGESTER_HOIST_STATE).complete(
-        HOIST_STATE_SYSTEM, user_prompt
-    )
+    if mon:
+        mon.llm_start(INGESTER_HOIST_STATE)
+    try:
+        response = await select_llm(deps.llm, INGESTER_HOIST_STATE).complete(
+            HOIST_STATE_SYSTEM, user_prompt
+        )
+        if mon:
+            mon.llm_end(INGESTER_HOIST_STATE, ok=True)
+    except Exception as exc:
+        if mon:
+            mon.llm_end(INGESTER_HOIST_STATE, ok=False, error=str(exc))
+        raise
 
     try:
         raw = extract_json(response)
@@ -391,6 +427,9 @@ async def search_sub_atoms(
 ) -> dict[str, Any]:
     """Deterministic: query FAISS index for existing atoms matching operations."""
     deps: ChunkerDeps = config["configurable"]["deps"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="search_sub_atoms")
     plan = state["proposed_plan"]
 
     if deps.faiss_index is None:
@@ -416,6 +455,9 @@ async def critic_validate(
     state: ChunkerState, config: RunnableConfig
 ) -> dict[str, Any]:
     """Validate that ALL self.* attributes appear in macro-atoms or state models."""
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="critic_validate")
     dfg = state["raw_dfg"]
     plan = state["proposed_plan"]
 
@@ -472,6 +514,9 @@ async def prepare_chunk_retry(
     state: ChunkerState, config: RunnableConfig
 ) -> dict[str, Any]:
     """Increment retry counter for the next proposal attempt."""
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="prepare_chunk_retry")
     return {"retry_count": state.get("retry_count", 0) + 1}
 
 
@@ -589,6 +634,7 @@ async def _decompose_single_atom(
     max_depth: int,
     line_threshold: int,
     current_depth: int,
+    monitor: IngestMonitor | None = None,
 ) -> MacroAtomSpec:
     """Recursively decompose a single atom if it exceeds complexity thresholds."""
     if current_depth >= max_depth:
@@ -615,12 +661,23 @@ async def _decompose_single_atom(
     )
 
     try:
+        if monitor:
+            monitor.llm_start(INGESTER_DECOMPOSE)
         response = await select_llm(llm, INGESTER_DECOMPOSE).complete(
             DECOMPOSE_ATOM_SYSTEM, user_prompt
         )
+    except Exception as exc:
+        if monitor:
+            monitor.llm_end(INGESTER_DECOMPOSE, ok=False, error=str(exc))
+        logger.warning("Decomposition failed for %s: %s", atom.name, exc)
+        return atom
+
+    if monitor:
+        monitor.llm_end(INGESTER_DECOMPOSE, ok=True)
+    try:
         raw = extract_json(response)
     except Exception as exc:
-        logger.warning("Decomposition failed for %s: %s", atom.name, exc)
+        logger.warning("Decomposition JSON parse failed for %s: %s", atom.name, exc)
         return atom
 
     children, _edges = _parse_sub_atoms(raw, current_depth)
@@ -631,7 +688,13 @@ async def _decompose_single_atom(
     recursed_children: list[MacroAtomSpec] = []
     for child in children:
         recursed = await _decompose_single_atom(
-            child, dfg, llm, max_depth, line_threshold, current_depth + 1
+            child,
+            dfg,
+            llm,
+            max_depth,
+            line_threshold,
+            current_depth + 1,
+            monitor=monitor,
         )
         recursed_children.append(recursed)
 
@@ -643,6 +706,9 @@ async def decompose_complex_atoms(
 ) -> dict[str, Any]:
     """Recursively decompose complex atoms based on complexity heuristics."""
     deps: ChunkerDeps = config["configurable"]["deps"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="decompose_complex_atoms")
     validated = state["validated_plan"]
     plan = validated.plan
     dfg = state["raw_dfg"]
@@ -657,7 +723,13 @@ async def decompose_complex_atoms(
     decomposed_atoms: list[MacroAtomSpec] = []
     for atom in plan.macro_atoms:
         result = await _decompose_single_atom(
-            atom, dfg, deps.llm, max_depth, line_threshold, current_depth=1
+            atom,
+            dfg,
+            deps.llm,
+            max_depth,
+            line_threshold,
+            current_depth=1,
+            monitor=mon,
         )
         decomposed_atoms.append(result)
 
@@ -710,6 +782,9 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
     description).
     """
     deps: ChunkerDeps = config["configurable"]["deps"]
+    mon = _get_monitor(config)
+    if mon:
+        mon.heartbeat(phase="phase2_chunk", step="abstract_atoms")
     validated = state["validated_plan"]
     plan = validated.plan
 
@@ -726,13 +801,29 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
         )
 
         try:
+            if mon:
+                mon.llm_start(INGESTER_ABSTRACT)
             response = await select_llm(deps.llm, INGESTER_ABSTRACT).complete(
                 CONCEPTUAL_ABSTRACT_SYSTEM, user_prompt
             )
+            if mon:
+                mon.llm_end(INGESTER_ABSTRACT, ok=True)
+        except Exception as exc:
+            if mon:
+                mon.llm_end(INGESTER_ABSTRACT, ok=False, error=str(exc))
+            logger.warning("Conceptual abstraction failed for %s: %s", atom.name, exc)
+            profile = ConceptualProfile(abstract_name=atom.name)
+            enriched = atom.model_copy(update={"conceptual_profile": profile})
+            enriched_atoms.append(enriched)
+            continue
+
+        try:
             raw = extract_json(response)
             profile = _parse_conceptual_profile(raw)
         except Exception as exc:
-            logger.warning("Conceptual abstraction failed for %s: %s", atom.name, exc)
+            logger.warning(
+                "Conceptual abstraction JSON parse failed for %s: %s", atom.name, exc
+            )
             profile = ConceptualProfile(abstract_name=atom.name)
 
         enriched = atom.model_copy(

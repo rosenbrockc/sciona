@@ -10,6 +10,7 @@ import shutil
 import socketserver
 import sys
 import threading
+import time
 import webbrowser
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
@@ -532,9 +533,11 @@ def main() -> None:
     # --- ingest ---
     ingest_parser = subparsers.add_parser(
         "ingest",
-        help="Ingest an existing Python class into the atom framework (Round 0)",
+        help="Ingest source code into the atom framework (Round 0)",
     )
-    ingest_parser.add_argument("source", type=str, help="Path to Python source file")
+    ingest_parser.add_argument(
+        "source", type=str, help="Path to source file (.py/.rs/.jl/.cpp/.h/.hpp)"
+    )
     ingest_parser.add_argument(
         "--class",
         dest="class_name",
@@ -571,6 +574,40 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Write pipeline event trace to {output_dir}/trace.jsonl",
+    )
+    ingest_parser.add_argument(
+        "--monitor",
+        action="store_true",
+        default=False,
+        help="Print live ingestion status updates to stdout",
+    )
+    ingest_parser.add_argument(
+        "--stale-seconds",
+        type=int,
+        default=120,
+        help="Heartbeat threshold for stalled detection (default: 120)",
+    )
+
+    ingest_status_parser = subparsers.add_parser(
+        "ingest-status",
+        help="Inspect ingestion run state from monitor files",
+    )
+    ingest_status_parser.add_argument(
+        "output",
+        type=str,
+        help="Ingestion output directory",
+    )
+    ingest_status_parser.add_argument(
+        "--stale-seconds",
+        type=int,
+        default=120,
+        help="Heartbeat threshold for stalled detection (default: 120)",
+    )
+    ingest_status_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Print full status payload as JSON",
     )
 
     # --- match ---
@@ -677,6 +714,8 @@ def main() -> None:
         asyncio.run(_cmd_history(args))
     elif args.command == "ingest":
         asyncio.run(_cmd_ingest(args))
+    elif args.command == "ingest-status":
+        _cmd_ingest_status(args)
     elif args.command == "match":
         asyncio.run(_cmd_match(args))
     elif args.command == "assemble":
@@ -920,21 +959,110 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
     print(f"Index saved to {output_dir} ({store.size} entries)")
 
 
+def _cmd_ingest_status(args: argparse.Namespace) -> None:
+    """Inspect ingestion monitor status and return meaningful exit codes."""
+    from ageom.ingester.monitor import COMPLETED_FILE, FAILED_FILE, IngestMonitor
+
+    output_dir = Path(args.output)
+    status = IngestMonitor.read_status(output_dir)
+    derived_state = IngestMonitor.classify_state(
+        status, stale_seconds=max(5, int(args.stale_seconds))
+    )
+
+    completed_path = output_dir / COMPLETED_FILE
+    failed_path = output_dir / FAILED_FILE
+    if completed_path.exists():
+        derived_state = "completed"
+    elif failed_path.exists():
+        derived_state = "failed"
+
+    payload = {
+        "output_dir": str(output_dir),
+        "derived_state": derived_state,
+        "status": status,
+        "has_completed_marker": completed_path.exists(),
+        "has_failed_marker": failed_path.exists(),
+    }
+
+    if args.json:
+        print(json.dumps(payload, indent=2, default=str))
+    else:
+        phase = str(status.get("phase", "")) if status else ""
+        step = str(status.get("current_step", "")) if status else ""
+        last_heartbeat = float(status.get("last_heartbeat_at") or 0.0) if status else 0.0
+        heartbeat_age = max(0.0, time.time() - last_heartbeat) if last_heartbeat else 0.0
+        print(f"state={derived_state}")
+        print(f"output={output_dir}")
+        if phase:
+            print(f"phase={phase}")
+        if step:
+            print(f"step={step}")
+        if last_heartbeat:
+            print(f"heartbeat_age_sec={heartbeat_age:.1f}")
+        if status.get("llm_call_inflight"):
+            inflight = status["llm_call_inflight"]
+            prompt_key = str(inflight.get("prompt_key", ""))
+            print(f"llm_inflight={prompt_key}")
+        if failed_path.exists():
+            try:
+                failed_payload = json.loads(failed_path.read_text())
+                if isinstance(failed_payload, dict):
+                    err = failed_payload.get("error")
+                    if err:
+                        print(f"error={err}")
+            except json.JSONDecodeError:
+                pass
+
+    if derived_state in {"failed", "stalled"}:
+        sys.exit(2)
+    if derived_state in {"missing", "unknown"}:
+        sys.exit(1)
+
+
 async def _cmd_ingest(args: argparse.Namespace) -> None:
-    """Ingest an existing Python class into the atom framework."""
+    """Ingest a source unit into the atom framework."""
     from ageom.config import AgeomConfig
     from ageom.ingester import IngesterAgent
+    from ageom.ingester.monitor import IngestMonitor
     from ageom.types import Prover
 
     config = AgeomConfig()
+    output_dir = Path(args.output) if args.output else Path("output") / args.class_name
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    source_path = Path(args.source)
-    if not source_path.exists():
-        print(f"Error: source file not found: {source_path}", file=sys.stderr)
-        sys.exit(1)
+    llm_provider = (
+        getattr(args, "llm_provider", None)
+        or config.ingester_llm_provider
+        or config.llm_provider
+    )
+    llm_model = (
+        getattr(args, "llm_model", None)
+        or config.ingester_llm_model
+        or config.llm_model
+    )
+    stale_seconds = max(5, int(getattr(args, "stale_seconds", 120)))
+    monitor = IngestMonitor(
+        output_dir,
+        enable_trace=bool(getattr(args, "trace", False)),
+        monitor_stdout=bool(getattr(args, "monitor", False)),
+        stale_seconds=stale_seconds,
+    )
+    monitor.start(
+        source_path=str(args.source),
+        class_name=args.class_name,
+        procedural=bool(getattr(args, "procedural", False)),
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        max_depth=int(config.ingester_max_depth),
+    )
 
-    # Set up LLM
+    proof_env = None
     try:
+        source_path = Path(args.source)
+        if not source_path.exists():
+            raise FileNotFoundError(f"source file not found: {source_path}")
+
+        # Set up LLM
         from ageom.llm_router import (
             INGESTER_ABSTRACT,
             INGESTER_CHUNK,
@@ -959,31 +1087,24 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
                 INGESTER_DECOMPOSE,
             ],
         )
-    except (ValueError, ImportError) as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
 
-    # Set up proof environment (Python/mypy)
-    proof_env = _create_proof_env(Prover.PYTHON, config)
+        # Set up proof environment (Python/mypy)
+        proof_env = _create_proof_env(Prover.PYTHON, config)
 
-    # Optionally load FAISS index
-    faiss_index = None
-    if config.index_dir.exists():
-        try:
-            from ageom.indexer.builder import SemanticIndexImpl
-            from ageom.indexer.embedder import UniXcoderEmbedder
-            from ageom.indexer.faiss_store import FAISSStore
+        # Optionally load FAISS index
+        faiss_index = None
+        if config.index_dir.exists():
+            try:
+                from ageom.indexer.builder import SemanticIndexImpl
+                from ageom.indexer.embedder import UniXcoderEmbedder
+                from ageom.indexer.faiss_store import FAISSStore
 
-            store = FAISSStore.load(config.index_dir)
-            embedder = UniXcoderEmbedder(config.embedding_model)
-            faiss_index = SemanticIndexImpl(store, embedder)
-        except Exception as exc:
-            print(f"Warning: failed to load FAISS index: {exc}", file=sys.stderr)
+                store = FAISSStore.load(config.index_dir)
+                embedder = UniXcoderEmbedder(config.embedding_model)
+                faiss_index = SemanticIndexImpl(store, embedder)
+            except Exception as exc:
+                print(f"Warning: failed to load FAISS index: {exc}", file=sys.stderr)
 
-    output_dir = Path(args.output) if args.output else Path("output") / args.class_name
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    try:
         agent = IngesterAgent(
             llm=llm,
             proof_env=proof_env,
@@ -991,32 +1112,40 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             output_dir=str(output_dir),
             max_depth=config.ingester_max_depth,
             line_threshold=config.ingester_decompose_line_threshold,
+            monitor=monitor,
         )
 
         print(f"Ingesting {'class' if not getattr(args, 'procedural', False) else 'procedural'} '{args.class_name}' from {source_path}")
         if getattr(args, "procedural", False):
             bundle = await agent.ingest_procedural(str(source_path), args.class_name)
         else:
-            bundle = await agent.ingest(str(source_path), args.class_name)
+            bundle = await agent.ingest(
+                str(source_path), args.class_name, raise_on_error=True
+            )
 
-        # Write output files
+        # Stage output files and publish atomically on successful completion.
         if bundle.generated_atoms:
-            (output_dir / "atoms.py").write_text(bundle.generated_atoms)
+            monitor.stage_file("atoms.py", bundle.generated_atoms)
         if bundle.generated_state_models:
-            (output_dir / "state_models.py").write_text(bundle.generated_state_models)
+            monitor.stage_file("state_models.py", bundle.generated_state_models)
         if bundle.generated_witnesses:
-            (output_dir / "witnesses.py").write_text(bundle.generated_witnesses)
+            monitor.stage_file("witnesses.py", bundle.generated_witnesses)
+        monitor.stage_json("cdg.json", bundle.cdg.model_dump())
 
-        # Write CDG JSON
-        from ageom.architect.handoff import save_json
-
-        save_json(bundle.cdg, output_dir / "cdg.json")
-
-        # Write match results
         if bundle.match_results:
             matches_data = [mr.to_dict() for mr in bundle.match_results]
-            with open(output_dir / "matches.json", "w") as f:
-                json.dump(matches_data, f, indent=2)
+            monitor.stage_json("matches.json", matches_data)
+
+        published_files = monitor.publish_staged()
+        summary = {
+            "cdg_nodes": len(bundle.cdg.nodes),
+            "cdg_edges": len(bundle.cdg.edges),
+            "matches": len(bundle.match_results),
+            "mypy_passed": bool(bundle.mypy_passed),
+            "ghost_sim_passed": bool(bundle.ghost_sim_passed),
+            "published_files": published_files,
+        }
+        monitor.complete(summary=summary)
 
         print("\nIngestion complete:")
         print(f"  CDG: {len(bundle.cdg.nodes)} nodes, {len(bundle.cdg.edges)} edges")
@@ -1024,19 +1153,18 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         print(f"  mypy passed: {bundle.mypy_passed}")
         print(f"  Ghost sim passed: {bundle.ghost_sim_passed}")
         print(f"  Output: {output_dir}/")
+        print(f"  Status: {output_dir / '.ingest_status.json'}")
+        print(f"  Marker: {output_dir / 'COMPLETED.json'}")
 
-        # Write trace if requested
         if getattr(args, "trace", False):
-            from ageom.telemetry import get_event_log
-
-            event_log = get_event_log()
-            if len(event_log) > 0:
-                event_log.save(output_dir / "trace.jsonl")
-                print(
-                    f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)"
-                )
+            print(f"  Trace: {output_dir / 'trace.jsonl'}")
+    except Exception as exc:
+        monitor.fail(error=str(exc))
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
     finally:
-        await proof_env.close()
+        if proof_env is not None:
+            await proof_env.close()
 
 
 async def _cmd_decompose(args: argparse.Namespace) -> None:
