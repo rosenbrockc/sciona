@@ -430,7 +430,19 @@ async def phase1_extract(
         mon.phase_start("phase1_extract", step="extract")
     try:
         extractor = _get_extractor(state["source_path"])
-        dfg = await extractor.extract_class(state["source_path"], state["class_name"])
+        try:
+            dfg = await extractor.extract_class(state["source_path"], state["class_name"])
+        except ValueError:
+            # Not a class — try as a named function
+            try:
+                dfg = await extractor.extract_function(
+                    state["source_path"], state["class_name"]
+                )
+            except ValueError:
+                raise ValueError(
+                    f"'{state['class_name']}' not found as class or function "
+                    f"in {state['source_path']}"
+                )
         if mon:
             mon.phase_end("phase1_extract", step="ok")
         return {"raw_dfg": dfg, "is_opaque": dfg.is_opaque}

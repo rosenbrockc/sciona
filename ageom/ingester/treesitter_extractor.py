@@ -1338,6 +1338,15 @@ class TreeSitterExtractor:
 
         return oracle_edges, inferred_edges, method_state_vars, method_outputs
 
+    async def extract_function(
+        self, source_path: str, function_name: str
+    ) -> RawDataFlowGraph:
+        """Not supported for non-Python languages; falls back to extract_procedural."""
+        raise ValueError(
+            f"Function-level LLM extraction not supported for {self.language.value}; "
+            f"use --procedural instead"
+        )
+
     async def extract_class(
         self, source_path: str, class_name: str
     ) -> RawDataFlowGraph:

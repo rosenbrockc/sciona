@@ -76,12 +76,12 @@ Additional guidance:
 Return valid JSON only."""
 
 SEMANTIC_CHUNK_USER = """\
-Class: {class_name}
+Entry point: {class_name}
 
 Method summaries:
 {method_summaries}
 
-Attribute graph (attr -> [read:method, write:method, ...]):
+Data flow graph (attr -> [read:method, write:method, ...]):
 {attr_graph}
 
 Config branches:

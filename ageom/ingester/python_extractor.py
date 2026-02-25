@@ -13,7 +13,11 @@ import re
 from pathlib import Path
 
 from ageom.architect.models import DependencyEdge
-from ageom.ingester.extractor import extract_data_flow, extract_procedural_data_flow
+from ageom.ingester.extractor import (
+    extract_data_flow,
+    extract_function_data_flow,
+    extract_procedural_data_flow,
+)
 from ageom.ingester.models import MethodFact, RawDataFlowGraph
 
 logger = logging.getLogger(__name__)
@@ -121,6 +125,12 @@ class PythonASTExtractor:
         dfg = await extract_data_flow(source_path, class_name)
         return _enrich_with_factor_graph_metadata(dfg)
 
+    async def extract_function(
+        self, source_path: str, function_name: str
+    ) -> RawDataFlowGraph:
+        dfg = await extract_function_data_flow(source_path, function_name)
+        return _enrich_with_factor_graph_metadata(dfg)
+
     async def extract_procedural(
         self, source_path: str, pipeline_name: str | None = None
     ) -> RawDataFlowGraph:
@@ -185,6 +195,16 @@ class JAXprExtractor:
 
         # Try to extract jaxpr-level info and enrich the AST-based graph
         dfg = await self._fallback.extract_class(source_path, class_name)
+        jaxpr_facts = _extract_jaxpr_facts(source_code)
+        return _merge_jaxpr_facts(dfg, jaxpr_facts)
+
+    async def extract_function(
+        self, source_path: str, function_name: str
+    ) -> RawDataFlowGraph:
+        """For function-based JAX code, enrich with jaxpr metadata."""
+        source_code = Path(source_path).read_text()
+
+        dfg = await self._fallback.extract_function(source_path, function_name)
         jaxpr_facts = _extract_jaxpr_facts(source_code)
         return _merge_jaxpr_facts(dfg, jaxpr_facts)
 

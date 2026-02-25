@@ -734,6 +734,106 @@ def _extract_function_fact(
     )
 
 
+async def extract_function_data_flow(
+    source_path: str, function_name: str
+) -> RawDataFlowGraph:
+    """Parse a Python file and extract the data-flow graph for a named function.
+
+    Finds the target top-level function, collects all file-level functions it
+    calls (direct + transitive), and builds a ``RawDataFlowGraph`` with the
+    function's internal call tree — analogous to what ``extract_data_flow``
+    does for a class's methods.
+
+    Args:
+        source_path: Path to the ``.py`` file.
+        function_name: Name of the top-level function to extract.
+
+    Returns:
+        A ``RawDataFlowGraph`` with function facts and inferred SSA edges.
+
+    Raises:
+        FileNotFoundError: If *source_path* does not exist.
+        ValueError: If *function_name* is not found as a top-level function.
+    """
+    path = Path(source_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Source file not found: {source_path}")
+
+    source_code = path.read_text()
+    source_lines = source_code.splitlines()
+    tree = ast.parse(source_code, filename=source_path)
+
+    # Collect all top-level function definitions
+    all_func_nodes: dict[str, ast.FunctionDef] = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            all_func_nodes[node.name] = node
+
+    if function_name not in all_func_nodes:
+        raise ValueError(
+            f"Function '{function_name}' not found as a top-level function in {source_path}"
+        )
+
+    # Build a file-level call graph: for each function, which other
+    # top-level functions does it call?
+    file_call_graph: dict[str, set[str]] = {}
+    all_func_names = set(all_func_nodes.keys())
+    for fname, fnode in all_func_nodes.items():
+        called: set[str] = set()
+        for child in ast.walk(fnode):
+            if isinstance(child, ast.Call):
+                callee = None
+                if isinstance(child.func, ast.Name):
+                    callee = child.func.id
+                elif isinstance(child.func, ast.Attribute):
+                    callee = child.func.attr
+                if callee and callee in all_func_names and callee != fname:
+                    called.add(callee)
+        file_call_graph[fname] = called
+
+    # Collect transitive closure of functions called from the target
+    reachable: set[str] = set()
+    frontier = {function_name}
+    while frontier:
+        current = frontier.pop()
+        if current in reachable:
+            continue
+        reachable.add(current)
+        frontier |= file_call_graph.get(current, set()) - reachable
+
+    # Build MethodFact for each reachable function
+    methods: list[MethodFact] = []
+    for fname in sorted(reachable):
+        fnode = all_func_nodes.get(fname)
+        if fnode is not None:
+            methods.append(_extract_function_fact(fnode, source_lines))
+
+    # Internal call graph (only edges between reachable functions)
+    internal_call_graph: dict[str, list[str]] = {}
+    for fname in reachable:
+        callees = sorted(file_call_graph.get(fname, set()) & reachable)
+        if callees:
+            internal_call_graph[fname] = callees
+
+    # Infer SSA edges by running _ProceduralBlockVisitor over the target
+    # function body (treating its statements like module-level statements)
+    known_functions = reachable
+    visitor = _ProceduralBlockVisitor(known_functions)
+    target_node = all_func_nodes[function_name]
+    for stmt in target_node.body:
+        visitor.visit(stmt)
+    inferred_edges = visitor.inferred_edges
+
+    return RawDataFlowGraph(
+        class_name=function_name,
+        source_code=source_code,
+        methods=methods,
+        all_attributes={},
+        internal_call_graph=internal_call_graph,
+        inferred_edges=inferred_edges,
+    )
+
+
 async def extract_procedural_data_flow(
     source_path: str,
     pipeline_name: str | None = None,

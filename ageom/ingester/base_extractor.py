@@ -39,6 +39,12 @@ class BaseExtractor(Protocol):
         """Extract data-flow graph for a class/struct from a source file."""
         ...
 
+    async def extract_function(
+        self, source_path: str, function_name: str
+    ) -> RawDataFlowGraph:
+        """Extract data-flow graph for a named function and its call tree."""
+        ...
+
     async def extract_procedural(
         self, source_path: str, pipeline_name: str | None = None
     ) -> RawDataFlowGraph:
