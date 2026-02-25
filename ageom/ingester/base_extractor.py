@@ -24,6 +24,7 @@ EXTENSION_MAP: dict[str, SourceLanguage] = {
     ".cxx": SourceLanguage.CPP,
     ".h": SourceLanguage.CPP,
     ".hpp": SourceLanguage.CPP,
+    ".ipp": SourceLanguage.CPP,
     ".jl": SourceLanguage.JULIA,
     ".rs": SourceLanguage.RUST,
 }
