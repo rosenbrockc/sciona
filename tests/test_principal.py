@@ -481,7 +481,11 @@ class TestRouteAfterGradients:
     def test_max_trials_reached(self):
         from ageom.principal.graph import PrincipalState, route_after_gradients
 
-        state = PrincipalState(current_trial=50, max_trials=50)
+        state = PrincipalState(
+            current_trial=50,
+            max_trials=50,
+            trial_history=[{"trial": i} for i in range(50)],
+        )
         assert route_after_gradients(state) == "end"
 
     def test_non_pruned_error(self):
@@ -513,7 +517,11 @@ class TestRouteAfterUpdate:
     def test_max_trials(self):
         from ageom.principal.graph import PrincipalState, route_after_update
 
-        state = PrincipalState(current_trial=10, max_trials=10)
+        state = PrincipalState(
+            current_trial=10,
+            max_trials=10,
+            trial_history=[{"trial": i} for i in range(10)],
+        )
         assert route_after_update(state) == "end"
 
     def test_continues(self):

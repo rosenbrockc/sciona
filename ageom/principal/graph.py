@@ -11,6 +11,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 
 from ageom.architect.graph import DecompositionAgent
@@ -68,7 +69,7 @@ class PrincipalState:
 # ---------------------------------------------------------------------------
 
 
-async def seed_population(state: PrincipalState, config: dict) -> dict:
+async def seed_population(state: PrincipalState, config: RunnableConfig) -> dict:
     """Use OptunaManager to suggest initial Architect paradigms and run decomposition."""
     deps: PrincipalDeps = config["configurable"]["deps"]
 
@@ -84,9 +85,15 @@ async def seed_population(state: PrincipalState, config: dict) -> dict:
     return {"cdg": cdg, "thread_id": thread_id, "current_trial": state.current_trial}
 
 
-async def execute_forward(state: PrincipalState, config: dict) -> dict:
+async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict:
     """Run the Orchestrator / Synthesizer pipeline and produce an ExportBundle."""
     deps: PrincipalDeps = config["configurable"]["deps"]
+
+    # Increment trial counter for time-travel re-entries (seed handles the
+    # first trial; subsequent trials arrive here via time_travel → forward).
+    trials_so_far = len(state.trial_history)
+    if trials_so_far >= state.current_trial:
+        state.current_trial = trials_so_far + 1
 
     if state.cdg is None:
         return {"error": "No CDG available", "done": True}
@@ -109,10 +116,10 @@ async def execute_forward(state: PrincipalState, config: dict) -> dict:
         bundle = await deps.synthesize_fn(state.cdg, match_results)
         state.export_bundle = bundle
 
-    return {"ghost_report": ghost_report, "export_bundle": state.export_bundle}
+    return {"ghost_report": ghost_report, "export_bundle": state.export_bundle, "current_trial": state.current_trial}
 
 
-async def evaluate_run(state: PrincipalState, config: dict) -> dict:
+async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     """Execute the instrumented artifact and gather telemetry."""
     deps: PrincipalDeps = config["configurable"]["deps"]
 
@@ -144,10 +151,15 @@ async def evaluate_run(state: PrincipalState, config: dict) -> dict:
         }
     )
 
-    return {"benchmark": benchmark}
+    return {
+        "benchmark": benchmark,
+        "best_loss": state.best_loss,
+        "trial_history": state.trial_history,
+        "current_trial": state.current_trial,
+    }
 
 
-async def compute_gradients(state: PrincipalState, config: dict) -> dict:
+async def compute_gradients(state: PrincipalState, config: RunnableConfig) -> dict:
     """Call CreditAssigner to find the top bottleneck node."""
     if state.cdg is None or state.benchmark is None:
         return {"done": True, "error": "Missing CDG or benchmark"}
@@ -182,7 +194,7 @@ async def compute_gradients(state: PrincipalState, config: dict) -> dict:
     }
 
 
-async def time_travel_update(state: PrincipalState, config: dict) -> dict:
+async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> dict:
     """Fork the Architect graph at the bottleneck and re-decompose with a constraint."""
     deps: PrincipalDeps = config["configurable"]["deps"]
 
@@ -226,7 +238,8 @@ async def time_travel_update(state: PrincipalState, config: dict) -> dict:
 
     # Append constraint to the goal so the LLM sees it
     original_goal = updated_values.get("goal", state.goal)
-    updated_values["goal"] = f"{original_goal}\n\nCONSTRAINT: {constraint}"
+    constrained_goal = f"{original_goal}\n\nCONSTRAINT: {constraint}"
+    updated_values["goal"] = constrained_goal
 
     # Reset decomposition progress to re-run from the fork point
     updated_values["done"] = False
@@ -234,8 +247,8 @@ async def time_travel_update(state: PrincipalState, config: dict) -> dict:
 
     await architect._graph.aupdate_state(fork_config, updated_values)
 
-    # Re-run decomposition on the forked thread
-    cdg = await architect.decompose(state.goal, thread_id=new_thread_id)
+    # Re-run decomposition on the forked thread with the constrained goal
+    cdg = await architect.decompose(constrained_goal, thread_id=new_thread_id)
     state.cdg = cdg
 
     logger.info(
@@ -256,7 +269,7 @@ def route_after_gradients(state: PrincipalState) -> str:
     """Decide whether to continue optimising or stop."""
     if state.done:
         return "end"
-    if state.current_trial >= state.max_trials:
+    if len(state.trial_history) >= state.max_trials:
         return "end"
     if state.error and "pruned" not in state.error.lower():
         return "end"
@@ -267,7 +280,7 @@ def route_after_update(state: PrincipalState) -> str:
     """After time-travel update, loop back or stop."""
     if state.done:
         return "end"
-    if state.current_trial >= state.max_trials:
+    if len(state.trial_history) >= state.max_trials:
         return "end"
     return "forward"
 
