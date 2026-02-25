@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +15,134 @@ from ageom.graph_store import (
     extract_witness_metadata,
 )
 
+_logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# CDG sanitization (run before upsert)
+# ---------------------------------------------------------------------------
+
+def _dedup_nodes(cdg: dict[str, Any]) -> dict[str, Any]:
+    """Merge duplicate ``node_id`` entries in a CDG.
+
+    Some ingested CDGs contain multiple nodes sharing the same ``node_id``
+    (e.g. overloaded Julia/C++ constructors).  When the graph store MERGEs
+    on ``fqn = repo.node_id``, the last writer's scalar properties win
+    while input/output ports from *all* writers accumulate, causing
+    ``n_inputs`` to diverge from the actual HAS_INPUT count.
+
+    Strategy: keep the entry with the most inputs (richest signature) and
+    merge the extra inputs/outputs from siblings as a union by port name.
+    """
+    nodes: list[dict[str, Any]] = cdg.get("nodes", [])
+    id_counts = Counter(n["node_id"] for n in nodes)
+    dupes = {nid for nid, cnt in id_counts.items() if cnt > 1}
+    if not dupes:
+        return cdg
+
+    merged: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+
+    for node in nodes:
+        nid = node["node_id"]
+        if nid not in dupes:
+            if nid not in merged:
+                merged[nid] = node
+                order.append(nid)
+            continue
+
+        if nid not in merged:
+            merged[nid] = dict(node)  # shallow copy
+            merged[nid]["inputs"] = list(node.get("inputs") or [])
+            merged[nid]["outputs"] = list(node.get("outputs") or [])
+            order.append(nid)
+        else:
+            # Merge: keep the richer entry as base, union ports by name
+            existing = merged[nid]
+            # If this variant has more inputs, adopt its scalar props
+            if len(node.get("inputs") or []) > len(existing.get("inputs") or []):
+                saved_inputs = existing["inputs"]
+                saved_outputs = existing["outputs"]
+                existing.update(node)
+                existing["inputs"] = list(node.get("inputs") or [])
+                existing["outputs"] = list(node.get("outputs") or [])
+                # Merge back old ports not present in the new base
+                extra_in = node.get("inputs") or []
+                extra_out = node.get("outputs") or []
+            else:
+                extra_in = node.get("inputs") or []
+                extra_out = node.get("outputs") or []
+
+            seen_in = {p["name"] for p in existing["inputs"]}
+            for p in extra_in:
+                if p["name"] not in seen_in:
+                    existing["inputs"].append(p)
+                    seen_in.add(p["name"])
+
+            seen_out = {p["name"] for p in existing["outputs"]}
+            for p in extra_out:
+                if p["name"] not in seen_out:
+                    existing["outputs"].append(p)
+                    seen_out.add(p["name"])
+
+    _logger.info(
+        "Deduped %d node_id(s): %s",
+        len(dupes),
+        ", ".join(sorted(dupes)),
+    )
+    return {**cdg, "nodes": [merged[nid] for nid in order]}
+
+
+def _fix_childless_decomposed(cdg: dict[str, Any]) -> dict[str, Any]:
+    """Downgrade decomposed nodes that have no children to atomic.
+
+    Some CDGs have a single root marked ``decomposed`` with an empty
+    ``children`` list and zero edges.  These are invisible to the
+    isomorphism search layers and should be ``atomic`` instead.
+    """
+    nodes = cdg.get("nodes", [])
+    edges = cdg.get("edges", [])
+    all_ids = {n["node_id"] for n in nodes}
+    parent_ids_from_edges = {e.get("source_id") for e in edges}
+
+    changed = False
+    new_nodes = []
+    for node in nodes:
+        children = node.get("children", [])
+        # Only count children that actually exist in this CDG
+        real_children = [c for c in children if c in all_ids]
+        has_edge_children = node["node_id"] in parent_ids_from_edges
+
+        if (
+            node.get("status") == "decomposed"
+            and not real_children
+            and not has_edge_children
+        ):
+            node = dict(node)
+            node["status"] = "atomic"
+            node["children"] = []
+            changed = True
+            _logger.info(
+                "Downgraded childless decomposed node '%s' to atomic",
+                node.get("name", node["node_id"]),
+            )
+        new_nodes.append(node)
+
+    if changed:
+        return {**cdg, "nodes": new_nodes}
+    return cdg
+
+
+def sanitize_cdg(cdg: dict[str, Any]) -> dict[str, Any]:
+    """Apply all pre-upsert sanitization passes to a CDG dict."""
+    cdg = _dedup_nodes(cdg)
+    cdg = _fix_childless_decomposed(cdg)
+    return cdg
+
+
+# ---------------------------------------------------------------------------
+# Repo upsert
+# ---------------------------------------------------------------------------
 
 async def upsert_repo(
     repo_path: Path, repo_name: str, config: AgeomConfig
@@ -32,6 +162,7 @@ async def upsert_repo(
     for cf in cdg_files:
         with open(cf) as f:
             data = json.load(f)
+        data = sanitize_cdg(data)
         cdg_data.append((cf, data))
         for node in data.get("nodes", []):
             all_node_ids.append(node["node_id"])

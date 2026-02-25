@@ -13,13 +13,20 @@ def _topo_hash(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], root_id
     """Compute a topological hash for a decomposed subtree.
 
     Hash of sorted (in_degree, out_degree) pairs for all children of *root_id*.
+    Only counts edges whose *both* endpoints are children of *root_id*,
+    excluding phantom edges to/from non-existent nodes (e.g. ``initial``/``final``).
     """
     children = [n for n in nodes if n.get("parent_id") == root_id]
     child_ids = {c["node_id"] for c in children}
+    # Only consider edges between sibling children
+    sibling_edges = [
+        e for e in edges
+        if e["source_id"] in child_ids and e["target_id"] in child_ids
+    ]
     degree_seq: list[tuple[int, int]] = []
     for cid in sorted(child_ids):
-        in_deg = sum(1 for e in edges if e["target_id"] == cid)
-        out_deg = sum(1 for e in edges if e["source_id"] == cid)
+        in_deg = sum(1 for e in sibling_edges if e["target_id"] == cid)
+        out_deg = sum(1 for e in sibling_edges if e["source_id"] == cid)
         degree_seq.append((in_deg, out_deg))
     raw = str(sorted(degree_seq))
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
