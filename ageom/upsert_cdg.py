@@ -133,8 +133,37 @@ def _fix_childless_decomposed(cdg: dict[str, Any]) -> dict[str, Any]:
     return cdg
 
 
+def _normalize_edge_keys(cdg: dict[str, Any]) -> dict[str, Any]:
+    """Normalise edge key names to ``source_id``/``target_id``.
+
+    Some CDGs (e.g. from the Bayesian / conjugate-priors ingester) use
+    ``source``/``target`` instead.  Map them so downstream code that
+    expects ``source_id``/``target_id`` works uniformly.
+    """
+    edges = cdg.get("edges", [])
+    if not edges:
+        return cdg
+
+    # Check if normalisation is needed
+    sample = edges[0]
+    if "source_id" in sample:
+        return cdg  # already normalised
+
+    new_edges = []
+    for e in edges:
+        ne = dict(e)
+        if "source" in ne and "source_id" not in ne:
+            ne["source_id"] = ne.pop("source")
+        if "target" in ne and "target_id" not in ne:
+            ne["target_id"] = ne.pop("target")
+        new_edges.append(ne)
+
+    return {**cdg, "edges": new_edges}
+
+
 def sanitize_cdg(cdg: dict[str, Any]) -> dict[str, Any]:
     """Apply all pre-upsert sanitization passes to a CDG dict."""
+    cdg = _normalize_edge_keys(cdg)
     cdg = _dedup_nodes(cdg)
     cdg = _fix_childless_decomposed(cdg)
     return cdg
