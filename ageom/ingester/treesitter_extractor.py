@@ -44,6 +44,132 @@ def _find_descendants(node: TSNode, type_name: str) -> list[TSNode]:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Function-level extraction helpers (used by extract_function)
+# ---------------------------------------------------------------------------
+
+
+def _extract_callees_from_body(node: TSNode) -> set[str]:
+    """Extract all function call names from a tree-sitter subtree."""
+    callees: set[str] = set()
+    for call_node in _find_descendants(node, "call_expression"):
+        if not call_node.children:
+            continue
+        func_expr = call_node.children[0]
+        if func_expr.type == "identifier":
+            callees.add(_node_text(func_expr))
+        elif func_expr.type in ("field_expression", "field_identifier"):
+            ids = [c for c in func_expr.children
+                   if c.type in ("identifier", "field_identifier")]
+            if ids:
+                callees.add(_node_text(ids[-1]))
+        elif func_expr.type == "scoped_identifier":
+            ids = [c for c in func_expr.children if c.type == "identifier"]
+            if ids:
+                callees.add(_node_text(ids[-1]))
+    return callees
+
+
+def _collect_all_function_nodes(
+    root: TSNode, language: "SourceLanguage",
+) -> dict[str, TSNode]:
+    """Collect all function definition nodes in a file, keyed by name.
+
+    For Rust includes functions inside impl blocks.  For Julia, if multiple
+    dispatch produces duplicate names the last definition wins.
+    """
+    from .base_extractor import SourceLanguage  # avoid circular at module level
+
+    func_map: dict[str, TSNode] = {}
+
+    if language == SourceLanguage.RUST:
+        for fn_node in _find_descendants(root, "function_item"):
+            for child in fn_node.children:
+                if child.type == "identifier":
+                    func_map[_node_text(child)] = fn_node
+                    break
+
+    elif language == SourceLanguage.JULIA:
+        for fn_node in _find_descendants(root, "function_definition"):
+            name = _julia_function_name(fn_node)
+            if name:
+                func_map[name] = fn_node
+
+    else:  # C++
+        # Include both function_definition (with body) and declaration
+        # (header-only forward declarations with function_declarator).
+        for node_type in ("function_definition", "declaration"):
+            for fn_node in _find_descendants(root, node_type):
+                for child in fn_node.children:
+                    if child.type == "function_declarator":
+                        for fcc in child.children:
+                            if fcc.type in ("identifier", "field_identifier"):
+                                name = _node_text(fcc)
+                                # Prefer definitions over declarations
+                                if name not in func_map or node_type == "function_definition":
+                                    func_map[name] = fn_node
+                                break
+                        break
+
+    return func_map
+
+
+def _julia_function_name(fn_node: TSNode) -> str:
+    """Extract function name from a Julia function_definition node."""
+    for child in fn_node.children:
+        if child.type != "signature":
+            continue
+        for sc in child.children:
+            if sc.type == "call_expression":
+                return _julia_call_sig_name(sc)
+            elif sc.type == "typed_expression":
+                for tc in sc.children:
+                    if tc.type == "call_expression":
+                        return _julia_call_sig_name(tc)
+            elif sc.type == "where_expression":
+                for wc in sc.children:
+                    if wc.type == "call_expression":
+                        return _julia_call_sig_name(wc)
+    return ""
+
+
+def _julia_call_sig_name(call_node: TSNode) -> str:
+    """Extract the function name from a Julia call_expression signature."""
+    for child in call_node.children:
+        if child.type == "identifier":
+            return _node_text(child)
+        elif child.type == "field_expression":
+            ids = [c for c in child.children if c.type == "identifier"]
+            if ids:
+                return _node_text(ids[-1])
+    return ""
+
+
+def _build_file_call_graph_ts(
+    func_nodes: dict[str, TSNode],
+) -> dict[str, set[str]]:
+    """Build a file-level call graph from tree-sitter function nodes."""
+    all_names = set(func_nodes.keys())
+    graph: dict[str, set[str]] = {}
+    for fname, fnode in func_nodes.items():
+        callees = _extract_callees_from_body(fnode)
+        graph[fname] = (callees & all_names) - {fname}
+    return graph
+
+
+def _transitive_closure(start: str, graph: dict[str, set[str]]) -> set[str]:
+    """Compute transitive closure of reachable names from *start*."""
+    reachable: set[str] = set()
+    frontier = {start}
+    while frontier:
+        current = frontier.pop()
+        if current in reachable:
+            continue
+        reachable.add(current)
+        frontier |= graph.get(current, set()) - reachable
+    return reachable
+
+
 # Tree-sitter queries for probabilistic/oracle interfaces.
 _RUST_TRAIT_BOUNDS_QUERY = """
 (impl_item
@@ -1341,11 +1467,210 @@ class TreeSitterExtractor:
     async def extract_function(
         self, source_path: str, function_name: str
     ) -> RawDataFlowGraph:
-        """Not supported for non-Python languages; falls back to extract_procedural."""
-        raise ValueError(
-            f"Function-level LLM extraction not supported for {self.language.value}; "
-            f"use --procedural instead"
+        """Extract a function-level data-flow graph for non-Python languages.
+
+        Mirrors ``extract_function_data_flow()`` from extractor.py:
+        collect all functions, build a call graph, compute the transitive
+        closure from *function_name*, and return a :class:`RawDataFlowGraph`.
+        """
+        path = Path(source_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Source file not found: {source_path}")
+
+        source_code = path.read_text()
+        source_lines = source_code.splitlines()
+        tree = self._parser.parse(source_code.encode("utf-8"))
+        root = tree.root_node
+
+        # 1. Collect all function definitions in the file
+        func_nodes = _collect_all_function_nodes(root, self.language)
+
+        if function_name not in func_nodes:
+            raise ValueError(
+                f"Function '{function_name}' not found in {source_path}"
+            )
+
+        # 2. Build file-level call graph
+        file_call_graph = _build_file_call_graph_ts(func_nodes)
+
+        # 3. Compute transitive closure from target
+        reachable = _transitive_closure(function_name, file_call_graph)
+
+        # 4. Build MethodFact for each reachable function
+        methods: list[MethodFact] = []
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+        seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
+
+        for fname in sorted(reachable):
+            fn_node = func_nodes.get(fname)
+            if fn_node is None:
+                continue
+            mf, sub_oracle, sub_inferred = self._build_method_fact_for_function(
+                fn_node, source_code, source_lines, fname
+            )
+            methods.append(mf)
+            oracle_edges.extend(sub_oracle)
+            for edge in sub_inferred:
+                _add_edge_if_new(inferred_edges, seen_inferred, edge)
+
+        # 5. Build internal_call_graph (edges between reachable functions)
+        internal_call_graph: dict[str, list[str]] = {}
+        for fname in reachable:
+            callees = sorted(file_call_graph.get(fname, set()) & reachable)
+            if callees:
+                internal_call_graph[fname] = callees
+
+        # 6. Build all_attributes from method reads/writes
+        all_attributes: dict[str, list[str]] = {}
+        for mf in methods:
+            for attr in mf.reads:
+                all_attributes.setdefault(attr, []).append(f"read:{mf.name}")
+            for attr in mf.writes:
+                all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
+
+        # Language-specific metadata
+        requires_logdet_jacobian = False
+        if self.language == SourceLanguage.JULIA:
+            requires_logdet_jacobian = _scan_julia_bijectors(source_code)
+
+        return RawDataFlowGraph(
+            class_name=function_name,
+            source_code=source_code,
+            methods=methods,
+            all_attributes=all_attributes,
+            internal_call_graph=internal_call_graph,
+            inferred_edges=inferred_edges,
+            oracle_edges=oracle_edges,
+            source_language=self.language.value,
+            requires_logdet_jacobian=requires_logdet_jacobian,
         )
+
+    # ------------------------------------------------------------------
+    # Private: build a MethodFact for a single function node
+    # ------------------------------------------------------------------
+
+    def _build_method_fact_for_function(
+        self,
+        fn_node: TSNode,
+        source_code: str,
+        source_lines: list[str],
+        func_name: str,
+    ) -> tuple[MethodFact, list[OracleEdge], list[DependencyEdge]]:
+        """Build a MethodFact for a single function, with oracle detection."""
+        oracle_edges: list[OracleEdge] = []
+        inferred_edges: list[DependencyEdge] = []
+
+        start = fn_node.start_point[0]
+        end = fn_node.end_point[0] + 1
+        source = "\n".join(source_lines[start:end])
+
+        # Track calls to other functions in the file
+        callees = sorted(_extract_callees_from_body(fn_node))
+
+        if self.language == SourceLanguage.RUST:
+            fv = _RustFunctionVisitor(fn_node, source_code)
+            fv.visit()
+
+            parent = fn_node.parent
+            if parent and parent.type == "impl_item":
+                trait_bounds = self._rust_trait_bounds_for_node(parent)
+            else:
+                trait_bounds = self._rust_trait_bounds_for_node(fn_node)
+
+            oracle_traits = {t for t in trait_bounds if t in _ORACLE_TRAIT_BOUNDS}
+            conjugate_traits = {
+                t for t in trait_bounds if t in _CONJUGATE_TRAIT_BOUNDS
+            }
+            if oracle_traits:
+                fv.is_oracle = True
+            if conjugate_traits:
+                fv.is_conjugate = True
+
+            fact = fv.get_fact()
+            fact = fact.model_copy(update={"calls": callees})
+
+            if fact.is_oracle:
+                sub_o, sub_i, sv, oo = self._build_rust_oracle_subgraph(
+                    fn_node, fact.name, oracle_traits
+                )
+                oracle_edges.extend(sub_o)
+                inferred_edges.extend(sub_i)
+                fact = fact.model_copy(
+                    update={
+                        "reads": sorted(set(fact.reads) | sv),
+                        "writes": sorted(set(fact.writes) | oo),
+                    }
+                )
+
+            return fact, oracle_edges, inferred_edges
+
+        elif self.language == SourceLanguage.JULIA:
+            struct_names: set[str] = set()
+            fv = _JuliaFunctionVisitor(fn_node, source_code, struct_names, {})
+            fv.visit()
+
+            dispatch_fn_keys = self._julia_dispatch_function_keys(
+                fn_node.parent or fn_node
+            )
+            is_oracle = self._is_julia_oracle_interface(
+                fn_node, fv, dispatch_fn_keys
+            )
+
+            state_vars: set[str] = set()
+            oracle_outputs: set[str] = set()
+            if is_oracle:
+                sub_o, sub_i, state_vars, oracle_outputs = (
+                    self._build_julia_oracle_subgraph(fn_node, fv.func_name)
+                )
+                oracle_edges.extend(sub_o)
+                inferred_edges.extend(sub_i)
+
+            fact = MethodFact(
+                name=fv.func_name or func_name,
+                params=fv.params,
+                return_type=fv.return_type,
+                reads=sorted(set(fv.reads) | state_vars),
+                writes=sorted(set(fv.writes) | oracle_outputs),
+                calls=callees,
+                source_code=source,
+                is_oracle=is_oracle,
+            )
+            return fact, oracle_edges, inferred_edges
+
+        else:  # C++
+            extracted_name = ""
+            params: list[str] = []
+            return_type = ""
+
+            for fc in fn_node.children:
+                if fc.type == "function_declarator":
+                    for fcc in fc.children:
+                        if fcc.type in ("identifier", "field_identifier"):
+                            extracted_name = _node_text(fcc)
+                        elif fcc.type == "parameter_list":
+                            for pc in fcc.children:
+                                if pc.type == "parameter_declaration":
+                                    for pcc in pc.children:
+                                        if pcc.type == "identifier":
+                                            params.append(_node_text(pcc))
+                elif fc.type in (
+                    "primitive_type",
+                    "type_identifier",
+                    "qualified_identifier",
+                ):
+                    return_type = _node_text(fc)
+
+            oracle_edges = _scan_cpp_oracle_edges(fn_node, source_code)
+
+            fact = MethodFact(
+                name=extracted_name or func_name,
+                params=params,
+                return_type=return_type,
+                calls=callees,
+                source_code=source,
+            )
+            return fact, oracle_edges, inferred_edges
 
     async def extract_class(
         self, source_path: str, class_name: str
