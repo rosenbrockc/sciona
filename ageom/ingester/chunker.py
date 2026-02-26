@@ -215,6 +215,11 @@ def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
         try:
             concept = ConceptType(item.get("concept_type", "custom"))
         except ValueError:
+            logger.warning(
+                "Unknown concept_type %r for node %r, falling back to custom",
+                item.get("concept_type"),
+                item.get("name"),
+            )
             concept = ConceptType.CUSTOM
         atoms.append(
             MacroAtomSpec(
@@ -600,6 +605,11 @@ def _parse_sub_atoms(raw: dict, parent_depth: int) -> tuple[list[MacroAtomSpec],
         try:
             concept = ConceptType(item.get("concept_type", "custom"))
         except ValueError:
+            logger.warning(
+                "Unknown concept_type %r for node %r, falling back to custom",
+                item.get("concept_type"),
+                item.get("name"),
+            )
             concept = ConceptType.CUSTOM
         sub_atoms.append(
             MacroAtomSpec(

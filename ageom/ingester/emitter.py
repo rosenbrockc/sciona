@@ -1237,6 +1237,35 @@ def _title_case(name: str) -> str:
     return name.replace("_", " ").title()
 
 
+_CONCEPT_TYPE_RULES: list[tuple[ConceptType, list[str]]] = [
+    (ConceptType.STATE_INIT, ["init", "setup", "create", "reset", "bootstrap", "allocat"]),
+    (ConceptType.DATA_ASSEMBLY, [
+        "build", "assemble", "construct", "compose", "prepare",
+        "materialize", "combine", "merge", "bundle", "package",
+    ]),
+    (ConceptType.VISUALIZATION, [
+        "plot", "render", "draw", "visualiz", "display", "diagnostic", "legend",
+    ]),
+    (ConceptType.CONDITIONAL_ROUTING, [
+        "select", "choose", "route", "dispatch", "gate", "guard",
+        "branch", "conditional", "fallback", "default",
+    ]),
+    (ConceptType.OBSERVABILITY, ["emit", "debug", "log", "trace", "record", "progress"]),
+    (ConceptType.DATA_EXTRACTION, [
+        "fetch", "load", "read", "parse", "ingest", "decode", "import",
+    ]),
+]
+
+
+def _classify_by_name(name: str) -> ConceptType:
+    """Classify a function name into a ConceptType using keyword heuristics."""
+    lower = name.lower()
+    for concept_type, keywords in _CONCEPT_TYPE_RULES:
+        if any(kw in lower for kw in keywords):
+            return concept_type
+    return ConceptType.CUSTOM
+
+
 def build_procedural_plan(
     dfg: RawDataFlowGraph, pipeline_name: str
 ) -> ValidatedMacroPlan:
@@ -1253,13 +1282,15 @@ def build_procedural_plan(
             if mf.return_type
             else [IOSpec(name="result", type_desc="Any")]
         )
+        if mf.is_external:
+            concept_type = ConceptType.EXTERNAL_TOOL
+        else:
+            concept_type = _classify_by_name(mf.name)
         macro_atoms.append(
             MacroAtomSpec(
                 decorators=mf.decorators,
                 is_external=mf.is_external,
-                concept_type=(
-                    ConceptType.EXTERNAL_TOOL if mf.is_external else ConceptType.CUSTOM
-                ),
+                concept_type=concept_type,
                 name=_title_case(mf.name),
                 description=mf.docstring,
                 method_names=[mf.name],

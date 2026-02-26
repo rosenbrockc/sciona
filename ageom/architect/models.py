@@ -46,6 +46,14 @@ class ConceptType(str, Enum):
     SMC_REWEIGHT = "smc_reweight"
     MESSAGE_PASSING = "message_passing"
     CONJUGATE_UPDATE = "conjugate_update"
+    # Data flow / orchestration
+    STATE_INIT = "state_init"
+    DATA_ASSEMBLY = "data_assembly"
+    CONDITIONAL_ROUTING = "conditional_routing"
+    DATA_EXTRACTION = "data_extraction"
+    # Presentation / observability
+    VISUALIZATION = "visualization"
+    OBSERVABILITY = "observability"
     CUSTOM = "custom"
     EXTERNAL_TOOL = "external_tool"
 

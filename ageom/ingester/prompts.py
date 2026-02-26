@@ -29,7 +29,17 @@ Core rules:
    sampler, log_prob, posterior_update, variational_inference, prior_init, \
    prior_distribution, likelihood_evaluation, probabilistic_oracle, \
    oracle_gradient, mcmc_kernel, mcmc_proposal, vi_elbo, sequential_filter, \
-   smc_reweight, message_passing, conjugate_update, custom.
+   smc_reweight, message_passing, conjugate_update, \
+   state_init, data_assembly, conditional_routing, data_extraction, \
+   visualization, observability, custom.
+
+Orchestration / data-flow type guidance:
+- state_init — initializes, resets, or bootstraps state/containers (no computation).
+- data_assembly — builds, assembles, prepares, or materializes composite data structures.
+- conditional_routing — selects, gates, guards, or dispatches based on conditions.
+- data_extraction — fetches, loads, reads, or parses external data sources.
+- visualization — plots, renders, or draws visual output.
+- observability — emits debug info, logs, traces, or records diagnostics.
 
 Bayesian/state-space detection requirements (MANDATORY):
 1. Detect distinct state-space structures and name them explicitly: \
@@ -146,7 +156,9 @@ Rules:
    sampler, log_prob, posterior_update, variational_inference, prior_init, \
    prior_distribution, likelihood_evaluation, probabilistic_oracle, \
    oracle_gradient, mcmc_kernel, mcmc_proposal, vi_elbo, sequential_filter, \
-   smc_reweight, message_passing, conjugate_update, custom.
+   smc_reweight, message_passing, conjugate_update, \
+   state_init, data_assembly, conditional_routing, data_extraction, \
+   visualization, observability, custom.
 
 Return valid JSON only."""
 
