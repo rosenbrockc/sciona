@@ -29,6 +29,10 @@
     </select>
     <button id="btn-fit">Fit</button>
     <button id="btn-reset">Reset</button>
+    <div class="toolbar-separator"></div>
+    <input type="text" id="graph-search" placeholder="Search nodes... (type:sampler, status:atomic)">
+    <button id="btn-legend">Legend</button>
+    <button id="btn-compare">Compare</button>
     <span id="status-text">No data loaded</span>
   </div>
 
@@ -42,6 +46,26 @@
     <div id="browser-list"></div>
   </div>
 
+  <!-- Legend panel -->
+  <div id="legend-panel">
+    <div id="legend-content"></div>
+  </div>
+
+  <!-- Breadcrumb trail -->
+  <div id="breadcrumb-bar" class="hidden">
+    <span id="breadcrumb-content"></span>
+  </div>
+
+  <!-- Compare mode overlay -->
+  <div id="compare-bar" class="hidden">
+    <span class="compare-label">Compare Mode</span>
+    <select id="compare-left-select"><option value="">Select left CDG...</option></select>
+    <span class="compare-vs">vs</span>
+    <select id="compare-right-select"><option value="">Select right CDG...</option></select>
+    <span id="compare-score"></span>
+    <button id="btn-compare-close">Exit Compare</button>
+  </div>
+
   <!-- Main area -->
   <div id="main-container">
     <div id="cy-container">
@@ -49,54 +73,87 @@
         <p>Drop a CDG JSON file here<br>or click <strong>Open File...</strong></p>
       </div>
     </div>
+    <!-- Compare mode: side-by-side panes -->
+    <div id="compare-container" class="hidden">
+      <div id="compare-left" class="compare-pane"></div>
+      <div id="compare-right" class="compare-pane"></div>
+    </div>
     <div id="detail-panel">
       <h3 id="detail-name"></h3>
-      <div class="detail-section">
-        <label>Status</label>
-        <span id="detail-status" class="status-badge"></span>
+      <div id="detail-tabs">
+        <button class="detail-tab active" data-tab="summary">Summary</button>
+        <button class="detail-tab" data-tab="ports">Ports</button>
+        <button class="detail-tab" data-tab="lineage">Lineage</button>
       </div>
-      <div class="detail-section">
-        <label>Concept Type</label>
-        <span id="detail-concept-type"></span>
-      </div>
-      <div class="detail-section">
-        <label>Description</label>
-        <p id="detail-description"></p>
-      </div>
-      <div class="detail-section">
-        <label>Type Signature</label>
-        <code id="detail-type-sig"></code>
-      </div>
-      <div class="detail-section">
-        <label>Matched Primitive</label>
-        <span id="detail-primitive"></span>
-      </div>
-      <div class="detail-section">
-        <label>Inputs</label>
-        <table id="detail-inputs" class="io-table">
-          <thead><tr><th>Name</th><th>Type</th><th>Constraints</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="detail-section">
-        <label>Outputs</label>
-        <table id="detail-outputs" class="io-table">
-          <thead><tr><th>Name</th><th>Type</th><th>Constraints</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="detail-section">
-        <label>Internal Metadata</label>
-        <div id="detail-internal">
-          <div><strong>Depth:</strong> <span id="detail-depth"></span></div>
-          <div><strong>Children:</strong> <span id="detail-children"></span></div>
-          <div><strong>Parent:</strong> <span id="detail-parent"></span></div>
-          <div><strong>Rationale:</strong> <span id="detail-rationale"></span></div>
+
+      <!-- Summary tab -->
+      <div id="tab-summary" class="tab-content active">
+        <div class="detail-section">
+          <label>Status</label>
+          <span id="detail-status" class="status-badge"></span>
+        </div>
+        <div class="detail-section">
+          <label>Concept Type</label>
+          <span id="detail-concept-type" class="concept-type-badge"></span>
+        </div>
+        <div class="detail-section">
+          <label>Description</label>
+          <p id="detail-description"></p>
+        </div>
+        <div class="detail-section">
+          <label>Type Signature</label>
+          <code id="detail-type-sig"></code>
+        </div>
+        <div class="detail-section">
+          <label>Matched Primitive</label>
+          <span id="detail-primitive"></span>
+        </div>
+        <div class="detail-section">
+          <label>Internal Metadata</label>
+          <div id="detail-internal">
+            <div><strong>Depth:</strong> <span id="detail-depth"></span></div>
+            <div><strong>Children:</strong> <span id="detail-children"></span></div>
+            <div><strong>Parent:</strong> <span id="detail-parent"></span></div>
+            <div><strong>Rationale:</strong> <span id="detail-rationale"></span></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <label>Critic Agent</label>
+          <textarea id="detail-critic" readonly></textarea>
         </div>
       </div>
-      <div class="detail-section">
-        <label>Critic Agent</label>
-        <textarea id="detail-critic" readonly></textarea>
+
+      <!-- Ports tab -->
+      <div id="tab-ports" class="tab-content">
+        <div class="detail-section">
+          <label>Inputs</label>
+          <table id="detail-inputs" class="io-table">
+            <thead><tr><th>Name</th><th>Type</th><th>Constraints</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="detail-section">
+          <label>Outputs</label>
+          <table id="detail-outputs" class="io-table">
+            <thead><tr><th>Name</th><th>Type</th><th>Constraints</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lineage tab -->
+      <div id="tab-lineage" class="tab-content">
+        <div id="lineage-content">
+          <p class="lineage-hint">Select a node to see its data-flow neighbors</p>
+          <div id="lineage-upstream" class="lineage-section">
+            <label>Upstream (sources)</label>
+            <div id="lineage-upstream-list"></div>
+          </div>
+          <div id="lineage-downstream" class="lineage-section">
+            <label>Downstream (targets)</label>
+            <div id="lineage-downstream-list"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
