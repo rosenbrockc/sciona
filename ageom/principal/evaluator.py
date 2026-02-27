@@ -9,6 +9,8 @@ from pathlib import Path
 
 from ageom.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
 from ageom.synthesizer.models import ExportBundle
+from ageom.principal.datasets import create_templated_dataset_collection
+from ageom.datasets.parser.base import FolderFilterOptions
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +100,62 @@ class ExecutionSandbox:
             global_loss=global_loss,
             node_telemetry=telemetry,
         )
+
+    async def evaluate_adapter(
+        self,
+        bundle: ExportBundle,
+        adapter_path: str,
+        metric: OptimizationMetric,
+        *,
+        user: str | None = None,
+        serial: str | None = None,
+        varset: dict | None = None,
+    ) -> BenchmarkResult:
+        """Execute *bundle* against a templated adapter dataset.
+
+        Loads multi-group sensor data from an ``adapter.yml`` file, writes
+        each group to a parquet file in the bundle's output directory, and
+        produces a manifest JSON that the artifact can consume.
+
+        Args:
+            bundle: The export bundle containing the compiled artifact.
+            adapter_path: Path to the ``adapter.yml`` template file.
+            metric: Which optimisation axis to compute the global loss for.
+            user: Optional user filter for the dataset collection.
+            serial: Optional device serial filter.
+            varset: Optional variable substitutions for the adapter template.
+
+        Returns:
+            A ``BenchmarkResult`` from the underlying :meth:`evaluate` call.
+        """
+        adapter = Path(adapter_path).expanduser()
+        if not adapter.exists():
+            logger.error("Adapter file not found: %s", adapter)
+            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+
+        try:
+            coll_cls = create_templated_dataset_collection(
+                str(adapter), varset=varset,
+            )
+            options = coll_cls.get_filter_options(user, serial, recursive=True)
+            coll = coll_cls.from_folder(options=options)
+            dfs = coll.to_pandas()
+        except Exception as exc:
+            logger.error("Failed to load adapter dataset: %s", exc)
+            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+
+        # Write each sensor group as a parquet file.
+        manifest: dict[str, str] = {}
+        out_dir = bundle.output_dir
+        for group_name, df in dfs.items():
+            parquet_path = out_dir / f"{group_name}.parquet"
+            df.to_parquet(parquet_path, index=False)
+            manifest[group_name] = str(parquet_path)
+
+        manifest_path = out_dir / "dataset_manifest.json"
+        manifest_path.write_text(json.dumps(manifest, indent=2))
+
+        return await self.evaluate(bundle, str(manifest_path), metric)
 
 
 def _parse_trace(trace_path: Path) -> dict[str, NodeTelemetry]:
