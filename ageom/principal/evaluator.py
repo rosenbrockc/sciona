@@ -9,8 +9,6 @@ from pathlib import Path
 
 from ageom.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
 from ageom.synthesizer.models import ExportBundle
-from ageom.principal.datasets import create_templated_dataset_collection
-from ageom.datasets.parser.base import FolderFilterOptions
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +126,8 @@ class ExecutionSandbox:
         Returns:
             A ``BenchmarkResult`` from the underlying :meth:`evaluate` call.
         """
+        from ageom.principal.datasets import create_templated_dataset_collection
+
         adapter = Path(adapter_path).expanduser()
         if not adapter.exists():
             logger.error("Adapter file not found: %s", adapter)
