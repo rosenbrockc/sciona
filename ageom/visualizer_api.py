@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.types import Receive, Scope, Send
 
 
 @asynccontextmanager
@@ -426,7 +428,23 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
     return {"query_node": query_node, "results": results}
 
 
+class NoCacheStaticFiles(StaticFiles):
+    """StaticFiles that sends no-cache headers so dev reloads always get fresh files."""
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        original_send = send
+
+        async def send_with_no_cache(message: dict) -> None:
+            if message.get("type") == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append((b"cache-control", b"no-cache, no-store, must-revalidate"))
+                message["headers"] = headers
+            await original_send(message)
+
+        await super().__call__(scope, receive, send_with_no_cache)
+
+
 # Mount static files last so API routes take priority
 _static_dir = Path(__file__).resolve().parent / "static"
 if _static_dir.exists():
-    app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="static")
+    app.mount("/", NoCacheStaticFiles(directory=str(_static_dir), html=True), name="static")
