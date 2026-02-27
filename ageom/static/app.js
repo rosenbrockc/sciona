@@ -99,6 +99,10 @@
 
   // --- Data loading ---
 
+  function encodeRepoPath(repo) {
+    return repo.split("/").map(encodeURIComponent).join("/");
+  }
+
   function handleFile(file) {
     var reader = new FileReader();
     reader.onload = function (e) {
@@ -1226,13 +1230,16 @@
       return;
     }
 
-    // Group by namespace
+    // Group by repo (second path segment, e.g. "advancedvi" from "ageo-atoms/advancedvi/optimize")
     var groups = {};
     cdgs.forEach(function (cdg) {
       var parts = cdg.repo.split("/");
-      var ns = parts.length > 1 ? parts.slice(0, -1).join("/") : "(ungrouped)";
-      if (!groups[ns]) groups[ns] = [];
-      groups[ns].push(cdg);
+      // 3+ segments: org/repo/cdg → group by parts[1]
+      // 2 segments: org/cdg → group by parts[1]
+      // 1 segment: group by the name itself
+      var key = parts.length >= 2 ? parts[1] : parts[0];
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(cdg);
     });
 
     var sortedKeys = Object.keys(groups).sort();
@@ -1240,11 +1247,14 @@
       var groupEl = document.createElement("div");
       groupEl.className = "browser-group";
 
+      var countLabel = groups[ns].length === 1
+        ? "1 CDG"
+        : groups[ns].length + " CDGs";
       var header = document.createElement("div");
       header.className = "browser-group-header";
       header.innerHTML = '<span class="browser-group-arrow">&#9654;</span> ' +
         '<span class="browser-group-name">' + ns + '</span>' +
-        '<span class="browser-group-count">' + groups[ns].length + '</span>';
+        '<span class="browser-group-count">' + countLabel + '</span>';
       header.addEventListener("click", function () {
         groupEl.classList.toggle("collapsed");
       });
@@ -1308,7 +1318,7 @@
 
   function fetchCDG(repo) {
     statusText.textContent = "Loading " + repo + "...";
-    fetch("/api/cdgs/" + encodeURIComponent(repo))
+    fetch("/api/cdgs/" + encodeRepoPath(repo))
       .then(function (res) {
         if (!res.ok) throw new Error("CDG not found");
         return res.json();
@@ -1424,7 +1434,7 @@
   function loadComparePane(side, repo) {
     if (!repo) return;
     var container = document.getElementById("compare-" + side);
-    fetch("/api/cdgs/" + encodeURIComponent(repo))
+    fetch("/api/cdgs/" + encodeRepoPath(repo))
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var cyInstance = buildCompareGraph(container, data);
