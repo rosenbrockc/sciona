@@ -998,11 +998,15 @@
 
   function onNodeTap(e) {
     var nodeData = e.target.data("_nodeData");
-    if (!nodeData) return;
-    selectedNodeId = nodeData.node_id;
-    populateDetailPanel(nodeData);
-    populateLineage(nodeData.node_id);
-    updateIsoButtonVisibility(nodeData);
+    if (!nodeData) { console.warn("onNodeTap: no _nodeData"); return; }
+    try {
+      selectedNodeId = nodeData.node_id;
+      populateDetailPanel(nodeData);
+      populateLineage(nodeData.node_id);
+      updateIsoButtonVisibility(nodeData);
+    } catch (err) {
+      console.error("onNodeTap error:", err);
+    }
     detailPanel.classList.add("visible");
   }
 
