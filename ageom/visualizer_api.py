@@ -88,10 +88,11 @@ async def get_cdg(repo: str = Query(..., description="Full repo path")) -> dict[
     driver = app.state.driver
 
     async with driver.session() as session:
-        # Fetch nodes
+        # Fetch nodes — use explicit parameters dict for Memgraph compatibility
         node_result = await session.run(
             """
-            MATCH (a:Atom {repo: $repo})
+            MATCH (a:Atom)
+            WHERE a.repo = $repo
             OPTIONAL MATCH (a)-[:HAS_INPUT]->(ip:InputPort)
             OPTIONAL MATCH (a)-[:HAS_OUTPUT]->(op:OutputPort)
             OPTIONAL MATCH (a)-[:PARENT_OF]->(child:Atom)
@@ -101,7 +102,7 @@ async def get_cdg(repo: str = Query(..., description="Full repo path")) -> dict[
                    collect(DISTINCT child.node_id) AS children,
                    parent.node_id AS parent_id
             """,
-            repo=repo,
+            parameters={"repo": repo},
         )
         node_records = [r async for r in node_result]
 
@@ -111,13 +112,14 @@ async def get_cdg(repo: str = Query(..., description="Full repo path")) -> dict[
         # Fetch edges
         edge_result = await session.run(
             """
-            MATCH (s:Atom {repo: $repo})-[r:DATA_FLOW]->(t:Atom {repo: $repo})
+            MATCH (s:Atom)-[r:DATA_FLOW]->(t:Atom)
+            WHERE s.repo = $repo AND t.repo = $repo
             RETURN s.node_id AS source_id, t.node_id AS target_id,
                    r.output_name AS output_name, r.input_name AS input_name,
                    r.source_type AS source_type, r.target_type AS target_type,
                    r.requires_glue AS requires_glue
             """,
-            repo=repo,
+            parameters={"repo": repo},
         )
         edge_records = [r async for r in edge_result]
 
@@ -208,13 +210,13 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
         # 1. Resolve the target node
         node_result = await session.run(
             """
-            MATCH (a:Atom {repo: $repo, node_id: $node_id})
+            MATCH (a:Atom)
+            WHERE a.repo = $repo AND a.node_id = $node_id
             OPTIONAL MATCH (a)-[:PARENT_OF]->(child:Atom)
             RETURN a, collect(DISTINCT child.concept_type) AS child_types,
                    count(DISTINCT child) AS n_children
             """,
-            repo=query.repo,
-            node_id=query.node_id,
+            parameters={"repo": query.repo, "node_id": query.node_id},
         )
         node_rec = await node_result.single()
         if not node_rec:
@@ -227,14 +229,14 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
         if n_children == 0 or target.get("status") == "atomic":
             parent_result = await session.run(
                 """
-                MATCH (child:Atom {repo: $repo, node_id: $node_id})
+                MATCH (child:Atom)
+                WHERE child.repo = $repo AND child.node_id = $node_id
                 MATCH (parent:Atom)-[:PARENT_OF]->(child)
                 OPTIONAL MATCH (parent)-[:PARENT_OF]->(sibling:Atom)
                 RETURN parent, collect(DISTINCT sibling.concept_type) AS child_types,
                        count(DISTINCT sibling) AS n_children
                 """,
-                repo=query.repo,
-                node_id=query.node_id,
+                parameters={"repo": query.repo, "node_id": query.node_id},
             )
             parent_rec = await parent_result.single()
             if parent_rec:
@@ -246,14 +248,14 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
             for _ in range(query.radius):
                 up_result = await session.run(
                     """
-                    MATCH (child:Atom {repo: $repo, node_id: $node_id})
+                    MATCH (child:Atom)
+                    WHERE child.repo = $repo AND child.node_id = $node_id
                     MATCH (parent:Atom)-[:PARENT_OF]->(child)
                     OPTIONAL MATCH (parent)-[:PARENT_OF]->(sibling:Atom)
                     RETURN parent, collect(DISTINCT sibling.concept_type) AS child_types,
                            count(DISTINCT sibling) AS n_children
                     """,
-                    repo=target.get("repo", query.repo),
-                    node_id=target.get("node_id", ""),
+                    parameters={"repo": target.get("repo", query.repo), "node_id": target.get("node_id", "")},
                 )
                 up_rec = await up_result.single()
                 if up_rec:
@@ -280,8 +282,8 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
         if 1 in query.layers and topo_hash:
             topo_result = await session.run(
                 """
-                MATCH (parent:Atom:Decomposed {topo_hash: $topo_hash})
-                WHERE parent.repo <> $exclude_repo
+                MATCH (parent:Atom:Decomposed)
+                WHERE parent.topo_hash = $topo_hash AND parent.repo <> $exclude_repo
                 MATCH (parent)-[:PARENT_OF]->(child:Atom)
                 WITH parent, collect(DISTINCT child.concept_type) AS child_types,
                      count(DISTINCT child) AS n_children
@@ -290,9 +292,7 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
                        n_children, child_types
                 LIMIT $limit
                 """,
-                topo_hash=topo_hash,
-                exclude_repo=target_repo,
-                limit=query.max_results,
+                parameters={"topo_hash": topo_hash, "exclude_repo": target_repo, "limit": query.max_results},
             )
             async for rec in topo_result:
                 fqn = rec["fqn"]
@@ -328,11 +328,13 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
                 ORDER BY n_children DESC
                 LIMIT $limit
                 """,
-                concept_type=target.get("concept_type", ""),
-                n_inputs=target.get("n_inputs", 0) or 0,
-                n_outputs=target.get("n_outputs", 0) or 0,
-                exclude_repo=target_repo,
-                limit=query.max_results,
+                parameters={
+                    "concept_type": target.get("concept_type", ""),
+                    "n_inputs": target.get("n_inputs", 0) or 0,
+                    "n_outputs": target.get("n_outputs", 0) or 0,
+                    "exclude_repo": target_repo,
+                    "limit": query.max_results,
+                },
             )
             async for rec in struct_result:
                 fqn = rec["fqn"]
@@ -358,7 +360,9 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
         if 3 in query.layers:
             jaccard_result = await session.run(
                 """
-                MATCH (query:Atom {fqn: $fqn})-[:PARENT_OF]->(qc:Atom)
+                MATCH (query:Atom)
+                WHERE query.fqn = $fqn
+                MATCH (query)-[:PARENT_OF]->(qc:Atom)
                 WITH query, collect(qc) AS query_children
                 WHERE size(query_children) > 0
                 MATCH (candidate:Atom:Decomposed)-[:PARENT_OF]->(cc:Atom)
@@ -384,10 +388,12 @@ async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
                        candidate.topo_hash AS topo_hash,
                        n_children, child_types, jaccard_score
                 """,
-                fqn=target_fqn,
-                exclude_repo=target_repo,
-                min_jaccard=query.min_jaccard,
-                limit=query.max_results,
+                parameters={
+                    "fqn": target_fqn,
+                    "exclude_repo": target_repo,
+                    "min_jaccard": query.min_jaccard,
+                    "limit": query.max_results,
+                },
             )
             async for rec in jaccard_result:
                 fqn = rec["fqn"]
