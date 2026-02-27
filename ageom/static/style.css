@@ -586,9 +586,9 @@ body {
 
 #detail-panel h3 {
   font-size: 16px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #263238;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .detail-section {
@@ -796,4 +796,298 @@ body {
   padding: 6px 8px;
   resize: vertical;
   background: #fafafa;
+}
+
+/* --- Detail header with iso button --- */
+#detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #263238;
+}
+
+#detail-header h3 {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.iso-btn {
+  padding: 3px 10px;
+  border: 1px solid #7c4dff;
+  border-radius: 3px;
+  background: #ede7f6;
+  color: #4a148c;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: none;
+}
+
+.iso-btn.visible {
+  display: inline-block;
+}
+
+.iso-btn:hover {
+  background: #d1c4e9;
+}
+
+/* --- Isomorphism modal --- */
+.iso-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iso-modal.hidden {
+  display: none;
+}
+
+.iso-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.iso-modal-content {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  padding: 20px 24px;
+  width: 360px;
+  max-width: 90vw;
+}
+
+.iso-modal-content h4 {
+  font-size: 15px;
+  margin-bottom: 16px;
+  color: #263238;
+}
+
+.iso-modal-field {
+  margin-bottom: 14px;
+}
+
+.iso-modal-field > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #546e7a;
+  margin-bottom: 4px;
+}
+
+.iso-radio-group,
+.iso-checkbox-group {
+  display: flex;
+  gap: 14px;
+  font-size: 13px;
+}
+
+.iso-radio-group label,
+.iso-checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-weight: 400;
+  color: #263238;
+}
+
+.iso-modal-field input[type="range"] {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.iso-modal-field input[type="number"] {
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid #cfd8dc;
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+.iso-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.iso-modal-btn {
+  padding: 6px 16px;
+  border: 1px solid #90a4ae;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.iso-modal-btn:hover {
+  background: #eceff1;
+}
+
+.iso-modal-btn-primary {
+  background: #1976d2;
+  color: #fff;
+  border-color: #1565c0;
+}
+
+.iso-modal-btn-primary:hover {
+  background: #1565c0;
+}
+
+/* --- Isomorphisms tab content --- */
+.iso-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+  font-size: 13px;
+  color: #546e7a;
+}
+
+.iso-loading.hidden {
+  display: none;
+}
+
+.iso-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cfd8dc;
+  border-top-color: #1976d2;
+  border-radius: 50%;
+  animation: iso-spin 0.6s linear infinite;
+}
+
+@keyframes iso-spin {
+  to { transform: rotate(360deg); }
+}
+
+.iso-empty {
+  padding: 16px 0;
+  font-size: 13px;
+  color: #90a4ae;
+}
+
+.iso-empty.hidden {
+  display: none;
+}
+
+/* Results table */
+.iso-result-row {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 6px;
+  border-bottom: 1px solid #eceff1;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.iso-result-row:hover {
+  background: #e3f2fd;
+}
+
+.iso-result-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iso-score-bar {
+  width: 40px;
+  height: 8px;
+  background: #eceff1;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.iso-score-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.iso-result-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #263238;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iso-result-score {
+  font-size: 11px;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  color: #546e7a;
+  flex-shrink: 0;
+}
+
+.iso-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #78909c;
+}
+
+.iso-layer-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.iso-layer-topo {
+  background: #c8e6c9;
+  color: #2e7d32;
+}
+
+.iso-layer-struct {
+  background: #bbdefb;
+  color: #1565c0;
+}
+
+.iso-layer-jaccard {
+  background: #e1bee7;
+  color: #6a1b9a;
+}
+
+.iso-result-concepts {
+  display: inline-flex;
+  gap: 1px;
+  height: 8px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.iso-concept-seg {
+  height: 100%;
+  min-width: 4px;
+  border-radius: 1px;
+}
+
+.iso-query-info {
+  font-size: 11px;
+  color: #78909c;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid #eceff1;
+  margin-bottom: 4px;
 }

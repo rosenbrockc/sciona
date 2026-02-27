@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 
 @asynccontextmanager
@@ -187,6 +188,236 @@ async def get_cdg(repo: str) -> dict[str, Any]:
         "edges": edges,
         "metadata": {"repo": repo},
     }
+
+
+class IsomorphismQuery(BaseModel):
+    repo: str
+    node_id: str
+    radius: int = 0
+    min_jaccard: float = 0.3
+    max_results: int = 20
+    layers: list[int] = [1, 2, 3]
+
+
+@app.post("/api/isomorphisms")
+async def find_isomorphisms(query: IsomorphismQuery) -> dict[str, Any]:
+    """Find similar subgraphs using 3-layer retrieval."""
+    driver = app.state.driver
+
+    async with driver.session() as session:
+        # 1. Resolve the target node
+        node_result = await session.run(
+            """
+            MATCH (a:Atom {repo: $repo, node_id: $node_id})
+            OPTIONAL MATCH (a)-[:PARENT_OF]->(child:Atom)
+            RETURN a, collect(DISTINCT child.concept_type) AS child_types,
+                   count(DISTINCT child) AS n_children
+            """,
+            repo=query.repo,
+            node_id=query.node_id,
+        )
+        node_rec = await node_result.single()
+        if not node_rec:
+            raise HTTPException(status_code=404, detail=f"Node not found: {query.repo}/{query.node_id}")
+
+        target = dict(node_rec["a"])
+        n_children = node_rec["n_children"]
+
+        # If the node is atomic (no children), walk up to nearest decomposed ancestor
+        if n_children == 0 or target.get("status") == "atomic":
+            parent_result = await session.run(
+                """
+                MATCH (child:Atom {repo: $repo, node_id: $node_id})
+                MATCH (parent:Atom)-[:PARENT_OF]->(child)
+                OPTIONAL MATCH (parent)-[:PARENT_OF]->(sibling:Atom)
+                RETURN parent, collect(DISTINCT sibling.concept_type) AS child_types,
+                       count(DISTINCT sibling) AS n_children
+                """,
+                repo=query.repo,
+                node_id=query.node_id,
+            )
+            parent_rec = await parent_result.single()
+            if parent_rec:
+                target = dict(parent_rec["parent"])
+                n_children = parent_rec["n_children"]
+
+        # If radius > 0 and we have a parent, walk up further
+        if query.radius > 0:
+            for _ in range(query.radius):
+                up_result = await session.run(
+                    """
+                    MATCH (child:Atom {repo: $repo, node_id: $node_id})
+                    MATCH (parent:Atom)-[:PARENT_OF]->(child)
+                    OPTIONAL MATCH (parent)-[:PARENT_OF]->(sibling:Atom)
+                    RETURN parent, collect(DISTINCT sibling.concept_type) AS child_types,
+                           count(DISTINCT sibling) AS n_children
+                    """,
+                    repo=target.get("repo", query.repo),
+                    node_id=target.get("node_id", ""),
+                )
+                up_rec = await up_result.single()
+                if up_rec:
+                    target = dict(up_rec["parent"])
+                    n_children = up_rec["n_children"]
+                else:
+                    break
+
+        target_fqn = target.get("fqn", f"{target.get('repo', query.repo)}.{target.get('node_id', '')}")
+        target_repo = target.get("repo", query.repo)
+
+        query_node = {
+            "fqn": target_fqn,
+            "name": target.get("name", ""),
+            "concept_type": target.get("concept_type", ""),
+            "n_children": n_children,
+        }
+
+        # Collect results by fqn, keep highest score
+        results_by_fqn: dict[str, dict[str, Any]] = {}
+
+        # Layer 1: topo_hash exact match
+        topo_hash = target.get("topo_hash")
+        if 1 in query.layers and topo_hash:
+            topo_result = await session.run(
+                """
+                MATCH (parent:Atom:Decomposed {topo_hash: $topo_hash})
+                WHERE parent.repo <> $exclude_repo
+                MATCH (parent)-[:PARENT_OF]->(child:Atom)
+                WITH parent, collect(DISTINCT child.concept_type) AS child_types,
+                     count(DISTINCT child) AS n_children
+                RETURN parent.fqn AS fqn, parent.repo AS repo, parent.name AS name,
+                       parent.concept_type AS concept_type, parent.topo_hash AS topo_hash,
+                       n_children, child_types
+                LIMIT $limit
+                """,
+                topo_hash=topo_hash,
+                exclude_repo=target_repo,
+                limit=query.max_results,
+            )
+            async for rec in topo_result:
+                fqn = rec["fqn"]
+                results_by_fqn[fqn] = {
+                    "fqn": fqn,
+                    "repo": rec["repo"],
+                    "name": rec["name"],
+                    "concept_type": rec["concept_type"],
+                    "topo_hash": rec["topo_hash"],
+                    "n_children": rec["n_children"],
+                    "score": 1.0,
+                    "jaccard_score": None,
+                    "layer": 1,
+                    "children_summary": rec["child_types"],
+                }
+
+        # Layer 2: structural match (concept_type + port arity ±1)
+        if 2 in query.layers:
+            struct_result = await session.run(
+                """
+                MATCH (parent:Atom:Decomposed)
+                WHERE parent.concept_type = $concept_type
+                  AND parent.repo <> $exclude_repo
+                  AND abs(parent.n_inputs - $n_inputs) <= 1
+                  AND abs(parent.n_outputs - $n_outputs) <= 1
+                MATCH (parent)-[:PARENT_OF]->(child:Atom)
+                WITH parent, collect(DISTINCT child.concept_type) AS child_types,
+                     count(DISTINCT child) AS n_children
+                WHERE n_children >= 2
+                RETURN parent.fqn AS fqn, parent.repo AS repo, parent.name AS name,
+                       parent.concept_type AS concept_type, parent.topo_hash AS topo_hash,
+                       n_children, child_types
+                ORDER BY n_children DESC
+                LIMIT $limit
+                """,
+                concept_type=target.get("concept_type", ""),
+                n_inputs=target.get("n_inputs", 0) or 0,
+                n_outputs=target.get("n_outputs", 0) or 0,
+                exclude_repo=target_repo,
+                limit=query.max_results,
+            )
+            async for rec in struct_result:
+                fqn = rec["fqn"]
+                # Compute IO match score
+                n_in_diff = abs((target.get("n_inputs", 0) or 0) - (rec["n_children"] or 0))
+                io_match = 1.0 if n_in_diff == 0 else 0.8
+                score = 0.7 * io_match
+                if fqn not in results_by_fqn or results_by_fqn[fqn]["score"] < score:
+                    results_by_fqn[fqn] = {
+                        "fqn": fqn,
+                        "repo": rec["repo"],
+                        "name": rec["name"],
+                        "concept_type": rec["concept_type"],
+                        "topo_hash": rec["topo_hash"],
+                        "n_children": rec["n_children"],
+                        "score": score,
+                        "jaccard_score": None,
+                        "layer": 2,
+                        "children_summary": rec["child_types"],
+                    }
+
+        # Layer 3: Jaccard neighborhood
+        if 3 in query.layers:
+            jaccard_result = await session.run(
+                """
+                MATCH (query:Atom {fqn: $fqn})-[:PARENT_OF]->(qc:Atom)
+                WITH query, collect(qc) AS query_children
+                WHERE size(query_children) > 0
+                MATCH (candidate:Atom:Decomposed)-[:PARENT_OF]->(cc:Atom)
+                WHERE candidate.repo <> $exclude_repo AND candidate.fqn <> $fqn
+                WITH query, query_children, candidate, collect(cc) AS cand_children
+                WHERE size(cand_children) > 0
+                WITH candidate,
+                     [qc IN query_children | qc.concept_type] AS q_types,
+                     [cc IN cand_children | cc.concept_type] AS c_types
+                WITH candidate,
+                     toFloat(size([x IN q_types WHERE x IN c_types])) /
+                     toFloat(size(q_types + [y IN c_types WHERE NOT y IN q_types])) AS jaccard_score
+                WHERE jaccard_score > $min_jaccard
+                WITH candidate, jaccard_score
+                ORDER BY jaccard_score DESC
+                LIMIT $limit
+                MATCH (candidate)-[:PARENT_OF]->(child:Atom)
+                WITH candidate, jaccard_score,
+                     collect(DISTINCT child.concept_type) AS child_types,
+                     count(DISTINCT child) AS n_children
+                RETURN candidate.fqn AS fqn, candidate.repo AS repo,
+                       candidate.name AS name, candidate.concept_type AS concept_type,
+                       candidate.topo_hash AS topo_hash,
+                       n_children, child_types, jaccard_score
+                """,
+                fqn=target_fqn,
+                exclude_repo=target_repo,
+                min_jaccard=query.min_jaccard,
+                limit=query.max_results,
+            )
+            async for rec in jaccard_result:
+                fqn = rec["fqn"]
+                j_score = rec["jaccard_score"]
+                score = j_score  # Jaccard score IS the score for layer 3
+                existing = results_by_fqn.get(fqn)
+                if existing:
+                    existing["jaccard_score"] = j_score
+                    if score > existing["score"]:
+                        existing["score"] = score
+                        existing["layer"] = 3
+                else:
+                    results_by_fqn[fqn] = {
+                        "fqn": fqn,
+                        "repo": rec["repo"],
+                        "name": rec["name"],
+                        "concept_type": rec["concept_type"],
+                        "topo_hash": rec["topo_hash"],
+                        "n_children": rec["n_children"],
+                        "score": score,
+                        "jaccard_score": j_score,
+                        "layer": 3,
+                        "children_summary": rec["child_types"],
+                    }
+
+    # Sort by score descending, cap at max_results
+    results = sorted(results_by_fqn.values(), key=lambda r: r["score"], reverse=True)
+    results = results[: query.max_results]
+
+    return {"query_node": query_node, "results": results}
 
 
 # Mount static files last so API routes take priority

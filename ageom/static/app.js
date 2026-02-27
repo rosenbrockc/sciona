@@ -1002,6 +1002,7 @@
     selectedNodeId = nodeData.node_id;
     populateDetailPanel(nodeData);
     populateLineage(nodeData.node_id);
+    updateIsoButtonVisibility(nodeData);
     detailPanel.classList.add("visible");
   }
 
@@ -1512,6 +1513,264 @@
 
     var jaccard = union > 0 ? (intersection / union) : 0;
     compareScore.textContent = "Jaccard similarity: " + jaccard.toFixed(3);
+  }
+
+  // --- Isomorphism search ---
+
+  var btnFindIso = document.getElementById("btn-find-iso");
+  var isoModal = document.getElementById("iso-modal");
+  var isoMinSim = document.getElementById("iso-min-sim");
+  var isoSimValue = document.getElementById("iso-sim-value");
+  var isoMaxResults = document.getElementById("iso-max-results");
+  var isoCancel = document.getElementById("iso-cancel");
+  var isoSearchBtn = document.getElementById("iso-search");
+  var isoLoading = document.getElementById("iso-loading");
+  var isoEmpty = document.getElementById("iso-empty");
+  var isoResults = document.getElementById("iso-results");
+  var isoSelectedNode = null; // node data of the selected node when iso button was clicked
+
+  // Show/hide iso button based on whether node is decomposed or child of decomposed
+  function updateIsoButtonVisibility(nodeData) {
+    if (!btnFindIso || !apiAvailable) return;
+    var show = false;
+    if (nodeData) {
+      // Show if the node is decomposed, or if it has a parent (meaning the parent is decomposed)
+      var hasChildren = nodeData.children && nodeData.children.length > 0;
+      var hasParent = !!nodeData.parent_id;
+      show = hasChildren || hasParent;
+    }
+    btnFindIso.classList.toggle("visible", show);
+  }
+
+  // Slider value display
+  if (isoMinSim) {
+    isoMinSim.addEventListener("input", function () {
+      isoSimValue.textContent = parseFloat(isoMinSim.value).toFixed(2);
+    });
+  }
+
+  // Open modal
+  if (btnFindIso) {
+    btnFindIso.addEventListener("click", function () {
+      if (!selectedNodeId || !currentData) return;
+      isoSelectedNode = nodeById[selectedNodeId];
+      if (!isoSelectedNode) return;
+
+      // Configure scope radio: disable "Parent" if node is root-level decomposed
+      var parentRadio = document.querySelector('input[name="iso-scope"][value="parent"]');
+      if (parentRadio) {
+        var hasParent = !!isoSelectedNode.parent_id;
+        parentRadio.disabled = !hasParent;
+        if (!hasParent) {
+          document.querySelector('input[name="iso-scope"][value="this"]').checked = true;
+        }
+      }
+
+      isoModal.classList.remove("hidden");
+    });
+  }
+
+  // Close modal
+  if (isoCancel) {
+    isoCancel.addEventListener("click", function () {
+      isoModal.classList.add("hidden");
+    });
+  }
+
+  // Close on backdrop click
+  if (isoModal) {
+    var backdrop = isoModal.querySelector(".iso-modal-backdrop");
+    if (backdrop) {
+      backdrop.addEventListener("click", function () {
+        isoModal.classList.add("hidden");
+      });
+    }
+  }
+
+  // Search
+  if (isoSearchBtn) {
+    isoSearchBtn.addEventListener("click", function () {
+      if (!isoSelectedNode || !currentData) return;
+      isoModal.classList.add("hidden");
+
+      var scope = document.querySelector('input[name="iso-scope"]:checked').value;
+      var layers = [];
+      if (document.getElementById("iso-layer-1").checked) layers.push(1);
+      if (document.getElementById("iso-layer-2").checked) layers.push(2);
+      if (document.getElementById("iso-layer-3").checked) layers.push(3);
+
+      var repo = currentData.metadata && currentData.metadata.repo ? currentData.metadata.repo : "";
+      var nodeId = scope === "parent" && isoSelectedNode.parent_id
+        ? isoSelectedNode.parent_id
+        : isoSelectedNode.node_id;
+      var radius = scope === "parent" ? 1 : 0;
+
+      var body = {
+        repo: repo,
+        node_id: nodeId,
+        radius: radius,
+        min_jaccard: parseFloat(isoMinSim.value),
+        max_results: parseInt(isoMaxResults.value, 10) || 20,
+        layers: layers
+      };
+
+      // Switch to isomorphisms tab
+      activateTab("isomorphisms");
+
+      // Show loading
+      isoLoading.classList.remove("hidden");
+      isoEmpty.classList.add("hidden");
+      isoResults.innerHTML = "";
+
+      fetch("/api/isomorphisms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("API error " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          isoLoading.classList.add("hidden");
+          renderIsoResults(data);
+        })
+        .catch(function (err) {
+          isoLoading.classList.add("hidden");
+          isoResults.innerHTML = '<div class="iso-empty"><p>Error: ' + err.message + '</p></div>';
+        });
+    });
+  }
+
+  function activateTab(tabName) {
+    var tabs = document.querySelectorAll(".detail-tab");
+    var contents = document.querySelectorAll(".tab-content");
+    tabs.forEach(function (t) {
+      t.classList.toggle("active", t.getAttribute("data-tab") === tabName);
+    });
+    contents.forEach(function (c) {
+      c.classList.toggle("active", c.id === "tab-" + tabName);
+    });
+  }
+
+  function renderIsoResults(data) {
+    isoResults.innerHTML = "";
+
+    if (!data.results || data.results.length === 0) {
+      isoEmpty.classList.remove("hidden");
+      isoEmpty.innerHTML = "<p>No similar subgraphs found</p>";
+      return;
+    }
+
+    isoEmpty.classList.add("hidden");
+
+    // Query info
+    var info = document.createElement("div");
+    info.className = "iso-query-info";
+    info.textContent = "Query: " + data.query_node.name +
+      " (" + data.query_node.concept_type + ", " + data.query_node.n_children + " children)" +
+      " — " + data.results.length + " result" + (data.results.length === 1 ? "" : "s");
+    isoResults.appendChild(info);
+
+    data.results.forEach(function (result) {
+      var row = document.createElement("div");
+      row.className = "iso-result-row";
+      row.addEventListener("click", function () {
+        openIsoInCompare(result.repo);
+      });
+
+      // Top line: score bar + name + score value
+      var top = document.createElement("div");
+      top.className = "iso-result-top";
+
+      var scoreBar = document.createElement("div");
+      scoreBar.className = "iso-score-bar";
+      var scoreFill = document.createElement("div");
+      scoreFill.className = "iso-score-fill";
+      scoreFill.style.width = (result.score * 100) + "%";
+      scoreFill.style.background = scoreColor(result.score);
+      scoreBar.appendChild(scoreFill);
+      top.appendChild(scoreBar);
+
+      var name = document.createElement("span");
+      name.className = "iso-result-name";
+      name.textContent = result.name;
+      name.title = result.fqn;
+      top.appendChild(name);
+
+      var scoreText = document.createElement("span");
+      scoreText.className = "iso-result-score";
+      scoreText.textContent = result.score.toFixed(2);
+      top.appendChild(scoreText);
+
+      row.appendChild(top);
+
+      // Meta line: layer badge, repo, concept bar
+      var meta = document.createElement("div");
+      meta.className = "iso-result-meta";
+
+      var layerBadge = document.createElement("span");
+      var layerNames = { 1: "topo", 2: "struct", 3: "jaccard" };
+      var layerClasses = { 1: "iso-layer-topo", 2: "iso-layer-struct", 3: "iso-layer-jaccard" };
+      layerBadge.className = "iso-layer-badge " + (layerClasses[result.layer] || "");
+      layerBadge.textContent = layerNames[result.layer] || "?";
+      meta.appendChild(layerBadge);
+
+      var repo = document.createElement("span");
+      repo.textContent = result.repo;
+      meta.appendChild(repo);
+
+      // Mini concept bar from children_summary
+      if (result.children_summary && result.children_summary.length > 0) {
+        var conceptBar = document.createElement("span");
+        conceptBar.className = "iso-result-concepts";
+        var familyCounts = {};
+        result.children_summary.forEach(function (ct) {
+          var fam = CONCEPT_FAMILY[ct] || "other";
+          familyCounts[fam] = (familyCounts[fam] || 0) + 1;
+        });
+        var total = result.children_summary.length;
+        Object.keys(familyCounts).forEach(function (fam) {
+          var seg = document.createElement("span");
+          seg.className = "iso-concept-seg";
+          seg.style.width = Math.max(4, Math.round(familyCounts[fam] / total * 40)) + "px";
+          seg.style.background = (FAMILY_COLORS[fam] || FAMILY_COLORS.other).border;
+          seg.title = (FAMILY_LABELS[fam] || fam) + ": " + familyCounts[fam];
+          conceptBar.appendChild(seg);
+        });
+        meta.appendChild(conceptBar);
+      }
+
+      row.appendChild(meta);
+      isoResults.appendChild(row);
+    });
+  }
+
+  function scoreColor(score) {
+    if (score >= 0.8) return "#43a047";
+    if (score >= 0.5) return "#fb8c00";
+    return "#e53935";
+  }
+
+  function openIsoInCompare(matchRepo) {
+    var currentRepo = currentData && currentData.metadata ? currentData.metadata.repo : "";
+    if (!currentRepo || !matchRepo) return;
+
+    enterCompareMode();
+
+    // Wait for selects to be populated, then set values
+    var waitForSelects = setInterval(function () {
+      if (compareLeftSelect.options.length > 1) {
+        clearInterval(waitForSelects);
+        compareLeftSelect.value = currentRepo;
+        compareRightSelect.value = matchRepo;
+        loadComparePane("left", currentRepo);
+        loadComparePane("right", matchRepo);
+      }
+    }, 100);
+
+    // Safety timeout
+    setTimeout(function () { clearInterval(waitForSelects); }, 5000);
   }
 
   // --- Animated flow direction ---

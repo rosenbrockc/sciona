@@ -79,11 +79,15 @@
       <div id="compare-right" class="compare-pane"></div>
     </div>
     <div id="detail-panel">
-      <h3 id="detail-name"></h3>
+      <div id="detail-header">
+        <h3 id="detail-name"></h3>
+        <button id="btn-find-iso" class="iso-btn" title="Find similar subgraphs">Isomorphisms</button>
+      </div>
       <div id="detail-tabs">
         <button class="detail-tab active" data-tab="summary">Summary</button>
         <button class="detail-tab" data-tab="ports">Ports</button>
         <button class="detail-tab" data-tab="lineage">Lineage</button>
+        <button class="detail-tab" data-tab="isomorphisms">Isomorphisms</button>
       </div>
 
       <!-- Summary tab -->
@@ -154,6 +158,53 @@
             <div id="lineage-downstream-list"></div>
           </div>
         </div>
+      </div>
+
+      <!-- Isomorphisms tab -->
+      <div id="tab-isomorphisms" class="tab-content">
+        <div id="iso-loading" class="iso-loading hidden">
+          <div class="iso-spinner"></div>
+          <span>Searching for similar subgraphs...</span>
+        </div>
+        <div id="iso-empty" class="iso-empty">
+          <p>Click <strong>Isomorphisms</strong> to find similar subgraphs</p>
+        </div>
+        <div id="iso-results"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Isomorphism options modal -->
+  <div id="iso-modal" class="iso-modal hidden">
+    <div class="iso-modal-backdrop"></div>
+    <div class="iso-modal-content">
+      <h4>Find Similar Subgraphs</h4>
+      <div class="iso-modal-field">
+        <label>Scope</label>
+        <div class="iso-radio-group">
+          <label><input type="radio" name="iso-scope" value="this" checked> This node</label>
+          <label><input type="radio" name="iso-scope" value="parent"> Parent</label>
+        </div>
+      </div>
+      <div class="iso-modal-field">
+        <label>Min similarity: <span id="iso-sim-value">0.30</span></label>
+        <input type="range" id="iso-min-sim" min="0" max="1" step="0.05" value="0.3">
+      </div>
+      <div class="iso-modal-field">
+        <label>Max results</label>
+        <input type="number" id="iso-max-results" value="20" min="1" max="100">
+      </div>
+      <div class="iso-modal-field">
+        <label>Layers</label>
+        <div class="iso-checkbox-group">
+          <label><input type="checkbox" id="iso-layer-1" checked> Topo-hash</label>
+          <label><input type="checkbox" id="iso-layer-2" checked> Structure</label>
+          <label><input type="checkbox" id="iso-layer-3" checked> Jaccard</label>
+        </div>
+      </div>
+      <div class="iso-modal-actions">
+        <button id="iso-cancel" class="iso-modal-btn">Cancel</button>
+        <button id="iso-search" class="iso-modal-btn iso-modal-btn-primary">Search</button>
       </div>
     </div>
   </div>
