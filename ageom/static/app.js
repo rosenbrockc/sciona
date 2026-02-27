@@ -492,14 +492,13 @@
     }
 
     // Interactions
-    cy.on("tap", "node", onNodeTap);
     cy.on("tap", function (e) {
-      console.log("cy tap, target:", e.target === cy ? "background" : e.target.id());
       if (e.target === cy) {
         detailPanel.classList.remove("visible");
+      } else if (e.target.isNode()) {
+        onNodeTap(e);
       }
     });
-    console.log("buildGraph: tap handler registered, nodes:", cy.nodes().length);
 
     // Double-click to expand/collapse decomposed nodes
     cy.on("dbltap", "node", function (e) {
@@ -1000,15 +999,11 @@
 
   function onNodeTap(e) {
     var nodeData = e.target.data("_nodeData");
-    if (!nodeData) { console.warn("onNodeTap: no _nodeData"); return; }
-    try {
-      selectedNodeId = nodeData.node_id;
-      populateDetailPanel(nodeData);
-      populateLineage(nodeData.node_id);
-      updateIsoButtonVisibility(nodeData);
-    } catch (err) {
-      console.error("onNodeTap error:", err);
-    }
+    if (!nodeData) return;
+    selectedNodeId = nodeData.node_id;
+    populateDetailPanel(nodeData);
+    populateLineage(nodeData.node_id);
+    updateIsoButtonVisibility(nodeData);
     detailPanel.classList.add("visible");
   }
 
@@ -1796,11 +1791,6 @@
     requestAnimationFrame(animateFlow);
   }
   requestAnimationFrame(animateFlow);
-
-  // --- Debug: raw click on cy container ---
-  cyContainer.addEventListener("click", function () {
-    console.log("DOM click on cy-container, cy exists:", !!cy, ", nodes:", cy ? cy.nodes().length : 0);
-  });
 
   // --- Init ---
 
