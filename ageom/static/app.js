@@ -494,10 +494,12 @@
     // Interactions
     cy.on("tap", "node", onNodeTap);
     cy.on("tap", function (e) {
+      console.log("cy tap, target:", e.target === cy ? "background" : e.target.id());
       if (e.target === cy) {
         detailPanel.classList.remove("visible");
       }
     });
+    console.log("buildGraph: tap handler registered, nodes:", cy.nodes().length);
 
     // Double-click to expand/collapse decomposed nodes
     cy.on("dbltap", "node", function (e) {
@@ -1794,6 +1796,11 @@
     requestAnimationFrame(animateFlow);
   }
   requestAnimationFrame(animateFlow);
+
+  // --- Debug: raw click on cy container ---
+  cyContainer.addEventListener("click", function () {
+    console.log("DOM click on cy-container, cy exists:", !!cy, ", nodes:", cy ? cy.nodes().length : 0);
+  });
 
   // --- Init ---
 
