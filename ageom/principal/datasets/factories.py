@@ -13,14 +13,14 @@ import logging
 import numpy as np
 import pandas as pd
 
-from ageom.datasets.parser.base import (
+from ._parser import (
     DataSetBase,
     UserMetaData,
     DataSetCollection,
     FolderFilterOptions,
-    UserDay,
+    import_fqn,
+    execute_any_transform,
 )
-from ageom.datasets.parser.utils import import_fqn, execute_any_transform
 
 from .core import (
     DataFileName,
@@ -350,7 +350,7 @@ def create_templated_dataset_collection(
         )
 
 
-    def autoload(self, uday: UserDay = None, folder: PathLike = None):
+    def autoload(self, uday=None, folder: PathLike = None):
         """Merges multiple data sources ensuring time is sorted.
 
         Args:
@@ -380,7 +380,7 @@ def create_templated_dataset_collection(
     def to_pandas(self,
             loader: Callable[[UserMetaData], DataSetBase] = None,
             merger: Callable[[List[DataSetBase]], DataSetBase] = None,
-            uday: UserDay = None,
+            uday=None,
         ) -> Mapping[str, pd.DataFrame]:
         """Converts this dataset collection into a set of dataframes grouped
         by the sensor groups in the templated dataset.

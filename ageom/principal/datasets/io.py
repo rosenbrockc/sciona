@@ -6,7 +6,7 @@ Extracted from ``ageom.datasets.io`` with remote studio references removed.
 import yaml
 from os import path
 
-from ageom.datasets.parser.utils import chdir
+from ._parser import chdir
 
 
 REF_CHARACTER = "^"

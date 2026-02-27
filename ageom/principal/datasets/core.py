@@ -17,7 +17,7 @@ from hashlib import sha256
 from dataclasses import dataclass
 from datetime import datetime, date
 
-from ageom.datasets.parser.base import (
+from ._parser import (
     DataSetBase,
     UserMetaData,
     DataSetCollection,
@@ -48,8 +48,8 @@ class DataFileName:
         if isinstance(self.start, datetime):
             return self.start.date()
         return self.start
-from ageom.datasets.parser.utils import import_fqn, execute_any_transform
-from ageom.datasets.parser.filtering import (
+from ._parser import import_fqn, execute_any_transform
+from ._parser import (
     ResamplingOptions, ResamplingMethod, filter_times, resample, find_time_edge,
 )
 
