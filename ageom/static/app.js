@@ -1,5 +1,6 @@
 (function () {
   "use strict";
+  console.log("[CDG Visualizer] app.js loaded, v=2026-02-27a");
 
   // --- Concept-type color families ---
 
