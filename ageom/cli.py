@@ -310,6 +310,12 @@ def main() -> None:
         default=False,
         help="Start FastAPI server with Memgraph CDG browsing (requires Memgraph connection)",
     )
+    viz_parser.add_argument(
+        "--reload",
+        action="store_true",
+        default=False,
+        help="Enable uvicorn auto-reload on code changes (--api mode only)",
+    )
 
     # --- assemble ---
     assemble_parser = subparsers.add_parser(
@@ -2085,6 +2091,7 @@ def _cmd_visualize(args: argparse.Namespace) -> None:
             host="127.0.0.1",
             port=port,
             log_level="info",
+            reload=getattr(args, "reload", False),
         )
         return
 
