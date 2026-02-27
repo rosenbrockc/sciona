@@ -519,6 +519,26 @@ def main() -> None:
         help="Per-trial subprocess timeout in seconds (default: 120)",
     )
 
+    # --- profile ---
+    profile_parser = subparsers.add_parser(
+        "profile", help="Evaluate an existing CDG and compiled artifact against a dataset"
+    )
+    profile_parser.add_argument(
+        "--cdg", type=str, required=True, help="Path to the CDG JSON file"
+    )
+    profile_parser.add_argument(
+        "--artifact", type=str, required=True, help="Path to the compiled artifact (Python file)"
+    )
+    profile_parser.add_argument(
+        "--dataset", type=str, required=True, help="Path to the benchmark dataset (CSV/JSON)"
+    )
+    profile_parser.add_argument(
+        "--metric",
+        choices=["latency", "memory", "precision", "flop_count"],
+        default="precision",
+        help="Optimization metric to profile (default: precision)",
+    )
+
     # --- sources ---
     sources_parser = subparsers.add_parser(
         "sources", help="Manage multi-repo atom sources"
@@ -714,6 +734,8 @@ def main() -> None:
             sys.exit(1)
     elif args.command == "optimize":
         asyncio.run(_cmd_optimize(args))
+    elif args.command == "profile":
+        asyncio.run(_cmd_profile(args))
     elif args.command == "decompose":
         asyncio.run(_cmd_decompose(args))
     elif args.command == "history":
@@ -2152,6 +2174,63 @@ def _cmd_visualize(args: argparse.Namespace) -> None:
         # Clean up default_cdg.json
         if default_cdg.exists():
             default_cdg.unlink()
+
+
+async def _cmd_profile(args: argparse.Namespace) -> None:
+    """Evaluate an existing CDG against a dataset and rank error contributors."""
+    from ageom.architect.handoff import load_json
+    from ageom.principal.models import OptimizationMetric
+    from ageom.principal.profiler import profile_algorithm_error
+    from ageom.synthesizer.models import ExportBundle
+
+    cdg_path = Path(args.cdg)
+    if not cdg_path.exists():
+        print(f"Error: CDG file not found at {cdg_path}", file=sys.stderr)
+        sys.exit(1)
+
+    artifact_path = Path(args.artifact)
+    if not artifact_path.exists():
+        print(f"Error: Artifact file not found at {artifact_path}", file=sys.stderr)
+        sys.exit(1)
+
+    dataset_path = Path(args.dataset)
+    if not dataset_path.exists():
+        print(f"Error: Dataset file not found at {dataset_path}", file=sys.stderr)
+        sys.exit(1)
+
+    cdg = load_json(cdg_path)
+    metric = OptimizationMetric(args.metric)
+
+    bundle = ExportBundle(
+        target="python-pkg",
+        output_dir=artifact_path.parent,
+        source_path=artifact_path,
+        compiled_artifact=artifact_path,
+    )
+
+    print(f"Profiling {artifact_path.name} against {dataset_path.name} using metric {metric.value}...")
+    
+    try:
+        gradients = await profile_algorithm_error(
+            cdg=cdg,
+            bundle=bundle,
+            dataset_path=str(dataset_path),
+            metric=metric,
+        )
+
+        if not gradients:
+            print("No gradients were computed. Ensure trace.jsonl is emitted properly.")
+            return
+
+        print("\n=== Profiling Results ===")
+        print(f"{'Node ID':<20} | {'Score (%)':<10} | {'Reason'}")
+        print("-" * 80)
+        for g in gradients:
+            print(f"{g.node_id:<20} | {g.gradient_score:<10.2f} | {g.bottleneck_reason}")
+
+    except Exception as exc:
+        print(f"Error during profiling: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
