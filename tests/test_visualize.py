@@ -102,7 +102,8 @@ class TestStaticFileContents:
 
     def test_app_js_has_status_colors(self):
         js = (STATIC_DIR / "app.js").read_text()
-        assert "STATUS_COLORS" in js
+        assert "CONCEPT_FAMILY" in js
+        assert "FAMILY_COLORS" in js
         assert "pending" in js
         assert "decomposed" in js
         assert "atomic" in js
@@ -111,7 +112,7 @@ class TestStaticFileContents:
 
     def test_app_js_has_concept_shapes(self):
         js = (STATIC_DIR / "app.js").read_text()
-        assert "CONCEPT_SHAPES" in js
+        assert "STATUS_SHAPES" in js
         assert "divide_and_conquer" in js
         assert "sorting" in js
 

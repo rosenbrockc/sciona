@@ -191,6 +191,8 @@ class SubprocessCLIClient:
                 cmd += ["--system-prompt", system]
             if self._model:
                 cmd += ["--model", self._model]
+            if self._max_tokens:
+                cmd += ["--max-tokens", str(self._max_tokens)]
         elif self._cli == "codex":
             # Rely on JSONL events from stdout; avoid output-file writes that can fail in sandboxes.
             cmd += ["codex", "exec", "--json"]
@@ -198,7 +200,7 @@ class SubprocessCLIClient:
             if model:
                 cmd += ["-m", model]
         elif self._cli == "gemini":
-            cmd += ["gemini", "--output-format", "text", "--extensions", ""]
+            cmd += ["gemini", "-p", "--output-format", "text", "--extensions", ""]
             if self._model:
                 cmd += ["--model", self._model]
         return cmd

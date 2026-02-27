@@ -374,7 +374,7 @@ class TestStatefulGhostWitnesses:
             plan.plan.macro_atoms,
             state_models=plan.plan.state_models,
         )
-        assert "state: AbstractSignal" in source
+        assert "state: AbstractArray" in source
 
     def test_witness_returns_tuple(self):
         plan = _make_stateful_plan()
@@ -517,4 +517,4 @@ class TestStatefulBundle:
         agent, _ = _make_agent()
         bundle = await agent.ingest(ra_source, "RollingAverager")
 
-        assert "state: AbstractSignal" in bundle.generated_witnesses
+        assert "state: AbstractArray" in bundle.generated_witnesses

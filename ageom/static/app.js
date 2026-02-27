@@ -1316,7 +1316,7 @@
 
   function fetchCDG(repo) {
     statusText.textContent = "Loading " + repo + "...";
-    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
+    fetch("/api/cdgs/" + encodeURIComponent(repo))
       .then(function (res) {
         if (!res.ok) throw new Error("CDG not found");
         return res.json();
@@ -1432,7 +1432,7 @@
   function loadComparePane(side, repo) {
     if (!repo) return;
     var container = document.getElementById("compare-" + side);
-    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
+    fetch("/api/cdgs/" + encodeURIComponent(repo))
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var cyInstance = buildCompareGraph(container, data);

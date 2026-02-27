@@ -55,6 +55,12 @@ class TestConceptType:
             "smc_reweight",
             "message_passing",
             "conjugate_update",
+            "state_init",
+            "data_assembly",
+            "conditional_routing",
+            "data_extraction",
+            "visualization",
+            "observability",
             "custom",
             "external_tool",
         }
