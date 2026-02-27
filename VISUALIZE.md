@@ -173,7 +173,7 @@ Drag a `.json` file anywhere onto the page to load it. Works in all modes includ
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/cdgs` | List all CDGs with node counts, concept types, statuses. Supports `?q=`, `?concept_type=`, `?status=` query params |
-| `GET` | `/api/cdgs/{repo}` | Full CDG JSON (nodes + edges + metadata) for a repo |
+| `GET` | `/api/cdg?repo=` | Full CDG JSON (nodes + edges + metadata) for a repo |
 | `POST` | `/api/isomorphisms` | Find similar subgraphs. Body: `{"repo", "node_id", "radius", "min_jaccard", "max_results", "layers"}` |
 
 Example:
@@ -183,7 +183,7 @@ Example:
 curl http://localhost:8080/api/cdgs
 
 # Fetch a specific CDG
-curl http://localhost:8080/api/cdgs/hpy-atoms%2Fspo2_perfusion
+curl "http://localhost:8080/api/cdg?repo=hpy-atoms/spo2_perfusion"
 
 # Search for similar subgraphs
 curl -X POST http://localhost:8080/api/isomorphisms \

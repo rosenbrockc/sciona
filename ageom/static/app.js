@@ -99,10 +99,6 @@
 
   // --- Data loading ---
 
-  function encodeRepoPath(repo) {
-    return repo.split("/").map(encodeURIComponent).join("/");
-  }
-
   function handleFile(file) {
     var reader = new FileReader();
     reader.onload = function (e) {
@@ -1318,7 +1314,7 @@
 
   function fetchCDG(repo) {
     statusText.textContent = "Loading " + repo + "...";
-    fetch("/api/cdgs/" + encodeRepoPath(repo))
+    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
       .then(function (res) {
         if (!res.ok) throw new Error("CDG not found");
         return res.json();
@@ -1434,7 +1430,7 @@
   function loadComparePane(side, repo) {
     if (!repo) return;
     var container = document.getElementById("compare-" + side);
-    fetch("/api/cdgs/" + encodeRepoPath(repo))
+    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var cyInstance = buildCompareGraph(container, data);

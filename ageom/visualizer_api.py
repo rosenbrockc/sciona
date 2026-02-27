@@ -82,8 +82,8 @@ async def list_cdgs(
     return rows
 
 
-@app.get("/api/cdgs/{repo:path}")
-async def get_cdg(repo: str) -> dict[str, Any]:
+@app.get("/api/cdg")
+async def get_cdg(repo: str = Query(..., description="Full repo path")) -> dict[str, Any]:
     """Return full CDG JSON (nodes + edges + metadata) for a repo."""
     driver = app.state.driver
 
