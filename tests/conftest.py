@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import json
 import os
+
+# Prevent FAISS/OpenMP segfaults when other tests leave thread-pool workers alive
+# (e.g. langgraph's concurrent.futures threads in test_e2e_principal_hodges).
+os.environ.setdefault("OMP_NUM_THREADS", "1")
 import shlex
 import signal
 import socket
