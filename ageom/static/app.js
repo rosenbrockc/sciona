@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  console.log("[CDG Visualizer] app.js loaded, v=2026-02-27a");
+  console.log("[CDG Visualizer] app.js loaded, v=2026-02-28a");
 
   // --- Concept-type color families ---
 
@@ -1316,7 +1316,7 @@
 
   function fetchCDG(repo) {
     statusText.textContent = "Loading " + repo + "...";
-    fetch("/api/cdgs/" + encodeURIComponent(repo))
+    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
       .then(function (res) {
         if (!res.ok) throw new Error("CDG not found");
         return res.json();
@@ -1432,7 +1432,7 @@
   function loadComparePane(side, repo) {
     if (!repo) return;
     var container = document.getElementById("compare-" + side);
-    fetch("/api/cdgs/" + encodeURIComponent(repo))
+    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var cyInstance = buildCompareGraph(container, data);
