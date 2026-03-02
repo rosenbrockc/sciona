@@ -127,11 +127,18 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
         return {"error": "No export bundle to evaluate", "done": True}
 
     sandbox = deps.sandbox
-    benchmark = await sandbox.evaluate(
-        state.export_bundle,
-        state.dataset_path,
-        state.metric,
-    )
+    if state.dataset_path.endswith((".yml", ".yaml")):
+        benchmark = await sandbox.evaluate_adapter(
+            state.export_bundle,
+            state.dataset_path,
+            state.metric,
+        )
+    else:
+        benchmark = await sandbox.evaluate(
+            state.export_bundle,
+            state.dataset_path,
+            state.metric,
+        )
     state.benchmark = benchmark
 
     # Track best
