@@ -35,7 +35,10 @@ async def profile_algorithm_error(
     
     # 1. Execute the compiled artifact against the dataset to gather empirical telemetry
     sandbox = ExecutionSandbox()
-    benchmark = await sandbox.evaluate(bundle, dataset_path, metric)
+    if dataset_path.endswith((".yml", ".yaml")):
+        benchmark = await sandbox.evaluate_adapter(bundle, dataset_path, metric)
+    else:
+        benchmark = await sandbox.evaluate(bundle, dataset_path, metric)
     
     # 2. Run the ghost simulation for structural checks and theoretical precision bounds
     # Assuming empty match_results as we just want theoretical bounds for the CDG nodes.
