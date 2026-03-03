@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from ageom.shared_context import (
+    ContextRecord,
     InMemorySharedContextStore,
     InstrumentedSharedContextStore,
     PostgresSharedContextStore,
@@ -44,6 +45,26 @@ class TestSharedContextMetrics:
         assert snap["search_misses"] == 1
         assert float(snap["search_hit_rate"]) == 0.0
 
+    def test_duplicate_suppression_and_provenance_labels(self):
+        metrics = SharedContextMetrics()
+        records = [
+            # duplicate text should be suppressed
+            ContextRecord(
+                text="Alpha Beta",
+                metadata={"source_channel": "success", "confidence": 0.9},
+            ),
+            ContextRecord(
+                text="Alpha   Beta",
+                metadata={"source_channel": "success", "confidence": 0.9},
+            ),
+        ]
+        block = format_context_block("Shared Context", records, metrics=metrics)
+        assert "ch:success" in block
+        snap = metrics.snapshot()
+        assert snap["duplicate_candidates"] == 2
+        assert snap["duplicates_suppressed"] == 1
+        assert float(snap["duplicate_suppression_rate"]) == pytest.approx(0.5)
+
 
 class TestSharedContextFactory:
     @pytest.mark.asyncio
@@ -80,3 +101,21 @@ class TestSharedContextFactory:
         rows = await store.search("ns/fallback", "record", limit=1)
         assert len(rows) == 1
 
+    @pytest.mark.asyncio
+    async def test_promotion_to_repo_namespace(self):
+        metrics = SharedContextMetrics()
+        store = await create_shared_context_store(
+            enabled=True,
+            backend="memory",
+            promotion_enabled=True,
+            promotion_min_confidence=0.9,
+            repo_namespace="repo/testrepo",
+            metrics=metrics,
+        )
+        assert store is not None
+        # confidence inferred as high from /success namespace
+        await store.put("hunter/run1/success", "Matched Nat.add_comm")
+        promoted = await store.recent("repo/testrepo/success", limit=5)
+        assert promoted
+        snap = metrics.snapshot()
+        assert snap["promotions_total"] >= 1

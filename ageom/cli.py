@@ -154,12 +154,20 @@ async def _create_shared_context(
     if not enabled:
         return None, None
 
+    os.environ["AGEOM_SHARED_CONTEXT_INCLUDE_PROVENANCE"] = (
+        "1" if config.shared_context_include_provenance else "0"
+    )
     metrics = SharedContextMetrics()
     store = await create_shared_context_store(
         enabled=True,
         backend=config.shared_context_backend,
         postgres_uri=config.postgres_uri,
         postgres_table=config.shared_context_postgres_table,
+        max_records_per_namespace=config.shared_context_max_records_per_namespace,
+        ttl_hours=config.shared_context_ttl_hours,
+        promotion_enabled=config.shared_context_promotion_enabled,
+        promotion_min_confidence=config.shared_context_promotion_min_confidence,
+        repo_namespace=config.shared_context_repo_namespace,
         metrics=metrics,
     )
     return store, metrics
@@ -180,6 +188,9 @@ def _print_shared_context_metrics(
         f"hit_rate={float(snap['search_hit_rate']):.2f} "
         f"avg_search_ms={float(snap['search_latency_ms_avg']):.1f} "
         f"puts={snap['puts_total']} "
+        f"dup_supp_rate={float(snap['duplicate_suppression_rate']):.2f} "
+        f"match_delta={float(snap['match_success_delta']):+.2f} "
+        f"promotions={snap['promotions_total']} "
         f"injected_blocks={snap['injected_blocks']} "
         f"injected_chars={snap['injected_chars']}"
     )
@@ -1833,9 +1844,22 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     max_iterations = args.max_iterations or config.synthesizer_max_iterations
+    synth_run_id = uuid.uuid4().hex
+    synth_shared_context, synth_shared_metrics = await _create_shared_context(
+        config,
+        enabled=config.synthesizer_shared_context_enabled,
+    )
 
     try:
-        agent = SynthesizerAgent(env=env, llm=llm, max_iterations=max_iterations)
+        agent = SynthesizerAgent(
+            env=env,
+            llm=llm,
+            max_iterations=max_iterations,
+            shared_context=synth_shared_context,
+            shared_context_metrics=synth_shared_metrics,
+            context_namespace=f"synthesizer/{synth_run_id}",
+            context_budget_chars=config.synthesizer_shared_context_budget_chars,
+        )
         print(f"Starting repair loop (max {max_iterations} iterations)...")
         result = await agent.synthesize(skeleton)
 
@@ -1856,6 +1880,13 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
         print(f"  Iterations used: {result.iterations_used}")
         print(f"  Patches applied: {result.patches_applied}")
         print(f"  Sorry remaining: {result.sorry_remaining}")
+        _print_shared_context_metrics("synthesizer", synth_shared_metrics)
+        metrics_path = _write_shared_context_metrics_file(
+            output_path.parent / "shared_context_metrics.json",
+            {"synthesizer": synth_shared_metrics},
+        )
+        if metrics_path is not None:
+            print(f"  Shared context metrics: {metrics_path}")
 
         if result.error_history:
             print("  Errors encountered:")

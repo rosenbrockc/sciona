@@ -89,13 +89,13 @@ Implementation status:
 3. Add optional provenance labels for explainable context usage.
 
 Implementation status:
-- In progress:
-  - Architect shared context wired into strategy/decompose/critique prompts.
-  - Principal optimization now reuses a single Architect shared-context namespace across trials/forks.
 - Completed:
-  - Architect/Hunter/Ingester CLI flows now support `auto` backend selection (`postgres` when available, else memory).
-- Pending:
-  - Promotion/eviction policy and provenance labels.
+  - Architect shared context wired into strategy/decompose/critique prompts.
+  - Principal optimization reuses a single Architect shared-context namespace across trials/forks.
+  - Synthesizer repair/tactic loops now read/write shared context.
+  - Promotion policy: high-confidence records can be promoted into repo-scoped namespaces.
+  - Eviction policy: Postgres backend prunes by TTL and keeps top records by confidence/frequency/recency.
+  - Provenance labels are injected into shared-context blocks for explainability.
 
 ## Open Source Options
 

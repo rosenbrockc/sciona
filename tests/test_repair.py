@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from ageom.judge.models import CompilerFeedback
+from ageom.shared_context import InMemorySharedContextStore
 from ageom.synthesizer.classifier import (
     ErrorCategory,
     classify_error,
@@ -486,6 +487,60 @@ class TestRepairGraph:
 
         assert state.compiled_ok is True
         assert state.iteration == 2
+
+    @pytest.mark.asyncio
+    async def test_llm_repair_uses_and_writes_shared_context(self):
+        """LLM repair prompt includes shared context and writes repair memory."""
+        skeleton = _make_skeleton("def foo : Nat := (1 : Int)\n")
+        patch_response = json.dumps(
+            {
+                "line_start": 1,
+                "line_end": 1,
+                "replacement": "def foo : Nat := 1",
+                "description": "Fix cast",
+            }
+        )
+        env = _make_mock_env(
+            [
+                CompilerFeedback(
+                    raw_output="type mismatch",
+                    errors=["type mismatch, expected Nat, got Int"],
+                ),
+                CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
+            ]
+        )
+        llm = AsyncMock()
+        captured_users: list[str] = []
+
+        async def complete(system: str, user: str) -> str:
+            captured_users.append(user)
+            return patch_response
+
+        llm.complete = complete
+
+        store = InMemorySharedContextStore()
+        await store.put(
+            "synth/test/repair",
+            "For Nat/Int mismatch, prefer a direct Nat literal when safe.",
+        )
+
+        state = RepairState(skeleton=skeleton, max_iterations=5)
+        await repair_graph.run(
+            CompileCheck(),
+            state=state,
+            deps=RepairDeps(
+                env=env,
+                llm=llm,
+                shared_context=store,
+                context_namespace="synth/test",
+            ),
+        )
+
+        assert state.compiled_ok is True
+        assert captured_users
+        assert "Shared Context" in captured_users[0]
+        records = await store.recent("synth/test/repair", limit=5)
+        assert any("Patch:" in r.text for r in records)
 
 
 # ===========================================================================

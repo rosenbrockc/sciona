@@ -41,6 +41,12 @@ class AgeomConfig(BaseSettings):
     use_agent_layer: bool = False  # prefix CLI commands with `al` (Agent Layer)
     shared_context_backend: str = "auto"  # "auto" | "memory" | "postgres"
     shared_context_postgres_table: str = "ageom_shared_context"
+    shared_context_ttl_hours: int = 168
+    shared_context_max_records_per_namespace: int = 500
+    shared_context_repo_namespace: str = "repo/default"
+    shared_context_promotion_enabled: bool = True
+    shared_context_promotion_min_confidence: float = 0.9
+    shared_context_include_provenance: bool = True
 
     # Memgraph graph store
     memgraph_uri: str = "bolt://localhost:7687"
@@ -91,6 +97,8 @@ class AgeomConfig(BaseSettings):
     synthesizer_max_iterations: int = 10
     synthesizer_llm_provider: str = ""  # falls back to llm_provider
     synthesizer_llm_model: str = ""
+    synthesizer_shared_context_enabled: bool = True
+    synthesizer_shared_context_budget_chars: int = 900
 
     # Ingester (Round 0)
     ingester_llm_provider: str = ""  # falls back to llm_provider

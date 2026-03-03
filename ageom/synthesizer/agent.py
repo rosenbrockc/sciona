@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ageom.hunter.llm import LLMClient
 from ageom.protocols import ProofEnvironment
+from ageom.shared_context import SharedContextMetrics, SharedContextStore
 from ageom.synthesizer.models import SkeletonFile, SynthesisResult
 from ageom.synthesizer.patcher import find_sorry_locations
 from ageom.synthesizer.repair import (
@@ -22,8 +23,20 @@ class SynthesizerAgent:
         env: ProofEnvironment,
         llm: LLMClient,
         max_iterations: int = 10,
+        *,
+        shared_context: SharedContextStore | None = None,
+        shared_context_metrics: SharedContextMetrics | None = None,
+        context_namespace: str = "",
+        context_budget_chars: int = 900,
     ) -> None:
-        self._deps = RepairDeps(env=env, llm=llm)
+        self._deps = RepairDeps(
+            env=env,
+            llm=llm,
+            shared_context=shared_context,
+            shared_context_metrics=shared_context_metrics,
+            context_namespace=context_namespace,
+            context_budget_chars=context_budget_chars,
+        )
         self._max_iterations = max_iterations
 
     async def synthesize(self, skeleton: SkeletonFile) -> SynthesisResult:

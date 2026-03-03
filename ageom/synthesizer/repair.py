@@ -13,6 +13,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from ageom.json_utils import extract_json
 
@@ -34,6 +35,11 @@ from ageom.synthesizer.patcher import (
     find_sorry_locations,
 )
 from ageom.llm_router import SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC, select_llm
+from ageom.shared_context import (
+    SharedContextMetrics,
+    SharedContextStore,
+    format_context_block,
+)
 from ageom.synthesizer.prompts import (
     ANALYZE_ERROR_SYSTEM,
     ANALYZE_ERROR_SYSTEM_PYTHON,
@@ -84,6 +90,10 @@ class RepairDeps:
 
     env: ProofEnvironment
     llm: LLMClient
+    shared_context: SharedContextStore | None = None
+    shared_context_metrics: SharedContextMetrics | None = None
+    context_namespace: str = ""
+    context_budget_chars: int = 900
 
 
 async def _compile_source(env: ProofEnvironment, source: str) -> CompilerFeedback:
@@ -95,6 +105,46 @@ async def _compile_source(env: ProofEnvironment, source: str) -> CompilerFeedbac
         raw_output=output,
         errors=[] if success else [output],
     )
+
+
+async def _search_context(
+    deps: RepairDeps,
+    *,
+    channel: str,
+    query: str,
+    limit: int = 3,
+) -> str:
+    store = deps.shared_context
+    ns = deps.context_namespace
+    if store is None or not ns:
+        return ""
+    try:
+        records = await store.search(f"{ns}/{channel}", query, limit=limit)
+        return format_context_block(
+            "Shared Context",
+            records,
+            max_chars=deps.context_budget_chars,
+            metrics=deps.shared_context_metrics,
+        )
+    except Exception:
+        return ""
+
+
+async def _put_context(
+    deps: RepairDeps,
+    *,
+    channel: str,
+    text: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    store = deps.shared_context
+    ns = deps.context_namespace
+    if store is None or not ns:
+        return
+    try:
+        await store.put(f"{ns}/{channel}", text, metadata=metadata)
+    except Exception:
+        return
 
 
 @dataclass
@@ -140,6 +190,16 @@ class CompileCheck(BaseNode[RepairState, RepairDeps, SkeletonFile]):
         if feedback.success:
             state.compiled_ok = True
             state.sorry_remaining = 0
+            await _put_context(
+                deps,
+                channel="compile",
+                text=(
+                    f"Iteration: {state.iteration}\n"
+                    "Compilation: success\n"
+                    f"Patches: {len(state.patches_applied)}"
+                ),
+                metadata={"confidence": 0.95, "compiled_ok": True},
+            )
             return End(state.skeleton)
 
         # Budget check — return best version if exhausted
@@ -153,6 +213,18 @@ class CompileCheck(BaseNode[RepairState, RepairDeps, SkeletonFile]):
 
         # Classify errors
         classified = classify_feedback(feedback)
+        if classified:
+            cat, text = classified[0]
+            await _put_context(
+                deps,
+                channel="compile",
+                text=(
+                    f"Iteration: {state.iteration}\n"
+                    f"Top error category: {cat.value}\n"
+                    f"Error: {text}"
+                ),
+                metadata={"confidence": 0.45, "compiled_ok": False},
+            )
 
         # Check if any have deterministic fixes
         has_deterministic = any(
@@ -250,6 +322,14 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             error_category=cat.value,
             error_context=context,
         )
+        shared_block = await _search_context(
+            deps,
+            channel="repair",
+            query=f"{cat.value} {error_text}",
+            limit=3,
+        )
+        if shared_block:
+            user_msg += f"\n\n{shared_block}"
 
         system_prompt = (
             ANALYZE_ERROR_SYSTEM_PYTHON
@@ -269,6 +349,31 @@ class LLMRepair(BaseNode[RepairState, RepairDeps, SkeletonFile]):
                 )
                 state.patches_applied.append(patch)
                 state.llm_successes += 1
+                await _put_context(
+                    deps,
+                    channel="repair",
+                    text=(
+                        f"Error category: {cat.value}\n"
+                        f"Patch: {patch.description or '(none)'}\n"
+                        f"Lines: {patch.line_start}-{patch.line_end}"
+                    ),
+                    metadata={
+                        "confidence": 0.9,
+                        "category": cat.value,
+                        "line_start": patch.line_start,
+                        "line_end": patch.line_end,
+                    },
+                )
+            else:
+                await _put_context(
+                    deps,
+                    channel="repair",
+                    text=(
+                        f"Error category: {cat.value}\n"
+                        "Patch: parse failure"
+                    ),
+                    metadata={"confidence": 0.3, "category": cat.value},
+                )
         except json.JSONDecodeError as exc:
             state.error_history.append(
                 (
@@ -316,6 +421,14 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
             hypotheses=context,
             available_lemmas="(use standard Mathlib tactics)",
         )
+        shared_block = await _search_context(
+            deps,
+            channel="tactic",
+            query=f"{goal_type} {context}",
+            limit=3,
+        )
+        if shared_block:
+            user_msg += f"\n\n{shared_block}"
 
         system_prompt = (
             GENERATE_IMPLEMENTATION_SYSTEM_PYTHON
@@ -341,6 +454,15 @@ class SorryElimination(BaseNode[RepairState, RepairDeps, SkeletonFile]):
                 )
                 state.patches_applied.append(patch)
                 state.llm_successes += 1
+                await _put_context(
+                    deps,
+                    channel="tactic",
+                    text=(
+                        f"Goal: {goal_type or '(unknown)'}\n"
+                        f"Tactic snippet: {tactic_body[:140]}"
+                    ),
+                    metadata={"confidence": 0.88, "line": line_num},
+                )
         except json.JSONDecodeError as exc:
             state.error_history.append(
                 (state.iteration, ErrorCategory.UNKNOWN, f"PARSE_FAILURE: {exc}")

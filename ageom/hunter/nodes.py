@@ -76,12 +76,15 @@ async def _search_context(
         return ""
     try:
         records = await store.search(f"{ns}/{channel}", query, limit=limit)
-        return format_context_block(
+        block = format_context_block(
             "Shared Context",
             records,
             max_chars=state.context_budget_chars,
             metrics=deps.shared_context_metrics,
         )
+        if block:
+            state.shared_context_used = True
+        return block
     except Exception:
         return ""
 
@@ -170,6 +173,11 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
 
         if not state.candidates_found:
             # No candidates at all - end immediately
+            if deps.shared_context_metrics is not None:
+                deps.shared_context_metrics.record_match_outcome(
+                    used_context=state.shared_context_used,
+                    success=False,
+                )
             return End(
                 MatchResult(
                     pdg_node=node,
@@ -262,6 +270,11 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
         if not to_verify:
             # Nothing new to verify
             if state.iteration >= state.max_iterations:
+                if deps.shared_context_metrics is not None:
+                    deps.shared_context_metrics.record_match_outcome(
+                        used_context=state.shared_context_used,
+                        success=False,
+                    )
                 return End(
                     MatchResult(
                         pdg_node=state.pdg_node,
@@ -321,6 +334,11 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
                     },
                 )
                 state.verified_match = r
+                if deps.shared_context_metrics is not None:
+                    deps.shared_context_metrics.record_match_outcome(
+                        used_context=state.shared_context_used,
+                        success=True,
+                    )
                 return End(
                     MatchResult(
                         pdg_node=state.pdg_node,
@@ -332,6 +350,11 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
 
         # No verified match - check budget
         if state.iteration >= state.max_iterations:
+            if deps.shared_context_metrics is not None:
+                deps.shared_context_metrics.record_match_outcome(
+                    used_context=state.shared_context_used,
+                    success=False,
+                )
             return End(
                 MatchResult(
                     pdg_node=state.pdg_node,

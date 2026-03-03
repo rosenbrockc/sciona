@@ -32,6 +32,7 @@ class HunterState:
 
     # Current iteration
     iteration: int = 0
+    shared_context_used: bool = False
 
     # Final result (set when a verified match is found)
     verified_match: VerificationResult | None = None
