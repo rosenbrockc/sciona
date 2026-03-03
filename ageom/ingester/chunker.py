@@ -48,7 +48,11 @@ from ageom.llm_router import (
     INGESTER_HOIST_STATE,
     select_llm,
 )
-from ageom.shared_context import SharedContextStore, format_context_block
+from ageom.shared_context import (
+    SharedContextMetrics,
+    SharedContextStore,
+    format_context_block,
+)
 from ageom.protocols import SemanticIndex
 
 logger = logging.getLogger(__name__)
@@ -80,6 +84,7 @@ class ChunkerDeps:
     line_threshold: int = 30
     monitor: IngestMonitor | None = None
     shared_context: SharedContextStore | None = None
+    shared_context_metrics: SharedContextMetrics | None = None
     context_namespace: str = ""
     context_budget_chars: int = 900
     parallelism: int = 1
@@ -148,6 +153,7 @@ async def _search_context(
             "Shared Context",
             records,
             max_chars=deps.context_budget_chars,
+            metrics=deps.shared_context_metrics,
         )
     except Exception:
         return ""
@@ -696,6 +702,7 @@ async def _decompose_single_atom(
     current_depth: int,
     monitor: IngestMonitor | None = None,
     shared_context: SharedContextStore | None = None,
+    shared_context_metrics: SharedContextMetrics | None = None,
     context_namespace: str = "",
     context_budget_chars: int = 900,
 ) -> MacroAtomSpec:
@@ -733,6 +740,7 @@ async def _decompose_single_atom(
                 "Shared Context",
                 records,
                 max_chars=context_budget_chars,
+                metrics=shared_context_metrics,
             )
             if block:
                 user_prompt += f"\n\n{block}"
@@ -788,6 +796,7 @@ async def _decompose_single_atom(
             current_depth + 1,
             monitor=monitor,
             shared_context=shared_context,
+            shared_context_metrics=shared_context_metrics,
             context_namespace=context_namespace,
             context_budget_chars=context_budget_chars,
         )
@@ -828,6 +837,7 @@ async def decompose_complex_atoms(
                 current_depth=1,
                 monitor=mon,
                 shared_context=deps.shared_context,
+                shared_context_metrics=deps.shared_context_metrics,
                 context_namespace=deps.context_namespace,
                 context_budget_chars=deps.context_budget_chars,
             )
@@ -846,6 +856,7 @@ async def decompose_complex_atoms(
                     current_depth=1,
                     monitor=mon,
                     shared_context=deps.shared_context,
+                    shared_context_metrics=deps.shared_context_metrics,
                     context_namespace=deps.context_namespace,
                     context_budget_chars=deps.context_budget_chars,
                 )

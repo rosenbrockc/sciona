@@ -16,7 +16,11 @@ import logging
 from ageom.hunter.llm import LLMClient
 from ageom.ingester.ffi_emitter import generate_ffi_bindings, generate_ffi_imports
 from ageom.llm_router import INGESTER_OPAQUE_WITNESS, select_llm
-from ageom.shared_context import SharedContextStore, format_context_block
+from ageom.shared_context import (
+    SharedContextMetrics,
+    SharedContextStore,
+    format_context_block,
+)
 
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import (
@@ -101,6 +105,7 @@ async def generate_opaque_witnesses(
     llm: LLMClient,
     *,
     shared_context: SharedContextStore | None = None,
+    shared_context_metrics: SharedContextMetrics | None = None,
     context_namespace: str = "",
     context_budget_chars: int = 900,
     parallelism: int = 1,
@@ -162,6 +167,7 @@ async def generate_opaque_witnesses(
                         "Shared Context",
                         records,
                         max_chars=context_budget_chars,
+                        metrics=shared_context_metrics,
                     )
                     if block:
                         user_prompt += f"\n\n{block}"

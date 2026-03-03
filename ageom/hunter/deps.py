@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from ageom.hunter.llm import LLMClient
 from ageom.protocols import SemanticIndex, VerificationOracle
-from ageom.shared_context import SharedContextStore
+from ageom.shared_context import SharedContextMetrics, SharedContextStore
 
 
 @dataclass
@@ -17,3 +17,4 @@ class HunterDeps:
     oracle: VerificationOracle
     llm: LLMClient
     shared_context: SharedContextStore | None = None
+    shared_context_metrics: SharedContextMetrics | None = None

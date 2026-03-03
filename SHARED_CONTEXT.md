@@ -78,8 +78,9 @@ Implementation status:
 - In progress:
   - Ingestion content-addressed cache implemented (`ageom/ingester/cache.py`, `IngesterAgent` cache hit/save path).
   - Ingester prompt-loop shared context + bounded parallelism implemented (`chunker.py`, `emitter.py`).
-- Pending:
-  - Persistent shared-context backend and metrics.
+- Completed:
+  - Postgres-backed shared-context store added and wired via existing `AGEOM_POSTGRES_URI`.
+  - Shared-context metrics added (hit/miss rate, latency, write counts, injected block/chars) with CLI summaries.
 
 ### Phase 3
 
@@ -91,6 +92,8 @@ Implementation status:
 - In progress:
   - Architect shared context wired into strategy/decompose/critique prompts.
   - Principal optimization now reuses a single Architect shared-context namespace across trials/forks.
+- Completed:
+  - Architect/Hunter/Ingester CLI flows now support `auto` backend selection (`postgres` when available, else memory).
 - Pending:
   - Promotion/eviction policy and provenance labels.
 

@@ -14,7 +14,7 @@ from ageom.hunter.nodes import (
 )
 from ageom.hunter.state import HunterState
 from ageom.protocols import SemanticIndex, VerificationOracle
-from ageom.shared_context import SharedContextStore
+from ageom.shared_context import SharedContextMetrics, SharedContextStore
 from ageom.types import MatchResult, PDGNode
 
 hunter_graph: Graph[HunterState, HunterDeps, MatchResult] = Graph(
@@ -43,6 +43,7 @@ class HunterAgent:
         top_k_per_query: int = 50,
         max_candidates_total: int = 3000,
         shared_context: SharedContextStore | None = None,
+        shared_context_metrics: SharedContextMetrics | None = None,
         context_namespace: str = "hunter",
         run_id: str | None = None,
         context_budget_chars: int = 900,
@@ -52,6 +53,7 @@ class HunterAgent:
             oracle=oracle,
             llm=llm,
             shared_context=shared_context,
+            shared_context_metrics=shared_context_metrics,
         )
         self._max_iterations = max_iterations
         self._top_k_verify = top_k_verify

@@ -238,6 +238,7 @@ async def _search_context(
             "Shared Context",
             records,
             max_chars=deps.context_budget_chars,
+            metrics=deps.shared_context_metrics,
         )
     except Exception:
         return ""

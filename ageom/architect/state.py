@@ -12,7 +12,7 @@ from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.embedder import SkillIndex
 from ageom.architect.models import AlgorithmicNode, DependencyEdge
 from ageom.hunter.llm import LLMClient
-from ageom.shared_context import SharedContextStore
+from ageom.shared_context import SharedContextMetrics, SharedContextStore
 
 if TYPE_CHECKING:
     from ageom.architect.graph_retrieval import CDGSubgraphRetriever
@@ -71,5 +71,6 @@ class DecompositionDeps:
     llm: LLMClient
     graph_retriever: CDGSubgraphRetriever | None = field(default=None)
     shared_context: SharedContextStore | None = field(default=None)
+    shared_context_metrics: SharedContextMetrics | None = field(default=None)
     context_namespace: str = field(default="")
     context_budget_chars: int = field(default=900)

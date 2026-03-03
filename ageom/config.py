@@ -39,6 +39,8 @@ class AgeomConfig(BaseSettings):
     llama_cpp_base_url: str = "http://127.0.0.1:8080/v1"
     llama_cpp_api_key: str = "local"
     use_agent_layer: bool = False  # prefix CLI commands with `al` (Agent Layer)
+    shared_context_backend: str = "auto"  # "auto" | "memory" | "postgres"
+    shared_context_postgres_table: str = "ageom_shared_context"
 
     # Memgraph graph store
     memgraph_uri: str = "bolt://localhost:7687"

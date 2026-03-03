@@ -58,7 +58,7 @@ from ageom.llm_router import (
     INGESTER_FIX_TYPE,
     select_llm,
 )
-from ageom.shared_context import SharedContextStore
+from ageom.shared_context import SharedContextMetrics, SharedContextStore
 from ageom.protocols import ProofEnvironment, SemanticIndex
 
 logger = logging.getLogger(__name__)
@@ -169,6 +169,7 @@ class IngesterDeps:
     line_threshold: int = 30
     monitor: IngestMonitor | None = None
     shared_context: SharedContextStore | None = None
+    shared_context_metrics: SharedContextMetrics | None = None
     context_namespace: str = ""
     context_budget_chars: int = 900
     parallelism: int = 1
@@ -479,6 +480,7 @@ async def phase2_chunk(state: IngesterState, config: RunnableConfig) -> dict[str
         line_threshold=deps.line_threshold,
         monitor=deps.monitor,
         shared_context=deps.shared_context,
+        shared_context_metrics=deps.shared_context_metrics,
         context_namespace=deps.context_namespace,
         context_budget_chars=deps.context_budget_chars,
         parallelism=deps.parallelism,
@@ -559,6 +561,7 @@ async def phase3_emit(state: IngesterState, config: RunnableConfig) -> dict[str,
                 dfg,
                 deps.llm,
                 shared_context=deps.shared_context,
+                shared_context_metrics=deps.shared_context_metrics,
                 context_namespace=deps.context_namespace,
                 context_budget_chars=deps.context_budget_chars,
                 parallelism=deps.parallelism,
@@ -947,6 +950,7 @@ class IngesterAgent:
         line_threshold: int = 30,
         monitor: IngestMonitor | None = None,
         shared_context: SharedContextStore | None = None,
+        shared_context_metrics: SharedContextMetrics | None = None,
         context_namespace: str = "",
         context_budget_chars: int = 900,
         parallelism: int = 1,
@@ -965,6 +969,7 @@ class IngesterAgent:
             line_threshold=line_threshold,
             monitor=monitor,
             shared_context=shared_context,
+            shared_context_metrics=shared_context_metrics,
             context_namespace=context_namespace,
             context_budget_chars=context_budget_chars,
             parallelism=max(1, parallelism),

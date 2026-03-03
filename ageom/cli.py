@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from ageom.config import AgeomConfig
     from ageom.hunter.llm import LLMClient
     from ageom.protocols import ProofEnvironment
+    from ageom.shared_context import SharedContextMetrics, SharedContextStore
     from ageom.types import Prover
 
 
@@ -140,6 +141,76 @@ def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironm
         from ageom.judge.coq_env import CoqEnvironment
 
         return CoqEnvironment(config.coq_project_path)
+
+
+async def _create_shared_context(
+    config: "AgeomConfig",
+    *,
+    enabled: bool,
+) -> tuple["SharedContextStore | None", "SharedContextMetrics | None"]:
+    """Create a shared context store and metrics wrapper for this command."""
+    from ageom.shared_context import SharedContextMetrics, create_shared_context_store
+
+    if not enabled:
+        return None, None
+
+    metrics = SharedContextMetrics()
+    store = await create_shared_context_store(
+        enabled=True,
+        backend=config.shared_context_backend,
+        postgres_uri=config.postgres_uri,
+        postgres_table=config.shared_context_postgres_table,
+        metrics=metrics,
+    )
+    return store, metrics
+
+
+def _print_shared_context_metrics(
+    label: str,
+    metrics: "SharedContextMetrics | None",
+) -> None:
+    """Print a compact shared-context metrics line."""
+    if metrics is None:
+        return
+    snap = metrics.snapshot()
+    print(
+        "  Shared context"
+        f" ({label}): backend={snap['backend']} "
+        f"searches={snap['searches_total']} "
+        f"hit_rate={float(snap['search_hit_rate']):.2f} "
+        f"avg_search_ms={float(snap['search_latency_ms_avg']):.1f} "
+        f"puts={snap['puts_total']} "
+        f"injected_blocks={snap['injected_blocks']} "
+        f"injected_chars={snap['injected_chars']}"
+    )
+
+
+def _snapshot_shared_context_metrics(
+    metrics_by_label: dict[str, "SharedContextMetrics | None"],
+) -> dict[str, dict[str, float | int | str]]:
+    payload: dict[str, dict[str, float | int | str]] = {}
+    for label, metrics in metrics_by_label.items():
+        if metrics is None:
+            continue
+        payload[label] = metrics.snapshot()
+    return payload
+
+
+def _write_shared_context_metrics_file(
+    path: Path,
+    metrics_by_label: dict[str, "SharedContextMetrics | None"],
+) -> Path | None:
+    """Persist shared-context metrics JSON; return path when written."""
+    contexts = _snapshot_shared_context_metrics(metrics_by_label)
+    if not contexts:
+        return None
+    payload = {
+        "generated_at_unix": time.time(),
+        "contexts": contexts,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2))
+    return path
 
 
 def main() -> None:
@@ -1053,7 +1124,6 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
     from ageom.config import AgeomConfig
     from ageom.ingester import IngesterAgent
     from ageom.ingester.monitor import IngestMonitor
-    from ageom.shared_context import InMemorySharedContextStore
     from ageom.types import Prover
 
     config = AgeomConfig()
@@ -1136,10 +1206,9 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
                 print(f"Warning: failed to load FAISS index: {exc}", file=sys.stderr)
 
         ingester_run_id = uuid.uuid4().hex
-        shared_context = (
-            InMemorySharedContextStore()
-            if config.ingester_shared_context_enabled
-            else None
+        shared_context, shared_context_metrics = await _create_shared_context(
+            config,
+            enabled=config.ingester_shared_context_enabled,
         )
         agent = IngesterAgent(
             llm=llm,
@@ -1150,6 +1219,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             line_threshold=config.ingester_decompose_line_threshold,
             monitor=monitor,
             shared_context=shared_context,
+            shared_context_metrics=shared_context_metrics,
             context_namespace=f"ingester/{ingester_run_id}",
             context_budget_chars=config.ingester_shared_context_budget_chars,
             parallelism=config.ingester_parallelism,
@@ -1197,6 +1267,13 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         print(f"  Output: {output_dir}/")
         print(f"  Status: {output_dir / '.ingest_status.json'}")
         print(f"  Marker: {output_dir / 'COMPLETED.json'}")
+        _print_shared_context_metrics("ingester", shared_context_metrics)
+        metrics_path = _write_shared_context_metrics_file(
+            output_dir / "shared_context_metrics.json",
+            {"ingester": shared_context_metrics},
+        )
+        if metrics_path is not None:
+            print(f"  Shared context metrics: {metrics_path}")
 
         if getattr(args, "trace", False):
             print(f"  Trace: {output_dir / 'trace.jsonl'}")
@@ -1248,7 +1325,6 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
     from ageom.config import AgeomConfig
-    from ageom.shared_context import InMemorySharedContextStore
 
     config = AgeomConfig()
     max_depth = args.max_depth or config.architect_max_depth
@@ -1308,10 +1384,9 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     # Determine persistence URI
     postgres_uri = "" if args.no_persist else config.postgres_uri
     architect_run_id = uuid.uuid4().hex
-    architect_shared_context = (
-        InMemorySharedContextStore()
-        if config.architect_shared_context_enabled
-        else None
+    architect_shared_context, architect_shared_metrics = await _create_shared_context(
+        config,
+        enabled=config.architect_shared_context_enabled,
     )
     architect_context_namespace = f"architect/{architect_run_id}"
 
@@ -1340,6 +1415,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
                     checkpointer=checkpointer,
                     graph_retriever=retriever,
                     shared_context=architect_shared_context,
+                    shared_context_metrics=architect_shared_metrics,
                     context_namespace=architect_context_namespace,
                     context_budget_chars=config.architect_shared_context_budget_chars,
                 )
@@ -1352,6 +1428,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
                 max_depth=max_depth,
                 checkpointer=checkpointer,
                 shared_context=architect_shared_context,
+                shared_context_metrics=architect_shared_metrics,
                 context_namespace=architect_context_namespace,
                 context_budget_chars=config.architect_shared_context_budget_chars,
             )
@@ -1361,6 +1438,13 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
         if args.output:
             save_json(cdg, args.output)
             print(f"  Saved to: {args.output}")
+            metrics_path = _write_shared_context_metrics_file(
+                Path(args.output).parent / "shared_context_metrics.json",
+                {"architect": architect_shared_metrics},
+            )
+            if metrics_path is not None:
+                print(f"  Shared context metrics: {metrics_path}")
+        _print_shared_context_metrics("architect", architect_shared_metrics)
 
 
 async def _cmd_history(args: argparse.Namespace) -> None:
@@ -1466,6 +1550,11 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         print(f"Error: missing LLM dependency ({exc})", file=sys.stderr)
         sys.exit(1)
 
+    run_id = uuid.uuid4().hex
+    shared_context, shared_context_metrics = await _create_shared_context(
+        config,
+        enabled=config.hunter_shared_context_enabled,
+    )
     agent = HunterAgent(
         index=index,
         oracle=oracle,
@@ -1478,6 +1567,11 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         query_batch_size=config.hunter_query_batch_size,
         top_k_per_query=config.hunter_top_k_per_query,
         max_candidates_total=config.hunter_max_candidates_total,
+        shared_context=shared_context,
+        shared_context_metrics=shared_context_metrics,
+        context_namespace="hunter",
+        run_id=run_id,
+        context_budget_chars=config.hunter_shared_context_budget_chars,
     )
 
     # Build PDG nodes
@@ -1524,6 +1618,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
                 print(
                     f"    - {vr.candidate.declaration.name}: {vr.error_message[:100]}"
                 )
+    _print_shared_context_metrics("hunter", shared_context_metrics)
 
 
 async def _cmd_assemble(args: argparse.Namespace) -> None:
@@ -1794,7 +1889,6 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     from ageom.indexer.faiss_store import FAISSStore
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.orchestrator import run_orchestration
-    from ageom.shared_context import InMemorySharedContextStore
     from ageom.types import Prover
 
     config = AgeomConfig()
@@ -1859,13 +1953,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             password=config.memgraph_password,
         )
     architect_run_id = uuid.uuid4().hex
-    architect_shared_context = (
-        InMemorySharedContextStore()
-        if config.architect_shared_context_enabled
-        else None
+    architect_shared_context, architect_shared_metrics = await _create_shared_context(
+        config,
+        enabled=config.architect_shared_context_enabled,
     )
 
-    async with create_checkpointer("") as checkpointer:
+    async with create_checkpointer(config.postgres_uri) as checkpointer:
         if graph_store_ctx is not None:
             async with graph_store_ctx as gstore:
                 retriever = make_retriever(config, gstore, current_repo="")
@@ -1876,6 +1969,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     checkpointer=checkpointer,
                     graph_retriever=retriever,
                     shared_context=architect_shared_context,
+                    shared_context_metrics=architect_shared_metrics,
                     context_namespace=f"architect/{architect_run_id}",
                     context_budget_chars=config.architect_shared_context_budget_chars,
                 )
@@ -1887,6 +1981,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 llm=llm,
                 checkpointer=checkpointer,
                 shared_context=architect_shared_context,
+                shared_context_metrics=architect_shared_metrics,
                 context_namespace=f"architect/{architect_run_id}",
                 context_budget_chars=config.architect_shared_context_budget_chars,
             )
@@ -1937,10 +2032,9 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     run_id = uuid.uuid4().hex
-    shared_context = (
-        InMemorySharedContextStore()
-        if config.hunter_shared_context_enabled
-        else None
+    hunter_shared_context, hunter_shared_metrics = await _create_shared_context(
+        config,
+        enabled=config.hunter_shared_context_enabled,
     )
     hunter = HunterAgent(
         index=index,
@@ -1954,7 +2048,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         query_batch_size=config.hunter_query_batch_size,
         top_k_per_query=config.hunter_top_k_per_query,
         max_candidates_total=config.hunter_max_candidates_total,
-        shared_context=shared_context,
+        shared_context=hunter_shared_context,
+        shared_context_metrics=hunter_shared_metrics,
         context_namespace="hunter",
         run_id=run_id,
         context_budget_chars=config.hunter_shared_context_budget_chars,
@@ -1994,6 +2089,17 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             json.dump(matches_data, f, indent=2)
 
     print(f"  Output: {output_dir}/")
+    _print_shared_context_metrics("architect", architect_shared_metrics)
+    _print_shared_context_metrics("hunter", hunter_shared_metrics)
+    metrics_path = _write_shared_context_metrics_file(
+        output_dir / "shared_context_metrics.json",
+        {
+            "architect": architect_shared_metrics,
+            "hunter": hunter_shared_metrics,
+        },
+    )
+    if metrics_path is not None:
+        print(f"  Shared context metrics: {metrics_path}")
 
     if getattr(args, "trace", False):
         from ageom.telemetry import get_event_log
@@ -2017,7 +2123,6 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         build_principal_graph,
     )
     from ageom.principal.models import OptimizationMetric
-    from ageom.shared_context import InMemorySharedContextStore
 
     config = AgeomConfig()
 
@@ -2066,10 +2171,9 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     metric = OptimizationMetric(args.metric)
     postgres_uri = "" if args.no_persist else config.postgres_uri
     architect_run_id = uuid.uuid4().hex
-    architect_shared_context = (
-        InMemorySharedContextStore()
-        if config.architect_shared_context_enabled
-        else None
+    architect_shared_context, architect_shared_metrics = await _create_shared_context(
+        config,
+        enabled=config.architect_shared_context_enabled,
     )
 
     print("Principal optimisation loop")
@@ -2086,6 +2190,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             llm=llm,
             checkpointer=checkpointer,
             shared_context=architect_shared_context,
+            shared_context_metrics=architect_shared_metrics,
             context_namespace=f"architect/{architect_run_id}",
             context_budget_chars=config.architect_shared_context_budget_chars,
         )
@@ -2115,6 +2220,14 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         print("  Trial history:")
         for entry in history:
             print(f"    Trial {entry['trial']}: loss={entry['loss']:.6f}")
+    _print_shared_context_metrics("architect", architect_shared_metrics)
+    metrics_out_dir = Path("output")
+    metrics_path = _write_shared_context_metrics_file(
+        metrics_out_dir / "optimize_shared_context_metrics.json",
+        {"architect": architect_shared_metrics},
+    )
+    if metrics_path is not None:
+        print(f"  Shared context metrics: {metrics_path}")
 
 
 async def _cmd_upsert_cdg(args: argparse.Namespace) -> None:
