@@ -16,6 +16,7 @@ from ageom.architect.models import (
     NodeStatus,
 )
 from ageom.architect.state import DecompositionState, _merge_nodes
+from ageom.shared_context import InMemorySharedContextStore
 
 # ---------------------------------------------------------------------------
 # Mock factories
@@ -702,3 +703,166 @@ class TestCritiqueHardening:
         assert len(updated) == 2
         assert all(n.status == NodeStatus.REJECTED for n in updated)
         assert result["critique_retries"] == 2
+
+
+class TestSharedContext:
+    @pytest.mark.asyncio
+    async def test_select_strategy_injects_and_writes_shared_context(self):
+        from ageom.architect.nodes import select_strategy
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        captured_users: list[str] = []
+
+        async def complete(system: str, user: str) -> str:
+            captured_users.append(user)
+            return json.dumps(
+                {
+                    "paradigm": "divide_and_conquer",
+                    "rationale": "standard choice",
+                    "variant_hint": "merge_sort",
+                }
+            )
+
+        llm.complete = complete
+        store = InMemorySharedContextStore()
+        await store.put(
+            "architect/test/strategy",
+            "Prior goal 'sort values' worked with divide_and_conquer",
+        )
+
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "",
+            "paradigm": "",
+            "skeleton_instantiated": False,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            shared_context=store,
+            context_namespace="architect/test",
+        )
+        config = {"configurable": {"deps": deps}}
+
+        await select_strategy(state, config)
+
+        assert captured_users
+        assert "Shared Context" in captured_users[0]
+        records = await store.recent("architect/test/strategy", limit=5)
+        assert any("Paradigm: divide_and_conquer" in r.text for r in records)
+
+    @pytest.mark.asyncio
+    async def test_decompose_node_injects_and_writes_shared_context(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        captured_users: list[str] = []
+
+        async def complete(system: str, user: str) -> str:
+            captured_users.append(user)
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Split",
+                            "description": "Split list into two halves",
+                            "concept_type": "divide_and_conquer",
+                            "inputs": [{"name": "data", "type_desc": "list[int]"}],
+                            "outputs": [
+                                {"name": "left", "type_desc": "list[int]"},
+                                {"name": "right", "type_desc": "list[int]"},
+                            ],
+                            "is_atomic": False,
+                            "matched_primitive": None,
+                        },
+                        {
+                            "name": "merge",
+                            "description": "Merge sorted halves",
+                            "concept_type": "sorting",
+                            "inputs": [
+                                {"name": "left", "type_desc": "list[int]"},
+                                {"name": "right", "type_desc": "list[int]"},
+                            ],
+                            "outputs": [{"name": "result", "type_desc": "list[int]"}],
+                            "is_atomic": True,
+                            "matched_primitive": "merge",
+                        },
+                    ],
+                    "edges": [
+                        {
+                            "source_name": "Split",
+                            "target_name": "merge",
+                            "output_name": "left",
+                            "input_name": "left",
+                            "data_type": "list[int]",
+                        }
+                    ],
+                }
+            )
+
+        llm.complete = complete
+        store = InMemorySharedContextStore()
+        await store.put(
+            "architect/test/decompose",
+            "For merge sort, ensure split feeds merge via left/right outputs.",
+        )
+
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Sort",
+            description="Sort input list",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="list[int]")],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "divide_and_conquer",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            shared_context=store,
+            context_namespace="architect/test",
+        )
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_node(state, config)
+
+        assert result["nodes"]
+        assert captured_users
+        assert "Shared Context" in captured_users[0]
+        records = await store.recent("architect/test/decompose", limit=5)
+        assert any("Parent: Sort" in r.text for r in records)

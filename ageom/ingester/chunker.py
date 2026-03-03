@@ -6,6 +6,7 @@ for existing sub-atoms, and validates coverage via a critic loop.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 
@@ -47,6 +48,7 @@ from ageom.llm_router import (
     INGESTER_HOIST_STATE,
     select_llm,
 )
+from ageom.shared_context import SharedContextStore, format_context_block
 from ageom.protocols import SemanticIndex
 
 logger = logging.getLogger(__name__)
@@ -77,6 +79,10 @@ class ChunkerDeps:
     max_depth: int = 1
     line_threshold: int = 30
     monitor: IngestMonitor | None = None
+    shared_context: SharedContextStore | None = None
+    context_namespace: str = ""
+    context_budget_chars: int = 900
+    parallelism: int = 1
 
 
 # ---------------------------------------------------------------------------
@@ -123,6 +129,45 @@ def _build_config_branches(dfg: RawDataFlowGraph) -> str:
             f"(lines {cb.lines[0]}-{cb.lines[1]})"
         )
     return "\n".join(lines)
+
+
+async def _search_context(
+    deps: ChunkerDeps,
+    *,
+    channel: str,
+    query: str,
+    limit: int = 3,
+) -> str:
+    store = deps.shared_context
+    ns = deps.context_namespace
+    if store is None or not ns:
+        return ""
+    try:
+        records = await store.search(f"{ns}/{channel}", query, limit=limit)
+        return format_context_block(
+            "Shared Context",
+            records,
+            max_chars=deps.context_budget_chars,
+        )
+    except Exception:
+        return ""
+
+
+async def _put_context(
+    deps: ChunkerDeps,
+    *,
+    channel: str,
+    text: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    store = deps.shared_context
+    ns = deps.context_namespace
+    if store is None or not ns:
+        return
+    try:
+        await store.put(f"{ns}/{channel}", text, metadata=metadata)
+    except Exception:
+        return
 
 
 def _compute_state_edges(
@@ -650,6 +695,9 @@ async def _decompose_single_atom(
     line_threshold: int,
     current_depth: int,
     monitor: IngestMonitor | None = None,
+    shared_context: SharedContextStore | None = None,
+    context_namespace: str = "",
+    context_budget_chars: int = 900,
 ) -> MacroAtomSpec:
     """Recursively decompose a single atom if it exceeds complexity thresholds."""
     if current_depth >= max_depth:
@@ -674,6 +722,22 @@ async def _decompose_single_atom(
         internal_calls=calls_str,
         source_code=source_code,
     )
+    if shared_context is not None and context_namespace:
+        try:
+            records = await shared_context.search(
+                f"{context_namespace}/decompose",
+                f"{atom.name} {atom.description}",
+                limit=3,
+            )
+            block = format_context_block(
+                "Shared Context",
+                records,
+                max_chars=context_budget_chars,
+            )
+            if block:
+                user_prompt += f"\n\n{block}"
+        except Exception:
+            pass
 
     try:
         if monitor:
@@ -698,6 +762,19 @@ async def _decompose_single_atom(
     children, sub_edges = _parse_sub_atoms(raw, current_depth)
     if not children:
         return atom
+    if shared_context is not None and context_namespace:
+        try:
+            await shared_context.put(
+                f"{context_namespace}/decompose",
+                (
+                    f"Atom: {atom.name}\n"
+                    f"Children: {', '.join(child.name for child in children)}\n"
+                    f"Sub-edge count: {len(sub_edges)}"
+                ),
+                metadata={"atom_name": atom.name, "depth": current_depth},
+            )
+        except Exception:
+            pass
 
     # Recurse into children
     recursed_children: list[MacroAtomSpec] = []
@@ -710,6 +787,9 @@ async def _decompose_single_atom(
             line_threshold,
             current_depth + 1,
             monitor=monitor,
+            shared_context=shared_context,
+            context_namespace=context_namespace,
+            context_budget_chars=context_budget_chars,
         )
         recursed_children.append(recursed)
 
@@ -735,18 +815,42 @@ async def decompose_complex_atoms(
     if max_depth <= 1:
         return {"validated_plan": validated}
 
-    decomposed_atoms: list[MacroAtomSpec] = []
-    for atom in plan.macro_atoms:
-        result = await _decompose_single_atom(
-            atom,
-            dfg,
-            deps.llm,
-            max_depth,
-            line_threshold,
-            current_depth=1,
-            monitor=mon,
-        )
-        decomposed_atoms.append(result)
+    parallelism = max(1, deps.parallelism)
+    if parallelism <= 1 or len(plan.macro_atoms) <= 1:
+        decomposed_atoms: list[MacroAtomSpec] = []
+        for atom in plan.macro_atoms:
+            result = await _decompose_single_atom(
+                atom,
+                dfg,
+                deps.llm,
+                max_depth,
+                line_threshold,
+                current_depth=1,
+                monitor=mon,
+                shared_context=deps.shared_context,
+                context_namespace=deps.context_namespace,
+                context_budget_chars=deps.context_budget_chars,
+            )
+            decomposed_atoms.append(result)
+    else:
+        semaphore = asyncio.Semaphore(parallelism)
+
+        async def _run(atom: MacroAtomSpec) -> MacroAtomSpec:
+            async with semaphore:
+                return await _decompose_single_atom(
+                    atom,
+                    dfg,
+                    deps.llm,
+                    max_depth,
+                    line_threshold,
+                    current_depth=1,
+                    monitor=mon,
+                    shared_context=deps.shared_context,
+                    context_namespace=deps.context_namespace,
+                    context_budget_chars=deps.context_budget_chars,
+                )
+
+        decomposed_atoms = list(await asyncio.gather(*[_run(a) for a in plan.macro_atoms]))
 
     new_plan = plan.model_copy(update={"macro_atoms": decomposed_atoms})
     new_validated = validated.model_copy(update={"plan": new_plan})
@@ -803,9 +907,7 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
     validated = state["validated_plan"]
     plan = validated.plan
 
-    enriched_atoms: list[MacroAtomSpec] = []
-
-    for atom in plan.macro_atoms:
+    async def _abstract_one(atom: MacroAtomSpec) -> MacroAtomSpec:
         user_prompt = CONCEPTUAL_ABSTRACT_USER.format(
             atom_name=atom.name,
             atom_description=atom.description,
@@ -814,6 +916,14 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
             outputs_spec=_format_io_specs(atom.outputs),
             method_names=", ".join(atom.method_names),
         )
+        shared_block = await _search_context(
+            deps,
+            channel="abstract",
+            query=f"{atom.name} {atom.concept_type.value}",
+            limit=3,
+        )
+        if shared_block:
+            user_prompt += f"\n\n{shared_block}"
 
         try:
             if mon:
@@ -828,9 +938,7 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
                 mon.llm_end(INGESTER_ABSTRACT, ok=False, error=str(exc))
             logger.warning("Conceptual abstraction failed for %s: %s", atom.name, exc)
             profile = ConceptualProfile(abstract_name=atom.name)
-            enriched = atom.model_copy(update={"conceptual_profile": profile})
-            enriched_atoms.append(enriched)
-            continue
+            return atom.model_copy(update={"conceptual_profile": profile})
 
         try:
             raw = extract_json(response)
@@ -841,12 +949,33 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
             )
             profile = ConceptualProfile(abstract_name=atom.name)
 
-        enriched = atom.model_copy(
+        await _put_context(
+            deps,
+            channel="abstract",
+            text=(
+                f"Atom: {atom.name}\n"
+                f"Abstract name: {profile.abstract_name}\n"
+                f"Transform: {profile.conceptual_transform}"
+            ),
+            metadata={"atom_name": atom.name, "concept_type": atom.concept_type.value},
+        )
+        return atom.model_copy(
             update={
                 "conceptual_profile": profile,
             }
         )
-        enriched_atoms.append(enriched)
+
+    parallelism = max(1, deps.parallelism)
+    if parallelism <= 1 or len(plan.macro_atoms) <= 1:
+        enriched_atoms = [await _abstract_one(atom) for atom in plan.macro_atoms]
+    else:
+        semaphore = asyncio.Semaphore(parallelism)
+
+        async def _run(atom: MacroAtomSpec) -> MacroAtomSpec:
+            async with semaphore:
+                return await _abstract_one(atom)
+
+        enriched_atoms = list(await asyncio.gather(*[_run(a) for a in plan.macro_atoms]))
 
     new_plan = plan.model_copy(update={"macro_atoms": enriched_atoms})
     new_validated = validated.model_copy(update={"plan": new_plan})

@@ -82,6 +82,8 @@ class AgeomConfig(BaseSettings):
     architect_max_depth: int = 8
     architect_llm_provider: str = ""  # falls back to llm_provider when empty
     architect_llm_model: str = ""
+    architect_shared_context_enabled: bool = True
+    architect_shared_context_budget_chars: int = 900
 
     # Synthesizer (Round 3)
     synthesizer_max_iterations: int = 10
@@ -93,6 +95,11 @@ class AgeomConfig(BaseSettings):
     ingester_llm_model: str = ""
     ingester_max_depth: int = 1  # max CDG depth (1 = current flat behavior)
     ingester_decompose_line_threshold: int = 30  # method lines triggering sub-decomposition
+    ingester_parallelism: int = 1
+    ingester_shared_context_enabled: bool = True
+    ingester_shared_context_budget_chars: int = 900
+    ingester_cache_enabled: bool = True
+    ingester_cache_dir: Path = Field(default=Path("data/ingest_cache"))
 
     # --- Per-prompt LLM overrides ---
     # Light tier  → qwen2.5-coder:7b  (mechanical, high-volume, GBNF-safe)

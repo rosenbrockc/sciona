@@ -7,6 +7,7 @@ and edges, and pre-filled MatchResults.
 
 from __future__ import annotations
 
+import asyncio
 import json
 
 from ageom.json_utils import extract_json
@@ -15,6 +16,7 @@ import logging
 from ageom.hunter.llm import LLMClient
 from ageom.ingester.ffi_emitter import generate_ffi_bindings, generate_ffi_imports
 from ageom.llm_router import INGESTER_OPAQUE_WITNESS, select_llm
+from ageom.shared_context import SharedContextStore, format_context_block
 
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import (
@@ -97,6 +99,11 @@ async def generate_opaque_witnesses(
     macro_atoms: list[MacroAtomSpec],
     dfg: RawDataFlowGraph,
     llm: LLMClient,
+    *,
+    shared_context: SharedContextStore | None = None,
+    context_namespace: str = "",
+    context_budget_chars: int = 900,
+    parallelism: int = 1,
 ) -> tuple[str, dict[str, str]]:
     """Generate AbstractArray-based witnesses for opaque DL atoms.
 
@@ -123,15 +130,9 @@ async def generate_opaque_witnesses(
         "",
     ]
 
-    name_map: dict[str, str] = {}
-
-    for atom in macro_atoms:
-        if not atom.is_opaque:
-            continue
-
+    async def _render_atom(atom: MacroAtomSpec) -> tuple[str, str, str]:
         fn_name = _snake_case(atom.name)
         witness_name = f"witness_{fn_name}"
-        name_map[atom.name] = witness_name
 
         # Attempt LLM-drafted witness
         mf = dfg.methods[0] if dfg.methods else None
@@ -151,6 +152,19 @@ async def generate_opaque_witnesses(
                     param_specs=param_specs,
                     return_type_spec="AbstractArray",
                 )
+                if shared_context is not None and context_namespace:
+                    records = await shared_context.search(
+                        f"{context_namespace}/opaque_witness",
+                        f"{atom.name} {atom.description}",
+                        limit=3,
+                    )
+                    block = format_context_block(
+                        "Shared Context",
+                        records,
+                        max_chars=context_budget_chars,
+                    )
+                    if block:
+                        user_prompt += f"\n\n{block}"
                 response = await select_llm(llm, INGESTER_OPAQUE_WITNESS).complete(
                     DRAFT_OPAQUE_WITNESS_SYSTEM, user_prompt
                 )
@@ -160,22 +174,56 @@ async def generate_opaque_witnesses(
                 logger.warning("LLM witness drafting failed for %s: %s", atom.name, exc)
 
         if witness_body:
-            # Build function with LLM-drafted body
             params = []
             for inp in atom.inputs:
                 params.append(f"{inp.name}: AbstractArray")
             param_str = ", ".join(params) if params else ""
-
-            lines.append(f"def {witness_name}({param_str}) -> AbstractArray:")
-            lines.append(f'    """Ghost witness for opaque boundary: {atom.name}."""')
-            # Indent each line of the body
+            block_lines = [
+                f"def {witness_name}({param_str}) -> AbstractArray:",
+                f'    """Ghost witness for opaque boundary: {atom.name}."""',
+            ]
             for body_line in witness_body.strip().splitlines():
-                lines.append(f"    {body_line}")
-            lines.append("")
-        else:
-            # Fallback: shape-preserving default
-            lines.append(_opaque_witness_fallback(atom))
-            lines.append("")
+                block_lines.append(f"    {body_line}")
+            block_lines.append("")
+            if shared_context is not None and context_namespace:
+                try:
+                    await shared_context.put(
+                        f"{context_namespace}/opaque_witness",
+                        (
+                            f"Opaque atom: {atom.name}\n"
+                            f"Witness: {witness_name}\n"
+                            f"Hint: prefer shape-preserving returns and AbstractArray typing"
+                        ),
+                        metadata={"atom_name": atom.name, "witness_name": witness_name},
+                    )
+                except Exception:
+                    pass
+            return atom.name, witness_name, "\n".join(block_lines)
+
+        fallback_block = _opaque_witness_fallback(atom) + "\n"
+        return atom.name, witness_name, fallback_block
+
+    opaque_atoms = [atom for atom in macro_atoms if atom.is_opaque]
+    if not opaque_atoms:
+        return "\n".join(lines), {}
+
+    par = max(1, parallelism)
+    if par <= 1 or len(opaque_atoms) <= 1:
+        rendered = [await _render_atom(atom) for atom in opaque_atoms]
+    else:
+        semaphore = asyncio.Semaphore(par)
+
+        async def _run(atom: MacroAtomSpec) -> tuple[str, str, str]:
+            async with semaphore:
+                return await _render_atom(atom)
+
+        rendered = list(await asyncio.gather(*[_run(a) for a in opaque_atoms]))
+
+    name_map: dict[str, str] = {}
+    for atom_name, witness_name, block in rendered:
+        name_map[atom_name] = witness_name
+        lines.append(block.rstrip("\n"))
+        lines.append("")
 
     return "\n".join(lines), name_map
 

@@ -35,6 +35,7 @@ from ageom.llm_router import (
     ARCHITECT_STRATEGY,
     select_llm,
 )
+from ageom.shared_context import format_context_block
 
 # ---------------------------------------------------------------------------
 # Conjugate prior/likelihood pair detection
@@ -209,6 +210,59 @@ def _parse_json(text: str) -> dict | None:
         return None
 
 
+def _context_namespace(config: RunnableConfig, deps: DecompositionDeps) -> str:
+    base = deps.context_namespace.strip()
+    if not base:
+        return ""
+    run_id = str(config.get("configurable", {}).get("run_id", "")).strip()
+    return f"{base}/{run_id}" if run_id else base
+
+
+async def _search_context(
+    deps: DecompositionDeps,
+    config: RunnableConfig,
+    *,
+    channel: str,
+    query: str,
+    limit: int = 3,
+) -> str:
+    store = deps.shared_context
+    if store is None:
+        return ""
+    ns = _context_namespace(config, deps)
+    if not ns:
+        return ""
+    try:
+        records = await store.search(f"{ns}/{channel}", query, limit=limit)
+        return format_context_block(
+            "Shared Context",
+            records,
+            max_chars=deps.context_budget_chars,
+        )
+    except Exception:
+        return ""
+
+
+async def _put_context(
+    deps: DecompositionDeps,
+    config: RunnableConfig,
+    *,
+    channel: str,
+    text: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    store = deps.shared_context
+    if store is None:
+        return
+    ns = _context_namespace(config, deps)
+    if not ns:
+        return
+    try:
+        await store.put(f"{ns}/{channel}", text, metadata=metadata)
+    except Exception:
+        return
+
+
 # ---------------------------------------------------------------------------
 # Node: select_strategy
 # ---------------------------------------------------------------------------
@@ -232,6 +286,17 @@ async def select_strategy(
     # ------------------------------------------------------------------
     conjugate_spec = _detect_conjugate_pair(goal)
     if conjugate_spec is not None:
+        await _put_context(
+            deps,
+            config,
+            channel="strategy",
+            text=(
+                f"Goal: {goal}\n"
+                f"Paradigm: conjugate_update\n"
+                f"Conjugate pair: {conjugate_spec['pair_name']}"
+            ),
+            metadata={"paradigm": "conjugate_update"},
+        )
         # Signal the router to short-circuit into advance_conjugate_node
         root_id = f"root_{uuid.uuid4().hex[:8]}"
         root = AlgorithmicNode(
@@ -274,10 +339,20 @@ async def select_strategy(
     # ------------------------------------------------------------------
     available = list(SKELETON_TEMPLATES.keys())
     available_str = "\n".join(f"  - {ct.value}" for ct in available)
+    user_prompt = SELECT_STRATEGY_USER.format(goal=goal)
+    shared_block = await _search_context(
+        deps,
+        config,
+        channel="strategy",
+        query=goal,
+        limit=3,
+    )
+    if shared_block:
+        user_prompt += f"\n\n{shared_block}"
 
     response = await select_llm(deps.llm, ARCHITECT_STRATEGY).complete(
         SELECT_STRATEGY_SYSTEM.format(available_paradigms=available_str),
-        SELECT_STRATEGY_USER.format(goal=goal),
+        user_prompt,
     )
 
     parsed = _parse_json(response)
@@ -352,6 +427,19 @@ async def select_strategy(
         "num_nodes": len(nodes),
         "num_pending": len(pending),
     }
+
+    await _put_context(
+        deps,
+        config,
+        channel="strategy",
+        text=(
+            f"Goal: {goal}\n"
+            f"Paradigm: {paradigm.value}\n"
+            f"Variant: {variant_hint or '(none)'}\n"
+            f"Skeleton: {skeleton_instantiated}"
+        ),
+        metadata={"paradigm": paradigm.value},
+    )
 
     return {
         "nodes": nodes,
@@ -429,20 +517,31 @@ async def decompose_node(
         if examples:
             example_decompositions = format_examples_for_prompt(examples)
 
+    user_prompt = DECOMPOSE_NODE_USER.format(
+        node_name=node.name,
+        node_description=node.description,
+        concept_type=node.concept_type.value,
+        inputs=_format_io(node.inputs),
+        outputs=_format_io(node.outputs),
+        depth=node.depth,
+        max_depth=max_depth,
+        primitives=_format_primitives(all_prims),
+        example_decompositions=example_decompositions,
+        retry_context=retry_context,
+    )
+    shared_block = await _search_context(
+        deps,
+        config,
+        channel="decompose",
+        query=f"{node.name} {node.description} {node.concept_type.value}",
+        limit=3,
+    )
+    if shared_block:
+        user_prompt += f"\n\n{shared_block}"
+
     response = await select_llm(deps.llm, ARCHITECT_DECOMPOSE).complete(
         DECOMPOSE_NODE_SYSTEM,
-        DECOMPOSE_NODE_USER.format(
-            node_name=node.name,
-            node_description=node.description,
-            concept_type=node.concept_type.value,
-            inputs=_format_io(node.inputs),
-            outputs=_format_io(node.outputs),
-            depth=node.depth,
-            max_depth=max_depth,
-            primitives=_format_primitives(all_prims),
-            example_decompositions=example_decompositions,
-            retry_context=retry_context,
-        ),
+        user_prompt,
     )
 
     parsed = _parse_json(response)
@@ -536,6 +635,19 @@ async def decompose_node(
         "num_edges": len(new_edges),
     }
 
+    await _put_context(
+        deps,
+        config,
+        channel="decompose",
+        text=(
+            f"Parent: {node.name}\n"
+            f"Children: {', '.join(n.name for n in new_nodes) or '(none)'}\n"
+            f"Edges: {len(new_edges)}\n"
+            f"Retry: {retries}"
+        ),
+        metadata={"node_id": current_id, "node_name": node.name},
+    )
+
     return {
         "nodes": new_nodes,
         "edges": new_edges,
@@ -626,6 +738,17 @@ async def critique_decomposition(
 
     if issues:
         reason = "Deterministic checks failed: " + "; ".join(issues)
+        await _put_context(
+            deps,
+            config,
+            channel="critique",
+            text=(
+                f"Parent: {parent.name}\n"
+                f"Approved: False\n"
+                f"Reason: {reason}"
+            ),
+            metadata={"node_id": current_id, "phase": "deterministic"},
+        )
         return {
             "critique_passed": False,
             "critique_reason": reason,
@@ -650,20 +773,30 @@ async def critique_decomposition(
     )
 
     catalog_prims = deps.catalog.find_matching_primitives(parent, k=5)
+    critique_prompt = CRITIQUE_USER.format(
+        parent_name=parent.name,
+        parent_description=parent.description,
+        parent_inputs=_format_io(parent.inputs),
+        parent_outputs=_format_io(parent.outputs),
+        sub_nodes=sub_nodes_str,
+        edges=edges_str or "  (no edges)",
+        current_depth=parent.depth,
+        max_depth=max_depth,
+        primitives=_format_primitives(catalog_prims),
+    )
+    shared_block = await _search_context(
+        deps,
+        config,
+        channel="critique",
+        query=f"{parent.name} {parent.description}",
+        limit=3,
+    )
+    if shared_block:
+        critique_prompt += f"\n\n{shared_block}"
 
     response = await select_llm(deps.llm, ARCHITECT_CRITIQUE).complete(
         CRITIQUE_SYSTEM,
-        CRITIQUE_USER.format(
-            parent_name=parent.name,
-            parent_description=parent.description,
-            parent_inputs=_format_io(parent.inputs),
-            parent_outputs=_format_io(parent.outputs),
-            sub_nodes=sub_nodes_str,
-            edges=edges_str or "  (no edges)",
-            current_depth=parent.depth,
-            max_depth=max_depth,
-            primitives=_format_primitives(catalog_prims),
-        ),
+        critique_prompt,
     )
 
     parsed = _parse_json(response)
@@ -671,6 +804,17 @@ async def critique_decomposition(
     if parsed is None:
         # Deterministic checks already passed, so malformed critique should not
         # block progress solely due LLM formatting.
+        await _put_context(
+            deps,
+            config,
+            channel="critique",
+            text=(
+                f"Parent: {parent.name}\n"
+                "Approved: True\n"
+                "Reason: LLM critique parse failed; accepted by deterministic checks"
+            ),
+            metadata={"node_id": current_id, "phase": "llm", "parse_error": True},
+        )
         return {
             "critique_passed": True,
             "critique_reason": "LLM critique parse failed; accepted by deterministic checks",
@@ -680,6 +824,17 @@ async def critique_decomposition(
     approved_raw = parsed.get("approved")
     if not isinstance(approved_raw, bool):
         # Same fail-open behavior for wrong JSON shape (e.g., missing "approved").
+        await _put_context(
+            deps,
+            config,
+            channel="critique",
+            text=(
+                f"Parent: {parent.name}\n"
+                "Approved: True\n"
+                "Reason: LLM critique had invalid schema; accepted by deterministic checks"
+            ),
+            metadata={"node_id": current_id, "phase": "llm", "schema_error": True},
+        )
         return {
             "critique_passed": True,
             "critique_reason": "LLM critique had invalid schema; accepted by deterministic checks",
@@ -715,6 +870,19 @@ async def critique_decomposition(
     }
     if flagged_updates:
         result["nodes"] = flagged_updates
+
+    await _put_context(
+        deps,
+        config,
+        channel="critique",
+        text=(
+            f"Parent: {parent.name}\n"
+            f"Approved: {approved}\n"
+            f"Reason: {reason or '(none)'}\n"
+            f"Flagged: {', '.join(flagged) if flagged else '(none)'}"
+        ),
+        metadata={"node_id": current_id, "phase": "llm", "approved": approved},
+    )
 
     return result
 

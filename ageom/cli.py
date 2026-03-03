@@ -1053,6 +1053,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
     from ageom.config import AgeomConfig
     from ageom.ingester import IngesterAgent
     from ageom.ingester.monitor import IngestMonitor
+    from ageom.shared_context import InMemorySharedContextStore
     from ageom.types import Prover
 
     config = AgeomConfig()
@@ -1134,6 +1135,12 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             except Exception as exc:
                 print(f"Warning: failed to load FAISS index: {exc}", file=sys.stderr)
 
+        ingester_run_id = uuid.uuid4().hex
+        shared_context = (
+            InMemorySharedContextStore()
+            if config.ingester_shared_context_enabled
+            else None
+        )
         agent = IngesterAgent(
             llm=llm,
             proof_env=proof_env,
@@ -1142,6 +1149,12 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             max_depth=config.ingester_max_depth,
             line_threshold=config.ingester_decompose_line_threshold,
             monitor=monitor,
+            shared_context=shared_context,
+            context_namespace=f"ingester/{ingester_run_id}",
+            context_budget_chars=config.ingester_shared_context_budget_chars,
+            parallelism=config.ingester_parallelism,
+            enable_cache=config.ingester_cache_enabled,
+            cache_dir=str(config.ingester_cache_dir),
         )
 
         print(f"Ingesting {'class' if not getattr(args, 'procedural', False) else 'procedural'} '{args.class_name}' from {source_path}")
@@ -1235,6 +1248,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
     from ageom.config import AgeomConfig
+    from ageom.shared_context import InMemorySharedContextStore
 
     config = AgeomConfig()
     max_depth = args.max_depth or config.architect_max_depth
@@ -1293,6 +1307,13 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
 
     # Determine persistence URI
     postgres_uri = "" if args.no_persist else config.postgres_uri
+    architect_run_id = uuid.uuid4().hex
+    architect_shared_context = (
+        InMemorySharedContextStore()
+        if config.architect_shared_context_enabled
+        else None
+    )
+    architect_context_namespace = f"architect/{architect_run_id}"
 
     # Set up graph retriever (opt-in)
     retriever = None
@@ -1318,6 +1339,9 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
                     max_depth=max_depth,
                     checkpointer=checkpointer,
                     graph_retriever=retriever,
+                    shared_context=architect_shared_context,
+                    context_namespace=architect_context_namespace,
+                    context_budget_chars=config.architect_shared_context_budget_chars,
                 )
                 cdg = await _run_decompose(agent, args, max_depth, catalog)
         else:
@@ -1327,6 +1351,9 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
                 llm=llm,
                 max_depth=max_depth,
                 checkpointer=checkpointer,
+                shared_context=architect_shared_context,
+                context_namespace=architect_context_namespace,
+                context_budget_chars=config.architect_shared_context_budget_chars,
             )
             cdg = await _run_decompose(agent, args, max_depth, catalog)
 
@@ -1831,6 +1858,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             user=config.memgraph_user,
             password=config.memgraph_password,
         )
+    architect_run_id = uuid.uuid4().hex
+    architect_shared_context = (
+        InMemorySharedContextStore()
+        if config.architect_shared_context_enabled
+        else None
+    )
 
     async with create_checkpointer("") as checkpointer:
         if graph_store_ctx is not None:
@@ -1842,6 +1875,9 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     llm=llm,
                     checkpointer=checkpointer,
                     graph_retriever=retriever,
+                    shared_context=architect_shared_context,
+                    context_namespace=f"architect/{architect_run_id}",
+                    context_budget_chars=config.architect_shared_context_budget_chars,
                 )
                 cdg = await architect.decompose(args.goal)
         else:
@@ -1850,6 +1886,9 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 skill_index=skill_index,
                 llm=llm,
                 checkpointer=checkpointer,
+                shared_context=architect_shared_context,
+                context_namespace=f"architect/{architect_run_id}",
+                context_budget_chars=config.architect_shared_context_budget_chars,
             )
             cdg = await architect.decompose(args.goal)
 
@@ -1978,6 +2017,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         build_principal_graph,
     )
     from ageom.principal.models import OptimizationMetric
+    from ageom.shared_context import InMemorySharedContextStore
 
     config = AgeomConfig()
 
@@ -2025,6 +2065,12 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     metric = OptimizationMetric(args.metric)
     postgres_uri = "" if args.no_persist else config.postgres_uri
+    architect_run_id = uuid.uuid4().hex
+    architect_shared_context = (
+        InMemorySharedContextStore()
+        if config.architect_shared_context_enabled
+        else None
+    )
 
     print("Principal optimisation loop")
     print(f"  Goal: {args.goal}")
@@ -2039,6 +2085,9 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             skill_index=skill_index,
             llm=llm,
             checkpointer=checkpointer,
+            shared_context=architect_shared_context,
+            context_namespace=f"architect/{architect_run_id}",
+            context_budget_chars=config.architect_shared_context_budget_chars,
         )
 
         sandbox = ExecutionSandbox(timeout_s=args.timeout)

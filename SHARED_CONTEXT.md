@@ -61,6 +61,9 @@ Enable agents to share useful context across parallel prompt calls and across re
 2. Wire Hunter to read/write shared context for ranking/reformulation/failure analysis.
 3. Parallelize orchestration Hunter calls with configurable concurrency.
 
+Implementation status:
+- Completed in code (`ageom/shared_context.py`, Hunter nodes/graph/orchestrator wiring).
+
 ### Phase 2
 
 1. Add persistent backend for shared context.
@@ -71,11 +74,25 @@ Enable agents to share useful context across parallel prompt calls and across re
    - token/latency deltas
    - match success deltas
 
+Implementation status:
+- In progress:
+  - Ingestion content-addressed cache implemented (`ageom/ingester/cache.py`, `IngesterAgent` cache hit/save path).
+  - Ingester prompt-loop shared context + bounded parallelism implemented (`chunker.py`, `emitter.py`).
+- Pending:
+  - Persistent shared-context backend and metrics.
+
 ### Phase 3
 
 1. Extend context sharing to Architect/Ingester/Synthesizer loops.
 2. Add promotion and eviction policies (confidence/age/frequency based).
 3. Add optional provenance labels for explainable context usage.
+
+Implementation status:
+- In progress:
+  - Architect shared context wired into strategy/decompose/critique prompts.
+  - Principal optimization now reuses a single Architect shared-context namespace across trials/forks.
+- Pending:
+  - Promotion/eviction policy and provenance labels.
 
 ## Open Source Options
 

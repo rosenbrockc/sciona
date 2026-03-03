@@ -24,6 +24,11 @@ from ageom.architect.handoff import CDGExport
 from ageom.architect.models import ConceptType, DependencyEdge
 from ageom.hunter.llm import LLMClient
 from ageom.ingester.chunker import ChunkerDeps, build_chunker_graph
+from ageom.ingester.cache import (
+    compute_ingest_cache_key,
+    load_ingest_cache,
+    save_ingest_cache,
+)
 from ageom.ingester.base_extractor import EXTENSION_MAP, BaseExtractor, SourceLanguage
 from ageom.ingester.emitter import (
     build_procedural_plan,
@@ -53,6 +58,7 @@ from ageom.llm_router import (
     INGESTER_FIX_TYPE,
     select_llm,
 )
+from ageom.shared_context import SharedContextStore
 from ageom.protocols import ProofEnvironment, SemanticIndex
 
 logger = logging.getLogger(__name__)
@@ -162,6 +168,10 @@ class IngesterDeps:
     max_depth: int = 1
     line_threshold: int = 30
     monitor: IngestMonitor | None = None
+    shared_context: SharedContextStore | None = None
+    context_namespace: str = ""
+    context_budget_chars: int = 900
+    parallelism: int = 1
 
 
 # ---------------------------------------------------------------------------
@@ -468,6 +478,10 @@ async def phase2_chunk(state: IngesterState, config: RunnableConfig) -> dict[str
         max_depth=deps.max_depth,
         line_threshold=deps.line_threshold,
         monitor=deps.monitor,
+        shared_context=deps.shared_context,
+        context_namespace=deps.context_namespace,
+        context_budget_chars=deps.context_budget_chars,
+        parallelism=deps.parallelism,
     )
     chunker_graph = build_chunker_graph().compile()
 
@@ -544,6 +558,10 @@ async def phase3_emit(state: IngesterState, config: RunnableConfig) -> dict[str,
                 state["validated_plan"].plan.macro_atoms,
                 dfg,
                 deps.llm,
+                shared_context=deps.shared_context,
+                context_namespace=deps.context_namespace,
+                context_budget_chars=deps.context_budget_chars,
+                parallelism=deps.parallelism,
             )
             if witness_source.strip():
                 bundle = bundle.model_copy(
@@ -928,6 +946,12 @@ class IngesterAgent:
         max_depth: int = 1,
         line_threshold: int = 30,
         monitor: IngestMonitor | None = None,
+        shared_context: SharedContextStore | None = None,
+        context_namespace: str = "",
+        context_budget_chars: int = 900,
+        parallelism: int = 1,
+        enable_cache: bool = False,
+        cache_dir: str | None = None,
     ) -> None:
         global _MAX_REPAIR_RETRIES
         _MAX_REPAIR_RETRIES = max_repair_retries
@@ -940,8 +964,14 @@ class IngesterAgent:
             max_depth=max_depth,
             line_threshold=line_threshold,
             monitor=monitor,
+            shared_context=shared_context,
+            context_namespace=context_namespace,
+            context_budget_chars=context_budget_chars,
+            parallelism=max(1, parallelism),
         )
         self._graph = build_ingester_graph().compile()
+        self._enable_cache = enable_cache
+        self._cache_dir = Path(cache_dir) if cache_dir else Path("data/ingest_cache")
 
     async def ingest(
         self, source_path: str, class_name: str, *, raise_on_error: bool = False
@@ -955,6 +985,21 @@ class IngesterAgent:
         Returns:
             An ``IngestionBundle`` with CDG, generated source, and match results.
         """
+        cache_key = ""
+        if self._enable_cache:
+            try:
+                cache_key = compute_ingest_cache_key(
+                    source_path=source_path,
+                    class_name=class_name,
+                    max_depth=self._deps.max_depth,
+                    line_threshold=self._deps.line_threshold,
+                )
+                cached = load_ingest_cache(self._cache_dir, cache_key)
+                if cached is not None:
+                    return cached
+            except Exception:
+                cache_key = ""
+
         initial_state: dict[str, Any] = {
             "source_path": source_path,
             "class_name": class_name,
@@ -981,6 +1026,11 @@ class IngesterAgent:
             raise RuntimeError(str(final_state["error"]))
 
         bundle: IngestionBundle = final_state["bundle"]
+        if self._enable_cache and cache_key and not final_state.get("error"):
+            try:
+                save_ingest_cache(self._cache_dir, cache_key, bundle)
+            except Exception:
+                pass
         return bundle
 
     async def ingest_procedural(

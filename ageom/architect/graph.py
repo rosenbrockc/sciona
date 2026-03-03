@@ -23,6 +23,7 @@ from ageom.architect.nodes import (
 )
 from ageom.architect.state import DecompositionDeps, DecompositionState
 from ageom.hunter.llm import LLMClient
+from ageom.shared_context import SharedContextStore
 
 
 def build_graph() -> StateGraph:
@@ -77,12 +78,18 @@ class DecompositionAgent:
         max_depth: int = 8,
         checkpointer: BaseCheckpointSaver | None = None,
         graph_retriever: Any = None,
+        shared_context: SharedContextStore | None = None,
+        context_namespace: str = "",
+        context_budget_chars: int = 900,
     ) -> None:
         self._deps = DecompositionDeps(
             catalog=catalog,
             skill_index=skill_index,
             llm=llm,
             graph_retriever=graph_retriever,
+            shared_context=shared_context,
+            context_namespace=context_namespace,
+            context_budget_chars=context_budget_chars,
         )
         self._max_depth = max_depth
         self._graph = build_graph().compile(checkpointer=checkpointer)
