@@ -14,6 +14,7 @@ from ageom.hunter.nodes import (
 )
 from ageom.hunter.state import HunterState
 from ageom.protocols import SemanticIndex, VerificationOracle
+from ageom.shared_context import SharedContextStore
 from ageom.types import MatchResult, PDGNode
 
 hunter_graph: Graph[HunterState, HunterDeps, MatchResult] = Graph(
@@ -41,8 +42,17 @@ class HunterAgent:
         query_batch_size: int = 40,
         top_k_per_query: int = 50,
         max_candidates_total: int = 3000,
+        shared_context: SharedContextStore | None = None,
+        context_namespace: str = "hunter",
+        run_id: str | None = None,
+        context_budget_chars: int = 900,
     ) -> None:
-        self._deps = HunterDeps(index=index, oracle=oracle, llm=llm)
+        self._deps = HunterDeps(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            shared_context=shared_context,
+        )
         self._max_iterations = max_iterations
         self._top_k_verify = top_k_verify
         self._search_k = search_k
@@ -51,9 +61,16 @@ class HunterAgent:
         self._query_batch_size = query_batch_size
         self._top_k_per_query = top_k_per_query
         self._max_candidates_total = max_candidates_total
+        self._context_namespace = context_namespace
+        self._run_id = run_id
+        self._context_budget_chars = context_budget_chars
 
     async def find_match(self, pdg_node: PDGNode) -> MatchResult:
         """Run the Hunter graph to find a verified match for the PDG node."""
+        namespace = self._context_namespace.strip() or "hunter"
+        if self._run_id:
+            namespace = f"{namespace}/{self._run_id}"
+
         state = HunterState(
             pdg_node=pdg_node,
             max_iterations=self._max_iterations,
@@ -64,6 +81,8 @@ class HunterAgent:
             query_batch_size=self._query_batch_size,
             top_k_per_query=self._top_k_per_query,
             max_candidates_total=self._max_candidates_total,
+            context_namespace=namespace,
+            context_budget_chars=self._context_budget_chars,
         )
 
         result = await hunter_graph.run(

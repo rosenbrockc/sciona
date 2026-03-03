@@ -740,14 +740,23 @@ class TestWriteToAgeoAtoms:
         return str(src)
 
     @pytest.mark.asyncio
-    async def test_write_artefacts(self, ecg_source):
+    async def test_write_artefacts(self, ecg_source, tmp_path):
         agent, _ = _make_agent()
         bundle = await agent.ingest(ecg_source, "ECGProcessor")
 
-        BIOSPPY_OUT.mkdir(parents=True, exist_ok=True)
+        output_dir = BIOSPPY_OUT
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            probe = output_dir / ".write_probe"
+            probe.write_text("ok")
+            probe.unlink()
+        except OSError:
+            # Sandbox/CI fallback: keep artefact writes inside temp workspace.
+            output_dir = tmp_path / "biosppy_out"
+            output_dir.mkdir(parents=True, exist_ok=True)
 
         # CDG
-        cdg_path = BIOSPPY_OUT / "ecg_cdg.json"
+        cdg_path = output_dir / "ecg_cdg.json"
         save_json(bundle.cdg, cdg_path)
         assert cdg_path.exists()
 
@@ -758,23 +767,23 @@ class TestWriteToAgeoAtoms:
         assert len(loaded["edges"]) >= 6
 
         # Atoms
-        atoms_path = BIOSPPY_OUT / "ecg.py"
+        atoms_path = output_dir / "ecg.py"
         atoms_path.write_text(bundle.generated_atoms)
         assert atoms_path.exists()
 
         # Witnesses
-        witnesses_path = BIOSPPY_OUT / "ecg_witnesses.py"
+        witnesses_path = output_dir / "ecg_witnesses.py"
         witnesses_path.write_text(bundle.generated_witnesses)
         assert witnesses_path.exists()
 
         # State models
         if bundle.generated_state_models:
-            state_path = BIOSPPY_OUT / "ecg_state.py"
+            state_path = output_dir / "ecg_state.py"
             state_path.write_text(bundle.generated_state_models)
             assert state_path.exists()
 
         # __init__.py
-        init_path = BIOSPPY_OUT / "__init__.py"
+        init_path = output_dir / "__init__.py"
         init_path.write_text(
             '"""BioSPPy ECG atoms ingested via the Smart Ingester."""\n'
         )

@@ -143,8 +143,8 @@ class TestSubprocessCLIClient:
             "claude", "-p", "--output-format", "text",
             "--system-prompt", "You are helpful.",
             "--model", "sonnet",
-            "--max-tokens", "2048",
         ]
+        assert "--max-tokens" not in cmd
 
     def test_claude_cmd_no_system(self):
         c = SubprocessCLIClient(cli="claude", model="sonnet", max_tokens=1024)

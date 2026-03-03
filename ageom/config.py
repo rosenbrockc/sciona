@@ -71,6 +71,8 @@ class AgeomConfig(BaseSettings):
     hunter_top_k_per_query: int = 50
     hunter_max_candidates_total: int = 3000
     hunter_verify_concurrency: int = 1  # >1 enables parallel verification
+    hunter_shared_context_enabled: bool = True
+    hunter_shared_context_budget_chars: int = 900
 
     # Architect (Round 1)
     skill_index_dir: Path = Field(default=Path("data/skill_index"))
@@ -140,6 +142,7 @@ class AgeomConfig(BaseSettings):
     # Orchestrator per-prompt
     orchestrator_refine_llm_provider: str = "llama_cpp"
     orchestrator_refine_llm_model: str = "qwen3:14b"  # medium: predicate splitting
+    orchestrator_hunter_concurrency: int = 1
 
     # Python target
     python_path: str = "python"

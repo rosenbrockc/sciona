@@ -84,9 +84,8 @@ async def list_cdgs(
     return rows
 
 
-@app.get("/api/cdg")
-async def get_cdg(repo: str = Query(..., description="Full repo path")) -> dict[str, Any]:
-    """Return full CDG JSON (nodes + edges + metadata) for a repo."""
+async def _load_cdg(repo: str) -> dict[str, Any]:
+    """Load full CDG JSON (nodes + edges + metadata) for a repo."""
     driver = app.state.driver
 
     async with driver.session() as session:
@@ -192,6 +191,18 @@ async def get_cdg(repo: str = Query(..., description="Full repo path")) -> dict[
         "edges": edges,
         "metadata": {"repo": repo},
     }
+
+
+@app.get("/api/cdg")
+async def get_cdg(repo: str = Query(..., description="Full repo path")) -> dict[str, Any]:
+    """Return full CDG JSON (nodes + edges + metadata) for a repo."""
+    return await _load_cdg(repo)
+
+
+@app.get("/api/cdgs/{repo:path}")
+async def get_cdg_by_path(repo: str) -> dict[str, Any]:
+    """Backward-compatible path form: /api/cdgs/{repo}."""
+    return await _load_cdg(repo)
 
 
 class IsomorphismQuery(BaseModel):

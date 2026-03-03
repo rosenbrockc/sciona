@@ -11,6 +11,7 @@ import socketserver
 import sys
 import threading
 import time
+import uuid
 import webbrowser
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
@@ -1766,6 +1767,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     from ageom.indexer.faiss_store import FAISSStore
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.orchestrator import run_orchestration
+    from ageom.shared_context import InMemorySharedContextStore
     from ageom.types import Prover
 
     config = AgeomConfig()
@@ -1895,6 +1897,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         print(f"Error setting up hunter LLM: {exc}", file=sys.stderr)
         sys.exit(1)
 
+    run_id = uuid.uuid4().hex
+    shared_context = (
+        InMemorySharedContextStore()
+        if config.hunter_shared_context_enabled
+        else None
+    )
     hunter = HunterAgent(
         index=index,
         oracle=oracle,
@@ -1907,6 +1915,10 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         query_batch_size=config.hunter_query_batch_size,
         top_k_per_query=config.hunter_top_k_per_query,
         max_candidates_total=config.hunter_max_candidates_total,
+        shared_context=shared_context,
+        context_namespace="hunter",
+        run_id=run_id,
+        context_budget_chars=config.hunter_shared_context_budget_chars,
     )
 
     # Step 3: Run orchestration loop
@@ -1918,6 +1930,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             llm=llm,
             prover=prover,
             max_rounds=args.max_rounds,
+            hunter_concurrency=config.orchestrator_hunter_concurrency,
         )
     finally:
         await env.close()

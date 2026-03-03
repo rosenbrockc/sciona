@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from ageom.shared_context import InMemorySharedContextStore
 from ageom.hunter.state import HunterState
 from ageom.types import (
     Declaration,
@@ -265,3 +266,78 @@ class TestHunterSpeculativeLocal:
         assert llm.grammar_calls >= 2  # rank + reformulate
         # First InitialSearch uses one query; second uses the 4-query batch.
         assert search_calls >= 5
+
+
+class _CapturePromptLLM:
+    def __init__(self) -> None:
+        self.rank_users: list[str] = []
+
+    async def complete(self, system: str, user: str) -> str:
+        s = system.lower()
+        if "formal mathematics expert" in s and "rank" in s:
+            self.rank_users.append(user)
+            return "[0]"
+        if "search expert" in s or "reformulate" in s:
+            return '["query1"]'
+        if "analyzing why" in s:
+            return "analysis"
+        return "[]"
+
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
+        return await self.complete(system, user)
+
+
+class TestHunterSharedContext:
+    @pytest.mark.asyncio
+    async def test_writes_verified_match_to_shared_context(
+        self, pdg_node, correct_decl, wrong_decl
+    ):
+        from ageom.hunter.graph import HunterAgent
+
+        store = InMemorySharedContextStore()
+        index = _make_mock_index([correct_decl, wrong_decl])
+        oracle = _make_mock_oracle({"Nat.add_comm"})
+        llm = _make_mock_llm()
+
+        agent = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            shared_context=store,
+            run_id="test-run",
+        )
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        records = await store.recent("hunter/test-run/success", limit=3)
+        assert records
+        assert any("Nat.add_comm" in rec.text for rec in records)
+
+    @pytest.mark.asyncio
+    async def test_injects_shared_context_into_rank_prompt(self, pdg_node, wrong_decl):
+        from ageom.hunter.graph import HunterAgent
+
+        store = InMemorySharedContextStore()
+        await store.put(
+            "hunter/run-ctx/success",
+            (
+                "Predicate: ∀ (n m : ℕ), n + m = m + n\n"
+                "Matched: Nat.add_comm\nType: ∀ (n m : ℕ), n + m = m + n"
+            ),
+        )
+
+        llm = _CapturePromptLLM()
+        index = _make_mock_index([wrong_decl])
+        oracle = _make_mock_oracle(set())
+        agent = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            max_iterations=0,
+            shared_context=store,
+            run_id="run-ctx",
+        )
+        await agent.find_match(pdg_node)
+
+        assert llm.rank_users
+        assert "## Shared Context" in llm.rank_users[0]

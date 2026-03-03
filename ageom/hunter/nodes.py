@@ -32,6 +32,7 @@ from ageom.llm_router import (
     HUNTER_SCORE,
     select_llm,
 )
+from ageom.shared_context import format_context_block
 from ageom.types import CandidateMatch, MatchResult
 
 _INT_ARRAY_GBNF = r"""
@@ -59,6 +60,47 @@ async def _complete_with_optional_grammar(
     if use_gbnf and hasattr(type(llm), "complete_with_grammar"):
         return await llm.complete_with_grammar(system, user, grammar)
     return await llm.complete(system, user)
+
+
+async def _search_context(
+    deps: HunterDeps,
+    state: HunterState,
+    *,
+    channel: str,
+    query: str,
+    limit: int,
+) -> str:
+    store = deps.shared_context
+    ns = state.context_namespace
+    if store is None or not ns:
+        return ""
+    try:
+        records = await store.search(f"{ns}/{channel}", query, limit=limit)
+        return format_context_block(
+            "Shared Context",
+            records,
+            max_chars=state.context_budget_chars,
+        )
+    except Exception:
+        return ""
+
+
+async def _put_context(
+    deps: HunterDeps,
+    state: HunterState,
+    *,
+    channel: str,
+    text: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    store = deps.shared_context
+    ns = state.context_namespace
+    if store is None or not ns:
+        return
+    try:
+        await store.put(f"{ns}/{channel}", text, metadata=metadata)
+    except Exception:
+        return
 
 
 @dataclass
@@ -157,6 +199,15 @@ class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
             informal_desc=state.pdg_node.informal_desc,
             candidates_list=candidates_text,
         )
+        shared_block = await _search_context(
+            deps,
+            state,
+            channel="success",
+            query=f"{state.pdg_node.statement} {state.pdg_node.informal_desc}",
+            limit=3,
+        )
+        if shared_block:
+            user_msg += f"\n\n{shared_block}"
 
         try:
             response = await _complete_with_optional_grammar(
@@ -233,10 +284,41 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
         for r in results:
             if not r.verified and r.compiler_output:
                 state.compiler_feedback.append(r.compiler_output)
+                snippet = " ".join(r.compiler_output.split())
+                if len(snippet) > 240:
+                    snippet = snippet[:237] + "..."
+                await _put_context(
+                    deps,
+                    state,
+                    channel="failure",
+                    text=(
+                        f"Predicate: {state.pdg_node.statement}\n"
+                        f"Rejected: {r.candidate.declaration.name}\n"
+                        f"Signal: {snippet}"
+                    ),
+                    metadata={
+                        "predicate_id": state.pdg_node.predicate_id,
+                        "candidate": r.candidate.declaration.name,
+                    },
+                )
 
         # Check for verified match
         for r in results:
             if r.verified:
+                await _put_context(
+                    deps,
+                    state,
+                    channel="success",
+                    text=(
+                        f"Predicate: {state.pdg_node.statement}\n"
+                        f"Matched: {r.candidate.declaration.name}\n"
+                        f"Type: {r.candidate.declaration.type_signature}"
+                    ),
+                    metadata={
+                        "predicate_id": state.pdg_node.predicate_id,
+                        "declaration": r.candidate.declaration.name,
+                    },
+                )
                 state.verified_match = r
                 return End(
                     MatchResult(
@@ -292,6 +374,16 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
         errors_text = "\n".join(state.compiler_feedback[-3:])  # Last 3 errors
         if analysis:
             errors_text += f"\n\nAnalysis: {analysis}"
+
+        shared_failures = await _search_context(
+            deps,
+            state,
+            channel="failure",
+            query=f"{state.pdg_node.statement} {errors_text}",
+            limit=3,
+        )
+        if shared_failures:
+            errors_text += f"\n\n{shared_failures}"
 
         reformulate_msg = REFORMULATE_QUERY_USER.format(
             predicate_id=state.pdg_node.predicate_id,

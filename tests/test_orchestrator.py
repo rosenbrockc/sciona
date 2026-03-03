@@ -1,5 +1,6 @@
 """Tests for the orchestrator feedback loop (Issue 2)."""
 
+import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
@@ -114,6 +115,38 @@ async def test_orchestration_failure_triggers_refinement():
 
     assert result.rounds_used >= 1
     assert len(result.failures) >= 1
+
+
+@pytest.mark.asyncio
+async def test_orchestration_runs_hunter_in_parallel_when_enabled():
+    """Hunter calls should overlap when concurrency > 1."""
+    cdg = _make_cdg("a", "b", "c")
+
+    active = 0
+    max_active = 0
+
+    async def mock_find_match(pdg_node):
+        nonlocal active, max_active
+        active += 1
+        max_active = max(max_active, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return _make_match_result(pdg_node.predicate_id, True)
+
+    hunter = AsyncMock()
+    hunter.find_match = AsyncMock(side_effect=mock_find_match)
+    llm = AsyncMock()
+
+    result = await run_orchestration(
+        cdg,
+        hunter_agent=hunter,
+        llm=llm,
+        max_rounds=1,
+        hunter_concurrency=3,
+    )
+
+    assert result.all_matched
+    assert max_active > 1
 
 
 def test_match_failure_report_from_match_result():

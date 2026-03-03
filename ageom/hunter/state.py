@@ -21,6 +21,8 @@ class HunterState:
     top_k_per_query: int = 50
     max_candidates_total: int = 3000
     verify_concurrency: int = 1  # >1 enables parallel verification
+    context_namespace: str = ""
+    context_budget_chars: int = 900
 
     # Accumulated across iterations
     candidates_found: list[CandidateMatch] = field(default_factory=list)

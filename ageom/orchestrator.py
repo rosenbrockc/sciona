@@ -6,6 +6,7 @@ atomic nodes when the Hunter fails to ground them.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
@@ -169,6 +170,7 @@ async def run_orchestration(
     llm: Any,
     prover: Prover = Prover.LEAN4,
     max_rounds: int = 3,
+    hunter_concurrency: int = 1,
 ) -> OrchestratorResult:
     """Run the full Architect -> Hunter feedback loop.
 
@@ -178,6 +180,7 @@ async def run_orchestration(
         llm: An LLM client for refinement.
         prover: Target prover.
         max_rounds: Maximum refinement rounds.
+        hunter_concurrency: Maximum concurrent Hunter node matches per round.
 
     Returns:
         OrchestratorResult with final CDG and match results.
@@ -211,9 +214,23 @@ async def run_orchestration(
 
         # Run Hunter on pending nodes
         round_failures: list[MatchFailureReport] = []
-        for pdg_node in pending_nodes:
-            match_result = await hunter_agent.find_match(pdg_node)
+        round_results: list[MatchResult] = []
+        if hunter_concurrency <= 1 or len(pending_nodes) <= 1:
+            for pdg_node in pending_nodes:
+                round_results.append(await hunter_agent.find_match(pdg_node))
+        else:
+            semaphore = asyncio.Semaphore(max(1, hunter_concurrency))
 
+            async def _run_hunter(pdg_node: Any) -> MatchResult:
+                async with semaphore:
+                    return await hunter_agent.find_match(pdg_node)
+
+            round_results = list(
+                await asyncio.gather(*[_run_hunter(node) for node in pending_nodes])
+            )
+
+        for match_result in round_results:
+            pdg_node = match_result.pdg_node
             # Replace existing result for this node if any
             result.match_results = [
                 mr
