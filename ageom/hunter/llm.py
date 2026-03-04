@@ -293,9 +293,12 @@ class SubprocessCLIClient:
 _DEFAULT_MODELS: dict[str, str] = {
     "anthropic": "claude-sonnet-4-5-20250929",
     "claude_cli": "sonnet",
+    "claude_shim": "sonnet",
     "codex": "gpt-5.3-codex",
     "codex_cli": "gpt-5.3-codex",
+    "codex_shim": "gpt-5.3-codex",
     "gemini_cli": "gemini-2.5-pro",
+    "gemini_shim": "gemini-2.5-pro",
     "llama_cpp": "qwen2.5-coder:7b",
     "local": "qwen2.5-coder:7b",
 }
@@ -329,7 +332,7 @@ def _normalized_model_for_provider(provider: str, model: str) -> str:
     if provider in {"llama_cpp", "local"}:
         return cleaned or default_model
 
-    if provider in {"codex", "codex_cli"}:
+    if provider in {"codex", "codex_cli", "codex_shim"}:
         if not cleaned:
             return default_model
         if _looks_like_codex_model(cleaned):
@@ -341,7 +344,7 @@ def _normalized_model_for_provider(provider: str, model: str) -> str:
             f"Use a codex/openai model such as '{default_model}'."
         )
 
-    if provider in {"anthropic", "claude_cli"}:
+    if provider in {"anthropic", "claude_cli", "claude_shim"}:
         if not cleaned:
             return default_model
         if _looks_like_claude_model(cleaned):
@@ -355,7 +358,7 @@ def _normalized_model_for_provider(provider: str, model: str) -> str:
             f"Model '{model}' is not claude-compatible for provider '{provider}'."
         )
 
-    if provider == "gemini_cli":
+    if provider in {"gemini_cli", "gemini_shim"}:
         if not cleaned:
             return default_model
         if _looks_like_gemini_model(cleaned):
@@ -425,6 +428,30 @@ def create_llm_client(
 
     if normalized == "gemini_cli":
         return SubprocessCLIClient(
+            cli="gemini", model=resolved_model, max_tokens=max_tokens,
+            use_agent_layer=use_agent_layer,
+        )
+
+    if normalized == "claude_shim":
+        from ageom.hunter.shim_pool import ShimPoolClient
+
+        return ShimPoolClient(
+            cli="claude", model=resolved_model, max_tokens=max_tokens,
+            use_agent_layer=use_agent_layer,
+        )
+
+    if normalized == "codex_shim":
+        from ageom.hunter.shim_pool import ShimPoolClient
+
+        return ShimPoolClient(
+            cli="codex", model=resolved_model, max_tokens=max_tokens,
+            use_agent_layer=use_agent_layer,
+        )
+
+    if normalized == "gemini_shim":
+        from ageom.hunter.shim_pool import ShimPoolClient
+
+        return ShimPoolClient(
             cli="gemini", model=resolved_model, max_tokens=max_tokens,
             use_agent_layer=use_agent_layer,
         )

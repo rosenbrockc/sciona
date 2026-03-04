@@ -16,7 +16,8 @@ echo "=== Step 1: Decompose, Match, and Assemble ==="
 # Produces cdg.json and matches.json in the build directory.
 ageom run "$GOAL" \
   --prover python \
-  --output "$BUILD_DIR"
+  --output "$BUILD_DIR" \
+  --trace
 
 echo -e "\n=== Step 2: Synthesize Verified Source ==="
 # Assemble CDG + match results into a compilable Python file,

@@ -8,6 +8,7 @@ import inspect
 import logging
 import pkgutil
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from ageom.types import Declaration, Prover
 
@@ -67,8 +68,11 @@ class PythonDeclarationSource:
             # Single module, not a package
             return self.get_declarations_from_module(package_name)
 
+        def _onerror(name: str) -> None:
+            logger.warning("Failed to walk module %s, skipping", name)
+
         for importer, modname, ispkg in pkgutil.walk_packages(
-            package_path, prefix=package_name + "."
+            package_path, prefix=package_name + ".", onerror=_onerror
         ):
             try:
                 declarations.extend(self.get_declarations_from_module(modname))
