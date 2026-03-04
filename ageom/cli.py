@@ -1920,185 +1920,238 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     from ageom.indexer.faiss_store import FAISSStore
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.orchestrator import run_orchestration
+    from ageom.telemetry import (
+        configure_dashboard_output,
+        finish_run,
+        get_event_log,
+        start_run,
+        telemetry_scope,
+        telemetry_stage,
+        update_stage,
+    )
     from ageom.types import Prover
 
     config = AgeomConfig()
     prover = Prover(args.prover)
+    output_dir = Path(args.output) if args.output else Path("output")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load catalog
-    catalog = PrimitiveCatalog()
-    if args.catalog:
-        catalog = PrimitiveCatalog.load(args.catalog)
-    else:
-        search_dir = config.skill_index_dir
-        if search_dir.exists():
-            for cat_file in sorted(search_dir.glob("catalog_*.json")):
-                partial = PrimitiveCatalog.load(cat_file)
-                for prim in partial.all_primitives():
-                    catalog.add(prim)
-
-    # Load skill index
-    skill_index = SkillIndex(index_dir=config.skill_index_dir)
-    if config.skill_index_dir.exists():
-        try:
-            skill_index = SkillIndex.load(config.skill_index_dir)
-        except Exception as exc:
-            print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
-
-    # Set up LLM
-    try:
-        from ageom.llm_router import (
-            ARCHITECT_CRITIQUE,
-            ARCHITECT_DECOMPOSE,
-            ARCHITECT_STRATEGY,
-            ORCHESTRATOR_REFINE,
-        )
-
-        llm = _create_llm_router(
-            args,
-            config,
-            "architect",
-            [
-                ARCHITECT_STRATEGY,
-                ARCHITECT_DECOMPOSE,
-                ARCHITECT_CRITIQUE,
-                ORCHESTRATOR_REFINE,
-            ],
-        )
-    except (ValueError, ImportError) as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
-
-    # Step 1: Decompose
-    print(f"Decomposing: {args.goal}")
-
-    retriever = None
-    graph_store_ctx = None
-    if config.graph_retrieval_enabled:
-        from ageom.architect.graph_retrieval import make_retriever
-        from ageom.graph_store import GraphStore as _GraphStore
-
-        graph_store_ctx = _GraphStore(
-            uri=config.memgraph_uri,
-            user=config.memgraph_user,
-            password=config.memgraph_password,
-        )
-    architect_run_id = uuid.uuid4().hex
-    architect_shared_context, architect_shared_metrics = await _create_shared_context(
-        config,
-        enabled=config.architect_shared_context_enabled,
+    configure_dashboard_output(config.telemetry_runs_dir)
+    event_log = get_event_log()
+    event_log.clear()
+    telemetry_run_id = start_run(
+        "algorithm_creation",
+        metadata={
+            "command": "run",
+            "goal": args.goal,
+            "prover": prover.value,
+            "max_rounds": int(args.max_rounds),
+        },
     )
 
-    async with create_checkpointer(config.postgres_uri) as checkpointer:
-        if graph_store_ctx is not None:
-            async with graph_store_ctx as gstore:
-                retriever = make_retriever(config, gstore, current_repo="")
-                architect = DecompositionAgent(
-                    catalog=catalog,
-                    skill_index=skill_index,
-                    llm=llm,
-                    checkpointer=checkpointer,
-                    graph_retriever=retriever,
-                    shared_context=architect_shared_context,
-                    shared_context_metrics=architect_shared_metrics,
-                    context_namespace=f"architect/{architect_run_id}",
-                    context_budget_chars=config.architect_shared_context_budget_chars,
+    try:
+        with telemetry_scope(run_id=telemetry_run_id):
+            update_stage(stage="setup", status="running", message="loading dependencies")
+
+            # Load catalog
+            catalog = PrimitiveCatalog()
+            if args.catalog:
+                catalog = PrimitiveCatalog.load(args.catalog)
+            else:
+                search_dir = config.skill_index_dir
+                if search_dir.exists():
+                    for cat_file in sorted(search_dir.glob("catalog_*.json")):
+                        partial = PrimitiveCatalog.load(cat_file)
+                        for prim in partial.all_primitives():
+                            catalog.add(prim)
+
+            # Load skill index
+            skill_index = SkillIndex(index_dir=config.skill_index_dir)
+            if config.skill_index_dir.exists():
+                try:
+                    skill_index = SkillIndex.load(config.skill_index_dir)
+                except Exception as exc:
+                    print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
+
+            # Set up LLM
+            try:
+                from ageom.llm_router import (
+                    ARCHITECT_CRITIQUE,
+                    ARCHITECT_DECOMPOSE,
+                    ARCHITECT_STRATEGY,
+                    ORCHESTRATOR_REFINE,
                 )
-                cdg = await architect.decompose(args.goal)
-        else:
-            architect = DecompositionAgent(
-                catalog=catalog,
-                skill_index=skill_index,
-                llm=llm,
-                checkpointer=checkpointer,
-                shared_context=architect_shared_context,
-                shared_context_metrics=architect_shared_metrics,
-                context_namespace=f"architect/{architect_run_id}",
-                context_budget_chars=config.architect_shared_context_budget_chars,
+
+                llm = _create_llm_router(
+                    args,
+                    config,
+                    "architect",
+                    [
+                        ARCHITECT_STRATEGY,
+                        ARCHITECT_DECOMPOSE,
+                        ARCHITECT_CRITIQUE,
+                        ORCHESTRATOR_REFINE,
+                    ],
+                )
+            except (ValueError, ImportError) as exc:
+                print(f"Error: {exc}", file=sys.stderr)
+                finish_run(telemetry_run_id, status="failed", error=str(exc))
+                sys.exit(1)
+            update_stage(stage="setup", status="completed")
+
+            # Step 1: Decompose
+            print(f"Decomposing: {args.goal}")
+
+            retriever = None
+            graph_store_ctx = None
+            if config.graph_retrieval_enabled:
+                from ageom.architect.graph_retrieval import make_retriever
+                from ageom.graph_store import GraphStore as _GraphStore
+
+                graph_store_ctx = _GraphStore(
+                    uri=config.memgraph_uri,
+                    user=config.memgraph_user,
+                    password=config.memgraph_password,
+                )
+            architect_run_id = uuid.uuid4().hex
+            architect_shared_context, architect_shared_metrics = await _create_shared_context(
+                config,
+                enabled=config.architect_shared_context_enabled,
             )
-            cdg = await architect.decompose(args.goal)
 
-    print(f"  Decomposed: {len(cdg.nodes)} nodes, {len(cdg.edges)} edges")
+            with telemetry_stage("architect_decompose", message="building initial CDG"):
+                async with create_checkpointer(config.postgres_uri) as checkpointer:
+                    if graph_store_ctx is not None:
+                        async with graph_store_ctx as gstore:
+                            retriever = make_retriever(config, gstore, current_repo="")
+                            architect = DecompositionAgent(
+                                catalog=catalog,
+                                skill_index=skill_index,
+                                llm=llm,
+                                checkpointer=checkpointer,
+                                graph_retriever=retriever,
+                                shared_context=architect_shared_context,
+                                shared_context_metrics=architect_shared_metrics,
+                                context_namespace=f"architect/{architect_run_id}",
+                                context_budget_chars=config.architect_shared_context_budget_chars,
+                            )
+                            cdg = await architect.decompose(args.goal)
+                    else:
+                        architect = DecompositionAgent(
+                            catalog=catalog,
+                            skill_index=skill_index,
+                            llm=llm,
+                            checkpointer=checkpointer,
+                            shared_context=architect_shared_context,
+                            shared_context_metrics=architect_shared_metrics,
+                            context_namespace=f"architect/{architect_run_id}",
+                            context_budget_chars=config.architect_shared_context_budget_chars,
+                        )
+                        cdg = await architect.decompose(args.goal)
 
-    # Step 2: Set up Hunter
-    index_dir = config.index_dir
-    if not index_dir.exists():
-        print(
-            f"Error: index directory {index_dir} not found. Run 'ageom index build' first.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+            print(f"  Decomposed: {len(cdg.nodes)} nodes, {len(cdg.edges)} edges")
 
-    store = FAISSStore.load(index_dir)
-    embedder = UniXcoderEmbedder(config.embedding_model)
-    index = SemanticIndexImpl(store, embedder)
+            # Step 2: Set up Hunter
+            index_dir = config.index_dir
+            if not index_dir.exists():
+                print(
+                    f"Error: index directory {index_dir} not found. Run 'ageom index build' first.",
+                    file=sys.stderr,
+                )
+                finish_run(
+                    telemetry_run_id,
+                    status="failed",
+                    error=f"missing index directory: {index_dir}",
+                )
+                sys.exit(1)
 
-    env = _create_proof_env(prover, config)
-    if prover == Prover.LEAN4:
-        oracle = VerificationOracleImpl(lean_env=env)
-    elif prover == Prover.PYTHON:
-        oracle = VerificationOracleImpl(python_env=env)
+            with telemetry_stage("hunter_setup", message="loading retrieval index"):
+                store = FAISSStore.load(index_dir)
+                embedder = UniXcoderEmbedder(config.embedding_model)
+                index = SemanticIndexImpl(store, embedder)
+
+                env = _create_proof_env(prover, config)
+                if prover == Prover.LEAN4:
+                    oracle = VerificationOracleImpl(lean_env=env)
+                elif prover == Prover.PYTHON:
+                    oracle = VerificationOracleImpl(python_env=env)
+                else:
+                    oracle = VerificationOracleImpl(coq_env=env)
+
+                try:
+                    from ageom.llm_router import (
+                        HUNTER_ANALYZE_FAILURE,
+                        HUNTER_REFORMULATE,
+                        HUNTER_SCORE,
+                    )
+
+                    hunter_llm = _create_llm_router(
+                        args,
+                        config,
+                        "hunter",
+                        [
+                            HUNTER_SCORE,
+                            HUNTER_REFORMULATE,
+                            HUNTER_ANALYZE_FAILURE,
+                        ],
+                    )
+                except (ValueError, ImportError) as exc:
+                    print(f"Error setting up hunter LLM: {exc}", file=sys.stderr)
+                    finish_run(telemetry_run_id, status="failed", error=str(exc))
+                    sys.exit(1)
+
+                run_id = uuid.uuid4().hex
+                hunter_shared_context, hunter_shared_metrics = await _create_shared_context(
+                    config,
+                    enabled=config.hunter_shared_context_enabled,
+                )
+                hunter = HunterAgent(
+                    index=index,
+                    oracle=oracle,
+                    llm=hunter_llm,
+                    max_iterations=config.hunter_max_iterations,
+                    top_k_verify=config.hunter_top_k_verify,
+                    search_k=config.hunter_search_k,
+                    mode=config.hunter_mode,
+                    use_gbnf=config.hunter_use_gbnf,
+                    query_batch_size=config.hunter_query_batch_size,
+                    top_k_per_query=config.hunter_top_k_per_query,
+                    max_candidates_total=config.hunter_max_candidates_total,
+                    shared_context=hunter_shared_context,
+                    shared_context_metrics=hunter_shared_metrics,
+                    context_namespace="hunter",
+                    run_id=run_id,
+                    context_budget_chars=config.hunter_shared_context_budget_chars,
+                )
+
+            # Step 3: Run orchestration loop
+            print(f"Running orchestration (max {args.max_rounds} rounds)...")
+            with telemetry_stage(
+                "orchestration",
+                message="architect->hunter refine loop",
+                total=int(args.max_rounds),
+            ):
+                try:
+                    result = await run_orchestration(
+                        cdg,
+                        hunter_agent=hunter,
+                        llm=llm,
+                        prover=prover,
+                        max_rounds=args.max_rounds,
+                        hunter_concurrency=config.orchestrator_hunter_concurrency,
+                    )
+                finally:
+                    await env.close()
+            update_stage(
+                stage="orchestration",
+                completed=result.rounds_used,
+                total=int(args.max_rounds),
+            )
+    except Exception as exc:
+        finish_run(telemetry_run_id, status="failed", error=str(exc))
+        raise
     else:
-        oracle = VerificationOracleImpl(coq_env=env)
-
-    try:
-        from ageom.llm_router import (
-            HUNTER_ANALYZE_FAILURE,
-            HUNTER_REFORMULATE,
-            HUNTER_SCORE,
-        )
-
-        hunter_llm = _create_llm_router(
-            args,
-            config,
-            "hunter",
-            [
-                HUNTER_SCORE,
-                HUNTER_REFORMULATE,
-                HUNTER_ANALYZE_FAILURE,
-            ],
-        )
-    except (ValueError, ImportError) as exc:
-        print(f"Error setting up hunter LLM: {exc}", file=sys.stderr)
-        sys.exit(1)
-
-    run_id = uuid.uuid4().hex
-    hunter_shared_context, hunter_shared_metrics = await _create_shared_context(
-        config,
-        enabled=config.hunter_shared_context_enabled,
-    )
-    hunter = HunterAgent(
-        index=index,
-        oracle=oracle,
-        llm=hunter_llm,
-        max_iterations=config.hunter_max_iterations,
-        top_k_verify=config.hunter_top_k_verify,
-        search_k=config.hunter_search_k,
-        mode=config.hunter_mode,
-        use_gbnf=config.hunter_use_gbnf,
-        query_batch_size=config.hunter_query_batch_size,
-        top_k_per_query=config.hunter_top_k_per_query,
-        max_candidates_total=config.hunter_max_candidates_total,
-        shared_context=hunter_shared_context,
-        shared_context_metrics=hunter_shared_metrics,
-        context_namespace="hunter",
-        run_id=run_id,
-        context_budget_chars=config.hunter_shared_context_budget_chars,
-    )
-
-    # Step 3: Run orchestration loop
-    print(f"Running orchestration (max {args.max_rounds} rounds)...")
-    try:
-        result = await run_orchestration(
-            cdg,
-            hunter_agent=hunter,
-            llm=llm,
-            prover=prover,
-            max_rounds=args.max_rounds,
-            hunter_concurrency=config.orchestrator_hunter_concurrency,
-        )
-    finally:
-        await env.close()
+        pass
 
     # Output
     print("\nOrchestration complete:")
@@ -2109,8 +2162,6 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     if result.ungroundable:
         print(f"  Ungroundable: {result.ungroundable}")
 
-    output_dir = Path(args.output) if args.output else Path("output")
-    output_dir.mkdir(parents=True, exist_ok=True)
     save_json(result.cdg, output_dir / "cdg.json")
 
     if result.match_results:
@@ -2133,12 +2184,11 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         print(f"  Shared context metrics: {metrics_path}")
 
     if getattr(args, "trace", False):
-        from ageom.telemetry import get_event_log
-
-        event_log = get_event_log()
         if len(event_log) > 0:
             event_log.save(output_dir / "trace.jsonl")
             print(f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)")
+
+    finish_run(telemetry_run_id, status="completed")
 
 
 async def _cmd_optimize(args: argparse.Namespace) -> None:
@@ -2308,6 +2358,7 @@ def _cmd_visualize(args: argparse.Namespace) -> None:
         port = args.port or 8080
         url = f"http://127.0.0.1:{port}"
         print(f"Starting CDG Visualizer API at {url}")
+        print(f"Telemetry dashboard: {url}/dashboard.html")
         print("Press Ctrl+C to stop")
 
         threading.Thread(

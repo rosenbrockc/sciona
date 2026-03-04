@@ -4,7 +4,22 @@ import json
 import tempfile
 from pathlib import Path
 
-from ageom.telemetry import EventLog, PipelineEvent, get_event_log, log_event
+from ageom.telemetry import (
+    EventLog,
+    PipelineEvent,
+    configure_dashboard_output,
+    finish_prompt_dispatch,
+    finish_run,
+    get_event_log,
+    get_runtime_run,
+    load_persisted_runs,
+    log_event,
+    reset_telemetry_runtime,
+    start_prompt_dispatch,
+    start_run,
+    telemetry_scope,
+    update_stage,
+)
 
 
 def test_pipeline_event_creation():
@@ -128,3 +143,41 @@ def test_get_event_log_singleton():
     a = get_event_log()
     b = get_event_log()
     assert a is b
+
+
+class _DummyClient:
+    _model = "dummy-model"
+
+
+def test_runtime_run_stage_and_prompt_tracking():
+    reset_telemetry_runtime()
+    run_id = start_run("algorithm_creation", run_id="run-test")
+    assert run_id == "run-test"
+
+    with telemetry_scope(run_id=run_id, stage="architect_decompose"):
+        update_stage(stage="architect_decompose", status="running", total=1, completed=0)
+        dispatch_id = start_prompt_dispatch("architect_decompose", client=_DummyClient())
+        finish_prompt_dispatch(dispatch_id, ok=True)
+        update_stage(stage="architect_decompose", status="completed", total=1, completed=1)
+
+    finish_run(run_id, status="completed")
+    snapshot = get_runtime_run(run_id)
+    assert snapshot is not None
+    assert snapshot["status"] == "completed"
+    assert snapshot["prompt_dispatches"] == 1
+    assert snapshot["prompt_successes"] == 1
+    assert snapshot["prompt_inflight"] == 0
+    stages = snapshot["stages"]
+    assert "architect_decompose" in stages
+    assert stages["architect_decompose"]["status"] == "completed"
+
+
+def test_persisted_run_snapshot(tmp_path: Path):
+    reset_telemetry_runtime()
+    configure_dashboard_output(tmp_path)
+    run_id = start_run("pipeline_x", run_id="persist-1")
+    finish_run(run_id, status="completed")
+
+    rows = load_persisted_runs(tmp_path, limit=10)
+    assert rows
+    assert rows[0]["run_id"] == "persist-1"

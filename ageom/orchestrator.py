@@ -15,6 +15,7 @@ from typing import Any
 from ageom.architect.handoff import CDGExport, to_pdg_nodes
 from ageom.architect.models import AlgorithmicNode, NodeStatus
 from ageom.llm_router import ORCHESTRATOR_REFINE, select_llm
+from ageom.telemetry import log_event, telemetry_scope, telemetry_stage, update_stage
 from ageom.types import (
     FailureAction,
     MatchFailureReport,
@@ -190,16 +191,36 @@ async def run_orchestration(
     for round_num in range(max_rounds):
         result.rounds_used = round_num + 1
         logger.info("Orchestration round %d/%d", round_num + 1, max_rounds)
+        update_stage(
+            stage="orchestration",
+            status="running",
+            message=f"round {round_num + 1}/{max_rounds}",
+            completed=round_num,
+            total=max_rounds,
+        )
+        log_event(
+            "orchestrator",
+            "round",
+            "ROUND_START",
+            payload={"round_num": round_num + 1, "max_rounds": max_rounds},
+        )
 
         # Convert current CDG to PDG nodes
         try:
             pdg_nodes = to_pdg_nodes(cdg, prover=prover, strict=False)
         except ValueError as exc:
             logger.warning("CDG conversion failed: %s", exc)
+            log_event(
+                "orchestrator",
+                "round",
+                "CDG_CONVERSION_FAILED",
+                payload={"error": str(exc)},
+            )
             break
 
         if not pdg_nodes:
             logger.info("No atomic nodes to match")
+            log_event("orchestrator", "round", "NO_ATOMIC_NODES")
             break
 
         # Filter out already-matched nodes
@@ -210,24 +231,44 @@ async def run_orchestration(
 
         if not pending_nodes:
             logger.info("All nodes matched")
+            log_event("orchestrator", "round", "ALL_MATCHED_EARLY")
             break
 
         # Run Hunter on pending nodes
         round_failures: list[MatchFailureReport] = []
         round_results: list[MatchResult] = []
-        if hunter_concurrency <= 1 or len(pending_nodes) <= 1:
-            for pdg_node in pending_nodes:
-                round_results.append(await hunter_agent.find_match(pdg_node))
-        else:
-            semaphore = asyncio.Semaphore(max(1, hunter_concurrency))
+        hunter_stage = f"hunter_round_{round_num + 1}"
+        with telemetry_stage(
+            hunter_stage,
+            message=f"pending={len(pending_nodes)}",
+            total=len(pending_nodes),
+        ):
+            with telemetry_scope(stage=hunter_stage):
+                if hunter_concurrency <= 1 or len(pending_nodes) <= 1:
+                    for i, pdg_node in enumerate(pending_nodes, start=1):
+                        round_results.append(await hunter_agent.find_match(pdg_node))
+                        update_stage(
+                            stage=hunter_stage,
+                            completed=i,
+                            total=len(pending_nodes),
+                        )
+                else:
+                    semaphore = asyncio.Semaphore(max(1, hunter_concurrency))
 
-            async def _run_hunter(pdg_node: Any) -> MatchResult:
-                async with semaphore:
-                    return await hunter_agent.find_match(pdg_node)
+                    async def _run_hunter(pdg_node: Any) -> MatchResult:
+                        async with semaphore:
+                            return await hunter_agent.find_match(pdg_node)
 
-            round_results = list(
-                await asyncio.gather(*[_run_hunter(node) for node in pending_nodes])
-            )
+                    round_results = list(
+                        await asyncio.gather(
+                            *[_run_hunter(node) for node in pending_nodes]
+                        )
+                    )
+                    update_stage(
+                        stage=hunter_stage,
+                        completed=len(round_results),
+                        total=len(pending_nodes),
+                    )
 
         for match_result in round_results:
             pdg_node = match_result.pdg_node
@@ -244,20 +285,73 @@ async def run_orchestration(
                 round_failures.append(failure)
                 result.failures.append(failure)
 
+        log_event(
+            "orchestrator",
+            "hunter",
+            "HUNTER_ROUND_DONE",
+            payload={
+                "round_num": round_num + 1,
+                "pending_nodes": len(pending_nodes),
+                "matches_succeeded": sum(1 for mr in round_results if mr.success),
+                "matches_failed": len(round_failures),
+            },
+        )
+
         if not round_failures:
             logger.info("All nodes matched in round %d", round_num + 1)
+            log_event(
+                "orchestrator",
+                "round",
+                "ROUND_ALL_MATCHED",
+                payload={"round_num": round_num + 1},
+            )
             break
 
         # If this is the last round, don't refine
         if round_num >= max_rounds - 1:
             for f in round_failures:
                 result.ungroundable.append(f.pdg_node.predicate_id)
+            log_event(
+                "orchestrator",
+                "refine",
+                "MAX_ROUNDS_REACHED",
+                payload={"ungroundable": list(result.ungroundable)},
+            )
             break
 
         # Refine CDG based on failures
-        for failure in round_failures:
-            cdg = await refine_on_failure(failure, cdg, llm)
+        refine_stage = f"refine_round_{round_num + 1}"
+        with telemetry_stage(
+            refine_stage,
+            message=f"failures={len(round_failures)}",
+            total=len(round_failures),
+        ):
+            with telemetry_scope(stage=refine_stage):
+                for i, failure in enumerate(round_failures, start=1):
+                    cdg = await refine_on_failure(failure, cdg, llm)
+                    update_stage(
+                        stage=refine_stage,
+                        completed=i,
+                        total=len(round_failures),
+                    )
 
         result.cdg = cdg
 
+    update_stage(
+        stage="orchestration",
+        status="completed",
+        completed=result.rounds_used,
+        total=max_rounds,
+    )
+    log_event(
+        "orchestrator",
+        "run",
+        "ORCHESTRATION_DONE",
+        payload={
+            "rounds_used": result.rounds_used,
+            "matches_total": len(result.match_results),
+            "matches_success": sum(1 for mr in result.match_results if mr.success),
+            "ungroundable": list(result.ungroundable),
+        },
+    )
     return result

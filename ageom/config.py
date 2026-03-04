@@ -47,6 +47,8 @@ class AgeomConfig(BaseSettings):
     shared_context_promotion_enabled: bool = True
     shared_context_promotion_min_confidence: float = 0.9
     shared_context_include_provenance: bool = True
+    telemetry_runs_dir: Path = Field(default=Path("output/telemetry_runs"))
+    telemetry_stale_seconds: int = 120
 
     # Memgraph graph store
     memgraph_uri: str = "bolt://localhost:7687"

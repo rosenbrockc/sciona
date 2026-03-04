@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from pathlib import Path
+import time
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
@@ -28,6 +29,119 @@ async def _lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AGEO CDG Visualizer", lifespan=_lifespan)
+
+
+def _merge_runs(
+    persisted: list[dict[str, Any]],
+    runtime: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for row in persisted + runtime:
+        run_id = str(row.get("run_id", "")).strip()
+        if not run_id:
+            continue
+        current = merged.get(run_id)
+        if current is None:
+            merged[run_id] = row
+            continue
+        if float(row.get("last_update_at", 0.0)) >= float(
+            current.get("last_update_at", 0.0)
+        ):
+            merged[run_id] = row
+    rows = list(merged.values())
+    rows.sort(key=lambda r: float(r.get("last_update_at", 0.0)), reverse=True)
+    return rows
+
+
+def _annotate_hang_signals(
+    run: dict[str, Any],
+    *,
+    stale_seconds: int,
+    now: float,
+) -> dict[str, Any]:
+    stages = run.get("stages", {}) if isinstance(run.get("stages"), dict) else {}
+    stale_stages: list[dict[str, Any]] = []
+    for stage_name, stage in stages.items():
+        if not isinstance(stage, dict):
+            continue
+        if str(stage.get("status", "")) != "running":
+            continue
+        hb = float(stage.get("last_heartbeat_at") or 0.0)
+        if hb <= 0:
+            continue
+        age = max(0.0, now - hb)
+        if age >= stale_seconds:
+            stale_stages.append(
+                {
+                    "stage": stage_name,
+                    "heartbeat_age_sec": age,
+                    "message": str(stage.get("message", "")),
+                }
+            )
+    out = dict(run)
+    out["stale_stages"] = stale_stages
+    out["is_hung"] = len(stale_stages) > 0 and str(run.get("status")) == "running"
+    return out
+
+
+@app.get("/api/dashboard/runs")
+async def list_dashboard_runs(
+    limit: int = Query(50, ge=1, le=500),
+    state: str = Query(
+        "all", description="Filter by state: all|running|completed|failed"
+    ),
+) -> dict[str, Any]:
+    """List telemetry runs with stale/hang annotations."""
+    from ageom.config import AgeomConfig
+    from ageom.telemetry import list_runtime_runs, load_persisted_runs
+
+    config = AgeomConfig()
+    rows = _merge_runs(
+        load_persisted_runs(config.telemetry_runs_dir, limit=max(limit * 3, 100)),
+        list_runtime_runs(),
+    )
+    wanted = state.strip().lower()
+    if wanted != "all":
+        rows = [r for r in rows if str(r.get("status", "")).lower() == wanted]
+
+    now = time.time()
+    rows = [
+        _annotate_hang_signals(
+            r, stale_seconds=max(5, int(config.telemetry_stale_seconds)), now=now
+        )
+        for r in rows[:limit]
+    ]
+    return {"runs": rows, "count": len(rows)}
+
+
+@app.get("/api/dashboard/runs/{run_id}")
+async def get_dashboard_run(run_id: str) -> dict[str, Any]:
+    """Get one telemetry run snapshot."""
+    from ageom.config import AgeomConfig
+    from ageom.telemetry import get_persisted_run, get_runtime_run
+
+    config = AgeomConfig()
+    row = get_runtime_run(run_id) or get_persisted_run(config.telemetry_runs_dir, run_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Run not found: {run_id}")
+    return _annotate_hang_signals(
+        row,
+        stale_seconds=max(5, int(config.telemetry_stale_seconds)),
+        now=time.time(),
+    )
+
+
+@app.get("/api/dashboard/latest")
+async def get_latest_dashboard_run() -> dict[str, Any]:
+    """Get the most recently-updated telemetry run snapshot."""
+    payload = await list_dashboard_runs(limit=1, state="all")
+    runs = payload.get("runs", [])
+    if not isinstance(runs, list) or not runs:
+        raise HTTPException(status_code=404, detail="No telemetry runs found")
+    latest = runs[0]
+    if not isinstance(latest, dict):
+        raise HTTPException(status_code=404, detail="No telemetry runs found")
+    return latest
 
 
 @app.get("/api/cdgs")

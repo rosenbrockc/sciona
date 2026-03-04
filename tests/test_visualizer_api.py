@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -256,3 +258,81 @@ class TestStaticFiles:
         resp = client.get("/")
         assert resp.status_code == 200
         assert "CDG Visualizer" in resp.text
+
+
+class TestDashboardAPI:
+    def test_list_runs_and_latest(self, client, monkeypatch, tmp_path):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "abc123",
+            "pipeline": "algorithm_creation",
+            "status": "running",
+            "started_at": now - 3.0,
+            "last_update_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 2,
+            "prompt_successes": 1,
+            "prompt_failures": 0,
+            "prompt_inflight": 1,
+            "events_count": 4,
+            "metadata": {"goal": "test"},
+        }
+        (tmp_path / "run_abc123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs")
+        assert resp.status_code == 200
+        data = resp.json()
+        run_ids = [r.get("run_id") for r in data["runs"]]
+        assert "abc123" in run_ids
+
+        latest = client.get("/api/dashboard/latest")
+        assert latest.status_code == 200
+        assert latest.json()["run_id"] == "abc123"
+
+    def test_run_hang_annotation(self, client, monkeypatch, tmp_path):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "hung-run",
+            "pipeline": "algorithm_creation",
+            "status": "running",
+            "started_at": now - 200.0,
+            "last_update_at": now - 50.0,
+            "stages": {
+                "hunter_round_1": {
+                    "name": "hunter_round_1",
+                    "status": "running",
+                    "started_at": now - 180.0,
+                    "last_heartbeat_at": now - 25.0,
+                    "ended_at": None,
+                    "message": "pending=4",
+                    "completed": 1,
+                    "total": 4,
+                }
+            },
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 3,
+            "prompt_successes": 1,
+            "prompt_failures": 0,
+            "prompt_inflight": 2,
+            "events_count": 8,
+            "metadata": {},
+        }
+        (tmp_path / "run_hung-run.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("AGEOM_TELEMETRY_STALE_SECONDS", "5")
+
+        resp = client.get("/api/dashboard/runs/hung-run")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["is_hung"] is True
+        assert len(data["stale_stages"]) == 1
