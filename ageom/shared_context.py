@@ -289,7 +289,7 @@ class PostgresSharedContextStore:
                             id BIGSERIAL PRIMARY KEY,
                             namespace TEXT NOT NULL,
                             text TEXT NOT NULL,
-                            metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+                            metadata JSONB NOT NULL DEFAULT '{{}}'::jsonb,
                             tokens TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
                             access_count BIGINT NOT NULL DEFAULT 0,
                             last_accessed TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -338,6 +338,7 @@ class PostgresSharedContextStore:
             return
         import psycopg
         from psycopg import sql
+        from psycopg.types.json import Jsonb
 
         tokens = sorted(_tokenize(text))
         table = sql.Identifier(self._table_name)
@@ -348,7 +349,7 @@ class PostgresSharedContextStore:
                         "INSERT INTO {} (namespace, text, metadata, tokens, access_count, last_accessed) "
                         "VALUES (%s, %s, %s, %s, 0, NOW())"
                     ).format(table),
-                    (namespace, text, dict(metadata or {}), tokens),
+                    (namespace, text, Jsonb(dict(metadata or {})), tokens),
                 )
                 if self._ttl_hours > 0:
                     await cur.execute(

@@ -3,13 +3,30 @@
 # using the NIGHTCAP templated adapter dataset.
 set -euo pipefail
 
+# Preflight checks
+if ! command -v ageom >/dev/null 2>&1; then
+  echo "Error: 'ageom' CLI not found in PATH." >&2
+  exit 1
+fi
+
 # 1. Setup paths
 GOAL="Detect heart rate from raw ECG signal"
 ADAPTER_PATH="$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/adapter.yml"
 BUILD_DIR="./build/nightcap_hr_detection"
 DIST_DIR="./dist/nightcap_hr_detection"
+RUN_METRICS="$BUILD_DIR/run_shared_context_metrics.json"
+SYNTH_METRICS="$BUILD_DIR/synthesize_shared_context_metrics.json"
 
 mkdir -p "$BUILD_DIR" "$DIST_DIR"
+
+if [[ ! -f "$ADAPTER_PATH" ]]; then
+  echo "Error: adapter dataset not found at $ADAPTER_PATH" >&2
+  exit 1
+fi
+
+if [[ -z "${AGEOM_POSTGRES_URI:-}" ]]; then
+  echo "Warning: AGEOM_POSTGRES_URI is not set; shared context will use in-memory backend."
+fi
 
 echo "=== Step 1: Decompose, Match, and Assemble ==="
 # Run the full orchestration loop: decompose → match → refine.
@@ -19,12 +36,28 @@ ageom run "$GOAL" \
   --output "$BUILD_DIR" \
   --trace
 
+if [[ ! -f "$BUILD_DIR/cdg.json" || ! -f "$BUILD_DIR/matches.json" ]]; then
+  echo "Error: expected orchestration outputs missing in $BUILD_DIR" >&2
+  exit 1
+fi
+if [[ -f "$BUILD_DIR/shared_context_metrics.json" ]]; then
+  cp "$BUILD_DIR/shared_context_metrics.json" "$RUN_METRICS"
+fi
+
 echo -e "\n=== Step 2: Synthesize Verified Source ==="
 # Assemble CDG + match results into a compilable Python file,
 # then run the compile-analyze-patch repair loop to fix type/shape mismatches.
 ageom synthesize "$BUILD_DIR/cdg.json" "$BUILD_DIR/matches.json" \
   --prover python \
   --output "$BUILD_DIR/verified.py"
+
+if [[ ! -f "$BUILD_DIR/verified.py" ]]; then
+  echo "Error: synthesis output missing: $BUILD_DIR/verified.py" >&2
+  exit 1
+fi
+if [[ -f "$BUILD_DIR/shared_context_metrics.json" ]]; then
+  cp "$BUILD_DIR/shared_context_metrics.json" "$SYNTH_METRICS"
+fi
 
 echo -e "\n=== Step 3: Export as Python Package ==="
 # Export the verified source into a distributable Python package.
@@ -46,3 +79,9 @@ echo -e "\n=== End-to-End Generation Complete ==="
 echo "Verified source:  $BUILD_DIR/verified.py"
 echo "Python package:   $DIST_DIR/"
 echo "CDG structure:    $BUILD_DIR/cdg.json"
+if [[ -f "$RUN_METRICS" ]]; then
+  echo "Run metrics:      $RUN_METRICS"
+fi
+if [[ -f "$SYNTH_METRICS" ]]; then
+  echo "Synthesize metrics: $SYNTH_METRICS"
+fi
