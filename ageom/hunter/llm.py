@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import json as _json
 import os
+import random
+import time
 from asyncio.subprocess import PIPE
 from typing import Protocol, runtime_checkable
 
@@ -166,6 +168,9 @@ class SubprocessCLIClient:
         self._model = model
         self._max_tokens = max_tokens
         self._use_agent_layer = use_agent_layer
+        self._timeout_s = _env_float("AGEOM_SUBPROCESS_TIMEOUT_S", 90.0)
+        self._max_retries = _env_int("AGEOM_SUBPROCESS_MAX_RETRIES", 1, min_value=0)
+        self._retry_backoff_s = _env_float("AGEOM_SUBPROCESS_RETRY_BACKOFF_S", 1.5)
 
     def _codex_model_arg(self) -> str:
         """Return a codex-compatible model name, or empty when model should be omitted."""
@@ -272,22 +277,149 @@ class SubprocessCLIClient:
     async def complete(self, system: str, user: str) -> str:
         cmd = self._build_cmd(system)
         stdin_text = self._build_stdin(system, user)
-        # Strip CLAUDECODE env var so nested Claude CLI sessions don't refuse
+        # Strip CLAUDECODE env var so nested Claude CLI sessions don't refuse.
         env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
-        proc = await asyncio.create_subprocess_exec(
-            *cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env,
-        )
-        stdout, stderr = await proc.communicate(stdin_text.encode())
-        if proc.returncode != 0:
-            raise RuntimeError(
-                f"{self._cli} CLI exited with code {proc.returncode}: "
-                f"{stderr.decode().strip()}"
+        attempts = max(1, self._max_retries + 1)
+        last_error = ""
+
+        for attempt in range(1, attempts + 1):
+            proc = await asyncio.create_subprocess_exec(
+                *cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env,
             )
-        return self._parse_output(stdout.decode())
+            started = time.time()
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(stdin_text.encode()),
+                    timeout=self._timeout_s,
+                )
+            except asyncio.TimeoutError as exc:
+                elapsed_ms = (time.time() - started) * 1000.0
+                await self._terminate_process(proc)
+                self._log_subprocess_event(
+                    "PROMPT_SUBPROCESS_TIMEOUT",
+                    {
+                        "cli": self._cli,
+                        "model": self._model,
+                        "attempt": attempt,
+                        "attempts_total": attempts,
+                        "timeout_s": self._timeout_s,
+                        "elapsed_ms": round(elapsed_ms, 2),
+                    },
+                )
+                last_error = (
+                    f"{self._cli} CLI timed out after {self._timeout_s:.1f}s "
+                    f"(attempt {attempt}/{attempts})"
+                )
+                if attempt >= attempts:
+                    raise RuntimeError(last_error) from exc
+                await self._sleep_before_retry(attempt)
+                continue
+
+            stderr_text = stderr.decode().strip()
+            if proc.returncode != 0:
+                last_error = (
+                    f"{self._cli} CLI exited with code {proc.returncode}: {stderr_text}"
+                )
+                if attempt < attempts and self._is_transient_error(stderr_text):
+                    self._log_subprocess_event(
+                        "PROMPT_SUBPROCESS_RETRY",
+                        {
+                            "cli": self._cli,
+                            "model": self._model,
+                            "attempt": attempt,
+                            "attempts_total": attempts,
+                            "reason": stderr_text[:200],
+                        },
+                    )
+                    await self._sleep_before_retry(attempt)
+                    continue
+                raise RuntimeError(last_error)
+
+            return self._parse_output(stdout.decode())
+
+        raise RuntimeError(last_error or f"{self._cli} CLI failed without output")
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         # CLI tools have no GBNF support; fall back to plain completion.
         return await self.complete(system, user)
+
+    async def _terminate_process(self, proc: asyncio.subprocess.Process) -> None:
+        if proc.returncode is not None:
+            return
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            return
+        waiter = getattr(proc, "wait", None)
+        if callable(waiter):
+            try:
+                await asyncio.wait_for(waiter(), timeout=2.0)
+            except Exception:
+                return
+
+    async def _sleep_before_retry(self, attempt: int) -> None:
+        base = max(0.0, self._retry_backoff_s)
+        jitter = random.uniform(0.0, 0.25)
+        await asyncio.sleep(base * attempt + jitter)
+
+    def _is_transient_error(self, text: str) -> bool:
+        lower = text.lower()
+        markers = (
+            "429",
+            "500",
+            "502",
+            "503",
+            "504",
+            "timeout",
+            "timed out",
+            "rate limit",
+            "temporarily unavailable",
+            "connection reset",
+            "network error",
+            "econnreset",
+            "socket hang up",
+            "http error",
+        )
+        return any(m in lower for m in markers)
+
+    def _log_subprocess_event(self, event_type: str, payload: dict[str, object]) -> None:
+        try:
+            from ageom.telemetry import get_current_stage, log_event
+
+            stage = get_current_stage() or "prompt_dispatch"
+            log_event(
+                "llm",
+                phase=stage,
+                event_type=event_type,
+                stage=stage,
+                provider=self._cli,
+                model=self._model,
+                payload=payload,
+            )
+        except Exception:
+            return
+
+
+def _env_int(name: str, default: int, *, min_value: int = 0) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return max(min_value, value)
+
+
+def _env_float(name: str, default: float) -> float:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
 
 
 _DEFAULT_MODELS: dict[str, str] = {

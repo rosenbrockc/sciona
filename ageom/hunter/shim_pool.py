@@ -102,25 +102,77 @@ class ShimPoolClient:
     async def complete(self, system: str, user: str) -> str:
         cmd = self._delegate._build_cmd(system)
         stdin_text = self._delegate._build_stdin(system, user)
+        attempts = max(1, self._delegate._max_retries + 1)
+        last_error = ""
 
-        proc = self._acquire(cmd)
-        if proc is not None:
-            logger.debug("Using pre-warmed %s process", self._delegate._cli)
-        else:
-            logger.debug("No pre-warmed process available; cold-starting %s", self._delegate._cli)
-            proc = await self._spawn(cmd)
+        for attempt in range(1, attempts + 1):
+            proc = self._acquire(cmd)
+            if proc is not None:
+                logger.debug("Using pre-warmed %s process", self._delegate._cli)
+            else:
+                logger.debug(
+                    "No pre-warmed process available; cold-starting %s",
+                    self._delegate._cli,
+                )
+                proc = await self._spawn(cmd)
 
-        stdout, stderr = await proc.communicate(stdin_text.encode())
-        if proc.returncode != 0:
-            raise RuntimeError(
-                f"{self._delegate._cli} CLI exited with code {proc.returncode}: "
-                f"{stderr.decode().strip()}"
-            )
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(stdin_text.encode()),
+                    timeout=self._delegate._timeout_s,
+                )
+            except asyncio.TimeoutError as exc:
+                await self._delegate._terminate_process(proc)
+                self._delegate._log_subprocess_event(
+                    "PROMPT_SUBPROCESS_TIMEOUT",
+                    {
+                        "cli": self._delegate._cli,
+                        "model": self._delegate._model,
+                        "attempt": attempt,
+                        "attempts_total": attempts,
+                        "timeout_s": self._delegate._timeout_s,
+                        "client": "shim_pool",
+                    },
+                )
+                last_error = (
+                    f"{self._delegate._cli} CLI timed out after "
+                    f"{self._delegate._timeout_s:.1f}s (attempt {attempt}/{attempts})"
+                )
+                if attempt >= attempts:
+                    raise RuntimeError(last_error) from exc
+                await self._delegate._sleep_before_retry(attempt)
+                continue
 
-        # Eagerly pre-warm a replacement
-        self._prewarm_bg(system)
+            stderr_text = stderr.decode().strip()
+            if proc.returncode != 0:
+                last_error = (
+                    f"{self._delegate._cli} CLI exited with code "
+                    f"{proc.returncode}: {stderr_text}"
+                )
+                if (
+                    attempt < attempts
+                    and self._delegate._is_transient_error(stderr_text)
+                ):
+                    self._delegate._log_subprocess_event(
+                        "PROMPT_SUBPROCESS_RETRY",
+                        {
+                            "cli": self._delegate._cli,
+                            "model": self._delegate._model,
+                            "attempt": attempt,
+                            "attempts_total": attempts,
+                            "reason": stderr_text[:200],
+                            "client": "shim_pool",
+                        },
+                    )
+                    await self._delegate._sleep_before_retry(attempt)
+                    continue
+                raise RuntimeError(last_error)
 
-        return self._delegate._parse_output(stdout.decode())
+            # Eagerly pre-warm a replacement.
+            self._prewarm_bg(system)
+            return self._delegate._parse_output(stdout.decode())
+
+        raise RuntimeError(last_error or f"{self._delegate._cli} CLI failed without output")
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         # CLI tools have no GBNF support; fall back to plain completion.

@@ -956,3 +956,131 @@ class TestDeterministicDecompose:
         src_id = by_name["Split Input"].node_id
         tgt_id = by_name["merge"].node_id
         assert any(e.source_id == src_id and e.target_id == tgt_id for e in edges)
+
+    @pytest.mark.asyncio
+    async def test_signal_filter_uses_deterministic_fallback_steps(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            # Intentionally under-specified: deterministic fallback should expand this.
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Design Core",
+                            "description": "Compute coefficients from the filter spec.",
+                        }
+                    ],
+                    "flow_hints": [],
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_filter",
+            name="Design Filter",
+            description="Design filter coefficients from specification",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="spec", type_desc="filter_spec")],
+            outputs=[IOSpec(name="coefficients", type_desc="vector[float]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Detect heart rate from raw ECG signal",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_filter"],
+            "current_node_id": "n_filter",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_node(state, config)
+        names = {n.name for n in result["nodes"]}
+        assert len(result["nodes"]) >= 3
+        assert "Parse Filter Requirements" in names
+        assert "Select Filter Family" in names
+        assert result["edges"]
+
+    @pytest.mark.asyncio
+    async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        # Force semantic/category retrieval path to return empty.
+        catalog.find_matching_primitives = lambda node, k=5: []
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        captured_users: list[str] = []
+
+        async def complete(system: str, user: str) -> str:
+            captured_users.append(user)
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Prepare Search",
+                            "description": "Prepare sorted array and query target",
+                        },
+                        {
+                            "name": "binary_search",
+                            "description": "Find target index in sorted array",
+                            "matched_primitive_hint": "binary_search",
+                        },
+                    ],
+                    "flow_hints": [
+                        {"from": "Prepare Search", "to": "binary_search", "why": "setup then search"}
+                    ],
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_search",
+            name="Target Lookup",
+            description="Search for a target in a sorted array",
+            concept_type=ConceptType.SEARCHING,
+            inputs=[IOSpec(name="data", type_desc="list[int]"), IOSpec(name="target", type_desc="int")],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Find target index",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_search"],
+            "current_node_id": "n_search",
+            "paradigm": "searching",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        config = {"configurable": {"deps": deps}}
+
+        await decompose_node(state, config)
+        assert captured_users
+        assert "No relevant primitives found." not in captured_users[0]
+        assert "binary_search" in captured_users[0]

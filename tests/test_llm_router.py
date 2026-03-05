@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -308,6 +309,42 @@ class TestSubprocessCLIClient:
         with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
             result = await c.complete_with_grammar("sys", "usr", "grammar")
         assert result == "ok"
+
+    @pytest.mark.asyncio
+    async def test_complete_retries_after_timeout(self):
+        c = SubprocessCLIClient(cli="claude", model="sonnet", max_tokens=1024)
+        c._max_retries = 1
+        c._retry_backoff_s = 0.0
+
+        proc1 = _fake_proc(returncode=None)
+        proc1.kill = MagicMock()
+        proc1.wait = AsyncMock(return_value=None)
+        proc2 = _fake_proc(stdout=b"recovered", returncode=0)
+        calls = {"count": 0}
+
+        async def fake_wait_for(awaitable, timeout):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                close = getattr(awaitable, "close", None)
+                if callable(close):
+                    close()
+                raise asyncio.TimeoutError()
+            return await awaitable
+
+        with patch(
+            "ageom.hunter.llm.asyncio.create_subprocess_exec",
+            side_effect=[proc1, proc2],
+        ), patch(
+            "ageom.hunter.llm.asyncio.wait_for",
+            new=fake_wait_for,
+        ), patch(
+            "ageom.hunter.llm.asyncio.sleep",
+            new=AsyncMock(return_value=None),
+        ):
+            result = await c.complete("sys", "usr")
+
+        assert result == "recovered"
+        assert proc1.kill.called
 
 
 class TestCreateLLMClientCLIProviders:

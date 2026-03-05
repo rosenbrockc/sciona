@@ -48,6 +48,62 @@ _KEYWORD_CONCEPTS: list[tuple[tuple[str, ...], ConceptType]] = [
     (("loss", "gradient", "backprop"), ConceptType.NEURAL_NETWORK),
 ]
 
+_CONCEPTUAL_FALLBACKS: dict[ConceptType, list[dict[str, str]]] = {
+    ConceptType.SIGNAL_FILTER: [
+        {
+            "name": "Parse Filter Requirements",
+            "description": (
+                "Extract sample-rate, passband/stopband, attenuation, ripple, and "
+                "implementation constraints from the specification."
+            ),
+            "concept_type": ConceptType.DATA_ASSEMBLY.value,
+            "matched_primitive_hint": "parse_filter_spec",
+        },
+        {
+            "name": "Select Filter Family",
+            "description": (
+                "Choose FIR or IIR topology and design method based on phase, "
+                "stability, and compute constraints."
+            ),
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "choose_filter_topology",
+        },
+        {
+            "name": "Synthesize Coefficients",
+            "description": (
+                "Generate candidate coefficients from the selected method and target "
+                "frequency response."
+            ),
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "design_filter_coefficients",
+        },
+        {
+            "name": "Validate and Finalize Coefficients",
+            "description": (
+                "Check frequency-response compliance and stability, then return the "
+                "final coefficient vector."
+            ),
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "validate_filter_response",
+        },
+    ],
+}
+
+_GENERIC_FALLBACK: list[dict[str, str]] = [
+    {
+        "name": "Interpret Requirements",
+        "description": "Normalize inputs, constraints, and success criteria for this node.",
+    },
+    {
+        "name": "Compute Core Transformation",
+        "description": "Perform the main transformation required to reach the target output.",
+    },
+    {
+        "name": "Validate and Return Result",
+        "description": "Verify constraints and emit the final result in the expected shape.",
+    },
+]
+
 
 def _norm(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
@@ -299,6 +355,49 @@ def _collect_edge_hints(parsed: dict[str, Any]) -> list[dict[str, Any]]:
     return hints
 
 
+def _fallback_sub_nodes(parent: AlgorithmicNode) -> list[dict[str, str]]:
+    specialized = _CONCEPTUAL_FALLBACKS.get(parent.concept_type)
+    if specialized:
+        return [dict(item) for item in specialized]
+    generic = []
+    for item in _GENERIC_FALLBACK:
+        row = dict(item)
+        row["concept_type"] = parent.concept_type.value
+        generic.append(row)
+    return generic
+
+
+def _prepare_raw_sub_nodes(
+    raw_subs: Any,
+    *,
+    parent: AlgorithmicNode,
+) -> list[dict[str, Any]]:
+    if isinstance(raw_subs, list):
+        cleaned = [item for item in raw_subs if isinstance(item, dict)]
+    else:
+        cleaned = []
+
+    if len(cleaned) >= 2:
+        return cleaned
+
+    # If the model returned too little structure, synthesize conceptual
+    # decomposition steps deterministically so downstream progress continues.
+    fallback = _fallback_sub_nodes(parent)
+    if not cleaned:
+        return fallback
+
+    existing_norm = {_norm(str(item.get("name", ""))) for item in cleaned}
+    for item in fallback:
+        if len(cleaned) >= 3:
+            break
+        name_norm = _norm(item.get("name", ""))
+        if name_norm in existing_norm:
+            continue
+        cleaned.append(item)
+        existing_norm.add(name_norm)
+    return cleaned
+
+
 def build_deterministic_decomposition(
     *,
     parsed: dict[str, Any],
@@ -306,9 +405,7 @@ def build_deterministic_decomposition(
     catalog: PrimitiveCatalog,
 ) -> DeterministicDecomposeResult:
     """Build deterministic nodes/edges from conceptual LLM output."""
-    raw_subs = parsed.get("sub_nodes")
-    if not isinstance(raw_subs, list):
-        raw_subs = []
+    raw_subs = _prepare_raw_sub_nodes(parsed.get("sub_nodes"), parent=parent)
 
     nodes: list[AlgorithmicNode] = []
     for idx, raw in enumerate(raw_subs):

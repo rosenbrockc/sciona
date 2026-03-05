@@ -7,6 +7,7 @@ Routing functions: def fn(state) -> str
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from typing import Any
 
@@ -196,6 +197,60 @@ def _format_primitives(prims: list) -> str:
             line += f"  (type: {p.type_signature[:60]})"
         lines.append(line)
     return "\n".join(lines)
+
+
+def _tokenize(text: str) -> set[str]:
+    return {tok for tok in re.findall(r"[a-z0-9_]+", text.lower()) if len(tok) >= 3}
+
+
+def _lexical_primitive_fallback(
+    node: AlgorithmicNode,
+    deps: DecompositionDeps,
+    *,
+    k: int = 5,
+) -> list:
+    """Fallback primitive retrieval when semantic/category retrieval is empty."""
+    catalog_prims = deps.catalog.all_primitives()
+    if not catalog_prims:
+        return []
+
+    query_parts = [
+        node.name,
+        node.description,
+        node.concept_type.value,
+        " ".join(io.name for io in node.inputs),
+        " ".join(io.type_desc for io in node.inputs),
+        " ".join(io.name for io in node.outputs),
+        " ".join(io.type_desc for io in node.outputs),
+    ]
+    query_tokens = _tokenize(" ".join(query_parts))
+    if not query_tokens:
+        return catalog_prims[:k]
+
+    scored: list[tuple[float, Any]] = []
+    for prim in catalog_prims:
+        prim_text = " ".join(
+            [
+                prim.name,
+                prim.description,
+                prim.category.value,
+                " ".join(f"{io.name} {io.type_desc}" for io in prim.inputs),
+                " ".join(f"{io.name} {io.type_desc}" for io in prim.outputs),
+            ]
+        )
+        prim_tokens = _tokenize(prim_text)
+        overlap = len(query_tokens & prim_tokens)
+        if overlap <= 0:
+            continue
+        score = float(overlap)
+        if prim.category == node.concept_type:
+            score += 2.0
+        scored.append((score, prim))
+
+    if not scored:
+        return []
+    scored.sort(key=lambda row: row[0], reverse=True)
+    return [prim for _score, prim in scored[:k]]
 
 
 def _parse_json(text: str) -> dict | None:
@@ -486,6 +541,7 @@ async def decompose_node(
 
     # Gather relevant primitives
     catalog_prims = deps.catalog.find_matching_primitives(node, k=5)
+    lexical_prims = _lexical_primitive_fallback(node, deps, k=5)
     try:
         skill_prims = deps.skill_index.search(f"{node.name} {node.description}", k=5)
     except Exception:
@@ -494,7 +550,7 @@ async def decompose_node(
     # Deduplicate by name
     seen_names: set[str] = set()
     all_prims = []
-    for p in catalog_prims + skill_prims:
+    for p in lexical_prims + catalog_prims + skill_prims:
         if p.name not in seen_names:
             all_prims.append(p)
             seen_names.add(p.name)
