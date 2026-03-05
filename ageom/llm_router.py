@@ -14,6 +14,7 @@ from typing import Any
 from ageom.hunter.llm import LLMClient
 from ageom.telemetry import (
     finish_prompt_dispatch,
+    get_current_run_id,
     get_current_stage,
     log_event,
     start_prompt_dispatch,
@@ -199,6 +200,15 @@ def select_llm(llm: Any, key: str) -> LLMClient:
     Otherwise returns *llm* unchanged (plain ``LLMClient``).
     """
     base = llm.for_prompt(key) if isinstance(llm, LLMRouter) else llm
-    if isinstance(base, PromptKeyLLMClient) and base._prompt_key == key:
+
+    # Preserve historical behavior outside telemetry run scope.
+    # This keeps identity semantics used across tests/callers.
+    if not get_current_run_id():
         return base
+
+    if isinstance(base, PromptKeyLLMClient):
+        if base._prompt_key == key:
+            return base
+        # Avoid nested wrappers on prompt-key switches.
+        return PromptKeyLLMClient(base._base, key)
     return PromptKeyLLMClient(base, key)

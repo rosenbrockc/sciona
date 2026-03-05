@@ -10,10 +10,12 @@ import pytest
 from ageom.llm_router import (
     ARCHITECT_STRATEGY,
     INGESTER_CHUNK,
+    PromptKeyLLMClient,
     SYNTHESIZER_TACTIC,
     LLMRouter,
     select_llm,
 )
+from ageom.telemetry import telemetry_scope
 
 
 def _make_mock_llm(name: str = "default") -> AsyncMock:
@@ -88,6 +90,12 @@ class TestSelectLLM:
 
         result = select_llm(router, SYNTHESIZER_TACTIC)
         assert result is default
+
+    def test_wraps_when_telemetry_run_scope_active(self):
+        llm = _make_mock_llm("plain")
+        with telemetry_scope(run_id="test-run"):
+            result = select_llm(llm, ARCHITECT_STRATEGY)
+        assert isinstance(result, PromptKeyLLMClient)
 
 
 class TestConfigPerPromptFields:

@@ -32,11 +32,12 @@ Consider the structure of the problem and which paradigm's skeleton best fits.
 
 DECOMPOSE_NODE_SYSTEM = """\
 You are an expert algorithm designer. Decompose the given algorithmic node \
-into smaller sub-nodes and data-flow edges between them.
+into conceptual sub-nodes and high-level flow hints.
 
-Each sub-node should be a well-defined algorithmic operation. If a sub-node \
-matches a known primitive from the catalog, set "is_atomic" to true and \
-"matched_primitive" to the primitive name.
+IMPORTANT:
+- Focus on conceptual decomposition only.
+- Do NOT spend tokens on detailed ports, type signatures, or full dataflow wiring.
+- Deterministic tooling will synthesize IO ports, atomic checks, and edge types.
 
 You must respond with ONLY a JSON object (no markdown fences, no explanation):
 {{
@@ -47,22 +48,16 @@ You must respond with ONLY a JSON object (no markdown fences, no explanation):
   "sub_nodes": [
     {{
       "name": "<descriptive name>",
-      "description": "<what this sub-node does>",
-      "concept_type": "<paradigm category>",
-      "inputs": [{{"name": "<name>", "type_desc": "<type>"}}],
-      "outputs": [{{"name": "<name>", "type_desc": "<type>"}}],
-      "type_signature": "<formal type if known>",
-      "is_atomic": <true|false>,
-      "matched_primitive": "<primitive name or null>"
+      "description": "<what this conceptual step does>",
+      "concept_type": "<optional paradigm category>",
+      "matched_primitive_hint": "<optional primitive name hint>"
     }}
   ],
-  "edges": [
+  "flow_hints": [
     {{
-      "source_name": "<source sub-node name>",
-      "target_name": "<target sub-node name>",
-      "output_name": "<which output>",
-      "input_name": "<which input>",
-      "data_type": "<type of data flowing>"
+      "from": "<source sub-node name>",
+      "to": "<target sub-node name>",
+      "why": "<brief rationale>"
     }}
   ]
 }}
@@ -85,8 +80,9 @@ Relevant primitives from the catalog:
 
 {retry_context}
 
-Decompose this node into 2 or more sub-nodes with data-flow edges between them. \
-Mark sub-nodes as atomic if they match a known primitive.
+Decompose this node into 2 or more conceptual sub-nodes.
+Include optional flow_hints for ordering/dependencies.
+Do not include detailed IO/type plumbing; deterministic tooling handles that.
 Also include 2-6 concise `progress_updates` describing major decomposition checkpoints.
 """
 

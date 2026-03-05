@@ -866,3 +866,93 @@ class TestSharedContext:
         assert "Shared Context" in captured_users[0]
         records = await store.recent("architect/test/decompose", limit=5)
         assert any("Parent: Sort" in r.text for r in records)
+
+
+class TestDeterministicDecompose:
+    @pytest.mark.asyncio
+    async def test_conceptual_payload_gets_deterministic_ports_and_edges(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            return json.dumps(
+                {
+                    "progress_updates": [
+                        "identify high-level phases",
+                        "map phase order",
+                    ],
+                    "sub_nodes": [
+                        {
+                            "name": "Split Input",
+                            "description": "Split list into halves for recursive processing.",
+                        },
+                        {
+                            "name": "merge",
+                            "description": "Merge sorted halves.",
+                            "matched_primitive_hint": "merge",
+                        },
+                    ],
+                    "flow_hints": [
+                        {
+                            "from": "Split Input",
+                            "to": "merge",
+                            "why": "split output feeds merge",
+                        }
+                    ],
+                }
+            )
+
+        llm.complete = complete
+
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Sort",
+            description="Sort input list",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="list[int]")],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "divide_and_conquer",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_node(state, config)
+        nodes = result["nodes"]
+        edges = result["edges"]
+        assert len(nodes) == 2
+        assert edges
+
+        by_name = {n.name: n for n in nodes}
+        assert by_name["Split Input"].inputs
+        assert by_name["Split Input"].outputs
+        assert by_name["Split Input"].type_signature
+
+        merge_node = by_name["merge"]
+        assert merge_node.status == NodeStatus.ATOMIC
+        assert merge_node.matched_primitive == "merge"
+        assert merge_node.type_signature
+
+        src_id = by_name["Split Input"].node_id
+        tgt_id = by_name["merge"].node_id
+        assert any(e.source_id == src_id and e.target_id == tgt_id for e in edges)

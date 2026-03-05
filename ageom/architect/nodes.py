@@ -19,6 +19,7 @@ from ageom.architect.models import (
     IOSpec,
     NodeStatus,
 )
+from ageom.architect.deterministic_decompose import build_deterministic_decomposition
 from ageom.architect.prompts import (
     CRITIQUE_SYSTEM,
     CRITIQUE_USER,
@@ -590,78 +591,13 @@ async def decompose_node(
             metadata={"node_id": current_id, "node_name": node.name},
         )
 
-    # Parse sub-nodes
-    new_nodes: list[AlgorithmicNode] = []
-    name_to_id: dict[str, str] = {}
-
-    for sub in parsed.get("sub_nodes", []):
-        sub_id = f"node_{uuid.uuid4().hex[:8]}"
-        sub_name = sub.get("name", "unnamed")
-        name_to_id[sub_name] = sub_id
-
-        # Parse concept_type
-        concept_type = node.concept_type
-        ct_str = sub.get("concept_type", "")
-        for ct in ConceptType:
-            if ct.value == ct_str:
-                concept_type = ct
-                break
-
-        # Parse I/O
-        inputs = [
-            IOSpec(name=io.get("name", ""), type_desc=io.get("type_desc", "any"))
-            for io in sub.get("inputs", [])
-        ]
-        outputs = [
-            IOSpec(name=io.get("name", ""), type_desc=io.get("type_desc", "any"))
-            for io in sub.get("outputs", [])
-        ]
-
-        is_atomic = sub.get("is_atomic", False)
-        matched_prim = sub.get("matched_primitive")
-
-        sub_node = AlgorithmicNode(
-            node_id=sub_id,
-            parent_id=current_id,
-            name=sub_name,
-            description=sub.get("description", ""),
-            concept_type=concept_type,
-            inputs=inputs,
-            outputs=outputs,
-            depth=node.depth + 1,
-            type_signature=sub.get("type_signature", ""),
-            matched_primitive=matched_prim if matched_prim != "null" else None,
-            status=NodeStatus.PENDING,
-        )
-
-        # Validate atomic claims against catalog
-        if is_atomic and deps.catalog.is_atomic(sub_node):
-            sub_node = sub_node.model_copy(update={"status": NodeStatus.ATOMIC})
-        elif is_atomic:
-            # LLM claimed atomic but catalog doesn't confirm — keep as PENDING
-            sub_node = sub_node.model_copy(update={"matched_primitive": None})
-
-        new_nodes.append(sub_node)
-
-    # Parse edges
-    new_edges: list[DependencyEdge] = []
-    for edge_spec in parsed.get("edges", []):
-        src_name = edge_spec.get("source_name", "")
-        tgt_name = edge_spec.get("target_name", "")
-        src_id = name_to_id.get(src_name, "")
-        tgt_id = name_to_id.get(tgt_name, "")
-        if src_id and tgt_id:
-            data_type = edge_spec.get("data_type", "any")
-            new_edges.append(
-                DependencyEdge(
-                    source_id=src_id,
-                    target_id=tgt_id,
-                    output_name=edge_spec.get("output_name", "result"),
-                    input_name=edge_spec.get("input_name", "data"),
-                    source_type=data_type,
-                    target_type=data_type,
-                )
-            )
+    built = build_deterministic_decomposition(
+        parsed=parsed,
+        parent=node,
+        catalog=deps.catalog,
+    )
+    new_nodes = built.nodes
+    new_edges = built.edges
 
     history_entry = {
         "step": "decompose_node",
