@@ -7,10 +7,18 @@ different prompts in the pipeline can be dispatched to different providers
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any
 
 from ageom.hunter.llm import LLMClient
-from ageom.telemetry import finish_prompt_dispatch, start_prompt_dispatch
+from ageom.telemetry import (
+    finish_prompt_dispatch,
+    get_current_stage,
+    log_event,
+    start_prompt_dispatch,
+    update_stage,
+)
 
 # ---------------------------------------------------------------------------
 # Prompt key constants — one per LLM call site
@@ -108,24 +116,73 @@ class PromptKeyLLMClient:
     def __init__(self, base: LLMClient, prompt_key: str) -> None:
         self._base = base
         self._prompt_key = prompt_key
+        self._heartbeat_interval_sec = 5.0
+
+    async def _heartbeat_loop(self, dispatch_id: str, started_at: float) -> None:
+        while True:
+            await asyncio.sleep(self._heartbeat_interval_sec)
+            elapsed = max(0.0, time.time() - started_at)
+            stage = get_current_stage()
+            if stage:
+                update_stage(
+                    stage=stage,
+                    status="running",
+                    message=f"waiting on {self._prompt_key} ({elapsed:.0f}s)",
+                )
+            log_event(
+                "llm",
+                phase=stage or "prompt_dispatch",
+                event_type="PROMPT_DISPATCH_HEARTBEAT",
+                stage=stage,
+                prompt_key=self._prompt_key,
+                dispatch_id=dispatch_id,
+                payload={"elapsed_sec": round(elapsed, 2)},
+            )
+
+    async def _stop_heartbeat(
+        self, task: asyncio.Task[None] | None
+    ) -> None:
+        if task is None:
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     async def complete(self, system: str, user: str) -> str:
         dispatch_id = start_prompt_dispatch(self._prompt_key, client=self._base)
+        started_at = time.time()
+        heartbeat_task = (
+            asyncio.create_task(self._heartbeat_loop(dispatch_id, started_at))
+            if dispatch_id
+            else None
+        )
         try:
             output = await self._base.complete(system, user)
         except Exception as exc:
+            await self._stop_heartbeat(heartbeat_task)
             finish_prompt_dispatch(dispatch_id, ok=False, error=str(exc))
             raise
+        await self._stop_heartbeat(heartbeat_task)
         finish_prompt_dispatch(dispatch_id, ok=True)
         return output
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         dispatch_id = start_prompt_dispatch(self._prompt_key, client=self._base)
+        started_at = time.time()
+        heartbeat_task = (
+            asyncio.create_task(self._heartbeat_loop(dispatch_id, started_at))
+            if dispatch_id
+            else None
+        )
         try:
             output = await self._base.complete_with_grammar(system, user, grammar)
         except Exception as exc:
+            await self._stop_heartbeat(heartbeat_task)
             finish_prompt_dispatch(dispatch_id, ok=False, error=str(exc))
             raise
+        await self._stop_heartbeat(heartbeat_task)
         finish_prompt_dispatch(dispatch_id, ok=True)
         return output
 

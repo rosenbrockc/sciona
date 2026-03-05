@@ -6,6 +6,7 @@ All tests use MemorySaver — no PostgreSQL required.
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
 import pytest
@@ -172,6 +173,47 @@ class TestCheckpointerFactory:
     @pytest.mark.asyncio
     async def test_empty_string_yields_memory_saver(self):
         async with create_checkpointer("") as cp:
+            assert isinstance(cp, MemorySaver)
+
+    @pytest.mark.asyncio
+    async def test_postgres_context_manager_shape_supported(self, monkeypatch):
+        class _DummySaver(MemorySaver):
+            def __init__(self) -> None:
+                super().__init__()
+                self.setup_calls = 0
+
+            async def setup(self) -> None:
+                self.setup_calls += 1
+
+        dummy = _DummySaver()
+
+        @asynccontextmanager
+        async def _from_conn_string(uri: str):
+            assert uri == "postgresql://test"
+            yield dummy
+
+        monkeypatch.setattr(
+            "langgraph.checkpoint.postgres.aio.AsyncPostgresSaver.from_conn_string",
+            _from_conn_string,
+        )
+
+        async with create_checkpointer("postgresql://test") as cp:
+            assert cp is dummy
+            assert dummy.setup_calls == 1
+
+    @pytest.mark.asyncio
+    async def test_postgres_error_falls_back_to_memory(self, monkeypatch):
+        @asynccontextmanager
+        async def _from_conn_string(_uri: str):
+            raise RuntimeError("db down")
+            yield  # pragma: no cover
+
+        monkeypatch.setattr(
+            "langgraph.checkpoint.postgres.aio.AsyncPostgresSaver.from_conn_string",
+            _from_conn_string,
+        )
+
+        async with create_checkpointer("postgresql://test") as cp:
             assert isinstance(cp, MemorySaver)
 
 

@@ -36,6 +36,7 @@ from ageom.llm_router import (
     select_llm,
 )
 from ageom.shared_context import format_context_block
+from ageom.telemetry import get_current_stage, log_event, update_stage
 
 # ---------------------------------------------------------------------------
 # Conjugate prior/likelihood pair detection
@@ -555,6 +556,39 @@ async def decompose_node(
                 {"step": "decompose_node", "node_id": current_id, "parse_error": True}
             ],
         }
+
+    progress_updates_raw = parsed.get("progress_updates", [])
+    progress_updates: list[str] = []
+    if isinstance(progress_updates_raw, list):
+        for item in progress_updates_raw:
+            text = str(item).strip()
+            if text:
+                progress_updates.append(text)
+    if progress_updates:
+        stage = get_current_stage() or "architect_decompose"
+        first_update = progress_updates[0][:180]
+        update_stage(
+            stage=stage,
+            status="running",
+            message=f"{node.name}: {first_update}",
+        )
+        log_event(
+            "architect",
+            "decompose",
+            "DECOMPOSE_PROGRESS",
+            node_id=current_id,
+            payload={"progress_updates": progress_updates[:6]},
+        )
+        await _put_context(
+            deps,
+            config,
+            channel="decompose_progress",
+            text=(
+                f"Node: {node.name}\n"
+                f"Progress: {' | '.join(progress_updates[:6])}"
+            ),
+            metadata={"node_id": current_id, "node_name": node.name},
+        )
 
     # Parse sub-nodes
     new_nodes: list[AlgorithmicNode] = []

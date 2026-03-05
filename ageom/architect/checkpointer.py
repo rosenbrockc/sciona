@@ -29,10 +29,11 @@ async def create_checkpointer(
         try:
             from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-            saver = AsyncPostgresSaver.from_conn_string(postgres_uri)
-            await saver.setup()
-            yield saver
-            return
+            # Newer langgraph returns an async context manager here.
+            async with AsyncPostgresSaver.from_conn_string(postgres_uri) as saver:
+                await saver.setup()
+                yield saver
+                return
         except Exception:
             logger.warning(
                 "Failed to connect to PostgreSQL at %s; falling back to MemorySaver",

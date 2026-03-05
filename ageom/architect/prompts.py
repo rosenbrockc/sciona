@@ -40,6 +40,10 @@ matches a known primitive from the catalog, set "is_atomic" to true and \
 
 You must respond with ONLY a JSON object (no markdown fences, no explanation):
 {{
+  "progress_updates": [
+    "<high-level checkpoint 1>",
+    "<high-level checkpoint 2>"
+  ],
   "sub_nodes": [
     {{
       "name": "<descriptive name>",
@@ -83,6 +87,7 @@ Relevant primitives from the catalog:
 
 Decompose this node into 2 or more sub-nodes with data-flow edges between them. \
 Mark sub-nodes as atomic if they match a known primitive.
+Also include 2-6 concise `progress_updates` describing major decomposition checkpoints.
 """
 
 # ---------------------------------------------------------------------------
