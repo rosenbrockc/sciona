@@ -9,13 +9,19 @@ import ast
 import importlib
 import inspect
 import json
+import logging
 from pathlib import Path
 import sys
-from typing import Any, get_args, get_origin
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
-from ageom.architect.catalog import PrimitiveCatalog
+from ageom.architect.catalog import CatalogReport, PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 from ageom.sources import AtomSource, SourcesConfig, discover_cdgs, import_atoms, load_sources, resolve_source
+
+if TYPE_CHECKING:
+    from ageom.architect.embedder import SkillIndex
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize(text: str) -> str:
@@ -137,15 +143,51 @@ def _module_belongs_to_source(
     return False
 
 
-def _load_atomic_node_index(source: AtomSource, *, base_dir: Path | None = None) -> dict[str, list[_AtomicNodeMeta]]:
+def _load_atomic_node_index(
+    source: AtomSource, *, base_dir: Path | None = None
+) -> tuple[dict[str, list[_AtomicNodeMeta]], dict[str, str]]:
+    """Load atomic node metadata and topo-hashes from CDG files.
+
+    Returns ``(atom_index, topo_hashes)`` where *topo_hashes* maps
+    ``topo_hash -> source_name`` for structural de-duplication.
+    """
+    from ageom.graph_store import _topo_hash
+
     index: dict[str, list[_AtomicNodeMeta]] = defaultdict(list)
+    topo_hashes: dict[str, str] = {}
+
     for cdg_path in discover_cdgs(source, base_dir):
         try:
             with open(cdg_path) as handle:
                 payload = json.load(handle)
         except Exception:
             continue
-        for raw in payload.get("nodes", []) or []:
+
+        all_nodes_raw = payload.get("nodes", []) or []
+        all_edges_raw = payload.get("edges", []) or []
+
+        # Compute topo_hashes for decomposed parent nodes.
+        for raw in all_nodes_raw:
+            children = raw.get("children", []) or []
+            status = raw.get("status", "")
+            if status == "decomposed" and len(children) >= 2:
+                node_id = str(raw.get("node_id", ""))
+                nodes_dicts = [
+                    {"node_id": str(n.get("node_id", "")), "parent_id": str(n.get("parent_id", ""))}
+                    for n in all_nodes_raw
+                ]
+                edges_dicts = [
+                    {"source_id": str(e.get("source_id", "")), "target_id": str(e.get("target_id", ""))}
+                    for e in all_edges_raw
+                ]
+                try:
+                    h = _topo_hash(nodes_dicts, edges_dicts, node_id)
+                    if h:
+                        topo_hashes[h] = source.name
+                except Exception:
+                    pass
+
+        for raw in all_nodes_raw:
             if raw.get("status") != "atomic":
                 continue
             try:
@@ -169,7 +211,7 @@ def _load_atomic_node_index(source: AtomSource, *, base_dir: Path | None = None)
             }:
                 if key:
                     index[key].append(meta)
-    return index
+    return index, topo_hashes
 
 
 def _expr_to_text(expr: ast.expr | None) -> str:
@@ -378,22 +420,71 @@ def _registration_to_primitive(
     return primitive, aliases
 
 
+def _add_primitive_with_aliases(
+    catalog: PrimitiveCatalog,
+    primitive: AlgorithmicPrimitive,
+    aliases: list[str],
+    *,
+    skill_index: SkillIndex | None = None,
+    dedup_threshold: float = 0.85,
+    report: CatalogReport | None = None,
+) -> bool:
+    """Insert *primitive* via dedup, register aliases.  Returns True if added."""
+    result = catalog.add_with_dedup(
+        primitive, skill_index, dedup_threshold, report
+    )
+    canonical = result.incumbent_name if result.is_duplicate else primitive.name
+    for alias in aliases:
+        try:
+            catalog.add_alias(alias, canonical)
+        except KeyError:
+            pass
+    if skill_index is not None and not result.is_duplicate:
+        skill_index.add_primitive(primitive)
+    return not result.is_duplicate
+
+
 def seed_catalog_from_sources(
     catalog: PrimitiveCatalog,
     *,
     config: SourcesConfig | None = None,
     base_dir: Path | None = None,
     include_live_registries: bool = True,
+    skill_index: SkillIndex | None = None,
+    dedup_threshold: float = 0.85,
+    report: CatalogReport | None = None,
 ) -> int:
     """Add architect primitives derived from configured source registrations."""
     if config is None:
         config = load_sources()
 
     added = 0
+    seen_topo_hashes: dict[str, str] = {}  # topo_hash -> first source name
+
     for source in config.sources:
         root = resolve_source(source, base_dir).expanduser().resolve()
         package_root = root.joinpath(*source.package.split("."))
-        atom_index = _load_atomic_node_index(source, base_dir=base_dir)
+        atom_index, source_topo_hashes = _load_atomic_node_index(
+            source, base_dir=base_dir
+        )
+
+        # Structural de-duplication: skip CDG subtrees already seen.
+        structural_skips: set[str] = set()
+        for h, src_name in source_topo_hashes.items():
+            if h in seen_topo_hashes and seen_topo_hashes[h] != src_name:
+                logger.debug(
+                    "Structural duplicate: topo_hash %s from '%s' "
+                    "already seen from '%s'",
+                    h,
+                    src_name,
+                    seen_topo_hashes[h],
+                )
+                structural_skips.add(h)
+                if report is not None:
+                    report.structural_skips += 1
+            else:
+                seen_topo_hashes[h] = src_name
+
         ast_entries = _parse_register_atom_functions(package_root, source.package)
         seen_names: set[str] = set()
         if include_live_registries:
@@ -431,13 +522,16 @@ def seed_catalog_from_sources(
                     if built is None:
                         continue
                     primitive, aliases = built
-                    existed = catalog.get(primitive.name) is not None
-                    catalog.add(primitive)
-                    for alias in aliases:
-                        catalog.add_alias(alias, primitive.name)
-                    seen_names.add(name)
-                    if not existed:
+                    if _add_primitive_with_aliases(
+                        catalog,
+                        primitive,
+                        aliases,
+                        skill_index=skill_index,
+                        dedup_threshold=dedup_threshold,
+                        report=report,
+                    ):
                         added += 1
+                    seen_names.add(name)
 
         for name, meta in ast_entries.items():
             if name in seen_names or catalog.get(name) is not None:
@@ -446,9 +540,14 @@ def seed_catalog_from_sources(
             if built is None:
                 continue
             primitive, aliases = built
-            catalog.add(primitive)
-            for alias in aliases:
-                catalog.add_alias(alias, primitive.name)
+            if _add_primitive_with_aliases(
+                catalog,
+                primitive,
+                aliases,
+                skill_index=skill_index,
+                dedup_threshold=dedup_threshold,
+                report=report,
+            ):
+                added += 1
             seen_names.add(name)
-            added += 1
     return added

@@ -120,6 +120,32 @@ class SkillIndex:
                 return decl
         return None
 
+    # --- Incremental updates ---
+
+    def add_primitive(self, primitive: AlgorithmicPrimitive) -> None:
+        """Add a single primitive to the live index.
+
+        Used during catalog seeding so the index stays current as new
+        primitives are added.
+        """
+        self._ensure_embedder()
+        text = self._primitive_to_text(primitive)
+        vec = self._embedder.embed(text)
+        decl = Declaration(
+            name=primitive.name,
+            type_signature=primitive.type_signature,
+            docstring=primitive.description,
+            source_lib=primitive.source,
+            prover=Prover.LEAN4,
+        )
+        entry = IndexEntry(declaration=decl, embedding=vec, source_text=text)
+        if self._store is None:
+            self._store = FAISSStore(dim=self._embedder.dim)
+        self._store.add([entry])
+        idx = len(self._primitives)
+        self._primitives.append(primitive)
+        self._id_to_primitive[idx] = primitive
+
     # --- Original search returning AlgorithmicPrimitive ---
 
     def search(self, query: str, k: int = 10) -> list[AlgorithmicPrimitive]:

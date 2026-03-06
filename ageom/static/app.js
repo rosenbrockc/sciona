@@ -482,7 +482,8 @@
       elements: elements,
       style: getCytoscapeStyle(),
       layout: { name: "preset" }, // delay layout
-      wheelSensitivity: 0.3
+      wheelSensitivity: 0.3,
+      maxZoom: 3
     });
 
     // Layout only visible elements

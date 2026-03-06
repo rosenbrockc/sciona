@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ageom.architect.models import (
     AlgorithmicNode,
@@ -11,6 +14,37 @@ from ageom.architect.models import (
     ConceptType,
     IOSpec,
 )
+
+if TYPE_CHECKING:
+    from ageom.architect.embedder import SkillIndex
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# De-duplication data models
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class DedupResult:
+    """Outcome of comparing a candidate against the catalog."""
+
+    is_duplicate: bool
+    incumbent_name: str | None = None
+    similarity: float = 0.0
+    structural_match: bool = False
+
+
+@dataclass
+class CatalogReport:
+    """Summary of catalog population with de-duplication metrics."""
+
+    total_candidates: int = 0
+    added: int = 0
+    merged: int = 0
+    structural_skips: int = 0
+    merge_details: list[tuple[str, str, float]] = field(default_factory=list)
 
 
 class PrimitiveCatalog:
@@ -81,6 +115,207 @@ class PrimitiveCatalog:
         if node.matched_primitive and self.get(node.matched_primitive) is not None:
             return True
         return self.get(node.name) is not None
+
+    # ------------------------------------------------------------------
+    # De-duplication
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _structural_match(
+        a: AlgorithmicPrimitive, b: AlgorithmicPrimitive
+    ) -> bool:
+        """Check category equality and IO arity compatibility."""
+        if a.category != b.category:
+            return False
+        a_req = len([p for p in a.inputs if p.required])
+        b_req = len([p for p in b.inputs if p.required])
+        if abs(a_req - b_req) > 1:
+            return False
+        if abs(len(a.outputs) - len(b.outputs)) > 1:
+            return False
+        return True
+
+    @staticmethod
+    def _richer(
+        a: AlgorithmicPrimitive, b: AlgorithmicPrimitive
+    ) -> AlgorithmicPrimitive:
+        """Return the primitive with richer metadata."""
+
+        def _score(p: AlgorithmicPrimitive) -> int:
+            s = len(p.description)
+            s += len(p.inputs) * 10
+            s += len(p.outputs) * 10
+            s += 50 if p.type_signature else 0
+            return s
+
+        return a if _score(a) >= _score(b) else b
+
+    def check_duplicate(
+        self,
+        candidate: AlgorithmicPrimitive,
+        skill_index: SkillIndex | None = None,
+        threshold: float = 0.85,
+    ) -> DedupResult:
+        """Check if *candidate* is a semantic duplicate of an existing primitive.
+
+        1. Exact name match -> always duplicate.
+        2. If *skill_index* is provided, query top-1 by embedding similarity.
+           If similarity >= *threshold* AND structural match -> duplicate.
+        3. Otherwise -> not duplicate.
+        """
+        existing = self.get(candidate.name)
+        if existing is not None:
+            return DedupResult(
+                is_duplicate=True,
+                incumbent_name=existing.name,
+                similarity=1.0,
+                structural_match=True,
+            )
+
+        if skill_index is None:
+            return DedupResult(is_duplicate=False)
+
+        hits = skill_index.search_by_embedding(
+            skill_index._primitive_to_text(candidate), k=1
+        )
+        if not hits:
+            return DedupResult(is_duplicate=False)
+
+        decl, score = hits[0]
+        incumbent = self.get(decl.name)
+        if incumbent is None:
+            return DedupResult(is_duplicate=False, similarity=score)
+
+        struct = self._structural_match(candidate, incumbent)
+        if score >= threshold and struct:
+            return DedupResult(
+                is_duplicate=True,
+                incumbent_name=incumbent.name,
+                similarity=score,
+                structural_match=True,
+            )
+        return DedupResult(
+            is_duplicate=False,
+            incumbent_name=incumbent.name,
+            similarity=score,
+            structural_match=struct,
+        )
+
+    def add_with_dedup(
+        self,
+        candidate: AlgorithmicPrimitive,
+        skill_index: SkillIndex | None = None,
+        threshold: float = 0.85,
+        report: CatalogReport | None = None,
+    ) -> DedupResult:
+        """Add a primitive, merging with the incumbent if duplicate.
+
+        When merging, the primitive with richer metadata wins and the
+        other's name is registered as an alias.
+
+        Returns the :class:`DedupResult`.
+        """
+        if report is not None:
+            report.total_candidates += 1
+
+        result = self.check_duplicate(candidate, skill_index, threshold)
+
+        if not result.is_duplicate:
+            self.add(candidate)
+            if report is not None:
+                report.added += 1
+            return result
+
+        # Merge: keep the richer primitive, alias the loser.
+        assert result.incumbent_name is not None
+        incumbent = self.get(result.incumbent_name)
+        assert incumbent is not None
+
+        winner = self._richer(incumbent, candidate)
+        loser_name = (
+            candidate.name if winner.name == incumbent.name else incumbent.name
+        )
+
+        # Remove the loser from _primitives so it doesn't shadow the alias.
+        if loser_name != winner.name and loser_name in self._primitives:
+            loser = self._primitives.pop(loser_name)
+            bucket = self._by_category.get(loser.category, [])
+            self._by_category[loser.category] = [
+                p for p in bucket if p.name != loser_name
+            ]
+
+        self.add(winner)
+        if loser_name != winner.name:
+            self._aliases[self._normalize_key(loser_name)] = winner.name
+
+        if report is not None:
+            report.merged += 1
+            report.merge_details.append(
+                (candidate.name, result.incumbent_name, result.similarity)
+            )
+
+        logger.debug(
+            "Merged primitive '%s' into '%s' (similarity=%.3f)",
+            candidate.name,
+            winner.name,
+            result.similarity,
+        )
+        return result
+
+    # ------------------------------------------------------------------
+    # Gap detection
+    # ------------------------------------------------------------------
+
+    def find_gaps(
+        self,
+        fallback_nodes: list[AlgorithmicNode],
+        skill_index: SkillIndex | None = None,
+        similarity_ceiling: float = 0.6,
+    ) -> list[list[AlgorithmicNode]]:
+        """Cluster fallback nodes that don't match any primitive well.
+
+        Returns groups of similar unmatched nodes (each group is a gap).
+        """
+        unmatched: list[AlgorithmicNode] = []
+        for node in fallback_nodes:
+            if self.get(node.name) is not None:
+                continue
+            if node.matched_primitive and self.get(node.matched_primitive) is not None:
+                continue
+            if skill_index is not None:
+                hits = skill_index.search_by_embedding(node.description, k=1)
+                if hits and hits[0][1] >= similarity_ceiling:
+                    continue
+            unmatched.append(node)
+
+        if not unmatched:
+            return []
+
+        # Greedy clustering by pairwise keyword overlap (no torch needed).
+        clusters: list[list[AlgorithmicNode]] = []
+        used: set[int] = set()
+        for i, node_a in enumerate(unmatched):
+            if i in used:
+                continue
+            cluster = [node_a]
+            used.add(i)
+            words_a = set(node_a.description.lower().split())
+            for j in range(i + 1, len(unmatched)):
+                if j in used:
+                    continue
+                words_b = set(unmatched[j].description.lower().split())
+                union = words_a | words_b
+                if union and len(words_a & words_b) / len(union) > 0.35:
+                    cluster.append(unmatched[j])
+                    used.add(j)
+            clusters.append(cluster)
+
+        # Only return clusters with 2+ members (single nodes aren't a pattern).
+        return [c for c in clusters if len(c) >= 2]
+
+    # ------------------------------------------------------------------
+    # Search
+    # ------------------------------------------------------------------
 
     def find_matching_primitives(
         self, node: AlgorithmicNode, k: int = 5

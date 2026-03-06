@@ -2,13 +2,19 @@
 
 import pytest
 
-from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+from ageom.architect.catalog import (
+    CatalogReport,
+    DedupResult,
+    PrimitiveCatalog,
+    seed_builtin_primitives,
+)
 from ageom.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
     ConceptType,
     IOSpec,
 )
+from ageom.types import Declaration, Prover
 
 
 @pytest.fixture
@@ -242,3 +248,297 @@ class TestBuiltinPrimitiveSeeding:
         )
 
         assert catalog.is_atomic(node) is True
+
+
+# ---------------------------------------------------------------------------
+# Mock SkillIndex for dedup tests (no torch/FAISS needed)
+# ---------------------------------------------------------------------------
+
+
+class _MockSkillIndex:
+    """Minimal mock that returns a canned (Declaration, score) pair."""
+
+    def __init__(self, name: str, score: float):
+        self._name = name
+        self._score = score
+
+    def search_by_embedding(self, query_text: str, k: int = 1):
+        decl = Declaration(
+            name=self._name,
+            type_signature="",
+            prover=Prover.LEAN4,
+        )
+        return [(decl, self._score)]
+
+    def _primitive_to_text(self, prim):
+        return f"{prim.name}: {prim.description}"
+
+    def add_primitive(self, primitive):
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Task 1: DedupResult + _structural_match
+# ---------------------------------------------------------------------------
+
+
+class TestStructuralMatch:
+    def test_same_category_same_arity(self):
+        a = AlgorithmicPrimitive(
+            name="a", source="t", category=ConceptType.SORTING,
+            description="x",
+            inputs=[IOSpec(name="x", type_desc="int")],
+            outputs=[IOSpec(name="y", type_desc="int")],
+        )
+        b = AlgorithmicPrimitive(
+            name="b", source="t", category=ConceptType.SORTING,
+            description="y",
+            inputs=[IOSpec(name="x", type_desc="int")],
+            outputs=[IOSpec(name="y", type_desc="int")],
+        )
+        assert PrimitiveCatalog._structural_match(a, b) is True
+
+    def test_different_category(self):
+        a = AlgorithmicPrimitive(
+            name="a", source="t", category=ConceptType.SORTING, description="x",
+        )
+        b = AlgorithmicPrimitive(
+            name="b", source="t", category=ConceptType.SEARCHING, description="y",
+        )
+        assert PrimitiveCatalog._structural_match(a, b) is False
+
+    def test_arity_off_by_one(self):
+        a = AlgorithmicPrimitive(
+            name="a", source="t", category=ConceptType.SORTING, description="x",
+            inputs=[IOSpec(name="x", type_desc="int")],
+            outputs=[IOSpec(name="y", type_desc="int")],
+        )
+        b = AlgorithmicPrimitive(
+            name="b", source="t", category=ConceptType.SORTING, description="y",
+            inputs=[
+                IOSpec(name="x", type_desc="int"),
+                IOSpec(name="k", type_desc="int"),
+            ],
+            outputs=[IOSpec(name="y", type_desc="int")],
+        )
+        assert PrimitiveCatalog._structural_match(a, b) is True
+
+    def test_arity_off_by_two(self):
+        a = AlgorithmicPrimitive(
+            name="a", source="t", category=ConceptType.SORTING, description="x",
+            inputs=[IOSpec(name="x", type_desc="int")],
+            outputs=[IOSpec(name="y", type_desc="int")],
+        )
+        b = AlgorithmicPrimitive(
+            name="b", source="t", category=ConceptType.SORTING, description="y",
+            inputs=[
+                IOSpec(name="x", type_desc="int"),
+                IOSpec(name="k", type_desc="int"),
+                IOSpec(name="n", type_desc="int"),
+            ],
+            outputs=[IOSpec(name="y", type_desc="int")],
+        )
+        assert PrimitiveCatalog._structural_match(a, b) is False
+
+
+# ---------------------------------------------------------------------------
+# Task 2: check_duplicate
+# ---------------------------------------------------------------------------
+
+
+class TestCheckDuplicate:
+    def test_exact_name_is_duplicate(self, catalog):
+        candidate = AlgorithmicPrimitive(
+            name="heapsort", source="other", category=ConceptType.SORTING,
+            description="Another heapsort",
+        )
+        result = catalog.check_duplicate(candidate)
+        assert result.is_duplicate is True
+        assert result.incumbent_name == "heapsort"
+
+    def test_different_name_no_index_not_duplicate(self, catalog):
+        candidate = AlgorithmicPrimitive(
+            name="quicksort", source="other", category=ConceptType.SORTING,
+            description="Sort using pivots",
+        )
+        result = catalog.check_duplicate(candidate)
+        assert result.is_duplicate is False
+
+    def test_mock_high_similarity_same_category(self, catalog):
+        mock_idx = _MockSkillIndex("heapsort", 0.92)
+        candidate = AlgorithmicPrimitive(
+            name="heap_sort_v2", source="other", category=ConceptType.SORTING,
+            description="Sort using a heap data structure variant",
+            inputs=[IOSpec(name="arr", type_desc="list[int]")],
+            outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+        )
+        result = catalog.check_duplicate(candidate, skill_index=mock_idx)
+        assert result.is_duplicate is True
+        assert result.incumbent_name == "heapsort"
+        assert result.similarity == 0.92
+
+    def test_mock_high_similarity_different_category(self, catalog):
+        mock_idx = _MockSkillIndex("heapsort", 0.92)
+        candidate = AlgorithmicPrimitive(
+            name="heap_priority_queue", source="other",
+            category=ConceptType.SEARCHING,  # different category
+            description="Priority queue using heap",
+        )
+        result = catalog.check_duplicate(candidate, skill_index=mock_idx)
+        assert result.is_duplicate is False
+
+    def test_mock_below_threshold(self, catalog):
+        mock_idx = _MockSkillIndex("heapsort", 0.70)
+        candidate = AlgorithmicPrimitive(
+            name="timsort", source="other", category=ConceptType.SORTING,
+            description="Adaptive merge sort",
+            inputs=[IOSpec(name="arr", type_desc="list[int]")],
+            outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+        )
+        result = catalog.check_duplicate(candidate, skill_index=mock_idx)
+        assert result.is_duplicate is False
+
+
+# ---------------------------------------------------------------------------
+# Task 3: add_with_dedup
+# ---------------------------------------------------------------------------
+
+
+class TestAddWithDedup:
+    def test_no_duplicate_adds_normally(self, catalog):
+        candidate = AlgorithmicPrimitive(
+            name="quicksort", source="other", category=ConceptType.SORTING,
+            description="Sort using pivots",
+        )
+        result = catalog.add_with_dedup(candidate)
+        assert result.is_duplicate is False
+        assert catalog.get("quicksort") is not None
+        assert catalog.size == 5
+
+    def test_merges_and_keeps_richer(self, catalog):
+        # heapsort is already in catalog with a short description
+        mock_idx = _MockSkillIndex("heapsort", 0.95)
+        candidate = AlgorithmicPrimitive(
+            name="heap_sort_improved", source="other",
+            category=ConceptType.SORTING,
+            description="Improved heapsort with optimised sift-down "
+                        "and better cache locality for large arrays",
+            inputs=[IOSpec(name="arr", type_desc="list[int]")],
+            outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+            type_signature="list[int] -> list[int]",
+        )
+        result = catalog.add_with_dedup(candidate, skill_index=mock_idx)
+        assert result.is_duplicate is True
+        # Candidate has richer metadata (longer description + type_signature)
+        winner = catalog.get("heap_sort_improved")
+        assert winner is not None
+        assert "Improved" in winner.description
+        # Old name should resolve via alias
+        assert catalog.get("heapsort") is not None
+
+    def test_merges_and_keeps_incumbent(self, catalog):
+        mock_idx = _MockSkillIndex("heapsort", 0.90)
+        candidate = AlgorithmicPrimitive(
+            name="hs2", source="other", category=ConceptType.SORTING,
+            description="hs",  # very short — incumbent is richer
+            inputs=[IOSpec(name="arr", type_desc="list[int]")],
+            outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+        )
+        result = catalog.add_with_dedup(candidate, skill_index=mock_idx)
+        assert result.is_duplicate is True
+        # Incumbent "heapsort" wins
+        assert catalog.get("heapsort") is not None
+        assert catalog.get("heapsort").name == "heapsort"
+        # Candidate name resolves as alias
+        assert catalog.get("hs2") is not None
+        assert catalog.get("hs2").name == "heapsort"
+
+    def test_no_index_falls_through(self, catalog):
+        candidate = AlgorithmicPrimitive(
+            name="introsort", source="other", category=ConceptType.SORTING,
+            description="Hybrid sorting algorithm",
+        )
+        result = catalog.add_with_dedup(candidate, skill_index=None)
+        assert result.is_duplicate is False
+        assert catalog.get("introsort") is not None
+
+
+# ---------------------------------------------------------------------------
+# Task 6: CatalogReport
+# ---------------------------------------------------------------------------
+
+
+class TestCatalogReport:
+    def test_counts(self, catalog):
+        report = CatalogReport()
+        mock_idx = _MockSkillIndex("heapsort", 0.95)
+
+        # Non-duplicate
+        catalog.add_with_dedup(
+            AlgorithmicPrimitive(
+                name="quicksort", source="t", category=ConceptType.SORTING,
+                description="Pivot sort",
+            ),
+            report=report,
+        )
+        # Duplicate
+        catalog.add_with_dedup(
+            AlgorithmicPrimitive(
+                name="heap_sort_v2", source="t", category=ConceptType.SORTING,
+                description="Another heap sort",
+                inputs=[IOSpec(name="arr", type_desc="list[int]")],
+                outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+            ),
+            skill_index=mock_idx,
+            report=report,
+        )
+
+        assert report.total_candidates == 2
+        assert report.added == 1
+        assert report.merged == 1
+        assert len(report.merge_details) == 1
+        assert report.merge_details[0][0] == "heap_sort_v2"
+        assert report.merge_details[0][1] == "heapsort"
+
+
+# ---------------------------------------------------------------------------
+# Task 7: find_gaps
+# ---------------------------------------------------------------------------
+
+
+class TestFindGaps:
+    def test_returns_clusters(self, catalog):
+        nodes = [
+            AlgorithmicNode(
+                node_id="a", name="Parse Requirements",
+                description="Parse and normalize input requirements into typed constraints",
+                concept_type=ConceptType.CUSTOM,
+            ),
+            AlgorithmicNode(
+                node_id="b", name="Normalize Requirements",
+                description="Normalize input requirements into typed constraints",
+                concept_type=ConceptType.CUSTOM,
+            ),
+            AlgorithmicNode(
+                node_id="c", name="Compute FFT",
+                description="Compute fast Fourier transform of a signal",
+                concept_type=ConceptType.SIGNAL_TRANSFORM,
+            ),
+        ]
+        clusters = catalog.find_gaps(nodes)
+        # a and b overlap ("normalize", "input", "requirements", "typed", "constraints")
+        # c is alone -> not in a cluster
+        assert len(clusters) >= 1
+        cluster_names = [{n.node_id for n in c} for c in clusters]
+        assert {"a", "b"} in cluster_names
+
+    def test_no_gaps_when_all_matched(self, catalog):
+        nodes = [
+            AlgorithmicNode(
+                node_id="a", name="heapsort",
+                description="Sort using heap",
+                concept_type=ConceptType.SORTING,
+            ),
+        ]
+        clusters = catalog.find_gaps(nodes)
+        assert clusters == []

@@ -199,7 +199,7 @@ def _load_architect_catalog(
     config: "AgeomConfig",
 ):
     """Load the architect primitive catalog from built-ins, JSON catalogs, and source registries."""
-    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+    from ageom.architect.catalog import CatalogReport, PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.source_catalog import seed_catalog_from_sources
     from ageom.sources import load_sources
 
@@ -218,6 +218,7 @@ def _load_architect_catalog(
                 for prim in partial.all_primitives():
                     catalog.add(prim)
 
+    report = CatalogReport()
     try:
         sources_cfg = load_sources(config.sources_file)
         derived = seed_catalog_from_sources(
@@ -225,9 +226,18 @@ def _load_architect_catalog(
             config=sources_cfg,
             base_dir=Path.cwd(),
             include_live_registries=False,
+            report=report,
         )
-        if derived:
-            print(f"Loaded {derived} source-derived primitives from {config.sources_file}")
+        if derived or report.merged or report.structural_skips:
+            parts = [f"{catalog.size} primitives"]
+            if derived:
+                parts.append(f"{derived} added")
+            if report.merged:
+                parts.append(f"{report.merged} merged")
+            if report.structural_skips:
+                parts.append(f"{report.structural_skips} structural skips")
+            parts.append(f"from {report.total_candidates} candidates")
+            print(f"Catalog: {', '.join(parts)}")
     except Exception as exc:
         print(
             f"Warning: failed to derive primitives from configured sources: {exc}",
@@ -843,6 +853,30 @@ def main() -> None:
         help="Write pipeline event trace to trace.jsonl",
     )
 
+    # --- catalog-gaps ---
+    gaps_parser = subparsers.add_parser(
+        "catalog-gaps",
+        help="Detect catalog coverage gaps from a CDG file",
+    )
+    gaps_parser.add_argument(
+        "--cdg",
+        type=str,
+        required=True,
+        help="Path to CDG JSON file",
+    )
+    gaps_parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.6,
+        help="Similarity ceiling below which a node is considered unmatched (default: 0.6)",
+    )
+    gaps_parser.add_argument(
+        "--catalog",
+        type=str,
+        default=None,
+        help="Path to a catalog JSON to load instead of built-ins",
+    )
+
     # --- upsert-cdg ---
     upsert_cdg_parser = subparsers.add_parser(
         "upsert-cdg",
@@ -920,11 +954,66 @@ def main() -> None:
         _run_async_command(_cmd_export(args))
     elif args.command == "visualize":
         _cmd_visualize(args)
+    elif args.command == "catalog-gaps":
+        _cmd_catalog_gaps(args)
     elif args.command == "upsert-cdg":
         _run_async_command(_cmd_upsert_cdg(args))
     else:
         parser.print_help()
         sys.exit(1)
+
+
+def _cmd_catalog_gaps(args: argparse.Namespace) -> None:
+    """Detect catalog coverage gaps from a CDG file."""
+    from ageom.architect.handoff import CDGExport
+    from ageom.architect.models import AlgorithmicNode, NodeStatus
+    from ageom.config import AgeomConfig
+
+    config = AgeomConfig()
+    catalog = _load_architect_catalog(args, config)
+
+    cdg_path = Path(args.cdg)
+    if not cdg_path.exists():
+        print(f"CDG file not found: {cdg_path}", file=sys.stderr)
+        sys.exit(1)
+
+    with open(cdg_path) as f:
+        cdg_data = json.load(f)
+    cdg = CDGExport.model_validate(cdg_data)
+
+    # Collect atomic nodes without a matched primitive
+    fallback_nodes = [
+        n for n in cdg.nodes
+        if n.status == NodeStatus.ATOMIC and not n.matched_primitive
+    ]
+
+    if not fallback_nodes:
+        print(f"No unmatched atomic nodes in {cdg_path.name}.")
+        return
+
+    # Try to use the skill index for similarity-based gap detection
+    skill_index = None
+    try:
+        skill_index_obj = _load_skill_index_or_empty(config)
+        if skill_index_obj is not None and hasattr(skill_index_obj, "search_by_embedding"):
+            skill_index = skill_index_obj
+    except Exception:
+        pass
+
+    clusters = catalog.find_gaps(
+        fallback_nodes,
+        skill_index=skill_index,
+        similarity_ceiling=args.threshold,
+    )
+
+    print(f"Catalog: {catalog.size} primitives")
+    print(f"Unmatched atomic nodes: {len(fallback_nodes)}")
+    print(f"Gap clusters (2+ similar unmatched nodes): {len(clusters)}")
+
+    for i, cluster in enumerate(clusters, 1):
+        print(f"\n  Gap {i} ({len(cluster)} nodes):")
+        for node in cluster:
+            print(f"    - {node.name}: {node.description[:80]}")
 
 
 def _cmd_sources_list(args: argparse.Namespace) -> None:
