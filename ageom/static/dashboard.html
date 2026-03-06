@@ -325,13 +325,16 @@
           div.className = "run-item" + (r.run_id === selectedRunId ? " active" : "");
           div.dataset.runId = r.run_id || "";
           const hung = r.is_hung ? " <span class=\"bad\">hung</span>" : "";
+          const architect = (r.metadata || {}).architect_metrics || {};
+          const unresolved = Number(architect.unresolved_leaf_count || 0);
+          const blocked = Number(((architect.node_status_counts || {}).blocked) || 0);
           div.innerHTML = [
             '<div class="run-line">',
             `<span class="run-id">${(r.run_id || "").slice(0, 12)}</span>`,
             `<span class="pill ${runStatusClass(r.status || "running")}">${r.status || "running"}</span>`,
             '</div>',
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
-            `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0}</div>`
+            `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`
           ].join("");
           div.addEventListener("click", () => {
             selectedRunId = r.run_id || "";
@@ -346,6 +349,7 @@
         const stages = run.stages || {};
         const stageCount = Object.keys(stages).length;
         const staleCount = (run.stale_stages || []).length;
+        const architect = (run.metadata || {}).architect_metrics || {};
         const metrics = [
           ["pipeline", run.pipeline || "--"],
           ["status", run.status || "--"],
@@ -357,6 +361,10 @@
           ["stale", String(staleCount)],
           ["success", String(run.prompt_successes || 0)],
           ["failures", String(run.prompt_failures || 0)],
+          ["unresolved", String(architect.unresolved_leaf_count || 0)],
+          ["blocked", String(((architect.node_status_counts || {}).blocked) || 0)],
+          ["any ports", `${(Number(architect.any_port_pct || 0) * 100).toFixed(1)}%`],
+          ["any edges", `${(Number(architect.any_edge_pct || 0) * 100).toFixed(1)}%`],
           ["started", fmtTime(run.started_at)],
           ["updated", fmtTime(run.last_update_at)]
         ];

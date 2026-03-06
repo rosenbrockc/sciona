@@ -8,12 +8,14 @@ from ageom.telemetry import (
     EventLog,
     PipelineEvent,
     configure_dashboard_output,
+    increment_run_metadata_counter,
     finish_prompt_dispatch,
     finish_run,
     get_event_log,
     get_runtime_run,
     load_persisted_runs,
     log_event,
+    merge_run_metadata,
     reset_telemetry_runtime,
     start_prompt_dispatch,
     start_run,
@@ -181,3 +183,35 @@ def test_persisted_run_snapshot(tmp_path: Path):
     rows = load_persisted_runs(tmp_path, limit=10)
     assert rows
     assert rows[0]["run_id"] == "persist-1"
+
+
+def test_run_metadata_merge_and_increment():
+    reset_telemetry_runtime()
+    run_id = start_run("algorithm_creation", run_id="meta-run")
+
+    with telemetry_scope(run_id=run_id):
+        merge_run_metadata(
+            {
+                "architect_metrics": {
+                    "node_status_counts": {"pending": 2},
+                    "unresolved_leaf_count": 2,
+                }
+            }
+        )
+        increment_run_metadata_counter(
+            "architect_metrics",
+            "critique_reject_counts_by_category",
+            "type_compatibility",
+        )
+        increment_run_metadata_counter(
+            "architect_metrics",
+            "critique_reject_counts_by_category",
+            "type_compatibility",
+        )
+
+    snapshot = get_runtime_run(run_id)
+    assert snapshot is not None
+    architect = snapshot["metadata"]["architect_metrics"]
+    assert architect["node_status_counts"]["pending"] == 2
+    assert architect["unresolved_leaf_count"] == 2
+    assert architect["critique_reject_counts_by_category"]["type_compatibility"] == 2

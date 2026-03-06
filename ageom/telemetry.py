@@ -330,6 +330,39 @@ class TelemetryRegistry:
             run.last_update_at = now
             self._persist_locked(run_id)
 
+    def merge_metadata(self, run_id: str, payload: dict[str, Any]) -> None:
+        now = time.time()
+        with self._lock:
+            run = self._runs.get(run_id)
+            if run is None:
+                return
+            _deep_merge_dict(run.metadata, payload)
+            run.last_update_at = now
+            self._persist_locked(run_id)
+
+    def increment_metadata_counter(
+        self,
+        run_id: str,
+        path: list[str],
+        amount: int = 1,
+    ) -> None:
+        now = time.time()
+        with self._lock:
+            run = self._runs.get(run_id)
+            if run is None or not path:
+                return
+            cursor = run.metadata
+            for key in path[:-1]:
+                child = cursor.get(key)
+                if not isinstance(child, dict):
+                    child = {}
+                    cursor[key] = child
+                cursor = child
+            leaf = path[-1]
+            cursor[leaf] = int(cursor.get(leaf, 0) or 0) + amount
+            run.last_update_at = now
+            self._persist_locked(run_id)
+
     def note_event(self, run_id: str) -> None:
         with self._lock:
             run = self._runs.get(run_id)
@@ -386,6 +419,14 @@ def _run_to_dict(run: RunSnapshot) -> dict[str, Any]:
         row.pop("_latency_total_ms", None)
         row.pop("_latency_count", None)
     return payload
+
+
+def _deep_merge_dict(target: dict[str, Any], payload: dict[str, Any]) -> None:
+    for key, value in payload.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _deep_merge_dict(target[key], value)
+            continue
+        target[key] = value
 
 
 _registry = TelemetryRegistry()
@@ -533,6 +574,26 @@ def finish_run(
 ) -> None:
     """Mark a telemetry run as completed/failed."""
     _registry.finish_run(run_id, status=status, error=error)
+
+
+def merge_run_metadata(payload: dict[str, Any], *, run_id: str | None = None) -> None:
+    """Merge nested metadata into the active run snapshot."""
+    rid = run_id or get_current_run_id()
+    if not rid or not payload:
+        return
+    _registry.merge_metadata(rid, payload)
+
+
+def increment_run_metadata_counter(
+    *path: str,
+    amount: int = 1,
+    run_id: str | None = None,
+) -> None:
+    """Increment a nested metadata counter on the active run snapshot."""
+    rid = run_id or get_current_run_id()
+    if not rid or not path:
+        return
+    _registry.increment_metadata_counter(rid, list(path), amount=amount)
 
 
 def update_stage(

@@ -38,7 +38,13 @@ from ageom.llm_router import (
     select_llm,
 )
 from ageom.shared_context import format_context_block
-from ageom.telemetry import get_current_stage, log_event, update_stage
+from ageom.telemetry import (
+    get_current_stage,
+    increment_run_metadata_counter,
+    log_event,
+    merge_run_metadata,
+    update_stage,
+)
 
 # ---------------------------------------------------------------------------
 # Conjugate prior/likelihood pair detection
@@ -213,6 +219,94 @@ def _pending_under_blocked(nodes: list[AlgorithmicNode]) -> list[AlgorithmicNode
             parent = by_id.get(parent_id)
             parent_id = parent.parent_id if parent is not None else None
     return offenders
+
+
+def _critique_reason_category(reason: str) -> str:
+    text = reason.lower()
+    if "any" in text or "type" in text:
+        return "type_compatibility"
+    if "path" in text or "missing step" in text or "complete" in text:
+        return "semantic_completeness"
+    if "atomic" in text or "catalog" in text:
+        return "atomicity"
+    if "depth" in text:
+        return "depth_limit"
+    if "parse" in text or "schema" in text:
+        return "llm_output"
+    return "other"
+
+
+def _architect_snapshot(
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+) -> dict[str, Any]:
+    active_nodes = [node for node in nodes if node.status != NodeStatus.REJECTED]
+    active_ids = {node.node_id for node in active_nodes}
+    active_edges = [
+        edge
+        for edge in edges
+        if edge.source_id in active_ids and edge.target_id in active_ids
+    ]
+    parent_ids = {edge.source_id for edge in active_edges}
+    leaves = [
+        node
+        for node in active_nodes
+        if not node.children and node.node_id not in parent_ids
+    ]
+    non_atomic_leaves = [
+        node for node in leaves if node.status != NodeStatus.ATOMIC
+    ]
+    total_ports = sum(len(node.inputs) + len(node.outputs) for node in active_nodes)
+    any_ports = sum(
+        1
+        for node in active_nodes
+        for io in (node.inputs + node.outputs)
+        if _is_any_type(io.type_desc)
+    )
+    total_edges = len(active_edges)
+    any_edges = sum(
+        1
+        for edge in active_edges
+        if _is_any_type(edge.source_type) or _is_any_type(edge.target_type)
+    )
+    status_counts: dict[str, int] = {}
+    for node in active_nodes:
+        key = node.status.value
+        status_counts[key] = status_counts.get(key, 0) + 1
+    return {
+        "node_status_counts": status_counts,
+        "unresolved_leaf_count": len(non_atomic_leaves),
+        "blocked_node_names": [
+            node.name for node in active_nodes if node.status == NodeStatus.BLOCKED
+        ],
+        "any_port_count": any_ports,
+        "total_port_count": total_ports,
+        "any_port_pct": (any_ports / total_ports) if total_ports else 0.0,
+        "any_edge_count": any_edges,
+        "total_edge_count": total_edges,
+        "any_edge_pct": (any_edges / total_edges) if total_edges else 0.0,
+    }
+
+
+def _publish_architect_snapshot(
+    *,
+    phase: str,
+    node_id: str,
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+    extra: dict[str, Any] | None = None,
+) -> None:
+    snapshot = _architect_snapshot(nodes, edges)
+    if extra:
+        snapshot.update(extra)
+    merge_run_metadata({"architect_metrics": snapshot})
+    log_event(
+        "architect",
+        phase,
+        "ARCHITECT_SNAPSHOT",
+        node_id=node_id,
+        payload=snapshot,
+    )
 
 
 def _format_io(specs: list[IOSpec]) -> str:
@@ -715,6 +809,14 @@ async def decompose_node(
         metadata={"node_id": current_id, "node_name": node.name},
     )
 
+    _publish_architect_snapshot(
+        phase="decompose",
+        node_id=current_id,
+        nodes=all_nodes + new_nodes,
+        edges=state["edges"] + new_edges,
+        extra={"last_node_name": node.name},
+    )
+
     return {
         "nodes": new_nodes,
         "edges": new_edges,
@@ -824,6 +926,19 @@ async def critique_decomposition(
 
     if issues:
         reason = "Deterministic checks failed: " + "; ".join(issues)
+        category = _critique_reason_category(reason)
+        increment_run_metadata_counter(
+            "architect_metrics",
+            "critique_reject_counts_by_category",
+            category,
+        )
+        log_event(
+            "architect",
+            "critique",
+            "ARCHITECT_CRITIQUE_REJECTED",
+            node_id=current_id,
+            payload={"category": category, "reason": reason, "phase": "deterministic"},
+        )
         await _put_context(
             deps,
             config,
@@ -937,6 +1052,20 @@ async def critique_decomposition(
     approved = approved_raw
     reason = parsed.get("reason", "")
     flagged = parsed.get("flagged_nodes", [])
+    if not approved:
+        category = _critique_reason_category(reason)
+        increment_run_metadata_counter(
+            "architect_metrics",
+            "critique_reject_counts_by_category",
+            category,
+        )
+        log_event(
+            "architect",
+            "critique",
+            "ARCHITECT_CRITIQUE_REJECTED",
+            node_id=current_id,
+            payload={"category": category, "reason": reason, "phase": "llm"},
+        )
 
     # Mark flagged nodes as HIGH_RISK via state update
     flagged_updates: list[AlgorithmicNode] = []
@@ -1021,13 +1150,22 @@ async def advance_node(
 
     # Pick next
     next_id = pending[0] if pending else ""
-    blocked_pending = _pending_under_blocked(all_nodes + updated_nodes)
+    merged_nodes = all_nodes + updated_nodes
+    blocked_pending = _pending_under_blocked(merged_nodes)
     done = len(pending) == 0
     error = ""
     if blocked_pending:
         names = ", ".join(node.name for node in blocked_pending[:5])
         error = f"Invalid architect state: pending nodes under blocked parent ({names})"
         done = True
+
+    _publish_architect_snapshot(
+        phase="advance",
+        node_id=current_id,
+        nodes=merged_nodes,
+        edges=state["edges"],
+        extra={"last_node_name": parent.name if parent else current_id},
+    )
 
     return {
         "nodes": updated_nodes,
@@ -1070,6 +1208,14 @@ async def prepare_retry(
             rejected_updates.append(
                 node.model_copy(update={"status": NodeStatus.REJECTED})
             )
+
+    parent = _find_node(all_nodes, current_id)
+    if parent is not None:
+        increment_run_metadata_counter(
+            "architect_metrics",
+            "retry_counts_by_node",
+            parent.name,
+        )
 
     return {
         "nodes": rejected_updates,
@@ -1116,6 +1262,25 @@ async def block_node(
                     }
                 )
             )
+
+    merged_nodes = all_nodes + blocked_updates
+    _publish_architect_snapshot(
+        phase="block",
+        node_id=current_id,
+        nodes=merged_nodes,
+        edges=state["edges"],
+        extra={
+            "last_node_name": parent.name if parent else current_id,
+            "blocked_reason": reason,
+        },
+    )
+    log_event(
+        "architect",
+        "block",
+        "ARCHITECT_BLOCKED",
+        node_id=current_id,
+        payload={"reason": reason, "node_name": parent.name if parent else current_id},
+    )
 
     return {
         "nodes": blocked_updates,
