@@ -104,9 +104,74 @@ _GENERIC_FALLBACK: list[dict[str, str]] = [
     },
 ]
 
+_VALIDATION_WRAPPER_NAME_TOKENS = {
+    "validate",
+    "validation",
+    "verify",
+    "verification",
+    "check",
+    "checking",
+    "finalize",
+    "finalization",
+}
+
+_VALIDATION_COMPUTE_TOKENS = {
+    "compute",
+    "derive",
+    "generate",
+    "synthesize",
+    "construct",
+    "apply",
+    "assemble",
+    "map",
+    "translate",
+    "select",
+    "choose",
+    "inspect",
+    "assess",
+    "route",
+    "escalate",
+}
+
 
 def _norm(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
+def _token_set(*values: str) -> set[str]:
+    tokens: set[str] = set()
+    for value in values:
+        tokens.update(re.findall(r"[a-z0-9]+", value.lower()))
+    return tokens
+
+
+def _is_validation_wrapper(spec: dict[str, Any]) -> bool:
+    name = str(spec.get("name", ""))
+    description = str(spec.get("description", ""))
+    tokens = _token_set(name, description)
+    if not tokens & _VALIDATION_WRAPPER_NAME_TOKENS:
+        return False
+    if tokens & _VALIDATION_COMPUTE_TOKENS:
+        return False
+    return True
+
+
+def _rewrite_validation_wrappers(raw_subs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    substantive = [item for item in raw_subs if not _is_validation_wrapper(item)]
+    if len(substantive) >= 2:
+        return substantive
+    return raw_subs
+
+
+def _rewrite_raw_sub_nodes(
+    raw_subs: list[dict[str, Any]],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> list[dict[str, Any]]:
+    del parent, catalog
+    rewritten = _rewrite_validation_wrappers(raw_subs)
+    return rewritten
 
 
 def _safe_iospec_list(raw: Any) -> list[IOSpec]:
@@ -662,6 +727,8 @@ def build_deterministic_decomposition(
 ) -> DeterministicDecomposeResult:
     """Build deterministic nodes/edges from conceptual LLM output."""
     raw_subs = _prepare_raw_sub_nodes(parsed.get("sub_nodes"), parent=parent)
+    raw_subs = _rewrite_raw_sub_nodes(raw_subs, parent=parent, catalog=catalog)
+    raw_subs = _prepare_raw_sub_nodes(raw_subs, parent=parent)
 
     nodes: list[AlgorithmicNode] = []
     for idx, raw in enumerate(raw_subs):

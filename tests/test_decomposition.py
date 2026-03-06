@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+from ageom.architect.deterministic_decompose import build_deterministic_decomposition
 from ageom.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
@@ -234,6 +235,80 @@ class TestDecompositionState:
         merged = _merge_nodes([], [n1])
         assert len(merged) == 1
         assert merged[0].node_id == "a"
+
+
+class TestDeterministicRewrite:
+    def test_elides_validation_wrappers_when_substantive_steps_remain(self):
+        catalog = PrimitiveCatalog()
+        parent = AlgorithmicNode(
+            node_id="parent_filter",
+            name="Design Filter",
+            description="Design a typed filter from requirements",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Validate Specification Feasibility",
+                        "description": "Verify the requested design is valid.",
+                    },
+                    {
+                        "name": "Choose Filter Strategy",
+                        "description": "Choose a topology for the design.",
+                    },
+                    {
+                        "name": "Synthesize Candidate Coefficients",
+                        "description": "Generate coefficients from the chosen topology.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        names = {node.name for node in result.nodes}
+        assert "Validate Specification Feasibility" not in names
+        assert "Choose Filter Strategy" in names
+        assert "Synthesize Candidate Coefficients" in names
+
+    def test_replenishes_after_validation_wrapper_removal(self):
+        catalog = PrimitiveCatalog()
+        parent = AlgorithmicNode(
+            node_id="parent_generic",
+            name="Prepare Result",
+            description="Prepare a result from an input payload",
+            concept_type=ConceptType.DATA_ASSEMBLY,
+            inputs=[IOSpec(name="payload", type_desc="dict[str, Any]")],
+            outputs=[IOSpec(name="result", type_desc="dict[str, Any]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Validate Input Payload",
+                        "description": "Check the payload before any work starts.",
+                    },
+                    {
+                        "name": "Compute Core Transformation",
+                        "description": "Perform the main transformation.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert len(result.nodes) >= 2
+        assert any(node.name == "Compute Core Transformation" for node in result.nodes)
 
 
 class TestSelectStrategy:
