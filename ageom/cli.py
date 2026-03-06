@@ -237,6 +237,23 @@ def _load_architect_catalog(
     return catalog
 
 
+def _load_skill_index_or_empty(config: "AgeomConfig"):
+    """Load the persisted skill index unless explicitly disabled."""
+    from ageom.architect.embedder import SkillIndex
+
+    skill_index = SkillIndex(index_dir=config.skill_index_dir)
+    if os.environ.get("AGEOM_DISABLE_SKILL_INDEX", "").strip() in {"1", "true", "yes"}:
+        print("Warning: skill index disabled via AGEOM_DISABLE_SKILL_INDEX.", file=sys.stderr)
+        return skill_index
+
+    if config.skill_index_dir.exists():
+        try:
+            return SkillIndex.load(config.skill_index_dir)
+        except Exception as exc:
+            print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
+    return skill_index
+
+
 def _print_shared_context_metrics(
     label: str,
     metrics: "SharedContextMetrics | None",
@@ -1391,7 +1408,6 @@ async def _run_decompose(
 async def _cmd_decompose(args: argparse.Namespace) -> None:
     """Decompose a goal into a Conceptual Dependency Graph."""
     from ageom.architect.checkpointer import create_checkpointer
-    from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
     from ageom.config import AgeomConfig
@@ -1407,13 +1423,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             file=sys.stderr,
         )
 
-    # Load skill index (falls back to empty)
-    skill_index = SkillIndex(index_dir=config.skill_index_dir)
-    if config.skill_index_dir.exists():
-        try:
-            skill_index = SkillIndex.load(config.skill_index_dir)
-        except Exception as exc:
-            print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
+    skill_index = _load_skill_index_or_empty(config)
 
     # Set up LLM
     try:
@@ -1958,7 +1968,6 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     """Run the full orchestration loop: decompose -> match -> refine -> assemble."""
     from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
-    from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
     from ageom.config import AgeomConfig
@@ -2000,13 +2009,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
             catalog = _load_architect_catalog(args, config)
 
-            # Load skill index
-            skill_index = SkillIndex(index_dir=config.skill_index_dir)
-            if config.skill_index_dir.exists():
-                try:
-                    skill_index = SkillIndex.load(config.skill_index_dir)
-                except Exception as exc:
-                    print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
+            skill_index = _load_skill_index_or_empty(config)
 
             # Set up LLM
             try:
@@ -2233,7 +2236,6 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     """Run the Principal NAS/AutoML optimisation loop."""
     from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
-    from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
     from ageom.config import AgeomConfig
     from ageom.principal.evaluator import ExecutionSandbox
@@ -2247,13 +2249,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     catalog = _load_architect_catalog(args, config)
 
-    # Load skill index
-    skill_index = SkillIndex(index_dir=config.skill_index_dir)
-    if config.skill_index_dir.exists():
-        try:
-            skill_index = SkillIndex.load(config.skill_index_dir)
-        except Exception as exc:
-            print(f"Warning: failed to load skill index: {exc}", file=sys.stderr)
+    skill_index = _load_skill_index_or_empty(config)
 
     # LLM
     try:

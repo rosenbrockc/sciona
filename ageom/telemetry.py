@@ -96,6 +96,21 @@ class PromptDispatchSnapshot:
 
 
 @dataclass
+class FinishedPromptSnapshot:
+    """Completed prompt dispatch metadata for event emission."""
+
+    dispatch_id: str
+    run_id: str
+    prompt_key: str
+    provider: str
+    model: str
+    stage: str
+    latency_ms: float
+    ok: bool
+    error: str = ""
+
+
+@dataclass
 class StageSnapshot:
     """Per-stage progress and heartbeat."""
 
@@ -300,18 +315,18 @@ class TelemetryRegistry:
         *,
         ok: bool,
         error: str = "",
-    ) -> None:
+    ) -> FinishedPromptSnapshot | None:
         now = time.time()
         with self._lock:
             run_id = self._dispatch_to_run.pop(dispatch_id, "")
             if not run_id:
-                return
+                return None
             run = self._runs.get(run_id)
             if run is None:
-                return
+                return None
             inflight = run.inflight_prompts.pop(dispatch_id, None)
             if inflight is None:
-                return
+                return None
             latency_ms = (now - inflight.started_at) * 1000.0
             row = run.prompt_by_key.get(inflight.prompt_key)
             if row is not None:
@@ -329,6 +344,17 @@ class TelemetryRegistry:
                 run.error = error or run.error
             run.last_update_at = now
             self._persist_locked(run_id)
+            return FinishedPromptSnapshot(
+                dispatch_id=dispatch_id,
+                run_id=run_id,
+                prompt_key=inflight.prompt_key,
+                provider=inflight.provider,
+                model=inflight.model,
+                stage=inflight.stage,
+                latency_ms=latency_ms,
+                ok=ok,
+                error=error,
+            )
 
     def merge_metadata(self, run_id: str, payload: dict[str, Any]) -> None:
         now = time.time()
@@ -687,13 +713,19 @@ def finish_prompt_dispatch(
     """Finalize prompt dispatch counters."""
     if not dispatch_id:
         return
-    _registry.finish_prompt(dispatch_id, ok=ok, error=error)
+    finished = _registry.finish_prompt(dispatch_id, ok=ok, error=error)
+    if finished is None:
+        return
     log_event(
         "llm",
-        phase=get_current_stage() or "prompt_dispatch",
+        phase=finished.stage or get_current_stage() or "prompt_dispatch",
         event_type="PROMPT_DISPATCH_DONE" if ok else "PROMPT_DISPATCH_ERROR",
-        run_id=get_current_run_id(),
-        stage=get_current_stage(),
+        run_id=finished.run_id or get_current_run_id(),
+        stage=finished.stage or get_current_stage(),
+        duration_ms=finished.latency_ms,
+        prompt_key=finished.prompt_key,
+        provider=finished.provider,
+        model=finished.model,
         payload={"error": error} if error else {},
         dispatch_id=dispatch_id,
     )

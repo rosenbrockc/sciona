@@ -153,6 +153,7 @@ class _DummyClient:
 
 def test_runtime_run_stage_and_prompt_tracking():
     reset_telemetry_runtime()
+    get_event_log().clear()
     run_id = start_run("algorithm_creation", run_id="run-test")
     assert run_id == "run-test"
 
@@ -172,6 +173,17 @@ def test_runtime_run_stage_and_prompt_tracking():
     stages = snapshot["stages"]
     assert "architect_decompose" in stages
     assert stages["architect_decompose"]["status"] == "completed"
+
+    done_events = [
+        ev for ev in get_event_log().events if ev.event_type == "PROMPT_DISPATCH_DONE"
+    ]
+    assert len(done_events) == 1
+    done = done_events[0]
+    assert done.prompt_key == "architect_decompose"
+    assert done.stage == "architect_decompose"
+    assert done.model == "dummy-model"
+    assert done.duration_ms is not None
+    assert done.duration_ms >= 0.0
 
 
 def test_persisted_run_snapshot(tmp_path: Path):
