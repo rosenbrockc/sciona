@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import inspect
 import json
 import os
 import shutil
@@ -15,7 +16,7 @@ import uuid
 import webbrowser
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ageom.config import AgeomConfig
@@ -836,31 +837,31 @@ def main() -> None:
             )
             sys.exit(1)
     elif args.command == "optimize":
-        asyncio.run(_cmd_optimize(args))
+        _run_async_command(_cmd_optimize(args))
     elif args.command == "profile":
-        asyncio.run(_cmd_profile(args))
+        _run_async_command(_cmd_profile(args))
     elif args.command == "decompose":
-        asyncio.run(_cmd_decompose(args))
+        _run_async_command(_cmd_decompose(args))
     elif args.command == "history":
-        asyncio.run(_cmd_history(args))
+        _run_async_command(_cmd_history(args))
     elif args.command == "ingest":
-        asyncio.run(_cmd_ingest(args))
+        _run_async_command(_cmd_ingest(args))
     elif args.command == "ingest-status":
         _cmd_ingest_status(args)
     elif args.command == "match":
-        asyncio.run(_cmd_match(args))
+        _run_async_command(_cmd_match(args))
     elif args.command == "assemble":
-        asyncio.run(_cmd_assemble(args))
+        _run_async_command(_cmd_assemble(args))
     elif args.command == "synthesize":
-        asyncio.run(_cmd_synthesize(args))
+        _run_async_command(_cmd_synthesize(args))
     elif args.command == "run":
-        asyncio.run(_cmd_run(args))
+        _run_async_command(_cmd_run(args))
     elif args.command == "export":
-        asyncio.run(_cmd_export(args))
+        _run_async_command(_cmd_export(args))
     elif args.command == "visualize":
         _cmd_visualize(args)
     elif args.command == "upsert-cdg":
-        asyncio.run(_cmd_upsert_cdg(args))
+        _run_async_command(_cmd_upsert_cdg(args))
     else:
         parser.print_help()
         sys.exit(1)
@@ -913,6 +914,15 @@ def _cmd_sources_sync(args: argparse.Namespace) -> None:
             print(f"  -> {resolved}")
         except Exception as exc:
             print(f"  ERROR: {exc}", file=sys.stderr)
+
+
+def _run_async_command(coro: Any) -> None:
+    """Run a CLI coroutine and close it if a mocked asyncio.run leaves it pending."""
+    try:
+        asyncio.run(coro)
+    finally:
+        if inspect.iscoroutine(coro) and getattr(coro, "cr_frame", None) is not None:
+            coro.close()
 
 
 def _cmd_skill_ingest(args: argparse.Namespace) -> None:

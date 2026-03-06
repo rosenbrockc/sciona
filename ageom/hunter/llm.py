@@ -12,7 +12,10 @@ from pathlib import Path
 from asyncio.subprocess import PIPE
 from typing import Protocol, runtime_checkable
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python < 3.11
+    import tomli as tomllib
 
 
 @runtime_checkable
