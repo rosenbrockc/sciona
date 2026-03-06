@@ -985,6 +985,61 @@ class TestSharedContext:
         records = await store.recent("architect/test/decompose", limit=5)
         assert any("Parent: Sort" in r.text for r in records)
 
+    @pytest.mark.asyncio
+    async def test_decompose_prompt_requests_conceptual_structure_only(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        captured_users: list[str] = []
+
+        async def complete(system: str, user: str) -> str:
+            captured_users.append(user)
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {"name": "Split Input", "description": "Partition the input."},
+                        {"name": "merge", "description": "Combine sorted halves."},
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Sort",
+            description="Sort input list",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="list[int]")],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "divide_and_conquer",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+
+        await decompose_node(state, {"configurable": {"deps": deps}})
+
+        assert captured_users
+        assert "Do not emit `inputs`, `outputs`, `type_signature`, `is_atomic`, or explicit `edges`." in captured_users[0]
+
 
 class TestDeterministicDecompose:
     @pytest.mark.asyncio

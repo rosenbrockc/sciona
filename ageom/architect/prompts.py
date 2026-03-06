@@ -32,12 +32,14 @@ Consider the structure of the problem and which paradigm's skeleton best fits.
 
 DECOMPOSE_NODE_SYSTEM = """\
 You are an expert algorithm designer. Decompose the given algorithmic node \
-into conceptual sub-nodes and high-level flow hints.
+into conceptual sub-nodes and lightweight ordering hints.
 
 IMPORTANT:
-- Focus on conceptual decomposition only.
-- Do NOT spend tokens on detailed ports, type signatures, or full dataflow wiring.
+- Focus only on conceptual structure.
+- Do NOT emit inputs, outputs, type signatures, glue code, or typed edges.
+- Do NOT try to solve the entire implementation. Propose the minimum useful set of conceptual steps.
 - Deterministic tooling will synthesize IO ports, atomic checks, and edge types.
+- If a step clearly matches a known primitive, include `matched_primitive_hint`.
 
 You must respond with ONLY a JSON object (no markdown fences, no explanation):
 {{
@@ -57,7 +59,7 @@ You must respond with ONLY a JSON object (no markdown fences, no explanation):
     {{
       "from": "<source sub-node name>",
       "to": "<target sub-node name>",
-      "why": "<brief rationale>"
+      "why": "<brief ordering/dependency rationale>"
     }}
   ]
 }}
@@ -81,8 +83,9 @@ Relevant primitives from the catalog:
 {retry_context}
 
 Decompose this node into 2 or more conceptual sub-nodes.
+Only describe what each step is responsible for.
 Include optional flow_hints for ordering/dependencies.
-Do not include detailed IO/type plumbing; deterministic tooling handles that.
+Do not emit `inputs`, `outputs`, `type_signature`, `is_atomic`, or explicit `edges`.
 Also include 2-6 concise `progress_updates` describing major decomposition checkpoints.
 """
 
