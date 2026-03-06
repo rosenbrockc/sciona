@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 
 from ageom.types import Declaration
@@ -18,7 +20,16 @@ class UniXcoderEmbedder:
         # Lazy imports so torch/transformers aren't required at import time
         from transformers import AutoModel, AutoTokenizer
 
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # UniXcoder currently triggers a tokenizers deprecation inside the
+        # upstream Roberta loader path. There is no replacement API at this
+        # layer yet, so suppress the narrow known warning locally.
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r"Deprecated in 0\.9\.0: BPE\.__init__ will not create from files anymore, try `BPE\.from_file` instead",
+                category=DeprecationWarning,
+            )
+            self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model = AutoModel.from_pretrained(model_name)
         self._model.eval()
         self._dim = 768
