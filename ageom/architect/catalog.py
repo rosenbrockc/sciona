@@ -98,7 +98,7 @@ class PrimitiveCatalog:
         for prim in category_matches:
             prim_words = set(prim.description.lower().split())
             overlap = len(node_words & prim_words)
-            scored.append((overlap, prim))
+            scored.append((overlap + self._arity_match_bonus(node, prim), prim))
 
         # If not enough from same category, add cross-category matches
         if len(scored) < k:
@@ -106,10 +106,30 @@ class PrimitiveCatalog:
                 if prim.category != node.concept_type:
                     prim_words = set(prim.description.lower().split())
                     overlap = len(node_words & prim_words)
-                    scored.append((overlap, prim))
+                    scored.append((overlap + self._arity_match_bonus(node, prim), prim))
 
         scored.sort(key=lambda x: x[0], reverse=True)
         return [prim for _, prim in scored[:k]]
+
+    @staticmethod
+    def _arity_match_bonus(node: AlgorithmicNode, prim: AlgorithmicPrimitive) -> float:
+        node_in = len(node.inputs)
+        node_out = len(node.outputs)
+        prim_required_in = len([port for port in prim.inputs if port.required])
+        prim_total_in = len(prim.inputs)
+        prim_out = len(prim.outputs)
+
+        score = 0.0
+        if prim_required_in <= node_in <= prim_total_in:
+            score += 1.5
+        else:
+            score -= abs(node_in - prim_required_in) * 0.25
+
+        if node_out == prim_out:
+            score += 0.75
+        elif prim_out:
+            score -= abs(node_out - prim_out) * 0.1
+        return score
 
     def save(self, path: str | Path) -> None:
         """Persist the catalog to a JSON file."""

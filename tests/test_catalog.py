@@ -138,6 +138,59 @@ class TestFindMatchingPrimitives:
         assert len(matches) >= 1
         assert any(m.name == "dijkstra" for m in matches)
 
+    def test_optional_extra_inputs_are_not_filtered_out_of_matches(self):
+        catalog = PrimitiveCatalog()
+        catalog.add(
+            AlgorithmicPrimitive(
+                name="filter_required_only",
+                source="test",
+                category=ConceptType.SIGNAL_FILTER,
+                description="Filter a signal with required coefficients and signal",
+                inputs=[
+                    IOSpec(name="coefficients", type_desc="filter coefficients"),
+                    IOSpec(name="signal", type_desc="np.ndarray"),
+                ],
+                outputs=[IOSpec(name="filtered_signal", type_desc="np.ndarray")],
+            )
+        )
+        catalog.add(
+            AlgorithmicPrimitive(
+                name="filter_with_optional_mode",
+                source="test",
+                category=ConceptType.SIGNAL_FILTER,
+                description="Filter a signal with optional mode selection",
+                inputs=[
+                    IOSpec(name="coefficients", type_desc="filter coefficients"),
+                    IOSpec(name="signal", type_desc="np.ndarray"),
+                    IOSpec(
+                        name="mode",
+                        type_desc="str",
+                        required=False,
+                        default_value_repr="'same'",
+                    ),
+                ],
+                outputs=[IOSpec(name="filtered_signal", type_desc="np.ndarray")],
+            )
+        )
+
+        node = AlgorithmicNode(
+            node_id="n1",
+            name="Apply Filter",
+            description="Filter a signal using coefficients",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[
+                IOSpec(name="coefficients", type_desc="filter coefficients"),
+                IOSpec(name="signal", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="filtered_signal", type_desc="np.ndarray")],
+        )
+
+        matches = catalog.find_matching_primitives(node, k=2)
+        assert {match.name for match in matches} == {
+            "filter_required_only",
+            "filter_with_optional_mode",
+        }
+
 
 class TestSaveLoad:
     def test_roundtrip(self, catalog, tmp_path):

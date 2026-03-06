@@ -64,6 +64,8 @@ class IOSpec(BaseModel):
     name: str
     type_desc: str  # e.g., "list[int]", "Graph", "nat -> nat -> Prop"
     constraints: str = ""  # e.g., "sorted", "non-empty", "n > 0"
+    required: bool = True
+    default_value_repr: str = ""
 
 
 class NodeStatus(str, Enum):

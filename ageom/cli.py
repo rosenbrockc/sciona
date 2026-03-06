@@ -224,6 +224,7 @@ def _load_architect_catalog(
             catalog,
             config=sources_cfg,
             base_dir=Path.cwd(),
+            include_live_registries=False,
         )
         if derived:
             print(f"Loaded {derived} source-derived primitives from {config.sources_file}")

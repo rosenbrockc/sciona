@@ -313,7 +313,16 @@ def _format_io(specs: list[IOSpec]) -> str:
     """Format IOSpec list for prompt display."""
     if not specs:
         return "none"
-    return ", ".join(f"{s.name}: {s.type_desc}" for s in specs)
+    parts: list[str] = []
+    for spec in specs:
+        rendered = f"{spec.name}: {spec.type_desc}"
+        if not spec.required:
+            rendered += " (optional"
+            if spec.default_value_repr:
+                rendered += f", default={spec.default_value_repr}"
+            rendered += ")"
+        parts.append(rendered)
+    return ", ".join(parts)
 
 
 def _format_primitives(prims: list) -> str:
@@ -323,6 +332,15 @@ def _format_primitives(prims: list) -> str:
     lines = []
     for p in prims[:10]:
         line = f"- {p.name} [{p.category.value}]: {p.description[:100]}"
+        required_inputs = [inp.name for inp in p.inputs if inp.required]
+        optional_inputs = [inp.name for inp in p.inputs if not inp.required]
+        if required_inputs or optional_inputs:
+            line += "  (inputs:"
+            if required_inputs:
+                line += f" required={required_inputs}"
+            if optional_inputs:
+                line += f" optional={optional_inputs}"
+            line += ")"
         if p.type_signature:
             line += f"  (type: {p.type_signature[:60]})"
         lines.append(line)

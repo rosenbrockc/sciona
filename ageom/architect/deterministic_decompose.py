@@ -121,7 +121,15 @@ def _safe_iospec_list(raw: Any) -> list[IOSpec]:
             continue
         type_desc = str(item.get("type_desc", "Any")).strip() or "Any"
         constraints = str(item.get("constraints", "")).strip()
-        rows.append(IOSpec(name=name, type_desc=type_desc, constraints=constraints))
+        rows.append(
+            IOSpec(
+                name=name,
+                type_desc=type_desc,
+                constraints=constraints,
+                required=bool(item.get("required", True)),
+                default_value_repr=str(item.get("default_value_repr", "") or ""),
+            )
+        )
     return rows
 
 
@@ -174,25 +182,62 @@ def _infer_concept_type(
 
 def _default_inputs(parent: AlgorithmicNode) -> list[IOSpec]:
     if parent.inputs:
-        return [IOSpec(name=i.name, type_desc=i.type_desc, constraints=i.constraints) for i in parent.inputs]
+        return [
+            IOSpec(
+                name=i.name,
+                type_desc=i.type_desc,
+                constraints=i.constraints,
+                required=i.required,
+                default_value_repr=i.default_value_repr,
+            )
+            for i in parent.inputs
+        ]
     return [IOSpec(name="input", type_desc="Any")]
 
 
 def _default_outputs(parent: AlgorithmicNode) -> list[IOSpec]:
     if parent.outputs:
-        return [IOSpec(name=o.name, type_desc=o.type_desc, constraints=o.constraints) for o in parent.outputs]
+        return [
+            IOSpec(
+                name=o.name,
+                type_desc=o.type_desc,
+                constraints=o.constraints,
+                required=o.required,
+                default_value_repr=o.default_value_repr,
+            )
+            for o in parent.outputs
+        ]
     return [IOSpec(name="result", type_desc="Any")]
 
 
 def _clone_ports(ports: list[IOSpec]) -> list[IOSpec]:
     return [
-        IOSpec(name=port.name, type_desc=port.type_desc, constraints=port.constraints)
+        IOSpec(
+            name=port.name,
+            type_desc=port.type_desc,
+            constraints=port.constraints,
+            required=port.required,
+            default_value_repr=port.default_value_repr,
+        )
         for port in ports
     ]
 
 
-def _port(name: str, type_desc: str, constraints: str = "") -> IOSpec:
-    return IOSpec(name=name, type_desc=type_desc, constraints=constraints)
+def _port(
+    name: str,
+    type_desc: str,
+    constraints: str = "",
+    *,
+    required: bool = True,
+    default_value_repr: str = "",
+) -> IOSpec:
+    return IOSpec(
+        name=name,
+        type_desc=type_desc,
+        constraints=constraints,
+        required=required,
+        default_value_repr=default_value_repr,
+    )
 
 
 def _first_type(ports: list[IOSpec], default: str) -> str:

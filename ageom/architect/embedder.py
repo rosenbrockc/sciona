@@ -40,8 +40,18 @@ class SkillIndex:
         """Format a primitive for embedding."""
         parts = [f"{prim.name}: {prim.description}"]
         if prim.inputs:
-            inputs_str = ", ".join(f"{io.name}: {io.type_desc}" for io in prim.inputs)
-            parts.append(f"Inputs: {inputs_str}")
+            required_inputs = ", ".join(
+                f"{io.name}: {io.type_desc}" for io in prim.inputs if io.required
+            )
+            optional_inputs = ", ".join(
+                f"{io.name}: {io.type_desc}={io.default_value_repr or '<default>'}"
+                for io in prim.inputs
+                if not io.required
+            )
+            if required_inputs:
+                parts.append(f"Required Inputs: {required_inputs}")
+            if optional_inputs:
+                parts.append(f"Optional Inputs: {optional_inputs}")
         if prim.outputs:
             outputs_str = ", ".join(f"{io.name}: {io.type_desc}" for io in prim.outputs)
             parts.append(f"Outputs: {outputs_str}")

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+import ast
 import importlib
 import inspect
 import json
@@ -61,8 +62,15 @@ def _ports_from_callable(func: Any) -> tuple[list[IOSpec], list[IOSpec]]:
             continue
         if param.name in {"self", "cls"}:
             continue
+        required = param.default is inspect._empty
+        default_value_repr = "" if required else repr(param.default)
         inputs.append(
-            IOSpec(name=param.name, type_desc=_annotation_to_text(param.annotation))
+            IOSpec(
+                name=param.name,
+                type_desc=_annotation_to_text(param.annotation),
+                required=required,
+                default_value_repr=default_value_repr,
+            )
         )
 
     return_annotation = signature.return_annotation
@@ -79,7 +87,7 @@ def _ports_from_callable(func: Any) -> tuple[list[IOSpec], list[IOSpec]]:
 
 
 def _signature_from_ports(inputs: list[IOSpec], outputs: list[IOSpec]) -> str:
-    in_sig = ", ".join(f"{port.name}: {port.type_desc}" for port in inputs) or "void"
+    in_sig = ", ".join(_format_port_signature(port) for port in inputs) or "void"
     if len(outputs) == 1:
         out_sig = outputs[0].type_desc
     else:
@@ -87,12 +95,29 @@ def _signature_from_ports(inputs: list[IOSpec], outputs: list[IOSpec]) -> str:
     return f"({in_sig}) -> {out_sig}"
 
 
+def _format_port_signature(port: IOSpec) -> str:
+    rendered = f"{port.name}: {port.type_desc}"
+    if not port.required:
+        rendered += "?"
+        if port.default_value_repr:
+            rendered += f" = {port.default_value_repr}"
+    return rendered
+
+
 def _iter_registry_modules() -> Iterable[Any]:
     for module in list(sys.modules.values()):
         if module is None:
             continue
-        if hasattr(module, "REGISTRY") and isinstance(getattr(module, "REGISTRY"), dict):
+        try:
+            registry = getattr(module, "REGISTRY")
+        except Exception:
+            continue
+        if isinstance(registry, dict):
             yield module
+
+
+def _package_python_files(package_root: Path) -> list[Path]:
+    return sorted(path for path in package_root.rglob("*.py") if path.name != "__init__.py")
 
 
 def _module_belongs_to_source(
@@ -147,6 +172,72 @@ def _load_atomic_node_index(source: AtomSource, *, base_dir: Path | None = None)
     return index
 
 
+def _expr_to_text(expr: ast.expr | None) -> str:
+    if expr is None:
+        return "Any"
+    try:
+        return ast.unparse(expr)
+    except Exception:
+        return "Any"
+
+
+def _literal_default_repr(expr: ast.expr | None) -> str:
+    if expr is None:
+        return ""
+    try:
+        return ast.unparse(expr)
+    except Exception:
+        return ""
+
+
+def _ports_from_ast_function(func: ast.FunctionDef | ast.AsyncFunctionDef) -> tuple[list[IOSpec], list[IOSpec]]:
+    posonly = list(func.args.posonlyargs)
+    regular = list(func.args.args)
+    if regular and regular[0].arg in {"self", "cls"}:
+        regular = regular[1:]
+    ordered = posonly + regular
+    defaults = list(func.args.defaults)
+    required_prefix = len(ordered) - len(defaults)
+
+    inputs: list[IOSpec] = []
+    for idx, arg in enumerate(ordered):
+        default_expr = defaults[idx - required_prefix] if idx >= required_prefix else None
+        required = default_expr is None
+        inputs.append(
+            IOSpec(
+                name=arg.arg,
+                type_desc=_expr_to_text(arg.annotation),
+                required=required,
+                default_value_repr=_literal_default_repr(default_expr),
+            )
+        )
+
+    for arg, default_expr in zip(func.args.kwonlyargs, func.args.kw_defaults):
+        if arg.arg in {"self", "cls"}:
+            continue
+        required = default_expr is None
+        inputs.append(
+            IOSpec(
+                name=arg.arg,
+                type_desc=_expr_to_text(arg.annotation),
+                required=required,
+                default_value_repr=_literal_default_repr(default_expr),
+            )
+        )
+
+    return_annotation = func.returns
+    if isinstance(return_annotation, ast.Subscript) and _expr_to_text(return_annotation.value) == "tuple":
+        slice_value = return_annotation.slice
+        tuple_elts = slice_value.elts if isinstance(slice_value, ast.Tuple) else [slice_value]
+        outputs = [
+            IOSpec(name=f"result_{idx + 1}", type_desc=_expr_to_text(item))
+            for idx, item in enumerate(tuple_elts)
+        ]
+    else:
+        outputs = [IOSpec(name="result", type_desc=_expr_to_text(return_annotation))]
+    return inputs, outputs
+
+
 _KEYWORD_TYPES: list[tuple[tuple[str, ...], ConceptType]] = [
     (("sort",), ConceptType.SORTING),
     (("search", "lookup"), ConceptType.SEARCHING),
@@ -167,6 +258,57 @@ def _infer_concept_type(*, name: str, module: str, description: str) -> ConceptT
         if any(word in haystack for word in words):
             return concept_type
     return ConceptType.CUSTOM
+
+
+def _ast_register_atom_name(decorator: ast.AST) -> str | None:
+    if isinstance(decorator, ast.Call):
+        target = decorator.func
+        if isinstance(target, ast.Name) and target.id == "register_atom":
+            for kw in decorator.keywords:
+                if kw.arg == "name":
+                    try:
+                        value = ast.literal_eval(kw.value)
+                    except Exception:
+                        value = None
+                    if isinstance(value, str) and value:
+                        return value
+            return ""
+    elif isinstance(decorator, ast.Name) and decorator.id == "register_atom":
+        return ""
+    return None
+
+
+def _parse_register_atom_functions(package_root: Path, package_name: str) -> dict[str, dict[str, Any]]:
+    parsed: dict[str, dict[str, Any]] = {}
+    for py_file in _package_python_files(package_root):
+        try:
+            tree = ast.parse(py_file.read_text(), filename=str(py_file))
+        except Exception:
+            continue
+        module_name = ".".join(py_file.relative_to(package_root.parent).with_suffix("").parts)
+        for node in tree.body:
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            reg_name = None
+            for decorator in node.decorator_list:
+                reg_name = _ast_register_atom_name(decorator)
+                if reg_name is not None:
+                    break
+            if reg_name is None:
+                continue
+            atom_name = reg_name or node.name
+            inputs, outputs = _ports_from_ast_function(node)
+            doc = ast.get_docstring(node) or ""
+            parsed[atom_name] = {
+                "impl": None,
+                "witness": None,
+                "doc": doc,
+                "module": module_name,
+                "name": atom_name,
+                "ast_inputs": inputs,
+                "ast_outputs": outputs,
+            }
+    return parsed
 
 
 def _match_atomic_meta(
@@ -213,12 +355,20 @@ def _registration_to_primitive(
         aliases = [alias for alias in {matched.node_id, matched.name, matched.matched_primitive} if alias and alias != name]
         return primitive, aliases
 
-    signature_source = witness or impl
-    inputs, outputs = _ports_from_callable(signature_source)
+    if meta.get("ast_inputs") is not None:
+        inputs = meta.get("ast_inputs", [])
+        outputs = meta.get("ast_outputs", []) or [IOSpec(name="result", type_desc="Any")]
+    else:
+        signature_source = witness or impl
+        inputs, outputs = _ports_from_callable(signature_source)
     primitive = AlgorithmicPrimitive(
         name=name,
         source=source.name,
-        category=_infer_concept_type(name=name, module=module_name, description=description),
+        category=_infer_concept_type(
+            name=name,
+            module=module_name or str(meta.get("module", "")),
+            description=description,
+        ),
         description=description or f"Registered atom from {module_name or source.package}",
         inputs=inputs,
         outputs=outputs,
@@ -233,6 +383,7 @@ def seed_catalog_from_sources(
     *,
     config: SourcesConfig | None = None,
     base_dir: Path | None = None,
+    include_live_registries: bool = True,
 ) -> int:
     """Add architect primitives derived from configured source registrations."""
     if config is None:
@@ -242,47 +393,62 @@ def seed_catalog_from_sources(
     for source in config.sources:
         root = resolve_source(source, base_dir).expanduser().resolve()
         package_root = root.joinpath(*source.package.split("."))
-        import_atoms(source, base_dir)
-        try:
-            importlib.import_module(f"{source.package}.ghost.registry")
-        except Exception:
-            pass
-
         atom_index = _load_atomic_node_index(source, base_dir=base_dir)
+        ast_entries = _parse_register_atom_functions(package_root, source.package)
         seen_names: set[str] = set()
-        for registry_module in _iter_registry_modules():
-            registry = getattr(registry_module, "REGISTRY", {})
-            for name, meta in registry.items():
-                impl = meta.get("impl")
-                witness = meta.get("witness")
-                module_name = getattr(impl, "__module__", "") or getattr(witness, "__module__", "")
-                file_path = None
-                for fn in (impl, witness):
-                    try:
-                        if fn is not None:
-                            file_path = inspect.getsourcefile(fn) or inspect.getfile(fn)
-                            if file_path:
-                                break
-                    except Exception:
+        if include_live_registries:
+            import_atoms(source, base_dir)
+            try:
+                importlib.import_module(f"{source.package}.ghost.registry")
+            except Exception:
+                pass
+
+            for registry_module in _iter_registry_modules():
+                registry = getattr(registry_module, "REGISTRY", {})
+                for name, meta in registry.items():
+                    impl = meta.get("impl")
+                    witness = meta.get("witness")
+                    module_name = getattr(impl, "__module__", "") or getattr(witness, "__module__", "")
+                    file_path = None
+                    for fn in (impl, witness):
+                        try:
+                            if fn is not None:
+                                file_path = inspect.getsourcefile(fn) or inspect.getfile(fn)
+                                if file_path:
+                                    break
+                        except Exception:
+                            continue
+                    if not _module_belongs_to_source(
+                        module_name,
+                        file_path,
+                        source=source,
+                        package_root=package_root,
+                    ):
                         continue
-                if not _module_belongs_to_source(
-                    module_name,
-                    file_path,
-                    source=source,
-                    package_root=package_root,
-                ):
-                    continue
-                if name in seen_names:
-                    continue
-                built = _registration_to_primitive(source, name, meta, atom_index)
-                if built is None:
-                    continue
-                primitive, aliases = built
-                existed = catalog.get(primitive.name) is not None
-                catalog.add(primitive)
-                for alias in aliases:
-                    catalog.add_alias(alias, primitive.name)
-                seen_names.add(name)
-                if not existed:
-                    added += 1
+                    if name in seen_names:
+                        continue
+                    built = _registration_to_primitive(source, name, meta, atom_index)
+                    if built is None:
+                        continue
+                    primitive, aliases = built
+                    existed = catalog.get(primitive.name) is not None
+                    catalog.add(primitive)
+                    for alias in aliases:
+                        catalog.add_alias(alias, primitive.name)
+                    seen_names.add(name)
+                    if not existed:
+                        added += 1
+
+        for name, meta in ast_entries.items():
+            if name in seen_names or catalog.get(name) is not None:
+                continue
+            built = _registration_to_primitive(source, name, meta, atom_index)
+            if built is None:
+                continue
+            primitive, aliases = built
+            catalog.add(primitive)
+            for alias in aliases:
+                catalog.add_alias(alias, primitive.name)
+            seen_names.add(name)
+            added += 1
     return added
