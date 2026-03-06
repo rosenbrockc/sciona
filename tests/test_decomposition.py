@@ -428,6 +428,78 @@ class TestDeterministicRewrite:
         assert "Compute Pole Locations" in names
         assert "Evaluate Discrete-Time Stability" in names
 
+    def test_collapses_duplicate_concepts_that_bind_to_same_primitive(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="parent_response",
+            name="Frequency Response",
+            description="Compute the frequency response of a filter",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            outputs=[IOSpec(name="response", type_desc="tuple[np.ndarray, np.ndarray]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Normalize Coefficient Form",
+                        "description": "Canonicalize coefficients for downstream analysis.",
+                    },
+                    {
+                        "name": "Canonicalize Coefficient Representation",
+                        "description": "Normalize coefficient ordering and representation.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        matches = [
+            node for node in result.nodes
+            if node.matched_primitive == "canonicalize_filter_coefficients"
+        ]
+        assert len(matches) == 1
+
+    def test_synthesizes_helper_for_missing_required_primitive_input(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="parent_response",
+            name="Frequency Response",
+            description="Compute the frequency response of a filter",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            outputs=[IOSpec(name="response", type_desc="tuple[np.ndarray, np.ndarray]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Evaluate Complex Filter Response",
+                        "description": "Compute the complex response across the frequency grid.",
+                    }
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        names = {node.name for node in result.nodes}
+        assert "Prepare Frequency Grid" in names
+        compute_node = next(
+            node for node in result.nodes
+            if node.matched_primitive == "compute_frequency_response"
+        )
+        assert any(port.name == "frequency_grid" for port in compute_node.inputs)
+
 
 class TestSelectStrategy:
     """Test that select_strategy picks paradigm and populates pending queue."""

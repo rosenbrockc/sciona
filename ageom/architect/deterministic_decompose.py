@@ -172,6 +172,23 @@ _ROUTING_WRAPPER_TOKENS = {
     "failover",
 }
 
+_HELPER_PORT_TOKENS = {
+    "config",
+    "configuration",
+    "context",
+    "defaults",
+    "grid",
+    "options",
+    "option",
+    "parameters",
+    "parameter",
+    "plan",
+    "policy",
+    "schedule",
+    "seed",
+    "state",
+}
+
 
 def _norm(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
@@ -313,6 +330,132 @@ def _rewrite_routing_wrappers(raw_subs: list[dict[str, Any]]) -> list[dict[str, 
     return raw_subs
 
 
+def _primitive_port_snapshot(spec: dict[str, Any], primitive: Any) -> tuple[list[IOSpec], list[IOSpec]]:
+    inputs = _safe_iospec_list(spec.get("inputs"))
+    outputs = _safe_iospec_list(spec.get("outputs"))
+    if not inputs:
+        inputs = _clone_ports(primitive.inputs)
+    if not outputs:
+        outputs = _clone_ports(primitive.outputs)
+    return inputs, outputs
+
+
+def _collapse_redundant_primitive_steps(
+    raw_subs: list[dict[str, Any]],
+    *,
+    catalog: PrimitiveCatalog,
+) -> list[dict[str, Any]]:
+    best_by_primitive: dict[str, tuple[int, int]] = {}
+    kept: list[dict[str, Any]] = []
+    for item in raw_subs:
+        primitive_name = str(
+            item.get("matched_primitive")
+            or item.get("matched_primitive_hint")
+            or ""
+        ).strip()
+        if not primitive_name:
+            kept.append(item)
+            continue
+
+        primitive = _find_primitive(catalog, primitive_name)
+        if primitive is None:
+            kept.append(item)
+            continue
+
+        specificity = len(_token_set(str(item.get("name", "")), str(item.get("description", ""))))
+        specificity += len(_safe_iospec_list(item.get("inputs")))
+        specificity += len(_safe_iospec_list(item.get("outputs")))
+
+        existing = best_by_primitive.get(primitive.name)
+        if existing is None:
+            best_by_primitive[primitive.name] = (len(kept), specificity)
+            kept.append(item)
+            continue
+
+        existing_index, existing_specificity = existing
+        if specificity > existing_specificity:
+            kept[existing_index] = item
+            best_by_primitive[primitive.name] = (existing_index, specificity)
+
+    return kept
+
+
+def _port_is_available(port: IOSpec, available_ports: list[IOSpec]) -> bool:
+    for candidate in available_ports:
+        same_name = candidate.name == port.name
+        compatible_type = (
+            candidate.type_desc == port.type_desc
+            or candidate.type_desc in {"", "Any"}
+            or port.type_desc in {"", "Any"}
+        )
+        if same_name and compatible_type:
+            return True
+    return False
+
+
+def _is_helper_like_port(port: IOSpec) -> bool:
+    tokens = _token_set(port.name, port.type_desc, port.constraints)
+    return bool(tokens & _HELPER_PORT_TOKENS)
+
+
+def _synthesize_missing_input_helpers(
+    raw_subs: list[dict[str, Any]],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> list[dict[str, Any]]:
+    rewritten: list[dict[str, Any]] = []
+    available_ports = _clone_ports(parent.inputs)
+
+    for item in raw_subs:
+        primitive_name = str(
+            item.get("matched_primitive")
+            or item.get("matched_primitive_hint")
+            or ""
+        ).strip()
+        primitive = _find_primitive(catalog, primitive_name) if primitive_name else None
+        if primitive is not None:
+            for required_input in primitive.inputs:
+                if not required_input.required:
+                    continue
+                if not _is_helper_like_port(required_input):
+                    continue
+                if _port_is_available(required_input, available_ports):
+                    continue
+
+                helper_name = f"Prepare {required_input.name.replace('_', ' ').title()}"
+                if not any(_norm(existing.get("name", "")) == _norm(helper_name) for existing in rewritten):
+                    rewritten.append(
+                        {
+                            "name": helper_name,
+                            "description": (
+                                f"Derive or configure {required_input.name} needed by "
+                                f"{primitive.name}."
+                            ),
+                            "concept_type": ConceptType.DATA_ASSEMBLY.value,
+                            "outputs": [
+                                {
+                                    "name": required_input.name,
+                                    "type_desc": required_input.type_desc,
+                                    "constraints": required_input.constraints,
+                                    "required": required_input.required,
+                                    "default_value_repr": required_input.default_value_repr,
+                                }
+                            ],
+                        }
+                    )
+                    available_ports.append(required_input)
+
+        rewritten.append(item)
+        explicit_outputs = _safe_iospec_list(item.get("outputs"))
+        if explicit_outputs:
+            available_ports.extend(explicit_outputs)
+        elif primitive is not None:
+            available_ports.extend(_clone_ports(primitive.outputs))
+
+    return rewritten
+
+
 def _rewrite_raw_sub_nodes(
     raw_subs: list[dict[str, Any]],
     *,
@@ -326,6 +469,12 @@ def _rewrite_raw_sub_nodes(
         catalog=catalog,
     )
     rewritten = _rewrite_routing_wrappers(rewritten)
+    rewritten = _collapse_redundant_primitive_steps(rewritten, catalog=catalog)
+    rewritten = _synthesize_missing_input_helpers(
+        rewritten,
+        parent=parent,
+        catalog=catalog,
+    )
     return rewritten
 
 
