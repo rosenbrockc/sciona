@@ -236,6 +236,16 @@ class TestBuiltinPrimitiveSeeding:
         assert catalog.get("Parse Filter Requirements") is not None
         assert catalog.get("Apply Filter") is not None
 
+    def test_seed_builtin_primitives_adds_signal_transform_aliases(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+
+        assert catalog.get("apply_window_function") is not None
+        assert catalog.get("Window") is not None
+        assert catalog.get("Forward Transform") is not None
+        assert catalog.get("Spectral Processing") is not None
+        assert catalog.get("Inverse Transform") is not None
+
     def test_aliases_make_nodes_atomic(self):
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -245,6 +255,19 @@ class TestBuiltinPrimitiveSeeding:
             name="Assemble Frequency Response Tuple",
             description="Assemble the final frequency response output",
             concept_type=ConceptType.SIGNAL_FILTER,
+        )
+
+        assert catalog.is_atomic(node) is True
+
+    def test_signal_transform_aliases_make_nodes_atomic(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+
+        node = AlgorithmicNode(
+            node_id="n2",
+            name="Window",
+            description="Apply a deterministic window before transformation",
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
         )
 
         assert catalog.is_atomic(node) is True

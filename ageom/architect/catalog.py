@@ -727,6 +727,82 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
     ),
 ]
 
+_SIGNAL_TRANSFORM_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
+    (
+        AlgorithmicPrimitive(
+            name="apply_window_function",
+            source="ageom-builtins",
+            category=ConceptType.SIGNAL_TRANSFORM,
+            description="Apply a deterministic window function to a numeric signal segment.",
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="windowed", type_desc="np.ndarray")],
+            type_signature="np.ndarray -> np.ndarray",
+        ),
+        [
+            "window",
+            "apply window",
+            "apply window function",
+            "window signal",
+            "windowing",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_forward_transform",
+            source="ageom-builtins",
+            category=ConceptType.SIGNAL_TRANSFORM,
+            description="Apply a forward spectral transform such as FFT or DCT.",
+            inputs=[IOSpec(name="windowed", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="spectrum", type_desc="np.ndarray")],
+            type_signature="np.ndarray -> np.ndarray",
+        ),
+        [
+            "forward transform",
+            "compute forward transform",
+            "fft",
+            "forward fft",
+            "dct",
+            "stft analysis",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="process_spectrum",
+            source="ageom-builtins",
+            category=ConceptType.SIGNAL_TRANSFORM,
+            description="Modify, filter, or weight spectral coefficients in the transform domain.",
+            inputs=[IOSpec(name="spectrum", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="modified_spectrum", type_desc="np.ndarray")],
+            type_signature="np.ndarray -> np.ndarray",
+        ),
+        [
+            "spectral processing",
+            "process spectrum",
+            "modify spectral coefficients",
+            "spectral filtering",
+            "spectral shaping",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_inverse_transform",
+            source="ageom-builtins",
+            category=ConceptType.SIGNAL_TRANSFORM,
+            description="Apply an inverse spectral transform to recover a time-domain signal.",
+            inputs=[IOSpec(name="modified_spectrum", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="result", type_desc="np.ndarray")],
+            type_signature="np.ndarray -> np.ndarray",
+        ),
+        [
+            "inverse transform",
+            "compute inverse transform",
+            "inverse fft",
+            "ifft",
+            "reconstruct signal",
+        ],
+    ),
+]
+
 
 def seed_bayesian_primitives(catalog: PrimitiveCatalog) -> None:
     """Add built-in Bayesian primitives to an existing catalog."""
@@ -739,6 +815,11 @@ def seed_builtin_primitives(catalog: PrimitiveCatalog) -> None:
     """Add built-in primitives used by deterministic architect flows."""
     seed_bayesian_primitives(catalog)
     for prim, aliases in _SIGNAL_FILTER_PRIMITIVES:
+        if catalog.get(prim.name) is None:
+            catalog.add(prim)
+        for alias in aliases:
+            catalog.add_alias(alias, prim.name)
+    for prim, aliases in _SIGNAL_TRANSFORM_PRIMITIVES:
         if catalog.get(prim.name) is None:
             catalog.add(prim)
         for alias in aliases:

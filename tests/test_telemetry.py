@@ -117,6 +117,58 @@ def test_event_log_clear():
     assert len(log) == 0
 
 
+def test_event_log_live_output_appends_jsonl(tmp_path: Path):
+    log = EventLog()
+    trace_path = tmp_path / "trace.jsonl"
+    log.configure_live_output(trace_path)
+
+    log.append(
+        PipelineEvent(
+            timestamp=1.0,
+            round="architect",
+            phase="decompose",
+            event_type="STEP_ONE",
+        )
+    )
+    log.append(
+        PipelineEvent(
+            timestamp=2.0,
+            round="architect",
+            phase="decompose",
+            event_type="STEP_TWO",
+            payload={"node": "n1"},
+        )
+    )
+
+    lines = trace_path.read_text().strip().splitlines()
+    assert len(lines) == 2
+    assert json.loads(lines[0])["event_type"] == "STEP_ONE"
+    assert json.loads(lines[1])["payload"] == {"node": "n1"}
+
+    log.configure_live_output(None)
+
+
+def test_event_log_clear_truncates_live_output(tmp_path: Path):
+    log = EventLog()
+    trace_path = tmp_path / "trace.jsonl"
+    log.configure_live_output(trace_path)
+    log.append(
+        PipelineEvent(
+            timestamp=1.0,
+            round="architect",
+            phase="decompose",
+            event_type="STEP_ONE",
+        )
+    )
+
+    log.clear()
+
+    assert trace_path.exists()
+    assert trace_path.read_text() == ""
+    assert len(log) == 0
+    log.configure_live_output(None)
+
+
 def test_log_event_convenience():
     # Reset the global log
     global_log = get_event_log()

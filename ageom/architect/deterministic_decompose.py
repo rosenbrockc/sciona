@@ -53,6 +53,32 @@ _KEYWORD_CONCEPTS: list[tuple[tuple[str, ...], ConceptType]] = [
 ]
 
 _CONCEPTUAL_FALLBACKS: dict[ConceptType, list[dict[str, str]]] = {
+    ConceptType.SIGNAL_TRANSFORM: [
+        {
+            "name": "Apply Window Function",
+            "description": "Apply a deterministic window to the input signal segment.",
+            "concept_type": ConceptType.SIGNAL_TRANSFORM.value,
+            "matched_primitive_hint": "apply_window_function",
+        },
+        {
+            "name": "Compute Forward Transform",
+            "description": "Project the windowed signal into the transform domain.",
+            "concept_type": ConceptType.SIGNAL_TRANSFORM.value,
+            "matched_primitive_hint": "compute_forward_transform",
+        },
+        {
+            "name": "Process Spectrum",
+            "description": "Modify spectral coefficients to extract or suppress target content.",
+            "concept_type": ConceptType.SIGNAL_TRANSFORM.value,
+            "matched_primitive_hint": "process_spectrum",
+        },
+        {
+            "name": "Compute Inverse Transform",
+            "description": "Recover a time-domain signal from the modified spectrum.",
+            "concept_type": ConceptType.SIGNAL_TRANSFORM.value,
+            "matched_primitive_hint": "compute_inverse_transform",
+        },
+    ],
     ConceptType.SIGNAL_FILTER: [
         {
             "name": "Parse Filter Requirements",
@@ -812,6 +838,103 @@ def _signal_filter_ports(
     return None
 
 
+def _signal_transform_ports(
+    parent: AlgorithmicNode,
+    spec: dict[str, Any],
+    *,
+    index: int,
+    total: int,
+) -> tuple[list[IOSpec], list[IOSpec]] | None:
+    parent_name = _norm(parent.name)
+    step_name = _norm(str(spec.get("name", "")))
+    parent_inputs = _clone_ports(parent.inputs)
+    parent_outputs = _clone_ports(parent.outputs)
+    signal_type = _first_type(parent_inputs, "np.ndarray")
+    result_type = _first_type(parent_outputs, "np.ndarray")
+
+    if parent_name == "window":
+        if any(token in step_name for token in ("select", "config", "parameter", "prepare")):
+            return (
+                parent_inputs or [_port("signal", signal_type)],
+                [_port("window_config", "window configuration")],
+            )
+        if any(token in step_name for token in ("kernel", "weights", "coeff")):
+            return (
+                [_port("window_config", "window configuration")],
+                [_port("window_kernel", "np.ndarray")],
+            )
+        if any(token in step_name for token in ("apply", "multiply", "window")):
+            return (
+                [
+                    _port("signal", signal_type),
+                    _port("window_kernel", "np.ndarray"),
+                ],
+                parent_outputs or [_port("windowed", "np.ndarray")],
+            )
+
+    if parent_name == "forward_transform":
+        if any(token in step_name for token in ("prepare", "plan", "pad", "layout")):
+            return (
+                parent_inputs or [_port("windowed", "np.ndarray")],
+                [_port("transform_plan", "transform plan")],
+            )
+        if any(token in step_name for token in ("forward", "transform", "fft", "dct", "stft")):
+            inputs = [_port("windowed", "np.ndarray")]
+            if index > 0:
+                inputs.append(_port("transform_plan", "transform plan", required=False))
+            return (
+                inputs,
+                parent_outputs or [_port("spectrum", "np.ndarray")],
+            )
+
+    if parent_name == "spectral_processing":
+        if any(token in step_name for token in ("prepare", "mask", "weights", "filter", "band")):
+            return (
+                parent_inputs or [_port("spectrum", "np.ndarray")],
+                [_port("spectral_operator", "spectral operator")],
+            )
+        if any(token in step_name for token in ("apply", "process", "modify", "suppress", "enhance")):
+            return (
+                [
+                    _port("spectrum", "np.ndarray"),
+                    _port("spectral_operator", "spectral operator", required=False),
+                ],
+                parent_outputs or [_port("modified_spectrum", "np.ndarray")],
+            )
+
+    if parent_name == "inverse_transform":
+        if any(token in step_name for token in ("prepare", "plan", "layout")):
+            return (
+                parent_inputs or [_port("modified_spectrum", "np.ndarray")],
+                [_port("inverse_plan", "transform plan")],
+            )
+        if any(token in step_name for token in ("inverse", "ifft", "reconstruct", "recover", "synthesize")):
+            inputs = [_port("modified_spectrum", "np.ndarray")]
+            if index > 0:
+                inputs.append(_port("inverse_plan", "transform plan", required=False))
+            return (
+                inputs,
+                parent_outputs or [_port("result", result_type)],
+            )
+
+    if parent_name in {
+        "window",
+        "forward_transform",
+        "spectral_processing",
+        "inverse_transform",
+    }:
+        fallback_type = result_type if result_type != "Any" else signal_type
+        inputs = parent_inputs if index == 0 else [_port(f"step_{index}_input", fallback_type)]
+        outputs = (
+            parent_outputs
+            if index == total - 1
+            else [_port(f"step_{index + 1}_artifact", fallback_type)]
+        )
+        return (inputs, outputs)
+
+    return None
+
+
 def _synthesize_specialized_ports(
     parent: AlgorithmicNode,
     spec: dict[str, Any],
@@ -821,6 +944,8 @@ def _synthesize_specialized_ports(
 ) -> tuple[list[IOSpec], list[IOSpec]] | None:
     if parent.concept_type == ConceptType.SIGNAL_FILTER:
         return _signal_filter_ports(parent, spec, index=index, total=total)
+    if parent.concept_type == ConceptType.SIGNAL_TRANSFORM:
+        return _signal_transform_ports(parent, spec, index=index, total=total)
     return None
 
 

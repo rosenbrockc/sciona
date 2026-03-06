@@ -45,16 +45,27 @@ class EventLog:
 
     def __init__(self) -> None:
         self._events: list[PipelineEvent] = []
+        self._live_path: Path | None = None
+        self._lock = threading.Lock()
 
     def append(self, event: PipelineEvent) -> None:
-        self._events.append(event)
+        payload = json.dumps(asdict(event), default=str)
+        with self._lock:
+            self._events.append(event)
+            if self._live_path is not None:
+                self._live_path.parent.mkdir(parents=True, exist_ok=True)
+                with self._live_path.open("a", encoding="utf-8") as fh:
+                    fh.write(payload)
+                    fh.write("\n")
 
     @property
     def events(self) -> list[PipelineEvent]:
-        return list(self._events)
+        with self._lock:
+            return list(self._events)
 
     def __len__(self) -> int:
-        return len(self._events)
+        with self._lock:
+            return len(self._events)
 
     def to_jsonl(self) -> str:
         """Serialize all events to a JSONL string."""
@@ -70,7 +81,22 @@ class EventLog:
         path.write_text(self.to_jsonl())
 
     def clear(self) -> None:
-        self._events.clear()
+        with self._lock:
+            self._events.clear()
+            if self._live_path is not None:
+                self._live_path.parent.mkdir(parents=True, exist_ok=True)
+                self._live_path.write_text("")
+
+    def configure_live_output(self, path: str | Path | None) -> None:
+        """Enable or disable incremental JSONL writes on append."""
+        with self._lock:
+            if path is None:
+                self._live_path = None
+                return
+            live_path = Path(path)
+            live_path.parent.mkdir(parents=True, exist_ok=True)
+            live_path.write_text("")
+            self._live_path = live_path
 
 
 # Module-level singleton

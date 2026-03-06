@@ -2081,7 +2081,10 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
     configure_dashboard_output(config.telemetry_runs_dir)
     event_log = get_event_log()
+    event_log.configure_live_output(None)
     event_log.clear()
+    if getattr(args, "trace", False):
+        event_log.configure_live_output(output_dir / "trace.jsonl")
     telemetry_run_id = start_run(
         "algorithm_creation",
         metadata={
@@ -2282,6 +2285,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         raise
     else:
         pass
+    finally:
+        event_log.configure_live_output(None)
 
     # Output
     print("\nOrchestration complete:")

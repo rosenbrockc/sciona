@@ -615,11 +615,9 @@ async def select_strategy(
             # Find the matching primitive name
             prim_name = node.matched_primitive
             if not prim_name:
-                name_lower = node.name.lower().replace(" ", "_")
-                for p in deps.catalog.all_primitives():
-                    if p.name.lower().replace(" ", "_") == name_lower:
-                        prim_name = p.name
-                        break
+                primitive = deps.catalog.get(node.name)
+                if primitive is not None:
+                    prim_name = primitive.name
             nodes[i] = node.model_copy(
                 update={
                     "status": NodeStatus.ATOMIC,

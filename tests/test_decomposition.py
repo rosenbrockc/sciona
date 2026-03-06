@@ -748,6 +748,57 @@ class TestSelectStrategy:
         # No skeleton for CUSTOM, so only root node
         assert len(result["nodes"]) == 1
 
+    @pytest.mark.asyncio
+    async def test_signal_transform_skeleton_nodes_bind_to_builtin_primitives(self):
+        from ageom.architect.nodes import select_strategy
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        skill_index = _make_skill_index()
+        llm = _make_mock_llm(
+            strategy_response=json.dumps(
+                {
+                    "paradigm": "signal_transform",
+                    "rationale": "Window, transform, process, and reconstruct the signal.",
+                    "variant_hint": "fft_filter",
+                }
+            )
+        )
+
+        state: DecompositionState = {
+            "goal": "Denoise a signal in the spectral domain",
+            "max_depth": 8,
+            "nodes": [],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "",
+            "paradigm": "",
+            "skeleton_instantiated": False,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await select_strategy(state, {"configurable": {"deps": deps}})
+
+        bound = {
+            node.name: node.matched_primitive
+            for node in result["nodes"]
+            if node.status == NodeStatus.ATOMIC
+        }
+
+        assert bound["Window"] == "apply_window_function"
+        assert bound["Forward Transform"] == "compute_forward_transform"
+        assert bound["Spectral Processing"] == "process_spectrum"
+        assert bound["Inverse Transform"] == "compute_inverse_transform"
+        assert result["pending_node_ids"] == []
+        assert result["done"] is True
+
 
 class TestRouteAfterCritic:
     """Test the 4 routing cases for route_after_critic."""
@@ -1753,6 +1804,83 @@ class TestDeterministicDecompose:
 
         assert result["nodes"]
         assert all(node.status == NodeStatus.ATOMIC for node in result["nodes"])
+
+    @pytest.mark.asyncio
+    async def test_signal_transform_hints_resolve_to_atomic_builtins(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Apply Window Function",
+                            "description": "Window the signal deterministically.",
+                            "matched_primitive_hint": "apply_window_function",
+                        },
+                        {
+                            "name": "Compute Forward Transform",
+                            "description": "Move into the spectral domain.",
+                            "matched_primitive_hint": "compute_forward_transform",
+                        },
+                        {
+                            "name": "Process Spectrum",
+                            "description": "Apply spectral modifications.",
+                            "matched_primitive_hint": "process_spectrum",
+                        },
+                        {
+                            "name": "Compute Inverse Transform",
+                            "description": "Return to the time domain.",
+                            "matched_primitive_hint": "compute_inverse_transform",
+                        },
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_transform",
+            name="Signal Transform",
+            description="Transform a signal to the spectral domain and back",
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="result", type_desc="np.ndarray")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Denoise a signal in the spectral domain",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_transform"],
+            "current_node_id": "n_transform",
+            "paradigm": "signal_transform",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await decompose_node(state, {"configurable": {"deps": deps}})
+
+        assert [node.matched_primitive for node in result["nodes"]] == [
+            "apply_window_function",
+            "compute_forward_transform",
+            "process_spectrum",
+            "compute_inverse_transform",
+        ]
+        assert all(node.status == NodeStatus.ATOMIC for node in result["nodes"])
+        assert all(io.type_desc != "Any" for node in result["nodes"] for io in node.inputs + node.outputs)
 
     @pytest.mark.asyncio
     async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):
