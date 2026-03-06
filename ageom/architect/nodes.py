@@ -20,7 +20,10 @@ from ageom.architect.models import (
     IOSpec,
     NodeStatus,
 )
-from ageom.architect.deterministic_decompose import build_deterministic_decomposition
+from ageom.architect.deterministic_decompose import (
+    DeterministicRewriteError,
+    build_deterministic_decomposition,
+)
 from ageom.architect.prompts import (
     CRITIQUE_SYSTEM,
     CRITIQUE_USER,
@@ -799,11 +802,25 @@ async def decompose_node(
             metadata={"node_id": current_id, "node_name": node.name},
         )
 
-    built = build_deterministic_decomposition(
-        parsed=parsed,
-        parent=node,
-        catalog=deps.catalog,
-    )
+    try:
+        built = build_deterministic_decomposition(
+            parsed=parsed,
+            parent=node,
+            catalog=deps.catalog,
+        )
+    except DeterministicRewriteError as exc:
+        return {
+            "nodes": [],
+            "edges": [],
+            "error": str(exc),
+            "history": [
+                {
+                    "step": "decompose_node",
+                    "node_id": current_id,
+                    "rewrite_error": str(exc),
+                }
+            ],
+        }
     new_nodes = built.nodes
     new_edges = built.edges
 

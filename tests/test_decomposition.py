@@ -8,7 +8,10 @@ from unittest.mock import AsyncMock
 import pytest
 
 from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
-from ageom.architect.deterministic_decompose import build_deterministic_decomposition
+from ageom.architect.deterministic_decompose import (
+    DeterministicRewriteError,
+    build_deterministic_decomposition,
+)
 from ageom.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
@@ -499,6 +502,84 @@ class TestDeterministicRewrite:
             if node.matched_primitive == "compute_frequency_response"
         )
         assert any(port.name == "frequency_grid" for port in compute_node.inputs)
+
+    def test_repairs_any_ports_from_matched_primitive_signature(self):
+        catalog = _make_catalog()
+        parent = AlgorithmicNode(
+            node_id="parent_search",
+            name="Target Lookup",
+            description="Search for a target in a sorted array",
+            concept_type=ConceptType.SEARCHING,
+            inputs=[
+                IOSpec(name="data", type_desc="sorted list[int]"),
+                IOSpec(name="target", type_desc="int"),
+            ],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "binary_search",
+                        "description": "Find the target index.",
+                        "matched_primitive_hint": "binary_search",
+                        "inputs": [
+                            {"name": "data", "type_desc": "Any"},
+                            {"name": "target", "type_desc": "Any"},
+                        ],
+                        "outputs": [{"name": "index", "type_desc": "Any"}],
+                    }
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        node = result.nodes[0]
+        assert [port.type_desc for port in node.inputs] == ["sorted list[comparable]", "comparable"]
+        assert [port.type_desc for port in node.outputs] == ["int"]
+
+    def test_fails_fast_when_primitive_bound_node_violates_signature(self):
+        catalog = _make_catalog()
+        parent = AlgorithmicNode(
+            node_id="parent_search",
+            name="Target Lookup",
+            description="Search for a target in a sorted array",
+            concept_type=ConceptType.SEARCHING,
+            inputs=[
+                IOSpec(name="data", type_desc="sorted list[int]"),
+                IOSpec(name="target", type_desc="int"),
+            ],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        with pytest.raises(DeterministicRewriteError, match="violates primitive signature"):
+            build_deterministic_decomposition(
+                parsed={
+                    "sub_nodes": [
+                        {
+                            "name": "binary_search",
+                            "description": "Find the target index.",
+                            "matched_primitive_hint": "binary_search",
+                            "inputs": [
+                                {"name": "data", "type_desc": "Any"},
+                                {"name": "target", "type_desc": "Any"},
+                            ],
+                            "outputs": [
+                                {"name": "index", "type_desc": "Any"},
+                                {"name": "artifact", "type_desc": "Any"},
+                            ],
+                        }
+                    ]
+                },
+                parent=parent,
+                catalog=catalog,
+            )
 
 
 class TestSelectStrategy:
@@ -1730,3 +1811,67 @@ class TestDeterministicDecompose:
 
         assert result["critique_passed"] is False
         assert "unresolved any ports" in result["critique_reason"].lower()
+
+    @pytest.mark.asyncio
+    async def test_decompose_node_returns_rewrite_error_for_invalid_primitive_shape(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "binary_search",
+                            "description": "Find the target index.",
+                            "matched_primitive_hint": "binary_search",
+                            "inputs": [
+                                {"name": "data", "type_desc": "Any"},
+                                {"name": "target", "type_desc": "Any"},
+                            ],
+                            "outputs": [
+                                {"name": "index", "type_desc": "Any"},
+                                {"name": "artifact", "type_desc": "Any"},
+                            ],
+                        }
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_search",
+            name="Target Lookup",
+            description="Search for a target in a sorted array",
+            concept_type=ConceptType.SEARCHING,
+            inputs=[IOSpec(name="data", type_desc="sorted list[int]"), IOSpec(name="target", type_desc="int")],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Find target index",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_search"],
+            "current_node_id": "n_search",
+            "paradigm": "searching",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await decompose_node(state, {"configurable": {"deps": deps}})
+
+        assert result["nodes"] == []
+        assert "violates primitive signature" in result["error"].lower()

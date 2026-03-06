@@ -33,6 +33,10 @@ class DeterministicDecomposeResult:
     edges: list[DependencyEdge]
 
 
+class DeterministicRewriteError(ValueError):
+    """Raised when deterministic rewrite leaves an invalid typed subgraph."""
+
+
 _KEYWORD_CONCEPTS: list[tuple[tuple[str, ...], ConceptType]] = [
     (("sort", "ordered", "rank"), ConceptType.SORTING),
     (("search", "lookup", "find"), ConceptType.SEARCHING),
@@ -592,6 +596,16 @@ def _clone_ports(ports: list[IOSpec]) -> list[IOSpec]:
     ]
 
 
+def _clone_port(port: IOSpec) -> IOSpec:
+    return IOSpec(
+        name=port.name,
+        type_desc=port.type_desc,
+        constraints=port.constraints,
+        required=port.required,
+        default_value_repr=port.default_value_repr,
+    )
+
+
 def _port(
     name: str,
     type_desc: str,
@@ -758,10 +772,10 @@ def _signal_filter_ports(
                 [_port("band_assessment", "response assessment")],
             )
         if "assemble" in step_name or "final" in step_name:
-            inputs = [_port("response_summary", response_type)]
-            if index > 0:
-                inputs.append(_port("band_assessment", "response assessment"))
-            return (inputs, parent_outputs or [_port("response", response_type)])
+            return (
+                [_port("response_summary", response_type)],
+                parent_outputs or [_port("response", response_type)],
+            )
 
     if parent_name in {
         "design_filter",
@@ -849,6 +863,178 @@ def _signature_from_ports(inputs: list[IOSpec], outputs: list[IOSpec]) -> str:
     if len(outputs) > 1:
         out_sig = f"({out_sig})"
     return f"{in_sig} -> {out_sig}"
+
+
+def _port_is_typed(port: IOSpec) -> bool:
+    return port.type_desc.strip() not in {"", "Any"}
+
+
+def _primary_type(parent: AlgorithmicNode) -> str:
+    for port in parent.outputs + parent.inputs:
+        if _port_is_typed(port):
+            return port.type_desc
+    return "Any"
+
+
+def _repair_ports_from_reference(
+    current: list[IOSpec],
+    reference: list[IOSpec],
+    *,
+    fallback_type: str,
+    allow_extension: bool = True,
+    rename_generic_names: bool = True,
+    force_reference_names: bool = False,
+) -> list[IOSpec]:
+    if not current and not reference:
+        return []
+
+    refs_by_name = {port.name: port for port in reference}
+    repaired: list[IOSpec] = []
+    limit = max(len(current), len(reference)) if allow_extension else len(current)
+
+    for index in range(limit):
+        base = current[index] if index < len(current) else None
+        ref = None
+        if base is not None:
+            ref = refs_by_name.get(base.name)
+        if ref is None and index < len(reference):
+            ref = reference[index]
+
+        if base is None and ref is not None:
+            repaired.append(_clone_port(ref))
+            continue
+        if base is None:
+            continue
+
+        name = base.name
+        if ref is not None and force_reference_names:
+            name = ref.name
+        elif rename_generic_names and ref is not None and name in {"", "input", "result", f"step_{index}_input", f"step_{index + 1}_artifact"}:
+            name = ref.name
+
+        type_desc = base.type_desc.strip() or "Any"
+        if type_desc == "Any":
+            if ref is not None and _port_is_typed(ref):
+                type_desc = ref.type_desc
+            elif fallback_type not in {"", "Any"}:
+                type_desc = fallback_type
+
+        constraints = base.constraints or (ref.constraints if ref is not None else "")
+        repaired.append(
+            IOSpec(
+                name=name,
+                type_desc=type_desc,
+                constraints=constraints,
+                required=base.required if base is not None else (ref.required if ref is not None else True),
+                default_value_repr=(
+                    base.default_value_repr
+                    or (ref.default_value_repr if ref is not None else "")
+                ),
+            )
+        )
+
+    return repaired
+
+
+def _repair_node_ports(
+    nodes: list[AlgorithmicNode],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> list[AlgorithmicNode]:
+    if not nodes:
+        return []
+
+    fallback_type = _primary_type(parent)
+    repaired_nodes: list[AlgorithmicNode] = []
+
+    # Primitive signatures are the strongest source of truth.
+    for node in nodes:
+        primitive = _find_primitive(catalog, node.matched_primitive or "")
+        inputs = _clone_ports(node.inputs)
+        outputs = _clone_ports(node.outputs)
+        if primitive is not None:
+            inputs = _repair_ports_from_reference(
+                inputs,
+                _clone_ports(primitive.inputs),
+                fallback_type=fallback_type,
+                force_reference_names=True,
+            )
+            outputs = _repair_ports_from_reference(
+                outputs,
+                _clone_ports(primitive.outputs),
+                fallback_type=fallback_type,
+                force_reference_names=True,
+            )
+        repaired_nodes.append(node.model_copy(update={"inputs": inputs, "outputs": outputs}))
+
+    # Propagate typed ports through the chain.
+    propagated: list[AlgorithmicNode] = []
+    for index, node in enumerate(repaired_nodes):
+        primitive_bound = _find_primitive(catalog, node.matched_primitive or "") is not None
+        input_reference = parent.inputs if index == 0 else propagated[index - 1].outputs
+        output_reference = (
+            parent.outputs
+            if index == len(repaired_nodes) - 1
+            else repaired_nodes[index + 1].inputs
+        )
+        propagated.append(
+            node.model_copy(
+                update={
+                    "inputs": _repair_ports_from_reference(
+                        _clone_ports(node.inputs),
+                        _clone_ports(input_reference),
+                        fallback_type=fallback_type,
+                        allow_extension=not primitive_bound,
+                        rename_generic_names=not primitive_bound,
+                    ),
+                    "outputs": _repair_ports_from_reference(
+                        _clone_ports(node.outputs),
+                        _clone_ports(output_reference),
+                        fallback_type=fallback_type,
+                        allow_extension=not primitive_bound,
+                        rename_generic_names=not primitive_bound,
+                    ),
+                }
+            )
+        )
+
+    return propagated
+
+
+def _validate_rewritten_nodes(
+    nodes: list[AlgorithmicNode],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> None:
+    parent_is_typed = any(_port_is_typed(port) for port in parent.inputs + parent.outputs)
+    if not parent_is_typed:
+        return
+    for node in nodes:
+        unresolved = [port.name for port in node.inputs + node.outputs if not _port_is_typed(port)]
+        if unresolved:
+            raise DeterministicRewriteError(
+                f"Unresolved Any ports remain for child '{node.name}' under typed parent "
+                f"'{parent.name}': {', '.join(unresolved)}"
+            )
+        primitive = _find_primitive(catalog, node.matched_primitive or "")
+        if primitive is None:
+            continue
+        allowed_inputs = {port.name for port in primitive.inputs}
+        allowed_outputs = {port.name for port in primitive.outputs}
+        extra_inputs = [port.name for port in node.inputs if port.name not in allowed_inputs]
+        extra_outputs = [port.name for port in node.outputs if port.name not in allowed_outputs]
+        if extra_inputs or extra_outputs:
+            problems = []
+            if extra_inputs:
+                problems.append(f"extra inputs: {', '.join(extra_inputs)}")
+            if extra_outputs:
+                problems.append(f"extra outputs: {', '.join(extra_outputs)}")
+            raise DeterministicRewriteError(
+                f"Primitive-bound child '{node.name}' violates primitive signature for "
+                f"'{primitive.name}' under parent '{parent.name}': {'; '.join(problems)}"
+            )
 
 
 def _pick_output_for_target(source: AlgorithmicNode, target: AlgorithmicNode) -> IOSpec:
@@ -1078,6 +1264,9 @@ def build_deterministic_decomposition(
             node = node.model_copy(update={"type_signature": _signature_from_ports(node.inputs, node.outputs)})
 
         nodes.append(node)
+
+    nodes = _repair_node_ports(nodes, parent=parent, catalog=catalog)
+    _validate_rewritten_nodes(nodes, parent=parent, catalog=catalog)
 
     edge_hints = _collect_edge_hints(parsed)
     edges = _sanitize_edge_hints(nodes, edge_hints)
