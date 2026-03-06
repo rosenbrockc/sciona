@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import json as _json
 import os
 import random
 import time
+from pathlib import Path
 from asyncio.subprocess import PIPE
 from typing import Protocol, runtime_checkable
+
+import tomllib
 
 
 @runtime_checkable
@@ -198,7 +202,9 @@ class SubprocessCLIClient:
                 cmd += ["--model", self._model]
         elif self._cli == "codex":
             # Rely on JSONL events from stdout; avoid output-file writes that can fail in sandboxes.
-            cmd += ["codex", "exec", "--json"]
+            cmd += ["codex", "exec", "--json", "--ephemeral"]
+            for override in _codex_mcp_disable_overrides():
+                cmd += ["-c", override]
             model = self._codex_model_arg()
             if model:
                 cmd += ["-m", model]
@@ -420,6 +426,45 @@ def _env_float(name: str, default: float) -> float:
     except ValueError:
         return default
     return value if value > 0 else default
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name, "").strip().lower()
+    if not raw:
+        return default
+    return raw not in {"0", "false", "no", "off"}
+
+
+@functools.lru_cache(maxsize=1)
+def _codex_mcp_disable_overrides() -> tuple[str, ...]:
+    """Return codex config overrides that disable MCP servers for shim calls.
+
+    This avoids fragile MCP transport failures in non-interactive `codex exec`
+    paths and reduces startup overhead for short prompt dispatches.
+    """
+    if not _env_bool("AGEOM_CODEX_SHIM_DISABLE_MCP", True):
+        return ()
+
+    config_path = Path(
+        os.getenv("AGEOM_CODEX_CONFIG_PATH", "~/.codex/config.toml")
+    ).expanduser()
+    if not config_path.exists():
+        return ()
+
+    try:
+        data = tomllib.loads(config_path.read_text())
+    except Exception:
+        return ()
+
+    servers = data.get("mcp_servers")
+    if not isinstance(servers, dict):
+        return ()
+
+    overrides: list[str] = []
+    for name in servers:
+        if isinstance(name, str) and name.strip():
+            overrides.append(f"mcp_servers.{name}.enabled=false")
+    return tuple(overrides)
 
 
 _DEFAULT_MODELS: dict[str, str] = {
