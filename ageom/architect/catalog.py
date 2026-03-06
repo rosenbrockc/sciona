@@ -35,8 +35,16 @@ class PrimitiveCatalog:
 
     def add(self, primitive: AlgorithmicPrimitive) -> None:
         """Add a primitive to the catalog."""
+        existing = self._primitives.get(primitive.name)
+        if existing is not None:
+            bucket = self._by_category.get(existing.category, [])
+            self._by_category[existing.category] = [
+                item for item in bucket if item.name != primitive.name
+            ]
         self._primitives[primitive.name] = primitive
-        self._by_category.setdefault(primitive.category, []).append(primitive)
+        bucket = self._by_category.setdefault(primitive.category, [])
+        if all(item.name != primitive.name for item in bucket):
+            bucket.append(primitive)
         self._aliases.setdefault(
             self._normalize_key(primitive.name),
             primitive.name,

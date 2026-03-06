@@ -128,6 +128,12 @@ class TestResolveSource:
             mock_fetch.assert_called_once_with(cache_dir, "main")
             assert resolved == cache_dir
 
+    def test_resolve_path_source_expands_user(self, tmp_path: Path):
+        home_repo = Path.home() / "codex_test_atoms_repo"
+        src = AtomSource(name="home-repo", package="home_pkg", path="~/codex_test_atoms_repo")
+        resolved = resolve_source(src, base_dir=tmp_path)
+        assert resolved == home_repo.resolve()
+
 
 # ---------------------------------------------------------------------------
 # CDG discovery
@@ -211,6 +217,31 @@ class TestImportAtoms:
         src = AtomSource(name="missing", package="no_such_pkg_12345", path=".")
         import_atoms(src, base_dir=tmp_path)
         assert any("Could not import" in r.message for r in caplog.records)
+
+    def test_import_atoms_skips_syntax_error_submodule(self, tmp_path: Path):
+        repo = tmp_path / "brokenrepo"
+        pkg = repo / "brokenpkg"
+        pkg.mkdir(parents=True)
+        (pkg / "__init__.py").write_text("")
+        (pkg / "broken.py").write_text("def nope(:\n")
+
+        src = AtomSource(name="brokenrepo", package="brokenpkg", path="brokenrepo")
+        import_atoms(src, base_dir=tmp_path)
+
+    def test_import_atoms_falls_back_when_package_init_is_broken(self, tmp_path: Path):
+        repo = tmp_path / "fallbackrepo"
+        pkg = repo / "fallbackpkg"
+        pkg.mkdir(parents=True)
+        (pkg / "__init__.py").write_text("from fallbackpkg import missing_submodule\n")
+        (pkg / "atoms.py").write_text("LOADED = True\n")
+
+        src = AtomSource(name="fallbackrepo", package="fallbackpkg", path="fallbackrepo")
+        import_atoms(src, base_dir=tmp_path)
+
+        import importlib
+
+        atoms = importlib.import_module("fallbackpkg.atoms")
+        assert getattr(atoms, "LOADED", False) is True
 
 
 # ---------------------------------------------------------------------------

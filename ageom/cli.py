@@ -194,6 +194,48 @@ async def _create_shared_context(
     return store, metrics
 
 
+def _load_architect_catalog(
+    args: argparse.Namespace,
+    config: "AgeomConfig",
+):
+    """Load the architect primitive catalog from built-ins, JSON catalogs, and source registries."""
+    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+    from ageom.architect.source_catalog import seed_catalog_from_sources
+    from ageom.sources import load_sources
+
+    catalog = PrimitiveCatalog()
+    seed_builtin_primitives(catalog)
+
+    if getattr(args, "catalog", None):
+        catalog = PrimitiveCatalog.load(args.catalog)
+        seed_builtin_primitives(catalog)
+    else:
+        search_dir = config.skill_index_dir
+        if search_dir.exists():
+            for cat_file in sorted(search_dir.glob("catalog_*.json")):
+                print(f"Loading catalog: {cat_file.name}")
+                partial = PrimitiveCatalog.load(cat_file)
+                for prim in partial.all_primitives():
+                    catalog.add(prim)
+
+    try:
+        sources_cfg = load_sources(config.sources_file)
+        derived = seed_catalog_from_sources(
+            catalog,
+            config=sources_cfg,
+            base_dir=Path.cwd(),
+        )
+        if derived:
+            print(f"Loaded {derived} source-derived primitives from {config.sources_file}")
+    except Exception as exc:
+        print(
+            f"Warning: failed to derive primitives from configured sources: {exc}",
+            file=sys.stderr,
+        )
+
+    return catalog
+
+
 def _print_shared_context_metrics(
     label: str,
     metrics: "SharedContextMetrics | None",
@@ -958,28 +1000,13 @@ def _cmd_skill_ingest(args: argparse.Namespace) -> None:
 
 def _cmd_skill_index(args: argparse.Namespace) -> None:
     """Build FAISS skill index from a catalog."""
-    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.embedder import SkillIndex
     from ageom.config import AgeomConfig
 
     config = AgeomConfig()
     output_dir = Path(args.output) if args.output else config.skill_index_dir
 
-    # Auto-detect catalogs if no explicit path given
-    catalog = PrimitiveCatalog()
-    seed_builtin_primitives(catalog)
-    if args.catalog:
-        catalog = PrimitiveCatalog.load(args.catalog)
-        seed_builtin_primitives(catalog)
-    else:
-        # Load all catalog_*.json files from the skill index dir
-        search_dir = config.skill_index_dir
-        if search_dir.exists():
-            for cat_file in sorted(search_dir.glob("catalog_*.json")):
-                print(f"Loading catalog: {cat_file.name}")
-                partial = PrimitiveCatalog.load(cat_file)
-                for prim in partial.all_primitives():
-                    catalog.add(prim)
+    catalog = _load_architect_catalog(args, config)
 
     if catalog.size == 0:
         print(
@@ -1362,7 +1389,6 @@ async def _run_decompose(
 
 async def _cmd_decompose(args: argparse.Namespace) -> None:
     """Decompose a goal into a Conceptual Dependency Graph."""
-    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
@@ -1372,20 +1398,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     config = AgeomConfig()
     max_depth = args.max_depth or config.architect_max_depth
 
-    # Load catalog
-    catalog = PrimitiveCatalog()
-    seed_builtin_primitives(catalog)
-    if args.catalog:
-        catalog = PrimitiveCatalog.load(args.catalog)
-        seed_builtin_primitives(catalog)
-    else:
-        search_dir = config.skill_index_dir
-        if search_dir.exists():
-            for cat_file in sorted(search_dir.glob("catalog_*.json")):
-                print(f"Loading catalog: {cat_file.name}")
-                partial = PrimitiveCatalog.load(cat_file)
-                for prim in partial.all_primitives():
-                    catalog.add(prim)
+    catalog = _load_architect_catalog(args, config)
 
     if catalog.size == 0:
         print(
@@ -1984,19 +1997,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         with telemetry_scope(run_id=telemetry_run_id):
             update_stage(stage="setup", status="running", message="loading dependencies")
 
-            # Load catalog
-            catalog = PrimitiveCatalog()
-            seed_builtin_primitives(catalog)
-            if args.catalog:
-                catalog = PrimitiveCatalog.load(args.catalog)
-                seed_builtin_primitives(catalog)
-            else:
-                search_dir = config.skill_index_dir
-                if search_dir.exists():
-                    for cat_file in sorted(search_dir.glob("catalog_*.json")):
-                        partial = PrimitiveCatalog.load(cat_file)
-                        for prim in partial.all_primitives():
-                            catalog.add(prim)
+            catalog = _load_architect_catalog(args, config)
 
             # Load skill index
             skill_index = SkillIndex(index_dir=config.skill_index_dir)
@@ -2243,19 +2244,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     config = AgeomConfig()
 
-    # Load catalog
-    catalog = PrimitiveCatalog()
-    seed_builtin_primitives(catalog)
-    if args.catalog:
-        catalog = PrimitiveCatalog.load(args.catalog)
-        seed_builtin_primitives(catalog)
-    else:
-        search_dir = config.skill_index_dir
-        if search_dir.exists():
-            for cat_file in sorted(search_dir.glob("catalog_*.json")):
-                partial = PrimitiveCatalog.load(cat_file)
-                for prim in partial.all_primitives():
-                    catalog.add(prim)
+    catalog = _load_architect_catalog(args, config)
 
     # Load skill index
     skill_index = SkillIndex(index_dir=config.skill_index_dir)

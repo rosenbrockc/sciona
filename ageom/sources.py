@@ -7,6 +7,7 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
+import types
 from typing import Literal
 
 import yaml
@@ -70,7 +71,7 @@ def resolve_source(source: AtomSource, base_dir: Path | None = None) -> Path:
     """
     if source.path:
         base = base_dir or Path.cwd()
-        return (base / source.path).resolve()
+        return (base / Path(source.path).expanduser()).resolve()
 
     # Git source — clone or fetch
     assert source.git is not None
@@ -130,30 +131,92 @@ def import_atoms(source: AtomSource, base_dir: Path | None = None) -> None:
         if root_str not in sys.path:
             sys.path.insert(0, root_str)
 
+    pkg = None
+    pkg_path = None
+    fallback_scan_root: Path | None = None
     try:
         pkg = importlib.import_module(source.package)
-    except ImportError:
-        logger.warning(
-            "Could not import package '%s' for source '%s'",
-            source.package,
-            source.name,
-        )
-        return
+        pkg_path = getattr(pkg, "__path__", None)
+    except Exception:
+        if not source.path:
+            logger.warning(
+                "Could not import package '%s' for source '%s'",
+                source.package,
+                source.name,
+            )
+            return
+
+        root = resolve_source(source, base_dir)
+        package_root = root.joinpath(*source.package.split("."))
+        if not package_root.exists():
+            logger.warning(
+                "Could not import package '%s' for source '%s'",
+                source.package,
+                source.name,
+            )
+            return
+
+        # Fallback for broken top-level __init__.py files: treat the package as a
+        # namespace package so submodules can still be imported and register atoms.
+        pkg = types.ModuleType(source.package)
+        pkg.__path__ = [str(package_root)]  # type: ignore[attr-defined]
+        pkg.__package__ = source.package
+        sys.modules[source.package] = pkg
+        pkg_path = pkg.__path__
+        fallback_scan_root = package_root
 
     # Walk submodules to trigger @register_atom decorators
-    pkg_path = getattr(pkg, "__path__", None)
+    if fallback_scan_root is not None:
+        for py_file in sorted(fallback_scan_root.rglob("*.py")):
+            if py_file.name == "__init__.py":
+                continue
+            module_parts = py_file.relative_to(root).with_suffix("").parts
+            modname = ".".join(module_parts)
+            _import_module_from_file(modname, py_file)
+        return
+
     if pkg_path is None:
         return
 
     import pkgutil
 
     for _importer, modname, _ispkg in pkgutil.walk_packages(
-        pkg_path, prefix=source.package + "."
+        pkg_path,
+        prefix=source.package + ".",
+        onerror=lambda name: logger.debug(
+            "Failed to enumerate %s for source %s", name, source.name, exc_info=True
+        ),
     ):
         try:
             importlib.import_module(modname)
         except Exception:
             logger.debug("Failed to import %s, skipping", modname, exc_info=True)
+
+
+def _import_module_from_file(modname: str, path: Path) -> None:
+    """Import *modname* directly from *path*, creating namespace parents as needed."""
+    import importlib.util
+
+    parent_parts = modname.split(".")[:-1]
+    for idx in range(len(parent_parts)):
+        pkg_name = ".".join(parent_parts[: idx + 1])
+        if pkg_name in sys.modules:
+            continue
+        pkg_path = path.parents[len(parent_parts) - idx - 1]
+        pkg = types.ModuleType(pkg_name)
+        pkg.__path__ = [str(pkg_path)]  # type: ignore[attr-defined]
+        pkg.__package__ = pkg_name
+        sys.modules[pkg_name] = pkg
+
+    spec = importlib.util.spec_from_file_location(modname, path)
+    if spec is None or spec.loader is None:
+        return
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[modname] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        logger.debug("Failed to import %s from %s, skipping", modname, path, exc_info=True)
 
 
 def import_all_sources(

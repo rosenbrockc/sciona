@@ -2,3 +2,6 @@ sources:
   - name: ageo-atoms
     path: ../ageo-atoms
     package: ageoa
+  - name: hpy-atoms
+    path: ~/codes/hpy-atoms
+    package: hpyatoms
