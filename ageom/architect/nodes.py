@@ -235,6 +235,10 @@ def _format_primitives(prims: list) -> str:
     return "\n".join(lines)
 
 
+def _is_any_type(type_desc: str) -> bool:
+    return type_desc.strip() in {"", "Any"}
+
+
 def _tokenize(text: str) -> set[str]:
     return {tok for tok in re.findall(r"[a-z0-9_]+", text.lower()) if len(tok) >= 3}
 
@@ -798,6 +802,25 @@ async def critique_decomposition(
     for child in children:
         if child.status == NodeStatus.ATOMIC and not deps.catalog.is_atomic(child):
             issues.append(f"Node '{child.name}' claims atomic but not in catalog")
+
+    # Check: typed parents must not degrade into Any-typed children/edges.
+    parent_is_typed = any(not _is_any_type(io.type_desc) for io in parent.inputs + parent.outputs)
+    if parent_is_typed:
+        for child in children:
+            weak_inputs = [io.name for io in child.inputs if _is_any_type(io.type_desc)]
+            weak_outputs = [io.name for io in child.outputs if _is_any_type(io.type_desc)]
+            if weak_inputs or weak_outputs:
+                issues.append(
+                    f"Node '{child.name}' uses unresolved Any ports "
+                    f"(inputs={weak_inputs}, outputs={weak_outputs})"
+                )
+        for edge in child_edges:
+            if _is_any_type(edge.source_type) or _is_any_type(edge.target_type):
+                issues.append(
+                    "Edge "
+                    f"{edge.source_id}->{edge.target_id} uses unresolved Any types "
+                    f"({edge.source_type} -> {edge.target_type})"
+                )
 
     if issues:
         reason = "Deterministic checks failed: " + "; ".join(issues)

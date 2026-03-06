@@ -184,6 +184,205 @@ def _default_outputs(parent: AlgorithmicNode) -> list[IOSpec]:
     return [IOSpec(name="result", type_desc="Any")]
 
 
+def _clone_ports(ports: list[IOSpec]) -> list[IOSpec]:
+    return [
+        IOSpec(name=port.name, type_desc=port.type_desc, constraints=port.constraints)
+        for port in ports
+    ]
+
+
+def _port(name: str, type_desc: str, constraints: str = "") -> IOSpec:
+    return IOSpec(name=name, type_desc=type_desc, constraints=constraints)
+
+
+def _first_type(ports: list[IOSpec], default: str) -> str:
+    for port in ports:
+        if port.type_desc.strip():
+            return port.type_desc
+    return default
+
+
+def _signal_filter_ports(
+    parent: AlgorithmicNode,
+    spec: dict[str, Any],
+    *,
+    index: int,
+    total: int,
+) -> tuple[list[IOSpec], list[IOSpec]] | None:
+    parent_name = _norm(parent.name)
+    step_name = _norm(str(spec.get("name", "")))
+    parent_inputs = _clone_ports(parent.inputs)
+    parent_outputs = _clone_ports(parent.outputs)
+    input_type = _first_type(parent_inputs, "np.ndarray")
+    output_type = _first_type(parent_outputs, "np.ndarray")
+
+    if parent_name == "design_filter":
+        if "parse" in step_name or "normalize" in step_name or "interpret" in step_name:
+            return (
+                parent_inputs or [_port("spec", "filter specification")],
+                [_port("design_requirements", "filter design requirements")],
+            )
+        if "target" in step_name or "constraint" in step_name:
+            return (
+                [_port("design_requirements", "filter design requirements")],
+                [_port("design_targets", "filter design targets")],
+            )
+        if "select" in step_name or "choose" in step_name:
+            return (
+                [_port("design_targets", "filter design targets")],
+                [_port("design_strategy", "filter design strategy")],
+            )
+        if "synth" in step_name or "coeff" in step_name:
+            return (
+                [_port("design_strategy", "filter design strategy")],
+                [_port("candidate_coefficients", "filter coefficients")],
+            )
+        if "evaluate" in step_name or "refine" in step_name or "final" in step_name:
+            return (
+                [
+                    _port("candidate_coefficients", "filter coefficients"),
+                    _port("design_targets", "filter design targets"),
+                ],
+                parent_outputs or [_port("coefficients", "filter coefficients")],
+            )
+
+    if parent_name == "validate_stability":
+        if "normalize" in step_name or "canonical" in step_name:
+            return (
+                parent_inputs or [_port("coefficients", "filter coefficients")],
+                [_port("normalized_coefficients", "filter coefficients")],
+            )
+        if "character" in step_name or "dynamics" in step_name or "construct" in step_name:
+            return (
+                [_port("normalized_coefficients", "filter coefficients")],
+                [_port("characteristic_polynomial", "np.polynomial.Polynomial")],
+            )
+        if "pole" in step_name or "solve" in step_name:
+            return (
+                [_port("characteristic_polynomial", "np.polynomial.Polynomial")],
+                [_port("poles", "np.ndarray")],
+            )
+        if "margin" in step_name or "stability" in step_name:
+            return (
+                [_port("poles", "np.ndarray")],
+                [_port("stability_report", "stability report")],
+            )
+        if "emit" in step_name or "pass" in step_name or "final" in step_name:
+            return (
+                [
+                    _port("normalized_coefficients", "filter coefficients"),
+                    _port("stability_report", "stability report"),
+                ],
+                parent_outputs or [_port("valid_coefficients", "filter coefficients")],
+            )
+
+    if parent_name == "apply_filter":
+        if "validate" in step_name or "precondition" in step_name:
+            return (
+                parent_inputs
+                or [
+                    _port("valid_coefficients", "filter coefficients"),
+                    _port("signal", input_type),
+                ],
+                [
+                    _port("validated_coefficients", "filter coefficients"),
+                    _port("validated_signal", input_type),
+                ],
+            )
+        if "boundary" in step_name or "initial" in step_name or "policy" in step_name:
+            return (
+                [
+                    _port("validated_coefficients", "filter coefficients"),
+                    _port("validated_signal", input_type),
+                ],
+                [_port("filter_plan", "filter execution plan")],
+            )
+        if "apply" in step_name or "execute" in step_name:
+            return (
+                [_port("filter_plan", "filter execution plan")],
+                [_port("filtered_signal", output_type)],
+            )
+        if "transient" in step_name or "edge" in step_name or "mitigate" in step_name:
+            return (
+                [_port("filtered_signal", output_type)],
+                [_port("stabilized_signal", output_type)],
+            )
+        if "final" in step_name:
+            return (
+                [_port("stabilized_signal", output_type)],
+                parent_outputs or [_port("filtered", output_type)],
+            )
+
+    if parent_name == "frequency_response":
+        response_type = _first_type(parent_outputs, "tuple[np.ndarray, np.ndarray]")
+        if "standard" in step_name or "canonical" in step_name or "normalize" in step_name:
+            return (
+                parent_inputs or [_port("valid_coefficients", "filter coefficients")],
+                [_port("normalized_coefficients", "filter coefficients")],
+            )
+        if "grid" in step_name or "domain" in step_name or "sampling" in step_name:
+            return (
+                [_port("normalized_coefficients", "filter coefficients")],
+                [_port("frequency_grid", "np.ndarray")],
+            )
+        if "complex" in step_name or "transfer" in step_name or "compute" in step_name:
+            return (
+                [
+                    _port("normalized_coefficients", "filter coefficients"),
+                    _port("frequency_grid", "np.ndarray"),
+                ],
+                [_port("complex_response", "np.ndarray")],
+            )
+        if "extract" in step_name or "derive" in step_name or "view" in step_name:
+            return (
+                [_port("complex_response", "np.ndarray")],
+                [_port("response_summary", response_type)],
+            )
+        if "assess" in step_name or "inspect" in step_name:
+            return (
+                [_port("response_summary", response_type)],
+                [_port("band_assessment", "response assessment")],
+            )
+        if "assemble" in step_name or "final" in step_name:
+            inputs = [_port("response_summary", response_type)]
+            if index > 0:
+                inputs.append(_port("band_assessment", "response assessment"))
+            return (inputs, parent_outputs or [_port("response", response_type)])
+
+    if parent_name in {
+        "design_filter",
+        "validate_stability",
+        "apply_filter",
+        "frequency_response",
+    }:
+        fallback_type = output_type if output_type != "Any" else input_type
+        inputs = (
+            parent_inputs
+            if index == 0
+            else [_port(f"step_{index}_input", fallback_type)]
+        )
+        outputs = (
+            parent_outputs
+            if index == total - 1
+            else [_port(f"step_{index + 1}_artifact", fallback_type)]
+        )
+        return (inputs, outputs)
+
+    return None
+
+
+def _synthesize_specialized_ports(
+    parent: AlgorithmicNode,
+    spec: dict[str, Any],
+    *,
+    index: int,
+    total: int,
+) -> tuple[list[IOSpec], list[IOSpec]] | None:
+    if parent.concept_type == ConceptType.SIGNAL_FILTER:
+        return _signal_filter_ports(parent, spec, index=index, total=total)
+    return None
+
+
 def _ensure_ports(
     spec: dict[str, Any],
     *,
@@ -193,6 +392,18 @@ def _ensure_ports(
 ) -> tuple[list[IOSpec], list[IOSpec]]:
     inputs = _safe_iospec_list(spec.get("inputs"))
     outputs = _safe_iospec_list(spec.get("outputs"))
+
+    specialized = _synthesize_specialized_ports(
+        parent,
+        spec,
+        index=index,
+        total=total,
+    )
+    if specialized is not None:
+        if not inputs:
+            inputs = specialized[0]
+        if not outputs:
+            outputs = specialized[1]
 
     if total == 1:
         if not inputs:

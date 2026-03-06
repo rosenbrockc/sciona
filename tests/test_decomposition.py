@@ -12,6 +12,7 @@ from ageom.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
     ConceptType,
+    DependencyEdge,
     IOSpec,
     NodeStatus,
 )
@@ -1133,6 +1134,10 @@ class TestDeterministicDecompose:
         assert "Parse Filter Requirements" in names
         assert "Select Filter Family" in names
         assert result["edges"]
+        for node in result["nodes"]:
+            assert node.inputs
+            assert node.outputs
+            assert all(io.type_desc != "Any" for io in node.inputs + node.outputs)
 
     @pytest.mark.asyncio
     async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):
@@ -1201,3 +1206,77 @@ class TestDeterministicDecompose:
         assert captured_users
         assert "No relevant primitives found." not in captured_users[0]
         assert "binary_search" in captured_users[0]
+
+    @pytest.mark.asyncio
+    async def test_critique_rejects_any_ports_when_parent_is_typed(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = _make_mock_llm()
+
+        parent = AlgorithmicNode(
+            node_id="parent1",
+            name="Typed Parent",
+            description="Parent with typed inputs and outputs",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+            depth=1,
+            status=NodeStatus.PENDING,
+        )
+        child1 = AlgorithmicNode(
+            node_id="child1",
+            parent_id="parent1",
+            name="Weak Step",
+            description="Uses Any ports",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="signal", type_desc="Any")],
+            outputs=[IOSpec(name="temp", type_desc="np.ndarray")],
+            depth=2,
+            status=NodeStatus.PENDING,
+        )
+        child2 = AlgorithmicNode(
+            node_id="child2",
+            parent_id="parent1",
+            name="Another Weak Step",
+            description="Consumes Any ports",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="temp", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="filtered", type_desc="Any")],
+            depth=2,
+            status=NodeStatus.PENDING,
+        )
+
+        state: DecompositionState = {
+            "goal": "filter signal",
+            "max_depth": 8,
+            "nodes": [parent, child1, child2],
+            "edges": [
+                DependencyEdge(
+                    source_id="child1",
+                    target_id="child2",
+                    output_name="temp",
+                    input_name="temp",
+                    source_type="np.ndarray",
+                    target_type="Any",
+                )
+            ],
+            "history": [],
+            "pending_node_ids": ["parent1"],
+            "current_node_id": "parent1",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is False
+        assert "unresolved any ports" in result["critique_reason"].lower()
