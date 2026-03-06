@@ -327,11 +327,11 @@ class TestRouteAfterCritic:
         state = {"critique_passed": False, "critique_retries": 1}
         assert route_after_critic(state) == "retry_decompose"
 
-    def test_next_node_on_max_retries(self):
+    def test_block_node_on_max_retries(self):
         from ageom.architect.nodes import route_after_critic
 
         state = {"critique_passed": False, "critique_retries": 3}
-        assert route_after_critic(state) == "next_node"
+        assert route_after_critic(state) == "block_node"
 
     def test_next_node_on_pass(self):
         from ageom.architect.nodes import route_after_critic
@@ -508,6 +508,65 @@ class TestCritiqueRejection:
         assert len(cdg.nodes) > 0
         # The critique was called at least twice
         assert call_count >= 2
+
+
+class TestBlockedDecomposition:
+    @pytest.mark.asyncio
+    async def test_agent_metadata_marks_blocked_decomposition(self):
+        from ageom.architect.graph import DecompositionAgent
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            system_lower = system.lower()
+            if "best" in system_lower and "paradigm" in system_lower:
+                return json.dumps(
+                    {
+                        "paradigm": "divide_and_conquer",
+                        "rationale": "D&C",
+                        "variant_hint": "merge_sort",
+                    }
+                )
+            if "critic" in system_lower or "evaluate" in system_lower:
+                return json.dumps(
+                    {
+                        "approved": False,
+                        "reason": "Typed flow is incomplete",
+                        "io_issues": ["missing typed edge"],
+                        "flagged_nodes": [],
+                    }
+                )
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Split",
+                            "description": "Split input",
+                        },
+                        {
+                            "name": "Combine",
+                            "description": "Combine partial results",
+                        },
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        agent = DecompositionAgent(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            max_depth=8,
+        )
+
+        cdg = await agent.decompose("Implement merge sort")
+
+        assert cdg.metadata["architect_status"] == "blocked"
+        assert cdg.metadata["architect_error"]
+        assert cdg.metadata["blocked_nodes"]
+        assert any(node.status == NodeStatus.BLOCKED for node in cdg.nodes)
 
 
 class TestMaxDepth:
@@ -703,6 +762,64 @@ class TestCritiqueHardening:
         assert len(updated) == 2
         assert all(n.status == NodeStatus.REJECTED for n in updated)
         assert result["critique_retries"] == 2
+
+    @pytest.mark.asyncio
+    async def test_block_node_discards_descendants_and_sets_error(self):
+        from ageom.architect.nodes import block_node
+
+        parent = AlgorithmicNode(
+            node_id="p",
+            name="Parent",
+            description="parent",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=0,
+        )
+        child = AlgorithmicNode(
+            node_id="c",
+            parent_id="p",
+            name="Child",
+            description="child",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        grandchild = AlgorithmicNode(
+            node_id="g",
+            parent_id="c",
+            name="Grandchild",
+            description="grandchild",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+
+        state: DecompositionState = {
+            "goal": "test",
+            "max_depth": 8,
+            "nodes": [parent, child, grandchild],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["p"],
+            "current_node_id": "p",
+            "paradigm": "custom",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "too many retries",
+            "critique_retries": 3,
+            "done": False,
+            "error": "",
+        }
+
+        result = await block_node(state, {"configurable": {"deps": None}})
+        by_id = {node.node_id: node for node in result["nodes"]}
+
+        assert result["done"] is True
+        assert "blocked" in result["error"].lower()
+        assert result["pending_node_ids"] == []
+        assert by_id["p"].status == NodeStatus.BLOCKED
+        assert by_id["c"].status == NodeStatus.REJECTED
+        assert by_id["g"].status == NodeStatus.REJECTED
 
 
 class TestSharedContext:

@@ -69,6 +69,36 @@ class CDGExport(BaseModel):
         """Check that all leaf nodes are atomic."""
         return len(self.non_atomic_leaves()) == 0
 
+    def blocked_nodes(self) -> list[AlgorithmicNode]:
+        """Return nodes that terminated decomposition without a valid handoff."""
+        return [n for n in self.nodes if n.status == NodeStatus.BLOCKED]
+
+    def architect_issues(self) -> list[str]:
+        """Return architect-level issues that should block handoff."""
+        issues: list[str] = []
+        blocked = self.blocked_nodes()
+        if blocked:
+            issues.append(
+                "Architect blocked nodes: " + ", ".join(node.name for node in blocked)
+            )
+        pending = [n.name for n in self.nodes if n.status == NodeStatus.PENDING]
+        if pending:
+            issues.append("Pending nodes remain: " + ", ".join(pending[:10]))
+        non_atomic = self.non_atomic_leaves()
+        if non_atomic:
+            issues.append(
+                "Non-atomic leaves remain: "
+                + ", ".join(node.name for node in non_atomic[:10])
+            )
+        metadata_error = str(self.metadata.get("architect_error", "")).strip()
+        if metadata_error:
+            issues.append(metadata_error)
+        return issues
+
+    def is_handoff_ready(self) -> bool:
+        """Check whether the architect produced a handoff-safe graph."""
+        return len(self.architect_issues()) == 0
+
 
 def export_cdg(
     nodes: list[AlgorithmicNode],
@@ -341,6 +371,10 @@ def to_pdg_nodes(
         issues = validate_handoff(cdg)
         if issues:
             raise HandoffValidationError(issues)
+
+    architect_issues = cdg.architect_issues()
+    if architect_issues:
+        raise ValueError("Cannot convert architect-blocked CDG. " + "; ".join(architect_issues))
 
     if not cdg.is_complete():
         non_atomic = cdg.non_atomic_leaves()

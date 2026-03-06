@@ -179,6 +179,42 @@ def _find_node(nodes: list[AlgorithmicNode], node_id: str) -> AlgorithmicNode | 
     return None
 
 
+def _descendant_ids(nodes: list[AlgorithmicNode], root_id: str) -> set[str]:
+    """Return all descendant node IDs under a parent."""
+    pending = [root_id]
+    descendants: set[str] = set()
+    while pending:
+        current = pending.pop()
+        for node in nodes:
+            if node.parent_id != current or node.node_id in descendants:
+                continue
+            descendants.add(node.node_id)
+            pending.append(node.node_id)
+    return descendants
+
+
+def _pending_under_blocked(nodes: list[AlgorithmicNode]) -> list[AlgorithmicNode]:
+    """Detect invalid pending descendants beneath blocked parents."""
+    blocked_ids = {
+        node.node_id for node in nodes if node.status in {NodeStatus.BLOCKED, NodeStatus.HIGH_RISK}
+    }
+    if not blocked_ids:
+        return []
+    by_id = {node.node_id: node for node in nodes}
+    offenders: list[AlgorithmicNode] = []
+    for node in nodes:
+        if node.status != NodeStatus.PENDING:
+            continue
+        parent_id = node.parent_id
+        while parent_id:
+            if parent_id in blocked_ids:
+                offenders.append(node)
+                break
+            parent = by_id.get(parent_id)
+            parent_id = parent.parent_id if parent is not None else None
+    return offenders
+
+
 def _format_io(specs: list[IOSpec]) -> str:
     """Format IOSpec list for prompt display."""
     if not specs:
@@ -951,11 +987,6 @@ async def advance_node(
         # Add non-atomic children to pending
         new_pending = [c.node_id for c in children if c.status == NodeStatus.PENDING]
     else:
-        # Max retries exhausted: mark node as HIGH_RISK, move on
-        if parent:
-            updated_nodes.append(
-                parent.model_copy(update={"status": NodeStatus.HIGH_RISK})
-            )
         new_pending = []
 
     # Remove current from pending
@@ -967,7 +998,13 @@ async def advance_node(
 
     # Pick next
     next_id = pending[0] if pending else ""
+    blocked_pending = _pending_under_blocked(all_nodes + updated_nodes)
     done = len(pending) == 0
+    error = ""
+    if blocked_pending:
+        names = ", ".join(node.name for node in blocked_pending[:5])
+        error = f"Invalid architect state: pending nodes under blocked parent ({names})"
+        done = True
 
     return {
         "nodes": updated_nodes,
@@ -977,12 +1014,14 @@ async def advance_node(
         "critique_passed": False,
         "critique_reason": "",
         "done": done,
+        "error": error,
         "history": [
             {
                 "step": "advance_node",
                 "from_node": current_id,
                 "next_node": next_id,
                 "done": done,
+                "error": error,
             }
         ],
     }
@@ -1023,6 +1062,57 @@ async def prepare_retry(
     }
 
 
+async def block_node(
+    state: DecompositionState, config: RunnableConfig
+) -> dict[str, Any]:
+    """Terminate decomposition when critique retries are exhausted."""
+    current_id = state["current_node_id"]
+    all_nodes = state["nodes"]
+    reason = state.get("critique_reason", "").strip() or "Critique retries exhausted"
+    parent = _find_node(all_nodes, current_id)
+
+    descendant_ids = _descendant_ids(all_nodes, current_id)
+    blocked_updates: list[AlgorithmicNode] = []
+    for node in all_nodes:
+        if node.node_id == current_id and parent is not None:
+            blocked_updates.append(
+                parent.model_copy(
+                    update={
+                        "status": NodeStatus.BLOCKED,
+                        "critic_notes": reason,
+                    }
+                )
+            )
+            continue
+        if node.node_id in descendant_ids and node.status != NodeStatus.REJECTED:
+            blocked_updates.append(
+                node.model_copy(
+                    update={
+                        "status": NodeStatus.REJECTED,
+                        "critic_notes": f"Discarded after parent blocked: {reason}",
+                    }
+                )
+            )
+
+    return {
+        "nodes": blocked_updates,
+        "pending_node_ids": [],
+        "current_node_id": "",
+        "critique_retries": 0,
+        "critique_passed": False,
+        "done": True,
+        "error": f"Architect decomposition blocked at '{parent.name if parent else current_id}': {reason}",
+        "history": [
+            {
+                "step": "block_node",
+                "node_id": current_id,
+                "reason": reason,
+                "num_discarded": max(len(blocked_updates) - 1, 0),
+            }
+        ],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Routing functions
 # ---------------------------------------------------------------------------
@@ -1035,7 +1125,8 @@ def route_after_critic(state: DecompositionState) -> str:
 
     if not passed and retries < 3:
         return "retry_decompose"
-    # Both "passed" and "max retries exhausted" go to advance_node
+    if not passed:
+        return "block_node"
     return "next_node"
 
 

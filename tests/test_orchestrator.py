@@ -149,6 +149,37 @@ async def test_orchestration_runs_hunter_in_parallel_when_enabled():
     assert max_active > 1
 
 
+@pytest.mark.asyncio
+async def test_orchestration_stops_before_hunter_on_blocked_cdg():
+    blocked = AlgorithmicNode(
+        node_id="blocked",
+        name="Blocked Step",
+        description="blocked",
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.BLOCKED,
+        depth=0,
+    )
+    cdg = CDGExport(
+        nodes=[blocked],
+        edges=[],
+        metadata={"architect_error": "decomposition blocked"},
+    )
+
+    hunter = AsyncMock()
+    llm = AsyncMock()
+
+    result = await run_orchestration(
+        cdg,
+        hunter_agent=hunter,
+        llm=llm,
+        max_rounds=3,
+    )
+
+    assert result.rounds_used == 0
+    assert result.match_results == []
+    hunter.find_match.assert_not_called()
+
+
 def test_match_failure_report_from_match_result():
     """MatchFailureReport.from_match_result creates correct report."""
     mr = _make_match_result("x", False)

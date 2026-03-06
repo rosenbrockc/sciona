@@ -188,6 +188,25 @@ async def run_orchestration(
     """
     result = OrchestratorResult(cdg=cdg, match_results=[])
 
+    architect_issues = cdg.architect_issues()
+    if architect_issues:
+        message = "; ".join(architect_issues)
+        logger.warning("Architect produced blocked CDG: %s", message)
+        update_stage(
+            stage="orchestration",
+            status="failed",
+            message=message,
+            completed=0,
+            total=max_rounds,
+        )
+        log_event(
+            "orchestrator",
+            "round",
+            "ARCHITECT_BLOCKED",
+            payload={"issues": architect_issues},
+        )
+        return result
+
     for round_num in range(max_rounds):
         result.rounds_used = round_num + 1
         logger.info("Orchestration round %d/%d", round_num + 1, max_rounds)

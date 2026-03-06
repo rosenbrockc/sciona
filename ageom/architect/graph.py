@@ -13,6 +13,7 @@ from ageom.architect.models import NodeStatus
 from ageom.architect.nodes import (
     advance_conjugate_node,
     advance_node,
+    block_node,
     critique_decomposition,
     decompose_node,
     prepare_retry,
@@ -34,6 +35,7 @@ def build_graph() -> StateGraph:
     graph.add_node("decompose_node", decompose_node)
     graph.add_node("critique", critique_decomposition)
     graph.add_node("advance_node", advance_node)
+    graph.add_node("block_node", block_node)
     graph.add_node("prepare_retry", prepare_retry)
     graph.add_node("advance_conjugate_node", advance_conjugate_node)
 
@@ -50,9 +52,14 @@ def build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "critique",
         route_after_critic,
-        {"retry_decompose": "prepare_retry", "next_node": "advance_node"},
+        {
+            "retry_decompose": "prepare_retry",
+            "next_node": "advance_node",
+            "block_node": "block_node",
+        },
     )
     graph.add_edge("prepare_retry", "decompose_node")
+    graph.add_edge("block_node", END)
     graph.add_conditional_edges(
         "advance_node",
         route_after_advance,
@@ -143,6 +150,13 @@ class DecompositionAgent:
         active_nodes = [
             n for n in final_state["nodes"] if n.status != NodeStatus.REJECTED
         ]
+        blocked_nodes = [n for n in active_nodes if n.status == NodeStatus.BLOCKED]
+        non_atomic_leaves = CDGExport(
+            nodes=active_nodes,
+            edges=final_state["edges"],
+            metadata={},
+        ).non_atomic_leaves()
+        architect_status = "blocked" if blocked_nodes or final_state.get("error") else "ready"
 
         return CDGExport(
             nodes=active_nodes,
@@ -155,6 +169,10 @@ class DecompositionAgent:
                 "active_nodes": len(active_nodes),
                 "history_steps": len(final_state.get("history", [])),
                 "thread_id": thread_id,
+                "architect_status": architect_status,
+                "architect_error": final_state.get("error", ""),
+                "blocked_nodes": [n.name for n in blocked_nodes],
+                "non_atomic_leaf_count": len(non_atomic_leaves),
             },
         )
 

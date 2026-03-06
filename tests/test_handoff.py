@@ -127,6 +127,38 @@ class TestCDGExport:
         assert len(non_atomic) == 1
         assert non_atomic[0].name == "Unresolved Step"
 
+    def test_architect_issues_include_blocked_and_pending_nodes(self):
+        blocked = AlgorithmicNode(
+            node_id="blocked",
+            name="Blocked Step",
+            description="stalled",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.BLOCKED,
+            depth=0,
+            children=["pending"],
+        )
+        pending = AlgorithmicNode(
+            node_id="pending",
+            parent_id="blocked",
+            name="Pending Step",
+            description="pending",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        cdg = CDGExport(
+            nodes=[blocked, pending],
+            edges=[],
+            metadata={"architect_error": "decomposition blocked"},
+        )
+
+        issues = cdg.architect_issues()
+
+        assert any("Blocked Step" in issue for issue in issues)
+        assert any("Pending Step" in issue for issue in issues)
+        assert any("decomposition blocked" in issue for issue in issues)
+        assert cdg.is_handoff_ready() is False
+
 
 class TestExportCDG:
     def test_valid_export(self, atomic_nodes, edges):
@@ -170,6 +202,20 @@ class TestToPDGNodes:
         cdg = CDGExport(nodes=non_atomic_nodes, edges=[])
         with pytest.raises(HandoffValidationError):
             to_pdg_nodes(cdg)
+
+    def test_rejects_architect_blocked_cdg(self):
+        blocked = AlgorithmicNode(
+            node_id="blocked",
+            name="Blocked Step",
+            description="blocked",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.BLOCKED,
+            depth=0,
+        )
+        cdg = CDGExport(nodes=[blocked], edges=[], metadata={"architect_error": "blocked"})
+
+        with pytest.raises(ValueError, match="architect-blocked"):
+            to_pdg_nodes(cdg, strict=False)
 
     def test_context_includes_matched_primitive(self, atomic_nodes, edges):
         cdg = CDGExport(nodes=atomic_nodes, edges=edges)

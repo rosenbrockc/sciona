@@ -90,6 +90,7 @@ class TestNodeStatus:
         assert NodeStatus.ATOMIC == "atomic"
         assert NodeStatus.REJECTED == "rejected"
         assert NodeStatus.HIGH_RISK == "high_risk"
+        assert NodeStatus.BLOCKED == "blocked"
 
 
 class TestAlgorithmicNode:

@@ -74,6 +74,7 @@ class NodeStatus(str, Enum):
     ATOMIC = "atomic"  # Leaf — maps to a known primitive
     REJECTED = "rejected"  # Critic rejected this decomposition
     HIGH_RISK = "high_risk"  # Requires novel proof, flagged by Critic
+    BLOCKED = "blocked"  # Decomposition terminated without a valid handoff
 
 
 class AlgorithmicNode(BaseModel):
