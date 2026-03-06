@@ -310,6 +310,79 @@ class TestDeterministicRewrite:
         assert len(result.nodes) >= 2
         assert any(node.name == "Compute Core Transformation" for node in result.nodes)
 
+    def test_normalizes_near_match_concepts_to_builtin_primitives(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="parent_response",
+            name="Frequency Response",
+            description="Compute the frequency response of a filter",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            outputs=[IOSpec(name="response", type_desc="tuple[np.ndarray, np.ndarray]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Normalize Coefficient Form",
+                        "description": "Canonicalize coefficients for downstream analysis.",
+                    },
+                    {
+                        "name": "Evaluate Complex Filter Response",
+                        "description": "Compute the complex response across the frequency grid.",
+                    },
+                    {
+                        "name": "Assemble Frequency Response Tuple",
+                        "description": "Return the response as a typed tuple.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        by_name = {node.name: node for node in result.nodes}
+        assert by_name["Normalize Coefficient Form"].matched_primitive == "canonicalize_filter_coefficients"
+        assert by_name["Evaluate Complex Filter Response"].matched_primitive == "compute_frequency_response"
+        assert by_name["Assemble Frequency Response Tuple"].matched_primitive == "summarize_frequency_response"
+
+    def test_normalizes_apply_filter_concept_without_exact_alias(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="parent_apply",
+            name="Apply Filter",
+            description="Apply stable coefficients to a signal",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[
+                IOSpec(name="valid_coefficients", type_desc="filter coefficients"),
+                IOSpec(name="signal", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Apply Coefficients to Canonical Signal",
+                        "description": "Run the filter coefficients across the sanitized signal array.",
+                    }
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert result.nodes
+        assert result.nodes[0].matched_primitive == "apply_iir_filter"
+
 
 class TestSelectStrategy:
     """Test that select_strategy picks paradigm and populates pending queue."""

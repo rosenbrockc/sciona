@@ -133,6 +133,29 @@ _VALIDATION_COMPUTE_TOKENS = {
     "escalate",
 }
 
+_PRIMITIVE_MATCH_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "the",
+    "to",
+    "for",
+    "from",
+    "of",
+    "with",
+    "into",
+    "on",
+    "in",
+    "by",
+    "then",
+    "after",
+    "before",
+    "result",
+    "results",
+    "step",
+    "steps",
+}
+
 
 def _norm(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
@@ -163,14 +186,105 @@ def _rewrite_validation_wrappers(raw_subs: list[dict[str, Any]]) -> list[dict[st
     return raw_subs
 
 
+def _primitive_match_tokens(*values: str) -> set[str]:
+    tokens = _token_set(*values)
+    return {token for token in tokens if token not in _PRIMITIVE_MATCH_STOPWORDS}
+
+
+def _primitive_signature_text(primitive: Any) -> str:
+    parts = [primitive.name, primitive.description]
+    parts.extend(port.name for port in primitive.inputs)
+    parts.extend(port.type_desc for port in primitive.inputs)
+    parts.extend(port.name for port in primitive.outputs)
+    parts.extend(port.type_desc for port in primitive.outputs)
+    return " ".join(part for part in parts if part)
+
+
+def _suggest_primitive_for_spec(
+    spec: dict[str, Any],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> Any:
+    explicit = str(
+        spec.get("matched_primitive")
+        or spec.get("matched_primitive_hint")
+        or spec.get("atomic_hint")
+        or ""
+    ).strip()
+    if explicit:
+        prim = _find_primitive(catalog, explicit)
+        if prim is not None:
+            return prim
+
+    name = str(spec.get("name", "")).strip()
+    description = str(spec.get("description", "")).strip()
+    for probe in (name, description, f"{name} {description}".strip()):
+        if not probe:
+            continue
+        prim = _find_primitive(catalog, probe)
+        if prim is not None:
+            return prim
+
+    spec_tokens = _primitive_match_tokens(name, description)
+    if not spec_tokens:
+        return None
+
+    best_primitive = None
+    best_score = 0.0
+    for primitive in catalog.all_primitives():
+        primitive_tokens = _primitive_match_tokens(_primitive_signature_text(primitive))
+        if not primitive_tokens:
+            continue
+        overlap = spec_tokens & primitive_tokens
+        if not overlap:
+            continue
+
+        score = float(len(overlap))
+        if primitive.category == parent.concept_type:
+            score += 1.5
+        if _norm(primitive.name) in _norm(name):
+            score += 1.0
+        if len(overlap) >= max(2, len(spec_tokens) // 2):
+            score += 0.5
+
+        if score > best_score:
+            best_score = score
+            best_primitive = primitive
+
+    if best_score >= 3.0:
+        return best_primitive
+    return None
+
+
+def _rewrite_conceptual_primitive_names(
+    raw_subs: list[dict[str, Any]],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> list[dict[str, Any]]:
+    rewritten: list[dict[str, Any]] = []
+    for item in raw_subs:
+        updated = dict(item)
+        primitive = _suggest_primitive_for_spec(updated, parent=parent, catalog=catalog)
+        if primitive is not None:
+            updated.setdefault("matched_primitive_hint", primitive.name)
+        rewritten.append(updated)
+    return rewritten
+
+
 def _rewrite_raw_sub_nodes(
     raw_subs: list[dict[str, Any]],
     *,
     parent: AlgorithmicNode,
     catalog: PrimitiveCatalog,
 ) -> list[dict[str, Any]]:
-    del parent, catalog
     rewritten = _rewrite_validation_wrappers(raw_subs)
+    rewritten = _rewrite_conceptual_primitive_names(
+        rewritten,
+        parent=parent,
+        catalog=catalog,
+    )
     return rewritten
 
 
