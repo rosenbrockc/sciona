@@ -383,6 +383,51 @@ class TestDeterministicRewrite:
         assert result.nodes
         assert result.nodes[0].matched_primitive == "apply_iir_filter"
 
+    def test_collapses_routing_wrappers_when_work_nodes_exist(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="parent_stability",
+            name="Validate Stability",
+            description="Validate coefficient stability",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            outputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Compute Pole Locations",
+                        "description": "Solve for the filter poles.",
+                    },
+                    {
+                        "name": "Evaluate Discrete-Time Stability",
+                        "description": "Assess the unit-circle stability margin.",
+                    },
+                    {
+                        "name": "Pass Stable Coefficients",
+                        "description": "Route the stable result to the next stage.",
+                    },
+                    {
+                        "name": "Escalate Unstable Coefficients",
+                        "description": "Escalate failures to a fallback branch.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        names = {node.name for node in result.nodes}
+        assert "Pass Stable Coefficients" not in names
+        assert "Escalate Unstable Coefficients" not in names
+        assert "Compute Pole Locations" in names
+        assert "Evaluate Discrete-Time Stability" in names
+
 
 class TestSelectStrategy:
     """Test that select_strategy picks paradigm and populates pending queue."""

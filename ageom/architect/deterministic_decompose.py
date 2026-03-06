@@ -129,9 +129,9 @@ _VALIDATION_COMPUTE_TOKENS = {
     "choose",
     "inspect",
     "assess",
-    "route",
-    "escalate",
 }
+
+_SUBSTANTIVE_COMPUTE_TOKENS = set(_VALIDATION_COMPUTE_TOKENS) | {"optimize", "fit"}
 
 _PRIMITIVE_MATCH_STOPWORDS = {
     "a",
@@ -154,6 +154,22 @@ _PRIMITIVE_MATCH_STOPWORDS = {
     "results",
     "step",
     "steps",
+}
+
+_ROUTING_WRAPPER_TOKENS = {
+    "route",
+    "routing",
+    "pass",
+    "handoff",
+    "forward",
+    "dispatch",
+    "fallback",
+    "branch",
+    "branching",
+    "escalate",
+    "escalation",
+    "retry",
+    "failover",
 }
 
 
@@ -206,6 +222,13 @@ def _suggest_primitive_for_spec(
     parent: AlgorithmicNode,
     catalog: PrimitiveCatalog,
 ) -> Any:
+    spec_tokens = _primitive_match_tokens(
+        str(spec.get("name", "")).strip(),
+        str(spec.get("description", "")).strip(),
+    )
+    if spec_tokens & _ROUTING_WRAPPER_TOKENS and not spec_tokens & _SUBSTANTIVE_COMPUTE_TOKENS:
+        return None
+
     explicit = str(
         spec.get("matched_primitive")
         or spec.get("matched_primitive_hint")
@@ -226,7 +249,6 @@ def _suggest_primitive_for_spec(
         if prim is not None:
             return prim
 
-    spec_tokens = _primitive_match_tokens(name, description)
     if not spec_tokens:
         return None
 
@@ -273,6 +295,24 @@ def _rewrite_conceptual_primitive_names(
     return rewritten
 
 
+def _is_routing_wrapper(spec: dict[str, Any]) -> bool:
+    if spec.get("matched_primitive") or spec.get("matched_primitive_hint"):
+        return False
+    tokens = _token_set(str(spec.get("name", "")), str(spec.get("description", "")))
+    if not tokens & _ROUTING_WRAPPER_TOKENS:
+        return False
+    if tokens & _SUBSTANTIVE_COMPUTE_TOKENS:
+        return False
+    return True
+
+
+def _rewrite_routing_wrappers(raw_subs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    substantive = [item for item in raw_subs if not _is_routing_wrapper(item)]
+    if len(substantive) >= 2:
+        return substantive
+    return raw_subs
+
+
 def _rewrite_raw_sub_nodes(
     raw_subs: list[dict[str, Any]],
     *,
@@ -285,6 +325,7 @@ def _rewrite_raw_sub_nodes(
         parent=parent,
         catalog=catalog,
     )
+    rewritten = _rewrite_routing_wrappers(rewritten)
     return rewritten
 
 
