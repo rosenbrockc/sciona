@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ageom.config import AgeomConfig
     from ageom.hunter.llm import LLMClient
-    from ageom.protocols import ProofEnvironment
+    from ageom.protocols import ProofEnvironment, SemanticIndex
     from ageom.shared_context import SharedContextMetrics, SharedContextStore
     from ageom.types import Prover
 
@@ -141,6 +141,26 @@ def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironm
         from ageom.judge.coq_env import CoqEnvironment
 
         return CoqEnvironment(config.coq_project_path)
+
+
+def _load_semantic_index(
+    index_dir: Path, config: "AgeomConfig"
+) -> tuple["SemanticIndex", str]:
+    """Load semantic index with FAISS, falling back to lexical mode if needed."""
+    from ageom.indexer.builder import SemanticIndexImpl
+    from ageom.indexer.embedder import UniXcoderEmbedder
+    from ageom.indexer.faiss_store import FAISSStore
+    from ageom.indexer.fallback_index import LexicalSemanticIndex
+
+    try:
+        store = FAISSStore.load(index_dir)
+        embedder = UniXcoderEmbedder(config.embedding_model)
+        return SemanticIndexImpl(store, embedder), "faiss"
+    except (ImportError, ModuleNotFoundError) as exc:
+        if "faiss" not in str(exc).lower():
+            raise
+        fallback = LexicalSemanticIndex.load(index_dir)
+        return fallback, "lexical_fallback"
 
 
 async def _create_shared_context(
@@ -928,7 +948,7 @@ def _cmd_skill_ingest(args: argparse.Namespace) -> None:
 
 def _cmd_skill_index(args: argparse.Namespace) -> None:
     """Build FAISS skill index from a catalog."""
-    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.embedder import SkillIndex
     from ageom.config import AgeomConfig
 
@@ -937,8 +957,10 @@ def _cmd_skill_index(args: argparse.Namespace) -> None:
 
     # Auto-detect catalogs if no explicit path given
     catalog = PrimitiveCatalog()
+    seed_builtin_primitives(catalog)
     if args.catalog:
         catalog = PrimitiveCatalog.load(args.catalog)
+        seed_builtin_primitives(catalog)
     else:
         # Load all catalog_*.json files from the skill index dir
         search_dir = config.skill_index_dir
@@ -1330,7 +1352,7 @@ async def _run_decompose(
 
 async def _cmd_decompose(args: argparse.Namespace) -> None:
     """Decompose a goal into a Conceptual Dependency Graph."""
-    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
@@ -1342,8 +1364,10 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
 
     # Load catalog
     catalog = PrimitiveCatalog()
+    seed_builtin_primitives(catalog)
     if args.catalog:
         catalog = PrimitiveCatalog.load(args.catalog)
+        seed_builtin_primitives(catalog)
     else:
         search_dir = config.skill_index_dir
         if search_dir.exists():
@@ -1505,9 +1529,6 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     """Match predicates to library functions."""
     from ageom.config import AgeomConfig
     from ageom.hunter.graph import HunterAgent
-    from ageom.indexer.builder import SemanticIndexImpl
-    from ageom.indexer.embedder import UniXcoderEmbedder
-    from ageom.indexer.faiss_store import FAISSStore
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.types import PDGNode, Prover
 
@@ -1522,9 +1543,12 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         )
         sys.exit(1)
 
-    store = FAISSStore.load(index_dir)
-    embedder = UniXcoderEmbedder(config.embedding_model)
-    index = SemanticIndexImpl(store, embedder)
+    index, index_mode = _load_semantic_index(index_dir, config)
+    if index_mode != "faiss":
+        print(
+            "Warning: FAISS unavailable; using lexical fallback index for Hunter.",
+            file=sys.stderr,
+        )
 
     # Set up verification oracle
     prover = Prover(args.prover)
@@ -1908,16 +1932,13 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
 
 async def _cmd_run(args: argparse.Namespace) -> None:
     """Run the full orchestration loop: decompose -> match -> refine -> assemble."""
-    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
     from ageom.config import AgeomConfig
     from ageom.hunter.graph import HunterAgent
-    from ageom.indexer.builder import SemanticIndexImpl
-    from ageom.indexer.embedder import UniXcoderEmbedder
-    from ageom.indexer.faiss_store import FAISSStore
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.orchestrator import run_orchestration
     from ageom.telemetry import (
@@ -1955,8 +1976,10 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
             # Load catalog
             catalog = PrimitiveCatalog()
+            seed_builtin_primitives(catalog)
             if args.catalog:
                 catalog = PrimitiveCatalog.load(args.catalog)
+                seed_builtin_primitives(catalog)
             else:
                 search_dir = config.skill_index_dir
                 if search_dir.exists():
@@ -2066,9 +2089,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 sys.exit(1)
 
             with telemetry_stage("hunter_setup", message="loading retrieval index"):
-                store = FAISSStore.load(index_dir)
-                embedder = UniXcoderEmbedder(config.embedding_model)
-                index = SemanticIndexImpl(store, embedder)
+                index, index_mode = _load_semantic_index(index_dir, config)
+                if index_mode != "faiss":
+                    print(
+                        "Warning: FAISS unavailable; using lexical fallback index for Hunter.",
+                        file=sys.stderr,
+                    )
 
                 env = _create_proof_env(prover, config)
                 if prover == Prover.LEAN4:
@@ -2193,7 +2219,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
 async def _cmd_optimize(args: argparse.Namespace) -> None:
     """Run the Principal NAS/AutoML optimisation loop."""
-    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.embedder import SkillIndex
     from ageom.architect.graph import DecompositionAgent
@@ -2209,8 +2235,10 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     # Load catalog
     catalog = PrimitiveCatalog()
+    seed_builtin_primitives(catalog)
     if args.catalog:
         catalog = PrimitiveCatalog.load(args.catalog)
+        seed_builtin_primitives(catalog)
     else:
         search_dir = config.skill_index_dir
         if search_dir.exists():

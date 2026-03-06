@@ -2,7 +2,7 @@
 
 import pytest
 
-from ageom.architect.catalog import PrimitiveCatalog
+from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
 from ageom.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
@@ -166,3 +166,26 @@ class TestSaveLoad:
 
         loaded = PrimitiveCatalog.load(save_path)
         assert loaded.size == 0
+
+
+class TestBuiltinPrimitiveSeeding:
+    def test_seed_builtin_primitives_adds_signal_filter_aliases(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+
+        assert catalog.get("parse_filter_spec") is not None
+        assert catalog.get("Parse Filter Requirements") is not None
+        assert catalog.get("Apply Filter") is not None
+
+    def test_aliases_make_nodes_atomic(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+
+        node = AlgorithmicNode(
+            node_id="n1",
+            name="Assemble Frequency Response Tuple",
+            description="Assemble the final frequency response output",
+            concept_type=ConceptType.SIGNAL_FILTER,
+        )
+
+        assert catalog.is_atomic(node) is True

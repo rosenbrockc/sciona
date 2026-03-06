@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.catalog import PrimitiveCatalog
+from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
 from ageom.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
@@ -1138,6 +1138,72 @@ class TestDeterministicDecompose:
             assert node.inputs
             assert node.outputs
             assert all(io.type_desc != "Any" for io in node.inputs + node.outputs)
+
+    @pytest.mark.asyncio
+    async def test_signal_filter_hints_resolve_to_atomic_builtins(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Parse Filter Requirements",
+                            "description": "Extract the typed design constraints.",
+                            "matched_primitive_hint": "parse_filter_spec",
+                        },
+                        {
+                            "name": "Synthesize Candidate Coefficients",
+                            "description": "Generate candidate coefficients.",
+                            "matched_primitive_hint": "design_filter_coefficients",
+                        },
+                        {
+                            "name": "Validate and Finalize Coefficients",
+                            "description": "Finalize coefficients after checks.",
+                            "matched_primitive_hint": "validate_filter_response",
+                        },
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_filter",
+            name="Design Filter",
+            description="Design filter coefficients from specification",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Detect heart rate from raw ECG signal",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_filter"],
+            "current_node_id": "n_filter",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await decompose_node(state, {"configurable": {"deps": deps}})
+
+        assert result["nodes"]
+        assert all(node.status == NodeStatus.ATOMIC for node in result["nodes"])
 
     @pytest.mark.asyncio
     async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):
