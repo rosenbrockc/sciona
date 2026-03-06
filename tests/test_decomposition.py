@@ -569,6 +569,70 @@ class TestBlockedDecomposition:
         assert cdg.metadata["blocked_nodes"]
         assert any(node.status == NodeStatus.BLOCKED for node in cdg.nodes)
 
+    @pytest.mark.asyncio
+    async def test_heart_rate_goal_fails_explicitly_when_signal_filter_flow_stalls(self):
+        from ageom.architect.graph import DecompositionAgent
+
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            system_lower = system.lower()
+            if "best" in system_lower and "paradigm" in system_lower:
+                return json.dumps(
+                    {
+                        "paradigm": "signal_filter",
+                        "rationale": "Filter and inspect the ECG trace before deriving heart rate.",
+                        "variant_hint": "bandpass_hr_detection",
+                    }
+                )
+            if "critic" in system_lower or "evaluate" in system_lower:
+                return json.dumps(
+                    {
+                        "approved": False,
+                        "reason": "Typed ECG/filter flow remains incomplete.",
+                        "io_issues": ["missing typed path to final output"],
+                        "flagged_nodes": [],
+                    }
+                )
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Parse Filter Requirements",
+                            "description": "Extract ECG band constraints.",
+                            "matched_primitive_hint": "parse_filter_spec",
+                        },
+                        {
+                            "name": "Select Filter Family",
+                            "description": "Choose the topology.",
+                            "matched_primitive_hint": "choose_filter_topology",
+                        },
+                        {
+                            "name": "Synthesize Candidate Coefficients",
+                            "description": "Generate candidate coefficients.",
+                            "matched_primitive_hint": "design_filter_coefficients",
+                        },
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        agent = DecompositionAgent(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            max_depth=8,
+        )
+
+        cdg = await agent.decompose("Detect heart rate from raw ECG signal")
+
+        assert cdg.metadata["architect_status"] == "blocked"
+        assert "Detect heart rate from raw ECG signal" == cdg.metadata["goal"]
+        assert "Typed ECG/filter flow remains incomplete" in cdg.metadata["architect_error"]
+
 
 class TestMaxDepth:
     """Depth violation caught by deterministic critique check."""
