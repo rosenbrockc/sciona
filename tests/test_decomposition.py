@@ -313,6 +313,39 @@ class TestDeterministicRewrite:
         assert len(result.nodes) >= 2
         assert any(node.name == "Compute Core Transformation" for node in result.nodes)
 
+    def test_preserves_detection_nodes_that_compute_boolean_results(self):
+        catalog = PrimitiveCatalog()
+        parent = AlgorithmicNode(
+            node_id="parent_graph",
+            name="Topological Sort",
+            description="Produce a DAG ordering or detect a cycle",
+            concept_type=ConceptType.GRAPH_TRAVERSAL,
+            inputs=[IOSpec(name="graph", type_desc="dag")],
+            outputs=[IOSpec(name="is_dag", type_desc="bool")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Compute In-Degree",
+                        "description": "Compute in-degree of each node.",
+                    },
+                    {
+                        "name": "Detect Cycle (DAG Check)",
+                        "description": "Detect whether the graph violates DAG ordering.",
+                        "outputs": [{"name": "is_dag", "type_desc": "bool"}],
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert any(node.name == "Detect Cycle (DAG Check)" for node in result.nodes)
+
     def test_normalizes_near_match_concepts_to_builtin_primitives(self):
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -541,6 +574,57 @@ class TestDeterministicRewrite:
         node = result.nodes[0]
         assert [port.type_desc for port in node.inputs] == ["sorted list[comparable]", "comparable"]
         assert [port.type_desc for port in node.outputs] == ["int"]
+
+    def test_does_not_append_parent_inputs_to_explicit_child_signature(self):
+        catalog = PrimitiveCatalog()
+        parent = AlgorithmicNode(
+            node_id="parent_hodges",
+            name="Hodges time-domain EMG onset detection",
+            description="Detect onset in EMG",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[
+                IOSpec(name="signal", type_desc="ndarray"),
+                IOSpec(name="rest_signal", type_desc="ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+                IOSpec(name="threshold", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="onsets", type_desc="ndarray")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Estimate Rest Baseline Statistics",
+                        "description": "Compute baseline statistics.",
+                        "inputs": [
+                            {"name": "rest_signal", "type_desc": "ndarray"},
+                            {"name": "sampling_rate", "type_desc": "float"},
+                        ],
+                        "outputs": [
+                            {"name": "rest_mean", "type_desc": "float"},
+                            {"name": "rest_std", "type_desc": "float"},
+                        ],
+                    },
+                    {
+                        "name": "Threshold Crossing State Machine",
+                        "description": "Emit onset indices.",
+                        "inputs": [
+                            {"name": "rest_std", "type_desc": "float"},
+                            {"name": "threshold", "type_desc": "float"},
+                        ],
+                        "outputs": [{"name": "onsets", "type_desc": "ndarray"}],
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        first = result.nodes[0]
+        assert [port.name for port in first.inputs] == ["rest_signal", "sampling_rate"]
 
     def test_fails_fast_when_primitive_bound_node_violates_signature(self):
         catalog = _make_catalog()

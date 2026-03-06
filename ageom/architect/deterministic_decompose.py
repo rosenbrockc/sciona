@@ -119,6 +119,17 @@ _VALIDATION_WRAPPER_NAME_TOKENS = {
     "finalization",
 }
 
+_VALIDATION_EXEMPT_TOKENS = {
+    "classify",
+    "count",
+    "decide",
+    "detect",
+    "estimate",
+    "measure",
+    "predicate",
+    "score",
+}
+
 _VALIDATION_COMPUTE_TOKENS = {
     "compute",
     "derive",
@@ -210,6 +221,8 @@ def _is_validation_wrapper(spec: dict[str, Any]) -> bool:
     description = str(spec.get("description", ""))
     tokens = _token_set(name, description)
     if not tokens & _VALIDATION_WRAPPER_NAME_TOKENS:
+        return False
+    if tokens & _VALIDATION_EXEMPT_TOKENS:
         return False
     if tokens & _VALIDATION_COMPUTE_TOKENS:
         return False
@@ -985,14 +998,14 @@ def _repair_node_ports(
                         _clone_ports(node.inputs),
                         _clone_ports(input_reference),
                         fallback_type=fallback_type,
-                        allow_extension=not primitive_bound,
+                        allow_extension=False,
                         rename_generic_names=not primitive_bound,
                     ),
                     "outputs": _repair_ports_from_reference(
                         _clone_ports(node.outputs),
                         _clone_ports(output_reference),
                         fallback_type=fallback_type,
-                        allow_extension=not primitive_bound,
+                        allow_extension=False,
                         rename_generic_names=not primitive_bound,
                     ),
                 }
