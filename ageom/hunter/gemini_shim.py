@@ -68,6 +68,8 @@ class GeminiShimClient:
     ) -> None:
         self._model = model
         self._max_tokens = max_tokens
+        self._telemetry_provider = "gemini_shim"
+        self._telemetry_model = model
         self._fake_mode = os.getenv("AGEOM_GEMINI_DAEMON_FAKE", "").strip() == "1"
         self._pool_size = pool_size or _env_int("AGEOM_GEMINI_SHIM_POOL_SIZE", 2)
         self._timeout_s = _env_float("AGEOM_SUBPROCESS_TIMEOUT_S", 90.0)
@@ -81,6 +83,7 @@ class GeminiShimClient:
         self._workers: list[_GeminiWorker] = []
         self._next_worker = itertools.count()
         self._closed = False
+        self._last_completion_metadata: dict[str, object] = {}
 
     async def complete(self, system: str, user: str) -> str:
         attempts = 2
@@ -93,6 +96,13 @@ class GeminiShimClient:
                     "complete",
                     {"system": system, "user": user, "max_tokens": self._max_tokens},
                 )
+                self._last_completion_metadata = {
+                    "shim_provider": "gemini_shim",
+                    "shim_worker_pid": result.get("pid"),
+                    "shim_request_count": result.get("requestCount"),
+                    "shim_pool_size": self._pool_size,
+                    "shim_was_cold_start": bool(result.get("coldStart", False)),
+                }
                 text = result.get("text", "")
                 return text if isinstance(text, str) else str(text)
             except Exception as exc:
@@ -114,6 +124,9 @@ class GeminiShimClient:
             await self._shutdown_worker(worker)
         self._workers.clear()
         shutil.rmtree(self._runtime_dir, ignore_errors=True)
+
+    def get_last_completion_metadata(self) -> dict[str, object]:
+        return dict(self._last_completion_metadata)
 
     async def _ensure_workers(self) -> None:
         if self._workers:

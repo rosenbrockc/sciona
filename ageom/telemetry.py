@@ -672,9 +672,13 @@ def update_stage(
 
 
 def _detect_provider_and_model(client: Any) -> tuple[str, str]:
-    provider = ""
-    model = str(getattr(client, "_model", "") or "").strip()
+    provider = str(getattr(client, "_telemetry_provider", "") or "").strip()
+    model = str(getattr(client, "_telemetry_model", "") or "").strip()
+    if not model:
+        model = str(getattr(client, "_model", "") or "").strip()
     name = type(client).__name__.lower()
+    if provider:
+        return provider, model
     if "claude" in name:
         provider = "claude"
     elif "codex" in name:
@@ -735,6 +739,7 @@ def finish_prompt_dispatch(
     *,
     ok: bool,
     error: str = "",
+    payload: dict[str, Any] | None = None,
 ) -> None:
     """Finalize prompt dispatch counters."""
     if not dispatch_id:
@@ -752,7 +757,7 @@ def finish_prompt_dispatch(
         prompt_key=finished.prompt_key,
         provider=finished.provider,
         model=finished.model,
-        payload={"error": error} if error else {},
+        payload=((payload or {}) | ({"error": error} if error else {})),
         dispatch_id=dispatch_id,
     )
 

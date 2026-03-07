@@ -203,6 +203,11 @@ class _DummyClient:
     _model = "dummy-model"
 
 
+class _TelemetryClient:
+    _telemetry_provider = "gemini_shim"
+    _telemetry_model = "flash-lite"
+
+
 def test_runtime_run_stage_and_prompt_tracking():
     reset_telemetry_runtime()
     get_event_log().clear()
@@ -236,6 +241,35 @@ def test_runtime_run_stage_and_prompt_tracking():
     assert done.model == "dummy-model"
     assert done.duration_ms is not None
     assert done.duration_ms >= 0.0
+
+
+def test_finish_prompt_dispatch_includes_metadata_payload():
+    reset_telemetry_runtime()
+    get_event_log().clear()
+    run_id = start_run("algorithm_creation", run_id="run-payload")
+
+    with telemetry_scope(run_id=run_id, stage="hunter_round_1"):
+        dispatch_id = start_prompt_dispatch("hunter_score", client=_TelemetryClient())
+        finish_prompt_dispatch(
+            dispatch_id,
+            ok=True,
+            payload={
+                "shim_worker_pid": 1234,
+                "shim_request_count": 2,
+                "shim_was_cold_start": False,
+            },
+        )
+
+    done_events = [
+        ev for ev in get_event_log().events if ev.event_type == "PROMPT_DISPATCH_DONE"
+    ]
+    assert len(done_events) == 1
+    done = done_events[0]
+    assert done.provider == "gemini_shim"
+    assert done.model == "flash-lite"
+    assert done.payload["shim_worker_pid"] == 1234
+    assert done.payload["shim_request_count"] == 2
+    assert done.payload["shim_was_cold_start"] is False
 
 
 def test_persisted_run_snapshot(tmp_path: Path):

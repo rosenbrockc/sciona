@@ -128,6 +128,7 @@ async function main() {
 
   let requestCount = 0;
   let baseLlmClient = null;
+  let firstCompletion = true;
 
   if (!fakeMode) {
     if (!cliRoot) {
@@ -186,8 +187,10 @@ async function main() {
             pid: process.pid,
             requestCount,
             model,
+            coldStart: firstCompletion,
           }),
         );
+        firstCompletion = false;
       } catch (error) {
         socket.write(
           jsonRpcError(

@@ -151,6 +151,16 @@ class PromptKeyLLMClient:
         except asyncio.CancelledError:
             pass
 
+    def _completion_metadata(self) -> dict[str, Any]:
+        getter = getattr(self._base, "get_last_completion_metadata", None)
+        if not callable(getter):
+            return {}
+        try:
+            metadata = getter()
+        except Exception:
+            return {}
+        return metadata if isinstance(metadata, dict) else {}
+
     async def complete(self, system: str, user: str) -> str:
         dispatch_id = start_prompt_dispatch(self._prompt_key, client=self._base)
         started_at = time.time()
@@ -166,7 +176,7 @@ class PromptKeyLLMClient:
             finish_prompt_dispatch(dispatch_id, ok=False, error=str(exc))
             raise
         await self._stop_heartbeat(heartbeat_task)
-        finish_prompt_dispatch(dispatch_id, ok=True)
+        finish_prompt_dispatch(dispatch_id, ok=True, payload=self._completion_metadata())
         return output
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
@@ -184,7 +194,7 @@ class PromptKeyLLMClient:
             finish_prompt_dispatch(dispatch_id, ok=False, error=str(exc))
             raise
         await self._stop_heartbeat(heartbeat_task)
-        finish_prompt_dispatch(dispatch_id, ok=True)
+        finish_prompt_dispatch(dispatch_id, ok=True, payload=self._completion_metadata())
         return output
 
 
