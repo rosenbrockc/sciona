@@ -778,6 +778,157 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
     ),
 ]
 
+_LINEAR_ALGEBRA_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
+    (
+        AlgorithmicPrimitive(
+            name="compute_matrix_decomposition",
+            source="ageom-builtins",
+            category=ConceptType.ALGEBRA,
+            description="Decompose a matrix into factors (LU, Cholesky, QR, or SVD).",
+            inputs=[
+                IOSpec(name="matrix", type_desc="np.ndarray"),
+                IOSpec(
+                    name="method",
+                    type_desc="str",
+                    required=False,
+                    default_value_repr="'svd'",
+                ),
+            ],
+            outputs=[IOSpec(name="factors", type_desc="tuple[np.ndarray, ...]")],
+            type_signature="np.ndarray -> tuple[np.ndarray, ...]",
+        ),
+        [
+            "lu decomposition",
+            "cholesky decomposition",
+            "qr decomposition",
+            "singular value decomposition",
+            "svd",
+            "matrix factorization",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="solve_linear_system",
+            source="ageom-builtins",
+            category=ConceptType.ALGEBRA,
+            description="Solve a linear system of equations Ax = b.",
+            inputs=[
+                IOSpec(name="A", type_desc="np.ndarray"),
+                IOSpec(name="b", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="x", type_desc="np.ndarray")],
+            type_signature="np.ndarray -> np.ndarray -> np.ndarray",
+        ),
+        ["solve linear system", "solve ax=b", "linear solver", "matrix inverse solve"],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_eigen_decomposition",
+            source="ageom-builtins",
+            category=ConceptType.ALGEBRA,
+            description="Compute eigenvalues and eigenvectors of a square matrix.",
+            inputs=[IOSpec(name="matrix", type_desc="np.ndarray")],
+            outputs=[
+                IOSpec(name="eigenvalues", type_desc="np.ndarray"),
+                IOSpec(name="eigenvectors", type_desc="np.ndarray"),
+            ],
+            type_signature="np.ndarray -> np.ndarray × np.ndarray",
+        ),
+        ["eigenvalues", "eigenvectors", "eigendecomposition", "spectral decomposition"],
+    ),
+]
+
+_OPTIMIZATION_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
+    (
+        AlgorithmicPrimitive(
+            name="gradient_descent_step",
+            source="ageom-builtins",
+            category=ConceptType.ANALYSIS,
+            description="Perform a single step of gradient descent optimization.",
+            inputs=[
+                IOSpec(name="x", type_desc="np.ndarray"),
+                IOSpec(name="gradient", type_desc="np.ndarray"),
+                IOSpec(name="learning_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="x_new", type_desc="np.ndarray")],
+            type_signature="np.ndarray -> np.ndarray -> float -> np.ndarray",
+        ),
+        ["gradient step", "update parameters", "descent step"],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_objective_gradient",
+            source="ageom-builtins",
+            category=ConceptType.ANALYSIS,
+            description="Evaluate the gradient of an objective function at a point.",
+            inputs=[
+                IOSpec(name="objective_fn", type_desc="Callable[[np.ndarray], float]"),
+                IOSpec(name="x", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="gradient", type_desc="np.ndarray")],
+            type_signature="(np.ndarray -> float) -> np.ndarray -> np.ndarray",
+        ),
+        ["evaluate gradient", "objective gradient", "compute jacobian"],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="line_search_optimization",
+            source="ageom-builtins",
+            category=ConceptType.ANALYSIS,
+            description="Determine the optimal step size along a descent direction.",
+            inputs=[
+                IOSpec(name="objective_fn", type_desc="Callable[[np.ndarray], float]"),
+                IOSpec(name="x", type_desc="np.ndarray"),
+                IOSpec(name="direction", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="alpha", type_desc="float")],
+            type_signature="(np.ndarray -> float) -> np.ndarray -> np.ndarray -> float",
+        ),
+        ["line search", "backtracking line search", "step size optimization"],
+    ),
+]
+
+_GRAPH_ALGEBRA_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
+    (
+        AlgorithmicPrimitive(
+            name="compute_graph_laplacian",
+            source="ageom-builtins",
+            category=ConceptType.GRAPH_SIGNAL_PROCESSING,
+            description="Compute the combinatorial or normalized Laplacian matrix of a graph.",
+            inputs=[
+                IOSpec(name="adjacency", type_desc="np.ndarray"),
+                IOSpec(
+                    name="normalized",
+                    type_desc="bool",
+                    required=False,
+                    default_value_repr="True",
+                ),
+            ],
+            outputs=[IOSpec(name="laplacian", type_desc="np.ndarray")],
+            type_signature="np.ndarray -> bool -> np.ndarray",
+        ),
+        ["graph laplacian", "discrete laplacian", "compute laplacian"],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="dijkstra_shortest_path",
+            source="ageom-builtins",
+            category=ConceptType.GRAPH_OPTIMIZATION,
+            description="Compute shortest paths from a source node in a weighted graph.",
+            inputs=[
+                IOSpec(name="adjacency", type_desc="np.ndarray"),
+                IOSpec(name="source_node", type_desc="int"),
+            ],
+            outputs=[
+                IOSpec(name="distances", type_desc="np.ndarray"),
+                IOSpec(name="predecessors", type_desc="np.ndarray"),
+            ],
+            type_signature="np.ndarray -> int -> np.ndarray × np.ndarray",
+        ),
+        ["dijkstra", "shortest path", "single source shortest path"],
+    ),
+]
+
 _SIGNAL_TRANSFORM_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
     (
         AlgorithmicPrimitive(
@@ -865,13 +1016,15 @@ def seed_bayesian_primitives(catalog: PrimitiveCatalog) -> None:
 def seed_builtin_primitives(catalog: PrimitiveCatalog) -> None:
     """Add built-in primitives used by deterministic architect flows."""
     seed_bayesian_primitives(catalog)
-    for prim, aliases in _SIGNAL_FILTER_PRIMITIVES:
-        if catalog.get(prim.name) is None:
-            catalog.add(prim)
-        for alias in aliases:
-            catalog.add_alias(alias, prim.name)
-    for prim, aliases in _SIGNAL_TRANSFORM_PRIMITIVES:
-        if catalog.get(prim.name) is None:
-            catalog.add(prim)
-        for alias in aliases:
-            catalog.add_alias(alias, prim.name)
+    for primitives in [
+        _SIGNAL_FILTER_PRIMITIVES,
+        _SIGNAL_TRANSFORM_PRIMITIVES,
+        _LINEAR_ALGEBRA_PRIMITIVES,
+        _OPTIMIZATION_PRIMITIVES,
+        _GRAPH_ALGEBRA_PRIMITIVES,
+    ]:
+        for prim, aliases in primitives:
+            if catalog.get(prim.name) is None:
+                catalog.add(prim)
+            for alias in aliases:
+                catalog.add_alias(alias, prim.name)
