@@ -20,6 +20,23 @@ def test_load_skill_index_can_be_disabled(monkeypatch, tmp_path: Path, capsys):
     assert "AGEOM_DISABLE_SKILL_INDEX" in capsys.readouterr().err
 
 
+def test_load_skill_index_can_be_disabled_by_execution_mode(
+    monkeypatch, tmp_path: Path, capsys
+):
+    monkeypatch.delenv("AGEOM_DISABLE_SKILL_INDEX", raising=False)
+    config = SimpleNamespace(skill_index_dir=tmp_path)
+
+    def _fail(_path):
+        raise AssertionError("SkillIndex.load should not be called when mode disables it")
+
+    monkeypatch.setattr("ageom.architect.embedder.SkillIndex.load", _fail)
+
+    index = _load_skill_index_or_empty(config, enabled=False)
+
+    assert index is not None
+    assert "execution mode" in capsys.readouterr().err
+
+
 def test_load_skill_index_uses_persisted_index_when_enabled(monkeypatch, tmp_path: Path):
     monkeypatch.delenv("AGEOM_DISABLE_SKILL_INDEX", raising=False)
     marker = object()

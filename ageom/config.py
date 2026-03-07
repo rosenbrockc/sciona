@@ -2,10 +2,27 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+@dataclass(frozen=True)
+class ExecutionModeSettings:
+    """Resolved execution-mode feature flags."""
+
+    mode: str
+    skill_index_enabled: bool
+    graph_retrieval_enabled: bool
+    architect_shared_context_enabled: bool
+    hunter_shared_context_enabled: bool
+    synthesizer_shared_context_enabled: bool
+    ingester_shared_context_enabled: bool
+    hunter_mode: str
+    hunter_use_gbnf: bool
+    semantic_index_backend_override: str | None = None
 
 
 class AgeomConfig(BaseSettings):
@@ -51,6 +68,7 @@ class AgeomConfig(BaseSettings):
     shared_context_include_provenance: bool = True
     telemetry_runs_dir: Path = Field(default=Path("output/telemetry_runs"))
     telemetry_stale_seconds: int = 120
+    execution_mode: str = "verified"  # "rapid" | "structured" | "verified"
 
     # Memgraph graph store
     memgraph_uri: str = "bolt://localhost:7687"
@@ -174,3 +192,55 @@ class AgeomConfig(BaseSettings):
     export_output_dir: Path = Field(default=Path("export"))
     lean_lake_path: str = "lake"  # path to lake binary
     optimize_by_default: bool = False
+
+
+def resolve_execution_mode(
+    config: AgeomConfig,
+    mode: str | None = None,
+) -> ExecutionModeSettings:
+    """Resolve high-level execution mode into concrete feature flags."""
+    normalized = str(mode or config.execution_mode or "verified").strip().lower()
+
+    if normalized == "verified":
+        return ExecutionModeSettings(
+            mode=normalized,
+            skill_index_enabled=True,
+            graph_retrieval_enabled=config.graph_retrieval_enabled,
+            architect_shared_context_enabled=config.architect_shared_context_enabled,
+            hunter_shared_context_enabled=config.hunter_shared_context_enabled,
+            synthesizer_shared_context_enabled=config.synthesizer_shared_context_enabled,
+            ingester_shared_context_enabled=config.ingester_shared_context_enabled,
+            hunter_mode=config.hunter_mode,
+            hunter_use_gbnf=config.hunter_use_gbnf,
+            semantic_index_backend_override=None,
+        )
+
+    if normalized == "structured":
+        return ExecutionModeSettings(
+            mode=normalized,
+            skill_index_enabled=True,
+            graph_retrieval_enabled=False,
+            architect_shared_context_enabled=False,
+            hunter_shared_context_enabled=False,
+            synthesizer_shared_context_enabled=False,
+            ingester_shared_context_enabled=False,
+            hunter_mode="standard",
+            hunter_use_gbnf=config.hunter_use_gbnf,
+            semantic_index_backend_override=None,
+        )
+
+    if normalized == "rapid":
+        return ExecutionModeSettings(
+            mode=normalized,
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            architect_shared_context_enabled=False,
+            hunter_shared_context_enabled=False,
+            synthesizer_shared_context_enabled=False,
+            ingester_shared_context_enabled=False,
+            hunter_mode="standard",
+            hunter_use_gbnf=False,
+            semantic_index_backend_override="lexical",
+        )
+
+    raise ValueError(f"Unsupported execution mode: {mode}")

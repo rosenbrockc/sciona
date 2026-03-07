@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ageom.config import AgeomConfig
+    from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.hunter.llm import LLMClient
     from ageom.protocols import ProofEnvironment, SemanticIndex
     from ageom.shared_context import SharedContextMetrics, SharedContextStore
@@ -140,6 +140,16 @@ def _parse_prompt_benchmark_provider_specs(
     return parsed
 
 
+def _add_mode_argument(parser: argparse.ArgumentParser) -> None:
+    """Add a shared execution-mode argument to a subcommand parser."""
+    parser.add_argument(
+        "--mode",
+        choices=["rapid", "structured", "verified"],
+        default=None,
+        help="Execution mode override (default: AGEOM_EXECUTION_MODE or verified)",
+    )
+
+
 def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironment":
     """Create the appropriate ProofEnvironment for the given prover.
 
@@ -165,12 +175,17 @@ def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironm
 
 
 def _load_semantic_index(
-    index_dir: Path, config: "AgeomConfig"
+    index_dir: Path,
+    config: "AgeomConfig",
+    *,
+    backend_override: str | None = None,
 ) -> tuple["SemanticIndex", str]:
     """Load semantic index with FAISS, falling back to lexical mode if needed."""
     from ageom.indexer.fallback_index import LexicalSemanticIndex
 
-    backend = str(getattr(config, "semantic_index_backend", "auto")).strip().lower()
+    backend = str(
+        backend_override or getattr(config, "semantic_index_backend", "auto")
+    ).strip().lower()
     if backend in {"lexical", "lexical_fallback"}:
         return LexicalSemanticIndex.load(index_dir), "lexical_forced"
 
@@ -278,7 +293,11 @@ def _load_architect_catalog(
     return catalog
 
 
-def _load_skill_index_or_empty(config: "AgeomConfig"):
+def _load_skill_index_or_empty(
+    config: "AgeomConfig",
+    *,
+    enabled: bool = True,
+):
     """Load the persisted skill index unless explicitly disabled."""
     from ageom.architect.embedder import SkillIndex
 
@@ -287,6 +306,9 @@ def _load_skill_index_or_empty(config: "AgeomConfig"):
         embedding_backend=getattr(config, "embedding_backend", "fastembed"),
         embedding_model=getattr(config, "embedding_model", "BAAI/bge-small-en-v1.5"),
     )
+    if not enabled:
+        print("Warning: skill index disabled by execution mode.", file=sys.stderr)
+        return skill_index
     if os.environ.get("AGEOM_DISABLE_SKILL_INDEX", "").strip() in {"1", "true", "yes"}:
         print("Warning: skill index disabled via AGEOM_DISABLE_SKILL_INDEX.", file=sys.stderr)
         return skill_index
@@ -484,6 +506,7 @@ def main() -> None:
         default=False,
         help="Write pipeline event trace to {output_dir}/trace.jsonl",
     )
+    _add_mode_argument(decompose_parser)
 
     # --- history ---
     history_parser = subparsers.add_parser(
@@ -597,6 +620,7 @@ def main() -> None:
         default=False,
         help="Write pipeline event trace to {output_dir}/trace.jsonl",
     )
+    _add_mode_argument(synth_parser)
 
     # --- run (full orchestration) ---
     run_parser = subparsers.add_parser(
@@ -633,6 +657,7 @@ def main() -> None:
     run_parser.add_argument(
         "--trace", action="store_true", default=False, help="Write trace.jsonl"
     )
+    _add_mode_argument(run_parser)
 
     # --- export ---
     export_parser = subparsers.add_parser(
@@ -727,6 +752,7 @@ def main() -> None:
         default=120.0,
         help="Per-trial subprocess timeout in seconds (default: 120)",
     )
+    _add_mode_argument(optimize_parser)
 
     # --- profile ---
     profile_parser = subparsers.add_parser(
@@ -859,6 +885,7 @@ def main() -> None:
         default=120,
         help="Heartbeat threshold for stalled detection (default: 120)",
     )
+    _add_mode_argument(ingest_parser)
 
     ingest_status_parser = subparsers.add_parser(
         "ingest-status",
@@ -924,6 +951,7 @@ def main() -> None:
         default=False,
         help="Write pipeline event trace to trace.jsonl",
     )
+    _add_mode_argument(match_parser)
 
     # --- catalog-gaps ---
     gaps_parser = subparsers.add_parser(
@@ -1044,6 +1072,7 @@ def _cmd_catalog_gaps(args: argparse.Namespace) -> None:
     from ageom.config import AgeomConfig
 
     config = AgeomConfig()
+    mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     catalog = _load_architect_catalog(args, config)
 
     cdg_path = Path(args.cdg)
@@ -1379,12 +1408,13 @@ def _cmd_ingest_status(args: argparse.Namespace) -> None:
 
 async def _cmd_ingest(args: argparse.Namespace) -> None:
     """Ingest a source unit into the atom framework."""
-    from ageom.config import AgeomConfig
+    from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.ingester import IngesterAgent
     from ageom.ingester.monitor import IngestMonitor
     from ageom.types import Prover
 
     config = AgeomConfig()
+    mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     output_dir = Path(args.output) if args.output else Path("output") / args.class_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1453,14 +1483,18 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         faiss_index = None
         if config.index_dir.exists():
             try:
-                faiss_index, _index_mode = _load_semantic_index(config.index_dir, config)
+                faiss_index, _index_mode = _load_semantic_index(
+                    config.index_dir,
+                    config,
+                    backend_override=mode_settings.semantic_index_backend_override,
+                )
             except Exception as exc:
                 print(f"Warning: failed to load semantic index: {exc}", file=sys.stderr)
 
         ingester_run_id = uuid.uuid4().hex
         shared_context, shared_context_metrics = await _create_shared_context(
             config,
-            enabled=config.ingester_shared_context_enabled,
+            enabled=mode_settings.ingester_shared_context_enabled,
         )
         agent = IngesterAgent(
             llm=llm,
@@ -1574,9 +1608,10 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
-    from ageom.config import AgeomConfig
+    from ageom.config import AgeomConfig, resolve_execution_mode
 
     config = AgeomConfig()
+    mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     max_depth = args.max_depth or config.architect_max_depth
 
     catalog = _load_architect_catalog(args, config)
@@ -1587,7 +1622,10 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             file=sys.stderr,
         )
 
-    skill_index = _load_skill_index_or_empty(config)
+    skill_index = _load_skill_index_or_empty(
+        config,
+        enabled=mode_settings.skill_index_enabled,
+    )
 
     # Set up LLM
     try:
@@ -1619,14 +1657,14 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     architect_run_id = uuid.uuid4().hex
     architect_shared_context, architect_shared_metrics = await _create_shared_context(
         config,
-        enabled=config.architect_shared_context_enabled,
+        enabled=mode_settings.architect_shared_context_enabled,
     )
     architect_context_namespace = f"architect/{architect_run_id}"
 
     # Set up graph retriever (opt-in)
     retriever = None
     graph_store_ctx = None
-    if config.graph_retrieval_enabled:
+    if mode_settings.graph_retrieval_enabled:
         from ageom.architect.graph_retrieval import make_retriever
         from ageom.graph_store import GraphStore
 
@@ -1725,12 +1763,13 @@ async def _cmd_history(args: argparse.Namespace) -> None:
 
 async def _cmd_match(args: argparse.Namespace) -> None:
     """Match predicates to library functions."""
-    from ageom.config import AgeomConfig
+    from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.hunter.graph import HunterAgent
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.types import PDGNode, Prover
 
     config = AgeomConfig()
+    mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
 
     # Load index
     index_dir = Path(args.index_dir) if args.index_dir else config.index_dir
@@ -1741,7 +1780,11 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         )
         sys.exit(1)
 
-    index, index_mode = _load_semantic_index(index_dir, config)
+    index, index_mode = _load_semantic_index(
+        index_dir,
+        config,
+        backend_override=mode_settings.semantic_index_backend_override,
+    )
     if index_mode != "faiss":
         print(
             "Warning: FAISS unavailable; using lexical fallback index for Hunter.",
@@ -1786,7 +1829,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     run_id = uuid.uuid4().hex
     shared_context, shared_context_metrics = await _create_shared_context(
         config,
-        enabled=config.hunter_shared_context_enabled,
+        enabled=mode_settings.hunter_shared_context_enabled,
     )
     agent = HunterAgent(
         index=index,
@@ -1795,8 +1838,8 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         max_iterations=config.hunter_max_iterations,
         top_k_verify=config.hunter_top_k_verify,
         search_k=config.hunter_search_k,
-        mode=config.hunter_mode,
-        use_gbnf=config.hunter_use_gbnf,
+        mode=mode_settings.hunter_mode,
+        use_gbnf=mode_settings.hunter_use_gbnf,
         query_batch_size=config.hunter_query_batch_size,
         top_k_per_query=config.hunter_top_k_per_query,
         max_candidates_total=config.hunter_max_candidates_total,
@@ -2002,12 +2045,13 @@ async def _cmd_export(args: argparse.Namespace) -> None:
 async def _cmd_synthesize(args: argparse.Namespace) -> None:
     """Assemble CDG + match results, then repair via the synthesizer agent."""
     from ageom.architect.handoff import load_json
-    from ageom.config import AgeomConfig
+    from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.synthesizer.agent import SynthesizerAgent
     from ageom.synthesizer.assembler import Assembler, AssemblyError
     from ageom.types import MatchResult, Prover
 
     config = AgeomConfig()
+    mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
 
     # Load CDG
     cdg_path = Path(args.cdg_file)
@@ -2069,7 +2113,7 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     synth_run_id = uuid.uuid4().hex
     synth_shared_context, synth_shared_metrics = await _create_shared_context(
         config,
-        enabled=config.synthesizer_shared_context_enabled,
+        enabled=mode_settings.synthesizer_shared_context_enabled,
     )
 
     try:
@@ -2176,7 +2220,10 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
             catalog = _load_architect_catalog(args, config)
 
-            skill_index = _load_skill_index_or_empty(config)
+            skill_index = _load_skill_index_or_empty(
+                config,
+                enabled=mode_settings.skill_index_enabled,
+            )
 
             # Set up LLM
             try:
@@ -2209,7 +2256,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
             retriever = None
             graph_store_ctx = None
-            if config.graph_retrieval_enabled:
+            if mode_settings.graph_retrieval_enabled:
                 from ageom.architect.graph_retrieval import make_retriever
                 from ageom.graph_store import GraphStore as _GraphStore
 
@@ -2221,7 +2268,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             architect_run_id = uuid.uuid4().hex
             architect_shared_context, architect_shared_metrics = await _create_shared_context(
                 config,
-                enabled=config.architect_shared_context_enabled,
+                enabled=mode_settings.architect_shared_context_enabled,
             )
 
             with telemetry_stage("architect_decompose", message="building initial CDG"):
@@ -2271,7 +2318,11 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 sys.exit(1)
 
             with telemetry_stage("hunter_setup", message="loading retrieval index"):
-                index, index_mode = _load_semantic_index(index_dir, config)
+                index, index_mode = _load_semantic_index(
+                    index_dir,
+                    config,
+                    backend_override=mode_settings.semantic_index_backend_override,
+                )
                 if index_mode != "faiss":
                     print(
                         "Warning: FAISS unavailable; using lexical fallback index for Hunter.",
@@ -2311,7 +2362,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 run_id = uuid.uuid4().hex
                 hunter_shared_context, hunter_shared_metrics = await _create_shared_context(
                     config,
-                    enabled=config.hunter_shared_context_enabled,
+                    enabled=mode_settings.hunter_shared_context_enabled,
                 )
                 hunter = HunterAgent(
                     index=index,
@@ -2320,8 +2371,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     max_iterations=config.hunter_max_iterations,
                     top_k_verify=config.hunter_top_k_verify,
                     search_k=config.hunter_search_k,
-                    mode=config.hunter_mode,
-                    use_gbnf=config.hunter_use_gbnf,
+                    mode=mode_settings.hunter_mode,
+                    use_gbnf=mode_settings.hunter_use_gbnf,
                     query_batch_size=config.hunter_query_batch_size,
                     top_k_per_query=config.hunter_top_k_per_query,
                     max_candidates_total=config.hunter_max_candidates_total,
@@ -2406,7 +2457,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.graph import DecompositionAgent
-    from ageom.config import AgeomConfig
+    from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.principal.evaluator import ExecutionSandbox
     from ageom.principal.graph import (
         PrincipalDeps,
@@ -2415,10 +2466,14 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     from ageom.principal.models import OptimizationMetric
 
     config = AgeomConfig()
+    mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
 
     catalog = _load_architect_catalog(args, config)
 
-    skill_index = _load_skill_index_or_empty(config)
+    skill_index = _load_skill_index_or_empty(
+        config,
+        enabled=mode_settings.skill_index_enabled,
+    )
 
     # LLM
     try:
@@ -2447,7 +2502,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     architect_run_id = uuid.uuid4().hex
     architect_shared_context, architect_shared_metrics = await _create_shared_context(
         config,
-        enabled=config.architect_shared_context_enabled,
+        enabled=mode_settings.architect_shared_context_enabled,
     )
 
     print("Principal optimisation loop")
