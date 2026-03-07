@@ -84,6 +84,7 @@ def _create_llm_router(
     ``{prompt_key}_llm_provider``, a dedicated ``LLMClient`` is created.
     Clients with matching (provider, model) pairs are deduplicated.
     """
+    from ageom.config import should_apply_prompt_override
     from ageom.hunter.llm import create_llm_client
     from ageom.llm_router import LLMRouter
 
@@ -96,6 +97,8 @@ def _create_llm_router(
         provider = getattr(config, f"{key}_llm_provider", "")
         model = getattr(config, f"{key}_llm_model", "")
         if not provider:
+            continue
+        if not should_apply_prompt_override(config, key):
             continue
         # Fall back model to global if only provider is set
         if not model:

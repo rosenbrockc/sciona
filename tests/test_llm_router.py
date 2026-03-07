@@ -148,7 +148,7 @@ class TestConfigPerPromptFields:
 
         from ageom.config import AgeomConfig
 
-        config = AgeomConfig()
+        config = AgeomConfig(_env_file=None)
         assert config.synthesizer_tactic_llm_provider == "llama_cpp"
         assert config.synthesizer_tactic_llm_model == "qwen-2.5-coder-32b"
         assert config.ingester_chunk_llm_provider == "codex"
@@ -160,12 +160,30 @@ class TestConfigPerPromptFields:
     def test_all_per_prompt_fields_exist(self):
         from ageom.config import AgeomConfig
 
-        config = AgeomConfig()
+        config = AgeomConfig(_env_file=None)
         from ageom.llm_router import ALL_PROMPT_KEYS
 
         for key in ALL_PROMPT_KEYS:
             assert hasattr(config, f"{key}_llm_provider")
             assert hasattr(config, f"{key}_llm_model")
+
+    def test_unbenchmarked_prompt_defaults_are_not_applied_implicitly(self):
+        from ageom.config import AgeomConfig, prompt_override_matches_code_default, should_apply_prompt_override
+
+        config = AgeomConfig(_env_file=None)
+        assert AgeomConfig.model_fields["ingester_fix_type_llm_provider"].default == "llama_cpp"
+        assert should_apply_prompt_override(config, "ingester_fix_type") is False
+        assert prompt_override_matches_code_default(config, "ingester_fix_type") is True
+
+    def test_explicit_override_for_unbenchmarked_prompt_is_still_applied(self):
+        from ageom.config import AgeomConfig, should_apply_prompt_override
+
+        config = AgeomConfig(
+            _env_file=None,
+            ingester_fix_type_llm_provider="codex_shim",
+            ingester_fix_type_llm_model="gpt-5.3-codex",
+        )
+        assert should_apply_prompt_override(config, "ingester_fix_type") is True
 
 
 class TestCreateLLMRouter:
@@ -318,6 +336,42 @@ class TestCreateLLMRouter:
             ("codex_shim", "gpt-5.3-codex"),
         ]
         assert router.for_prompt("architect_strategy") is router.for_prompt("architect_critique")
+
+    def test_unbenchmarked_default_override_is_filtered_out(self, monkeypatch):
+        from ageom.cli import _create_llm_router
+
+        created: list[tuple[str, str]] = []
+
+        def _fake_create_llm_client(*, provider, model, **kwargs):
+            created.append((provider, model))
+            client = MagicMock()
+            client.provider = provider
+            client.model = model
+            return client
+
+        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+
+        args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
+        config = SimpleNamespace(
+            llm_provider="anthropic",
+            llm_model="claude-sonnet-4-5-20250929",
+            llm_max_tokens=4096,
+            anthropic_api_key="",
+            openai_api_key="",
+            openai_base_url="",
+            llama_cpp_base_url="http://127.0.0.1:8080/v1",
+            llama_cpp_api_key="local",
+            use_agent_layer=False,
+            ingester_llm_provider="",
+            ingester_llm_model="",
+            ingester_fix_type_llm_provider="llama_cpp",
+            ingester_fix_type_llm_model="qwen2.5-coder:7b",
+        )
+
+        router = _create_llm_router(args, config, "ingester", ["ingester_fix_type"])
+
+        assert router is not None
+        assert created == [("anthropic", "claude-sonnet-4-5-20250929")]
 
 
 # ---------------------------------------------------------------------------

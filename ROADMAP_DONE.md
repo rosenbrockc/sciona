@@ -171,4 +171,26 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1200 passed, 17 skipped`
 - Commits:
-  - `TBD` `telemetry: surface live provider failure details`
+  - `2f25444` `telemetry: surface live provider failure details`
+
+## Benchmark-Justified Routing Defaults
+
+- Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:
+  - `architect_strategy`
+  - `architect_critique`
+  - `hunter_score`
+  - `hunter_reformulate`
+  - `hunter_analyze_failure`
+- Unbenchmarked prompt-specific code defaults no longer create extra provider clients automatically.
+- Explicit non-default user overrides are still honored, so this reduces default runtime sprawl without removing escape hatches.
+- Added regressions for:
+  - benchmark-justified override policy on code defaults
+  - explicit override passthrough for unbenchmarked prompt keys
+  - router filtering of unbenchmarked default overrides
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py`
+  - Result: `50 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1203 passed, 17 skipped`
+- Commits:
+  - `TBD` `cli: filter unbenchmarked prompt overrides`

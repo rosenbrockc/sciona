@@ -8,6 +8,16 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BENCHMARK_JUSTIFIED_PROMPT_KEYS = frozenset(
+    {
+        "architect_strategy",
+        "architect_critique",
+        "hunter_score",
+        "hunter_reformulate",
+        "hunter_analyze_failure",
+    }
+)
+
 
 @dataclass(frozen=True)
 class ExecutionModeSettings:
@@ -192,6 +202,25 @@ class AgeomConfig(BaseSettings):
     export_output_dir: Path = Field(default=Path("export"))
     lean_lake_path: str = "lake"  # path to lake binary
     optimize_by_default: bool = False
+
+
+def prompt_override_matches_code_default(config: AgeomConfig, prompt_key: str) -> bool:
+    """Return True when a per-prompt provider/model pair matches code defaults."""
+    provider_field = AgeomConfig.model_fields.get(f"{prompt_key}_llm_provider")
+    model_field = AgeomConfig.model_fields.get(f"{prompt_key}_llm_model")
+    if provider_field is None or model_field is None:
+        return False
+    return (
+        getattr(config, f"{prompt_key}_llm_provider", "") == provider_field.default
+        and getattr(config, f"{prompt_key}_llm_model", "") == model_field.default
+    )
+
+
+def should_apply_prompt_override(config: AgeomConfig, prompt_key: str) -> bool:
+    """Apply override when benchmark-justified or explicitly changed by the user."""
+    if prompt_key in BENCHMARK_JUSTIFIED_PROMPT_KEYS:
+        return True
+    return not prompt_override_matches_code_default(config, prompt_key)
 
 
 def resolve_execution_mode(
