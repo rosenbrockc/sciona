@@ -408,6 +408,56 @@ class TestCreateLLMRouter:
         assert created == [("anthropic", "claude-sonnet-4-5-20250929")]
 
 
+class TestPromptRoutingSummary:
+    def test_summary_reports_active_and_suppressed_overrides(self, capsys):
+        from ageom.cli import _print_prompt_routing_summary, _summarize_prompt_routing
+        from ageom.config import AgeomConfig
+
+        config = AgeomConfig(_env_file=None)
+        summary = _summarize_prompt_routing(
+            config,
+            "ingester",
+            ["ingester_fix_type", "ingester_chunk"],
+        )
+
+        assert summary["default_provider"] == "anthropic"
+        assert summary["suppressed_default_overrides"] == ["ingester_fix_type"]
+        assert summary["active_overrides"] == []
+
+        _print_prompt_routing_summary(
+            config,
+            "ingester",
+            ["ingester_fix_type", "ingester_chunk"],
+        )
+        out = capsys.readouterr().out
+        assert "LLM routing (ingester)" in out
+        assert "suppressed_defaults=[ingester_fix_type]" in out
+
+    def test_summary_reports_custom_nonbenchmark_override(self):
+        from ageom.cli import _summarize_prompt_routing
+        from ageom.config import AgeomConfig
+
+        config = AgeomConfig(
+            _env_file=None,
+            ingester_fix_type_llm_provider="codex_shim",
+            ingester_fix_type_llm_model="gpt-5.3-codex",
+        )
+        summary = _summarize_prompt_routing(
+            config,
+            "ingester",
+            ["ingester_fix_type"],
+        )
+
+        assert summary["custom_nonbenchmark_overrides"] == ["ingester_fix_type"]
+        assert summary["active_overrides"] == [
+            {
+                "prompt_key": "ingester_fix_type",
+                "provider": "codex_shim",
+                "model": "gpt-5.3-codex",
+            }
+        ]
+
+
 # ---------------------------------------------------------------------------
 # SubprocessCLIClient tests
 # ---------------------------------------------------------------------------

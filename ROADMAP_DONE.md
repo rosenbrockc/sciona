@@ -216,4 +216,29 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1205 passed, 17 skipped`
 - Commits:
-  - `TBD` `llm-router: enforce prompt timeout profiles`
+  - `8d92f04` `llm-router: enforce prompt timeout profiles`
+
+## Runtime Routing Audit Visibility
+
+- Added a CLI routing audit that prints the effective default provider/model plus:
+  - active prompt-key overrides
+  - suppressed code-default overrides that were filtered out
+  - active non-benchmark custom overrides
+- Wired the routing audit into the major CLI flows that construct per-round routers:
+  - ingester
+  - architect
+  - hunter
+  - synthesizer
+  - full `run`
+  - optimize/decompose flows that instantiate architect routers
+- Added regressions for:
+  - structured routing summary content
+  - suppressed default override reporting
+  - custom non-benchmark override reporting
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py`
+  - Result: `54 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1207 passed, 17 skipped`
+- Commits:
+  - `TBD` `cli: add routing audit summaries`
