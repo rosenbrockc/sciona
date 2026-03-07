@@ -91,3 +91,25 @@
   - Result: `52 passed`
   - `conda run -n hpyexec pytest -q`
   - Result: `1194 passed, 17 skipped`
+- Commits:
+  - `931a4e1` `architect: harden rewrite graph invariants`
+
+## Deterministic Rewrite Action Observability
+
+- Added deterministic rewrite action logs to `build_deterministic_decomposition`, covering:
+  - validation wrapper elision
+  - primitive normalization
+  - routing wrapper elision
+  - redundant primitive collapse
+  - helper synthesis
+  - specialized fallback merges
+- Propagated rewrite actions into architect decompose history and snapshot metadata so the non-LLM edits are visible downstream.
+- Added regressions for:
+  - rewrite action emission during primitive normalization
+  - rewrite action emission during routing-wrapper elimination
+  - decompose-node history carrying rewrite actions
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_decomposition.py`
+  - Result: `53 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1195 passed, 17 skipped`

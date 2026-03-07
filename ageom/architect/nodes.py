@@ -821,12 +821,14 @@ async def decompose_node(
         }
     new_nodes = built.nodes
     new_edges = built.edges
+    rewrite_actions = list(getattr(built, "rewrite_actions", []))
 
     history_entry = {
         "step": "decompose_node",
         "node_id": current_id,
         "num_sub_nodes": len(new_nodes),
         "num_edges": len(new_edges),
+        "rewrite_actions": rewrite_actions,
     }
 
     await _put_context(
@@ -837,6 +839,7 @@ async def decompose_node(
             f"Parent: {node.name}\n"
             f"Children: {', '.join(n.name for n in new_nodes) or '(none)'}\n"
             f"Edges: {len(new_edges)}\n"
+            f"Rewrite actions: {len(rewrite_actions)}\n"
             f"Retry: {retries}"
         ),
         metadata={"node_id": current_id, "node_name": node.name},
@@ -847,7 +850,7 @@ async def decompose_node(
         node_id=current_id,
         nodes=all_nodes + new_nodes,
         edges=state["edges"] + new_edges,
-        extra={"last_node_name": node.name},
+        extra={"last_node_name": node.name, "rewrite_actions": rewrite_actions},
     )
 
     return {

@@ -31,6 +31,7 @@ class DeterministicDecomposeResult:
 
     nodes: list[AlgorithmicNode]
     edges: list[DependencyEdge]
+    rewrite_actions: list[dict[str, Any]]
 
 
 class DeterministicRewriteError(ValueError):
@@ -565,26 +566,73 @@ def _rewrite_raw_sub_nodes(
     *,
     parent: AlgorithmicNode,
     catalog: PrimitiveCatalog,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    rewrite_actions: list[dict[str, Any]] = []
+
+    def _snapshot(items: list[dict[str, Any]]) -> list[tuple[str, str]]:
+        return [
+            (
+                str(item.get("name", "")).strip(),
+                str(
+                    item.get("matched_primitive")
+                    or item.get("matched_primitive_hint")
+                    or ""
+                ).strip(),
+            )
+            for item in items
+            if isinstance(item, dict)
+        ]
+
+    def _record(stage: str, before: list[dict[str, Any]], after: list[dict[str, Any]]) -> None:
+        before_snapshot = _snapshot(before)
+        after_snapshot = _snapshot(after)
+        removed = [name for name, _hint in before_snapshot if (name, _hint) not in after_snapshot]
+        added = [name for name, _hint in after_snapshot if (name, _hint) not in before_snapshot]
+        normalized: list[str] = []
+        before_by_name = {name: hint for name, hint in before_snapshot if name}
+        for name, hint in after_snapshot:
+            if name in before_by_name and before_by_name[name] != hint and hint:
+                normalized.append(name)
+        if removed or added or normalized:
+            rewrite_actions.append(
+                {
+                    "stage": stage,
+                    "removed": removed,
+                    "added": added,
+                    "normalized": normalized,
+                }
+            )
+
     rewritten = _rewrite_validation_wrappers(raw_subs)
+    _record("validation_wrapper_elision", raw_subs, rewritten)
+    previous = rewritten
     rewritten = _rewrite_conceptual_primitive_names(
-        rewritten,
+        previous,
         parent=parent,
         catalog=catalog,
     )
-    rewritten = _rewrite_routing_wrappers(rewritten)
-    rewritten = _collapse_redundant_primitive_steps(rewritten, catalog=catalog)
+    _record("primitive_normalization", previous, rewritten)
+    previous = rewritten
+    rewritten = _rewrite_routing_wrappers(previous)
+    _record("routing_wrapper_elision", previous, rewritten)
+    previous = rewritten
+    rewritten = _collapse_redundant_primitive_steps(previous, catalog=catalog)
+    _record("redundant_primitive_collapse", previous, rewritten)
+    previous = rewritten
     rewritten = _synthesize_missing_input_helpers(
-        rewritten,
+        previous,
         parent=parent,
         catalog=catalog,
     )
+    _record("helper_synthesis", previous, rewritten)
+    previous = rewritten
     rewritten = _merge_specialized_fallbacks(
-        rewritten,
+        previous,
         parent=parent,
         catalog=catalog,
     )
-    return rewritten
+    _record("specialized_fallback_merge", previous, rewritten)
+    return rewritten, rewrite_actions
 
 
 def _canonical_primitive_name_for_spec(
@@ -603,8 +651,8 @@ def _canonical_primitive_name_for_spec(
         prim = _find_primitive(catalog, explicit)
         if prim is not None:
             return prim.name
-    prim = _suggest_primitive_for_spec(spec, parent=parent, catalog=catalog)
-    return prim.name if prim is not None else ""
+    suggestion = _suggest_primitive_for_spec(spec, parent=parent, catalog=catalog)
+    return suggestion.primitive.name if suggestion.primitive is not None else ""
 
 
 def _specialized_fallbacks_for_parent(
@@ -1716,7 +1764,7 @@ def build_deterministic_decomposition(
 ) -> DeterministicDecomposeResult:
     """Build deterministic nodes/edges from conceptual LLM output."""
     raw_subs = _prepare_raw_sub_nodes(parsed.get("sub_nodes"), parent=parent)
-    raw_subs = _rewrite_raw_sub_nodes(raw_subs, parent=parent, catalog=catalog)
+    raw_subs, rewrite_actions = _rewrite_raw_sub_nodes(raw_subs, parent=parent, catalog=catalog)
     raw_subs = _prepare_raw_sub_nodes(raw_subs, parent=parent)
 
     nodes: list[AlgorithmicNode] = []
@@ -1796,4 +1844,8 @@ def build_deterministic_decomposition(
     edges = _prune_conflicting_typed_edges(nodes, edges)
     _validate_rewritten_graph(nodes, edges, parent=parent)
 
-    return DeterministicDecomposeResult(nodes=nodes, edges=edges)
+    return DeterministicDecomposeResult(
+        nodes=nodes,
+        edges=edges,
+        rewrite_actions=rewrite_actions,
+    )

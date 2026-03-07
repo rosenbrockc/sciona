@@ -387,6 +387,7 @@ class TestDeterministicRewrite:
         assert by_name["Assemble Frequency Response Tuple"].matched_primitive == "summarize_frequency_response"
         assert by_name["Normalize Coefficient Form"].primitive_binding_confidence >= 0.9
         assert by_name["Normalize Coefficient Form"].primitive_binding_source == "exact_name"
+        assert any(action["stage"] == "primitive_normalization" for action in result.rewrite_actions)
 
     def test_normalizes_apply_filter_concept_without_exact_alias(self):
         catalog = PrimitiveCatalog()
@@ -499,6 +500,7 @@ class TestDeterministicRewrite:
         assert "Escalate Unstable Coefficients" not in names
         assert "Compute Pole Locations" in names
         assert "Evaluate Discrete-Time Stability" in names
+        assert any(action["stage"] == "routing_wrapper_elision" for action in result.rewrite_actions)
 
     def test_rewrite_rejects_primitive_signature_violation_with_invariant_code(self):
         catalog = _make_catalog()
@@ -2663,3 +2665,68 @@ class TestDeterministicDecompose:
 
         assert result["nodes"] == []
         assert "violates primitive signature" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_decompose_node_history_records_rewrite_actions(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Pass Stable Coefficients",
+                            "description": "Route the stable result onward.",
+                        },
+                        {
+                            "name": "Evaluate Discrete-Time Stability",
+                            "description": "Assess the unit-circle stability margin.",
+                        },
+                        {
+                            "name": "Compute Pole Locations",
+                            "description": "Solve for the filter poles.",
+                        },
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_stability",
+            name="Validate Stability",
+            description="Validate coefficient stability",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            outputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Validate stability",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_stability"],
+            "current_node_id": "n_stability",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await decompose_node(state, {"configurable": {"deps": deps}})
+
+        assert result["history"]
+        actions = result["history"][0]["rewrite_actions"]
+        assert any(action["stage"] == "routing_wrapper_elision" for action in actions)
