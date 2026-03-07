@@ -90,6 +90,44 @@ def test_cli_loader_falls_back_when_faiss_missing(tmp_path, monkeypatch):
     assert hits and hits[0][0].name == "fft_forward"
 
 
+def test_cli_loader_can_force_lexical_backend(tmp_path, monkeypatch):
+    _write_msgpack_index(tmp_path)
+
+    from ageom.indexer.faiss_store import FAISSStore
+
+    def _should_not_run(_directory):
+        raise AssertionError("FAISS loader should not be called in forced lexical mode")
+
+    monkeypatch.setattr(FAISSStore, "load", staticmethod(_should_not_run))
+
+    class _Cfg:
+        embedding_model = "microsoft/unixcoder-base"
+        semantic_index_backend = "lexical"
+
+    idx, mode = _load_semantic_index(tmp_path, _Cfg())
+    assert mode == "lexical_forced"
+    hits = idx.search_by_embedding("fft", k=1)
+    assert hits and hits[0][0].name == "fft_forward"
+
+
+def test_cli_loader_forced_faiss_reraises_missing_backend(tmp_path, monkeypatch):
+    _write_msgpack_index(tmp_path)
+
+    from ageom.indexer.faiss_store import FAISSStore
+
+    def _raise_missing(_directory):
+        raise ModuleNotFoundError("No module named 'faiss'")
+
+    monkeypatch.setattr(FAISSStore, "load", staticmethod(_raise_missing))
+
+    class _Cfg:
+        embedding_model = "microsoft/unixcoder-base"
+        semantic_index_backend = "faiss"
+
+    with pytest.raises(ModuleNotFoundError, match="faiss"):
+        _load_semantic_index(tmp_path, _Cfg())
+
+
 def test_cli_loader_reraises_non_faiss_import_errors(tmp_path, monkeypatch):
     _write_msgpack_index(tmp_path)
 

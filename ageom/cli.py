@@ -148,16 +148,23 @@ def _load_semantic_index(
     index_dir: Path, config: "AgeomConfig"
 ) -> tuple["SemanticIndex", str]:
     """Load semantic index with FAISS, falling back to lexical mode if needed."""
+    from ageom.indexer.fallback_index import LexicalSemanticIndex
+
+    backend = str(getattr(config, "semantic_index_backend", "auto")).strip().lower()
+    if backend in {"lexical", "lexical_fallback"}:
+        return LexicalSemanticIndex.load(index_dir), "lexical_forced"
+
     from ageom.indexer.builder import SemanticIndexImpl
     from ageom.indexer.embedder import UniXcoderEmbedder
     from ageom.indexer.faiss_store import FAISSStore
-    from ageom.indexer.fallback_index import LexicalSemanticIndex
 
     try:
         store = FAISSStore.load(index_dir)
         embedder = UniXcoderEmbedder(config.embedding_model)
         return SemanticIndexImpl(store, embedder), "faiss"
     except (ImportError, ModuleNotFoundError) as exc:
+        if backend == "faiss":
+            raise
         if "faiss" not in str(exc).lower():
             raise
         fallback = LexicalSemanticIndex.load(index_dir)
@@ -1372,15 +1379,9 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         faiss_index = None
         if config.index_dir.exists():
             try:
-                from ageom.indexer.builder import SemanticIndexImpl
-                from ageom.indexer.embedder import UniXcoderEmbedder
-                from ageom.indexer.faiss_store import FAISSStore
-
-                store = FAISSStore.load(config.index_dir)
-                embedder = UniXcoderEmbedder(config.embedding_model)
-                faiss_index = SemanticIndexImpl(store, embedder)
+                faiss_index, _index_mode = _load_semantic_index(config.index_dir, config)
             except Exception as exc:
-                print(f"Warning: failed to load FAISS index: {exc}", file=sys.stderr)
+                print(f"Warning: failed to load semantic index: {exc}", file=sys.stderr)
 
         ingester_run_id = uuid.uuid4().hex
         shared_context, shared_context_metrics = await _create_shared_context(

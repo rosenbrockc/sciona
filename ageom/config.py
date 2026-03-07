@@ -25,6 +25,7 @@ class AgeomConfig(BaseSettings):
     embedding_model: str = "microsoft/unixcoder-base"
     embedding_dim: int = 768
     embedding_batch_size: int = 32
+    semantic_index_backend: str = "auto"  # "auto" | "faiss" | "lexical"
 
     # FAISS index
     index_dir: Path = Field(default=Path("data/index"))
