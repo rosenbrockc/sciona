@@ -434,7 +434,7 @@ class TestPromptRoutingSummary:
         assert "suppressed_defaults=[ingester_fix_type]" in out
 
     def test_summary_reports_custom_nonbenchmark_override(self):
-        from ageom.cli import _summarize_prompt_routing
+        from ageom.cli import _routing_metadata_summary, _summarize_prompt_routing
         from ageom.config import AgeomConfig
 
         config = AgeomConfig(
@@ -456,6 +456,9 @@ class TestPromptRoutingSummary:
                 "model": "gpt-5.3-codex",
             }
         ]
+        metadata = _routing_metadata_summary(summary)
+        assert metadata["custom_nonbenchmark_overrides"] == ["ingester_fix_type"]
+        assert metadata["active_overrides"][0]["provider"] == "codex_shim"
 
 
 # ---------------------------------------------------------------------------

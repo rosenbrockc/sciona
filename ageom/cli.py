@@ -191,6 +191,25 @@ def _print_prompt_routing_summary(
     return summary
 
 
+def _routing_metadata_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    """Shrink routing audit into dashboard-friendly run metadata."""
+    return {
+        "round": summary["round"],
+        "default_provider": summary["default_provider"],
+        "default_model": summary["default_model"],
+        "active_overrides": [
+            {
+                "prompt_key": row["prompt_key"],
+                "provider": row["provider"],
+                "model": row["model"],
+            }
+            for row in summary["active_overrides"]
+        ],
+        "suppressed_default_overrides": list(summary["suppressed_default_overrides"]),
+        "custom_nonbenchmark_overrides": list(summary["custom_nonbenchmark_overrides"]),
+    }
+
+
 @dataclass(frozen=True)
 class RetrievalPolicy:
     """Effective retrieval gates after combining mode and catalog-confidence signals."""
@@ -2450,6 +2469,25 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         texts=[args.goal],
     )
     _print_retrieval_policy(retrieval_policy)
+    architect_routing = _summarize_prompt_routing(
+        config,
+        "architect",
+        [
+            "architect_strategy",
+            "architect_decompose",
+            "architect_critique",
+            "orchestrator_refine",
+        ],
+    )
+    hunter_routing = _summarize_prompt_routing(
+        config,
+        "hunter",
+        [
+            "hunter_score",
+            "hunter_reformulate",
+            "hunter_analyze_failure",
+        ],
+    )
     telemetry_run_id = start_run(
         "algorithm_creation",
         metadata={
@@ -2467,6 +2505,10 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 "semantic_backend": retrieval_policy.semantic_index_backend_override
                 or "default",
                 "hunter_mode": retrieval_policy.hunter_mode,
+            },
+            "llm_routing": {
+                "architect": _routing_metadata_summary(architect_routing),
+                "hunter": _routing_metadata_summary(hunter_routing),
             },
         },
     )

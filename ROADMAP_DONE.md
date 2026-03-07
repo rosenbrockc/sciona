@@ -241,4 +241,24 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1207 passed, 17 skipped`
 - Commits:
-  - `TBD` `cli: add routing audit summaries`
+  - `d00991d` `cli: add routing audit summaries`
+
+## Routing Audit In Run Telemetry
+
+- Persisted the routing audit into `run` telemetry metadata so saved snapshots and the dashboard keep the same provider-routing context printed at startup.
+- `algorithm_creation` run metadata now includes round-scoped routing summaries for:
+  - architect
+  - hunter
+- The persisted payload includes:
+  - default provider/model
+  - active prompt-key overrides
+  - suppressed default overrides
+  - custom non-benchmark overrides
+- Added regression coverage for the telemetry-friendly routing summary transformation.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py`
+  - Result: `54 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1207 passed, 17 skipped`
+- Commits:
+  - `TBD` `telemetry: persist routing audit metadata`
