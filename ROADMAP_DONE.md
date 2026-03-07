@@ -291,4 +291,26 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1208 passed, 17 skipped`
 - Commits:
-  - `TBD` `test: clean regression warning noise`
+  - `bb4a4fc` `test: clean regression warning noise`
+
+## Deterministic Benchmark Validation Bundle
+
+- Added a deterministic `benchmark-validate` CLI command that runs:
+  - the prompt benchmark suite with an in-repo fixture provider
+  - the full-flow benchmark suite
+- The command writes a local validation bundle with:
+  - `prompt_benchmark.json`
+  - `flow_benchmark.json`
+  - `summary.json`
+- Added a reusable `save_flow_benchmark_report(...)` helper so the flow benchmark now has the same report persistence behavior as the prompt benchmark.
+- Added regressions for:
+  - flow benchmark report persistence
+  - full benchmark validation bundle generation
+  - flow benchmark aggregate variants in saved reports
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_benchmark_validation.py tests/test_prompt_benchmark.py tests/test_flow_benchmark.py`
+  - Result: `12 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1211 passed, 17 skipped`
+- Commits:
+  - `TBD` `benchmark: add deterministic validation bundle`

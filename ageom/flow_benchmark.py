@@ -6,6 +6,7 @@ import json
 import re
 import time
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Sequence
 
 from ageom.architect.graph import DecompositionAgent
@@ -501,3 +502,18 @@ def format_flow_benchmark_summary(
             f"{aggregate.variant} | {aggregate.passed_cases}/{aggregate.total_cases} | {aggregate.avg_latency_ms:.1f}"
         )
     return "\n".join(lines)
+
+
+def save_flow_benchmark_report(
+    path: str | Path,
+    *,
+    results: Sequence[FlowBenchmarkResult],
+    aggregates: Sequence[FlowBenchmarkAggregate],
+) -> None:
+    payload = {
+        "results": [result.to_dict() for result in results],
+        "aggregates": [aggregate.to_dict() for aggregate in aggregates],
+    }
+    report_path = Path(path)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

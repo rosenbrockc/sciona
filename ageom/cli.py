@@ -1061,6 +1061,17 @@ def main() -> None:
         help="Also run a simpler direct-baseline prompt variant for each provider/case pair",
     )
 
+    benchmark_validate_parser = subparsers.add_parser(
+        "benchmark-validate",
+        help="Run deterministic prompt and flow benchmark validation and save reports",
+    )
+    benchmark_validate_parser.add_argument(
+        "--output",
+        type=str,
+        default="build/benchmark_validation",
+        help="Directory where validation reports will be written.",
+    )
+
     # --- sources ---
     sources_parser = subparsers.add_parser(
         "sources", help="Manage multi-repo atom sources"
@@ -1286,6 +1297,8 @@ def main() -> None:
         _run_async_command(_cmd_profile(args))
     elif args.command == "prompt-benchmark":
         _run_async_command(_cmd_prompt_benchmark(args))
+    elif args.command == "benchmark-validate":
+        _run_async_command(_cmd_benchmark_validate(args))
     elif args.command == "decompose":
         _run_async_command(_cmd_decompose(args))
     elif args.command == "history":
@@ -3109,6 +3122,20 @@ async def _cmd_prompt_benchmark(args: argparse.Namespace) -> None:
             maybe_result = close()
             if inspect.isawaitable(maybe_result):
                 await maybe_result
+
+
+async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
+    """Run deterministic release-style benchmark validation."""
+    from ageom.benchmark_validation import run_benchmark_validation
+
+    summary = await run_benchmark_validation(args.output)
+    print("Prompt benchmark summary")
+    print(summary["prompt_summary"])
+    print()
+    print("Flow benchmark summary")
+    print(summary["flow_summary"])
+    print()
+    print(f"Saved validation bundle: {summary['summary_report']}")
 
 
 if __name__ == "__main__":
