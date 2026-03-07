@@ -179,7 +179,7 @@ class TestCreateLLMRouter:
         assert router.for_prompt("architect_strategy") is router.for_prompt("architect_critique")
         assert router.for_prompt("architect_decompose") is router._default
 
-    def test_hunter_prompts_use_gemini_cli_overrides(self, monkeypatch):
+    def test_hunter_prompts_use_gemini_shim_overrides(self, monkeypatch):
         from ageom.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
@@ -206,11 +206,11 @@ class TestCreateLLMRouter:
             use_agent_layer=False,
             hunter_llm_provider="",
             hunter_llm_model="",
-            hunter_score_llm_provider="gemini_cli",
+            hunter_score_llm_provider="gemini_shim",
             hunter_score_llm_model="flash-lite",
-            hunter_reformulate_llm_provider="gemini_cli",
+            hunter_reformulate_llm_provider="gemini_shim",
             hunter_reformulate_llm_model="flash-lite",
-            hunter_analyze_failure_llm_provider="gemini_cli",
+            hunter_analyze_failure_llm_provider="gemini_shim",
             hunter_analyze_failure_llm_model="flash",
         )
 
@@ -224,8 +224,8 @@ class TestCreateLLMRouter:
         assert isinstance(router, LLMRouter)
         assert created == [
             ("anthropic", "claude-sonnet-4-5-20250929"),
-            ("gemini_cli", "flash-lite"),
-            ("gemini_cli", "flash"),
+            ("gemini_shim", "flash-lite"),
+            ("gemini_shim", "flash"),
         ]
         assert router.for_prompt("hunter_score") is router.for_prompt("hunter_reformulate")
         assert router.for_prompt("hunter_analyze_failure") is not router.for_prompt("hunter_score")

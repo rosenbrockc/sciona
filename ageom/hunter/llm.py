@@ -629,11 +629,11 @@ def create_llm_client(
         )
 
     if normalized == "gemini_shim":
-        from ageom.hunter.shim_pool import ShimPoolClient
+        from ageom.hunter.gemini_shim import GeminiShimClient
 
-        return ShimPoolClient(
-            cli="gemini", model=resolved_model, max_tokens=max_tokens,
-            use_agent_layer=use_agent_layer,
+        return GeminiShimClient(
+            model=resolved_model,
+            max_tokens=max_tokens,
         )
 
     raise ValueError(f"Unsupported LLM provider: {provider}")

@@ -264,8 +264,8 @@ def _load_skill_index_or_empty(config: "AgeomConfig"):
 
     skill_index = SkillIndex(
         index_dir=config.skill_index_dir,
-        embedding_backend=config.embedding_backend,
-        embedding_model=config.embedding_model,
+        embedding_backend=getattr(config, "embedding_backend", "fastembed"),
+        embedding_model=getattr(config, "embedding_model", "BAAI/bge-small-en-v1.5"),
     )
     if os.environ.get("AGEOM_DISABLE_SKILL_INDEX", "").strip() in {"1", "true", "yes"}:
         print("Warning: skill index disabled via AGEOM_DISABLE_SKILL_INDEX.", file=sys.stderr)
@@ -436,7 +436,7 @@ def main() -> None:
     )
     decompose_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -555,7 +555,7 @@ def main() -> None:
     )
     synth_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -600,7 +600,7 @@ def main() -> None:
     )
     run_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,
         help="LLM provider override",
     )
@@ -685,7 +685,7 @@ def main() -> None:
     )
     optimize_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,
         help="LLM provider override",
     )
@@ -768,7 +768,7 @@ def main() -> None:
     )
     ingest_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,
         help="LLM provider override (default: from config)",
     )
@@ -845,7 +845,7 @@ def main() -> None:
     )
     match_parser.add_argument(
         "--llm-provider",
-        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli"],
+        choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,
         help="LLM provider override (default: from config)",
     )

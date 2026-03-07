@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import sys
 import types
+import re
+import shutil
 
 import pytest
 
@@ -122,3 +124,39 @@ class TestConcreteClients:
         assert client._client.completions.last_kwargs["extra_body"] == {
             "grammar": 'root ::= "[]"'
         }
+
+    @pytest.mark.asyncio
+    async def test_gemini_shim_reuses_live_worker(self, monkeypatch):
+        if shutil.which("node") is None:
+            pytest.skip("node is required for gemini_shim test")
+
+        monkeypatch.setenv("AGEOM_GEMINI_DAEMON_FAKE", "1")
+        monkeypatch.setenv("AGEOM_GEMINI_SHIM_POOL_SIZE", "1")
+
+        client = create_llm_client(
+            provider="gemini_shim",
+            model="flash-lite",
+            max_tokens=64,
+        )
+        try:
+            first = await client.complete("sys", "one")
+            second = await client.complete("sys", "two")
+        finally:
+            close = getattr(client, "close", None)
+            if close is not None:
+                await close()
+
+        pid_pattern = re.compile(r"pid=(\d+)")
+        count_pattern = re.compile(r"count=(\d+)")
+        first_pid = pid_pattern.search(first)
+        second_pid = pid_pattern.search(second)
+        first_count = count_pattern.search(first)
+        second_count = count_pattern.search(second)
+
+        assert first_pid is not None
+        assert second_pid is not None
+        assert first_count is not None
+        assert second_count is not None
+        assert first_pid.group(1) == second_pid.group(1)
+        assert first_count.group(1) == "1"
+        assert second_count.group(1) == "2"
