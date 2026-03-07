@@ -500,6 +500,88 @@ class TestDeterministicRewrite:
         assert "Compute Pole Locations" in names
         assert "Evaluate Discrete-Time Stability" in names
 
+    def test_rewrite_rejects_primitive_signature_violation_with_invariant_code(self):
+        catalog = _make_catalog()
+        parent = AlgorithmicNode(
+            node_id="parent_search",
+            name="Target Lookup",
+            description="Search for a target in a sorted array",
+            concept_type=ConceptType.SEARCHING,
+            inputs=[
+                IOSpec(name="data", type_desc="sorted list[int]"),
+                IOSpec(name="target", type_desc="int"),
+            ],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        with pytest.raises(DeterministicRewriteError, match=r"\[primitive_signature_violation\]"):
+            build_deterministic_decomposition(
+                parsed={
+                    "sub_nodes": [
+                        {
+                            "name": "binary_search",
+                            "description": "Find the target index.",
+                            "matched_primitive_hint": "binary_search",
+                            "inputs": [
+                                {"name": "data", "type_desc": "Any"},
+                                {"name": "target", "type_desc": "Any"},
+                            ],
+                            "outputs": [
+                                {"name": "index", "type_desc": "Any"},
+                                {"name": "debug", "type_desc": "int"},
+                            ],
+                        }
+                    ],
+                },
+                parent=parent,
+                catalog=catalog,
+            )
+
+    def test_rewrite_rejects_disconnected_child_with_invariant_code(self):
+        catalog = _make_catalog()
+        parent = AlgorithmicNode(
+            node_id="parent_graph",
+            name="Graph Path",
+            description="Connect one step into another",
+            concept_type=ConceptType.SEARCHING,
+            inputs=[IOSpec(name="data", type_desc="sorted list[comparable]")],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        with pytest.raises(DeterministicRewriteError, match=r"\[disconnected_child\]"):
+            build_deterministic_decomposition(
+                parsed={
+                    "sub_nodes": [
+                        {
+                            "name": "Prepare Search",
+                            "description": "Prepare search inputs.",
+                            "inputs": [{"name": "data", "type_desc": "sorted list[comparable]"}],
+                            "outputs": [{"name": "prepared", "type_desc": "sorted list[comparable]"}],
+                        },
+                        {
+                            "name": "binary_search",
+                            "description": "Search sorted data for a target.",
+                            "matched_primitive_hint": "binary_search",
+                        },
+                        {
+                            "name": "Unused Step",
+                            "description": "A detached child with no edges.",
+                            "inputs": [{"name": "orphan", "type_desc": "int"}],
+                            "outputs": [{"name": "dangling", "type_desc": "int"}],
+                        },
+                    ],
+                    "flow_hints": [
+                        {"from": "Prepare Search", "to": "binary_search", "why": "setup then search"}
+                    ],
+                },
+                parent=parent,
+                catalog=catalog,
+            )
+
     def test_collapses_duplicate_concepts_that_bind_to_same_primitive(self):
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -678,7 +760,10 @@ class TestDeterministicRewrite:
             depth=1,
         )
 
-        with pytest.raises(DeterministicRewriteError, match="violates primitive signature"):
+        with pytest.raises(
+            DeterministicRewriteError,
+            match=r"\[primitive_signature_violation\].*violates primitive signature",
+        ):
             build_deterministic_decomposition(
                 parsed={
                     "sub_nodes": [

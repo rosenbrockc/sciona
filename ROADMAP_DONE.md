@@ -74,3 +74,20 @@
   - Result: `87 passed`
   - `conda run -n hpyexec pytest -q`
   - Result: `1192 passed, 17 skipped`
+- Commits:
+  - `ae5391e` `architect: score primitive binding confidence`
+
+## Graph Invariant Hardening
+
+- Added named invariant failures for deterministic rewrite validation, including:
+  - unresolved typed ports
+  - primitive-signature violations
+  - disconnected children
+  - missing typed source-to-sink paths
+- Deterministic graph validation now checks rewritten edges, not just node port shapes.
+- Added regressions for disconnected-child and invariant-tagged primitive-signature failures.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_decomposition.py`
+  - Result: `52 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1194 passed, 17 skipped`

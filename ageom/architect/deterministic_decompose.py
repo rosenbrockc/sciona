@@ -46,6 +46,10 @@ class PrimitiveBindingSuggestion:
     source: str
 
 
+def _invariant_error(code: str, message: str) -> DeterministicRewriteError:
+    return DeterministicRewriteError(f"[{code}] {message}")
+
+
 _KEYWORD_CONCEPTS: list[tuple[tuple[str, ...], ConceptType]] = [
     (("sort", "ordered", "rank"), ConceptType.SORTING),
     (("search", "lookup", "find"), ConceptType.SEARCHING),
@@ -1300,14 +1304,25 @@ def _validate_rewritten_nodes(
     catalog: PrimitiveCatalog,
 ) -> None:
     parent_is_typed = any(_port_is_typed(port) for port in parent.inputs + parent.outputs)
+    seen_names: set[str] = set()
+    for node in nodes:
+        normalized = _norm(node.name)
+        if normalized in seen_names:
+            raise _invariant_error(
+                "duplicate_child_name",
+                f"Duplicate child name '{node.name}' under parent '{parent.name}'",
+            )
+        seen_names.add(normalized)
+
     if not parent_is_typed:
         return
     for node in nodes:
         unresolved = [port.name for port in node.inputs + node.outputs if not _port_is_typed(port)]
         if unresolved:
-            raise DeterministicRewriteError(
+            raise _invariant_error(
+                "unresolved_any_ports",
                 f"Unresolved Any ports remain for child '{node.name}' under typed parent "
-                f"'{parent.name}': {', '.join(unresolved)}"
+                f"'{parent.name}': {', '.join(unresolved)}",
             )
         primitive = _find_primitive(catalog, node.matched_primitive or "")
         if primitive is None:
@@ -1322,10 +1337,93 @@ def _validate_rewritten_nodes(
                 problems.append(f"extra inputs: {', '.join(extra_inputs)}")
             if extra_outputs:
                 problems.append(f"extra outputs: {', '.join(extra_outputs)}")
-            raise DeterministicRewriteError(
+            raise _invariant_error(
+                "primitive_signature_violation",
                 f"Primitive-bound child '{node.name}' violates primitive signature for "
-                f"'{primitive.name}' under parent '{parent.name}': {'; '.join(problems)}"
+                f"'{primitive.name}' under parent '{parent.name}': {'; '.join(problems)}",
             )
+
+
+def _validate_rewritten_graph(
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+    *,
+    parent: AlgorithmicNode,
+) -> None:
+    if len(nodes) <= 1:
+        return
+
+    by_id = {node.node_id: node for node in nodes}
+    incoming: dict[str, int] = {node.node_id: 0 for node in nodes}
+    outgoing: dict[str, int] = {node.node_id: 0 for node in nodes}
+    adjacency: dict[str, list[str]] = {node.node_id: [] for node in nodes}
+
+    for edge in edges:
+        if edge.source_id == edge.target_id:
+            raise _invariant_error(
+                "self_loop",
+                f"Self-loop detected on child '{by_id.get(edge.source_id, parent).name}' under parent '{parent.name}'",
+            )
+        if edge.source_id not in by_id or edge.target_id not in by_id:
+            continue
+        outgoing[edge.source_id] += 1
+        incoming[edge.target_id] += 1
+        adjacency[edge.source_id].append(edge.target_id)
+
+    for node in nodes:
+        if incoming[node.node_id] == 0 and outgoing[node.node_id] == 0:
+            raise _invariant_error(
+                "disconnected_child",
+                f"Child '{node.name}' is disconnected under parent '{parent.name}'",
+            )
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def _visit(node_id: str) -> None:
+        if node_id in visited:
+            return
+        if node_id in visiting:
+            raise _invariant_error(
+                "cycle_detected",
+                f"Cycle detected in rewritten child graph under parent '{parent.name}'",
+            )
+        visiting.add(node_id)
+        for target_id in adjacency[node_id]:
+            _visit(target_id)
+        visiting.remove(node_id)
+        visited.add(node_id)
+
+    for node_id in adjacency:
+        _visit(node_id)
+
+    parent_input_names = {port.name for port in parent.inputs}
+    parent_output_names = {port.name for port in parent.outputs}
+    roots = [
+        node.node_id
+        for node in nodes
+        if incoming[node.node_id] == 0 and any(port.name in parent_input_names for port in node.inputs)
+    ]
+    sinks = {
+        node.node_id
+        for node in nodes
+        if outgoing[node.node_id] == 0 and any(port.name in parent_output_names for port in node.outputs)
+    }
+    if roots and sinks:
+        frontier = list(roots)
+        seen = set(frontier)
+        while frontier:
+            current = frontier.pop()
+            if current in sinks:
+                return
+            for target_id in adjacency[current]:
+                if target_id not in seen:
+                    seen.add(target_id)
+                    frontier.append(target_id)
+        raise _invariant_error(
+            "missing_typed_path",
+            f"No typed path connects parent inputs to outputs under '{parent.name}'",
+        )
 
 
 def _pick_output_for_target(source: AlgorithmicNode, target: AlgorithmicNode) -> IOSpec:
@@ -1696,5 +1794,6 @@ def build_deterministic_decomposition(
         edges = _build_chain_edges(nodes)
     edges = _synthesize_matching_input_edges(nodes, edges)
     edges = _prune_conflicting_typed_edges(nodes, edges)
+    _validate_rewritten_graph(nodes, edges, parent=parent)
 
     return DeterministicDecomposeResult(nodes=nodes, edges=edges)
