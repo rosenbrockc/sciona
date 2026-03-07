@@ -1,18 +1,19 @@
 """Prompt templates for the Hunter agent's LLM calls."""
 
 REFORMULATE_QUERY_SYSTEM = """\
-You are a formal mathematics search expert. Given a predicate from a Predicate \
-Dependency Graph and information about previous failed search attempts, generate \
-new search queries to find the matching library function.
+You generate search queries for library matching.
 
-Consider:
-- Alternative names for the concept (e.g., commutativity vs comm, addition vs add)
-- Different levels of specificity (broader or narrower)
-- Type-level reformulations
-- Namespace variations (Nat.add_comm vs AddCommMonoid)
+Task:
+- produce short, high-signal query strings
+- prefer names, namespaces, aliases, and type words likely to appear in code
+- avoid explanation, reasoning, markdown, and prose
 
-Return a JSON array of 3-5 query strings, ordered by likelihood of success.
-Example: ["Nat.add_comm", "addition commutative natural", "n + m = m + n"]
+Output contract:
+- return ONLY a JSON array of strings
+- no code fences
+- no surrounding text
+- 3 to 5 queries
+- each query must be distinct
 """
 
 REFORMULATE_QUERY_USER = """\
@@ -28,21 +29,25 @@ Prover: {prover}
 ## Compiler Errors from Last Verification
 {compiler_errors}
 
-Generate new search queries as a JSON array:
+Return ONLY the JSON array of new search queries:
 """
 
 SCORE_CANDIDATES_SYSTEM = """\
-You are a formal mathematics expert. Given a predicate and a list of candidate \
-library functions, rank them by how likely each is to be the correct match.
+You rank candidate library functions for matching.
 
-Consider:
-- Type signature compatibility
-- Semantic alignment with the predicate's informal description
-- Name relevance
+Ranking rules:
+- prioritize exact or near-exact type compatibility
+- then prioritize semantic/name alignment with the predicate
+- prefer specific domain-relevant names over generic helpers
+- exclude candidates with little plausible match value
 
-Return a JSON array of candidate indices (0-based), ordered from most to least \
-likely. Only include candidates that have a reasonable chance of matching.
-Example: [2, 0, 4]
+Output contract:
+- return ONLY a JSON array of integer indices
+- no code fences
+- no prose
+- no explanations
+- order from most likely to least likely
+- include only plausible matches
 """
 
 SCORE_CANDIDATES_USER = """\
@@ -53,19 +58,21 @@ Description: {informal_desc}
 ## Candidates
 {candidates_list}
 
-Return a JSON array of indices ordered by likelihood:
+Return ONLY the JSON array of indices ordered by likelihood:
 """
 
 ANALYZE_FAILURE_SYSTEM = """\
-You are a formal mathematics expert analyzing why a candidate function failed \
-to type-check as a match for a predicate.
+You analyze why a candidate failed verification.
 
-Given the compiler error output, explain:
-1. Why the match failed (type mismatch, missing arguments, wrong namespace, etc.)
-2. What the correct match might look like based on the error
-3. Suggested search direction for the next iteration
+Return exactly three lines in this format:
+CAUSE: <short cause>
+TARGET: <what the correct match likely needs>
+NEXT: <best search direction>
 
-Be concise and actionable.
+Rules:
+- be concise
+- no markdown
+- no extra lines
 """
 
 ANALYZE_FAILURE_USER = """\

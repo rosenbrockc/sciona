@@ -613,17 +613,17 @@ def create_llm_client(
         )
 
     if normalized == "claude_shim":
-        from ageom.hunter.shim_pool import ShimPoolClient
+        from ageom.hunter.cli_socket_shim import CLISocketShimClient
 
-        return ShimPoolClient(
+        return CLISocketShimClient(
             cli="claude", model=resolved_model, max_tokens=max_tokens,
             use_agent_layer=use_agent_layer,
         )
 
     if normalized == "codex_shim":
-        from ageom.hunter.shim_pool import ShimPoolClient
+        from ageom.hunter.cli_socket_shim import CLISocketShimClient
 
-        return ShimPoolClient(
+        return CLISocketShimClient(
             cli="codex", model=resolved_model, max_tokens=max_tokens,
             use_agent_layer=use_agent_layer,
         )

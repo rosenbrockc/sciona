@@ -92,11 +92,12 @@ def _make_mock_llm(
     llm = AsyncMock()
 
     async def complete(system: str, user: str) -> str:
-        if "rank" in system.lower() or "score" in system.lower():
+        system_lower = system.lower()
+        if "json array of integer indices" in system_lower or "rank" in system_lower or "score" in system_lower:
             return rank_response
-        elif "reformulate" in system.lower():
+        elif "json array of strings" in system_lower or "generate search queries" in system_lower:
             return queries_response
-        elif "analy" in system.lower():
+        elif "return exactly three lines" in system_lower or "analy" in system_lower:
             return "The types don't match. Try searching for add_comm instead."
         return '["fallback_query"]'
 
@@ -220,10 +221,10 @@ class _GrammarAwareLLM:
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         self.grammar_calls += 1
-        s = system.lower()
-        if "rank" in s or "score" in s:
+        system_lower = system.lower()
+        if "json array of integer indices" in system_lower or "rank" in system_lower or "score" in system_lower:
             return "[0]"
-        if "search expert" in s or "reformulate" in s:
+        if "json array of strings" in system_lower or "generate search queries" in system_lower:
             return '["q1", "q2", "q3", "q4"]'
         return "[]"
 
@@ -273,13 +274,13 @@ class _CapturePromptLLM:
         self.rank_users: list[str] = []
 
     async def complete(self, system: str, user: str) -> str:
-        s = system.lower()
-        if "formal mathematics expert" in s and "rank" in s:
+        system_lower = system.lower()
+        if "json array of integer indices" in system_lower or "rank" in system_lower or "score" in system_lower:
             self.rank_users.append(user)
             return "[0]"
-        if "search expert" in s or "reformulate" in s:
+        if "json array of strings" in system_lower or "generate search queries" in system_lower:
             return '["query1"]'
-        if "analyzing why" in s:
+        if "return exactly three lines" in system_lower or "analy" in system_lower:
             return "analysis"
         return "[]"
 

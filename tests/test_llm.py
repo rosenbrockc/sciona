@@ -160,3 +160,55 @@ class TestConcreteClients:
         assert first_pid.group(1) == second_pid.group(1)
         assert first_count.group(1) == "1"
         assert second_count.group(1) == "2"
+
+    @pytest.mark.asyncio
+    async def test_claude_shim_reuses_live_worker(self, monkeypatch):
+        monkeypatch.setenv("AGEOM_CLI_SHIM_DAEMON_FAKE", "1")
+        monkeypatch.setenv("AGEOM_CLI_SHIM_POOL_SIZE", "1")
+
+        client = create_llm_client(
+            provider="claude_shim",
+            model="sonnet",
+            max_tokens=64,
+        )
+        try:
+            first = await client.complete("sys", "one")
+            second = await client.complete("sys", "two")
+        finally:
+            close = getattr(client, "close", None)
+            if close is not None:
+                await close()
+
+        pid_pattern = re.compile(r"pid=(\d+)")
+        count_pattern = re.compile(r"count=(\d+)")
+        assert pid_pattern.search(first) is not None
+        assert pid_pattern.search(second) is not None
+        assert pid_pattern.search(first).group(1) == pid_pattern.search(second).group(1)
+        assert count_pattern.search(first).group(1) == "1"
+        assert count_pattern.search(second).group(1) == "2"
+
+    @pytest.mark.asyncio
+    async def test_codex_shim_reuses_live_worker(self, monkeypatch):
+        monkeypatch.setenv("AGEOM_CLI_SHIM_DAEMON_FAKE", "1")
+        monkeypatch.setenv("AGEOM_CLI_SHIM_POOL_SIZE", "1")
+
+        client = create_llm_client(
+            provider="codex_shim",
+            model="gpt-5.3-codex",
+            max_tokens=64,
+        )
+        try:
+            first = await client.complete("sys", "one")
+            second = await client.complete("sys", "two")
+        finally:
+            close = getattr(client, "close", None)
+            if close is not None:
+                await close()
+
+        pid_pattern = re.compile(r"pid=(\d+)")
+        count_pattern = re.compile(r"count=(\d+)")
+        assert pid_pattern.search(first) is not None
+        assert pid_pattern.search(second) is not None
+        assert pid_pattern.search(first).group(1) == pid_pattern.search(second).group(1)
+        assert count_pattern.search(first).group(1) == "1"
+        assert count_pattern.search(second).group(1) == "2"
