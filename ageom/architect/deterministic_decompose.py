@@ -37,6 +37,15 @@ class DeterministicRewriteError(ValueError):
     """Raised when deterministic rewrite leaves an invalid typed subgraph."""
 
 
+@dataclass(frozen=True)
+class PrimitiveBindingSuggestion:
+    """Deterministic primitive-binding candidate with confidence and provenance."""
+
+    primitive: Any | None
+    confidence: float
+    source: str
+
+
 _KEYWORD_CONCEPTS: list[tuple[tuple[str, ...], ConceptType]] = [
     (("sort", "ordered", "rank"), ConceptType.SORTING),
     (("search", "lookup", "find"), ConceptType.SEARCHING),
@@ -266,6 +275,8 @@ _HELPER_PORT_TOKENS = {
     "state",
 }
 
+_ATOMIC_BINDING_CONFIDENCE_THRESHOLD = 0.70
+
 _SPECIALIZED_SCAFFOLD_PARENTS: dict[ConceptType, set[str]] = {
     ConceptType.SIGNAL_FILTER: {"design_filter"},
     ConceptType.SIGNAL_TRANSFORM: {"signal_transform"},
@@ -322,13 +333,13 @@ def _suggest_primitive_for_spec(
     *,
     parent: AlgorithmicNode,
     catalog: PrimitiveCatalog,
-) -> Any:
+) -> PrimitiveBindingSuggestion:
     spec_tokens = _primitive_match_tokens(
         str(spec.get("name", "")).strip(),
         str(spec.get("description", "")).strip(),
     )
     if spec_tokens & _ROUTING_WRAPPER_TOKENS and not spec_tokens & _SUBSTANTIVE_COMPUTE_TOKENS:
-        return None
+        return PrimitiveBindingSuggestion(None, 0.0, "")
 
     explicit = str(
         spec.get("matched_primitive")
@@ -339,7 +350,7 @@ def _suggest_primitive_for_spec(
     if explicit:
         prim = _find_primitive(catalog, explicit)
         if prim is not None:
-            return prim
+            return PrimitiveBindingSuggestion(prim, 1.0, "explicit_hint")
 
     name = str(spec.get("name", "")).strip()
     description = str(spec.get("description", "")).strip()
@@ -348,10 +359,12 @@ def _suggest_primitive_for_spec(
             continue
         prim = _find_primitive(catalog, probe)
         if prim is not None:
-            return prim
+            source = "exact_name" if probe == name else "exact_description"
+            confidence = 0.95 if probe == name else 0.90
+            return PrimitiveBindingSuggestion(prim, confidence, source)
 
     if not spec_tokens:
-        return None
+        return PrimitiveBindingSuggestion(None, 0.0, "")
 
     best_primitive = None
     best_score = 0.0
@@ -376,8 +389,9 @@ def _suggest_primitive_for_spec(
             best_primitive = primitive
 
     if best_score >= 3.0:
-        return best_primitive
-    return None
+        normalized = min(0.85, 0.30 + best_score * 0.10)
+        return PrimitiveBindingSuggestion(best_primitive, normalized, "token_overlap")
+    return PrimitiveBindingSuggestion(None, 0.0, "")
 
 
 def _rewrite_conceptual_primitive_names(
@@ -389,9 +403,11 @@ def _rewrite_conceptual_primitive_names(
     rewritten: list[dict[str, Any]] = []
     for item in raw_subs:
         updated = dict(item)
-        primitive = _suggest_primitive_for_spec(updated, parent=parent, catalog=catalog)
-        if primitive is not None:
-            updated.setdefault("matched_primitive_hint", primitive.name)
+        suggestion = _suggest_primitive_for_spec(updated, parent=parent, catalog=catalog)
+        if suggestion.primitive is not None:
+            updated.setdefault("matched_primitive_hint", suggestion.primitive.name)
+            updated.setdefault("primitive_binding_confidence", suggestion.confidence)
+            updated.setdefault("primitive_binding_source", suggestion.source)
         rewritten.append(updated)
     return rewritten
 
@@ -1620,10 +1636,29 @@ def build_deterministic_decomposition(
             or raw.get("atomic_hint")
             or ""
         ).strip()
-        prim = _find_primitive(catalog, prim_hint) or _find_primitive(catalog, name)
+        binding_confidence = float(raw.get("primitive_binding_confidence", 0.0) or 0.0)
+        binding_source = str(raw.get("primitive_binding_source", "")).strip()
+        prim = None
+        if prim_hint:
+            prim = _find_primitive(catalog, prim_hint)
+            if prim is not None and binding_confidence <= 0.0:
+                binding_confidence = 1.0 if binding_source == "explicit_hint" else 0.95
+                binding_source = binding_source or "explicit_hint"
+        if prim is None:
+            suggestion = _suggest_primitive_for_spec(raw, parent=parent, catalog=catalog)
+            prim = suggestion.primitive
+            if suggestion.primitive is not None and suggestion.confidence > binding_confidence:
+                binding_confidence = suggestion.confidence
+                binding_source = suggestion.source
+        if prim is None:
+            prim = _find_primitive(catalog, name)
+            if prim is not None and binding_confidence <= 0.0:
+                binding_confidence = 0.95
+                binding_source = "exact_name"
 
         matched_primitive = prim.name if prim is not None else ""
-        atomic_claim = bool(raw.get("is_atomic", False) or prim is not None)
+        strong_binding = prim is not None and binding_confidence >= _ATOMIC_BINDING_CONFIDENCE_THRESHOLD
+        atomic_claim = bool(raw.get("is_atomic", False) or strong_binding)
 
         node = AlgorithmicNode(
             node_id=f"node_{uuid.uuid4().hex[:8]}",
@@ -1636,6 +1671,8 @@ def build_deterministic_decomposition(
             depth=parent.depth + 1,
             type_signature=str(raw.get("type_signature", "")).strip(),
             matched_primitive=matched_primitive or None,
+            primitive_binding_confidence=binding_confidence,
+            primitive_binding_source=binding_source,
             status=NodeStatus.PENDING,
         )
 

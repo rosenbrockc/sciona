@@ -57,3 +57,20 @@
   - Result: `3 passed`
   - `conda run -n hpyexec pytest -q`
   - Result: `1190 passed, 17 skipped`
+- Commits:
+  - `007829b` `benchmark: add small full-flow comparisons`
+
+## Primitive-Binding Confidence Scoring
+
+- Added explicit primitive-binding confidence and provenance fields to algorithmic nodes.
+- Deterministic primitive normalization now distinguishes explicit, exact, and token-overlap bindings instead of treating all matches equally.
+- Weak token-overlap bindings no longer harden into atomic nodes automatically, and deterministic critique now rejects forced atomic bindings when the score is too weak.
+- Added regressions for:
+  - confidence metadata on exact normalized bindings
+  - weak overlap bindings staying non-atomic
+  - deterministic critique rejecting weak forced atomic bindings
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_decomposition.py tests/test_catalog.py`
+  - Result: `87 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1192 passed, 17 skipped`

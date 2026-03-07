@@ -937,6 +937,16 @@ async def critique_decomposition(
     for child in children:
         if child.status == NodeStatus.ATOMIC and not deps.catalog.is_atomic(child):
             issues.append(f"Node '{child.name}' claims atomic but not in catalog")
+        if (
+            child.status == NodeStatus.ATOMIC
+            and child.matched_primitive
+            and child.primitive_binding_source == "token_overlap"
+            and child.primitive_binding_confidence < 0.75
+        ):
+            issues.append(
+                f"Node '{child.name}' has weak primitive binding "
+                f"({child.matched_primitive}, confidence={child.primitive_binding_confidence:.2f})"
+            )
 
     # Check: typed parents must not degrade into Any-typed children/edges.
     parent_is_typed = any(not _is_any_type(io.type_desc) for io in parent.inputs + parent.outputs)

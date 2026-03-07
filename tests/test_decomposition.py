@@ -385,6 +385,8 @@ class TestDeterministicRewrite:
         assert by_name["Normalize Coefficient Form"].matched_primitive == "canonicalize_filter_coefficients"
         assert by_name["Evaluate Complex Filter Response"].matched_primitive == "compute_frequency_response"
         assert by_name["Assemble Frequency Response Tuple"].matched_primitive == "summarize_frequency_response"
+        assert by_name["Normalize Coefficient Form"].primitive_binding_confidence >= 0.9
+        assert by_name["Normalize Coefficient Form"].primitive_binding_source == "exact_name"
 
     def test_normalizes_apply_filter_concept_without_exact_alias(self):
         catalog = PrimitiveCatalog()
@@ -418,6 +420,40 @@ class TestDeterministicRewrite:
 
         assert result.nodes
         assert result.nodes[0].matched_primitive == "apply_iir_filter"
+        assert result.nodes[0].primitive_binding_confidence >= 0.7
+
+    def test_weak_overlap_primitive_binding_stays_non_atomic(self):
+        catalog = _make_catalog()
+        parent = AlgorithmicNode(
+            node_id="parent_sorting",
+            name="Plan Search Step",
+            description="Coordinate search behavior inside a larger sorting workflow",
+            concept_type=ConceptType.SORTING,
+            inputs=[IOSpec(name="items", type_desc="list[int]")],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Search Sorted Target",
+                        "description": "Search the sorted target item.",
+                    }
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert result.nodes
+        node = result.nodes[0]
+        assert node.matched_primitive == "binary_search"
+        assert node.primitive_binding_source == "token_overlap"
+        assert node.primitive_binding_confidence < 0.70
+        assert node.status == NodeStatus.PENDING
 
     def test_collapses_routing_wrappers_when_work_nodes_exist(self):
         catalog = PrimitiveCatalog()
@@ -2260,6 +2296,82 @@ class TestDeterministicDecompose:
 
         assert result["critique_passed"] is True
         assert "nodes" not in result
+
+    @pytest.mark.asyncio
+    async def test_deterministic_critique_rejects_weak_atomic_token_overlap_binding(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        parent = AlgorithmicNode(
+            node_id="parent",
+            name="Plan Search Step",
+            description="Coordinate search behavior inside a larger sorting workflow",
+            concept_type=ConceptType.SORTING,
+            inputs=[IOSpec(name="items", type_desc="list[int]")],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.DECOMPOSED,
+            depth=1,
+        )
+        weak = AlgorithmicNode(
+            node_id="weak",
+            parent_id="parent",
+            name="Search Sorted Array",
+            description="Search a sorted array for a target value.",
+            concept_type=ConceptType.SORTING,
+            inputs=[
+                IOSpec(name="data", type_desc="sorted list[comparable]"),
+                IOSpec(name="target", type_desc="comparable"),
+            ],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            matched_primitive="binary_search",
+            primitive_binding_confidence=0.69,
+            primitive_binding_source="token_overlap",
+            status=NodeStatus.ATOMIC,
+            depth=2,
+        )
+        compare = AlgorithmicNode(
+            node_id="compare",
+            parent_id="parent",
+            name="Compare",
+            description="Compare two values.",
+            concept_type=ConceptType.SORTING,
+            inputs=[
+                IOSpec(name="a", type_desc="comparable"),
+                IOSpec(name="b", type_desc="comparable"),
+            ],
+            outputs=[IOSpec(name="order", type_desc="bool")],
+            matched_primitive="compare",
+            primitive_binding_confidence=1.0,
+            primitive_binding_source="exact_name",
+            status=NodeStatus.ATOMIC,
+            depth=2,
+        )
+        state: DecompositionState = {
+            "goal": "Search in a sorted array",
+            "max_depth": 8,
+            "nodes": [parent, weak, compare],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "parent",
+            "paradigm": "sorting",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is False
+        assert "weak primitive binding" in result["critique_reason"].lower()
 
     @pytest.mark.asyncio
     async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):
