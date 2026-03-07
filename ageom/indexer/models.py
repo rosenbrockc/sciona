@@ -33,6 +33,7 @@ class IndexMetadata:
     prover: Prover
     source_lib: str
     embedding_model: str
+    embedding_backend: str = "unixcoder"
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )

@@ -129,6 +129,7 @@ class FAISSStore:
                 "prover": self._metadata.prover.value,
                 "source_lib": self._metadata.source_lib,
                 "embedding_model": self._metadata.embedding_model,
+                "embedding_backend": self._metadata.embedding_backend,
                 "created_at": self._metadata.created_at,
             }
         with open(directory / "meta.json", "w") as f:
@@ -175,6 +176,7 @@ class FAISSStore:
                 prover=Prover(md["prover"]),
                 source_lib=md["source_lib"],
                 embedding_model=md["embedding_model"],
+                embedding_backend=md.get("embedding_backend", "unixcoder"),
                 created_at=md["created_at"],
             )
         else:

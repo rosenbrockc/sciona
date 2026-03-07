@@ -5,6 +5,7 @@ from __future__ import annotations
 import pickle
 
 import msgpack
+import numpy as np
 import pytest
 
 from ageom.cli import _load_semantic_index
@@ -140,6 +141,63 @@ def test_cli_loader_reraises_non_faiss_import_errors(tmp_path, monkeypatch):
 
     class _Cfg:
         embedding_model = "microsoft/unixcoder-base"
+        embedding_backend = "fastembed"
 
     with pytest.raises(ImportError, match="broken_dependency"):
         _load_semantic_index(tmp_path, _Cfg())
+
+
+def test_cli_loader_prefers_stored_embedding_backend_metadata(tmp_path, monkeypatch):
+    from ageom.indexer.models import IndexMetadata
+    from ageom.types import Prover
+
+    _write_msgpack_index(tmp_path)
+
+    class _FakeStore:
+        _declarations = {
+            0: Declaration(
+                name="fft_forward",
+                type_signature="ndarray -> ndarray",
+                prover=Prover.PYTHON,
+            )
+        }
+        _metadata = IndexMetadata(
+            num_entries=1,
+            prover=Prover.PYTHON,
+            source_lib="dsp",
+            embedding_model="stored-fastembed-model",
+            embedding_backend="fastembed",
+        )
+
+        def search(self, query_vec, k=10):
+            del query_vec, k
+            return []
+
+    class _FakeEmbedder:
+        def __init__(self):
+            self.backend = "fastembed"
+            self.model_name = "stored-fastembed-model"
+
+        def embed(self, text):
+            del text
+            return np.array([1.0], dtype=np.float32)
+
+    from ageom.indexer.faiss_store import FAISSStore
+    import ageom.indexer.embedder as embedder_mod
+
+    monkeypatch.setattr(FAISSStore, "load", staticmethod(lambda _directory: _FakeStore()))
+    monkeypatch.setattr(
+        embedder_mod,
+        "create_embedder",
+        lambda backend, model_name: _FakeEmbedder()
+        if (backend, model_name) == ("fastembed", "stored-fastembed-model")
+        else (_ for _ in ()).throw(AssertionError((backend, model_name))),
+    )
+
+    class _Cfg:
+        embedding_model = "microsoft/unixcoder-base"
+        embedding_backend = "unixcoder"
+
+    idx, mode = _load_semantic_index(tmp_path, _Cfg())
+    assert mode == "faiss"
+    assert idx.get_declaration("fft_forward") is not None

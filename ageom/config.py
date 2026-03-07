@@ -22,7 +22,8 @@ class AgeomConfig(BaseSettings):
     sources_file: Path = Field(default=Path("sources.yml"))
 
     # Embedding model
-    embedding_model: str = "microsoft/unixcoder-base"
+    embedding_backend: str = "fastembed"  # "fastembed" | "unixcoder"
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
     embedding_dim: int = 768
     embedding_batch_size: int = 32
     semantic_index_backend: str = "auto"  # "auto" | "faiss" | "lexical"

@@ -1,8 +1,4 @@
-"""Skill embedding index for semantic search over algorithmic primitives.
-
-Reuses the existing FAISSStore and UniXcoderEmbedder, building a separate
-index specifically for the architect's primitive catalog.
-"""
+"""Skill embedding index for semantic search over algorithmic primitives."""
 
 from __future__ import annotations
 
@@ -11,30 +7,43 @@ from pathlib import Path
 
 from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive
+from ageom.indexer.embedder import DEFAULT_EMBEDDING_BACKEND, Embedder, create_embedder
 from ageom.indexer.faiss_store import FAISSStore
-from ageom.indexer.models import IndexEntry
+from ageom.indexer.models import IndexEntry, IndexMetadata
 from ageom.types import Declaration, Prover
 
 
 class SkillIndex:
     """Semantic search over algorithmic primitives using FAISS embeddings.
 
-    Wraps the existing indexer infrastructure, storing a separate FAISS index
-    at data/skill_index/ (distinct from the declaration index at data/index/).
+    Stores a separate FAISS index at ``data/skill_index/`` distinct from the
+    declaration index at ``data/index/``.
     """
 
-    def __init__(self, index_dir: str | Path = "data/skill_index") -> None:
+    def __init__(
+        self,
+        index_dir: str | Path = "data/skill_index",
+        *,
+        embedding_backend: str = DEFAULT_EMBEDDING_BACKEND,
+        embedding_model: str | None = None,
+    ) -> None:
         self._index_dir = Path(index_dir)
         self._store = None  # Lazy — set by build or load
-        self._embedder = None  # Lazy
+        self._embedder: Embedder | None = None
+        self._embedding_backend = embedding_backend
+        self._embedding_model = embedding_model
         self._primitives: list[AlgorithmicPrimitive] = []
         self._id_to_primitive: dict[int, AlgorithmicPrimitive] = {}
 
-    def _ensure_embedder(self):
+    def _ensure_embedder(self) -> Embedder:
         if self._embedder is None:
-            from ageom.indexer.embedder import UniXcoderEmbedder
-
-            self._embedder = UniXcoderEmbedder()
+            self._embedder = create_embedder(
+                backend=self._embedding_backend,
+                model_name=self._embedding_model,
+            )
+            self._embedding_backend = self._embedder.backend
+            self._embedding_model = self._embedder.model_name
+        return self._embedder
 
     def _primitive_to_text(self, prim: AlgorithmicPrimitive) -> str:
         """Format a primitive for embedding."""
@@ -92,6 +101,15 @@ class SkillIndex:
             self._id_to_primitive[i] = prim
 
         store.add(entries)
+        store.set_metadata(
+            IndexMetadata(
+                num_entries=len(entries),
+                prover=Prover.LEAN4,
+                source_lib="skill_index",
+                embedding_model=self._embedder.model_name,
+                embedding_backend=self._embedder.backend,
+            )
+        )
         self._store = store
 
     # --- SemanticIndex protocol methods ---
@@ -191,6 +209,11 @@ class SkillIndex:
         directory = Path(directory)
         idx = cls(index_dir=directory)
         idx._store = FAISSStore.load(directory)
+        if idx._store._metadata is not None:
+            idx._embedding_backend = idx._store._metadata.embedding_backend
+            idx._embedding_model = idx._store._metadata.embedding_model
+        else:
+            idx._embedding_backend = "unixcoder"
 
         prims_path = directory / "primitives.json"
         if prims_path.exists():

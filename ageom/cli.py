@@ -155,12 +155,16 @@ def _load_semantic_index(
         return LexicalSemanticIndex.load(index_dir), "lexical_forced"
 
     from ageom.indexer.builder import SemanticIndexImpl
-    from ageom.indexer.embedder import UniXcoderEmbedder
+    from ageom.indexer.embedder import create_embedder
     from ageom.indexer.faiss_store import FAISSStore
 
     try:
         store = FAISSStore.load(index_dir)
-        embedder = UniXcoderEmbedder(config.embedding_model)
+        metadata = store._metadata
+        embedder = create_embedder(
+            backend=metadata.embedding_backend if metadata is not None else config.embedding_backend,
+            model_name=metadata.embedding_model if metadata is not None else config.embedding_model,
+        )
         return SemanticIndexImpl(store, embedder), "faiss"
     except (ImportError, ModuleNotFoundError) as exc:
         if backend == "faiss":
@@ -258,7 +262,11 @@ def _load_skill_index_or_empty(config: "AgeomConfig"):
     """Load the persisted skill index unless explicitly disabled."""
     from ageom.architect.embedder import SkillIndex
 
-    skill_index = SkillIndex(index_dir=config.skill_index_dir)
+    skill_index = SkillIndex(
+        index_dir=config.skill_index_dir,
+        embedding_backend=config.embedding_backend,
+        embedding_model=config.embedding_model,
+    )
     if os.environ.get("AGEOM_DISABLE_SKILL_INDEX", "").strip() in {"1", "true", "yes"}:
         print("Warning: skill index disabled via AGEOM_DISABLE_SKILL_INDEX.", file=sys.stderr)
         return skill_index
@@ -1130,7 +1138,11 @@ def _cmd_skill_index(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     print(f"Building skill index from {catalog.size} primitives...")
-    index = SkillIndex(index_dir=output_dir)
+    index = SkillIndex(
+        index_dir=output_dir,
+        embedding_backend=config.embedding_backend,
+        embedding_model=config.embedding_model,
+    )
     index.build_from_catalog(catalog)
     index.save()
     print(f"Skill index saved to {output_dir}")
@@ -1235,7 +1247,10 @@ def _cmd_index_build(args: argparse.Namespace) -> None:
         print(f"Error: unsupported prover {prover}", file=sys.stderr)
         sys.exit(1)
 
-    builder = IndexBuilder()
+    builder = IndexBuilder(
+        embedding_backend=config.embedding_backend,
+        embedding_model=config.embedding_model,
+    )
     store = builder.build_from_declarations(
         declarations, source_lib=args.path or "Mathlib", prover=prover
     )

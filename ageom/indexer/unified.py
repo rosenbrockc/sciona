@@ -1,4 +1,4 @@
-"""Unified index: single FAISSStore + UniXcoderEmbedder implementing SemanticIndex.
+"""Unified index: single FAISSStore + local embedder implementing SemanticIndex.
 
 Both SkillIndex and SemanticIndexImpl delegate to this common base, ensuring
 the Architect and Hunter can share the same underlying index at runtime.
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ageom.indexer.embedder import UniXcoderEmbedder
+from ageom.indexer.embedder import DEFAULT_EMBEDDING_BACKEND, Embedder, create_embedder
 from ageom.indexer.faiss_store import FAISSStore
 from ageom.indexer.models import IndexEntry
 from ageom.types import Declaration
@@ -17,7 +17,7 @@ from ageom.types import Declaration
 class UnifiedIndex:
     """Core index implementing the SemanticIndex protocol.
 
-    Wraps a single FAISSStore + UniXcoderEmbedder pair and exposes the
+    Wraps a single FAISSStore + local embedder and exposes the
     ``search_by_embedding``, ``search_by_type``, and ``get_declaration``
     methods required by the protocol.
     """
@@ -25,17 +25,29 @@ class UnifiedIndex:
     def __init__(
         self,
         store: FAISSStore | None = None,
-        embedder: UniXcoderEmbedder | None = None,
+        embedder: Embedder | None = None,
+        embedding_backend: str = DEFAULT_EMBEDDING_BACKEND,
+        embedding_model: str | None = None,
     ) -> None:
         self._embedder = embedder
         self._store = store
+        self._embedding_backend = embedding_backend
+        self._embedding_model = embedding_model
         self._by_name: dict[str, Declaration] = {}
         if store is not None:
             self._by_name = {decl.name: decl for decl in store._declarations.values()}
+            if store._metadata is not None:
+                self._embedding_backend = store._metadata.embedding_backend
+                self._embedding_model = store._metadata.embedding_model
+            else:
+                self._embedding_backend = "unixcoder"
 
-    def _ensure_embedder(self) -> UniXcoderEmbedder:
+    def _ensure_embedder(self) -> Embedder:
         if self._embedder is None:
-            self._embedder = UniXcoderEmbedder()
+            self._embedder = create_embedder(
+                backend=self._embedding_backend,
+                model_name=self._embedding_model,
+            )
         return self._embedder
 
     def add_entries(self, entries: list[IndexEntry]) -> None:

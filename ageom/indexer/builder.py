@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from ageom.indexer.embedder import UniXcoderEmbedder
+from ageom.indexer.embedder import (
+    DEFAULT_EMBEDDING_BACKEND,
+    Embedder,
+    create_embedder,
+)
 from ageom.indexer.faiss_store import FAISSStore
 from ageom.indexer.models import IndexEntry, IndexMetadata
 from ageom.types import Declaration, Prover
@@ -13,10 +17,15 @@ class IndexBuilder:
 
     def __init__(
         self,
-        embedder: UniXcoderEmbedder | None = None,
+        embedder: Embedder | None = None,
         store: FAISSStore | None = None,
+        embedding_backend: str = DEFAULT_EMBEDDING_BACKEND,
+        embedding_model: str | None = None,
     ) -> None:
-        self._embedder = embedder or UniXcoderEmbedder()
+        self._embedder = embedder or create_embedder(
+            backend=embedding_backend,
+            model_name=embedding_model,
+        )
         self._store = store or FAISSStore(dim=self._embedder.dim)
 
     def build_from_declarations(
@@ -56,7 +65,8 @@ class IndexBuilder:
                 num_entries=len(entries),
                 prover=prover,
                 source_lib=source_lib,
-                embedding_model="microsoft/unixcoder-base",
+                embedding_model=self._embedder.model_name,
+                embedding_backend=self._embedder.backend,
             )
         )
         return self._store
@@ -71,7 +81,7 @@ class SemanticIndexImpl:
     def __init__(
         self,
         store: FAISSStore,
-        embedder: UniXcoderEmbedder,
+        embedder: Embedder,
         lean_source: object | None = None,  # LeanDeclarationSource, optional
     ) -> None:
         self._store = store

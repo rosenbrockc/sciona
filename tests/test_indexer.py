@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import platform
+import sys
 import types
 import tempfile
 
@@ -39,6 +40,7 @@ class TestIndexMetadata:
             prover=Prover.LEAN4,
             source_lib="Mathlib",
             embedding_model="microsoft/unixcoder-base",
+            embedding_backend="unixcoder",
         )
         assert meta.num_entries == 100
         assert meta.created_at  # auto-set
@@ -102,6 +104,7 @@ class TestFAISSStore:
                 prover=Prover.LEAN4,
                 source_lib="test",
                 embedding_model="test-model",
+                embedding_backend="fastembed",
             )
         )
 
@@ -112,6 +115,8 @@ class TestFAISSStore:
 
             loaded = FAISSStore.load(tmpdir)
             assert loaded.size == 5
+            assert loaded._metadata is not None
+            assert loaded._metadata.embedding_backend == "fastembed"
 
             # Search should work on loaded store
             query = sample_entries[0].embedding
@@ -119,10 +124,35 @@ class TestFAISSStore:
             assert results[0][0].name == "decl_0"
 
 
-class TestUniXcoderEmbedder:
-    """Tests for the embedder - requires transformers + torch."""
+class TestEmbedderFactory:
+    def test_create_fastembed_embedder_uses_local_fastembed_backend(self, monkeypatch):
+        import ageom.indexer.embedder as embedder_mod
 
-    def test_prefers_juliacall_before_transformers_import(self, monkeypatch):
+        class _FakeTextEmbedding:
+            def __init__(self, model_name: str):
+                self.model_name = model_name
+
+            def embed(self, texts, batch_size: int = 32):
+                del batch_size
+                for text in texts:
+                    base = float(len(text))
+                    yield np.array([base, 0.0, 4.0], dtype=np.float32)
+
+        monkeypatch.setitem(
+            sys.modules,
+            "fastembed",
+            types.SimpleNamespace(TextEmbedding=_FakeTextEmbedding),
+        )
+
+        embedder = embedder_mod.create_embedder("fastembed", "fake-fastembed-model")
+
+        assert embedder.backend == "fastembed"
+        assert embedder.model_name == "fake-fastembed-model"
+        vec = embedder.embed("abc")
+        assert vec.shape == (3,)
+        assert abs(float(np.linalg.norm(vec)) - 1.0) < 1e-6
+
+    def test_create_unixcoder_embedder_uses_guard_before_transformers_import(self, monkeypatch):
         import ageom.indexer.embedder as embedder_mod
 
         order: list[str] = []
@@ -157,12 +187,16 @@ class TestUniXcoderEmbedder:
             "_prefer_juliacall_before_torch",
             _record_juliacall,
         )
-        monkeypatch.setitem(__import__("sys").modules, "transformers", fake_transformers)
+        monkeypatch.setitem(sys.modules, "transformers", fake_transformers)
 
-        embedder = embedder_mod.UniXcoderEmbedder("fake-model")
+        embedder = embedder_mod.create_embedder("unixcoder", "fake-model")
 
         assert embedder.dim == 768
         assert order == ["juliacall", "tokenizer", "model", "eval"]
+
+
+class TestUniXcoderEmbedder:
+    """Tests for the unixcoder embedder - requires transformers + torch."""
 
     @pytest.fixture
     def embedder(self):
