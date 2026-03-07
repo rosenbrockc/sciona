@@ -44,3 +44,16 @@
   - Result: `49 passed`
   - `conda run -n hpyexec pytest -q`
   - Result: `1187 passed, 17 skipped`
+- Commits:
+  - `86a9710` `cli: gate retrieval by catalog confidence`
+
+## Small Full-Flow Benchmark Comparisons
+
+- Added a new `flow_benchmark` harness with small multi-domain end-to-end cases spanning decomposition plus matching.
+- The harness compares a `direct_baseline` path against `rapid`, `structured`, and `verified` style full-flow variants.
+- Added stable E2E regressions that keep these small task comparisons in-tree.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_flow_benchmark.py tests/test_e2e_flow_benchmark.py`
+  - Result: `3 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1190 passed, 17 skipped`

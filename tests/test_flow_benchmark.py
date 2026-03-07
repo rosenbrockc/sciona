@@ -1,0 +1,32 @@
+from __future__ import annotations
+
+import pytest
+
+from ageom.flow_benchmark import (
+    default_flow_benchmark_cases,
+    format_flow_benchmark_summary,
+    run_flow_benchmark,
+    summarize_flow_benchmark,
+)
+
+
+def test_default_flow_benchmark_cases_cover_multiple_domains():
+    cases = default_flow_benchmark_cases()
+
+    assert len(cases) == 3
+    assert {case.domain for case in cases} == {"sorting", "graph", "dsp"}
+
+
+@pytest.mark.asyncio
+async def test_flow_benchmark_summary_orders_variants_by_success():
+    cases = default_flow_benchmark_cases()
+
+    results = await run_flow_benchmark(cases=cases)
+    aggregates = summarize_flow_benchmark(results)
+
+    assert aggregates[0].variant in {"rapid", "structured", "verified"}
+    assert aggregates[-1].variant == "direct_baseline"
+    assert aggregates[-1].failed_cases == len(cases)
+
+    summary = format_flow_benchmark_summary(aggregates)
+    assert "variant | pass/total | avg ms" in summary
