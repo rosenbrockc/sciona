@@ -16,8 +16,11 @@ cannot use.  Your job is to expand the catalog so more leaves match.
 | You need **domain-general** primitives with no backing implementation (catalog-only entries) | **Built-in** — add to `catalog.py` | `prompts/expand-builtin.md` |
 
 **Most of the time, use Ingest.** It auto-generates atoms, witnesses, CDGs,
-and contracts from existing code.  Use the other options only when ingestion
-doesn't apply.
+and contracts from existing code.  `prompts/expand-ingest.md` includes
+tables of **40+ pre-identified ingestion targets** with source paths into
+`../ageo-atoms/third_party/`, organized by domain (biosignal, quant finance,
+astronomy, robotics, quantum, ML).  Use the other options only when
+ingestion doesn't apply.
 
 ### Decision guide
 
