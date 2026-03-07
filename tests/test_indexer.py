@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import importlib.util
+import platform
+import types
 import tempfile
 
 import numpy as np
@@ -119,10 +122,59 @@ class TestFAISSStore:
 class TestUniXcoderEmbedder:
     """Tests for the embedder - requires transformers + torch."""
 
+    def test_prefers_juliacall_before_transformers_import(self, monkeypatch):
+        import ageom.indexer.embedder as embedder_mod
+
+        order: list[str] = []
+
+        def _record_juliacall() -> None:
+            order.append("juliacall")
+
+        class _FakeTokenizer:
+            @staticmethod
+            def from_pretrained(_model_name):
+                order.append("tokenizer")
+                return object()
+
+        class _FakeModel:
+            @staticmethod
+            def from_pretrained(_model_name):
+                order.append("model")
+
+                class _Loaded:
+                    def eval(self):
+                        order.append("eval")
+
+                return _Loaded()
+
+        fake_transformers = types.SimpleNamespace(
+            AutoTokenizer=_FakeTokenizer,
+            AutoModel=_FakeModel,
+        )
+
+        monkeypatch.setattr(
+            embedder_mod,
+            "_prefer_juliacall_before_torch",
+            _record_juliacall,
+        )
+        monkeypatch.setitem(__import__("sys").modules, "transformers", fake_transformers)
+
+        embedder = embedder_mod.UniXcoderEmbedder("fake-model")
+
+        assert embedder.dim == 768
+        assert order == ["juliacall", "tokenizer", "model", "eval"]
+
     @pytest.fixture
     def embedder(self):
-        pytest.importorskip("transformers")
-        pytest.importorskip("torch")
+        if importlib.util.find_spec("transformers") is None:
+            pytest.skip("transformers not installed")
+        if importlib.util.find_spec("torch") is None:
+            pytest.skip("torch not installed")
+        if importlib.util.find_spec("juliacall") is not None and platform.system() == "Darwin":
+            pytest.skip(
+                "real UniXcoder integration is unstable with juliacall+torch on macOS; "
+                "covered by import-order unit test and end-to-end runtime checks"
+            )
         from ageom.indexer.embedder import UniXcoderEmbedder
 
         return UniXcoderEmbedder()

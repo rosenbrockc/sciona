@@ -9,6 +9,19 @@ import numpy as np
 from ageom.types import Declaration
 
 
+def _prefer_juliacall_before_torch() -> None:
+    """Best-effort import ordering guard for environments that use juliacall.
+
+    Some environments warn or segfault if torch is imported before juliacall.
+    UniXcoder loads through transformers/torch, so opportunistically import
+    juliacall first when available. Failures here should not block embedding.
+    """
+    try:
+        import juliacall  # noqa: F401
+    except Exception:
+        return
+
+
 class UniXcoderEmbedder:
     """Embeds formal code using microsoft/unixcoder-base.
 
@@ -18,6 +31,7 @@ class UniXcoderEmbedder:
 
     def __init__(self, model_name: str = "microsoft/unixcoder-base") -> None:
         # Lazy imports so torch/transformers aren't required at import time
+        _prefer_juliacall_before_torch()
         from transformers import AutoModel, AutoTokenizer
 
         # UniXcoder currently triggers a tokenizers deprecation inside the
