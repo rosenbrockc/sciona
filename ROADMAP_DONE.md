@@ -281,4 +281,14 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1208 passed, 17 skipped`
 - Commits:
-  - `TBD` `dashboard: expose routing and retrieval summaries`
+  - `5f0209e` `dashboard: expose routing and retrieval summaries`
+
+## Regression Warning Cleanup
+
+- Set `pytest-asyncio` loop-scope config explicitly to remove the standing deprecation warning.
+- Suppressed the known external `torch`-before-`juliacall` warning in pytest so full regressions focus on actionable failures instead of repeated environment noise.
+- Validation:
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1208 passed, 17 skipped`
+- Commits:
+  - `TBD` `test: clean regression warning noise`

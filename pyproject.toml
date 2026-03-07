@@ -76,7 +76,11 @@ packages = ["ageom"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:torch was imported before juliacall.*:UserWarning",
+]
 markers = [
     "slow: marks tests as slow (require model downloads)",
     "match_regression_deterministic: deterministic Hunter regression suite using fixture-backed cases",
