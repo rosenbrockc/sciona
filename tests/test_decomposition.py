@@ -2031,6 +2031,73 @@ class TestDeterministicDecompose:
         assert ("poles", "poles") in edge_pairs
         assert ("stability_report", "stability_report") in edge_pairs
 
+    def test_validate_stability_bad_flow_hint_is_overridden_by_typed_edges(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="n_stability",
+            name="Validate Stability",
+            description="Check filter stability via pole analysis",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            outputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Normalize Coefficient Form",
+                        "description": "Normalize coefficient ordering and representation.",
+                    },
+                    {
+                        "name": "Construct Characteristic Polynomial",
+                        "description": "Build the characteristic polynomial.",
+                    },
+                    {
+                        "name": "Compute Pole Locations",
+                        "description": "Compute discrete-time poles.",
+                    },
+                    {
+                        "name": "Evaluate Discrete-Time Stability",
+                        "description": "Assess whether the poles satisfy the stability criterion.",
+                    },
+                    {
+                        "name": "Emit Stable Coefficients",
+                        "description": "Return validated coefficients after the stability check passes.",
+                    },
+                ],
+                "flow_hints": [
+                    {
+                        "from": "Normalize Coefficient Form",
+                        "to": "Compute Pole Locations",
+                    }
+                ],
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        edge_pairs = {
+            (edge.source_id, edge.target_id, edge.output_name, edge.input_name)
+            for edge in result.edges
+        }
+        by_name = {node.name: node.node_id for node in result.nodes}
+        assert (
+            by_name["Construct Characteristic Polynomial"],
+            by_name["Compute Pole Locations"],
+            "characteristic_polynomial",
+            "characteristic_polynomial",
+        ) in edge_pairs
+        assert (
+            by_name["Normalize Coefficient Form"],
+            by_name["Compute Pole Locations"],
+            "normalized_coefficients",
+            "characteristic_polynomial",
+        ) not in edge_pairs
+
     @pytest.mark.asyncio
     async def test_critique_prompt_includes_matched_primitives(self):
         from ageom.architect.nodes import critique_decomposition
@@ -2113,6 +2180,86 @@ class TestDeterministicDecompose:
         assert result["critique_passed"] is True
         assert "matched_primitive: parse_filter_spec" in captured["user"]
         assert "matched_primitive: choose_filter_topology" in captured["user"]
+
+    @pytest.mark.asyncio
+    async def test_approved_critique_does_not_downgrade_flagged_atomic_children(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            return json.dumps(
+                {
+                    "approved": True,
+                    "reason": "Decomposition is acceptable.",
+                    "flagged_nodes": ["Interpret Design Specification"],
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_filter",
+            name="Design Filter",
+            description="Design filter coefficients from specification",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.DECOMPOSED,
+            depth=1,
+        )
+        validate = AlgorithmicNode(
+            node_id="n_validate",
+            parent_id="n_filter",
+            name="Interpret Design Specification",
+            description="Validate candidate coefficients against design targets.",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[
+                IOSpec(name="candidate_coefficients", type_desc="filter coefficients"),
+                IOSpec(name="design_targets", type_desc="filter design targets"),
+            ],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            matched_primitive="validate_filter_response",
+            status=NodeStatus.ATOMIC,
+            depth=2,
+        )
+        parse = AlgorithmicNode(
+            node_id="n_parse",
+            parent_id="n_filter",
+            name="Parse Filter Requirements",
+            description="Parse the specification into design targets.",
+            concept_type=ConceptType.DATA_ASSEMBLY,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="design_targets", type_desc="filter design targets")],
+            matched_primitive="parse_filter_spec",
+            status=NodeStatus.ATOMIC,
+            depth=2,
+        )
+        state: DecompositionState = {
+            "goal": "Detect heart rate from raw ECG signal",
+            "max_depth": 8,
+            "nodes": [parent, parse, validate],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "n_filter",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is True
+        assert "nodes" not in result
 
     @pytest.mark.asyncio
     async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):

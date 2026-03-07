@@ -1441,9 +1441,21 @@ def _synthesize_matching_input_edges(
         return existing_edges
 
     seen = {_edge_tuple(edge) for edge in existing_edges}
+    nodes_by_id = {node.node_id: node for node in nodes}
     incoming_inputs: dict[str, set[str]] = {}
     for edge in existing_edges:
-        incoming_inputs.setdefault(edge.target_id, set()).add(edge.input_name)
+        target = nodes_by_id.get(edge.target_id)
+        if target is None:
+            continue
+        target_input = next((port for port in target.inputs if port.name == edge.input_name), None)
+        if target_input is None:
+            continue
+        if (
+            target_input.type_desc in {"", "Any"}
+            or edge.source_type == target_input.type_desc
+            and edge.target_type == target_input.type_desc
+        ):
+            incoming_inputs.setdefault(edge.target_id, set()).add(edge.input_name)
 
     augmented = list(existing_edges)
     for target_index, target in enumerate(nodes):
@@ -1485,6 +1497,47 @@ def _synthesize_matching_input_edges(
                 break
 
     return augmented
+
+
+def _prune_conflicting_typed_edges(
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+) -> list[DependencyEdge]:
+    if not edges:
+        return edges
+
+    nodes_by_id = {node.node_id: node for node in nodes}
+    exact_typed_inputs: set[tuple[str, str]] = set()
+    for edge in edges:
+        target = nodes_by_id.get(edge.target_id)
+        if target is None:
+            continue
+        target_input = next((port for port in target.inputs if port.name == edge.input_name), None)
+        if target_input is None:
+            continue
+        if (
+            target_input.type_desc not in {"", "Any"}
+            and edge.source_type == target_input.type_desc
+            and edge.target_type == target_input.type_desc
+        ):
+            exact_typed_inputs.add((edge.target_id, edge.input_name))
+
+    pruned: list[DependencyEdge] = []
+    for edge in edges:
+        target = nodes_by_id.get(edge.target_id)
+        target_input = None if target is None else next(
+            (port for port in target.inputs if port.name == edge.input_name),
+            None,
+        )
+        if (
+            target_input is not None
+            and (edge.target_id, edge.input_name) in exact_typed_inputs
+            and target_input.type_desc not in {"", "Any"}
+            and (edge.source_type != target_input.type_desc or edge.target_type != target_input.type_desc)
+        ):
+            continue
+        pruned.append(edge)
+    return pruned
 
 
 def _collect_edge_hints(parsed: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1605,5 +1658,6 @@ def build_deterministic_decomposition(
     if not edges:
         edges = _build_chain_edges(nodes)
     edges = _synthesize_matching_input_edges(nodes, edges)
+    edges = _prune_conflicting_typed_edges(nodes, edges)
 
     return DeterministicDecomposeResult(nodes=nodes, edges=edges)

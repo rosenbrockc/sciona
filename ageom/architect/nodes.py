@@ -1112,9 +1112,11 @@ async def critique_decomposition(
             payload={"category": category, "reason": reason, "phase": "llm"},
         )
 
-    # Mark flagged nodes as HIGH_RISK via state update
+    # Only rejected critiques should downgrade children. Some models emit
+    # advisory flagged_nodes even when approved=true; treating those as hard
+    # downgrades leaves primitive-bound leaves unresolved.
     flagged_updates: list[AlgorithmicNode] = []
-    if flagged:
+    if flagged and not approved:
         for child in children:
             if child.name in flagged:
                 flagged_updates.append(
