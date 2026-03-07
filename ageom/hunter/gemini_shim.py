@@ -44,6 +44,28 @@ def _resolve_gemini_cli_root() -> str:
     raise RuntimeError(f"Unable to resolve Gemini CLI root from {resolved}")
 
 
+def _stage_gemini_home(runtime_dir: Path, source_home: Path | None = None) -> Path:
+    """Create a writable HOME for Gemini and seed it from the user's config."""
+    source_home = source_home or Path.home()
+    staged_home = runtime_dir / "home"
+    staged_home.mkdir(parents=True, exist_ok=True)
+
+    source_gemini_dir = source_home / ".gemini"
+    staged_gemini_dir = staged_home / ".gemini"
+    if source_gemini_dir.exists():
+        shutil.copytree(source_gemini_dir, staged_gemini_dir, dirs_exist_ok=True)
+    else:
+        staged_gemini_dir.mkdir(parents=True, exist_ok=True)
+
+    source_gcloud_dir = source_home / ".config" / "gcloud"
+    staged_gcloud_dir = staged_home / ".config" / "gcloud"
+    if source_gcloud_dir.exists():
+        staged_gcloud_dir.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source_gcloud_dir, staged_gcloud_dir, dirs_exist_ok=True)
+
+    return staged_home
+
+
 @dataclass
 class _GeminiWorker:
     process: asyncio.subprocess.Process
@@ -76,6 +98,7 @@ class GeminiShimClient:
         self._retry_backoff_s = _env_float("AGEOM_SUBPROCESS_RETRY_BACKOFF_S", 1.5)
         runtime_root = os.getenv("AGEOM_GEMINI_SHIM_RUNTIME_DIR", "/tmp")
         self._runtime_dir = Path(tempfile.mkdtemp(prefix="ags-", dir=runtime_root))
+        self._staged_home = _stage_gemini_home(self._runtime_dir)
         self._daemon_script = Path(__file__).with_name("gemini_daemon.mjs")
         self._cli_root = "" if self._fake_mode else _resolve_gemini_cli_root()
         self._node_bin = shutil.which("node") or "node"
@@ -149,6 +172,10 @@ class GeminiShimClient:
         socket_path = self._runtime_dir / f"worker-{index}.sock"
         env = dict(os.environ)
         env["AGEOM_GEMINI_CLI_ROOT"] = self._cli_root
+        env["HOME"] = str(self._staged_home)
+        env.setdefault("XDG_CONFIG_HOME", str(self._staged_home / ".config"))
+        env.setdefault("XDG_CACHE_HOME", str(self._staged_home / ".cache"))
+        env.setdefault("XDG_STATE_HOME", str(self._staged_home / ".local" / "state"))
         process = await asyncio.create_subprocess_exec(
             self._node_bin,
             str(self._daemon_script),
@@ -168,8 +195,10 @@ class GeminiShimClient:
         except Exception:
             await self._terminate_process(process)
             stderr_text = await self._read_stream(process.stderr)
+            stdout_text = await self._read_stream(process.stdout)
+            details = stderr_text.strip() or stdout_text.strip()
             raise RuntimeError(
-                f"Failed to start Gemini shim worker: {stderr_text.strip()}"
+                f"Failed to start Gemini shim worker: {details}"
             ) from None
 
         worker = _GeminiWorker(

@@ -15,6 +15,7 @@ from ageom.hunter.llm import (
     LlamaCppLLMClient,
     create_llm_client,
 )
+from ageom.hunter.gemini_shim import _stage_gemini_home
 
 
 class _FakeAnthropicMessages:
@@ -75,6 +76,26 @@ class TestCreateLLMClient:
 
 
 class TestConcreteClients:
+    def test_stage_gemini_home_copies_auth_state(self, tmp_path):
+        source_home = tmp_path / "source-home"
+        source_gemini = source_home / ".gemini"
+        source_gemini.mkdir(parents=True)
+        (source_gemini / "oauth_creds.json").write_text('{"token":"x"}', encoding="utf-8")
+        source_gcloud = source_home / ".config" / "gcloud"
+        source_gcloud.mkdir(parents=True)
+        (source_gcloud / "application_default_credentials.json").write_text(
+            '{"client":"y"}', encoding="utf-8"
+        )
+
+        runtime_dir = tmp_path / "runtime"
+        staged_home = _stage_gemini_home(runtime_dir, source_home=source_home)
+
+        assert staged_home == runtime_dir / "home"
+        assert (staged_home / ".gemini" / "oauth_creds.json").read_text(encoding="utf-8") == '{"token":"x"}'
+        assert (
+            staged_home / ".config" / "gcloud" / "application_default_credentials.json"
+        ).read_text(encoding="utf-8") == '{"client":"y"}'
+
     @pytest.mark.asyncio
     async def test_claude_client_complete(self, monkeypatch):
         fake_mod = types.SimpleNamespace(AsyncAnthropic=_FakeAsyncAnthropic)

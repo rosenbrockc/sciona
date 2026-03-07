@@ -129,8 +129,8 @@ class AgeomConfig(BaseSettings):
     architect_critique_llm_model: str = "gpt-5.3-codex"  # faster CLI shim while architect debugging is active
 
     # Hunter per-prompt
-    hunter_score_llm_provider: str = "gemini_shim"
-    hunter_score_llm_model: str = "flash-lite"  # light: fast ranking / constrained selection
+    hunter_score_llm_provider: str = "codex_shim"
+    hunter_score_llm_model: str = "gpt-5.3-codex"  # best current latency for constrained ranking
     hunter_reformulate_llm_provider: str = "gemini_shim"
     hunter_reformulate_llm_model: str = "flash-lite"  # light: query diversity loop
     hunter_analyze_failure_llm_provider: str = "gemini_shim"
