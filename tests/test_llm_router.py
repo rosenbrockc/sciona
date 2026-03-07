@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -125,6 +126,58 @@ class TestConfigPerPromptFields:
         for key in ALL_PROMPT_KEYS:
             assert hasattr(config, f"{key}_llm_provider")
             assert hasattr(config, f"{key}_llm_model")
+
+
+class TestCreateLLMRouter:
+    def test_architect_strategy_and_critique_use_codex_shim_overrides(self, monkeypatch):
+        from ageom.cli import _create_llm_router
+
+        created: list[tuple[str, str]] = []
+
+        def _fake_create_llm_client(*, provider, model, **kwargs):
+            created.append((provider, model))
+            client = MagicMock()
+            client.provider = provider
+            client.model = model
+            return client
+
+        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+
+        args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
+        config = SimpleNamespace(
+            llm_provider="anthropic",
+            llm_model="claude-sonnet-4-5-20250929",
+            llm_max_tokens=4096,
+            anthropic_api_key="",
+            openai_api_key="",
+            openai_base_url="",
+            llama_cpp_base_url="http://127.0.0.1:8080/v1",
+            llama_cpp_api_key="local",
+            use_agent_layer=False,
+            architect_llm_provider="",
+            architect_llm_model="",
+            architect_strategy_llm_provider="codex_shim",
+            architect_strategy_llm_model="gpt-5.3-codex",
+            architect_decompose_llm_provider="",
+            architect_decompose_llm_model="",
+            architect_critique_llm_provider="codex_shim",
+            architect_critique_llm_model="gpt-5.3-codex",
+        )
+
+        router = _create_llm_router(
+            args,
+            config,
+            "architect",
+            ["architect_strategy", "architect_decompose", "architect_critique"],
+        )
+
+        assert isinstance(router, LLMRouter)
+        assert created == [
+            ("anthropic", "claude-sonnet-4-5-20250929"),
+            ("codex_shim", "gpt-5.3-codex"),
+        ]
+        assert router.for_prompt("architect_strategy") is router.for_prompt("architect_critique")
+        assert router.for_prompt("architect_decompose") is router._default
 
 
 # ---------------------------------------------------------------------------

@@ -119,12 +119,12 @@ class AgeomConfig(BaseSettings):
     # Heavy tier  → remote API          (falls back to agent/global default)
 
     # Architect per-prompt
-    architect_strategy_llm_provider: str = "llama_cpp"
-    architect_strategy_llm_model: str = "qwen2.5-coder:7b"  # light: pick 1 from enum
+    architect_strategy_llm_provider: str = "codex_shim"
+    architect_strategy_llm_model: str = "gpt-5.3-codex"  # faster CLI shim while architect debugging is active
     architect_decompose_llm_provider: str = ""  # remote: graph design + type reasoning
     architect_decompose_llm_model: str = ""
-    architect_critique_llm_provider: str = "llama_cpp"
-    architect_critique_llm_model: str = "qwen3:14b"  # medium: verification checklist
+    architect_critique_llm_provider: str = "codex_shim"
+    architect_critique_llm_model: str = "gpt-5.3-codex"  # faster CLI shim while architect debugging is active
 
     # Hunter per-prompt
     hunter_score_llm_provider: str = "llama_cpp"
