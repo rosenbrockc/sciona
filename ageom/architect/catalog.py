@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -45,6 +46,16 @@ class CatalogReport:
     merged: int = 0
     structural_skips: int = 0
     merge_details: list[tuple[str, str, float]] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class CatalogConfidence:
+    """Heuristic confidence that a task text maps onto known catalog primitives."""
+
+    score: float
+    exact_matches: tuple[str, ...] = ()
+    strong_matches: tuple[str, ...] = ()
+    max_overlap: float = 0.0
 
 
 class PrimitiveCatalog:
@@ -110,11 +121,65 @@ class PrimitiveCatalog:
         """Return all primitives in the catalog."""
         return list(self._primitives.values())
 
+    @staticmethod
+    def _tokenize_text(text: str) -> set[str]:
+        return {
+            token
+            for token in re.findall(r"[a-z0-9]+", text.lower())
+            if len(token) >= 3
+        }
+
     def is_atomic(self, node: AlgorithmicNode) -> bool:
         """Check if a node matches any known primitive by name."""
         if node.matched_primitive and self.get(node.matched_primitive) is not None:
             return True
         return self.get(node.name) is not None
+
+    def estimate_confidence(self, text: str) -> CatalogConfidence:
+        """Estimate whether retrieval is likely to pay off for the given task text."""
+        normalized_text = self._normalize_key(text)
+        text_tokens = self._tokenize_text(text)
+        if not normalized_text or not text_tokens or not self._primitives:
+            return CatalogConfidence(score=0.0)
+
+        exact_matches: list[str] = []
+        strong_matches: list[str] = []
+        max_overlap = 0.0
+
+        seen_exact: set[str] = set()
+        for alias, primitive_name in self._aliases.items():
+            alias_tokens = tuple(token for token in alias.split("_") if token)
+            if not alias_tokens:
+                continue
+            if len(alias_tokens) == 1 and len(alias_tokens[0]) < 5:
+                continue
+            alias_phrase = "_".join(alias_tokens)
+            if alias_phrase in normalized_text and primitive_name not in seen_exact:
+                exact_matches.append(primitive_name)
+                seen_exact.add(primitive_name)
+
+        for primitive in self._primitives.values():
+            prim_tokens = set(self._normalize_key(primitive.name).split("_"))
+            prim_tokens |= self._tokenize_text(primitive.description)
+            prim_tokens = {token for token in prim_tokens if token}
+            if not prim_tokens:
+                continue
+            overlap = len(text_tokens & prim_tokens) / max(1, len(prim_tokens))
+            max_overlap = max(max_overlap, overlap)
+            if overlap >= 0.2:
+                strong_matches.append(primitive.name)
+
+        exact_score = 0.55 if exact_matches else 0.0
+        strong_score = min(0.25, len(strong_matches) * 0.05)
+        overlap_score = min(0.20, max_overlap * 0.50)
+        score = min(1.0, exact_score + strong_score + overlap_score)
+
+        return CatalogConfidence(
+            score=score,
+            exact_matches=tuple(exact_matches[:5]),
+            strong_matches=tuple(strong_matches[:5]),
+            max_overlap=max_overlap,
+        )
 
     # ------------------------------------------------------------------
     # De-duplication

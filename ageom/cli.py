@@ -14,6 +14,7 @@ import threading
 import time
 import uuid
 import webbrowser
+from dataclasses import dataclass
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -118,6 +119,114 @@ def _create_llm_router(
     if not overrides:
         return default
     return LLMRouter(default=default, overrides=overrides)
+
+
+@dataclass(frozen=True)
+class RetrievalPolicy:
+    """Effective retrieval gates after combining mode and catalog-confidence signals."""
+
+    catalog_confidence: float
+    confidence_band: str
+    confidence_source: str
+    skill_index_enabled: bool
+    graph_retrieval_enabled: bool
+    semantic_index_backend_override: str | None
+    hunter_mode: str
+
+
+def _resolve_retrieval_policy(
+    *,
+    mode_settings: Any,
+    catalog: Any | None,
+    texts: list[str] | tuple[str, ...],
+) -> RetrievalPolicy:
+    """Decide whether retrieval should stay enabled for the current task."""
+    semantic_override = getattr(mode_settings, "semantic_index_backend_override", None)
+    hunter_mode = str(getattr(mode_settings, "hunter_mode", "standard"))
+    graph_enabled = bool(getattr(mode_settings, "graph_retrieval_enabled", False))
+    skill_enabled = bool(getattr(mode_settings, "skill_index_enabled", False))
+
+    if catalog is None or getattr(catalog, "size", 0) == 0:
+        return RetrievalPolicy(
+            catalog_confidence=0.0,
+            confidence_band="none",
+            confidence_source="empty_catalog",
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override=semantic_override or "lexical",
+            hunter_mode="standard",
+        )
+
+    confidences = []
+    for text in texts:
+        stripped = str(text or "").strip()
+        if not stripped:
+            continue
+        confidence = catalog.estimate_confidence(stripped)
+        confidences.append((stripped, confidence))
+
+    if not confidences:
+        return RetrievalPolicy(
+            catalog_confidence=0.0,
+            confidence_band="low",
+            confidence_source="no_text",
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override=semantic_override or "lexical",
+            hunter_mode="standard",
+        )
+
+    best_text, best = max(confidences, key=lambda item: item[1].score)
+    band = "low"
+    if best.score >= 0.70:
+        band = "high"
+    elif best.score >= 0.40:
+        band = "medium"
+
+    if band == "low":
+        return RetrievalPolicy(
+            catalog_confidence=best.score,
+            confidence_band=band,
+            confidence_source=best_text,
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override=semantic_override or "lexical",
+            hunter_mode="standard",
+        )
+
+    if band == "medium":
+        return RetrievalPolicy(
+            catalog_confidence=best.score,
+            confidence_band=band,
+            confidence_source=best_text,
+            skill_index_enabled=skill_enabled,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override=semantic_override or "lexical",
+            hunter_mode="standard",
+        )
+
+    return RetrievalPolicy(
+        catalog_confidence=best.score,
+        confidence_band=band,
+        confidence_source=best_text,
+        skill_index_enabled=skill_enabled,
+        graph_retrieval_enabled=graph_enabled,
+        semantic_index_backend_override=semantic_override,
+        hunter_mode=hunter_mode,
+    )
+
+
+def _print_retrieval_policy(policy: RetrievalPolicy) -> None:
+    """Print the effective retrieval policy for the current task."""
+    print(
+        "Retrieval policy: "
+        f"catalog_confidence={policy.catalog_confidence:.2f} "
+        f"({policy.confidence_band}), "
+        f"skill_index={'on' if policy.skill_index_enabled else 'off'}, "
+        f"graph_retrieval={'on' if policy.graph_retrieval_enabled else 'off'}, "
+        f"semantic_backend={policy.semantic_index_backend_override or 'default'}, "
+        f"hunter_mode={policy.hunter_mode}"
+    )
 
 
 def _parse_prompt_benchmark_provider_specs(
@@ -1666,6 +1775,12 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     _print_mode_summary("decompose", mode_settings)
 
     catalog = _load_architect_catalog(args, config)
+    retrieval_policy = _resolve_retrieval_policy(
+        mode_settings=mode_settings,
+        catalog=catalog,
+        texts=[args.goal],
+    )
+    _print_retrieval_policy(retrieval_policy)
 
     if catalog.size == 0:
         print(
@@ -1675,7 +1790,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
 
     skill_index = _load_skill_index_or_empty(
         config,
-        enabled=mode_settings.skill_index_enabled,
+        enabled=retrieval_policy.skill_index_enabled,
     )
 
     # Set up LLM
@@ -1715,7 +1830,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     # Set up graph retriever (opt-in)
     retriever = None
     graph_store_ctx = None
-    if mode_settings.graph_retrieval_enabled:
+    if retrieval_policy.graph_retrieval_enabled:
         from ageom.architect.graph_retrieval import make_retriever
         from ageom.graph_store import GraphStore
 
@@ -1823,6 +1938,43 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     _print_mode_summary("match", mode_settings)
 
+    # Build PDG nodes
+    nodes: list[PDGNode] = []
+    prover = Prover(args.prover)
+    if args.statement:
+        nodes.append(
+            PDGNode(
+                predicate_id="cli-0",
+                statement=args.statement,
+                prover=prover,
+            )
+        )
+    elif args.pdg_file:
+        pdg_path = Path(args.pdg_file)
+        with open(pdg_path) as f:
+            pdg_data = json.load(f)
+        for item in pdg_data:
+            nodes.append(
+                PDGNode(
+                    predicate_id=item.get("predicate_id", ""),
+                    statement=item["statement"],
+                    informal_desc=item.get("informal_desc", ""),
+                    prover=prover,
+                    context=item.get("context", {}),
+                )
+            )
+    else:
+        print("Error: provide --statement or --pdg-file", file=sys.stderr)
+        sys.exit(1)
+
+    catalog = _load_architect_catalog(args, config)
+    retrieval_policy = _resolve_retrieval_policy(
+        mode_settings=mode_settings,
+        catalog=catalog,
+        texts=[f"{node.statement} {node.informal_desc}".strip() for node in nodes],
+    )
+    _print_retrieval_policy(retrieval_policy)
+
     # Load index
     index_dir = Path(args.index_dir) if args.index_dir else config.index_dir
     if not index_dir.exists():
@@ -1835,7 +1987,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     index, index_mode = _load_semantic_index(
         index_dir,
         config,
-        backend_override=mode_settings.semantic_index_backend_override,
+        backend_override=retrieval_policy.semantic_index_backend_override,
     )
     if index_mode != "faiss":
         print(
@@ -1844,7 +1996,6 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         )
 
     # Set up verification oracle
-    prover = Prover(args.prover)
     env = _create_proof_env(prover, config)
     if prover == Prover.LEAN4:
         oracle = VerificationOracleImpl(lean_env=env)
@@ -1890,7 +2041,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         max_iterations=config.hunter_max_iterations,
         top_k_verify=config.hunter_top_k_verify,
         search_k=config.hunter_search_k,
-        mode=mode_settings.hunter_mode,
+        mode=retrieval_policy.hunter_mode,
         use_gbnf=mode_settings.hunter_use_gbnf,
         query_batch_size=config.hunter_query_batch_size,
         top_k_per_query=config.hunter_top_k_per_query,
@@ -1901,34 +2052,6 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         run_id=run_id,
         context_budget_chars=config.hunter_shared_context_budget_chars,
     )
-
-    # Build PDG nodes
-    nodes: list[PDGNode] = []
-    if args.statement:
-        nodes.append(
-            PDGNode(
-                predicate_id="cli-0",
-                statement=args.statement,
-                prover=prover,
-            )
-        )
-    elif args.pdg_file:
-        pdg_path = Path(args.pdg_file)
-        with open(pdg_path) as f:
-            pdg_data = json.load(f)
-        for item in pdg_data:
-            nodes.append(
-                PDGNode(
-                    predicate_id=item.get("predicate_id", ""),
-                    statement=item["statement"],
-                    informal_desc=item.get("informal_desc", ""),
-                    prover=prover,
-                    context=item.get("context", {}),
-                )
-            )
-    else:
-        print("Error: provide --statement or --pdg-file", file=sys.stderr)
-        sys.exit(1)
 
     # Run matching
     for node in nodes:
@@ -2259,6 +2382,13 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     event_log.clear()
     if getattr(args, "trace", False):
         event_log.configure_live_output(output_dir / "trace.jsonl")
+    catalog = _load_architect_catalog(args, config)
+    retrieval_policy = _resolve_retrieval_policy(
+        mode_settings=mode_settings,
+        catalog=catalog,
+        texts=[args.goal],
+    )
+    _print_retrieval_policy(retrieval_policy)
     telemetry_run_id = start_run(
         "algorithm_creation",
         metadata={
@@ -2268,6 +2398,15 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             "max_rounds": int(args.max_rounds),
             "execution_mode": mode_settings.mode,
             "mode_features": _mode_feature_summary(mode_settings),
+            "retrieval_policy": {
+                "catalog_confidence": retrieval_policy.catalog_confidence,
+                "confidence_band": retrieval_policy.confidence_band,
+                "skill_index": retrieval_policy.skill_index_enabled,
+                "graph_retrieval": retrieval_policy.graph_retrieval_enabled,
+                "semantic_backend": retrieval_policy.semantic_index_backend_override
+                or "default",
+                "hunter_mode": retrieval_policy.hunter_mode,
+            },
         },
     )
 
@@ -2275,11 +2414,9 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         with telemetry_scope(run_id=telemetry_run_id):
             update_stage(stage="setup", status="running", message="loading dependencies")
 
-            catalog = _load_architect_catalog(args, config)
-
             skill_index = _load_skill_index_or_empty(
                 config,
-                enabled=mode_settings.skill_index_enabled,
+                enabled=retrieval_policy.skill_index_enabled,
             )
 
             # Set up LLM
@@ -2313,7 +2450,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
 
             retriever = None
             graph_store_ctx = None
-            if mode_settings.graph_retrieval_enabled:
+            if retrieval_policy.graph_retrieval_enabled:
                 from ageom.architect.graph_retrieval import make_retriever
                 from ageom.graph_store import GraphStore as _GraphStore
 
@@ -2378,7 +2515,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 index, index_mode = _load_semantic_index(
                     index_dir,
                     config,
-                    backend_override=mode_settings.semantic_index_backend_override,
+                    backend_override=retrieval_policy.semantic_index_backend_override,
                 )
                 if index_mode != "faiss":
                     print(
@@ -2428,7 +2565,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     max_iterations=config.hunter_max_iterations,
                     top_k_verify=config.hunter_top_k_verify,
                     search_k=config.hunter_search_k,
-                    mode=mode_settings.hunter_mode,
+                    mode=retrieval_policy.hunter_mode,
                     use_gbnf=mode_settings.hunter_use_gbnf,
                     query_batch_size=config.hunter_query_batch_size,
                     top_k_per_query=config.hunter_top_k_per_query,
@@ -2527,10 +2664,16 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     _print_mode_summary("optimize", mode_settings)
 
     catalog = _load_architect_catalog(args, config)
+    retrieval_policy = _resolve_retrieval_policy(
+        mode_settings=mode_settings,
+        catalog=catalog,
+        texts=[args.goal],
+    )
+    _print_retrieval_policy(retrieval_policy)
 
     skill_index = _load_skill_index_or_empty(
         config,
-        enabled=mode_settings.skill_index_enabled,
+        enabled=retrieval_policy.skill_index_enabled,
     )
 
     # LLM

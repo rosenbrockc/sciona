@@ -30,3 +30,17 @@
   - Result: `9 passed`
   - `conda run -n hpyexec pytest -q`
   - Result: `1182 passed, 17 skipped`
+- Commits:
+  - `c5f42bd` `benchmark: compare direct prompt baselines`
+
+## Conditional Retrieval By Confidence And Mode
+
+- Added a catalog-confidence heuristic so retrieval is now gated by task text instead of always-on defaults.
+- `decompose`, `match`, `run`, and `optimize` now derive an effective retrieval policy from execution mode plus catalog confidence.
+- Low-confidence tasks now disable heavier retrieval paths and force lexical fallback; high-confidence tasks preserve stronger retrieval paths.
+- Added regression coverage for the confidence heuristic and retrieval-policy banding.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_retrieval_policy.py tests/test_execution_modes.py tests/test_cli_skill_index.py tests/test_catalog.py`
+  - Result: `49 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1187 passed, 17 skipped`
