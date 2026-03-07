@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ageom.cli import _mode_feature_summary
 from ageom.config import AgeomConfig, resolve_execution_mode
 
 
@@ -65,3 +66,18 @@ def test_rapid_mode_uses_lexical_and_disables_shared_features(monkeypatch):
     assert mode.hunter_mode == "standard"
     assert mode.hunter_use_gbnf is False
     assert mode.semantic_index_backend_override == "lexical"
+
+
+def test_mode_feature_summary_renders_expected_flags(monkeypatch):
+    monkeypatch.setenv("AGEOM_EXECUTION_MODE", "rapid")
+    config = AgeomConfig()
+    mode = resolve_execution_mode(config)
+
+    summary = _mode_feature_summary(mode)
+
+    assert summary["mode"] == "rapid"
+    assert summary["skill_index"] == "off"
+    assert summary["graph_retrieval"] == "off"
+    assert summary["hunter_mode"] == "standard"
+    assert summary["hunter_gbnf"] == "off"
+    assert summary["semantic_backend"] == "lexical"

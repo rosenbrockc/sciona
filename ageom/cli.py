@@ -150,6 +150,49 @@ def _add_mode_argument(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _mode_feature_summary(mode_settings: Any) -> dict[str, str]:
+    """Render the resolved execution-mode feature gates for display/telemetry."""
+    return {
+        "mode": str(mode_settings.mode),
+        "skill_index": "on" if mode_settings.skill_index_enabled else "off",
+        "graph_retrieval": "on" if mode_settings.graph_retrieval_enabled else "off",
+        "architect_context": "on"
+        if mode_settings.architect_shared_context_enabled
+        else "off",
+        "hunter_context": "on" if mode_settings.hunter_shared_context_enabled else "off",
+        "synth_context": "on"
+        if mode_settings.synthesizer_shared_context_enabled
+        else "off",
+        "ingester_context": "on"
+        if mode_settings.ingester_shared_context_enabled
+        else "off",
+        "hunter_mode": str(mode_settings.hunter_mode),
+        "hunter_gbnf": "on" if mode_settings.hunter_use_gbnf else "off",
+        "semantic_backend": (
+            str(mode_settings.semantic_index_backend_override)
+            if mode_settings.semantic_index_backend_override
+            else "default"
+        ),
+    }
+
+
+def _print_mode_summary(command_name: str, mode_settings: Any) -> None:
+    """Print a compact execution-mode summary for the current command."""
+    summary = _mode_feature_summary(mode_settings)
+    print(
+        f"Execution mode ({command_name}): {summary['mode']} "
+        f"[skill_index={summary['skill_index']}, "
+        f"graph_retrieval={summary['graph_retrieval']}, "
+        f"architect_context={summary['architect_context']}, "
+        f"hunter_context={summary['hunter_context']}, "
+        f"synth_context={summary['synth_context']}, "
+        f"ingester_context={summary['ingester_context']}, "
+        f"hunter_mode={summary['hunter_mode']}, "
+        f"hunter_gbnf={summary['hunter_gbnf']}, "
+        f"semantic_backend={summary['semantic_backend']}]"
+    )
+
+
 def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironment":
     """Create the appropriate ProofEnvironment for the given prover.
 
@@ -1417,6 +1460,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     output_dir = Path(args.output) if args.output else Path("output") / args.class_name
     output_dir.mkdir(parents=True, exist_ok=True)
+    _print_mode_summary("ingest", mode_settings)
 
     llm_provider = (
         getattr(args, "llm_provider", None)
@@ -1613,6 +1657,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     max_depth = args.max_depth or config.architect_max_depth
+    _print_mode_summary("decompose", mode_settings)
 
     catalog = _load_architect_catalog(args, config)
 
@@ -1770,6 +1815,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
 
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
+    _print_mode_summary("match", mode_settings)
 
     # Load index
     index_dir = Path(args.index_dir) if args.index_dir else config.index_dir
@@ -2052,6 +2098,7 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
 
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
+    _print_mode_summary("synthesize", mode_settings)
 
     # Load CDG
     cdg_path = Path(args.cdg_file)
@@ -2178,7 +2225,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.graph import DecompositionAgent
     from ageom.architect.handoff import save_json
-    from ageom.config import AgeomConfig
+    from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.hunter.graph import HunterAgent
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.orchestrator import run_orchestration
@@ -2194,9 +2241,11 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     from ageom.types import Prover
 
     config = AgeomConfig()
+    mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     prover = Prover(args.prover)
     output_dir = Path(args.output) if args.output else Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
+    _print_mode_summary("run", mode_settings)
 
     configure_dashboard_output(config.telemetry_runs_dir)
     event_log = get_event_log()
@@ -2211,6 +2260,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             "goal": args.goal,
             "prover": prover.value,
             "max_rounds": int(args.max_rounds),
+            "execution_mode": mode_settings.mode,
+            "mode_features": _mode_feature_summary(mode_settings),
         },
     )
 
@@ -2467,6 +2518,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
+    _print_mode_summary("optimize", mode_settings)
 
     catalog = _load_architect_catalog(args, config)
 
