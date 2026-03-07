@@ -106,6 +106,7 @@ async def test_run_prompt_benchmark_with_good_provider_passes_all_cases(tmp_path
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert len(payload["results"]) == len(results)
     assert len(payload["aggregates"]) == 1
+    assert payload["aggregates"][0]["variant"] == "tuned"
 
 
 @pytest.mark.asyncio
@@ -122,4 +123,21 @@ async def test_run_prompt_benchmark_summarizes_provider_quality():
     assert [aggregate.provider for aggregate in aggregates][:2] == ["good", "bad"]
     assert aggregates[0].passed_cases > aggregates[1].passed_cases
     summary = format_prompt_benchmark_summary(aggregates)
-    assert "provider | model | pass/total" in summary
+    assert "provider | variant | model | pass/total" in summary
+
+
+@pytest.mark.asyncio
+async def test_run_prompt_benchmark_compare_direct_baseline_adds_variants():
+    providers = [PromptBenchmarkProvider(name="good", client=_GoodBenchmarkLLM())]
+    cases = select_prompt_benchmark_cases(prompt_keys=["hunter_score"])
+    results = await run_prompt_benchmark(
+        providers=providers,
+        cases=cases,
+        compare_direct_baseline=True,
+    )
+
+    assert len(results) == len(cases) * 2
+    assert {result.variant for result in results} == {"tuned", "direct_baseline"}
+
+    aggregates = summarize_prompt_benchmark(results)
+    assert {aggregate.variant for aggregate in aggregates} == {"tuned", "direct_baseline"}

@@ -35,6 +35,8 @@ class PromptBenchmarkCase:
     expected: dict[str, Any]
     grammar: str = ""
     use_grammar: bool = True
+    baseline_system: str = ""
+    baseline_user: str = ""
 
 
 @dataclass(frozen=True)
@@ -50,6 +52,7 @@ class PromptBenchmarkResult:
     prompt_key: str
     provider: str
     model: str
+    variant: str
     latency_ms: float
     ok: bool
     validation_error: str = ""
@@ -63,6 +66,7 @@ class PromptBenchmarkResult:
 class PromptBenchmarkAggregate:
     provider: str
     model: str
+    variant: str
     total_cases: int = 0
     passed_cases: int = 0
     failed_cases: int = 0
@@ -122,6 +126,16 @@ def _score_case(
         ),
         grammar=_INT_ARRAY_GBNF,
         expected={"kind": "int_array", "first_index": expected_first_index},
+        baseline_system=(
+            "Choose the best candidate functions for the task. "
+            "Return ONLY a JSON array of integer indices ordered from best to worst."
+        ),
+        baseline_user=(
+            f"Task: {statement}\n"
+            f"Description: {informal_desc}\n"
+            f"Candidates:\n{candidates_list}\n\n"
+            "Return the JSON array of candidate indices:"
+        ),
     )
 
 
@@ -152,6 +166,19 @@ def _reformulate_case(
         ),
         grammar=_STRING_ARRAY_GBNF,
         expected={"kind": "string_array", "required_terms": list(required_terms)},
+        baseline_system=(
+            "Suggest better search queries for this failed retrieval attempt. "
+            "Return ONLY a JSON array of strings."
+        ),
+        baseline_user=(
+            f"Predicate ID: {predicate_id}\n"
+            f"Task: {statement}\n"
+            f"Description: {informal_desc}\n"
+            f"Prover: {prover}\n"
+            f"Queries tried:\n" + "\n".join(f"- {q}" for q in queries_tried) + "\n"
+            f"Errors:\n{compiler_errors}\n\n"
+            "Return the JSON array of better queries:"
+        ),
     )
 
 
@@ -178,6 +205,16 @@ def _analyze_failure_case(
         ),
         use_grammar=False,
         expected={"kind": "failure_triplet", "target_terms": list(target_terms)},
+        baseline_system=(
+            "Briefly analyze the failed candidate. "
+            "Return exactly three lines starting with CAUSE:, TARGET:, and NEXT:."
+        ),
+        baseline_user=(
+            f"Task: {statement}\n"
+            f"Candidate: {candidate_name}\n"
+            f"Type: {candidate_type}\n"
+            f"Compiler output:\n{compiler_output}"
+        ),
     )
 
 
@@ -375,6 +412,7 @@ async def run_prompt_benchmark(
     providers: Sequence[PromptBenchmarkProvider],
     cases: Sequence[PromptBenchmarkCase],
     repeats: int = 1,
+    compare_direct_baseline: bool = False,
 ) -> list[PromptBenchmarkResult]:
     results: list[PromptBenchmarkResult] = []
     repeat_count = max(1, int(repeats))
@@ -383,46 +421,58 @@ async def run_prompt_benchmark(
             getattr(provider.client, "_model", "")
         )
         for case in cases:
+            variants = [("tuned", case.system, case.user)]
+            if compare_direct_baseline:
+                variants.append(
+                    (
+                        "direct_baseline",
+                        case.baseline_system or case.system,
+                        case.baseline_user or case.user,
+                    )
+                )
             for _ in range(repeat_count):
-                started = time.perf_counter()
-                try:
-                    if case.grammar and case.use_grammar and hasattr(
-                        provider.client, "complete_with_grammar"
-                    ):
-                        output = await provider.client.complete_with_grammar(
-                            case.system, case.user, case.grammar
+                for variant, system, user in variants:
+                    started = time.perf_counter()
+                    try:
+                        if case.grammar and case.use_grammar and hasattr(
+                            provider.client, "complete_with_grammar"
+                        ):
+                            output = await provider.client.complete_with_grammar(
+                                system, user, case.grammar
+                            )
+                        else:
+                            output = await provider.client.complete(system, user)
+                        latency_ms = (time.perf_counter() - started) * 1000.0
+                        validation_error = _validate_case_output(case, output)
+                        results.append(
+                            PromptBenchmarkResult(
+                                case_id=case.case_id,
+                                domain=case.domain,
+                                prompt_key=case.prompt_key,
+                                provider=provider.name,
+                                model=model,
+                                variant=variant,
+                                latency_ms=latency_ms,
+                                ok=validation_error == "",
+                                validation_error=validation_error,
+                                output_preview=output[:200],
+                            )
                         )
-                    else:
-                        output = await provider.client.complete(case.system, case.user)
-                    latency_ms = (time.perf_counter() - started) * 1000.0
-                    validation_error = _validate_case_output(case, output)
-                    results.append(
-                        PromptBenchmarkResult(
-                            case_id=case.case_id,
-                            domain=case.domain,
-                            prompt_key=case.prompt_key,
-                            provider=provider.name,
-                            model=model,
-                            latency_ms=latency_ms,
-                            ok=validation_error == "",
-                            validation_error=validation_error,
-                            output_preview=output[:200],
+                    except Exception as exc:
+                        latency_ms = (time.perf_counter() - started) * 1000.0
+                        results.append(
+                            PromptBenchmarkResult(
+                                case_id=case.case_id,
+                                domain=case.domain,
+                                prompt_key=case.prompt_key,
+                                provider=provider.name,
+                                model=model,
+                                variant=variant,
+                                latency_ms=latency_ms,
+                                ok=False,
+                                validation_error=str(exc),
+                            )
                         )
-                    )
-                except Exception as exc:
-                    latency_ms = (time.perf_counter() - started) * 1000.0
-                    results.append(
-                        PromptBenchmarkResult(
-                            case_id=case.case_id,
-                            domain=case.domain,
-                            prompt_key=case.prompt_key,
-                            provider=provider.name,
-                            model=model,
-                            latency_ms=latency_ms,
-                            ok=False,
-                            validation_error=str(exc),
-                        )
-                    )
     return results
 
 
@@ -431,25 +481,32 @@ def summarize_prompt_benchmark(
 ) -> list[PromptBenchmarkAggregate]:
     aggregates: dict[tuple[str, str], PromptBenchmarkAggregate] = {}
     for result in results:
-        key = (result.provider, result.model)
+        key = (result.provider, result.model, result.variant)
         aggregate = aggregates.setdefault(
             key,
-            PromptBenchmarkAggregate(provider=result.provider, model=result.model),
+            PromptBenchmarkAggregate(
+                provider=result.provider,
+                model=result.model,
+                variant=result.variant,
+            ),
         )
         aggregate.record(result)
     return sorted(
         aggregates.values(),
-        key=lambda item: (-item.passed_cases, item.avg_latency_ms, item.provider),
+        key=lambda item: (-item.passed_cases, item.avg_latency_ms, item.provider, item.variant),
     )
 
 
 def format_prompt_benchmark_summary(
     aggregates: Sequence[PromptBenchmarkAggregate],
 ) -> str:
-    lines = ["provider | model | pass/total | avg ms | max ms", "--- | --- | --- | ---: | ---:"]
+    lines = [
+        "provider | variant | model | pass/total | avg ms | max ms",
+        "--- | --- | --- | --- | ---: | ---:",
+    ]
     for aggregate in aggregates:
         lines.append(
-            f"{aggregate.provider} | {aggregate.model or '-'} | "
+            f"{aggregate.provider} | {aggregate.variant} | {aggregate.model or '-'} | "
             f"{aggregate.passed_cases}/{aggregate.total_cases} | "
             f"{aggregate.avg_latency_ms:.1f} | {aggregate.max_latency_ms:.1f}"
         )

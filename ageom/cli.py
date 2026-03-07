@@ -853,6 +853,12 @@ def main() -> None:
         default=None,
         help="Optional JSON report path",
     )
+    prompt_benchmark_parser.add_argument(
+        "--compare-direct-baseline",
+        action="store_true",
+        default=False,
+        help="Also run a simpler direct-baseline prompt variant for each provider/case pair",
+    )
 
     # --- sources ---
     sources_parser = subparsers.add_parser(
@@ -2836,6 +2842,7 @@ async def _cmd_prompt_benchmark(args: argparse.Namespace) -> None:
             providers=providers,
             cases=cases,
             repeats=args.repeats,
+            compare_direct_baseline=bool(args.compare_direct_baseline),
         )
         aggregates = summarize_prompt_benchmark(results)
         print(format_prompt_benchmark_summary(aggregates))

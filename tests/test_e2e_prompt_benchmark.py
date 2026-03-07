@@ -78,3 +78,28 @@ async def test_cross_domain_prompt_benchmark_e2e():
     assert top.passed_cases == len(cases)
     assert weaker.failed_cases == 4
     assert weaker.by_prompt_key["hunter_reformulate"]["failed"] == 4
+
+
+@pytest.mark.asyncio
+async def test_cross_domain_prompt_benchmark_e2e_with_direct_baseline_variants():
+    cases = default_prompt_benchmark_cases()
+    providers = [
+        PromptBenchmarkProvider(
+            name="provider_a",
+            client=_DeterministicCrossDomainLLM("provider_a"),
+        )
+    ]
+
+    results = await run_prompt_benchmark(
+        providers=providers,
+        cases=cases,
+        repeats=1,
+        compare_direct_baseline=True,
+    )
+
+    assert len(results) == len(cases) * 2
+    assert {result.variant for result in results} == {"tuned", "direct_baseline"}
+
+    aggregates = summarize_prompt_benchmark(results)
+    assert {aggregate.variant for aggregate in aggregates} == {"tuned", "direct_baseline"}
+    assert all(aggregate.passed_cases == len(cases) for aggregate in aggregates)
