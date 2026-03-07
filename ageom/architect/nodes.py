@@ -430,6 +430,15 @@ def _context_namespace(config: RunnableConfig, deps: DecompositionDeps) -> str:
     return f"{base}/{run_id}" if run_id else base
 
 
+def _template_namespace(config: RunnableConfig, deps: DecompositionDeps) -> str:
+    base = _context_namespace(config, deps).strip().strip("/")
+    if not base:
+        return "architect/templates"
+    if "/" in base:
+        base = base.rsplit("/", 1)[0]
+    return f"{base}/templates"
+
+
 async def _search_context(
     deps: DecompositionDeps,
     config: RunnableConfig,
@@ -456,6 +465,39 @@ async def _search_context(
         return ""
 
 
+async def _search_template_context(
+    deps: DecompositionDeps,
+    config: RunnableConfig,
+    *,
+    query: str,
+    limit: int = 3,
+) -> str:
+    store = deps.shared_context
+    if store is None:
+        return ""
+    ns = _template_namespace(config, deps)
+    if not ns:
+        return ""
+    try:
+        records = await store.search(ns, query, limit=limit)
+        if deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_template_search(hits=len(records))
+        block = format_context_block(
+            "Prior Decomposition Templates",
+            records,
+            max_chars=deps.context_budget_chars,
+            metrics=deps.shared_context_metrics,
+        )
+        if deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_template_injection(
+                chars=len(block),
+                records=len(records),
+            )
+        return block
+    except Exception:
+        return ""
+
+
 async def _put_context(
     deps: DecompositionDeps,
     config: RunnableConfig,
@@ -472,6 +514,29 @@ async def _put_context(
         return
     try:
         await store.put(f"{ns}/{channel}", text, metadata=metadata)
+    except Exception:
+        return
+
+
+async def _put_template_context(
+    deps: DecompositionDeps,
+    config: RunnableConfig,
+    *,
+    text: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    store = deps.shared_context
+    if store is None:
+        return
+    ns = _template_namespace(config, deps)
+    if not ns:
+        return
+    payload = dict(metadata or {})
+    payload.setdefault("confidence", 0.95)
+    try:
+        await store.put(ns, text, metadata=payload)
+        if deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_template_put()
     except Exception:
         return
 
@@ -750,6 +815,14 @@ async def decompose_node(
     )
     if shared_block:
         user_prompt += f"\n\n{shared_block}"
+    template_block = await _search_template_context(
+        deps,
+        config,
+        query=f"{node.name} {node.description} {node.concept_type.value}",
+        limit=2,
+    )
+    if template_block:
+        user_prompt += f"\n\n{template_block}"
 
     response = await select_llm(deps.llm, ARCHITECT_DECOMPOSE).complete(
         DECOMPOSE_NODE_SYSTEM,
@@ -1171,6 +1244,7 @@ async def advance_node(
     state: DecompositionState, config: RunnableConfig
 ) -> dict[str, Any]:
     """After approved critique or max-retries exhaustion: move to next node."""
+    deps = _get_deps(config)
     current_id = state["current_node_id"]
     all_nodes = state["nodes"]
     pending = list(state["pending_node_ids"])
@@ -1198,6 +1272,30 @@ async def advance_node(
 
         # Add non-atomic children to pending
         new_pending = [c.node_id for c in children if c.status == NodeStatus.PENDING]
+        child_summaries = [
+            (
+                f"{child.name}"
+                f"{f' [{child.matched_primitive}]' if child.matched_primitive else ''}"
+            )
+            for child in children
+        ]
+        await _put_template_context(
+            deps,
+            config,
+            text=(
+                f"Parent: {parent.name}\n"
+                f"Description: {parent.description}\n"
+                f"Children: {', '.join(child_summaries) or '(none)'}\n"
+                f"Outputs: {', '.join(port.name for port in parent.outputs) or '(none)'}"
+            ),
+            metadata={
+                "node_id": current_id,
+                "node_name": parent.name,
+                "child_count": len(children),
+                "approved": True,
+                "channel": "templates",
+            },
+        )
     else:
         new_pending = []
 

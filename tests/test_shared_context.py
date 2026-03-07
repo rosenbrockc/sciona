@@ -32,6 +32,8 @@ class TestSharedContextMetrics:
         assert snap["search_hits"] == 1
         assert snap["injected_blocks"] == 1
         assert snap["injected_chars"] > 0
+        assert snap["template_searches_total"] == 0
+        assert snap["template_puts_total"] == 0
 
     @pytest.mark.asyncio
     async def test_search_miss_is_counted(self):
@@ -64,6 +66,23 @@ class TestSharedContextMetrics:
         assert snap["duplicate_candidates"] == 2
         assert snap["duplicates_suppressed"] == 1
         assert float(snap["duplicate_suppression_rate"]) == pytest.approx(0.5)
+
+    def test_template_metrics_are_tracked_separately(self):
+        metrics = SharedContextMetrics()
+
+        metrics.record_template_search(hits=2)
+        metrics.record_template_search(hits=0)
+        metrics.record_template_put()
+        metrics.record_template_injection(chars=42, records=2)
+
+        snap = metrics.snapshot()
+        assert snap["template_searches_total"] == 2
+        assert snap["template_search_hits"] == 1
+        assert float(snap["template_hit_rate"]) == pytest.approx(0.5)
+        assert snap["template_puts_total"] == 1
+        assert snap["template_injected_blocks"] == 1
+        assert snap["template_injected_records"] == 2
+        assert snap["template_injected_chars"] == 42
 
 
 class TestSharedContextFactory:

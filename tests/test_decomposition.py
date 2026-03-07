@@ -21,7 +21,7 @@ from ageom.architect.models import (
     NodeStatus,
 )
 from ageom.architect.state import DecompositionState, _merge_nodes
-from ageom.shared_context import InMemorySharedContextStore
+from ageom.shared_context import InMemorySharedContextStore, SharedContextMetrics
 
 # ---------------------------------------------------------------------------
 # Mock factories
@@ -1654,6 +1654,86 @@ class TestSharedContext:
         assert any("Parent: Sort" in r.text for r in records)
 
     @pytest.mark.asyncio
+    async def test_decompose_node_injects_template_context_from_shared_namespace(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        captured_users: list[str] = []
+
+        async def complete(system: str, user: str) -> str:
+            captured_users.append(user)
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Split",
+                            "description": "Split list into halves.",
+                        },
+                        {
+                            "name": "merge",
+                            "description": "Merge sorted halves.",
+                            "matched_primitive_hint": "merge",
+                        },
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        store = InMemorySharedContextStore()
+        await store.put(
+            "architect/templates",
+            "Parent: Sort\nDescription: Sort input list\nChildren: Split, merge [merge]\nOutputs: result",
+        )
+
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Sort",
+            description="Sort input list",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="list[int]")],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "divide_and_conquer",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            shared_context=store,
+            shared_context_metrics=SharedContextMetrics(),
+            context_namespace="architect/test",
+        )
+        config = {"configurable": {"deps": deps}}
+
+        await decompose_node(state, config)
+
+        assert captured_users
+        assert "Prior Decomposition Templates" in captured_users[0]
+        snap = deps.shared_context_metrics.snapshot()
+        assert snap["template_searches_total"] == 1
+        assert snap["template_search_hits"] == 1
+        assert snap["template_injected_blocks"] == 1
+
+    @pytest.mark.asyncio
     async def test_decompose_prompt_requests_conceptual_structure_only(self):
         from ageom.architect.nodes import decompose_node
         from ageom.architect.state import DecompositionDeps
@@ -2730,3 +2810,70 @@ class TestDeterministicDecompose:
         assert result["history"]
         actions = result["history"][0]["rewrite_actions"]
         assert any(action["stage"] == "routing_wrapper_elision" for action in actions)
+
+    @pytest.mark.asyncio
+    async def test_advance_node_writes_successful_template_to_shared_context(self):
+        from ageom.architect.nodes import advance_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = _make_mock_llm()
+        store = InMemorySharedContextStore()
+
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Sort",
+            description="Sort input list",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="list[int]")],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        child = AlgorithmicNode(
+            node_id="n_child",
+            parent_id="n_parent",
+            name="merge",
+            description="Merge sorted halves",
+            concept_type=ConceptType.SORTING,
+            inputs=[
+                IOSpec(name="left", type_desc="list[int]"),
+                IOSpec(name="right", type_desc="list[int]"),
+            ],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            matched_primitive="merge",
+            status=NodeStatus.ATOMIC,
+            depth=2,
+        )
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [parent, child],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "divide_and_conquer",
+            "skeleton_instantiated": True,
+            "critique_passed": True,
+            "critique_reason": "approved",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            shared_context=store,
+            shared_context_metrics=SharedContextMetrics(),
+            context_namespace="architect/test",
+        )
+
+        await advance_node(state, {"configurable": {"deps": deps}})
+
+        records = await store.recent("architect/templates", limit=5)
+        assert any("Parent: Sort" in r.text for r in records)
+        snap = deps.shared_context_metrics.snapshot()
+        assert snap["template_puts_total"] == 1

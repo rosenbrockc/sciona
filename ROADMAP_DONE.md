@@ -113,3 +113,38 @@
   - Result: `53 passed`
   - `conda run -n hpyexec pytest -q`
   - Result: `1195 passed, 17 skipped`
+
+## Successful Decomposition Template Reuse
+
+- Successful architect decompositions are now persisted into a stable shared-context namespace, `architect/templates`, instead of staying run-local only.
+- Future `decompose_node` prompts now search that template namespace and inject compact prior decomposition templates when relevant.
+- Added regressions for:
+  - decompose prompt injection from the shared template namespace
+  - successful `advance_node` writes into the template namespace
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_decomposition.py`
+  - Result: `55 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1197 passed, 17 skipped` before a known `hpyexec` post-run bus error on that run; the suite itself completed and reported pass/skip counts
+- Commits:
+  - `TBD` `architect: persist and reuse decomposition templates`
+
+## Shared-Context Reuse Metrics Visibility
+
+- Added explicit template-reuse counters to shared-context metrics:
+  - template searches
+  - template hits
+  - template writes
+  - template prompt injections
+- Architect template search/write paths now record those counters, and CLI shared-context summaries now print the template-reuse slice directly.
+- Added regressions for:
+  - standalone template-metric accounting
+  - architect decompose template search/injection metrics
+  - architect template-write metrics on successful node advancement
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_decomposition.py tests/test_shared_context.py`
+  - Result: `62 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1198 passed, 17 skipped`
+- Commits:
+  - `TBD` `shared-context: surface template reuse metrics`

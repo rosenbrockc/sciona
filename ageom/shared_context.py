@@ -71,6 +71,12 @@ class SharedContextMetrics:
     injected_blocks: int = 0
     injected_records: int = 0
     injected_chars: int = 0
+    template_searches_total: int = 0
+    template_search_hits: int = 0
+    template_puts_total: int = 0
+    template_injected_blocks: int = 0
+    template_injected_records: int = 0
+    template_injected_chars: int = 0
     duplicate_candidates: int = 0
     duplicates_suppressed: int = 0
     match_with_context_total: int = 0
@@ -107,6 +113,21 @@ class SharedContextMetrics:
         self.injected_blocks += 1
         self.injected_chars += chars
         self.injected_records += max(0, records)
+
+    def record_template_search(self, *, hits: int) -> None:
+        self.template_searches_total += 1
+        if hits > 0:
+            self.template_search_hits += 1
+
+    def record_template_put(self) -> None:
+        self.template_puts_total += 1
+
+    def record_template_injection(self, *, chars: int, records: int) -> None:
+        if chars <= 0:
+            return
+        self.template_injected_blocks += 1
+        self.template_injected_chars += chars
+        self.template_injected_records += max(0, records)
 
     def record_duplicate_filter(self, *, candidates: int, suppressed: int) -> None:
         self.duplicate_candidates += max(0, candidates)
@@ -150,6 +171,11 @@ class SharedContextMetrics:
             if self.match_without_context_total
             else 0.0
         )
+        template_hit_rate = (
+            self.template_search_hits / self.template_searches_total
+            if self.template_searches_total
+            else 0.0
+        )
         return {
             "backend": self.backend,
             "searches_total": self.searches_total,
@@ -165,6 +191,13 @@ class SharedContextMetrics:
             "injected_blocks": self.injected_blocks,
             "injected_records": self.injected_records,
             "injected_chars": self.injected_chars,
+            "template_searches_total": self.template_searches_total,
+            "template_search_hits": self.template_search_hits,
+            "template_hit_rate": template_hit_rate,
+            "template_puts_total": self.template_puts_total,
+            "template_injected_blocks": self.template_injected_blocks,
+            "template_injected_records": self.template_injected_records,
+            "template_injected_chars": self.template_injected_chars,
             "duplicate_candidates": self.duplicate_candidates,
             "duplicates_suppressed": self.duplicates_suppressed,
             "duplicate_suppression_rate": duplicate_suppression_rate,

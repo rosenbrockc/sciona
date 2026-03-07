@@ -492,7 +492,10 @@ def _print_shared_context_metrics(
         f"match_delta={float(snap['match_success_delta']):+.2f} "
         f"promotions={snap['promotions_total']} "
         f"injected_blocks={snap['injected_blocks']} "
-        f"injected_chars={snap['injected_chars']}"
+        f"injected_chars={snap['injected_chars']} "
+        f"template_hits={snap['template_search_hits']}/{snap['template_searches_total']} "
+        f"template_puts={snap['template_puts_total']} "
+        f"template_injected={snap['template_injected_blocks']}"
     )
 
 
