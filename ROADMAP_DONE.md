@@ -127,7 +127,7 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1197 passed, 17 skipped` before a known `hpyexec` post-run bus error on that run; the suite itself completed and reported pass/skip counts
 - Commits:
-  - `TBD` `architect: persist and reuse decomposition templates`
+  - `9ca755e` `architect: persist template reuse metrics`
 
 ## Shared-Context Reuse Metrics Visibility
 
@@ -147,4 +147,28 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1198 passed, 17 skipped`
 - Commits:
-  - `TBD` `shared-context: surface template reuse metrics`
+  - `9ca755e` `architect: persist template reuse metrics`
+
+## Live Provider Failure Reporting
+
+- Prompt-dispatch error events now include provider-supplied failure metadata instead of only a generic exception string.
+- Added error metadata capture for:
+  - subprocess CLI providers
+  - persistent socket shims
+  - Gemini socket shim retries/startup failures
+- The router now attaches fields such as:
+  - failure phase
+  - transport type
+  - provider/model
+  - exit code or timeout context
+  - stderr/error excerpts
+- Added regressions for:
+  - router propagation of client error metadata into `PROMPT_DISPATCH_ERROR`
+  - subprocess CLI error metadata capture
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py tests/test_llm.py tests/test_telemetry.py`
+  - Result: `71 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1200 passed, 17 skipped`
+- Commits:
+  - `TBD` `telemetry: surface live provider failure details`

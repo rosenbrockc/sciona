@@ -178,6 +178,14 @@ class SubprocessCLIClient:
         self._timeout_s = _env_float("AGEOM_SUBPROCESS_TIMEOUT_S", 90.0)
         self._max_retries = _env_int("AGEOM_SUBPROCESS_MAX_RETRIES", 1, min_value=0)
         self._retry_backoff_s = _env_float("AGEOM_SUBPROCESS_RETRY_BACKOFF_S", 1.5)
+        self._last_completion_metadata: dict[str, object] = {}
+        self._last_error_metadata: dict[str, object] = {}
+
+    def get_last_completion_metadata(self) -> dict[str, object]:
+        return dict(self._last_completion_metadata)
+
+    def get_last_error_metadata(self) -> dict[str, object]:
+        return dict(self._last_error_metadata)
 
     def _codex_model_arg(self) -> str:
         """Return a codex-compatible model name, or empty when model should be omitted."""
@@ -290,6 +298,7 @@ class SubprocessCLIClient:
         env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
         attempts = max(1, self._max_retries + 1)
         last_error = ""
+        self._last_error_metadata = {}
 
         for attempt in range(1, attempts + 1):
             proc = await asyncio.create_subprocess_exec(
@@ -319,6 +328,15 @@ class SubprocessCLIClient:
                     f"{self._cli} CLI timed out after {self._timeout_s:.1f}s "
                     f"(attempt {attempt}/{attempts})"
                 )
+                self._last_error_metadata = {
+                    "provider_error_phase": "timeout",
+                    "provider_transport": "subprocess",
+                    "provider_cli": self._cli,
+                    "provider_model": self._model,
+                    "provider_attempt": attempt,
+                    "provider_attempts_total": attempts,
+                    "provider_timeout_s": self._timeout_s,
+                }
                 if attempt >= attempts:
                     raise RuntimeError(last_error) from exc
                 await self._sleep_before_retry(attempt)
@@ -326,9 +344,21 @@ class SubprocessCLIClient:
 
             stderr_text = stderr.decode().strip()
             if proc.returncode != 0:
+                stderr_excerpt = stderr_text[:240]
                 last_error = (
                     f"{self._cli} CLI exited with code {proc.returncode}: {stderr_text}"
                 )
+                self._last_error_metadata = {
+                    "provider_error_phase": "subprocess_exit",
+                    "provider_transport": "subprocess",
+                    "provider_cli": self._cli,
+                    "provider_model": self._model,
+                    "provider_attempt": attempt,
+                    "provider_attempts_total": attempts,
+                    "provider_exit_code": proc.returncode,
+                    "provider_stderr_excerpt": stderr_excerpt,
+                    "provider_transient_error": self._is_transient_error(stderr_text),
+                }
                 if attempt < attempts and self._is_transient_error(stderr_text):
                     self._log_subprocess_event(
                         "PROMPT_SUBPROCESS_RETRY",
@@ -344,6 +374,12 @@ class SubprocessCLIClient:
                     continue
                 raise RuntimeError(last_error)
 
+            self._last_completion_metadata = {
+                "provider_transport": "subprocess",
+                "provider_cli": self._cli,
+                "provider_model": self._model,
+                "provider_attempt": attempt,
+            }
             return self._parse_output(stdout.decode())
 
         raise RuntimeError(last_error or f"{self._cli} CLI failed without output")

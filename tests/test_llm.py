@@ -13,6 +13,7 @@ from ageom.hunter.llm import (
     ClaudeLLMClient,
     CodexLLMClient,
     LlamaCppLLMClient,
+    SubprocessCLIClient,
     create_llm_client,
 )
 from ageom.hunter.gemini_shim import _stage_gemini_home
@@ -233,3 +234,31 @@ class TestConcreteClients:
         assert pid_pattern.search(first).group(1) == pid_pattern.search(second).group(1)
         assert count_pattern.search(first).group(1) == "1"
         assert count_pattern.search(second).group(1) == "2"
+
+    @pytest.mark.asyncio
+    async def test_subprocess_cli_client_records_error_metadata(self, monkeypatch):
+        class _FakeProcess:
+            returncode = 2
+
+            async def communicate(self, data: bytes):
+                return b"", b"bad token"
+
+        async def _fake_create_subprocess_exec(*args, **kwargs):
+            return _FakeProcess()
+
+        monkeypatch.setattr(
+            "ageom.hunter.llm.asyncio.create_subprocess_exec",
+            _fake_create_subprocess_exec,
+        )
+
+        client = SubprocessCLIClient(cli="gemini", model="flash-lite", max_tokens=64)
+
+        with pytest.raises(RuntimeError, match="gemini CLI exited with code 2"):
+            await client.complete("sys", "user")
+
+        metadata = client.get_last_error_metadata()
+        assert metadata["provider_error_phase"] == "subprocess_exit"
+        assert metadata["provider_cli"] == "gemini"
+        assert metadata["provider_model"] == "flash-lite"
+        assert metadata["provider_exit_code"] == 2
+        assert metadata["provider_stderr_excerpt"] == "bad token"

@@ -76,6 +76,7 @@ class CLISocketShimClient:
         self._next_worker = itertools.count()
         self._closed = False
         self._last_completion_metadata: dict[str, object] = {}
+        self._last_error_metadata: dict[str, object] = {}
 
     async def complete(self, system: str, user: str) -> str:
         return await self._complete_rpc("complete", system, user, "")
@@ -85,6 +86,9 @@ class CLISocketShimClient:
 
     def get_last_completion_metadata(self) -> dict[str, object]:
         return dict(self._last_completion_metadata)
+
+    def get_last_error_metadata(self) -> dict[str, object]:
+        return dict(self._last_error_metadata)
 
     async def close(self) -> None:
         if self._closed:
@@ -96,16 +100,29 @@ class CLISocketShimClient:
         shutil.rmtree(self._runtime_dir, ignore_errors=True)
 
     async def _complete_rpc(self, method: str, system: str, user: str, grammar: str) -> str:
+        self._last_error_metadata = {}
         worker = await self._acquire_worker()
-        result = await self._rpc(
-            worker,
-            method,
-            {
-                "system": system,
-                "user": user,
-                "grammar": grammar,
-            },
-        )
+        try:
+            result = await self._rpc(
+                worker,
+                method,
+                {
+                    "system": system,
+                    "user": user,
+                    "grammar": grammar,
+                },
+            )
+        except Exception as exc:
+            self._last_error_metadata = {
+                "provider_error_phase": "rpc",
+                "provider_transport": "socket_shim",
+                "provider_cli": self._cli,
+                "provider_model": self._model,
+                "shim_worker_pid": worker.pid,
+                "shim_pool_size": self._pool_size,
+                "provider_error_excerpt": str(exc)[:240],
+            }
+            raise
         self._last_completion_metadata = {
             "shim_provider": f"{self._cli}_shim",
             "shim_worker_pid": result.get("pid"),
@@ -161,6 +178,14 @@ class CLISocketShimClient:
         except Exception:
             await self._terminate_process(process)
             stderr_text = await self._read_stream(process.stderr)
+            self._last_error_metadata = {
+                "provider_error_phase": "startup",
+                "provider_transport": "socket_shim",
+                "provider_cli": self._cli,
+                "provider_model": self._model,
+                "provider_exit_code": process.returncode,
+                "provider_stderr_excerpt": stderr_text.strip()[:240],
+            }
             raise RuntimeError(
                 f"Failed to start {self._cli} shim worker: {stderr_text.strip()}"
             ) from None

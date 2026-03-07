@@ -161,6 +161,18 @@ class PromptKeyLLMClient:
             return {}
         return metadata if isinstance(metadata, dict) else {}
 
+    def _error_metadata(self, exc: Exception) -> dict[str, Any]:
+        payload: dict[str, Any] = {"error_type": exc.__class__.__name__}
+        getter = getattr(self._base, "get_last_error_metadata", None)
+        if callable(getter):
+            try:
+                metadata = getter()
+            except Exception:
+                metadata = {}
+            if isinstance(metadata, dict):
+                payload.update(metadata)
+        return payload
+
     async def complete(self, system: str, user: str) -> str:
         dispatch_id = start_prompt_dispatch(self._prompt_key, client=self._base)
         started_at = time.time()
@@ -173,7 +185,12 @@ class PromptKeyLLMClient:
             output = await self._base.complete(system, user)
         except Exception as exc:
             await self._stop_heartbeat(heartbeat_task)
-            finish_prompt_dispatch(dispatch_id, ok=False, error=str(exc))
+            finish_prompt_dispatch(
+                dispatch_id,
+                ok=False,
+                error=str(exc),
+                payload=self._error_metadata(exc),
+            )
             raise
         await self._stop_heartbeat(heartbeat_task)
         finish_prompt_dispatch(dispatch_id, ok=True, payload=self._completion_metadata())
@@ -191,7 +208,12 @@ class PromptKeyLLMClient:
             output = await self._base.complete_with_grammar(system, user, grammar)
         except Exception as exc:
             await self._stop_heartbeat(heartbeat_task)
-            finish_prompt_dispatch(dispatch_id, ok=False, error=str(exc))
+            finish_prompt_dispatch(
+                dispatch_id,
+                ok=False,
+                error=str(exc),
+                payload=self._error_metadata(exc),
+            )
             raise
         await self._stop_heartbeat(heartbeat_task)
         finish_prompt_dispatch(dispatch_id, ok=True, payload=self._completion_metadata())

@@ -17,7 +17,12 @@ from ageom.llm_router import (
     LLMRouter,
     select_llm,
 )
-from ageom.telemetry import telemetry_scope
+from ageom.telemetry import (
+    get_event_log,
+    reset_telemetry_runtime,
+    start_run,
+    telemetry_scope,
+)
 
 
 def _make_mock_llm(name: str = "default") -> AsyncMock:
@@ -98,6 +103,41 @@ class TestSelectLLM:
         with telemetry_scope(run_id="test-run"):
             result = select_llm(llm, ARCHITECT_STRATEGY)
         assert isinstance(result, PromptKeyLLMClient)
+
+    @pytest.mark.asyncio
+    async def test_prompt_wrapper_surfaces_client_error_metadata(self):
+        reset_telemetry_runtime()
+        get_event_log().clear()
+
+        class _FailingClient:
+            _telemetry_provider = "codex_shim"
+            _telemetry_model = "gpt-5.3-codex"
+
+            async def complete(self, system: str, user: str) -> str:
+                raise RuntimeError("shim worker exited early")
+
+            def get_last_error_metadata(self) -> dict[str, object]:
+                return {
+                    "provider_error_phase": "startup",
+                    "provider_exit_code": 17,
+                    "provider_stderr_excerpt": "auth failed",
+                }
+
+        run_id = start_run("algorithm_creation", run_id="test-run")
+        with telemetry_scope(run_id=run_id, stage="hunter_round_1"):
+            wrapped = PromptKeyLLMClient(_FailingClient(), "hunter_score")
+            with pytest.raises(RuntimeError, match="shim worker exited early"):
+                await wrapped.complete("sys", "user")
+
+        events = [
+            ev for ev in get_event_log().events if ev.event_type == "PROMPT_DISPATCH_ERROR"
+        ]
+        assert len(events) == 1
+        payload = events[0].payload
+        assert payload["error_type"] == "RuntimeError"
+        assert payload["provider_error_phase"] == "startup"
+        assert payload["provider_exit_code"] == 17
+        assert payload["provider_stderr_excerpt"] == "auth failed"
 
 
 class TestConfigPerPromptFields:

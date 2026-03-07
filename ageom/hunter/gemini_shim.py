@@ -107,10 +107,12 @@ class GeminiShimClient:
         self._next_worker = itertools.count()
         self._closed = False
         self._last_completion_metadata: dict[str, object] = {}
+        self._last_error_metadata: dict[str, object] = {}
 
     async def complete(self, system: str, user: str) -> str:
         attempts = 2
         last_error: Exception | None = None
+        self._last_error_metadata = {}
         for attempt in range(1, attempts + 1):
             worker = await self._acquire_worker()
             try:
@@ -130,6 +132,17 @@ class GeminiShimClient:
                 return text if isinstance(text, str) else str(text)
             except Exception as exc:
                 last_error = exc
+                self._last_error_metadata = {
+                    "provider_error_phase": "rpc",
+                    "provider_transport": "socket_shim",
+                    "provider_cli": "gemini",
+                    "provider_model": self._model,
+                    "provider_attempt": attempt,
+                    "provider_attempts_total": attempts,
+                    "shim_worker_pid": worker.pid,
+                    "shim_pool_size": self._pool_size,
+                    "provider_error_excerpt": str(exc)[:240],
+                }
                 await self._restart_worker(worker)
                 if attempt < attempts:
                     await asyncio.sleep(self._retry_backoff_s)
@@ -150,6 +163,9 @@ class GeminiShimClient:
 
     def get_last_completion_metadata(self) -> dict[str, object]:
         return dict(self._last_completion_metadata)
+
+    def get_last_error_metadata(self) -> dict[str, object]:
+        return dict(self._last_error_metadata)
 
     async def _ensure_workers(self) -> None:
         if self._workers:
@@ -197,6 +213,14 @@ class GeminiShimClient:
             stderr_text = await self._read_stream(process.stderr)
             stdout_text = await self._read_stream(process.stdout)
             details = stderr_text.strip() or stdout_text.strip()
+            self._last_error_metadata = {
+                "provider_error_phase": "startup",
+                "provider_transport": "socket_shim",
+                "provider_cli": "gemini",
+                "provider_model": self._model,
+                "provider_exit_code": process.returncode,
+                "provider_stderr_excerpt": details[:240],
+            }
             raise RuntimeError(
                 f"Failed to start Gemini shim worker: {details}"
             ) from None
