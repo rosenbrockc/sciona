@@ -129,12 +129,12 @@ class AgeomConfig(BaseSettings):
     architect_critique_llm_model: str = "gpt-5.3-codex"  # faster CLI shim while architect debugging is active
 
     # Hunter per-prompt
-    hunter_score_llm_provider: str = "llama_cpp"
-    hunter_score_llm_model: str = "qwen2.5-coder:7b"  # light: ranking, GBNF-constrained
-    hunter_reformulate_llm_provider: str = "llama_cpp"
-    hunter_reformulate_llm_model: str = "qwen2.5-coder:7b"  # light: query diversity loop
-    hunter_analyze_failure_llm_provider: str = "llama_cpp"
-    hunter_analyze_failure_llm_model: str = "qwen3:14b"  # medium: compiler error diagnosis
+    hunter_score_llm_provider: str = "gemini_cli"
+    hunter_score_llm_model: str = "flash-lite"  # light: fast ranking / constrained selection
+    hunter_reformulate_llm_provider: str = "gemini_cli"
+    hunter_reformulate_llm_model: str = "flash-lite"  # light: query diversity loop
+    hunter_analyze_failure_llm_provider: str = "gemini_cli"
+    hunter_analyze_failure_llm_model: str = "flash"  # medium-light: failure diagnosis while debugging
 
     # Synthesizer per-prompt (all remote — proof/repair)
     synthesizer_repair_llm_provider: str = ""

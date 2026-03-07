@@ -179,6 +179,57 @@ class TestCreateLLMRouter:
         assert router.for_prompt("architect_strategy") is router.for_prompt("architect_critique")
         assert router.for_prompt("architect_decompose") is router._default
 
+    def test_hunter_prompts_use_gemini_cli_overrides(self, monkeypatch):
+        from ageom.cli import _create_llm_router
+
+        created: list[tuple[str, str]] = []
+
+        def _fake_create_llm_client(*, provider, model, **kwargs):
+            created.append((provider, model))
+            client = MagicMock()
+            client.provider = provider
+            client.model = model
+            return client
+
+        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+
+        args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
+        config = SimpleNamespace(
+            llm_provider="anthropic",
+            llm_model="claude-sonnet-4-5-20250929",
+            llm_max_tokens=4096,
+            anthropic_api_key="",
+            openai_api_key="",
+            openai_base_url="",
+            llama_cpp_base_url="http://127.0.0.1:8080/v1",
+            llama_cpp_api_key="local",
+            use_agent_layer=False,
+            hunter_llm_provider="",
+            hunter_llm_model="",
+            hunter_score_llm_provider="gemini_cli",
+            hunter_score_llm_model="flash-lite",
+            hunter_reformulate_llm_provider="gemini_cli",
+            hunter_reformulate_llm_model="flash-lite",
+            hunter_analyze_failure_llm_provider="gemini_cli",
+            hunter_analyze_failure_llm_model="flash",
+        )
+
+        router = _create_llm_router(
+            args,
+            config,
+            "hunter",
+            ["hunter_score", "hunter_reformulate", "hunter_analyze_failure"],
+        )
+
+        assert isinstance(router, LLMRouter)
+        assert created == [
+            ("anthropic", "claude-sonnet-4-5-20250929"),
+            ("gemini_cli", "flash-lite"),
+            ("gemini_cli", "flash"),
+        ]
+        assert router.for_prompt("hunter_score") is router.for_prompt("hunter_reformulate")
+        assert router.for_prompt("hunter_analyze_failure") is not router.for_prompt("hunter_score")
+
 
 # ---------------------------------------------------------------------------
 # SubprocessCLIClient tests
