@@ -84,6 +84,62 @@ def _annotate_hang_signals(
     return out
 
 
+def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
+    """Derive dashboard-friendly summaries from run metadata."""
+    metadata = run.get("metadata", {}) if isinstance(run.get("metadata"), dict) else {}
+    retrieval = metadata.get("retrieval_policy", {})
+    routing = metadata.get("llm_routing", {})
+    if not isinstance(retrieval, dict):
+        retrieval = {}
+    if not isinstance(routing, dict):
+        routing = {}
+
+    def _routing_line(name: str) -> dict[str, Any]:
+        section = routing.get(name, {})
+        if not isinstance(section, dict):
+            section = {}
+        active = section.get("active_overrides", [])
+        if not isinstance(active, list):
+            active = []
+        return {
+            "round": name,
+            "default": (
+                f"{section.get('default_provider', '--')}:{section.get('default_model', '--')}"
+            ),
+            "active_count": len(active),
+            "suppressed_count": len(section.get("suppressed_default_overrides", []) or []),
+            "custom_nonbenchmark_count": len(
+                section.get("custom_nonbenchmark_overrides", []) or []
+            ),
+        }
+
+    out = dict(run)
+    out["retrieval_summary"] = {
+        "confidence_band": retrieval.get("confidence_band", "--"),
+        "skill_index": bool(retrieval.get("skill_index", False)),
+        "graph_retrieval": bool(retrieval.get("graph_retrieval", False)),
+        "semantic_backend": retrieval.get("semantic_backend", "default"),
+        "hunter_mode": retrieval.get("hunter_mode", "--"),
+    }
+    out["routing_summary"] = {
+        "architect": _routing_line("architect"),
+        "hunter": _routing_line("hunter"),
+    }
+    return out
+
+
+def _decorate_dashboard_run(
+    run: dict[str, Any],
+    *,
+    stale_seconds: int,
+    now: float,
+) -> dict[str, Any]:
+    """Apply all dashboard-facing derived annotations."""
+    return _extract_dashboard_summaries(
+        _annotate_hang_signals(run, stale_seconds=stale_seconds, now=now)
+    )
+
+
 @app.get("/api/dashboard/runs")
 async def list_dashboard_runs(
     limit: int = Query(50, ge=1, le=500),
@@ -106,7 +162,7 @@ async def list_dashboard_runs(
 
     now = time.time()
     rows = [
-        _annotate_hang_signals(
+        _decorate_dashboard_run(
             r, stale_seconds=max(5, int(config.telemetry_stale_seconds)), now=now
         )
         for r in rows[:limit]
@@ -124,7 +180,7 @@ async def get_dashboard_run(run_id: str) -> dict[str, Any]:
     row = get_runtime_run(run_id) or get_persisted_run(config.telemetry_runs_dir, run_id)
     if row is None:
         raise HTTPException(status_code=404, detail=f"Run not found: {run_id}")
-    return _annotate_hang_signals(
+    return _decorate_dashboard_run(
         row,
         stale_seconds=max(5, int(config.telemetry_stale_seconds)),
         now=time.time(),

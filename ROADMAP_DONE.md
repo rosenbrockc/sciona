@@ -261,4 +261,24 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1207 passed, 17 skipped`
 - Commits:
-  - `TBD` `telemetry: persist routing audit metadata`
+  - `99b22e2` `telemetry: persist routing audit metadata`
+
+## Dashboard Routing And Retrieval Summaries
+
+- Added derived dashboard-facing summaries for:
+  - retrieval policy
+  - architect routing
+  - hunter routing
+- Exposed those summaries through the dashboard API so the frontend no longer has to parse raw nested metadata blobs to show the active provider mix.
+- Updated the telemetry dashboard UI to surface:
+  - retrieval confidence/backend on the run list and summary cards
+  - architect default LLM plus active override count
+  - hunter default LLM plus active override count
+- Added regression coverage for the dashboard API summary fields.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_visualizer_api.py`
+  - Result: `12 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1208 passed, 17 skipped`
+- Commits:
+  - `TBD` `dashboard: expose routing and retrieval summaries`

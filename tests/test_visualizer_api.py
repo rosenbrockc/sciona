@@ -295,6 +295,71 @@ class TestDashboardAPI:
         assert latest.status_code == 200
         assert latest.json()["run_id"] == "abc123"
 
+    def test_dashboard_run_includes_routing_and_retrieval_summaries(
+        self, client, monkeypatch, tmp_path
+    ):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "route123",
+            "pipeline": "algorithm_creation",
+            "status": "running",
+            "started_at": now - 2.0,
+            "last_update_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 1,
+            "prompt_successes": 1,
+            "prompt_failures": 0,
+            "prompt_inflight": 0,
+            "events_count": 2,
+            "metadata": {
+                "retrieval_policy": {
+                    "confidence_band": "high",
+                    "skill_index": True,
+                    "graph_retrieval": False,
+                    "semantic_backend": "lexical",
+                    "hunter_mode": "standard",
+                },
+                "llm_routing": {
+                    "architect": {
+                        "default_provider": "anthropic",
+                        "default_model": "claude-sonnet",
+                        "active_overrides": [
+                            {
+                                "prompt_key": "architect_strategy",
+                                "provider": "codex_shim",
+                                "model": "gpt-5.3-codex",
+                            }
+                        ],
+                        "suppressed_default_overrides": [],
+                        "custom_nonbenchmark_overrides": [],
+                    },
+                    "hunter": {
+                        "default_provider": "llama_cpp",
+                        "default_model": "qwen2.5-coder:7b",
+                        "active_overrides": [],
+                        "suppressed_default_overrides": ["hunter_unused"],
+                        "custom_nonbenchmark_overrides": [],
+                    },
+                },
+            },
+        }
+        (tmp_path / "run_route123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs/route123")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["retrieval_summary"]["confidence_band"] == "high"
+        assert data["retrieval_summary"]["semantic_backend"] == "lexical"
+        assert data["routing_summary"]["architect"]["default"] == "anthropic:claude-sonnet"
+        assert data["routing_summary"]["architect"]["active_count"] == 1
+        assert data["routing_summary"]["hunter"]["suppressed_count"] == 1
+
     def test_run_hang_annotation(self, client, monkeypatch, tmp_path):
         from ageom.telemetry import reset_telemetry_runtime
 

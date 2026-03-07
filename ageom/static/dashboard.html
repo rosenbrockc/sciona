@@ -325,16 +325,21 @@
           div.className = "run-item" + (r.run_id === selectedRunId ? " active" : "");
           div.dataset.runId = r.run_id || "";
           const hung = r.is_hung ? " <span class=\"bad\">hung</span>" : "";
-          const architect = (r.metadata || {}).architect_metrics || {};
-          const unresolved = Number(architect.unresolved_leaf_count || 0);
-          const blocked = Number(((architect.node_status_counts || {}).blocked) || 0);
+        const architect = (r.metadata || {}).architect_metrics || {};
+        const retrieval = r.retrieval_summary || {};
+        const routing = (r.routing_summary || {}).architect || {};
+        const unresolved = Number(architect.unresolved_leaf_count || 0);
+        const blocked = Number(((architect.node_status_counts || {}).blocked) || 0);
+        const retrievalBand = retrieval.confidence_band || "--";
+        const activeOverrides = Number(routing.active_count || 0);
           div.innerHTML = [
             '<div class="run-line">',
             `<span class="run-id">${(r.run_id || "").slice(0, 12)}</span>`,
             `<span class="pill ${runStatusClass(r.status || "running")}">${r.status || "running"}</span>`,
             '</div>',
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
-            `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`
+            `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
+            `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides}</div>`
           ].join("");
           div.addEventListener("click", () => {
             selectedRunId = r.run_id || "";
@@ -350,6 +355,9 @@
         const stageCount = Object.keys(stages).length;
         const staleCount = (run.stale_stages || []).length;
         const architect = (run.metadata || {}).architect_metrics || {};
+        const retrieval = run.retrieval_summary || {};
+        const architectRouting = (run.routing_summary || {}).architect || {};
+        const hunterRouting = (run.routing_summary || {}).hunter || {};
         const metrics = [
           ["pipeline", run.pipeline || "--"],
           ["status", run.status || "--"],
@@ -365,6 +373,9 @@
           ["blocked", String(((architect.node_status_counts || {}).blocked) || 0)],
           ["any ports", `${(Number(architect.any_port_pct || 0) * 100).toFixed(1)}%`],
           ["any edges", `${(Number(architect.any_edge_pct || 0) * 100).toFixed(1)}%`],
+          ["retrieval", `${retrieval.confidence_band || "--"} / ${retrieval.semantic_backend || "--"}`],
+          ["architect llm", `${architectRouting.default || "--"} +${architectRouting.active_count || 0}`],
+          ["hunter llm", `${hunterRouting.default || "--"} +${hunterRouting.active_count || 0}`],
           ["started", fmtTime(run.started_at)],
           ["updated", fmtTime(run.last_update_at)]
         ];
