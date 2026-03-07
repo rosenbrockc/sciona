@@ -8,6 +8,7 @@ different prompts in the pipeline can be dispatched to different providers
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from typing import Any
 
@@ -71,6 +72,37 @@ ALL_PROMPT_KEYS = [
     INGESTER_DECOMPOSE,
     ORCHESTRATOR_REFINE,
 ]
+
+PROMPT_TIMEOUTS_S: dict[str, float] = {
+    ARCHITECT_STRATEGY: 20.0,
+    ARCHITECT_DECOMPOSE: 45.0,
+    ARCHITECT_CRITIQUE: 35.0,
+    HUNTER_SCORE: 20.0,
+    HUNTER_REFORMULATE: 30.0,
+    HUNTER_ANALYZE_FAILURE: 20.0,
+}
+
+
+def prompt_timeout_seconds(prompt_key: str) -> float | None:
+    """Resolve router-enforced timeout for a prompt key."""
+    env_key = f"AGEOM_{prompt_key.upper()}_TIMEOUT_S"
+    raw = os.getenv(env_key, "").strip()
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = 0.0
+        return value if value > 0 else None
+    default_raw = os.getenv("AGEOM_PROMPT_TIMEOUT_DEFAULT_S", "").strip()
+    if default_raw:
+        try:
+            value = float(default_raw)
+        except ValueError:
+            value = 0.0
+        if value > 0:
+            return value
+    value = PROMPT_TIMEOUTS_S.get(prompt_key, 0.0)
+    return value if value > 0 else None
 
 
 # ---------------------------------------------------------------------------
@@ -181,8 +213,29 @@ class PromptKeyLLMClient:
             if dispatch_id
             else None
         )
+        timeout_s = prompt_timeout_seconds(self._prompt_key)
         try:
-            output = await self._base.complete(system, user)
+            if timeout_s:
+                output = await asyncio.wait_for(
+                    self._base.complete(system, user),
+                    timeout=timeout_s,
+                )
+            else:
+                output = await self._base.complete(system, user)
+        except asyncio.TimeoutError as exc:
+            await self._stop_heartbeat(heartbeat_task)
+            error = f"{self._prompt_key} timed out after {timeout_s:.1f}s"
+            finish_prompt_dispatch(
+                dispatch_id,
+                ok=False,
+                error=error,
+                payload={
+                    "error_type": "TimeoutError",
+                    "provider_error_phase": "router_timeout",
+                    "prompt_timeout_s": timeout_s,
+                },
+            )
+            raise RuntimeError(error) from exc
         except Exception as exc:
             await self._stop_heartbeat(heartbeat_task)
             finish_prompt_dispatch(
@@ -204,8 +257,29 @@ class PromptKeyLLMClient:
             if dispatch_id
             else None
         )
+        timeout_s = prompt_timeout_seconds(self._prompt_key)
         try:
-            output = await self._base.complete_with_grammar(system, user, grammar)
+            if timeout_s:
+                output = await asyncio.wait_for(
+                    self._base.complete_with_grammar(system, user, grammar),
+                    timeout=timeout_s,
+                )
+            else:
+                output = await self._base.complete_with_grammar(system, user, grammar)
+        except asyncio.TimeoutError as exc:
+            await self._stop_heartbeat(heartbeat_task)
+            error = f"{self._prompt_key} timed out after {timeout_s:.1f}s"
+            finish_prompt_dispatch(
+                dispatch_id,
+                ok=False,
+                error=error,
+                payload={
+                    "error_type": "TimeoutError",
+                    "provider_error_phase": "router_timeout",
+                    "prompt_timeout_s": timeout_s,
+                },
+            )
+            raise RuntimeError(error) from exc
         except Exception as exc:
             await self._stop_heartbeat(heartbeat_task)
             finish_prompt_dispatch(

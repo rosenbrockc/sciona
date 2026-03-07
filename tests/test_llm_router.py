@@ -15,6 +15,7 @@ from ageom.llm_router import (
     PromptKeyLLMClient,
     SYNTHESIZER_TACTIC,
     LLMRouter,
+    prompt_timeout_seconds,
     select_llm,
 )
 from ageom.telemetry import (
@@ -139,6 +140,36 @@ class TestSelectLLM:
         assert payload["provider_exit_code"] == 17
         assert payload["provider_stderr_excerpt"] == "auth failed"
 
+    @pytest.mark.asyncio
+    async def test_prompt_wrapper_enforces_router_timeout(self, monkeypatch):
+        reset_telemetry_runtime()
+        get_event_log().clear()
+
+        class _SlowClient:
+            _telemetry_provider = "gemini_shim"
+            _telemetry_model = "flash-lite"
+
+            async def complete(self, system: str, user: str) -> str:
+                await asyncio.sleep(0.05)
+                return "late"
+
+        monkeypatch.setenv("AGEOM_HUNTER_SCORE_TIMEOUT_S", "0.01")
+        run_id = start_run("algorithm_creation", run_id="test-timeout")
+        with telemetry_scope(run_id=run_id, stage="hunter_round_1"):
+            wrapped = PromptKeyLLMClient(_SlowClient(), "hunter_score")
+            with pytest.raises(RuntimeError, match="hunter_score timed out after 0.0s"):
+                await wrapped.complete("sys", "user")
+
+        events = [
+            ev for ev in get_event_log().events if ev.event_type == "PROMPT_DISPATCH_ERROR"
+        ]
+        assert len(events) == 1
+        payload = events[0].payload
+        assert payload["error_type"] == "TimeoutError"
+        assert payload["provider_error_phase"] == "router_timeout"
+        assert payload["prompt_timeout_s"] == pytest.approx(0.01)
+        monkeypatch.delenv("AGEOM_HUNTER_SCORE_TIMEOUT_S")
+
 
 class TestConfigPerPromptFields:
     def test_config_picks_up_per_prompt_env_vars(self, monkeypatch):
@@ -166,6 +197,9 @@ class TestConfigPerPromptFields:
         for key in ALL_PROMPT_KEYS:
             assert hasattr(config, f"{key}_llm_provider")
             assert hasattr(config, f"{key}_llm_model")
+
+    def test_prompt_timeout_defaults_exist_for_hunter_score(self):
+        assert prompt_timeout_seconds("hunter_score") == pytest.approx(20.0)
 
     def test_unbenchmarked_prompt_defaults_are_not_applied_implicitly(self):
         from ageom.config import AgeomConfig, prompt_override_matches_code_default, should_apply_prompt_override

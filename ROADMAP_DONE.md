@@ -193,4 +193,27 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1203 passed, 17 skipped`
 - Commits:
-  - `TBD` `cli: filter unbenchmarked prompt overrides`
+  - `6b4fa9c` `cli: filter unbenchmarked prompt overrides`
+
+## Prompt Runtime Timeout Profiles
+
+- Added router-enforced timeout profiles for high-volume prompt keys so long-running calls fail on a bounded schedule instead of inheriting one broad client timeout.
+- Added default timeout bands for:
+  - `architect_strategy`
+  - `architect_decompose`
+  - `architect_critique`
+  - `hunter_score`
+  - `hunter_reformulate`
+  - `hunter_analyze_failure`
+- Added per-prompt environment overrides via `AGEOM_<PROMPT_KEY>_TIMEOUT_S` and a fallback `AGEOM_PROMPT_TIMEOUT_DEFAULT_S`.
+- Router timeout failures now surface as explicit `PROMPT_DISPATCH_ERROR` events with `provider_error_phase=router_timeout` and the applied timeout value.
+- Added regressions for:
+  - router timeout enforcement on a slow prompt client
+  - timeout default lookup for benchmarked prompt keys
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py`
+  - Result: `52 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1205 passed, 17 skipped`
+- Commits:
+  - `TBD` `llm-router: enforce prompt timeout profiles`
