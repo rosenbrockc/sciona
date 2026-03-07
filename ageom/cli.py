@@ -120,6 +120,26 @@ def _create_llm_router(
     return LLMRouter(default=default, overrides=overrides)
 
 
+def _parse_prompt_benchmark_provider_specs(
+    raw_specs: list[str] | None,
+) -> list[tuple[str, str]]:
+    specs = [spec.strip() for spec in (raw_specs or []) if spec and spec.strip()]
+    if not specs:
+        raise ValueError("At least one --provider provider:model spec is required")
+
+    parsed: list[tuple[str, str]] = []
+    for spec in specs:
+        provider, sep, model = spec.partition(":")
+        provider = provider.strip()
+        model = model.strip()
+        if not sep or not provider or not model:
+            raise ValueError(
+                f"Invalid provider spec '{spec}'. Expected format provider:model"
+            )
+        parsed.append((provider, model))
+    return parsed
+
+
 def _create_proof_env(prover: "Prover", config: "AgeomConfig") -> "ProofEnvironment":
     """Create the appropriate ProofEnvironment for the given prover.
 
@@ -728,6 +748,43 @@ def main() -> None:
         help="Optimization metric to profile (default: precision)",
     )
 
+    # --- prompt-benchmark ---
+    prompt_benchmark_parser = subparsers.add_parser(
+        "prompt-benchmark",
+        help="Benchmark prompt keys across providers on a small cross-domain suite",
+    )
+    prompt_benchmark_parser.add_argument(
+        "--provider",
+        action="append",
+        default=[],
+        help="Provider spec in the form provider:model. Repeat to compare multiple providers.",
+    )
+    prompt_benchmark_parser.add_argument(
+        "--prompt-key",
+        action="append",
+        choices=["hunter_score", "hunter_reformulate", "hunter_analyze_failure"],
+        default=[],
+        help="Restrict the benchmark to one or more prompt keys (default: all benchmarked keys).",
+    )
+    prompt_benchmark_parser.add_argument(
+        "--repeats",
+        type=int,
+        default=1,
+        help="Number of times to run each provider/case pair (default: 1)",
+    )
+    prompt_benchmark_parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=None,
+        help="Max output tokens for benchmark calls (default: hunter config)",
+    )
+    prompt_benchmark_parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Optional JSON report path",
+    )
+
     # --- sources ---
     sources_parser = subparsers.add_parser(
         "sources", help="Manage multi-repo atom sources"
@@ -949,6 +1006,8 @@ def main() -> None:
         _run_async_command(_cmd_optimize(args))
     elif args.command == "profile":
         _run_async_command(_cmd_profile(args))
+    elif args.command == "prompt-benchmark":
+        _run_async_command(_cmd_prompt_benchmark(args))
     elif args.command == "decompose":
         _run_async_command(_cmd_decompose(args))
     elif args.command == "history":
@@ -2622,6 +2681,73 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
     except Exception as exc:
         print(f"Error during profiling: {exc}", file=sys.stderr)
         sys.exit(1)
+
+
+async def _cmd_prompt_benchmark(args: argparse.Namespace) -> None:
+    """Run prompt-key A/B benchmarks across a small cross-domain suite."""
+    from ageom.config import AgeomConfig
+    from ageom.hunter.llm import create_llm_client
+    from ageom.prompt_benchmark import (
+        PromptBenchmarkProvider,
+        format_prompt_benchmark_summary,
+        run_prompt_benchmark,
+        save_prompt_benchmark_report,
+        select_prompt_benchmark_cases,
+        summarize_prompt_benchmark,
+    )
+
+    config = AgeomConfig()
+    try:
+        provider_specs = _parse_prompt_benchmark_provider_specs(args.provider)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
+
+    providers: list[PromptBenchmarkProvider] = []
+    try:
+        for provider_name, model_name in provider_specs:
+            client = create_llm_client(
+                provider=provider_name,
+                model=model_name,
+                max_tokens=args.max_tokens or config.hunter_llm_max_tokens,
+                anthropic_api_key=config.anthropic_api_key,
+                openai_api_key=config.openai_api_key,
+                openai_base_url=config.openai_base_url,
+                llama_cpp_base_url=config.llama_cpp_base_url,
+                llama_cpp_api_key=config.llama_cpp_api_key,
+                use_agent_layer=config.use_agent_layer,
+            )
+            providers.append(
+                PromptBenchmarkProvider(
+                    name=f"{provider_name}:{model_name}",
+                    client=client,
+                )
+            )
+
+        cases = select_prompt_benchmark_cases(prompt_keys=args.prompt_key)
+        results = await run_prompt_benchmark(
+            providers=providers,
+            cases=cases,
+            repeats=args.repeats,
+        )
+        aggregates = summarize_prompt_benchmark(results)
+        print(format_prompt_benchmark_summary(aggregates))
+
+        if args.output:
+            save_prompt_benchmark_report(
+                args.output,
+                results=results,
+                aggregates=aggregates,
+            )
+            print(f"\nSaved report: {args.output}")
+    finally:
+        for provider in providers:
+            close = getattr(provider.client, "close", None)
+            if not callable(close):
+                continue
+            maybe_result = close()
+            if inspect.isawaitable(maybe_result):
+                await maybe_result
 
 
 if __name__ == "__main__":
