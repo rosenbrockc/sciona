@@ -119,6 +119,42 @@ _CONCEPTUAL_FALLBACKS: dict[ConceptType, list[dict[str, str]]] = {
     ],
 }
 
+_PARENT_CONCEPTUAL_FALLBACKS: dict[str, list[dict[str, str]]] = {
+    "design_filter": [dict(item) for item in _CONCEPTUAL_FALLBACKS[ConceptType.SIGNAL_FILTER]],
+    "validate_stability": [
+        {
+            "name": "Normalize Coefficient Form",
+            "description": "Normalize coefficient ordering and representation before stability analysis.",
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "canonicalize_filter_coefficients",
+        },
+        {
+            "name": "Construct Characteristic Polynomial",
+            "description": "Construct the characteristic polynomial associated with the normalized coefficients.",
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "construct_characteristic_polynomial",
+        },
+        {
+            "name": "Compute Pole Locations",
+            "description": "Compute discrete-time poles from the characteristic polynomial.",
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "compute_pole_locations",
+        },
+        {
+            "name": "Evaluate Discrete-Time Stability",
+            "description": "Assess whether the pole set satisfies the discrete-time stability criterion.",
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "assess_discrete_time_stability",
+        },
+        {
+            "name": "Emit Stable Coefficients",
+            "description": "Return validated coefficients once the stability report passes acceptance checks.",
+            "concept_type": ConceptType.SIGNAL_FILTER.value,
+            "matched_primitive_hint": "finalize_stable_coefficients",
+        },
+    ],
+}
+
 _GENERIC_FALLBACK: list[dict[str, str]] = [
     {
         "name": "Interpret Requirements",
@@ -228,6 +264,11 @@ _HELPER_PORT_TOKENS = {
     "schedule",
     "seed",
     "state",
+}
+
+_SPECIALIZED_SCAFFOLD_PARENTS: dict[ConceptType, set[str]] = {
+    ConceptType.SIGNAL_FILTER: {"design_filter"},
+    ConceptType.SIGNAL_TRANSFORM: {"signal_transform"},
 }
 
 
@@ -518,7 +559,98 @@ def _rewrite_raw_sub_nodes(
         parent=parent,
         catalog=catalog,
     )
+    rewritten = _merge_specialized_fallbacks(
+        rewritten,
+        parent=parent,
+        catalog=catalog,
+    )
     return rewritten
+
+
+def _canonical_primitive_name_for_spec(
+    spec: dict[str, Any],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> str:
+    explicit = str(
+        spec.get("matched_primitive")
+        or spec.get("matched_primitive_hint")
+        or spec.get("atomic_hint")
+        or ""
+    ).strip()
+    if explicit:
+        prim = _find_primitive(catalog, explicit)
+        if prim is not None:
+            return prim.name
+    prim = _suggest_primitive_for_spec(spec, parent=parent, catalog=catalog)
+    return prim.name if prim is not None else ""
+
+
+def _specialized_fallbacks_for_parent(
+    parent: AlgorithmicNode,
+) -> list[dict[str, str]] | None:
+    parent_name = _norm(parent.name)
+    parent_specific = _PARENT_CONCEPTUAL_FALLBACKS.get(parent_name)
+    if parent_specific is not None:
+        return [dict(item) for item in parent_specific]
+
+    specialized = _CONCEPTUAL_FALLBACKS.get(parent.concept_type)
+    if not specialized:
+        return None
+    allowed_parent_names = _SPECIALIZED_SCAFFOLD_PARENTS.get(parent.concept_type)
+    if allowed_parent_names and parent_name not in allowed_parent_names:
+        return None
+    return [dict(item) for item in specialized]
+
+
+def _merge_specialized_fallbacks(
+    raw_subs: list[dict[str, Any]],
+    *,
+    parent: AlgorithmicNode,
+    catalog: PrimitiveCatalog,
+) -> list[dict[str, Any]]:
+    specialized = _specialized_fallbacks_for_parent(parent)
+    if not specialized:
+        return raw_subs
+    fallback_primitive_names = [
+        str(item.get("matched_primitive_hint", "")).strip()
+        for item in specialized
+        if str(item.get("matched_primitive_hint", "")).strip()
+    ]
+    if fallback_primitive_names and not all(
+        _find_primitive(catalog, primitive_name) is not None
+        for primitive_name in fallback_primitive_names
+    ):
+        return raw_subs
+
+    used_indices: set[int] = set()
+    merged: list[dict[str, Any]] = []
+    existing_primitive_names = [
+        _canonical_primitive_name_for_spec(item, parent=parent, catalog=catalog)
+        for item in raw_subs
+    ]
+
+    for fallback in specialized:
+        fallback_prim = str(fallback.get("matched_primitive_hint", "")).strip()
+        match_index = None
+        for index, primitive_name in enumerate(existing_primitive_names):
+            if index in used_indices:
+                continue
+            if fallback_prim and primitive_name == fallback_prim:
+                match_index = index
+                break
+            if _norm(str(raw_subs[index].get("name", ""))) == _norm(str(fallback.get("name", ""))):
+                match_index = index
+                break
+
+        if match_index is not None:
+            merged.append(raw_subs[match_index])
+            used_indices.add(match_index)
+        else:
+            merged.append(dict(fallback))
+
+    return merged
 
 
 def _safe_iospec_list(raw: Any) -> list[IOSpec]:
@@ -687,11 +819,11 @@ def _signal_filter_ports(
         if "parse" in step_name or "normalize" in step_name or "interpret" in step_name:
             return (
                 parent_inputs or [_port("spec", "filter specification")],
-                [_port("design_requirements", "filter design requirements")],
+                [_port("design_targets", "filter design targets")],
             )
         if "target" in step_name or "constraint" in step_name:
             return (
-                [_port("design_requirements", "filter design requirements")],
+                parent_inputs or [_port("spec", "filter specification")],
                 [_port("design_targets", "filter design targets")],
             )
         if "select" in step_name or "choose" in step_name:
@@ -1022,6 +1154,7 @@ def _repair_ports_from_reference(
     allow_extension: bool = True,
     rename_generic_names: bool = True,
     force_reference_names: bool = False,
+    force_reference_types: bool = False,
 ) -> list[IOSpec]:
     if not current and not reference:
         return []
@@ -1051,7 +1184,9 @@ def _repair_ports_from_reference(
             name = ref.name
 
         type_desc = base.type_desc.strip() or "Any"
-        if type_desc == "Any":
+        if ref is not None and force_reference_types and _port_is_typed(ref):
+            type_desc = ref.type_desc
+        elif type_desc == "Any":
             if ref is not None and _port_is_typed(ref):
                 type_desc = ref.type_desc
             elif fallback_type not in {"", "Any"}:
@@ -1097,12 +1232,14 @@ def _repair_node_ports(
                 _clone_ports(primitive.inputs),
                 fallback_type=fallback_type,
                 force_reference_names=True,
+                force_reference_types=True,
             )
             outputs = _repair_ports_from_reference(
                 outputs,
                 _clone_ports(primitive.outputs),
                 fallback_type=fallback_type,
                 force_reference_names=True,
+                force_reference_types=True,
             )
         repaired_nodes.append(node.model_copy(update={"inputs": inputs, "outputs": outputs}))
 
@@ -1210,6 +1347,7 @@ def _sanitize_edge_hints(
     edge_hints: list[dict[str, Any]],
 ) -> list[DependencyEdge]:
     by_norm_name = {_norm(n.name): n for n in nodes}
+    node_order = {node.node_id: index for index, node in enumerate(nodes)}
     seen: set[tuple[str, str, str, str, str, str]] = set()
     result: list[DependencyEdge] = []
 
@@ -1231,6 +1369,8 @@ def _sanitize_edge_hints(
         src = by_norm_name.get(_norm(src_name))
         tgt = by_norm_name.get(_norm(tgt_name))
         if src is None or tgt is None or src.node_id == tgt.node_id:
+            continue
+        if node_order.get(src.node_id, -1) >= node_order.get(tgt.node_id, -1):
             continue
 
         preferred_output = str(hint.get("output_name", "")).strip()
@@ -1293,6 +1433,60 @@ def _build_chain_edges(nodes: list[AlgorithmicNode]) -> list[DependencyEdge]:
     return edges
 
 
+def _synthesize_matching_input_edges(
+    nodes: list[AlgorithmicNode],
+    existing_edges: list[DependencyEdge],
+) -> list[DependencyEdge]:
+    if len(nodes) <= 1:
+        return existing_edges
+
+    seen = {_edge_tuple(edge) for edge in existing_edges}
+    incoming_inputs: dict[str, set[str]] = {}
+    for edge in existing_edges:
+        incoming_inputs.setdefault(edge.target_id, set()).add(edge.input_name)
+
+    augmented = list(existing_edges)
+    for target_index, target in enumerate(nodes):
+        satisfied = incoming_inputs.setdefault(target.node_id, set())
+        required_inputs = [port for port in target.inputs if port.required]
+        if not required_inputs:
+            continue
+
+        for target_input in required_inputs:
+            if target_input.name in satisfied:
+                continue
+            for source in reversed(nodes[:target_index]):
+                match = next(
+                    (
+                        output
+                        for output in source.outputs
+                        if output.name == target_input.name
+                        and output.type_desc == target_input.type_desc
+                    ),
+                    None,
+                )
+                if match is None:
+                    continue
+                edge = DependencyEdge(
+                    source_id=source.node_id,
+                    target_id=target.node_id,
+                    output_name=match.name,
+                    input_name=target_input.name,
+                    source_type=match.type_desc,
+                    target_type=target_input.type_desc,
+                    requires_glue=False,
+                )
+                key = _edge_tuple(edge)
+                if key in seen:
+                    break
+                augmented.append(edge)
+                seen.add(key)
+                satisfied.add(target_input.name)
+                break
+
+    return augmented
+
+
 def _collect_edge_hints(parsed: dict[str, Any]) -> list[dict[str, Any]]:
     hints: list[dict[str, Any]] = []
     raw_edges = parsed.get("edges")
@@ -1305,9 +1499,9 @@ def _collect_edge_hints(parsed: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _fallback_sub_nodes(parent: AlgorithmicNode) -> list[dict[str, str]]:
-    specialized = _CONCEPTUAL_FALLBACKS.get(parent.concept_type)
+    specialized = _specialized_fallbacks_for_parent(parent)
     if specialized:
-        return [dict(item) for item in specialized]
+        return specialized
     generic = []
     for item in _GENERIC_FALLBACK:
         row = dict(item)
@@ -1410,5 +1604,6 @@ def build_deterministic_decomposition(
     edges = _sanitize_edge_hints(nodes, edge_hints)
     if not edges:
         edges = _build_chain_edges(nodes)
+    edges = _synthesize_matching_input_edges(nodes, edges)
 
     return DeterministicDecomposeResult(nodes=nodes, edges=edges)

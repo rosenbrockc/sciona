@@ -520,19 +520,24 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
             category=ConceptType.DATA_ASSEMBLY,
             description=(
                 "Parse and canonicalize a filter specification into typed design "
-                "requirements such as sample rate, passbands, ripple, and "
+                "targets such as sample rate, passbands, ripple, and "
                 "attenuation constraints."
             ),
             inputs=[IOSpec(name="spec", type_desc="filter specification")],
             outputs=[
                 IOSpec(
-                    name="design_requirements",
-                    type_desc="filter design requirements",
+                    name="design_targets",
+                    type_desc="filter design targets",
                 )
             ],
-            type_signature="filter specification -> filter design requirements",
+            type_signature="filter specification -> filter design targets",
         ),
-        ["parse filter requirements", "normalize specification", "interpret filter specification"],
+        [
+            "parse filter requirements",
+            "normalize specification",
+            "interpret filter specification",
+            "normalize design targets",
+        ],
     ),
     (
         AlgorithmicPrimitive(
@@ -634,6 +639,32 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
     ),
     (
         AlgorithmicPrimitive(
+            name="construct_characteristic_polynomial",
+            source="ageom-builtins",
+            category=ConceptType.SIGNAL_FILTER,
+            description="Construct the characteristic polynomial implied by normalized filter coefficients.",
+            inputs=[
+                IOSpec(
+                    name="normalized_coefficients",
+                    type_desc="filter coefficients",
+                )
+            ],
+            outputs=[
+                IOSpec(
+                    name="characteristic_polynomial",
+                    type_desc="np.polynomial.Polynomial",
+                )
+            ],
+            type_signature="filter coefficients -> np.polynomial.Polynomial",
+        ),
+        [
+            "construct filter characteristic polynomial",
+            "build characteristic polynomial",
+            "construct coefficient polynomial",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
             name="assess_discrete_time_stability",
             source="ageom-builtins",
             category=ConceptType.SIGNAL_FILTER,
@@ -646,6 +677,26 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
             "evaluate stability margin",
             "evaluate discrete-time stability",
             "evaluate unit-circle stability margin",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="finalize_stable_coefficients",
+            source="ageom-builtins",
+            category=ConceptType.SIGNAL_FILTER,
+            description="Emit validated coefficients after a discrete-time stability report passes acceptance criteria.",
+            inputs=[
+                IOSpec(name="normalized_coefficients", type_desc="filter coefficients"),
+                IOSpec(name="stability_report", type_desc="stability report"),
+            ],
+            outputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            type_signature="filter coefficients -> stability report -> filter coefficients",
+        ),
+        [
+            "emit stable coefficients",
+            "pass stable coefficients",
+            "gate coefficients by stability",
+            "finalize stable coefficients",
         ],
     ),
     (

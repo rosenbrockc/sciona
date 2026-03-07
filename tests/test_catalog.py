@@ -246,6 +246,37 @@ class TestBuiltinPrimitiveSeeding:
         assert catalog.get("Spectral Processing") is not None
         assert catalog.get("Inverse Transform") is not None
 
+    def test_parse_filter_spec_normalize_design_targets_alias_uses_targets_contract(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+
+        primitive = catalog.get("Normalize Design Targets")
+
+        assert primitive is not None
+        assert primitive.name == "parse_filter_spec"
+        assert [port.name for port in primitive.inputs] == ["spec"]
+        assert [port.name for port in primitive.outputs] == ["design_targets"]
+
+    def test_validate_stability_builtins_cover_polynomial_and_finalize_steps(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+
+        poly = catalog.get("Construct Characteristic Polynomial")
+        final = catalog.get("Emit Stable Coefficients")
+
+        assert poly is not None
+        assert poly.name == "construct_characteristic_polynomial"
+        assert [port.name for port in poly.inputs] == ["normalized_coefficients"]
+        assert [port.name for port in poly.outputs] == ["characteristic_polynomial"]
+
+        assert final is not None
+        assert final.name == "finalize_stable_coefficients"
+        assert [port.name for port in final.inputs] == [
+            "normalized_coefficients",
+            "stability_report",
+        ]
+        assert [port.name for port in final.outputs] == ["valid_coefficients"]
+
     def test_aliases_make_nodes_atomic(self):
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)

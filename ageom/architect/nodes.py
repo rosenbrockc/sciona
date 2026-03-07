@@ -997,7 +997,7 @@ async def critique_decomposition(
     sub_nodes_str = "\n".join(
         f"  - {c.name} [{c.concept_type.value}] "
         f"(inputs: {_format_io(c.inputs)}, outputs: {_format_io(c.outputs)}, "
-        f"status: {c.status.value})"
+        f"status: {c.status.value}, matched_primitive: {c.matched_primitive or '(none)'})"
         for c in children
     )
     edges_str = "\n".join(
@@ -1007,6 +1007,18 @@ async def critique_decomposition(
     )
 
     catalog_prims = deps.catalog.find_matching_primitives(parent, k=5)
+    child_prims = [
+        deps.catalog.get(child.matched_primitive or "")
+        for child in children
+        if child.matched_primitive
+    ]
+    seen_primitive_names: set[str] = set()
+    critique_primitives = []
+    for primitive in [*catalog_prims, *child_prims]:
+        if primitive is None or primitive.name in seen_primitive_names:
+            continue
+        seen_primitive_names.add(primitive.name)
+        critique_primitives.append(primitive)
     critique_prompt = CRITIQUE_USER.format(
         parent_name=parent.name,
         parent_description=parent.description,
@@ -1016,7 +1028,7 @@ async def critique_decomposition(
         edges=edges_str or "  (no edges)",
         current_depth=parent.depth,
         max_depth=max_depth,
-        primitives=_format_primitives(catalog_prims),
+        primitives=_format_primitives(critique_primitives),
     )
     shared_block = await _search_context(
         deps,

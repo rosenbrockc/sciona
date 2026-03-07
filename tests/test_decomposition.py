@@ -1882,6 +1882,238 @@ class TestDeterministicDecompose:
         assert all(node.status == NodeStatus.ATOMIC for node in result["nodes"])
         assert all(io.type_desc != "Any" for node in result["nodes"] for io in node.inputs + node.outputs)
 
+    def test_signal_filter_partial_chain_is_completed_deterministically(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="n_filter",
+            name="Design Filter",
+            description="Design filter coefficients from specification",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Normalize Design Targets",
+                        "description": "Translate ECG filter specification into concrete design targets.",
+                    },
+                    {
+                        "name": "Choose Filter Strategy",
+                        "description": "Select an appropriate filter topology and design strategy.",
+                    },
+                    {
+                        "name": "Synthesize Coefficients",
+                        "description": "Generate candidate coefficients and verify they satisfy design constraints.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert [node.matched_primitive for node in result.nodes] == [
+            "parse_filter_spec",
+            "choose_filter_topology",
+            "design_filter_coefficients",
+            "validate_filter_response",
+        ]
+        assert result.nodes[0].outputs[0].name == "design_targets"
+        assert result.nodes[-1].outputs[0].name == "coefficients"
+        edge_pairs = {
+            (edge.output_name, edge.input_name)
+            for edge in result.edges
+        }
+        assert ("design_targets", "design_targets") in edge_pairs
+        assert ("candidate_coefficients", "candidate_coefficients") in edge_pairs
+
+    def test_signal_filter_scaffold_drops_disconnected_extra_branch_nodes(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="n_filter",
+            name="Design Filter",
+            description="Design filter coefficients from specification",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Normalize Design Targets",
+                        "description": "Normalize the filter specification into concrete design targets.",
+                    },
+                    {
+                        "name": "Check Realizability",
+                        "description": "Run a side-branch realizability check.",
+                    },
+                    {
+                        "name": "Choose Filter Strategy",
+                        "description": "Choose a valid topology.",
+                    },
+                    {
+                        "name": "Synthesize Coefficients",
+                        "description": "Generate candidate coefficients.",
+                    },
+                    {
+                        "name": "Validate and Finalize Coefficients",
+                        "description": "Finalize the design against targets.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert [node.matched_primitive for node in result.nodes] == [
+            "parse_filter_spec",
+            "choose_filter_topology",
+            "design_filter_coefficients",
+            "validate_filter_response",
+        ]
+        assert all(node.name != "Check Realizability" for node in result.nodes)
+
+    def test_validate_stability_partial_chain_is_completed_deterministically(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        parent = AlgorithmicNode(
+            node_id="n_stability",
+            name="Validate Stability",
+            description="Check filter stability via pole analysis",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            outputs=[IOSpec(name="valid_coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "Normalize Coefficient Form",
+                        "description": "Normalize coefficient ordering and representation.",
+                    },
+                    {
+                        "name": "Compute Pole Locations",
+                        "description": "Compute discrete-time poles.",
+                    },
+                    {
+                        "name": "Evaluate Discrete-Time Stability",
+                        "description": "Assess whether the poles satisfy the stability criterion.",
+                    },
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert [node.matched_primitive for node in result.nodes] == [
+            "canonicalize_filter_coefficients",
+            "construct_characteristic_polynomial",
+            "compute_pole_locations",
+            "assess_discrete_time_stability",
+            "finalize_stable_coefficients",
+        ]
+        edge_pairs = {(edge.output_name, edge.input_name) for edge in result.edges}
+        assert ("normalized_coefficients", "normalized_coefficients") in edge_pairs
+        assert ("characteristic_polynomial", "characteristic_polynomial") in edge_pairs
+        assert ("poles", "poles") in edge_pairs
+        assert ("stability_report", "stability_report") in edge_pairs
+
+    @pytest.mark.asyncio
+    async def test_critique_prompt_includes_matched_primitives(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        captured: dict[str, str] = {}
+
+        async def complete(system: str, user: str) -> str:
+            captured["user"] = user
+            return json.dumps({"approved": True, "reason": "Looks good.", "flagged_nodes": []})
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_filter",
+            name="Design Filter",
+            description="Design filter coefficients from specification",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
+            status=NodeStatus.DECOMPOSED,
+            depth=1,
+        )
+        parse = AlgorithmicNode(
+            node_id="n_parse",
+            parent_id="n_filter",
+            name="Normalize Design Targets",
+            description="Parse the specification into design targets.",
+            concept_type=ConceptType.DATA_ASSEMBLY,
+            inputs=[IOSpec(name="spec", type_desc="filter specification")],
+            outputs=[IOSpec(name="design_targets", type_desc="filter design targets")],
+            matched_primitive="parse_filter_spec",
+            status=NodeStatus.ATOMIC,
+            depth=2,
+        )
+        choose = AlgorithmicNode(
+            node_id="n_choose",
+            parent_id="n_filter",
+            name="Choose Filter Strategy",
+            description="Choose a filter topology.",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="design_targets", type_desc="filter design targets")],
+            outputs=[IOSpec(name="design_strategy", type_desc="filter design strategy")],
+            matched_primitive="choose_filter_topology",
+            status=NodeStatus.ATOMIC,
+            depth=2,
+        )
+        state: DecompositionState = {
+            "goal": "Detect heart rate from raw ECG signal",
+            "max_depth": 8,
+            "nodes": [parent, parse, choose],
+            "edges": [
+                DependencyEdge(
+                    source_id="n_parse",
+                    target_id="n_choose",
+                    output_name="design_targets",
+                    input_name="design_targets",
+                    source_type="filter design targets",
+                    target_type="filter design targets",
+                )
+            ],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "n_filter",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is True
+        assert "matched_primitive: parse_filter_spec" in captured["user"]
+        assert "matched_primitive: choose_filter_topology" in captured["user"]
+
     @pytest.mark.asyncio
     async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):
         from ageom.architect.nodes import decompose_node
