@@ -325,7 +325,7 @@
           div.className = "run-item" + (r.run_id === selectedRunId ? " active" : "");
           div.dataset.runId = r.run_id || "";
           const hung = r.is_hung ? " <span class=\"bad\">hung</span>" : "";
-          const architect = (r.metadata || {}).architect_metrics || {};
+          const architect = r.architect_summary || {};
           const retrieval = r.retrieval_summary || {};
           const routing = (r.routing_summary || {}).architect || {};
           const complexity = r.provider_complexity || {};
@@ -337,13 +337,14 @@
             : "";
           const shared = r.shared_context_summary || {};
           const unresolved = Number(architect.unresolved_leaf_count || 0);
-          const blocked = Number(((architect.node_status_counts || {}).blocked) || 0);
+          const blocked = Number(architect.blocked_count || 0);
           const retrievalBand = retrieval.confidence_band || "--";
           const activeOverrides = Number(routing.active_count || 0);
           const sharedContexts = Number(shared.active_context_count || shared.context_count || 0);
           const sharedSearches = Number(shared.total_searches || 0);
           const sharedTemplates = Number(shared.total_template_hits || 0);
           const sharedFailures = Number(shared.total_failure_hits || 0);
+          const critiqueRejects = Number(architect.critique_reject_total || 0);
           const validationLine = (benchmark.prompt_results || benchmark.flow_results)
             ? `<div class="run-meta">bench prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
@@ -354,6 +355,7 @@
             '</div>',
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
+            `<div class="run-meta">critique_rejects=${critiqueRejects} retries=${Number(architect.retry_total || 0)} rewrites=${Number(architect.rewrite_action_count || 0)}</div>`,
             `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides} providers=${Number(complexity.provider_count || 0)}</div>`,
             `<div class="run-meta">catalog=${Number(catalog.catalog_size || 0)} added=${Number(catalog.added || 0)} merged=${Number(catalog.merged || 0)}</div>`,
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
@@ -375,7 +377,7 @@
         const stages = run.stages || {};
         const stageCount = Object.keys(stages).length;
         const staleCount = (run.stale_stages || []).length;
-        const architect = (run.metadata || {}).architect_metrics || {};
+        const architect = run.architect_summary || {};
         const retrieval = run.retrieval_summary || {};
         const architectRouting = (run.routing_summary || {}).architect || {};
         const hunterRouting = (run.routing_summary || {}).hunter || {};
@@ -396,7 +398,12 @@
           ["success", String(run.prompt_successes || 0)],
           ["failures", String(run.prompt_failures || 0)],
           ["unresolved", String(architect.unresolved_leaf_count || 0)],
-          ["blocked", String(((architect.node_status_counts || {}).blocked) || 0)],
+          ["blocked", String(architect.blocked_count || 0)],
+          ["blocked reason", architect.blocked_reason || "--"],
+          ["last node", architect.last_node_name || "--"],
+          ["critique rejects", String(architect.critique_reject_total || 0)],
+          ["retry total", String(architect.retry_total || 0)],
+          ["rewrite actions", String(architect.rewrite_action_count || 0)],
           ["any ports", `${(Number(architect.any_port_pct || 0) * 100).toFixed(1)}%`],
           ["any edges", `${(Number(architect.any_edge_pct || 0) * 100).toFixed(1)}%`],
           ["retrieval", `${retrieval.confidence_band || "--"} / ${retrieval.semantic_backend || "--"}`],
@@ -443,6 +450,7 @@
           `error: ${run.error || "(none)"}\n` +
           `hung: ${run.is_hung ? "yes" : "no"}\n` +
           `provider_complexity: ${JSON.stringify(run.provider_complexity || {}, null, 2)}\n` +
+          `architect_summary: ${JSON.stringify(run.architect_summary || {}, null, 2)}\n` +
           `catalog_alignment_summary: ${JSON.stringify(run.catalog_alignment_summary || {}, null, 2)}\n` +
           `shared_context_summary: ${JSON.stringify(run.shared_context_summary || {}, null, 2)}\n` +
           `benchmark_summary: ${JSON.stringify(run.benchmark_summary || {}, null, 2)}\n` +

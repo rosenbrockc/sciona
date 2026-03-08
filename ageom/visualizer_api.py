@@ -93,6 +93,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     release_validation = metadata.get("release_validation", {})
     shared_context = metadata.get("shared_context", {})
     catalog_alignment = metadata.get("catalog_alignment", {})
+    architect_metrics = metadata.get("architect_metrics", {})
     if not isinstance(retrieval, dict):
         retrieval = {}
     if not isinstance(routing, dict):
@@ -105,6 +106,8 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         shared_context = {}
     if not isinstance(catalog_alignment, dict):
         catalog_alignment = {}
+    if not isinstance(architect_metrics, dict):
+        architect_metrics = {}
     contexts = shared_context.get("contexts", {})
     if not isinstance(contexts, dict):
         contexts = {}
@@ -207,6 +210,45 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "witness_signature": int(
             catalog_alignment.get("source_witness_signature_fallbacks", 0) or 0
         ),
+    }
+    status_counts = architect_metrics.get("node_status_counts", {})
+    if not isinstance(status_counts, dict):
+        status_counts = {}
+    blocked_names = architect_metrics.get("blocked_node_names", [])
+    if not isinstance(blocked_names, list):
+        blocked_names = []
+    critique_counts = architect_metrics.get("critique_reject_counts_by_category", {})
+    if not isinstance(critique_counts, dict):
+        critique_counts = {}
+    retry_counts = architect_metrics.get("retry_counts_by_node", {})
+    if not isinstance(retry_counts, dict):
+        retry_counts = {}
+    rewrite_actions = architect_metrics.get("rewrite_actions", [])
+    if not isinstance(rewrite_actions, list):
+        rewrite_actions = []
+    top_critique_categories = sorted(
+        (
+            {
+                "category": str(category),
+                "count": int(count or 0),
+            }
+            for category, count in critique_counts.items()
+        ),
+        key=lambda row: (-row["count"], row["category"]),
+    )
+    out["architect_summary"] = {
+        "unresolved_leaf_count": int(architect_metrics.get("unresolved_leaf_count", 0) or 0),
+        "blocked_count": int(status_counts.get("blocked", 0) or 0),
+        "blocked_node_names": [str(name) for name in blocked_names if str(name).strip()],
+        "blocked_reason": str(architect_metrics.get("blocked_reason", "") or ""),
+        "any_port_pct": float(architect_metrics.get("any_port_pct", 0.0) or 0.0),
+        "any_edge_pct": float(architect_metrics.get("any_edge_pct", 0.0) or 0.0),
+        "rewrite_action_count": len(rewrite_actions),
+        "last_node_name": str(architect_metrics.get("last_node_name", "") or ""),
+        "critique_reject_total": sum(int(count or 0) for count in critique_counts.values()),
+        "critique_reject_categories": top_critique_categories[:5],
+        "retry_total": sum(int(count or 0) for count in retry_counts.values()),
+        "retry_node_count": len(retry_counts),
     }
     out["benchmark_summary"] = {
         "prompt_cases": int(benchmark.get("prompt_cases", 0) or 0),

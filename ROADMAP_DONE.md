@@ -700,3 +700,23 @@
   - Result: `1236 passed, 17 skipped`
 - Commit:
   - `telemetry: persist decompose and match runs`
+
+## Architect Dashboard Summary
+
+- Added a first-class `architect_summary` to dashboard run payloads so architect failures are visible without reading raw nested metadata.
+- The summary now surfaces:
+  - unresolved leaf count
+  - blocked node count and blocked node names
+  - blocked reason and last architect node name
+  - Any-type port and edge percentages
+  - critique reject totals and top reject categories
+  - retry totals and rewrite-action counts
+- Updated the dashboard UI to use the derived architect summary in both the run list and the detail panel.
+- Added regressions for architect-summary extraction in dashboard API responses.
+- Validation:
+  - `pytest -q tests/test_visualizer_api.py tests/test_cli_command_telemetry.py tests/test_validation_telemetry.py`
+  - Result: `19 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1237 passed, 17 skipped`
+- Commit:
+  - `dashboard: summarize architect state`

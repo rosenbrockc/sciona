@@ -537,6 +537,70 @@ class TestDashboardAPI:
             "hunter",
         ]
 
+    def test_dashboard_run_includes_architect_summary(
+        self, client, monkeypatch, tmp_path
+    ):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "architect123",
+            "pipeline": "decompose",
+            "status": "failed",
+            "started_at": now - 9.0,
+            "last_update_at": now - 1.0,
+            "ended_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 3,
+            "prompt_successes": 2,
+            "prompt_failures": 1,
+            "prompt_inflight": 0,
+            "events_count": 7,
+            "metadata": {
+                "architect_metrics": {
+                    "node_status_counts": {"blocked": 2, "atomic": 5},
+                    "unresolved_leaf_count": 4,
+                    "blocked_node_names": ["Design Filter", "Validate Stability"],
+                    "blocked_reason": "Critique retries exhausted",
+                    "any_port_pct": 0.1,
+                    "any_edge_pct": 0.0,
+                    "rewrite_actions": [
+                        {"stage": "primitive_normalization"},
+                        {"stage": "wrapper_elision"},
+                    ],
+                    "last_node_name": "Validate Stability",
+                    "critique_reject_counts_by_category": {
+                        "type_mismatch": 3,
+                        "missing_flow": 1,
+                    },
+                    "retry_counts_by_node": {
+                        "Design Filter": 2,
+                        "Validate Stability": 1,
+                    },
+                }
+            },
+        }
+        (tmp_path / "run_architect123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs/architect123")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["architect_summary"]["unresolved_leaf_count"] == 4
+        assert data["architect_summary"]["blocked_count"] == 2
+        assert data["architect_summary"]["blocked_reason"] == "Critique retries exhausted"
+        assert data["architect_summary"]["last_node_name"] == "Validate Stability"
+        assert data["architect_summary"]["rewrite_action_count"] == 2
+        assert data["architect_summary"]["critique_reject_total"] == 4
+        assert data["architect_summary"]["retry_total"] == 3
+        assert data["architect_summary"]["critique_reject_categories"] == [
+            {"category": "type_mismatch", "count": 3},
+            {"category": "missing_flow", "count": 1},
+        ]
+
     def test_run_hang_annotation(self, client, monkeypatch, tmp_path):
         from ageom.telemetry import reset_telemetry_runtime
 
