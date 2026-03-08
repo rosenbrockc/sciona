@@ -371,6 +371,8 @@ def solve_impl(matrix: object, rhs: object) -> object:
         assert catalog.get("linalg.solve") is not None
         assert catalog.get("linalg solve") is not None
         assert catalog.get("linalg_solve") is not None
+        assert catalog.get("witness_linear_solve") is not None
+        assert catalog.get("linear_solve") is not None
         assert catalog.get("solve").name == "scipy.linalg.solve"
     finally:
         for name in set(sys.modules) - before_modules:

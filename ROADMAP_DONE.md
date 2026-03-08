@@ -487,3 +487,19 @@
   - Result: `1223 passed, 17 skipped`
 - Commits:
   - `da55c5a` `catalog: add dotted source name aliases`
+
+## Witness-Derived Alias Expansion
+
+- Extended source-derived alias generation to use witness names in addition to implementation names and registration names.
+- Witness aliases now retain both:
+  - the raw witness symbol, e.g. `witness_linear_solve`
+  - the stripped conceptual alias, e.g. `linear_solve`
+- This improves alignment when wrappers are generic but witness names carry the real algorithmic meaning.
+- Added regressions for witness-derived aliases during source seeding.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_source_catalog.py tests/test_catalog.py`
+  - Result: `45 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1223 passed, 17 skipped`
+- Commits:
+  - `TBD` `catalog: add witness source aliases`

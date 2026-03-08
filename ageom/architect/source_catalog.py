@@ -473,12 +473,40 @@ def _registration_to_primitive(
         outputs=outputs,
         type_signature=_signature_from_ports(inputs, outputs),
     )
-    aliases = sorted(_alias_candidates(name, impl))
+    aliases = sorted(
+        _alias_candidates(
+            name,
+            impl,
+            witness=witness,
+            witness_name=str(meta.get("witness_name", "") or ""),
+        )
+    )
     return primitive, aliases
 
 
-def _alias_candidates(name: str, impl: Any) -> set[str]:
-    aliases = {alias for alias in {getattr(impl, "__name__", ""), name.split(".")[-1]} if alias and alias != name}
+def _alias_candidates(
+    name: str,
+    impl: Any,
+    *,
+    witness: Any = None,
+    witness_name: str = "",
+) -> set[str]:
+    aliases = {
+        alias
+        for alias in {
+            getattr(impl, "__name__", ""),
+            getattr(witness, "__name__", ""),
+            witness_name,
+            name.split(".")[-1],
+        }
+        if alias and alias != name
+    }
+    expanded: set[str] = set()
+    for alias in aliases:
+        expanded.add(alias)
+        if alias.startswith("witness_") and len(alias) > len("witness_"):
+            expanded.add(alias[len("witness_") :])
+    aliases = expanded
     parts = [part for part in name.split(".") if part]
     if len(parts) >= 2:
         suffix = parts[-2:]
