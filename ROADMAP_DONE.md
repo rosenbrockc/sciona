@@ -280,6 +280,20 @@
   - Result: `1215 passed, 17 skipped`
 - Commits:
   - `9b1b33d` `runtime: warn on legacy subprocess providers`
+
+## Release Validation CI Automation
+
+- Added a repo-native GitHub Actions workflow at `.github/workflows/release-validation.yml`.
+- The workflow now:
+  - installs the project plus the release-validation dependency set
+  - runs `ageom release-validate --output build/release_validation`
+  - uploads the resulting release-validation bundle as a CI artifact
+- This closes the gap between having the validation entrypoint in-tree and actually running it as repeatable repo automation.
+- Validation:
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1215 passed, 17 skipped`
+- Commits:
+  - `TBD` `ci: add release validation workflow`
   - `conda run -n hpyexec pytest -q`
   - Result: `1207 passed, 17 skipped`
 - Commits:
