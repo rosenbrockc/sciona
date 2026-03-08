@@ -522,4 +522,4 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1224 passed, 17 skipped`
 - Commits:
-  - `TBD` `catalog: add module-derived source aliases`
+  - `1484cdb` `catalog: add module-derived source aliases`
