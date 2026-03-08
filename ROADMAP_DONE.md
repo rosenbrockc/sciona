@@ -313,4 +313,4 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1211 passed, 17 skipped`
 - Commits:
-  - `TBD` `benchmark: add deterministic validation bundle`
+  - `66d8281` `benchmark: add deterministic validation bundle`
