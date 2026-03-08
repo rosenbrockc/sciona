@@ -49,6 +49,7 @@ class FlowBenchmarkResult:
     case_id: str
     domain: str
     variant: str
+    execution_path: str
     ok: bool
     latency_ms: float
     prompt_calls: int
@@ -64,6 +65,7 @@ class FlowBenchmarkResult:
 @dataclass
 class FlowBenchmarkAggregate:
     variant: str
+    execution_paths: list[str] = field(default_factory=list)
     total_cases: int = 0
     passed_cases: int = 0
     failed_cases: int = 0
@@ -77,6 +79,8 @@ class FlowBenchmarkAggregate:
 
     def record(self, result: FlowBenchmarkResult) -> None:
         self.total_cases += 1
+        if result.execution_path not in self.execution_paths:
+            self.execution_paths.append(result.execution_path)
         if result.ok:
             self.passed_cases += 1
         else:
@@ -101,6 +105,7 @@ class FlowBenchmarkAggregate:
     def to_dict(self) -> dict[str, Any]:
         return {
             "variant": self.variant,
+            "execution_paths": sorted(self.execution_paths),
             "total_cases": self.total_cases,
             "passed_cases": self.passed_cases,
             "failed_cases": self.failed_cases,
@@ -342,6 +347,7 @@ async def _run_direct_baseline_case(case: FlowBenchmarkCase) -> FlowBenchmarkRes
         case_id=case.case_id,
         domain=case.domain,
         variant="direct_baseline",
+        execution_path="direct_baseline",
         ok=matched == len(case.leaves),
         latency_ms=latency_ms,
         prompt_calls=hunter_llm.calls,
@@ -413,6 +419,7 @@ async def _run_rapid_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
         case_id=case.case_id,
         domain=case.domain,
         variant="rapid",
+        execution_path="rapid_direct",
         ok=matched == len(case.leaves),
         latency_ms=latency_ms,
         prompt_calls=hunter_llm.calls,
@@ -440,6 +447,7 @@ async def _run_structured_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
         case_id=case.case_id,
         domain=case.domain,
         variant="structured",
+        execution_path="structured_single_pass",
         ok=matched == len(case.leaves),
         latency_ms=latency_ms,
         prompt_calls=architect_llm.calls + hunter_llm.calls,
@@ -468,6 +476,7 @@ async def _run_verified_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
         case_id=case.case_id,
         domain=case.domain,
         variant="verified",
+        execution_path="verified_orchestration",
         ok=matched == len(case.leaves),
         latency_ms=latency_ms,
         prompt_calls=architect_llm.calls + hunter_llm.calls,

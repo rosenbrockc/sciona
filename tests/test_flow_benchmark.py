@@ -30,6 +30,9 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     assert aggregate_map["rapid"].failed_cases == len(cases)
     assert aggregate_map["structured"].passed_cases == len(cases)
     assert aggregate_map["verified"].passed_cases == len(cases)
+    assert aggregate_map["rapid"].execution_paths == ["rapid_direct"]
+    assert aggregate_map["structured"].execution_paths == ["structured_single_pass"]
+    assert aggregate_map["verified"].execution_paths == ["verified_orchestration"]
     assert all(aggregate.stability_rate == pytest.approx(1.0) for aggregate in aggregates)
     assert all(aggregate.avg_prompt_calls >= 0.0 for aggregate in aggregates)
 

@@ -1009,3 +1009,25 @@
   - Result: `1250 passed, 17 skipped`
 - Commit:
   - `benchmark: expose required and comparison flow tracks`
+
+## Mode Distinctness Validation
+
+- Added explicit execution-path metadata to full-flow benchmark results and aggregates.
+- Flow benchmark variants now persist the concrete execution path they exercised:
+  - `direct_baseline`
+  - `rapid_direct`
+  - `structured_single_pass`
+  - `verified_orchestration`
+- Benchmark validation now includes a `flow_execution_paths` summary with:
+  - expected path mapping by variant
+  - observed path mapping by variant
+  - distinctness violations
+- Release/benchmark validation now fails if the mode variants collapse onto the wrong execution paths, so routing and benchmark semantics cannot silently drift apart.
+- Dashboard/API benchmark summaries now expose those observed execution paths directly.
+- Validation:
+  - `pytest -q tests/test_flow_benchmark.py tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `29 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1250 passed, 17 skipped`
+- Commit:
+  - `benchmark: validate mode execution distinctness`

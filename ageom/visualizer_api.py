@@ -364,6 +364,11 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         )
         if isinstance(benchmark.get("flow_comparison_variants", []), list)
         else [],
+        "flow_execution_paths": dict(
+            benchmark.get("flow_execution_paths", {}) or {}
+        )
+        if isinstance(benchmark.get("flow_execution_paths", {}), dict)
+        else {},
         "flow_avg_prompt_calls": dict(
             benchmark.get("flow_avg_prompt_calls", {}) or {}
         )

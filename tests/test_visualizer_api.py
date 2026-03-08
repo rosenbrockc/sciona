@@ -473,6 +473,19 @@ class TestDashboardAPI:
                     "flow_stability_summary": "rapid 4/4, verified 4/4",
                     "flow_required_variants": ["structured", "verified"],
                     "flow_comparison_variants": ["direct_baseline", "rapid"],
+                    "flow_execution_paths": {
+                        "expected": {
+                            "rapid": "rapid_direct",
+                            "structured": "structured_single_pass",
+                            "verified": "verified_orchestration",
+                        },
+                        "observed": {
+                            "rapid": ["rapid_direct"],
+                            "structured": ["structured_single_pass"],
+                            "verified": ["verified_orchestration"],
+                        },
+                        "violations": [],
+                    },
                     "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
                     "prompt_avg_latency_ms": {
                         "codex_shim:tuned": 3954.8,
@@ -537,6 +550,7 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["flow_mode_failures"] == 0
         assert data["benchmark_summary"]["flow_required_variants"] == ["structured", "verified"]
         assert set(data["benchmark_summary"]["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
+        assert data["benchmark_summary"]["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
         assert data["benchmark_summary"]["flow_comparison_failures"] == 2
         assert data["benchmark_summary"]["release_status"] == "passed"
         assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")

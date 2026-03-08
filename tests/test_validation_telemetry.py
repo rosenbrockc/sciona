@@ -31,6 +31,11 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "flow_stability_summary": "rapid 4/4, verified 4/4",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
+            "flow_execution_paths": {
+                "expected": {"rapid": "rapid_direct"},
+                "observed": {"rapid": ["rapid_direct"]},
+                "violations": [],
+            },
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {"violations": [], "provider_count": 3},
             "prompt_tuned_failures": 0,
@@ -62,6 +67,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert bench["flow_mode_failures"] == 0
     assert bench["flow_required_variants"] == ["structured", "verified"]
     assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
+    assert bench["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
     assert bench["runtime_complexity"]["provider_count"] == 3
 
 
@@ -90,6 +96,11 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
             "flow_stability_summary": "rapid 4/4, verified 4/4",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
+            "flow_execution_paths": {
+                "expected": {"rapid": "rapid_direct"},
+                "observed": {"rapid": ["rapid_direct"]},
+                "violations": [],
+            },
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {
                 "provider_count": 5,
@@ -157,6 +168,11 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "flow_stability_summary": "rapid 4/4, verified 4/4",
                 "flow_required_variants": ["structured", "verified"],
                 "flow_comparison_variants": ["direct_baseline", "rapid"],
+                "flow_execution_paths": {
+                    "expected": {"rapid": "rapid_direct"},
+                    "observed": {"rapid": ["rapid_direct"]},
+                    "violations": [],
+                },
                 "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
                 "status": "failed",
                 "runtime_complexity": {"provider_count": 5, "violations": ["legacy_providers_present=codex_cli"]},

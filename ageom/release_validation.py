@@ -32,6 +32,9 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "flow_comparison_variants": list(
                     benchmark_summary.get("flow_comparison_variants", []) or []
                 ),
+                "flow_execution_paths": dict(
+                    benchmark_summary.get("flow_execution_paths", {}) or {}
+                ),
                 "prompt_tuned_failures": benchmark_summary.get("prompt_tuned_failures", 0),
                 "prompt_tuned_unstable_groups": benchmark_summary.get(
                     "prompt_tuned_unstable_groups", 0

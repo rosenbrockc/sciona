@@ -52,6 +52,12 @@ _PROMPT_TO_ROUND: dict[str, str] = {
 
 _LEGACY_PROVIDER_SET = {"claude_cli", "codex_cli", "gemini_cli"}
 _REQUIRED_FLOW_BENCHMARK_VARIANTS = {"structured", "verified"}
+_EXPECTED_FLOW_EXECUTION_PATHS = {
+    "direct_baseline": "direct_baseline",
+    "rapid": "rapid_direct",
+    "structured": "structured_single_pass",
+    "verified": "verified_orchestration",
+}
 _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
     "rapid": {
         "max_provider_count": 2,
@@ -80,6 +86,43 @@ _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
 def _benchmark_validation_config() -> AgeomConfig:
     """Use repo defaults for validation instead of operator-local dotenv overrides."""
     return AgeomConfig(_env_file=None)
+
+
+def flow_execution_path_summary(flow_aggregates: list[Any]) -> dict[str, Any]:
+    """Summarize whether flow benchmark variants still map to distinct execution paths."""
+    observed = {
+        agg.variant: sorted(getattr(agg, "execution_paths", []) or [])
+        for agg in flow_aggregates
+    }
+    violations: list[str] = []
+    for variant, expected in _EXPECTED_FLOW_EXECUTION_PATHS.items():
+        paths = observed.get(variant, [])
+        if not paths:
+            violations.append(f"{variant}:missing_execution_path")
+            continue
+        if len(paths) != 1:
+            violations.append(f"{variant}:multiple_execution_paths={','.join(paths)}")
+            continue
+        if paths[0] != expected:
+            violations.append(
+                f"{variant}:expected {expected} but observed {paths[0]}"
+            )
+    required_modes = ("rapid", "structured", "verified")
+    observed_required = {
+        variant: observed.get(variant, ["--"])[0]
+        for variant in required_modes
+        if observed.get(variant)
+    }
+    if len(set(observed_required.values())) != len(required_modes):
+        violations.append(
+            "mode_paths_not_distinct:"
+            + ",".join(f"{variant}={path}" for variant, path in sorted(observed_required.items()))
+        )
+    return {
+        "expected": dict(_EXPECTED_FLOW_EXECUTION_PATHS),
+        "observed": observed,
+        "violations": violations,
+    }
 
 
 def _transport_for_provider(provider: str) -> str:
@@ -343,12 +386,14 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         for agg in flow_aggregates
         if agg.variant in comparison_flow_variants
     )
+    flow_execution_paths = flow_execution_path_summary(flow_aggregates)
     runtime_complexity = runtime_complexity_summary(_benchmark_validation_config())
     benchmark_passed = (
         prompt_tuned_failures == 0
         and prompt_tuned_unstable_groups == 0
         and flow_mode_failures == 0
         and flow_mode_unstable_groups == 0
+        and len(flow_execution_paths["violations"]) == 0
         and len(runtime_complexity["violations"]) == 0
     )
 
@@ -372,6 +417,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         ),
         "flow_required_variants": sorted(_REQUIRED_FLOW_BENCHMARK_VARIANTS),
         "flow_comparison_variants": sorted(comparison_flow_variants),
+        "flow_execution_paths": flow_execution_paths,
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
         },
