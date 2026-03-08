@@ -3417,6 +3417,8 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "flow_summary": summary["flow_summary"],
         "flow_stability_summary": summary.get("flow_stability_summary", ""),
         "flow_avg_prompt_calls": dict(summary.get("flow_avg_prompt_calls", {}) or {}),
+        "prompt_avg_latency_ms": dict(summary.get("prompt_avg_latency_ms", {}) or {}),
+        "flow_avg_latency_ms": dict(summary.get("flow_avg_latency_ms", {}) or {}),
         "prompt_tuned_failures": int(summary.get("prompt_tuned_failures", 0) or 0),
         "prompt_tuned_unstable_groups": int(
             summary.get("prompt_tuned_unstable_groups", 0) or 0
@@ -3486,9 +3488,10 @@ async def _cmd_release_validate(args: argparse.Namespace) -> None:
         merge_run_metadata(
             {
                 "release_validation": {
+                    "status": summary.get("status", "failed"),
                     "manifest": summary["manifest"],
                     "benchmarks_dir": summary["benchmarks_dir"],
-                    "status": "passed",
+                    "runtime_complexity": dict(summary.get("runtime_complexity", {}) or {}),
                 },
                 "benchmark_validation": _benchmark_validation_metadata(benchmark_summary),
             },

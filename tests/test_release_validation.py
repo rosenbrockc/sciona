@@ -19,10 +19,14 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["status"] == "passed"
     bench = manifest["checks"]["benchmark_validation"]
+    runtime = manifest["checks"]["runtime_complexity"]
     assert bench["prompt_results"] > 0
     assert bench["flow_results"] > 0
     assert bench["prompt_tuned_failures"] == 0
     assert bench["flow_mode_failures"] == 0
+    assert runtime["provider_count"] > 0
+    assert runtime["legacy_provider_count"] == 0
+    assert runtime["violations"] == []
     assert (tmp_path / "benchmarks" / "summary.json").exists()
 
 
@@ -63,3 +67,58 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
     assert bench["prompt_tuned_failures"] == 1
     assert bench["prompt_tuned_unstable_groups"] == 2
     assert bench["flow_mode_unstable_groups"] == 1
+
+
+@pytest.mark.asyncio
+async def test_run_release_validation_fails_when_runtime_complexity_budget_exceeded(
+    monkeypatch, tmp_path
+):
+    async def _fake_run_benchmark_validation(output_dir):
+        return {
+            "summary_report": str(tmp_path / "benchmarks" / "summary.json"),
+            "prompt_report": str(tmp_path / "benchmarks" / "prompt_benchmark.json"),
+            "flow_report": str(tmp_path / "benchmarks" / "flow_benchmark.json"),
+            "prompt_cases": 12,
+            "prompt_results": 24,
+            "prompt_summary": "prompt summary",
+            "prompt_stability_summary": "fixture_good/tuned 12/12",
+            "flow_cases": 4,
+            "flow_results": 16,
+            "flow_summary": "flow summary",
+            "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "prompt_tuned_failures": 0,
+            "prompt_tuned_unstable_groups": 0,
+            "flow_mode_failures": 0,
+            "flow_mode_unstable_groups": 0,
+        }
+
+    monkeypatch.setattr(
+        "ageom.release_validation.run_benchmark_validation",
+        _fake_run_benchmark_validation,
+    )
+    monkeypatch.setattr(
+        "ageom.release_validation._runtime_complexity_summary",
+        lambda config: {
+            "provider_count": 6,
+            "provider_model_count": 7,
+            "transport_count": 4,
+            "legacy_provider_count": 1,
+            "legacy_providers": ["codex_cli"],
+            "budget": {
+                "max_provider_count": 4,
+                "max_provider_model_count": 5,
+                "max_transport_count": 3,
+                "allow_legacy_providers": False,
+            },
+        },
+    )
+
+    summary = await run_release_validation(tmp_path)
+
+    manifest = json.loads(Path(summary["manifest"]).read_text(encoding="utf-8"))
+    assert manifest["status"] == "failed"
+    runtime = manifest["checks"]["runtime_complexity"]
+    assert runtime["legacy_provider_count"] == 1
+    assert any("provider_count=6 exceeds budget 4" == item for item in runtime["violations"])
+    assert any("legacy_providers_present=codex_cli" == item for item in runtime["violations"])

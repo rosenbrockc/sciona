@@ -65,8 +65,17 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
 
     async def _fake_run_release_validation(output_dir):
         return {
+            "status": "failed",
             "manifest": "build/release_validation/release_validation.json",
             "benchmarks_dir": "build/release_validation/benchmarks",
+            "runtime_complexity": {
+                "provider_count": 5,
+                "provider_model_count": 6,
+                "transport_count": 4,
+                "legacy_provider_count": 1,
+                "legacy_providers": ["codex_cli"],
+                "violations": ["legacy_providers_present=codex_cli"],
+            },
             "benchmark_summary": {
                 "summary_report": "build/release_validation/benchmarks/summary.json",
                 "prompt_report": "build/release_validation/benchmarks/prompt_benchmark.json",
@@ -99,6 +108,7 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
     payload = json.loads(persisted[-1].read_text(encoding="utf-8"))
     assert payload["pipeline"] == "release_validation"
     assert payload["status"] == "completed"
-    assert payload["metadata"]["release_validation"]["status"] == "passed"
+    assert payload["metadata"]["release_validation"]["status"] == "failed"
+    assert payload["metadata"]["release_validation"]["runtime_complexity"]["legacy_provider_count"] == 1
     assert payload["metadata"]["benchmark_validation"]["flow_results"] == 16
     assert payload["metadata"]["benchmark_validation"]["flow_avg_prompt_calls"]["verified"] == 7.0

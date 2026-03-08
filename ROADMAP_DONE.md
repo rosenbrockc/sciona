@@ -820,3 +820,30 @@
   - Result: `1241 passed, 17 skipped`
 - Commit:
   - `dashboard: surface catalog merge examples`
+
+## Release Complexity Policing
+
+- Added a first-class runtime-complexity gate to release validation so a release can now fail even when correctness benchmarks pass if the default routing surface becomes too complex.
+- Release validation now computes and persists a runtime-complexity summary over the package’s default `verified`-mode routing, including:
+  - provider count
+  - provider/model count
+  - transport count
+  - active override count
+  - legacy provider presence
+- Added explicit budget checks for:
+  - maximum provider count
+  - maximum provider/model count
+  - maximum transport count
+  - zero legacy one-shot subprocess providers
+- Fixed the release-validation CLI telemetry path to stop hardcoding `status=passed`; it now persists the actual release-validation status and runtime-complexity payload.
+- Added regressions for:
+  - passing runtime-complexity summaries in the manifest
+  - failing release validation when runtime complexity exceeds budget
+  - release-validation telemetry carrying the actual status and runtime-complexity details
+- Validation:
+  - `pytest -q tests/test_release_validation.py tests/test_validation_telemetry.py`
+  - Result: `5 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1242 passed, 17 skipped`
+- Commit:
+  - `release: police runtime complexity budget`
