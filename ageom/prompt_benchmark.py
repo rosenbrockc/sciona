@@ -72,7 +72,11 @@ class PromptBenchmarkAggregate:
     failed_cases: int = 0
     avg_latency_ms: float = 0.0
     max_latency_ms: float = 0.0
+    repeat_groups: int = 0
+    stable_groups: int = 0
+    stability_rate: float = 1.0
     by_prompt_key: dict[str, dict[str, float | int]] = field(default_factory=dict)
+    _case_outcomes: dict[str, list[bool]] = field(default_factory=dict)
 
     def record(self, result: PromptBenchmarkResult) -> None:
         self.total_cases += 1
@@ -96,9 +100,35 @@ class PromptBenchmarkAggregate:
         bucket["avg_latency_ms"] = (
             (float(bucket["avg_latency_ms"]) * (cases - 1)) + result.latency_ms
         ) / max(1, cases)
+        self._case_outcomes.setdefault(f"{result.prompt_key}:{result.case_id}", []).append(
+            result.ok
+        )
+
+    def finalize(self) -> None:
+        groups = list(self._case_outcomes.values())
+        self.repeat_groups = len(groups)
+        self.stable_groups = sum(
+            1 for outcomes in groups if len(set(outcomes)) <= 1
+        )
+        self.stability_rate = (
+            self.stable_groups / self.repeat_groups if self.repeat_groups else 1.0
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "provider": self.provider,
+            "model": self.model,
+            "variant": self.variant,
+            "total_cases": self.total_cases,
+            "passed_cases": self.passed_cases,
+            "failed_cases": self.failed_cases,
+            "avg_latency_ms": self.avg_latency_ms,
+            "max_latency_ms": self.max_latency_ms,
+            "repeat_groups": self.repeat_groups,
+            "stable_groups": self.stable_groups,
+            "stability_rate": self.stability_rate,
+            "by_prompt_key": self.by_prompt_key,
+        }
 
 
 def _score_case(
@@ -491,9 +521,17 @@ def summarize_prompt_benchmark(
             ),
         )
         aggregate.record(result)
+    for aggregate in aggregates.values():
+        aggregate.finalize()
     return sorted(
         aggregates.values(),
-        key=lambda item: (-item.passed_cases, item.avg_latency_ms, item.provider, item.variant),
+        key=lambda item: (
+            -item.passed_cases,
+            -item.stability_rate,
+            item.avg_latency_ms,
+            item.provider,
+            item.variant,
+        ),
     )
 
 
@@ -501,13 +539,14 @@ def format_prompt_benchmark_summary(
     aggregates: Sequence[PromptBenchmarkAggregate],
 ) -> str:
     lines = [
-        "provider | variant | model | pass/total | avg ms | max ms",
-        "--- | --- | --- | --- | ---: | ---:",
+        "provider | variant | model | pass/total | stable | avg ms | max ms",
+        "--- | --- | --- | --- | ---: | ---: | ---:",
     ]
     for aggregate in aggregates:
         lines.append(
             f"{aggregate.provider} | {aggregate.variant} | {aggregate.model or '-'} | "
             f"{aggregate.passed_cases}/{aggregate.total_cases} | "
+            f"{aggregate.stable_groups}/{aggregate.repeat_groups} | "
             f"{aggregate.avg_latency_ms:.1f} | {aggregate.max_latency_ms:.1f}"
         )
     return "\n".join(lines)

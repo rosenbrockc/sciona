@@ -227,6 +227,21 @@
   - `conda run -n hpyexec pytest -q tests/test_llm_router.py tests/test_llm.py`
   - `conda run -n hpyexec pytest -q`
 
+## Benchmark Stability Summaries
+
+- Prompt and flow benchmark aggregates now track repeat-group stability in addition to pass/fail and latency.
+- Added aggregate fields for:
+  - repeat group count
+  - stable group count
+  - stability rate
+- Prompt and flow benchmark summaries now show a `stable` column so repeated-run consistency is visible in the text and JSON artifacts.
+- Added regressions for:
+  - prompt benchmark stability on repeated runs
+  - flow benchmark repeat grouping and summary formatting
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_prompt_benchmark.py tests/test_flow_benchmark.py tests/test_e2e_prompt_benchmark.py tests/test_e2e_flow_benchmark.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:

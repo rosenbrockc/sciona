@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -68,6 +68,10 @@ class FlowBenchmarkAggregate:
     passed_cases: int = 0
     failed_cases: int = 0
     avg_latency_ms: float = 0.0
+    repeat_groups: int = 0
+    stable_groups: int = 0
+    stability_rate: float = 1.0
+    _case_outcomes: dict[str, list[bool]] = field(default_factory=dict)
 
     def record(self, result: FlowBenchmarkResult) -> None:
         self.total_cases += 1
@@ -78,9 +82,29 @@ class FlowBenchmarkAggregate:
         total_latency = self.avg_latency_ms * (self.total_cases - 1)
         total_latency += result.latency_ms
         self.avg_latency_ms = total_latency / max(1, self.total_cases)
+        self._case_outcomes.setdefault(result.case_id, []).append(result.ok)
+
+    def finalize(self) -> None:
+        groups = list(self._case_outcomes.values())
+        self.repeat_groups = len(groups)
+        self.stable_groups = sum(
+            1 for outcomes in groups if len(set(outcomes)) <= 1
+        )
+        self.stability_rate = (
+            self.stable_groups / self.repeat_groups if self.repeat_groups else 1.0
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "variant": self.variant,
+            "total_cases": self.total_cases,
+            "passed_cases": self.passed_cases,
+            "failed_cases": self.failed_cases,
+            "avg_latency_ms": self.avg_latency_ms,
+            "repeat_groups": self.repeat_groups,
+            "stable_groups": self.stable_groups,
+            "stability_rate": self.stability_rate,
+        }
 
 
 def _slug(text: str) -> str:
@@ -466,14 +490,17 @@ async def run_flow_benchmark(
     *,
     cases: Sequence[FlowBenchmarkCase],
     variants: Sequence[str] = ("direct_baseline", "rapid", "structured", "verified"),
+    repeats: int = 1,
 ) -> list[FlowBenchmarkResult]:
     results: list[FlowBenchmarkResult] = []
+    repeat_count = max(1, int(repeats))
     for case in cases:
-        for variant in variants:
-            if variant == "direct_baseline":
-                results.append(await _run_direct_baseline_case(case))
-                continue
-            results.append(await _run_structured_case(case, variant=variant))
+        for _ in range(repeat_count):
+            for variant in variants:
+                if variant == "direct_baseline":
+                    results.append(await _run_direct_baseline_case(case))
+                    continue
+                results.append(await _run_structured_case(case, variant=variant))
     return results
 
 
@@ -484,9 +511,11 @@ def summarize_flow_benchmark(
     for result in results:
         aggregate = aggregates.setdefault(result.variant, FlowBenchmarkAggregate(variant=result.variant))
         aggregate.record(result)
+    for aggregate in aggregates.values():
+        aggregate.finalize()
     return sorted(
         aggregates.values(),
-        key=lambda item: (-item.passed_cases, item.avg_latency_ms, item.variant),
+        key=lambda item: (-item.passed_cases, -item.stability_rate, item.avg_latency_ms, item.variant),
     )
 
 
@@ -494,12 +523,13 @@ def format_flow_benchmark_summary(
     aggregates: Sequence[FlowBenchmarkAggregate],
 ) -> str:
     lines = [
-        "variant | pass/total | avg ms",
-        "--- | --- | ---:",
+        "variant | pass/total | stable | avg ms",
+        "--- | --- | ---: | ---:",
     ]
     for aggregate in aggregates:
         lines.append(
-            f"{aggregate.variant} | {aggregate.passed_cases}/{aggregate.total_cases} | {aggregate.avg_latency_ms:.1f}"
+            f"{aggregate.variant} | {aggregate.passed_cases}/{aggregate.total_cases} | "
+            f"{aggregate.stable_groups}/{aggregate.repeat_groups} | {aggregate.avg_latency_ms:.1f}"
         )
     return "\n".join(lines)
 

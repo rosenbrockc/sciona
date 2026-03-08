@@ -100,6 +100,7 @@ async def test_run_prompt_benchmark_with_good_provider_passes_all_cases(tmp_path
     aggregates = summarize_prompt_benchmark(results)
     assert len(aggregates) == 1
     assert aggregates[0].passed_cases == len(results)
+    assert aggregates[0].stability_rate == pytest.approx(1.0)
 
     report_path = tmp_path / "prompt_benchmark.json"
     save_prompt_benchmark_report(report_path, results=results, aggregates=aggregates)
@@ -123,7 +124,7 @@ async def test_run_prompt_benchmark_summarizes_provider_quality():
     assert [aggregate.provider for aggregate in aggregates][:2] == ["good", "bad"]
     assert aggregates[0].passed_cases > aggregates[1].passed_cases
     summary = format_prompt_benchmark_summary(aggregates)
-    assert "provider | variant | model | pass/total" in summary
+    assert "provider | variant | model | pass/total | stable" in summary
 
 
 @pytest.mark.asyncio
@@ -141,3 +142,20 @@ async def test_run_prompt_benchmark_compare_direct_baseline_adds_variants():
 
     aggregates = summarize_prompt_benchmark(results)
     assert {aggregate.variant for aggregate in aggregates} == {"tuned", "direct_baseline"}
+
+
+@pytest.mark.asyncio
+async def test_prompt_benchmark_stability_tracks_repeat_consistency():
+    providers = [PromptBenchmarkProvider(name="good", client=_GoodBenchmarkLLM())]
+    cases = select_prompt_benchmark_cases(prompt_keys=["hunter_score"])
+    results = await run_prompt_benchmark(
+        providers=providers,
+        cases=cases,
+        repeats=2,
+    )
+
+    aggregates = summarize_prompt_benchmark(results)
+    assert len(aggregates) == 1
+    assert aggregates[0].repeat_groups == len(cases)
+    assert aggregates[0].stable_groups == len(cases)
+    assert aggregates[0].stability_rate == pytest.approx(1.0)
