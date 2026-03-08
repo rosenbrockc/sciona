@@ -1788,6 +1788,138 @@ class TestSharedContext:
         assert captured_users
         assert "Do not emit `inputs`, `outputs`, `type_signature`, `is_atomic`, or explicit `edges`." in captured_users[0]
 
+    @pytest.mark.asyncio
+    async def test_decompose_node_injects_failure_context_from_shared_namespace(self):
+        from ageom.architect.nodes import decompose_node
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        captured_users: list[str] = []
+
+        async def complete(system: str, user: str) -> str:
+            captured_users.append(user)
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {"name": "Split", "description": "Split list into halves."},
+                        {
+                            "name": "merge",
+                            "description": "Merge sorted halves.",
+                            "matched_primitive_hint": "merge",
+                        },
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        store = InMemorySharedContextStore()
+        await store.put(
+            "architect/failures",
+            "Parent: Sort\nDescription: Sort input list\nCategory: semantic_completeness\nReason: Missing typed path to result",
+        )
+
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Sort",
+            description="Sort input list",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="list[int]")],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "divide_and_conquer",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            shared_context=store,
+            context_namespace="architect/test",
+        )
+
+        await decompose_node(state, {"configurable": {"deps": deps}})
+
+        assert captured_users
+        assert "Prior Failure Patterns" in captured_users[0]
+
+    @pytest.mark.asyncio
+    async def test_critique_rejection_writes_failure_context_to_shared_namespace(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+        store = InMemorySharedContextStore()
+
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Sort",
+            description="Sort input list",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="list[int]")],
+            outputs=[IOSpec(name="result", type_desc="list[int]")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        child = AlgorithmicNode(
+            node_id="n_child",
+            parent_id="n_parent",
+            name="Candidate Step",
+            description="A badly typed child step.",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            inputs=[IOSpec(name="data", type_desc="Any")],
+            outputs=[IOSpec(name="result", type_desc="Any")],
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+        state: DecompositionState = {
+            "goal": "Implement merge sort",
+            "max_depth": 8,
+            "nodes": [parent, child],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "divide_and_conquer",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            shared_context=store,
+            context_namespace="architect/test",
+        )
+
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is False
+        records = await store.recent("architect/failures", limit=5)
+        assert any("Parent: Sort" in r.text for r in records)
+
 
 class TestDeterministicDecompose:
     @pytest.mark.asyncio

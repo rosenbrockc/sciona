@@ -439,6 +439,15 @@ def _template_namespace(config: RunnableConfig, deps: DecompositionDeps) -> str:
     return f"{base}/templates"
 
 
+def _failure_namespace(config: RunnableConfig, deps: DecompositionDeps) -> str:
+    base = _context_namespace(config, deps).strip().strip("/")
+    if not base:
+        return "architect/failures"
+    if "/" in base:
+        base = base.rsplit("/", 1)[0]
+    return f"{base}/failures"
+
+
 async def _search_context(
     deps: DecompositionDeps,
     config: RunnableConfig,
@@ -498,6 +507,31 @@ async def _search_template_context(
         return ""
 
 
+async def _search_failure_context(
+    deps: DecompositionDeps,
+    config: RunnableConfig,
+    *,
+    query: str,
+    limit: int = 3,
+) -> str:
+    store = deps.shared_context
+    if store is None:
+        return ""
+    ns = _failure_namespace(config, deps)
+    if not ns:
+        return ""
+    try:
+        records = await store.search(ns, query, limit=limit)
+        return format_context_block(
+            "Prior Failure Patterns",
+            records,
+            max_chars=deps.context_budget_chars,
+            metrics=deps.shared_context_metrics,
+        )
+    except Exception:
+        return ""
+
+
 async def _put_context(
     deps: DecompositionDeps,
     config: RunnableConfig,
@@ -537,6 +571,27 @@ async def _put_template_context(
         await store.put(ns, text, metadata=payload)
         if deps.shared_context_metrics is not None:
             deps.shared_context_metrics.record_template_put()
+    except Exception:
+        return
+
+
+async def _put_failure_context(
+    deps: DecompositionDeps,
+    config: RunnableConfig,
+    *,
+    text: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    store = deps.shared_context
+    if store is None:
+        return
+    ns = _failure_namespace(config, deps)
+    if not ns:
+        return
+    payload = dict(metadata or {})
+    payload.setdefault("confidence", 0.9)
+    try:
+        await store.put(ns, text, metadata=payload)
     except Exception:
         return
 
@@ -823,6 +878,14 @@ async def decompose_node(
     )
     if template_block:
         user_prompt += f"\n\n{template_block}"
+    failure_block = await _search_failure_context(
+        deps,
+        config,
+        query=f"{node.name} {node.description} {node.concept_type.value}",
+        limit=2,
+    )
+    if failure_block:
+        user_prompt += f"\n\n{failure_block}"
 
     response = await select_llm(deps.llm, ARCHITECT_DECOMPOSE).complete(
         DECOMPOSE_NODE_SYSTEM,
@@ -1069,6 +1132,22 @@ async def critique_decomposition(
             ),
             metadata={"node_id": current_id, "phase": "deterministic"},
         )
+        await _put_failure_context(
+            deps,
+            config,
+            text=(
+                f"Parent: {parent.name}\n"
+                f"Description: {parent.description}\n"
+                f"Category: {category}\n"
+                f"Reason: {reason}"
+            ),
+            metadata={
+                "node_id": current_id,
+                "node_name": parent.name,
+                "phase": "deterministic",
+                "category": category,
+            },
+        )
         return {
             "critique_passed": False,
             "critique_reason": reason,
@@ -1231,6 +1310,26 @@ async def critique_decomposition(
         ),
         metadata={"node_id": current_id, "phase": "llm", "approved": approved},
     )
+    if not approved:
+        category = _critique_reason_category(reason)
+        await _put_failure_context(
+            deps,
+            config,
+            text=(
+                f"Parent: {parent.name}\n"
+                f"Description: {parent.description}\n"
+                f"Category: {category}\n"
+                f"Reason: {reason or '(none)'}\n"
+                f"Flagged: {', '.join(flagged) if flagged else '(none)'}"
+            ),
+            metadata={
+                "node_id": current_id,
+                "node_name": parent.name,
+                "phase": "llm",
+                "category": category,
+                "approved": False,
+            },
+        )
 
     return result
 

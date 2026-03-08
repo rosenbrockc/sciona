@@ -331,4 +331,24 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1212 passed, 17 skipped`
 - Commits:
-  - `TBD` `cli: add release validation entrypoint`
+  - `d018a70` `cli: add release validation entrypoint`
+
+## Persistent Architect Failure Memory
+
+- Added a stable `architect/failures` shared-context namespace for critique rejection patterns.
+- Rejected architect critiques now persist compact failure summaries with:
+  - parent name/description
+  - rejection category
+  - rejection reason
+  - flagged nodes when present
+- Future `decompose_node` prompts now inject relevant prior failure patterns alongside shared context and successful templates.
+- Added regressions for:
+  - decompose prompt injection from the failure namespace
+  - critique rejection persistence into the failure namespace
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_decomposition.py`
+  - Result: `57 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1214 passed, 17 skipped`
+- Commits:
+  - `TBD` `architect: reuse critique failure patterns`
