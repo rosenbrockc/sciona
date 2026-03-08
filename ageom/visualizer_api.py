@@ -214,6 +214,32 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
             catalog_alignment.get("source_witness_signature_fallbacks", 0) or 0
         ),
     }
+    source_breakdown = catalog_alignment.get("source_breakdown", {})
+    if not isinstance(source_breakdown, dict):
+        source_breakdown = {}
+    source_rows: list[dict[str, Any]] = []
+    for source_name, row in source_breakdown.items():
+        if not isinstance(row, dict):
+            continue
+        source_rows.append(
+            {
+                "source": str(source_name),
+                "added": int(row.get("added", 0) or 0),
+                "live_registry_candidates": int(
+                    row.get("live_registry_candidates", 0) or 0
+                ),
+                "ast_candidates": int(row.get("ast_candidates", 0) or 0),
+            }
+        )
+    source_rows.sort(
+        key=lambda row: (
+            -int(row["added"]),
+            -(int(row["live_registry_candidates"]) + int(row["ast_candidates"])),
+            row["source"],
+        )
+    )
+    out["catalog_alignment_summary"]["source_count"] = len(source_rows)
+    out["catalog_alignment_summary"]["top_sources"] = source_rows[:5]
     status_counts = architect_metrics.get("node_status_counts", {})
     if not isinstance(status_counts, dict):
         status_counts = {}

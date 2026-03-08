@@ -743,3 +743,25 @@
   - Result: `1239 passed, 17 skipped`
 - Commit:
   - `telemetry: summarize hunter retrieval quality`
+
+## Catalog Source Breakdown Summary
+
+- Extended source-derived catalog reporting to retain per-source contribution counts instead of only global totals.
+- Catalog alignment metadata now carries, per source package:
+  - added primitive count
+  - live-registry candidate count
+  - AST-fallback candidate count
+- Added dashboard/API summaries for:
+  - source package count
+  - top contributing sources by added primitives
+- Updated the dashboard UI to show the leading contributing source packages directly in run cards and run details.
+- Added regressions for:
+  - source-breakdown accounting during source-derived catalog seeding
+  - dashboard extraction of top source contributors
+- Validation:
+  - `pytest -q tests/test_source_catalog.py tests/test_visualizer_api.py`
+  - Result: `25 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1239 passed, 17 skipped`
+- Commit:
+  - `dashboard: surface catalog source breakdown`

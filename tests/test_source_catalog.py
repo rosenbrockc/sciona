@@ -103,6 +103,8 @@ def detect_peaks(signal: "np.ndarray") -> "np.ndarray":
         assert aliased.name == "detect_peaks"
         assert report.source_live_registry_candidates == 1
         assert report.source_cdg_metadata_matches == 1
+        assert report.source_breakdown["demo-source"]["live_registry_candidates"] == 1
+        assert report.source_breakdown["demo-source"]["added"] == 1
     finally:
         for name in set(sys.modules) - before_modules:
             if name == "mypkg" or name.startswith("mypkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):

@@ -28,6 +28,18 @@ def _normalize(text: str) -> str:
     return "".join(ch.lower() for ch in text if ch.isalnum())
 
 
+def _bump_source_breakdown(
+    report: CatalogReport | None,
+    source_name: str,
+    key: str,
+    amount: int = 1,
+) -> None:
+    if report is None or not source_name:
+        return
+    row = report.source_breakdown.setdefault(source_name, {})
+    row[key] = int(row.get(key, 0) or 0) + amount
+
+
 @dataclass
 class _AtomicNodeMeta:
     node_id: str
@@ -634,6 +646,7 @@ def seed_catalog_from_sources(
                         continue
                     if report is not None:
                         report.source_live_registry_candidates += 1
+                    _bump_source_breakdown(report, source.name, "live_registry_candidates")
                     built = _registration_to_primitive(
                         source,
                         name,
@@ -653,6 +666,7 @@ def seed_catalog_from_sources(
                         report=report,
                     ):
                         added += 1
+                        _bump_source_breakdown(report, source.name, "added")
                     seen_names.add(name)
 
         for name, meta in ast_entries.items():
@@ -660,6 +674,7 @@ def seed_catalog_from_sources(
                 continue
             if report is not None:
                 report.source_ast_candidates += 1
+            _bump_source_breakdown(report, source.name, "ast_candidates")
             built = _registration_to_primitive(
                 source,
                 name,
@@ -679,5 +694,6 @@ def seed_catalog_from_sources(
                 report=report,
             ):
                 added += 1
+                _bump_source_breakdown(report, source.name, "added")
             seen_names.add(name)
     return added

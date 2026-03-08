@@ -357,6 +357,18 @@ class TestDashboardAPI:
                     "source_cdg_metadata_matches": 200,
                     "source_witness_doc_fallbacks": 30,
                     "source_witness_signature_fallbacks": 18,
+                    "source_breakdown": {
+                        "ageo-atoms": {
+                            "added": 127,
+                            "live_registry_candidates": 100,
+                            "ast_candidates": 27,
+                        },
+                        "hpy-atoms": {
+                            "added": 7,
+                            "live_registry_candidates": 0,
+                            "ast_candidates": 7,
+                        },
+                    },
                 },
             },
         }
@@ -376,6 +388,21 @@ class TestDashboardAPI:
         assert data["catalog_alignment_summary"]["merged"] == 12
         assert data["catalog_alignment_summary"]["live_registry"] == 120
         assert data["catalog_alignment_summary"]["ast_fallback"] == 353
+        assert data["catalog_alignment_summary"]["source_count"] == 2
+        assert data["catalog_alignment_summary"]["top_sources"] == [
+            {
+                "source": "ageo-atoms",
+                "added": 127,
+                "live_registry_candidates": 100,
+                "ast_candidates": 27,
+            },
+            {
+                "source": "hpy-atoms",
+                "added": 7,
+                "live_registry_candidates": 0,
+                "ast_candidates": 7,
+            },
+        ]
         assert data["provider_complexity"]["provider_count"] == 3
         assert data["provider_complexity"]["provider_model_count"] == 3
         assert sorted(data["provider_complexity"]["transports"]) == [

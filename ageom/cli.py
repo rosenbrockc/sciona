@@ -582,6 +582,7 @@ def _load_architect_catalog(
         "source_cdg_metadata_matches": report.source_cdg_metadata_matches,
         "source_witness_doc_fallbacks": report.source_witness_doc_fallbacks,
         "source_witness_signature_fallbacks": report.source_witness_signature_fallbacks,
+        "source_breakdown": report.source_breakdown,
     }
     return catalog, report_payload
 

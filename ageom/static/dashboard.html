@@ -336,6 +336,7 @@
           const flowPromptCallSummary = Object.keys(flowPromptCalls).length
             ? Object.entries(flowPromptCalls).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(" ")
             : "";
+          const topSources = (catalog.top_sources || []).map((row) => `${row.source}=${Number(row.added || 0)}`).join(" ");
           const shared = r.shared_context_summary || {};
           const unresolved = Number(architect.unresolved_leaf_count || 0);
           const blocked = Number(architect.blocked_count || 0);
@@ -361,6 +362,7 @@
             `<div class="run-meta">searches=${Number(hunter.search_iterations || 0)} candidates=${Number(hunter.new_candidates_total || 0)} verified=${verifiedMatches}</div>`,
             `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides} providers=${Number(complexity.provider_count || 0)}</div>`,
             `<div class="run-meta">catalog=${Number(catalog.catalog_size || 0)} added=${Number(catalog.added || 0)} merged=${Number(catalog.merged || 0)}</div>`,
+            (topSources ? `<div class="run-meta">catalog_sources ${topSources}</div>` : ""),
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
             (flowPromptCallSummary
               ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>`
@@ -389,6 +391,7 @@
         const catalog = run.catalog_alignment_summary || {};
         const benchmark = run.benchmark_summary || {};
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
+        const topSources = (catalog.top_sources || []).map((row) => `${row.source}=${Number(row.added || 0)}`).join(", ");
         const shared = run.shared_context_summary || {};
         const metrics = [
           ["pipeline", run.pipeline || "--"],
@@ -427,6 +430,7 @@
           ["catalog", `${Number(catalog.catalog_size || 0)} / ${Number(catalog.total_candidates || 0)}`],
           ["catalog add/merge", `${Number(catalog.added || 0)} / ${Number(catalog.merged || 0)}`],
           ["catalog sources", `live=${Number(catalog.live_registry || 0)} ast=${Number(catalog.ast_fallback || 0)} cdg=${Number(catalog.cdg_matched || 0)}`],
+          ["catalog top sources", topSources || "--"],
           ["shared ctx", `${Number(shared.active_context_count || 0)}/${Number(shared.context_count || 0)}`],
           ["ctx search/hit", `${Number(shared.total_searches || 0)}/${Number(shared.total_hits || 0)}`],
           ["ctx puts", String(Number(shared.total_puts || 0))],
