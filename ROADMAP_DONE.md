@@ -387,4 +387,24 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1214 passed, 17 skipped`
 - Commits:
-  - `TBD` `architect: reuse critique failure patterns`
+  - `8827e91` `architect: reuse critique failure patterns`
+
+## Witness-Backed Source Primitive Extraction
+
+- Strengthened source-derived primitive extraction to use witness metadata more effectively.
+- Live registry imports now fall back to witness docstrings when wrapper implementations are under-documented.
+- AST fallback extraction now:
+  - reads the witness function referenced by `@register_atom(...)`
+  - uses witness docstrings when the wrapper has no useful description
+  - uses witness input/output signatures when the wrapper is generic or untyped
+  - strips quoted forward-reference annotations into clean catalog type text
+- Added regressions for:
+  - live registry description fallback to witness docstrings
+  - AST fallback using witness signatures for generic wrappers
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_source_catalog.py tests/test_catalog.py`
+  - Result: `44 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1217 passed, 17 skipped`
+- Commits:
+  - `TBD` `catalog: enrich witness-backed source extraction`

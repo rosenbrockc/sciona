@@ -217,6 +217,8 @@ def _load_atomic_node_index(
 def _expr_to_text(expr: ast.expr | None) -> str:
     if expr is None:
         return "Any"
+    if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
+        return expr.value
     try:
         return ast.unparse(expr)
     except Exception:
@@ -280,6 +282,16 @@ def _ports_from_ast_function(func: ast.FunctionDef | ast.AsyncFunctionDef) -> tu
     return inputs, outputs
 
 
+def _ports_are_uninformative(inputs: list[IOSpec], outputs: list[IOSpec]) -> bool:
+    if not inputs:
+        return True
+    if all(port.type_desc == "Any" for port in inputs) and all(
+        port.type_desc == "Any" for port in outputs
+    ):
+        return True
+    return False
+
+
 _KEYWORD_TYPES: list[tuple[tuple[str, ...], ConceptType]] = [
     (("sort",), ConceptType.SORTING),
     (("search", "lookup"), ConceptType.SEARCHING),
@@ -302,10 +314,17 @@ def _infer_concept_type(*, name: str, module: str, description: str) -> ConceptT
     return ConceptType.CUSTOM
 
 
-def _ast_register_atom_name(decorator: ast.AST) -> str | None:
+def _ast_register_atom_spec(decorator: ast.AST) -> tuple[str, str] | None:
     if isinstance(decorator, ast.Call):
         target = decorator.func
         if isinstance(target, ast.Name) and target.id == "register_atom":
+            witness_name = ""
+            if decorator.args:
+                first = decorator.args[0]
+                if isinstance(first, ast.Name):
+                    witness_name = first.id
+                elif isinstance(first, ast.Attribute):
+                    witness_name = first.attr
             for kw in decorator.keywords:
                 if kw.arg == "name":
                     try:
@@ -313,10 +332,10 @@ def _ast_register_atom_name(decorator: ast.AST) -> str | None:
                     except Exception:
                         value = None
                     if isinstance(value, str) and value:
-                        return value
-            return ""
+                        return value, witness_name
+            return "", witness_name
     elif isinstance(decorator, ast.Name) and decorator.id == "register_atom":
-        return ""
+        return "", ""
     return None
 
 
@@ -328,27 +347,46 @@ def _parse_register_atom_functions(package_root: Path, package_name: str) -> dic
         except Exception:
             continue
         module_name = ".".join(py_file.relative_to(package_root.parent).with_suffix("").parts)
+        function_defs = {
+            node.name: node
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
         for node in tree.body:
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
-            reg_name = None
+            reg_spec = None
             for decorator in node.decorator_list:
-                reg_name = _ast_register_atom_name(decorator)
-                if reg_name is not None:
+                reg_spec = _ast_register_atom_spec(decorator)
+                if reg_spec is not None:
                     break
-            if reg_name is None:
+            if reg_spec is None:
                 continue
+            reg_name, witness_name = reg_spec
             atom_name = reg_name or node.name
             inputs, outputs = _ports_from_ast_function(node)
             doc = ast.get_docstring(node) or ""
+            witness_doc = ""
+            witness_inputs: list[IOSpec] = []
+            witness_outputs: list[IOSpec] = []
+            witness_func = function_defs.get(witness_name)
+            if witness_func is not None:
+                witness_doc = ast.get_docstring(witness_func) or ""
+                witness_inputs, witness_outputs = _ports_from_ast_function(witness_func)
+                if _ports_are_uninformative(inputs, outputs) and not _ports_are_uninformative(
+                    witness_inputs, witness_outputs
+                ):
+                    inputs = witness_inputs
+                    outputs = witness_outputs
             parsed[atom_name] = {
                 "impl": None,
                 "witness": None,
-                "doc": doc,
+                "doc": doc or witness_doc,
                 "module": module_name,
                 "name": atom_name,
                 "ast_inputs": inputs,
                 "ast_outputs": outputs,
+                "witness_name": witness_name,
             }
     return parsed
 
@@ -381,7 +419,12 @@ def _registration_to_primitive(
     impl = meta.get("impl")
     witness = meta.get("witness")
     module_name = getattr(impl, "__module__", "") or getattr(witness, "__module__", "")
-    description = str(meta.get("doc", "") or getattr(impl, "__doc__", "") or "").strip()
+    description = str(
+        meta.get("doc", "")
+        or getattr(impl, "__doc__", "")
+        or getattr(witness, "__doc__", "")
+        or ""
+    ).strip()
 
     matched = _match_atomic_meta(name, impl, atom_index)
     if matched is not None:

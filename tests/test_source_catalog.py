@@ -213,6 +213,114 @@ def derive_feature(signal: "np.ndarray", threshold: float = 0.5) -> "np.ndarray"
                 sys.modules.pop(name, None)
 
 
+def test_seed_catalog_prefers_witness_doc_for_live_registry_metadata(tmp_path: Path):
+    repo = tmp_path / "repo"
+
+    _write(repo / "sharedpkg" / "__init__.py", "")
+    _write(repo / "sharedpkg" / "ghost" / "__init__.py", "")
+    _write(
+        repo / "sharedpkg" / "ghost" / "registry.py",
+        """
+from __future__ import annotations
+
+REGISTRY = {}
+
+def register_atom(witness, *, name=None):
+    def decorator(func):
+        atom_name = name or func.__name__
+        REGISTRY[atom_name] = {"impl": func, "witness": witness}
+        return func
+    return decorator
+""".strip()
+        + "\n",
+    )
+
+    _write(repo / "richpkg" / "__init__.py", "")
+    _write(
+        repo / "richpkg" / "atoms.py",
+        """
+from __future__ import annotations
+
+from sharedpkg.ghost.registry import register_atom
+
+def witness_bandpass(signal: "AbstractSignal", lowcut: float, highcut: float) -> "AbstractSignal":
+    \"\"\"Apply a stable bandpass stage to the signal.\"\"\"
+    return signal
+
+@register_atom(witness_bandpass)
+def bandpass_filter(signal: "np.ndarray", lowcut: float, highcut: float) -> "np.ndarray":
+    return signal
+""".strip()
+        + "\n",
+    )
+
+    config = SourcesConfig(
+        sources=[AtomSource(name="rich-source", package="richpkg", path="repo")]
+    )
+    catalog = PrimitiveCatalog()
+
+    before_modules = set(sys.modules)
+    try:
+        added = seed_catalog_from_sources(catalog, config=config, base_dir=tmp_path)
+        assert added == 1
+        prim = catalog.get("bandpass_filter")
+        assert prim is not None
+        assert prim.description == "Apply a stable bandpass stage to the signal."
+        assert [port.name for port in prim.inputs] == ["signal", "lowcut", "highcut"]
+    finally:
+        for name in set(sys.modules) - before_modules:
+            if name == "richpkg" or name.startswith("richpkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):
+                sys.modules.pop(name, None)
+
+
+def test_seed_catalog_uses_witness_signature_for_ast_fallback_when_wrapper_is_generic(tmp_path: Path):
+    repo = tmp_path / "repo"
+    _write(repo / "brokenpkg" / "__init__.py", "from brokenpkg import missing_dependency\n")
+    _write(
+        repo / "brokenpkg" / "atoms.py",
+        """
+from __future__ import annotations
+
+from ageoa.ghost.registry import register_atom
+
+def witness_fft_transform(signal: "AbstractSignal", axis: int = -1) -> "AbstractSpectrum":
+    \"\"\"Compute a forward spectral transform on the signal.\"\"\"
+    return signal
+
+@register_atom(witness_fft_transform)
+def fft_transform(*args, **kwargs) -> object:
+    return None
+""".strip()
+        + "\n",
+    )
+
+    config = SourcesConfig(
+        sources=[AtomSource(name="broken-source", package="brokenpkg", path="repo")]
+    )
+    catalog = PrimitiveCatalog()
+
+    before_modules = set(sys.modules)
+    try:
+        added = seed_catalog_from_sources(
+            catalog,
+            config=config,
+            base_dir=tmp_path,
+            include_live_registries=False,
+        )
+        assert added == 1
+        prim = catalog.get("fft_transform")
+        assert prim is not None
+        assert prim.description == "Compute a forward spectral transform on the signal."
+        assert [port.name for port in prim.inputs] == ["signal", "axis"]
+        assert prim.inputs[1].required is False
+        assert prim.inputs[1].default_value_repr == "-1"
+        assert prim.outputs[0].type_desc == "AbstractSpectrum"
+    finally:
+        for name in set(sys.modules) - before_modules:
+            if name == "brokenpkg" or name.startswith("brokenpkg."):
+                sys.modules.pop(name, None)
+
+
 # ---------------------------------------------------------------------------
 # Mock SkillIndex for dedup integration tests
 # ---------------------------------------------------------------------------
