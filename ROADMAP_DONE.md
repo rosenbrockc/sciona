@@ -679,3 +679,24 @@
   - Result: `1224 passed, 17 skipped`
 - Commits:
   - `b28f82a` `dashboard: summarize provider complexity`
+
+## Command Telemetry Persistence
+
+- Promoted `decompose` and `match` into first-class persisted telemetry runs so they show up in the dashboard alongside `run`, validation, and benchmark flows.
+- Each command now records:
+  - execution mode and mode feature summary
+  - retrieval policy summary
+  - catalog alignment summary
+  - prompt-routing summary for its active round
+  - shared-context metrics in run metadata
+- Added focused regressions for:
+  - persisted `decompose` run snapshots
+  - persisted `match` run snapshots
+  - stage completion and shared-context metadata for both commands
+- Validation:
+  - `pytest -q tests/test_cli_command_telemetry.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `18 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1236 passed, 17 skipped`
+- Commit:
+  - `telemetry: persist decompose and match runs`
