@@ -448,4 +448,4 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1219 passed, 17 skipped`
 - Commits:
-  - `TBD` `runtime: simplify rapid mode routing`
+  - `a933a23` `runtime: simplify rapid mode routing`
