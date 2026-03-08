@@ -293,7 +293,7 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1215 passed, 17 skipped`
 - Commits:
-  - `TBD` `ci: add release validation workflow`
+  - `4cbb714` `ci: add release validation workflow`
   - `conda run -n hpyexec pytest -q`
   - Result: `1207 passed, 17 skipped`
 - Commits:
