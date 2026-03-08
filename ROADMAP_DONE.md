@@ -1048,3 +1048,20 @@
   - Result: `1250 passed, 17 skipped`
 - Commit:
   - `dashboard: surface live execution paths`
+
+## Flow Summary Execution Paths
+
+- Updated the human-readable flow benchmark summary to include the execution path for each variant.
+- `format_flow_benchmark_summary(...)` now emits a `paths` column so text summaries in benchmark/release artifacts directly show:
+  - `direct_baseline`
+  - `rapid_direct`
+  - `structured_single_pass`
+  - `verified_orchestration`
+- Added regressions to ensure the summary string continues to carry the mode-specific execution-path markers.
+- Validation:
+  - `pytest -q tests/test_flow_benchmark.py tests/test_e2e_flow_benchmark.py tests/test_benchmark_validation.py`
+  - Result: `8 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1250 passed, 17 skipped`
+- Commit:
+  - `benchmark: include execution paths in flow summary`

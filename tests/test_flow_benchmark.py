@@ -37,7 +37,9 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     assert all(aggregate.avg_prompt_calls >= 0.0 for aggregate in aggregates)
 
     summary = format_flow_benchmark_summary(aggregates)
-    assert "variant | pass/total | stable | avg ms | avg prompts" in summary
+    assert "variant | paths | pass/total | stable | avg ms | avg prompts" in summary
+    assert "rapid | rapid_direct |" in summary
+    assert "structured | structured_single_pass |" in summary
 
 
 @pytest.mark.asyncio

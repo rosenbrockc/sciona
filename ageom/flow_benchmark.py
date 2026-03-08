@@ -616,12 +616,13 @@ def format_flow_benchmark_summary(
     aggregates: Sequence[FlowBenchmarkAggregate],
 ) -> str:
     lines = [
-        "variant | pass/total | stable | avg ms | avg prompts",
-        "--- | --- | ---: | ---: | ---:",
+        "variant | paths | pass/total | stable | avg ms | avg prompts",
+        "--- | --- | --- | ---: | ---: | ---:",
     ]
     for aggregate in aggregates:
+        paths = ",".join(aggregate.execution_paths) or "--"
         lines.append(
-            f"{aggregate.variant} | {aggregate.passed_cases}/{aggregate.total_cases} | "
+            f"{aggregate.variant} | {paths} | {aggregate.passed_cases}/{aggregate.total_cases} | "
             f"{aggregate.stable_groups}/{aggregate.repeat_groups} | {aggregate.avg_latency_ms:.1f} | "
             f"{aggregate.avg_prompt_calls:.1f}"
         )
