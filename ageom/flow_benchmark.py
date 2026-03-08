@@ -52,6 +52,7 @@ class FlowBenchmarkResult:
     variant: str
     ok: bool
     latency_ms: float
+    prompt_calls: int
     matched_leaves: int
     total_leaves: int
     node_count: int
@@ -68,6 +69,8 @@ class FlowBenchmarkAggregate:
     passed_cases: int = 0
     failed_cases: int = 0
     avg_latency_ms: float = 0.0
+    total_prompt_calls: int = 0
+    avg_prompt_calls: float = 0.0
     repeat_groups: int = 0
     stable_groups: int = 0
     stability_rate: float = 1.0
@@ -82,6 +85,8 @@ class FlowBenchmarkAggregate:
         total_latency = self.avg_latency_ms * (self.total_cases - 1)
         total_latency += result.latency_ms
         self.avg_latency_ms = total_latency / max(1, self.total_cases)
+        self.total_prompt_calls += int(result.prompt_calls)
+        self.avg_prompt_calls = self.total_prompt_calls / max(1, self.total_cases)
         self._case_outcomes.setdefault(result.case_id, []).append(result.ok)
 
     def finalize(self) -> None:
@@ -101,6 +106,8 @@ class FlowBenchmarkAggregate:
             "passed_cases": self.passed_cases,
             "failed_cases": self.failed_cases,
             "avg_latency_ms": self.avg_latency_ms,
+            "total_prompt_calls": self.total_prompt_calls,
+            "avg_prompt_calls": self.avg_prompt_calls,
             "repeat_groups": self.repeat_groups,
             "stable_groups": self.stable_groups,
             "stability_rate": self.stability_rate,
@@ -122,8 +129,10 @@ def _hint_matches(text: str, hint: str) -> bool:
 class _FlowArchitectLLM:
     def __init__(self, case: FlowBenchmarkCase) -> None:
         self._case = case
+        self.calls = 0
 
     async def complete(self, system: str, user: str) -> str:
+        self.calls += 1
         system_lower = system.lower()
         if "best" in system_lower and "paradigm" in system_lower:
             return json.dumps(
@@ -171,7 +180,11 @@ class _FlowArchitectLLM:
 
 
 class _BenchmarkHunterLLM:
+    def __init__(self) -> None:
+        self.calls = 0
+
     async def complete(self, system: str, user: str) -> str:
+        self.calls += 1
         lower = system.lower()
         if "rank" in lower or "score" in lower:
             return "[0, 1, 2, 3]"
@@ -307,10 +320,11 @@ def _make_declarations(case: FlowBenchmarkCase) -> list[Declaration]:
 async def _run_direct_baseline_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
     started = time.perf_counter()
     declarations = _make_declarations(case)
+    hunter_llm = _BenchmarkHunterLLM()
     hunter = HunterAgent(
         index=_LexicalSemanticIndex(declarations),  # type: ignore[arg-type]
         oracle=_LeafOracle({leaf.query_hint: leaf.declaration_name for leaf in case.leaves}),  # type: ignore[arg-type]
-        llm=_BenchmarkHunterLLM(),
+        llm=hunter_llm,
         max_iterations=1,
         top_k_verify=1,
         search_k=5,
@@ -331,6 +345,7 @@ async def _run_direct_baseline_case(case: FlowBenchmarkCase) -> FlowBenchmarkRes
         variant="direct_baseline",
         ok=matched == len(case.leaves),
         latency_ms=latency_ms,
+        prompt_calls=hunter_llm.calls,
         matched_leaves=matched,
         total_leaves=len(case.leaves),
         node_count=1,
@@ -345,19 +360,21 @@ async def _run_structured_case(
 ) -> FlowBenchmarkResult:
     started = time.perf_counter()
     catalog = _make_catalog(case)
+    architect_llm = _FlowArchitectLLM(case)
     agent = DecompositionAgent(
         catalog=catalog,
         skill_index=_EmptySkillIndex(),  # type: ignore[arg-type]
-        llm=_FlowArchitectLLM(case),  # type: ignore[arg-type]
+        llm=architect_llm,  # type: ignore[arg-type]
         max_depth=6,
     )
     cdg = await agent.decompose(case.prompt)
     pdg_nodes = to_pdg_nodes(cdg, prover=Prover.PYTHON, strict=False)
     declarations = _make_declarations(case)
+    hunter_llm = _BenchmarkHunterLLM()
     hunter = HunterAgent(
         index=_LexicalSemanticIndex(declarations),  # type: ignore[arg-type]
         oracle=_LeafOracle({leaf.query_hint: leaf.declaration_name for leaf in case.leaves}),  # type: ignore[arg-type]
-        llm=_BenchmarkHunterLLM(),
+        llm=hunter_llm,
         max_iterations=2,
         top_k_verify=2,
         search_k=5,
@@ -396,6 +413,7 @@ async def _run_structured_case(
         variant=variant,
         ok=matched == len(case.leaves),
         latency_ms=latency_ms,
+        prompt_calls=architect_llm.calls + hunter_llm.calls,
         matched_leaves=matched,
         total_leaves=len(case.leaves),
         node_count=len(cdg.nodes),
@@ -523,13 +541,14 @@ def format_flow_benchmark_summary(
     aggregates: Sequence[FlowBenchmarkAggregate],
 ) -> str:
     lines = [
-        "variant | pass/total | stable | avg ms",
-        "--- | --- | ---: | ---:",
+        "variant | pass/total | stable | avg ms | avg prompts",
+        "--- | --- | ---: | ---: | ---:",
     ]
     for aggregate in aggregates:
         lines.append(
             f"{aggregate.variant} | {aggregate.passed_cases}/{aggregate.total_cases} | "
-            f"{aggregate.stable_groups}/{aggregate.repeat_groups} | {aggregate.avg_latency_ms:.1f}"
+            f"{aggregate.stable_groups}/{aggregate.repeat_groups} | {aggregate.avg_latency_ms:.1f} | "
+            f"{aggregate.avg_prompt_calls:.1f}"
         )
     return "\n".join(lines)
 

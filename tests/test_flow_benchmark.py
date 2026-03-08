@@ -28,9 +28,10 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     assert aggregates[-1].variant == "direct_baseline"
     assert aggregates[-1].failed_cases == len(cases)
     assert all(aggregate.stability_rate == pytest.approx(1.0) for aggregate in aggregates)
+    assert all(aggregate.avg_prompt_calls >= 0.0 for aggregate in aggregates)
 
     summary = format_flow_benchmark_summary(aggregates)
-    assert "variant | pass/total | stable | avg ms" in summary
+    assert "variant | pass/total | stable | avg ms | avg prompts" in summary
 
 
 @pytest.mark.asyncio
@@ -43,3 +44,4 @@ async def test_flow_benchmark_repeat_stability_groups_cases():
     assert aggregates
     assert all(aggregate.repeat_groups == 1 for aggregate in aggregates)
     assert all(aggregate.stable_groups == 1 for aggregate in aggregates)
+    assert all(aggregate.total_prompt_calls >= aggregate.total_cases for aggregate in aggregates)

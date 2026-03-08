@@ -242,6 +242,18 @@
   - `conda run -n hpyexec pytest -q tests/test_prompt_benchmark.py tests/test_flow_benchmark.py tests/test_e2e_prompt_benchmark.py tests/test_e2e_flow_benchmark.py`
   - `conda run -n hpyexec pytest -q`
 
+## Flow Benchmark Prompt Volume
+
+- Flow benchmark results now record prompt-call counts in addition to latency and pass/fail outcome.
+- Flow benchmark aggregates now summarize:
+  - total prompt calls
+  - average prompt calls per case
+- The text summary now shows `avg prompts`, which makes it easier to compare direct baseline vs `rapid` / `structured` / `verified` on search cost as well as correctness and latency.
+- Added regressions for flow-benchmark prompt-call aggregation and summary formatting.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_flow_benchmark.py tests/test_e2e_flow_benchmark.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:
