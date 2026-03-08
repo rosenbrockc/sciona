@@ -484,7 +484,8 @@
           ["prompt latency", Object.keys(promptLatency).length
             ? Object.entries(promptLatency).map(([k, v]) => `${k}=${Number(v).toFixed(1)}ms`).join(", ")
             : "--"],
-          ["flow regress", `${Number(benchmark.flow_mode_failures || 0)} / ${Number(benchmark.flow_mode_unstable_groups || 0)}`],
+          ["flow gate", `${(benchmark.flow_required_variants || []).join(",") || "--"} | ${Number(benchmark.flow_mode_failures || 0)} / ${Number(benchmark.flow_mode_unstable_groups || 0)}`],
+          ["flow compare", `${(benchmark.flow_comparison_variants || []).join(",") || "--"} | ${Number(benchmark.flow_comparison_failures || 0)} / ${Number(benchmark.flow_comparison_unstable_groups || 0)}`],
           ["release", benchmark.release_status || "--"],
           ["started", fmtTime(run.started_at)],
           ["updated", fmtTime(run.last_update_at)]

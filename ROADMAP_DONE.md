@@ -989,3 +989,23 @@
   - Result: `1250 passed, 17 skipped`
 - Commit:
   - `benchmark: align flow variants with execution modes`
+
+## Benchmark Gate Auditability
+
+- Made the full-flow benchmark gate explicit about which variants are required for release-style validation and which are comparison-only.
+- Benchmark-validation artifacts now persist:
+  - `flow_required_variants`
+  - `flow_comparison_variants`
+  - `flow_comparison_failures`
+  - `flow_comparison_unstable_groups`
+- Release-validation manifests now carry the same required-vs-comparison benchmark metadata.
+- Dashboard/API benchmark summaries now expose those fields directly so it is obvious that:
+  - `structured` and `verified` are the gated full-flow modes
+  - `rapid` and `direct_baseline` are comparison tracks
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `26 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1250 passed, 17 skipped`
+- Commit:
+  - `benchmark: expose required and comparison flow tracks`

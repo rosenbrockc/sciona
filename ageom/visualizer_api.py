@@ -354,6 +354,16 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "flow_stability_summary": str(
             benchmark.get("flow_stability_summary", "") or ""
         ),
+        "flow_required_variants": list(
+            benchmark.get("flow_required_variants", []) or []
+        )
+        if isinstance(benchmark.get("flow_required_variants", []), list)
+        else [],
+        "flow_comparison_variants": list(
+            benchmark.get("flow_comparison_variants", []) or []
+        )
+        if isinstance(benchmark.get("flow_comparison_variants", []), list)
+        else [],
         "flow_avg_prompt_calls": dict(
             benchmark.get("flow_avg_prompt_calls", {}) or {}
         )
@@ -377,6 +387,12 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "flow_mode_failures": int(benchmark.get("flow_mode_failures", 0) or 0),
         "flow_mode_unstable_groups": int(
             benchmark.get("flow_mode_unstable_groups", 0) or 0
+        ),
+        "flow_comparison_failures": int(
+            benchmark.get("flow_comparison_failures", 0) or 0
+        ),
+        "flow_comparison_unstable_groups": int(
+            benchmark.get("flow_comparison_unstable_groups", 0) or 0
         ),
         "runtime_complexity": dict(
             benchmark.get("runtime_complexity", {}) or {}

@@ -22,6 +22,8 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     runtime = manifest["checks"]["runtime_complexity"]
     assert bench["prompt_results"] > 0
     assert bench["flow_results"] > 0
+    assert bench["flow_required_variants"] == ["structured", "verified"]
+    assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
     assert bench["prompt_tuned_failures"] == 0
     assert bench["flow_mode_failures"] == 0
     assert runtime["provider_count"] > 0
@@ -48,12 +50,16 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 3/4, verified 4/4",
+            "flow_required_variants": ["structured", "verified"],
+            "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {"violations": []},
             "prompt_tuned_failures": 1,
             "prompt_tuned_unstable_groups": 2,
             "flow_mode_failures": 0,
             "flow_mode_unstable_groups": 1,
+            "flow_comparison_failures": 2,
+            "flow_comparison_unstable_groups": 0,
         }
 
     monkeypatch.setattr(
@@ -89,6 +95,8 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_required_variants": ["structured", "verified"],
+            "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {
                 "provider_count": 6,
@@ -111,6 +119,8 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
             "prompt_tuned_unstable_groups": 0,
             "flow_mode_failures": 0,
             "flow_mode_unstable_groups": 0,
+            "flow_comparison_failures": 2,
+            "flow_comparison_unstable_groups": 0,
         }
 
     monkeypatch.setattr(

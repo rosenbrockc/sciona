@@ -328,6 +328,21 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         for agg in flow_aggregates
         if agg.variant in _REQUIRED_FLOW_BENCHMARK_VARIANTS
     )
+    comparison_flow_variants = {
+        agg.variant
+        for agg in flow_aggregates
+        if agg.variant not in _REQUIRED_FLOW_BENCHMARK_VARIANTS
+    }
+    flow_comparison_failures = sum(
+        agg.failed_cases
+        for agg in flow_aggregates
+        if agg.variant in comparison_flow_variants
+    )
+    flow_comparison_unstable_groups = sum(
+        max(0, agg.repeat_groups - agg.stable_groups)
+        for agg in flow_aggregates
+        if agg.variant in comparison_flow_variants
+    )
     runtime_complexity = runtime_complexity_summary(_benchmark_validation_config())
     benchmark_passed = (
         prompt_tuned_failures == 0
@@ -355,6 +370,8 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
             f"{agg.variant} {agg.stable_groups}/{agg.repeat_groups}"
             for agg in flow_aggregates
         ),
+        "flow_required_variants": sorted(_REQUIRED_FLOW_BENCHMARK_VARIANTS),
+        "flow_comparison_variants": sorted(comparison_flow_variants),
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
         },
@@ -369,6 +386,8 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "prompt_tuned_unstable_groups": prompt_tuned_unstable_groups,
         "flow_mode_failures": flow_mode_failures,
         "flow_mode_unstable_groups": flow_mode_unstable_groups,
+        "flow_comparison_failures": flow_comparison_failures,
+        "flow_comparison_unstable_groups": flow_comparison_unstable_groups,
         "runtime_complexity": runtime_complexity,
     }
     summary_path = out_dir / "summary.json"

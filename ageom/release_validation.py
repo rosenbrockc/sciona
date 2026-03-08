@@ -26,6 +26,12 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "flow_report": benchmark_summary["flow_report"],
                 "prompt_results": benchmark_summary["prompt_results"],
                 "flow_results": benchmark_summary["flow_results"],
+                "flow_required_variants": list(
+                    benchmark_summary.get("flow_required_variants", []) or []
+                ),
+                "flow_comparison_variants": list(
+                    benchmark_summary.get("flow_comparison_variants", []) or []
+                ),
                 "prompt_tuned_failures": benchmark_summary.get("prompt_tuned_failures", 0),
                 "prompt_tuned_unstable_groups": benchmark_summary.get(
                     "prompt_tuned_unstable_groups", 0
@@ -33,6 +39,12 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "flow_mode_failures": benchmark_summary.get("flow_mode_failures", 0),
                 "flow_mode_unstable_groups": benchmark_summary.get(
                     "flow_mode_unstable_groups", 0
+                ),
+                "flow_comparison_failures": benchmark_summary.get(
+                    "flow_comparison_failures", 0
+                ),
+                "flow_comparison_unstable_groups": benchmark_summary.get(
+                    "flow_comparison_unstable_groups", 0
                 ),
             },
             "runtime_complexity": runtime_complexity,

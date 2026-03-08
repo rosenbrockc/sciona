@@ -3596,6 +3596,10 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "flow_results": summary["flow_results"],
         "flow_summary": summary["flow_summary"],
         "flow_stability_summary": summary.get("flow_stability_summary", ""),
+        "flow_required_variants": list(summary.get("flow_required_variants", []) or []),
+        "flow_comparison_variants": list(
+            summary.get("flow_comparison_variants", []) or []
+        ),
         "flow_avg_prompt_calls": dict(summary.get("flow_avg_prompt_calls", {}) or {}),
         "prompt_avg_latency_ms": dict(summary.get("prompt_avg_latency_ms", {}) or {}),
         "flow_avg_latency_ms": dict(summary.get("flow_avg_latency_ms", {}) or {}),
@@ -3606,6 +3610,10 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "flow_mode_failures": int(summary.get("flow_mode_failures", 0) or 0),
         "flow_mode_unstable_groups": int(
             summary.get("flow_mode_unstable_groups", 0) or 0
+        ),
+        "flow_comparison_failures": int(summary.get("flow_comparison_failures", 0) or 0),
+        "flow_comparison_unstable_groups": int(
+            summary.get("flow_comparison_unstable_groups", 0) or 0
         ),
         "runtime_complexity": dict(summary.get("runtime_complexity", {}) or {}),
     }

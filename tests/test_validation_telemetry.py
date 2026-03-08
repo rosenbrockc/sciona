@@ -29,12 +29,16 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_required_variants": ["structured", "verified"],
+            "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {"violations": [], "provider_count": 3},
             "prompt_tuned_failures": 0,
             "prompt_tuned_unstable_groups": 0,
             "flow_mode_failures": 0,
             "flow_mode_unstable_groups": 0,
+            "flow_comparison_failures": 2,
+            "flow_comparison_unstable_groups": 0,
         }
 
     monkeypatch.setattr(
@@ -56,6 +60,8 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert bench["flow_results"] == 16
     assert bench["flow_avg_prompt_calls"]["rapid"] == 6.0
     assert bench["flow_mode_failures"] == 0
+    assert bench["flow_required_variants"] == ["structured", "verified"]
+    assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
     assert bench["runtime_complexity"]["provider_count"] == 3
 
 
@@ -82,6 +88,8 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_required_variants": ["structured", "verified"],
+            "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {
                 "provider_count": 5,
@@ -92,6 +100,8 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
             "prompt_tuned_unstable_groups": 0,
             "flow_mode_failures": 0,
             "flow_mode_unstable_groups": 0,
+            "flow_comparison_failures": 2,
+            "flow_comparison_unstable_groups": 0,
         }
 
     monkeypatch.setattr(
@@ -145,6 +155,8 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "flow_results": 16,
                 "flow_summary": "flow summary",
                 "flow_stability_summary": "rapid 4/4, verified 4/4",
+                "flow_required_variants": ["structured", "verified"],
+                "flow_comparison_variants": ["direct_baseline", "rapid"],
                 "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
                 "status": "failed",
                 "runtime_complexity": {"provider_count": 5, "violations": ["legacy_providers_present=codex_cli"]},
@@ -152,6 +164,8 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "prompt_tuned_unstable_groups": 0,
                 "flow_mode_failures": 0,
                 "flow_mode_unstable_groups": 0,
+                "flow_comparison_failures": 2,
+                "flow_comparison_unstable_groups": 0,
             },
         }
 
