@@ -330,10 +330,14 @@
           const routing = (r.routing_summary || {}).architect || {};
           const complexity = r.provider_complexity || {};
           const benchmark = r.benchmark_summary || {};
+          const shared = r.shared_context_summary || {};
           const unresolved = Number(architect.unresolved_leaf_count || 0);
           const blocked = Number(((architect.node_status_counts || {}).blocked) || 0);
           const retrievalBand = retrieval.confidence_band || "--";
           const activeOverrides = Number(routing.active_count || 0);
+          const sharedContexts = Number(shared.active_context_count || shared.context_count || 0);
+          const sharedSearches = Number(shared.total_searches || 0);
+          const sharedTemplates = Number(shared.total_template_hits || 0);
           const validationLine = (benchmark.prompt_results || benchmark.flow_results)
             ? `<div class="run-meta">bench prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
@@ -345,6 +349,7 @@
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
             `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides} providers=${Number(complexity.provider_count || 0)}</div>`,
+            `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates}</div>`,
             validationLine
           ].join("");
           div.addEventListener("click", () => {
@@ -366,6 +371,7 @@
         const hunterRouting = (run.routing_summary || {}).hunter || {};
         const complexity = run.provider_complexity || {};
         const benchmark = run.benchmark_summary || {};
+        const shared = run.shared_context_summary || {};
         const metrics = [
           ["pipeline", run.pipeline || "--"],
           ["status", run.status || "--"],
@@ -386,6 +392,12 @@
           ["hunter llm", `${hunterRouting.default || "--"} +${hunterRouting.active_count || 0}`],
           ["providers", `${Number(complexity.provider_count || 0)} / ${Number(complexity.provider_model_count || 0)}`],
           ["transports", (complexity.transports || []).join(", ") || "--"],
+          ["shared ctx", `${Number(shared.active_context_count || 0)}/${Number(shared.context_count || 0)}`],
+          ["ctx search/hit", `${Number(shared.total_searches || 0)}/${Number(shared.total_hits || 0)}`],
+          ["ctx puts", String(Number(shared.total_puts || 0))],
+          ["ctx injected", String(Number(shared.total_injected_blocks || 0))],
+          ["template reuse", `${Number(shared.total_template_hits || 0)}/${Number(shared.total_template_searches || 0)}`],
+          ["template writes", String(Number(shared.total_template_puts || 0))],
           ["prompt bench", `${Number(benchmark.prompt_results || 0)}/${Number(benchmark.prompt_cases || 0)}`],
           ["flow bench", `${Number(benchmark.flow_results || 0)}/${Number(benchmark.flow_cases || 0)}`],
           ["release", benchmark.release_status || "--"],
@@ -407,6 +419,7 @@
           `error: ${run.error || "(none)"}\n` +
           `hung: ${run.is_hung ? "yes" : "no"}\n` +
           `provider_complexity: ${JSON.stringify(run.provider_complexity || {}, null, 2)}\n` +
+          `shared_context_summary: ${JSON.stringify(run.shared_context_summary || {}, null, 2)}\n` +
           `benchmark_summary: ${JSON.stringify(run.benchmark_summary || {}, null, 2)}\n` +
           `\nmetadata:\n${metadata}` +
           (stale ? `\n\nstale_stages:\n${stale}` : "");

@@ -421,6 +421,82 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["release_status"] == "passed"
         assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")
 
+    def test_dashboard_run_includes_shared_context_summary(
+        self, client, monkeypatch, tmp_path
+    ):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "shared123",
+            "pipeline": "algorithm_creation",
+            "status": "completed",
+            "started_at": now - 12.0,
+            "last_update_at": now - 1.0,
+            "ended_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 4,
+            "prompt_successes": 4,
+            "prompt_failures": 0,
+            "prompt_inflight": 0,
+            "events_count": 10,
+            "metadata": {
+                "shared_context": {
+                    "metrics_path": "build/demo/shared_context_metrics.json",
+                    "contexts": {
+                        "architect": {
+                            "backend": "postgres",
+                            "searches_total": 5,
+                            "search_hits": 3,
+                            "puts_total": 7,
+                            "injected_blocks": 2,
+                            "promotions_total": 1,
+                            "template_searches_total": 2,
+                            "template_search_hits": 1,
+                            "template_puts_total": 3,
+                            "template_injected_blocks": 1,
+                        },
+                        "hunter": {
+                            "backend": "postgres",
+                            "searches_total": 4,
+                            "search_hits": 1,
+                            "puts_total": 2,
+                            "injected_blocks": 1,
+                            "promotions_total": 0,
+                            "template_searches_total": 0,
+                            "template_search_hits": 0,
+                            "template_puts_total": 0,
+                            "template_injected_blocks": 0,
+                        },
+                    },
+                }
+            },
+        }
+        (tmp_path / "run_shared123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs/shared123")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["shared_context_summary"]["context_count"] == 2
+        assert data["shared_context_summary"]["active_context_count"] == 2
+        assert data["shared_context_summary"]["total_searches"] == 9
+        assert data["shared_context_summary"]["total_hits"] == 4
+        assert data["shared_context_summary"]["total_puts"] == 9
+        assert data["shared_context_summary"]["total_template_hits"] == 1
+        assert data["shared_context_summary"]["total_template_puts"] == 3
+        assert data["shared_context_summary"]["metrics_path"].endswith(
+            "shared_context_metrics.json"
+        )
+        assert data["shared_context_summary"]["backends"] == ["postgres"]
+        assert [row["label"] for row in data["shared_context_summary"]["contexts"]] == [
+            "architect",
+            "hunter",
+        ]
+
     def test_run_hang_annotation(self, client, monkeypatch, tmp_path):
         from ageom.telemetry import reset_telemetry_runtime
 

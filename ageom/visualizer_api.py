@@ -91,6 +91,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     routing = metadata.get("llm_routing", {})
     benchmark = metadata.get("benchmark_validation", {})
     release_validation = metadata.get("release_validation", {})
+    shared_context = metadata.get("shared_context", {})
     if not isinstance(retrieval, dict):
         retrieval = {}
     if not isinstance(routing, dict):
@@ -99,6 +100,11 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         benchmark = {}
     if not isinstance(release_validation, dict):
         release_validation = {}
+    if not isinstance(shared_context, dict):
+        shared_context = {}
+    contexts = shared_context.get("contexts", {})
+    if not isinstance(contexts, dict):
+        contexts = {}
 
     def _transport_for_provider(provider: str) -> str:
         lowered = provider.strip().lower()
@@ -190,6 +196,86 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "manifest": str(release_validation.get("manifest", "") or ""),
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),
+    }
+    shared_rows: list[dict[str, Any]] = []
+    total_searches = 0
+    total_hits = 0
+    total_puts = 0
+    total_injected_blocks = 0
+    total_promotions = 0
+    total_template_searches = 0
+    total_template_hits = 0
+    total_template_puts = 0
+    total_template_injected = 0
+    backends: set[str] = set()
+    active_contexts = 0
+    for label, row in contexts.items():
+        if not isinstance(row, dict):
+            continue
+        searches = int(row.get("searches_total", 0) or 0)
+        hits = int(row.get("search_hits", 0) or 0)
+        puts = int(row.get("puts_total", 0) or 0)
+        injected_blocks = int(row.get("injected_blocks", 0) or 0)
+        promotions = int(row.get("promotions_total", 0) or 0)
+        template_searches = int(row.get("template_searches_total", 0) or 0)
+        template_hits = int(row.get("template_search_hits", 0) or 0)
+        template_puts = int(row.get("template_puts_total", 0) or 0)
+        template_injected = int(row.get("template_injected_blocks", 0) or 0)
+        backend = str(row.get("backend", "") or "").strip()
+        if backend:
+            backends.add(backend)
+        if any(
+            value > 0
+            for value in (
+                searches,
+                puts,
+                injected_blocks,
+                promotions,
+                template_searches,
+                template_puts,
+                template_injected,
+            )
+        ):
+            active_contexts += 1
+        total_searches += searches
+        total_hits += hits
+        total_puts += puts
+        total_injected_blocks += injected_blocks
+        total_promotions += promotions
+        total_template_searches += template_searches
+        total_template_hits += template_hits
+        total_template_puts += template_puts
+        total_template_injected += template_injected
+        shared_rows.append(
+            {
+                "label": label,
+                "backend": backend or "--",
+                "searches": searches,
+                "hits": hits,
+                "puts": puts,
+                "injected_blocks": injected_blocks,
+                "promotions": promotions,
+                "template_searches": template_searches,
+                "template_hits": template_hits,
+                "template_puts": template_puts,
+                "template_injected_blocks": template_injected,
+            }
+        )
+    out["shared_context_summary"] = {
+        "context_count": len(shared_rows),
+        "active_context_count": active_contexts,
+        "backends": sorted(backends),
+        "total_searches": total_searches,
+        "total_hits": total_hits,
+        "total_puts": total_puts,
+        "total_injected_blocks": total_injected_blocks,
+        "total_promotions": total_promotions,
+        "total_template_searches": total_template_searches,
+        "total_template_hits": total_template_hits,
+        "total_template_puts": total_template_puts,
+        "total_template_injected_blocks": total_template_injected,
+        "metrics_path": str(shared_context.get("metrics_path", "") or ""),
+        "contexts": sorted(shared_rows, key=lambda row: row["label"]),
     }
     return out
 

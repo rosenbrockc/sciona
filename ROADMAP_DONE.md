@@ -173,6 +173,20 @@
 - Commits:
   - `2f25444` `telemetry: surface live provider failure details`
 
+## Dashboard Shared-Context Visibility
+
+- Algorithm-creation telemetry runs now persist final shared-context snapshots directly into run metadata instead of requiring separate sidecar inspection.
+- Dashboard/API summaries now expose:
+  - active shared-context counts
+  - total searches, hits, writes, and prompt injections
+  - template reuse searches, hits, writes, and injections
+  - backend list and metrics file path
+- Dashboard UI run cards and detail summaries now show shared-context usage alongside routing, retrieval, and benchmark summaries.
+- Added API regressions for shared-context summary derivation from persisted run metadata.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_visualizer_api.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:

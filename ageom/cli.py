@@ -630,6 +630,19 @@ def _snapshot_shared_context_metrics(
     return payload
 
 
+def _shared_context_metadata(
+    metrics_by_label: dict[str, "SharedContextMetrics | None"],
+    *,
+    metrics_path: Path | None = None,
+) -> dict[str, object]:
+    """Build run-metadata payload for dashboard shared-context summaries."""
+    contexts = _snapshot_shared_context_metrics(metrics_by_label)
+    payload: dict[str, object] = {"contexts": contexts}
+    if metrics_path is not None:
+        payload["metrics_path"] = str(metrics_path)
+    return payload
+
+
 def _write_shared_context_metrics_file(
     path: Path,
     metrics_by_label: dict[str, "SharedContextMetrics | None"],
@@ -2507,6 +2520,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         configure_dashboard_output,
         finish_run,
         get_event_log,
+        merge_run_metadata,
         start_run,
         telemetry_scope,
         telemetry_stage,
@@ -2818,6 +2832,18 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             "architect": architect_shared_metrics,
             "hunter": hunter_shared_metrics,
         },
+    )
+    merge_run_metadata(
+        {
+            "shared_context": _shared_context_metadata(
+                {
+                    "architect": architect_shared_metrics,
+                    "hunter": hunter_shared_metrics,
+                },
+                metrics_path=metrics_path,
+            )
+        },
+        run_id=telemetry_run_id,
     )
     if metrics_path is not None:
         print(f"  Shared context metrics: {metrics_path}")
