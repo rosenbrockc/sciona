@@ -1072,6 +1072,17 @@ def main() -> None:
         help="Directory where validation reports will be written.",
     )
 
+    release_validate_parser = subparsers.add_parser(
+        "release-validate",
+        help="Run deterministic release validation and write a manifest bundle",
+    )
+    release_validate_parser.add_argument(
+        "--output",
+        type=str,
+        default="build/release_validation",
+        help="Directory where the release validation bundle will be written.",
+    )
+
     # --- sources ---
     sources_parser = subparsers.add_parser(
         "sources", help="Manage multi-repo atom sources"
@@ -1299,6 +1310,8 @@ def main() -> None:
         _run_async_command(_cmd_prompt_benchmark(args))
     elif args.command == "benchmark-validate":
         _run_async_command(_cmd_benchmark_validate(args))
+    elif args.command == "release-validate":
+        _run_async_command(_cmd_release_validate(args))
     elif args.command == "decompose":
         _run_async_command(_cmd_decompose(args))
     elif args.command == "history":
@@ -3136,6 +3149,15 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
     print(summary["flow_summary"])
     print()
     print(f"Saved validation bundle: {summary['summary_report']}")
+
+
+async def _cmd_release_validate(args: argparse.Namespace) -> None:
+    """Run deterministic release validation and print manifest locations."""
+    from ageom.release_validation import run_release_validation
+
+    summary = await run_release_validation(args.output)
+    print(f"Release validation manifest: {summary['manifest']}")
+    print(f"Benchmark bundle: {summary['benchmarks_dir']}")
 
 
 if __name__ == "__main__":

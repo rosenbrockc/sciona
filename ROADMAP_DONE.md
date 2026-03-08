@@ -314,3 +314,21 @@
   - Result: `1211 passed, 17 skipped`
 - Commits:
   - `66d8281` `benchmark: add deterministic validation bundle`
+
+## Repo-Native Release Validation Entry Point
+
+- Added a deterministic `release-validate` CLI command as a repo-native release validation entrypoint.
+- The command wraps the benchmark validation bundle and writes:
+  - `release_validation.json`
+  - nested benchmark reports under `benchmarks/`
+- Added a dedicated `ageom.release_validation` backend so release validation is a product-level API, not just an ad hoc CLI composition.
+- Added regressions for:
+  - release validation manifest generation
+  - benchmark bundle presence inside the release validation directory
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_release_validation.py tests/test_benchmark_validation.py`
+  - Result: `4 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1212 passed, 17 skipped`
+- Commits:
+  - `TBD` `cli: add release validation entrypoint`
