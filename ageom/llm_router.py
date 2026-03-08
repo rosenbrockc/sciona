@@ -137,6 +137,18 @@ class LLMRouter:
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         return await self._default.complete_with_grammar(system, user, grammar)
 
+    async def warmup(self) -> None:
+        """Prewarm unique underlying clients when they expose a warmup hook."""
+        seen: set[int] = set()
+        for client in [self._default, *self._overrides.values()]:
+            marker = id(client)
+            if marker in seen:
+                continue
+            seen.add(marker)
+            warm = getattr(client, "warmup", None)
+            if callable(warm):
+                await warm()
+
 
 # ---------------------------------------------------------------------------
 # Prompt-key wrapper for telemetry

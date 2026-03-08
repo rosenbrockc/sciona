@@ -77,6 +77,25 @@ class TestLLMRouter:
         assert result == "default-grammar-response"
         default.complete_with_grammar.assert_awaited_once_with("sys", "usr", "grammar")
 
+    @pytest.mark.asyncio
+    async def test_warmup_deduplicates_underlying_clients(self):
+        default = _make_mock_llm("default")
+        override = _make_mock_llm("override")
+        default.warmup = AsyncMock()
+        override.warmup = AsyncMock()
+        router = LLMRouter(
+            default=default,
+            overrides={
+                ARCHITECT_STRATEGY: override,
+                SYNTHESIZER_TACTIC: override,
+            },
+        )
+
+        await router.warmup()
+
+        default.warmup.assert_awaited_once()
+        override.warmup.assert_awaited_once()
+
 
 class TestSelectLLM:
     def test_plain_llm_returned_unchanged(self):

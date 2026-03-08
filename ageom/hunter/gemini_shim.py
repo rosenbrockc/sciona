@@ -167,6 +167,10 @@ class GeminiShimClient:
     def get_last_error_metadata(self) -> dict[str, object]:
         return dict(self._last_error_metadata)
 
+    async def warmup(self) -> None:
+        """Spawn and connect the persistent worker pool up front."""
+        await self._ensure_workers()
+
     async def _ensure_workers(self) -> None:
         if self._workers:
             return

@@ -127,6 +127,15 @@ def _create_llm_router(
     return LLMRouter(default=default, overrides=overrides)
 
 
+async def _warm_llm_if_supported(llm: object, label: str) -> None:
+    """Prewarm clients that expose a warmup hook so failures surface early."""
+    warm = getattr(llm, "warmup", None)
+    if not callable(warm):
+        return
+    print(f"Prewarming {label} LLM clients...")
+    await warm()
+
+
 def _summarize_prompt_routing(
     config: "AgeomConfig",
     round_name: str,
@@ -1795,6 +1804,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             config, "ingester", prompt_keys, getattr(args, "mode", None)
         )
         llm = _create_llm_router(args, config, "ingester", prompt_keys)
+        await _warm_llm_if_supported(llm, "ingester")
 
         # Set up proof environment (Python/mypy)
         proof_env = _create_proof_env(Prover.PYTHON, config)
@@ -1971,6 +1981,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             config, "architect", prompt_keys, getattr(args, "mode", None)
         )
         llm = _create_llm_router(args, config, "architect", prompt_keys)
+        await _warm_llm_if_supported(llm, "architect")
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -2181,6 +2192,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
             config, "hunter", prompt_keys, getattr(args, "mode", None)
         )
         llm = _create_llm_router(args, config, "hunter", prompt_keys)
+        await _warm_llm_if_supported(llm, "hunter")
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -2436,6 +2448,7 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
             config, "synthesizer", prompt_keys, getattr(args, "mode", None)
         )
         llm = _create_llm_router(args, config, "synthesizer", prompt_keys)
+        await _warm_llm_if_supported(llm, "synthesizer")
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -2630,6 +2643,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     "architect",
                     architect_prompt_keys,
                 )
+                await _warm_llm_if_supported(llm, "architect")
             except (ValueError, ImportError) as exc:
                 print(f"Error: {exc}", file=sys.stderr)
                 finish_run(telemetry_run_id, status="failed", error=str(exc))
@@ -2746,6 +2760,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                         "hunter",
                         hunter_prompt_keys,
                     )
+                    await _warm_llm_if_supported(hunter_llm, "hunter")
                 except (ValueError, ImportError) as exc:
                     print(f"Error setting up hunter LLM: {exc}", file=sys.stderr)
                     finish_run(telemetry_run_id, status="failed", error=str(exc))
@@ -2903,6 +2918,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             config, "architect", prompt_keys, getattr(args, "mode", None)
         )
         llm = _create_llm_router(args, config, "architect", prompt_keys)
+        await _warm_llm_if_supported(llm, "architect")
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)

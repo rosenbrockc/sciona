@@ -217,6 +217,16 @@
   - `conda run -n hpyexec pytest -q tests/test_llm_router.py tests/test_execution_modes.py`
   - `conda run -n hpyexec pytest -q`
 
+## Persistent Shim Prewarm
+
+- Added `warmup()` support to the persistent socket-based shim clients and to `LLMRouter`.
+- Main CLI flows now prewarm router/client pools during setup so socket/auth/startup failures surface before long-running stages begin.
+- This also reduces first-call jitter for persistent shims by establishing their worker pools up front.
+- Added router regressions for warmup de-duplication across shared override clients.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py tests/test_llm.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:
