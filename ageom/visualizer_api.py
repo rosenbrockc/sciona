@@ -100,6 +100,20 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(release_validation, dict):
         release_validation = {}
 
+    def _transport_for_provider(provider: str) -> str:
+        lowered = provider.strip().lower()
+        if lowered.endswith("_shim"):
+            return "persistent_shim"
+        if lowered.endswith("_cli"):
+            return "legacy_cli"
+        if lowered == "llama_cpp":
+            return "local_server"
+        if lowered in {"anthropic", "codex", "openai"}:
+            return "api"
+        if not lowered:
+            return "--"
+        return "other"
+
     def _routing_line(name: str) -> dict[str, Any]:
         section = routing.get(name, {})
         if not isinstance(section, dict):
@@ -119,6 +133,32 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
             ),
         }
 
+    provider_models: set[str] = set()
+    providers: set[str] = set()
+    transports: set[str] = set()
+    for section in routing.values():
+        if not isinstance(section, dict):
+            continue
+        default_provider = str(section.get("default_provider", "") or "").strip()
+        default_model = str(section.get("default_model", "") or "").strip()
+        if default_provider:
+            providers.add(default_provider)
+            transports.add(_transport_for_provider(default_provider))
+            provider_models.add(f"{default_provider}:{default_model or '--'}")
+        active = section.get("active_overrides", [])
+        if not isinstance(active, list):
+            continue
+        for row in active:
+            if not isinstance(row, dict):
+                continue
+            provider = str(row.get("provider", "") or "").strip()
+            model = str(row.get("model", "") or "").strip()
+            if not provider:
+                continue
+            providers.add(provider)
+            transports.add(_transport_for_provider(provider))
+            provider_models.add(f"{provider}:{model or '--'}")
+
     out = dict(run)
     out["retrieval_summary"] = {
         "confidence_band": retrieval.get("confidence_band", "--"),
@@ -130,6 +170,14 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     out["routing_summary"] = {
         "architect": _routing_line("architect"),
         "hunter": _routing_line("hunter"),
+    }
+    out["provider_complexity"] = {
+        "provider_count": len(providers),
+        "provider_model_count": len(provider_models),
+        "transport_count": len(transports),
+        "providers": sorted(providers),
+        "provider_models": sorted(provider_models),
+        "transports": sorted(transports),
     }
     out["benchmark_summary"] = {
         "prompt_cases": int(benchmark.get("prompt_cases", 0) or 0),

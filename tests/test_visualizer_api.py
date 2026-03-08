@@ -359,6 +359,13 @@ class TestDashboardAPI:
         assert data["routing_summary"]["architect"]["default"] == "anthropic:claude-sonnet"
         assert data["routing_summary"]["architect"]["active_count"] == 1
         assert data["routing_summary"]["hunter"]["suppressed_count"] == 1
+        assert data["provider_complexity"]["provider_count"] == 3
+        assert data["provider_complexity"]["provider_model_count"] == 3
+        assert sorted(data["provider_complexity"]["transports"]) == [
+            "api",
+            "local_server",
+            "persistent_shim",
+        ]
 
     def test_dashboard_run_includes_benchmark_and_release_validation_summaries(
         self, client, monkeypatch, tmp_path

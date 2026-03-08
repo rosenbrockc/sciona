@@ -523,3 +523,29 @@
   - Result: `1224 passed, 17 skipped`
 - Commits:
   - `1484cdb` `catalog: add module-derived source aliases`
+
+## Provider Complexity Dashboard Summary
+
+- Added a dashboard-facing provider complexity summary derived from routing metadata.
+- Each run now exposes:
+  - unique provider count
+  - unique provider/model count
+  - transport class count
+  - provider list
+  - provider/model list
+  - transport list
+- Transport classes are normalized into generic buckets:
+  - `persistent_shim`
+  - `legacy_cli`
+  - `local_server`
+  - `api`
+  - `other`
+- Updated the dashboard UI to show provider counts and transport summaries directly.
+- Added regressions for provider-complexity extraction on dashboard run payloads.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_visualizer_api.py`
+  - Result: `13 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1224 passed, 17 skipped`
+- Commits:
+  - `TBD` `dashboard: summarize provider complexity`
