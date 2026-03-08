@@ -503,3 +503,23 @@
   - Result: `1223 passed, 17 skipped`
 - Commits:
   - `977dedc` `catalog: add witness source aliases`
+
+## Module-Derived Alias Expansion
+
+- Extended source-derived alias generation to use module path context for simple atom names.
+- Atoms defined in namespaced modules now get generic aliases such as:
+  - `signal.butter`
+  - `signal butter`
+  - `signal_butter`
+  - `scipy.signal.butter`
+  - `scipy signal butter`
+  - `scipy_signal_butter`
+- This improves matching against source-derived atoms when the registry name is short but the module namespace carries important semantics.
+- Added regressions for module-derived alias expansion during source seeding.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_source_catalog.py tests/test_catalog.py`
+  - Result: `46 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1224 passed, 17 skipped`
+- Commits:
+  - `TBD` `catalog: add module-derived source aliases`

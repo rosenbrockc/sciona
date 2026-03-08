@@ -479,6 +479,7 @@ def _registration_to_primitive(
             impl,
             witness=witness,
             witness_name=str(meta.get("witness_name", "") or ""),
+            module_name=module_name or str(meta.get("module", "") or ""),
         )
     )
     return primitive, aliases
@@ -490,6 +491,7 @@ def _alias_candidates(
     *,
     witness: Any = None,
     witness_name: str = "",
+    module_name: str = "",
 ) -> set[str]:
     aliases = {
         alias
@@ -513,6 +515,22 @@ def _alias_candidates(
         aliases.add(".".join(suffix))
         aliases.add(" ".join(suffix))
         aliases.add("_".join(suffix))
+    module_parts = [part for part in module_name.split(".") if part]
+    leaf_name = parts[-1] if parts else name
+    if leaf_name:
+        if module_parts:
+            module_leaf = module_parts[-1]
+            aliases.add(f"{module_leaf}.{leaf_name}")
+            aliases.add(f"{module_leaf} {leaf_name}")
+            aliases.add(f"{module_leaf}_{leaf_name}")
+        if len(module_parts) >= 2:
+            module_suffix = module_parts[-2:]
+            dotted = ".".join([*module_suffix, leaf_name])
+            spaced = " ".join([*module_suffix, leaf_name])
+            underscored = "_".join([*module_suffix, leaf_name])
+            aliases.add(dotted)
+            aliases.add(spaced)
+            aliases.add(underscored)
     return {alias for alias in aliases if alias and alias != name}
 
 

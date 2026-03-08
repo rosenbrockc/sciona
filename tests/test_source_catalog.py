@@ -380,6 +380,70 @@ def solve_impl(matrix: object, rhs: object) -> object:
                 sys.modules.pop(name, None)
 
 
+def test_seed_catalog_adds_module_derived_aliases_for_simple_atom_names(tmp_path: Path):
+    repo = tmp_path / "repo"
+
+    _write(repo / "sharedpkg" / "__init__.py", "")
+    _write(repo / "sharedpkg" / "ghost" / "__init__.py", "")
+    _write(
+        repo / "sharedpkg" / "ghost" / "registry.py",
+        """
+from __future__ import annotations
+
+REGISTRY = {}
+
+def register_atom(witness, *, name=None):
+    def decorator(func):
+        atom_name = name or func.__name__
+        REGISTRY[atom_name] = {"impl": func, "witness": witness}
+        return func
+    return decorator
+""".strip()
+        + "\n",
+    )
+
+    _write(repo / "mypkg" / "__init__.py", "")
+    _write(repo / "mypkg" / "scipy" / "__init__.py", "")
+    _write(
+        repo / "mypkg" / "scipy" / "signal.py",
+        """
+from __future__ import annotations
+
+from sharedpkg.ghost.registry import register_atom
+
+def witness_butter(signal: "AbstractSignal", order: int = 4) -> "AbstractSignal":
+    return signal
+
+@register_atom(witness_butter)
+def butter(signal: "np.ndarray", order: int = 4) -> "np.ndarray":
+    return signal
+""".strip()
+        + "\n",
+    )
+
+    config = SourcesConfig(
+        sources=[AtomSource(name="demo-source", package="mypkg", path="repo")]
+    )
+    catalog = PrimitiveCatalog()
+
+    before_modules = set(sys.modules)
+    try:
+        added = seed_catalog_from_sources(catalog, config=config, base_dir=tmp_path)
+        assert added == 1
+        assert catalog.get("butter") is not None
+        assert catalog.get("signal.butter") is not None
+        assert catalog.get("signal butter") is not None
+        assert catalog.get("signal_butter") is not None
+        assert catalog.get("scipy.signal.butter") is not None
+        assert catalog.get("scipy signal butter") is not None
+        assert catalog.get("scipy_signal_butter") is not None
+        assert catalog.get("signal.butter").name == "butter"
+    finally:
+        for name in set(sys.modules) - before_modules:
+            if name == "mypkg" or name.startswith("mypkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):
+                sys.modules.pop(name, None)
+
+
 # ---------------------------------------------------------------------------
 # Mock SkillIndex for dedup integration tests
 # ---------------------------------------------------------------------------
