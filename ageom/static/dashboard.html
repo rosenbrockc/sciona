@@ -333,6 +333,7 @@
           const catalog = r.catalog_alignment_summary || {};
           const benchmark = r.benchmark_summary || {};
           const benchmarkRuntime = benchmark.runtime_complexity || {};
+          const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
           const flowLatency = benchmark.flow_avg_latency_ms || {};
           const flowPromptCallSummary = Object.keys(flowPromptCalls).length
@@ -355,6 +356,11 @@
           const critiqueRejects = Number(architect.critique_reject_total || 0);
           const verifiedMatches = Number(hunter.verified_matches || 0);
           const benchmarkStatus = benchmark.status || "--";
+          const runtimeModeSummary = Object.keys(benchmarkRuntimeModes).length
+            ? Object.entries(benchmarkRuntimeModes)
+                .map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.transport_count || 0)}`)
+                .join(" ")
+            : "";
           const validationLine = (benchmark.prompt_results || benchmark.flow_results)
             ? `<div class="run-meta">bench=${benchmarkStatus} prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)} runtime_providers=${Number(benchmarkRuntime.provider_count || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
@@ -377,6 +383,9 @@
               : ""),
             (flowLatencySummary
               ? `<div class="run-meta">flow_latency ${flowLatencySummary}</div>`
+              : ""),
+            (runtimeModeSummary
+              ? `<div class="run-meta">runtime_modes ${runtimeModeSummary}</div>`
               : ""),
             validationLine
           ].join("");
@@ -402,6 +411,7 @@
         const catalog = run.catalog_alignment_summary || {};
         const benchmark = run.benchmark_summary || {};
         const benchmarkRuntime = benchmark.runtime_complexity || {};
+        const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
         const flowLatency = benchmark.flow_avg_latency_ms || {};
         const promptLatency = benchmark.prompt_avg_latency_ms || {};
@@ -462,6 +472,9 @@
           ["flow bench", `${Number(benchmark.flow_results || 0)}/${Number(benchmark.flow_cases || 0)}`],
           ["flow stable", benchmark.flow_stability_summary || "--"],
           ["runtime budget", `${Number(benchmarkRuntime.provider_count || 0)} providers / ${Number(benchmarkRuntime.transport_count || 0)} transports / ${Number((benchmarkRuntime.violations || []).length || 0)} violations`],
+          ["runtime modes", Object.keys(benchmarkRuntimeModes).length
+            ? Object.entries(benchmarkRuntimeModes).map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.provider_model_count || 0)}/${Number(row.transport_count || 0)}`).join(", ")
+            : "--"],
           ["flow prompts", Object.keys(flowPromptCalls).length
             ? Object.entries(flowPromptCalls).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(", ")
             : "--"],

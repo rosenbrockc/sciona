@@ -51,6 +51,34 @@ _PROMPT_TO_ROUND: dict[str, str] = {
 }
 
 _LEGACY_PROVIDER_SET = {"claude_cli", "codex_cli", "gemini_cli"}
+_MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
+    "rapid": {
+        "max_provider_count": 2,
+        "max_provider_model_count": 2,
+        "max_transport_count": 2,
+        "max_active_override_count": 0,
+        "allow_legacy_providers": False,
+    },
+    "structured": {
+        "max_provider_count": 2,
+        "max_provider_model_count": 2,
+        "max_transport_count": 2,
+        "max_active_override_count": 0,
+        "allow_legacy_providers": False,
+    },
+    "verified": {
+        "max_provider_count": 4,
+        "max_provider_model_count": 5,
+        "max_transport_count": 3,
+        "max_active_override_count": 5,
+        "allow_legacy_providers": False,
+    },
+}
+
+
+def _benchmark_validation_config() -> AgeomConfig:
+    """Use repo defaults for validation instead of operator-local dotenv overrides."""
+    return AgeomConfig(_env_file=None)
 
 
 def _transport_for_provider(provider: str) -> str:
@@ -68,8 +96,12 @@ def _transport_for_provider(provider: str) -> str:
     return "other"
 
 
-def runtime_complexity_summary(config: AgeomConfig) -> dict[str, Any]:
-    """Summarize default verified-mode routing complexity for release gating."""
+def _runtime_complexity_for_mode(
+    config: AgeomConfig,
+    *,
+    execution_mode: str,
+) -> dict[str, Any]:
+    """Summarize routing complexity for one execution mode."""
     providers: set[str] = set()
     provider_models: set[str] = set()
     transports: set[str] = set()
@@ -91,7 +123,7 @@ def runtime_complexity_summary(config: AgeomConfig) -> dict[str, Any]:
         provider = str(getattr(config, f"{prompt_key}_llm_provider", "") or "").strip()
         if not provider:
             continue
-        if not should_apply_prompt_override(config, prompt_key, execution_mode="verified"):
+        if not should_apply_prompt_override(config, prompt_key, execution_mode=execution_mode):
             continue
         model = str(
             getattr(config, f"{prompt_key}_llm_model", "")
@@ -109,6 +141,7 @@ def runtime_complexity_summary(config: AgeomConfig) -> dict[str, Any]:
         )
 
     summary = {
+        "mode": execution_mode,
         "provider_count": len(providers),
         "provider_model_count": len(provider_models),
         "transport_count": len(transports),
@@ -122,12 +155,7 @@ def runtime_complexity_summary(config: AgeomConfig) -> dict[str, Any]:
         ),
         "legacy_provider_count": len(legacy_providers),
         "legacy_providers": sorted(legacy_providers),
-        "budget": {
-            "max_provider_count": 4,
-            "max_provider_model_count": 5,
-            "max_transport_count": 3,
-            "allow_legacy_providers": False,
-        },
+        "budget": dict(_MODE_RUNTIME_BUDGETS[execution_mode]),
     }
     summary["violations"] = runtime_complexity_violations(summary)
     return summary
@@ -140,6 +168,7 @@ def runtime_complexity_violations(summary: dict[str, Any]) -> list[str]:
     provider_count = int(summary.get("provider_count", 0) or 0)
     provider_model_count = int(summary.get("provider_model_count", 0) or 0)
     transport_count = int(summary.get("transport_count", 0) or 0)
+    active_override_count = int(summary.get("active_override_count", 0) or 0)
     legacy_provider_count = int(summary.get("legacy_provider_count", 0) or 0)
     max_provider_count = int(budget.get("max_provider_count", provider_count) or provider_count)
     max_provider_model_count = int(
@@ -147,6 +176,9 @@ def runtime_complexity_violations(summary: dict[str, Any]) -> list[str]:
     )
     max_transport_count = int(
         budget.get("max_transport_count", transport_count) or transport_count
+    )
+    max_active_override_count = int(
+        budget.get("max_active_override_count", active_override_count) or active_override_count
     )
     if provider_count > max_provider_count:
         violations.append(
@@ -160,11 +192,53 @@ def runtime_complexity_violations(summary: dict[str, Any]) -> list[str]:
         violations.append(
             f"transport_count={transport_count} exceeds budget {max_transport_count}"
         )
+    if active_override_count > max_active_override_count:
+        violations.append(
+            f"active_override_count={active_override_count} exceeds budget {max_active_override_count}"
+        )
     if not bool(budget.get("allow_legacy_providers", False)) and legacy_provider_count > 0:
         violations.append(
             f"legacy_providers_present={','.join(summary.get('legacy_providers', []) or [])}"
         )
     return violations
+
+
+def runtime_complexity_summary(config: AgeomConfig) -> dict[str, Any]:
+    """Summarize routing complexity across execution modes."""
+    by_mode = {
+        mode: _runtime_complexity_for_mode(config, execution_mode=mode)
+        for mode in ("rapid", "structured", "verified")
+    }
+    monotonic_violations: list[str] = []
+    metric_names = (
+        "provider_count",
+        "provider_model_count",
+        "transport_count",
+        "active_override_count",
+    )
+    for metric in metric_names:
+        rapid_value = int(by_mode["rapid"].get(metric, 0) or 0)
+        structured_value = int(by_mode["structured"].get(metric, 0) or 0)
+        verified_value = int(by_mode["verified"].get(metric, 0) or 0)
+        if rapid_value > structured_value:
+            monotonic_violations.append(
+                f"{metric}: rapid={rapid_value} exceeds structured={structured_value}"
+            )
+        if structured_value > verified_value:
+            monotonic_violations.append(
+                f"{metric}: structured={structured_value} exceeds verified={verified_value}"
+            )
+
+    violations: list[str] = []
+    for mode, row in by_mode.items():
+        violations.extend(f"{mode}:{item}" for item in row.get("violations", []))
+    violations.extend(f"monotonic:{item}" for item in monotonic_violations)
+
+    verified = dict(by_mode["verified"])
+    verified["by_mode"] = by_mode
+    verified["monotonic_violations"] = monotonic_violations
+    verified["violations"] = violations
+    return verified
 
 
 class FixturePromptBenchmarkLLM:
@@ -251,7 +325,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         for agg in flow_aggregates
         if agg.variant != "direct_baseline"
     )
-    runtime_complexity = runtime_complexity_summary(AgeomConfig())
+    runtime_complexity = runtime_complexity_summary(_benchmark_validation_config())
     benchmark_passed = (
         prompt_tuned_failures == 0
         and prompt_tuned_unstable_groups == 0

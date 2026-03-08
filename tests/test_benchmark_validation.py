@@ -4,7 +4,8 @@ import json
 
 import pytest
 
-from ageom.benchmark_validation import run_benchmark_validation
+from ageom.benchmark_validation import run_benchmark_validation, runtime_complexity_summary
+from ageom.config import AgeomConfig
 from ageom.flow_benchmark import (
     default_flow_benchmark_cases,
     run_flow_benchmark,
@@ -56,6 +57,21 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
         "structured",
         "verified",
     }
+    assert set(payload["runtime_complexity"]["by_mode"]) == {
+        "rapid",
+        "structured",
+        "verified",
+    }
+    assert isinstance(payload["runtime_complexity"]["monotonic_violations"], list)
+
+
+def test_runtime_complexity_summary_is_mode_aware():
+    summary = runtime_complexity_summary(AgeomConfig(_env_file=None))
+
+    assert set(summary["by_mode"]) == {"rapid", "structured", "verified"}
+    assert summary["by_mode"]["rapid"]["mode"] == "rapid"
+    assert summary["by_mode"]["verified"]["mode"] == "verified"
+    assert "monotonic_violations" in summary
 
 
 @pytest.mark.asyncio

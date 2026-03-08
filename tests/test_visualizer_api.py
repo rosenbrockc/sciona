@@ -480,6 +480,23 @@ class TestDashboardAPI:
                     "runtime_complexity": {
                         "provider_count": 5,
                         "transport_count": 4,
+                        "by_mode": {
+                            "rapid": {
+                                "provider_count": 2,
+                                "provider_model_count": 2,
+                                "transport_count": 2,
+                            },
+                            "structured": {
+                                "provider_count": 2,
+                                "provider_model_count": 2,
+                                "transport_count": 2,
+                            },
+                            "verified": {
+                                "provider_count": 5,
+                                "provider_model_count": 6,
+                                "transport_count": 4,
+                            },
+                        },
                         "violations": ["legacy_providers_present=codex_cli"],
                     },
                     "prompt_tuned_failures": 0,
@@ -511,6 +528,7 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["prompt_avg_latency_ms"]["codex_shim:tuned"] == 3954.8
         assert data["benchmark_summary"]["flow_avg_latency_ms"]["verified"] == 611.2
         assert data["benchmark_summary"]["runtime_complexity"]["provider_count"] == 5
+        assert data["benchmark_summary"]["runtime_complexity"]["by_mode"]["rapid"]["provider_count"] == 2
         assert data["benchmark_summary"]["prompt_tuned_failures"] == 0
         assert data["benchmark_summary"]["flow_mode_failures"] == 0
         assert data["benchmark_summary"]["release_status"] == "passed"

@@ -883,3 +883,32 @@
   - Result: `1243 passed, 17 skipped`
 - Commit:
   - `benchmark: gate validation on runtime budget`
+
+## Mode-Aware Runtime Complexity Budgets
+
+- Promoted runtime-complexity validation from a single global budget to explicit per-mode budgets for:
+  - `rapid`
+  - `structured`
+  - `verified`
+- Benchmark validation now persists mode-aware runtime summaries under `runtime_complexity.by_mode`, including:
+  - provider count
+  - provider/model count
+  - transport count
+  - active override count
+  - budget violations per mode
+- Added monotonic simplification checks so benchmark validation now flags cases where:
+  - `rapid` is more complex than `structured`
+  - `structured` is more complex than `verified`
+- Fixed release-style validation to ignore operator-local `.env` overrides and evaluate the repo baseline instead.
+- Updated the dashboard to surface per-mode runtime complexity summaries directly from benchmark metadata.
+- Added regressions for:
+  - mode-aware runtime-complexity summaries
+  - benchmark bundle persistence of `by_mode`
+  - dashboard extraction of mode-aware runtime complexity
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `26 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1244 passed, 17 skipped`
+- Commit:
+  - `benchmark: add mode-aware runtime budgets`
