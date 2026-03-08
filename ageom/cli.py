@@ -3193,8 +3193,40 @@ async def _cmd_prompt_benchmark(args: argparse.Namespace) -> None:
 async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
     """Run deterministic release-style benchmark validation."""
     from ageom.benchmark_validation import run_benchmark_validation
+    from ageom.config import AgeomConfig
+    from ageom.telemetry import configure_dashboard_output, finish_run, merge_run_metadata, start_run
 
-    summary = await run_benchmark_validation(args.output)
+    config = AgeomConfig()
+    configure_dashboard_output(config.telemetry_runs_dir)
+    telemetry_run_id = start_run(
+        "benchmark_validation",
+        metadata={
+            "command": "benchmark-validate",
+            "output_dir": str(args.output),
+        },
+    )
+    try:
+        summary = await run_benchmark_validation(args.output)
+        merge_run_metadata(
+            {
+                "benchmark_validation": {
+                    "summary_report": summary["summary_report"],
+                    "prompt_report": summary["prompt_report"],
+                    "flow_report": summary["flow_report"],
+                    "prompt_cases": summary["prompt_cases"],
+                    "prompt_results": summary["prompt_results"],
+                    "prompt_summary": summary["prompt_summary"],
+                    "flow_cases": summary["flow_cases"],
+                    "flow_results": summary["flow_results"],
+                    "flow_summary": summary["flow_summary"],
+                }
+            },
+            run_id=telemetry_run_id,
+        )
+        finish_run(telemetry_run_id, status="completed")
+    except Exception as exc:
+        finish_run(telemetry_run_id, status="failed", error=str(exc))
+        raise
     print("Prompt benchmark summary")
     print(summary["prompt_summary"])
     print()
@@ -3207,8 +3239,46 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
 async def _cmd_release_validate(args: argparse.Namespace) -> None:
     """Run deterministic release validation and print manifest locations."""
     from ageom.release_validation import run_release_validation
+    from ageom.config import AgeomConfig
+    from ageom.telemetry import configure_dashboard_output, finish_run, merge_run_metadata, start_run
 
-    summary = await run_release_validation(args.output)
+    config = AgeomConfig()
+    configure_dashboard_output(config.telemetry_runs_dir)
+    telemetry_run_id = start_run(
+        "release_validation",
+        metadata={
+            "command": "release-validate",
+            "output_dir": str(args.output),
+        },
+    )
+    try:
+        summary = await run_release_validation(args.output)
+        benchmark_summary = summary["benchmark_summary"]
+        merge_run_metadata(
+            {
+                "release_validation": {
+                    "manifest": summary["manifest"],
+                    "benchmarks_dir": summary["benchmarks_dir"],
+                    "status": "passed",
+                },
+                "benchmark_validation": {
+                    "summary_report": benchmark_summary["summary_report"],
+                    "prompt_report": benchmark_summary["prompt_report"],
+                    "flow_report": benchmark_summary["flow_report"],
+                    "prompt_cases": benchmark_summary["prompt_cases"],
+                    "prompt_results": benchmark_summary["prompt_results"],
+                    "prompt_summary": benchmark_summary["prompt_summary"],
+                    "flow_cases": benchmark_summary["flow_cases"],
+                    "flow_results": benchmark_summary["flow_results"],
+                    "flow_summary": benchmark_summary["flow_summary"],
+                },
+            },
+            run_id=telemetry_run_id,
+        )
+        finish_run(telemetry_run_id, status="completed")
+    except Exception as exc:
+        finish_run(telemetry_run_id, status="failed", error=str(exc))
+        raise
     print(f"Release validation manifest: {summary['manifest']}")
     print(f"Benchmark bundle: {summary['benchmarks_dir']}")
 

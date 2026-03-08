@@ -89,10 +89,16 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     metadata = run.get("metadata", {}) if isinstance(run.get("metadata"), dict) else {}
     retrieval = metadata.get("retrieval_policy", {})
     routing = metadata.get("llm_routing", {})
+    benchmark = metadata.get("benchmark_validation", {})
+    release_validation = metadata.get("release_validation", {})
     if not isinstance(retrieval, dict):
         retrieval = {}
     if not isinstance(routing, dict):
         routing = {}
+    if not isinstance(benchmark, dict):
+        benchmark = {}
+    if not isinstance(release_validation, dict):
+        release_validation = {}
 
     def _routing_line(name: str) -> dict[str, Any]:
         section = routing.get(name, {})
@@ -124,6 +130,18 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     out["routing_summary"] = {
         "architect": _routing_line("architect"),
         "hunter": _routing_line("hunter"),
+    }
+    out["benchmark_summary"] = {
+        "prompt_cases": int(benchmark.get("prompt_cases", 0) or 0),
+        "prompt_results": int(benchmark.get("prompt_results", 0) or 0),
+        "flow_cases": int(benchmark.get("flow_cases", 0) or 0),
+        "flow_results": int(benchmark.get("flow_results", 0) or 0),
+        "prompt_summary": str(benchmark.get("prompt_summary", "") or ""),
+        "flow_summary": str(benchmark.get("flow_summary", "") or ""),
+        "summary_report": str(benchmark.get("summary_report", "") or ""),
+        "manifest": str(release_validation.get("manifest", "") or ""),
+        "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
+        "release_status": str(release_validation.get("status", "") or ""),
     }
     return out
 

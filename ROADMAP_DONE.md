@@ -449,3 +449,24 @@
   - Result: `1219 passed, 17 skipped`
 - Commits:
   - `a933a23` `runtime: simplify rapid mode routing`
+
+## Validation Telemetry And Dashboard Summaries
+
+- Promoted `benchmark-validate` and `release-validate` into first-class telemetry runs instead of leaving them as opaque JSON bundle writers.
+- Those commands now persist run metadata for:
+  - prompt benchmark counts and summary text
+  - flow benchmark counts and summary text
+  - release manifest / benchmark bundle locations
+- Extended the dashboard API to derive a `benchmark_summary` section from run metadata.
+- Updated the dashboard UI so validation runs show benchmark counts and release status directly in the run list and summary panel.
+- Added regressions for:
+  - benchmark validation telemetry persistence
+  - release validation telemetry persistence
+  - dashboard benchmark/release summary extraction
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `15 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1222 passed, 17 skipped`
+- Commits:
+  - `TBD` `telemetry: surface validation benchmark summaries`

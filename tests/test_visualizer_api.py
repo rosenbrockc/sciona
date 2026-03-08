@@ -360,6 +360,60 @@ class TestDashboardAPI:
         assert data["routing_summary"]["architect"]["active_count"] == 1
         assert data["routing_summary"]["hunter"]["suppressed_count"] == 1
 
+    def test_dashboard_run_includes_benchmark_and_release_validation_summaries(
+        self, client, monkeypatch, tmp_path
+    ):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "bench123",
+            "pipeline": "release_validation",
+            "status": "completed",
+            "started_at": now - 5.0,
+            "last_update_at": now - 1.0,
+            "ended_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 0,
+            "prompt_successes": 0,
+            "prompt_failures": 0,
+            "prompt_inflight": 0,
+            "events_count": 1,
+            "metadata": {
+                "benchmark_validation": {
+                    "summary_report": "build/release_validation/benchmarks/summary.json",
+                    "prompt_report": "build/release_validation/benchmarks/prompt_benchmark.json",
+                    "flow_report": "build/release_validation/benchmarks/flow_benchmark.json",
+                    "prompt_cases": 12,
+                    "prompt_results": 24,
+                    "prompt_summary": "prompt summary",
+                    "flow_cases": 4,
+                    "flow_results": 16,
+                    "flow_summary": "flow summary",
+                },
+                "release_validation": {
+                    "manifest": "build/release_validation/release_validation.json",
+                    "benchmarks_dir": "build/release_validation/benchmarks",
+                    "status": "passed",
+                },
+            },
+        }
+        (tmp_path / "run_bench123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs/bench123")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["benchmark_summary"]["prompt_cases"] == 12
+        assert data["benchmark_summary"]["prompt_results"] == 24
+        assert data["benchmark_summary"]["flow_cases"] == 4
+        assert data["benchmark_summary"]["flow_results"] == 16
+        assert data["benchmark_summary"]["release_status"] == "passed"
+        assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")
+
     def test_run_hang_annotation(self, client, monkeypatch, tmp_path):
         from ageom.telemetry import reset_telemetry_runtime
 

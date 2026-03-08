@@ -325,13 +325,17 @@
           div.className = "run-item" + (r.run_id === selectedRunId ? " active" : "");
           div.dataset.runId = r.run_id || "";
           const hung = r.is_hung ? " <span class=\"bad\">hung</span>" : "";
-        const architect = (r.metadata || {}).architect_metrics || {};
-        const retrieval = r.retrieval_summary || {};
-        const routing = (r.routing_summary || {}).architect || {};
-        const unresolved = Number(architect.unresolved_leaf_count || 0);
-        const blocked = Number(((architect.node_status_counts || {}).blocked) || 0);
-        const retrievalBand = retrieval.confidence_band || "--";
-        const activeOverrides = Number(routing.active_count || 0);
+          const architect = (r.metadata || {}).architect_metrics || {};
+          const retrieval = r.retrieval_summary || {};
+          const routing = (r.routing_summary || {}).architect || {};
+          const benchmark = r.benchmark_summary || {};
+          const unresolved = Number(architect.unresolved_leaf_count || 0);
+          const blocked = Number(((architect.node_status_counts || {}).blocked) || 0);
+          const retrievalBand = retrieval.confidence_band || "--";
+          const activeOverrides = Number(routing.active_count || 0);
+          const validationLine = (benchmark.prompt_results || benchmark.flow_results)
+            ? `<div class="run-meta">bench prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
+            : "";
           div.innerHTML = [
             '<div class="run-line">',
             `<span class="run-id">${(r.run_id || "").slice(0, 12)}</span>`,
@@ -339,7 +343,8 @@
             '</div>',
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
-            `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides}</div>`
+            `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides}</div>`,
+            validationLine
           ].join("");
           div.addEventListener("click", () => {
             selectedRunId = r.run_id || "";
@@ -358,6 +363,7 @@
         const retrieval = run.retrieval_summary || {};
         const architectRouting = (run.routing_summary || {}).architect || {};
         const hunterRouting = (run.routing_summary || {}).hunter || {};
+        const benchmark = run.benchmark_summary || {};
         const metrics = [
           ["pipeline", run.pipeline || "--"],
           ["status", run.status || "--"],
@@ -376,6 +382,9 @@
           ["retrieval", `${retrieval.confidence_band || "--"} / ${retrieval.semantic_backend || "--"}`],
           ["architect llm", `${architectRouting.default || "--"} +${architectRouting.active_count || 0}`],
           ["hunter llm", `${hunterRouting.default || "--"} +${hunterRouting.active_count || 0}`],
+          ["prompt bench", `${Number(benchmark.prompt_results || 0)}/${Number(benchmark.prompt_cases || 0)}`],
+          ["flow bench", `${Number(benchmark.flow_results || 0)}/${Number(benchmark.flow_cases || 0)}`],
+          ["release", benchmark.release_status || "--"],
           ["started", fmtTime(run.started_at)],
           ["updated", fmtTime(run.last_update_at)]
         ];
@@ -393,6 +402,7 @@
           `run_id: ${run.run_id || ""}\n` +
           `error: ${run.error || "(none)"}\n` +
           `hung: ${run.is_hung ? "yes" : "no"}\n` +
+          `benchmark_summary: ${JSON.stringify(run.benchmark_summary || {}, null, 2)}\n` +
           `\nmetadata:\n${metadata}` +
           (stale ? `\n\nstale_stages:\n${stale}` : "");
       }
