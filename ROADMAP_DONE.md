@@ -286,6 +286,23 @@
   - `conda run -n hpyexec pytest -q tests/test_visualizer_api.py tests/test_llm_router.py tests/test_execution_modes.py`
   - `conda run -n hpyexec pytest -q`
 
+## Release Validation Gating
+
+- `release_validation.json` is now a real gate instead of always reporting `passed`.
+- Release validation now fails when non-baseline benchmark regressions are present:
+  - tuned prompt benchmark failures
+  - tuned prompt unstable groups
+  - non-baseline flow benchmark failures
+  - non-baseline flow unstable groups
+- Benchmark validation summaries now persist those gating counts directly so release validation and dashboard summaries can consume them without re-reading aggregate files.
+- Added regressions for:
+  - benchmark summary gating fields
+  - failed release-validation manifests when regressions exist
+  - telemetry/dashboard persistence of the new gating counts
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:

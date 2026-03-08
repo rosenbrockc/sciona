@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -20,4 +21,45 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     bench = manifest["checks"]["benchmark_validation"]
     assert bench["prompt_results"] > 0
     assert bench["flow_results"] > 0
+    assert bench["prompt_tuned_failures"] == 0
+    assert bench["flow_mode_failures"] == 0
     assert (tmp_path / "benchmarks" / "summary.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
+    monkeypatch, tmp_path
+):
+    async def _fake_run_benchmark_validation(output_dir):
+        return {
+            "summary_report": str(tmp_path / "benchmarks" / "summary.json"),
+            "prompt_report": str(tmp_path / "benchmarks" / "prompt_benchmark.json"),
+            "flow_report": str(tmp_path / "benchmarks" / "flow_benchmark.json"),
+            "prompt_cases": 12,
+            "prompt_results": 24,
+            "prompt_summary": "prompt summary",
+            "prompt_stability_summary": "fixture_good/tuned 10/12",
+            "flow_cases": 4,
+            "flow_results": 16,
+            "flow_summary": "flow summary",
+            "flow_stability_summary": "rapid 3/4, verified 4/4",
+            "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "prompt_tuned_failures": 1,
+            "prompt_tuned_unstable_groups": 2,
+            "flow_mode_failures": 0,
+            "flow_mode_unstable_groups": 1,
+        }
+
+    monkeypatch.setattr(
+        "ageom.release_validation.run_benchmark_validation",
+        _fake_run_benchmark_validation,
+    )
+
+    summary = await run_release_validation(tmp_path)
+
+    manifest = json.loads(Path(summary["manifest"]).read_text(encoding="utf-8"))
+    assert manifest["status"] == "failed"
+    bench = manifest["checks"]["benchmark_validation"]
+    assert bench["prompt_tuned_failures"] == 1
+    assert bench["prompt_tuned_unstable_groups"] == 2
+    assert bench["flow_mode_unstable_groups"] == 1

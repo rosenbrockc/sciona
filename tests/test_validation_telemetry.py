@@ -29,6 +29,10 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "prompt_tuned_failures": 0,
+            "prompt_tuned_unstable_groups": 0,
+            "flow_mode_failures": 0,
+            "flow_mode_unstable_groups": 0,
         }
 
     monkeypatch.setattr(
@@ -47,6 +51,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert bench["prompt_results"] == 24
     assert bench["flow_results"] == 16
     assert bench["flow_avg_prompt_calls"]["rapid"] == 6.0
+    assert bench["flow_mode_failures"] == 0
 
 
 @pytest.mark.asyncio
@@ -75,6 +80,10 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "flow_summary": "flow summary",
                 "flow_stability_summary": "rapid 4/4, verified 4/4",
                 "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+                "prompt_tuned_failures": 0,
+                "prompt_tuned_unstable_groups": 0,
+                "flow_mode_failures": 0,
+                "flow_mode_unstable_groups": 0,
             },
         }
 

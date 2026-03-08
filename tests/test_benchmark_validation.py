@@ -38,6 +38,8 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "prompt_stability_summary" in payload
     assert "flow_stability_summary" in payload
     assert "flow_avg_prompt_calls" in payload
+    assert "prompt_tuned_failures" in payload
+    assert "flow_mode_failures" in payload
     assert set(payload["flow_avg_prompt_calls"]) == {
         "direct_baseline",
         "rapid",

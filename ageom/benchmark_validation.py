@@ -91,6 +91,23 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         aggregates=flow_aggregates,
     )
 
+    prompt_tuned_failures = sum(
+        agg.failed_cases for agg in prompt_aggregates if agg.variant != "direct_baseline"
+    )
+    prompt_tuned_unstable_groups = sum(
+        max(0, agg.repeat_groups - agg.stable_groups)
+        for agg in prompt_aggregates
+        if agg.variant != "direct_baseline"
+    )
+    flow_mode_failures = sum(
+        agg.failed_cases for agg in flow_aggregates if agg.variant != "direct_baseline"
+    )
+    flow_mode_unstable_groups = sum(
+        max(0, agg.repeat_groups - agg.stable_groups)
+        for agg in flow_aggregates
+        if agg.variant != "direct_baseline"
+    )
+
     summary = {
         "prompt_cases": len(prompt_cases),
         "prompt_results": len(prompt_results),
@@ -111,6 +128,10 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
         },
+        "prompt_tuned_failures": prompt_tuned_failures,
+        "prompt_tuned_unstable_groups": prompt_tuned_unstable_groups,
+        "flow_mode_failures": flow_mode_failures,
+        "flow_mode_unstable_groups": flow_mode_unstable_groups,
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

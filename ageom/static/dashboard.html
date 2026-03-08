@@ -417,11 +417,13 @@
           ["failure writes", String(Number(shared.total_failure_puts || 0))],
           ["prompt bench", `${Number(benchmark.prompt_results || 0)}/${Number(benchmark.prompt_cases || 0)}`],
           ["prompt stable", benchmark.prompt_stability_summary || "--"],
+          ["prompt regress", `${Number(benchmark.prompt_tuned_failures || 0)} / ${Number(benchmark.prompt_tuned_unstable_groups || 0)}`],
           ["flow bench", `${Number(benchmark.flow_results || 0)}/${Number(benchmark.flow_cases || 0)}`],
           ["flow stable", benchmark.flow_stability_summary || "--"],
           ["flow prompts", Object.keys(flowPromptCalls).length
             ? Object.entries(flowPromptCalls).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(", ")
             : "--"],
+          ["flow regress", `${Number(benchmark.flow_mode_failures || 0)} / ${Number(benchmark.flow_mode_unstable_groups || 0)}`],
           ["release", benchmark.release_status || "--"],
           ["started", fmtTime(run.started_at)],
           ["updated", fmtTime(run.last_update_at)]

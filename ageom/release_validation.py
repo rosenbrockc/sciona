@@ -15,8 +15,14 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     benchmark_summary = await run_benchmark_validation(out_dir / "benchmarks")
+    release_passed = (
+        int(benchmark_summary.get("prompt_tuned_failures", 0) or 0) == 0
+        and int(benchmark_summary.get("prompt_tuned_unstable_groups", 0) or 0) == 0
+        and int(benchmark_summary.get("flow_mode_failures", 0) or 0) == 0
+        and int(benchmark_summary.get("flow_mode_unstable_groups", 0) or 0) == 0
+    )
     manifest = {
-        "status": "passed",
+        "status": "passed" if release_passed else "failed",
         "checks": {
             "benchmark_validation": {
                 "summary_report": benchmark_summary["summary_report"],
@@ -24,6 +30,14 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "flow_report": benchmark_summary["flow_report"],
                 "prompt_results": benchmark_summary["prompt_results"],
                 "flow_results": benchmark_summary["flow_results"],
+                "prompt_tuned_failures": benchmark_summary.get("prompt_tuned_failures", 0),
+                "prompt_tuned_unstable_groups": benchmark_summary.get(
+                    "prompt_tuned_unstable_groups", 0
+                ),
+                "flow_mode_failures": benchmark_summary.get("flow_mode_failures", 0),
+                "flow_mode_unstable_groups": benchmark_summary.get(
+                    "flow_mode_unstable_groups", 0
+                ),
             }
         },
     }

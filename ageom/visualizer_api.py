@@ -227,6 +227,14 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         if isinstance(benchmark.get("flow_avg_prompt_calls", {}), dict)
         else {},
         "summary_report": str(benchmark.get("summary_report", "") or ""),
+        "prompt_tuned_failures": int(benchmark.get("prompt_tuned_failures", 0) or 0),
+        "prompt_tuned_unstable_groups": int(
+            benchmark.get("prompt_tuned_unstable_groups", 0) or 0
+        ),
+        "flow_mode_failures": int(benchmark.get("flow_mode_failures", 0) or 0),
+        "flow_mode_unstable_groups": int(
+            benchmark.get("flow_mode_unstable_groups", 0) or 0
+        ),
         "manifest": str(release_validation.get("manifest", "") or ""),
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),

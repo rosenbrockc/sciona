@@ -3260,6 +3260,14 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "flow_summary": summary["flow_summary"],
         "flow_stability_summary": summary.get("flow_stability_summary", ""),
         "flow_avg_prompt_calls": dict(summary.get("flow_avg_prompt_calls", {}) or {}),
+        "prompt_tuned_failures": int(summary.get("prompt_tuned_failures", 0) or 0),
+        "prompt_tuned_unstable_groups": int(
+            summary.get("prompt_tuned_unstable_groups", 0) or 0
+        ),
+        "flow_mode_failures": int(summary.get("flow_mode_failures", 0) or 0),
+        "flow_mode_unstable_groups": int(
+            summary.get("flow_mode_unstable_groups", 0) or 0
+        ),
     }
 
 
