@@ -10,14 +10,13 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from ageom.architect.graph import DecompositionAgent
-from ageom.architect.handoff import to_pdg_nodes
 from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 from ageom.hunter.graph import HunterAgent
+from ageom.orchestrator import run_orchestration
 from ageom.types import (
     CandidateMatch,
     Declaration,
-    MatchResult,
     PDGNode,
     Prover,
     VerificationLevel,
@@ -353,22 +352,7 @@ async def _run_direct_baseline_case(case: FlowBenchmarkCase) -> FlowBenchmarkRes
     )
 
 
-async def _run_structured_case(
-    case: FlowBenchmarkCase,
-    *,
-    variant: str,
-) -> FlowBenchmarkResult:
-    started = time.perf_counter()
-    catalog = _make_catalog(case)
-    architect_llm = _FlowArchitectLLM(case)
-    agent = DecompositionAgent(
-        catalog=catalog,
-        skill_index=_EmptySkillIndex(),  # type: ignore[arg-type]
-        llm=architect_llm,  # type: ignore[arg-type]
-        max_depth=6,
-    )
-    cdg = await agent.decompose(case.prompt)
-    pdg_nodes = to_pdg_nodes(cdg, prover=Prover.PYTHON, strict=False)
+def _make_hunter(case: FlowBenchmarkCase) -> tuple[HunterAgent, _BenchmarkHunterLLM]:
     declarations = _make_declarations(case)
     hunter_llm = _BenchmarkHunterLLM()
     hunter = HunterAgent(
@@ -379,38 +363,83 @@ async def _run_structured_case(
         top_k_verify=2,
         search_k=5,
     )
+    return hunter, hunter_llm
 
-    matched = 0
-    for leaf in case.leaves:
-        leaf_slug = _slug(leaf.name)
-        matching_nodes = [
-            node
-            for node in pdg_nodes
-            if _hint_matches(
-                f"{node.statement} {node.informal_desc} {node.context.get('matched_primitive', '')}",
-                leaf.query_hint,
-            )
-        ]
-        matching_nodes.sort(
-            key=lambda node: (
-                0
-                if node.context.get("matched_primitive", "") == leaf_slug
-                else 1,
-                int(node.context.get("depth", "0")),
-            )
-        )
-        query_node = matching_nodes[0] if matching_nodes else None
-        if query_node is None:
-            continue
-        result = await hunter.find_match(query_node)
-        if result.success:
-            matched += 1
 
+def _matched_leaf_count(
+    case: FlowBenchmarkCase,
+    match_results: Sequence[Any],
+) -> int:
+    """Count unique expected leaf declarations covered by successful matches."""
+    expected = {leaf.declaration_name for leaf in case.leaves}
+    matched: set[str] = set()
+    for result in match_results:
+        verified = getattr(result, "verified_match", None)
+        declaration = getattr(getattr(verified, "candidate", None), "declaration", None)
+        name = str(getattr(declaration, "name", "") or "").strip()
+        if name in expected:
+            matched.add(name)
+    return len(matched)
+
+
+async def _decompose_case(
+    case: FlowBenchmarkCase,
+) -> tuple[Any, _FlowArchitectLLM]:
+    catalog = _make_catalog(case)
+    architect_llm = _FlowArchitectLLM(case)
+    agent = DecompositionAgent(
+        catalog=catalog,
+        skill_index=_EmptySkillIndex(),  # type: ignore[arg-type]
+        llm=architect_llm,  # type: ignore[arg-type]
+        max_depth=6,
+    )
+    cdg = await agent.decompose(case.prompt)
+    return cdg, architect_llm
+
+
+async def _run_rapid_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
+    from ageom.cli import _run_rapid_direct_match
+
+    started = time.perf_counter()
+    hunter, hunter_llm = _make_hunter(case)
+    result = await _run_rapid_direct_match(
+        case.prompt,
+        prover=Prover.PYTHON,
+        hunter=hunter,
+    )
+    matched = _matched_leaf_count(case, result.match_results)
     latency_ms = (time.perf_counter() - started) * 1000.0
     return FlowBenchmarkResult(
         case_id=case.case_id,
         domain=case.domain,
-        variant=variant,
+        variant="rapid",
+        ok=matched == len(case.leaves),
+        latency_ms=latency_ms,
+        prompt_calls=hunter_llm.calls,
+        matched_leaves=matched,
+        total_leaves=len(case.leaves),
+        node_count=len(result.cdg.nodes),
+        error="" if matched == len(case.leaves) else "rapid direct match did not cover all leaves",
+    )
+
+
+async def _run_structured_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
+    from ageom.cli import _run_structured_single_pass
+
+    started = time.perf_counter()
+    cdg, architect_llm = await _decompose_case(case)
+    hunter, hunter_llm = _make_hunter(case)
+    result = await _run_structured_single_pass(
+        cdg,
+        prover=Prover.PYTHON,
+        hunter=hunter,
+    )
+    matched = _matched_leaf_count(case, result.match_results)
+    latency_ms = (time.perf_counter() - started) * 1000.0
+    return FlowBenchmarkResult(
+        case_id=case.case_id,
+        domain=case.domain,
+        variant="structured",
         ok=matched == len(case.leaves),
         latency_ms=latency_ms,
         prompt_calls=architect_llm.calls + hunter_llm.calls,
@@ -418,6 +447,34 @@ async def _run_structured_case(
         total_leaves=len(case.leaves),
         node_count=len(cdg.nodes),
         error="" if matched == len(case.leaves) else "not all decomposed leaves matched",
+    )
+
+
+async def _run_verified_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
+    started = time.perf_counter()
+    cdg, architect_llm = await _decompose_case(case)
+    hunter, hunter_llm = _make_hunter(case)
+    result = await run_orchestration(
+        cdg,
+        hunter_agent=hunter,
+        llm=architect_llm,  # type: ignore[arg-type]
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+    matched = _matched_leaf_count(case, result.match_results)
+    latency_ms = (time.perf_counter() - started) * 1000.0
+    return FlowBenchmarkResult(
+        case_id=case.case_id,
+        domain=case.domain,
+        variant="verified",
+        ok=matched == len(case.leaves),
+        latency_ms=latency_ms,
+        prompt_calls=architect_llm.calls + hunter_llm.calls,
+        matched_leaves=matched,
+        total_leaves=len(case.leaves),
+        node_count=len(result.cdg.nodes),
+        error="" if matched == len(case.leaves) else "verified refinement did not ground all leaves",
     )
 
 
@@ -518,7 +575,16 @@ async def run_flow_benchmark(
                 if variant == "direct_baseline":
                     results.append(await _run_direct_baseline_case(case))
                     continue
-                results.append(await _run_structured_case(case, variant=variant))
+                if variant == "rapid":
+                    results.append(await _run_rapid_case(case))
+                    continue
+                if variant == "structured":
+                    results.append(await _run_structured_case(case))
+                    continue
+                if variant == "verified":
+                    results.append(await _run_verified_case(case))
+                    continue
+                raise ValueError(f"Unsupported flow benchmark variant: {variant}")
     return results
 
 

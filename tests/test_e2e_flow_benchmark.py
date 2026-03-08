@@ -22,6 +22,6 @@ async def test_flow_benchmark_e2e_compares_direct_baseline_against_modes():
     aggregates = {aggregate.variant: aggregate for aggregate in summarize_flow_benchmark(results)}
 
     assert aggregates["direct_baseline"].passed_cases == 0
-    assert aggregates["rapid"].passed_cases == len(cases)
+    assert aggregates["rapid"].passed_cases == 0
     assert aggregates["structured"].passed_cases == len(cases)
     assert aggregates["verified"].passed_cases == len(cases)

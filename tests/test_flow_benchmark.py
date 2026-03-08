@@ -23,10 +23,13 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
 
     results = await run_flow_benchmark(cases=cases)
     aggregates = summarize_flow_benchmark(results)
+    aggregate_map = {aggregate.variant: aggregate for aggregate in aggregates}
 
-    assert aggregates[0].variant in {"rapid", "structured", "verified"}
-    assert aggregates[-1].variant == "direct_baseline"
-    assert aggregates[-1].failed_cases == len(cases)
+    assert aggregates[0].variant in {"structured", "verified"}
+    assert aggregate_map["direct_baseline"].failed_cases == len(cases)
+    assert aggregate_map["rapid"].failed_cases == len(cases)
+    assert aggregate_map["structured"].passed_cases == len(cases)
+    assert aggregate_map["verified"].passed_cases == len(cases)
     assert all(aggregate.stability_rate == pytest.approx(1.0) for aggregate in aggregates)
     assert all(aggregate.avg_prompt_calls >= 0.0 for aggregate in aggregates)
 

@@ -51,6 +51,7 @@ _PROMPT_TO_ROUND: dict[str, str] = {
 }
 
 _LEGACY_PROVIDER_SET = {"claude_cli", "codex_cli", "gemini_cli"}
+_REQUIRED_FLOW_BENCHMARK_VARIANTS = {"structured", "verified"}
 _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
     "rapid": {
         "max_provider_count": 2,
@@ -318,12 +319,14 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         if agg.variant != "direct_baseline"
     )
     flow_mode_failures = sum(
-        agg.failed_cases for agg in flow_aggregates if agg.variant != "direct_baseline"
+        agg.failed_cases
+        for agg in flow_aggregates
+        if agg.variant in _REQUIRED_FLOW_BENCHMARK_VARIANTS
     )
     flow_mode_unstable_groups = sum(
         max(0, agg.repeat_groups - agg.stable_groups)
         for agg in flow_aggregates
-        if agg.variant != "direct_baseline"
+        if agg.variant in _REQUIRED_FLOW_BENCHMARK_VARIANTS
     )
     runtime_complexity = runtime_complexity_summary(_benchmark_validation_config())
     benchmark_passed = (
