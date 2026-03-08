@@ -459,6 +459,7 @@ class TestDashboardAPI:
             "events_count": 1,
             "metadata": {
                 "benchmark_validation": {
+                    "status": "failed",
                     "summary_report": "build/release_validation/benchmarks/summary.json",
                     "prompt_report": "build/release_validation/benchmarks/prompt_benchmark.json",
                     "flow_report": "build/release_validation/benchmarks/flow_benchmark.json",
@@ -476,6 +477,11 @@ class TestDashboardAPI:
                         "gemini_shim:tuned": 3771.8,
                     },
                     "flow_avg_latency_ms": {"rapid": 412.5, "verified": 611.2},
+                    "runtime_complexity": {
+                        "provider_count": 5,
+                        "transport_count": 4,
+                        "violations": ["legacy_providers_present=codex_cli"],
+                    },
                     "prompt_tuned_failures": 0,
                     "prompt_tuned_unstable_groups": 0,
                     "flow_mode_failures": 0,
@@ -498,11 +504,13 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["prompt_results"] == 24
         assert data["benchmark_summary"]["flow_cases"] == 4
         assert data["benchmark_summary"]["flow_results"] == 16
+        assert data["benchmark_summary"]["status"] == "failed"
         assert data["benchmark_summary"]["prompt_stability_summary"] == "fixture_good/tuned 12/12"
         assert data["benchmark_summary"]["flow_stability_summary"] == "rapid 4/4, verified 4/4"
         assert data["benchmark_summary"]["flow_avg_prompt_calls"]["rapid"] == 6.0
         assert data["benchmark_summary"]["prompt_avg_latency_ms"]["codex_shim:tuned"] == 3954.8
         assert data["benchmark_summary"]["flow_avg_latency_ms"]["verified"] == 611.2
+        assert data["benchmark_summary"]["runtime_complexity"]["provider_count"] == 5
         assert data["benchmark_summary"]["prompt_tuned_failures"] == 0
         assert data["benchmark_summary"]["flow_mode_failures"] == 0
         assert data["benchmark_summary"]["release_status"] == "passed"

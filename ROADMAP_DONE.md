@@ -847,3 +847,39 @@
   - Result: `1242 passed, 17 skipped`
 - Commit:
   - `release: police runtime complexity budget`
+
+## Benchmark Runtime Complexity Summary
+
+- Promoted runtime-complexity budgeting into the benchmark-validation bundle itself instead of keeping it as release-only logic.
+- `benchmark_validation/summary.json` now persists:
+  - benchmark status
+  - runtime-complexity summary
+  - runtime-complexity violations
+- Refactored runtime-complexity analysis into the benchmark-validation layer so release validation consumes the same artifact rather than recomputing its own separate check.
+- Updated dashboard benchmark summaries to surface:
+  - benchmark status
+  - runtime provider/transport counts
+  - runtime-complexity violations
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `25 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1243 passed, 17 skipped`
+- Commit:
+  - `benchmark: persist runtime complexity status`
+
+## Benchmark Validation Gating
+
+- `benchmark-validate` is now a real gate instead of a bundle-only report writer.
+- The CLI command now:
+  - completes successfully only when the combined benchmark status is `passed`
+  - marks telemetry as failed when benchmark/runtime-complexity validation fails
+  - raises a runtime error on failed benchmark validation
+- Fixed telemetry metadata so benchmark runs now carry the full status/runtime-complexity payload used by the dashboard and release validation.
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `25 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1243 passed, 17 skipped`
+- Commit:
+  - `benchmark: gate validation on runtime budget`

@@ -36,6 +36,7 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
 ):
     async def _fake_run_benchmark_validation(output_dir):
         return {
+            "status": "failed",
             "summary_report": str(tmp_path / "benchmarks" / "summary.json"),
             "prompt_report": str(tmp_path / "benchmarks" / "prompt_benchmark.json"),
             "flow_report": str(tmp_path / "benchmarks" / "flow_benchmark.json"),
@@ -48,6 +49,7 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 3/4, verified 4/4",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "runtime_complexity": {"violations": []},
             "prompt_tuned_failures": 1,
             "prompt_tuned_unstable_groups": 2,
             "flow_mode_failures": 0,
@@ -75,6 +77,7 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
 ):
     async def _fake_run_benchmark_validation(output_dir):
         return {
+            "status": "failed",
             "summary_report": str(tmp_path / "benchmarks" / "summary.json"),
             "prompt_report": str(tmp_path / "benchmarks" / "prompt_benchmark.json"),
             "flow_report": str(tmp_path / "benchmarks" / "flow_benchmark.json"),
@@ -87,6 +90,23 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "runtime_complexity": {
+                "provider_count": 6,
+                "provider_model_count": 7,
+                "transport_count": 4,
+                "legacy_provider_count": 1,
+                "legacy_providers": ["codex_cli"],
+                "budget": {
+                    "max_provider_count": 4,
+                    "max_provider_model_count": 5,
+                    "max_transport_count": 3,
+                    "allow_legacy_providers": False,
+                },
+                "violations": [
+                    "provider_count=6 exceeds budget 4",
+                    "legacy_providers_present=codex_cli",
+                ],
+            },
             "prompt_tuned_failures": 0,
             "prompt_tuned_unstable_groups": 0,
             "flow_mode_failures": 0,
@@ -96,22 +116,6 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
     monkeypatch.setattr(
         "ageom.release_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
-    )
-    monkeypatch.setattr(
-        "ageom.release_validation._runtime_complexity_summary",
-        lambda config: {
-            "provider_count": 6,
-            "provider_model_count": 7,
-            "transport_count": 4,
-            "legacy_provider_count": 1,
-            "legacy_providers": ["codex_cli"],
-            "budget": {
-                "max_provider_count": 4,
-                "max_provider_model_count": 5,
-                "max_transport_count": 3,
-                "allow_legacy_providers": False,
-            },
-        },
     )
 
     summary = await run_release_validation(tmp_path)

@@ -17,6 +17,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
 
     async def _fake_run_benchmark_validation(output_dir):
         return {
+            "status": "passed",
             "summary_report": "build/benchmark_validation/summary.json",
             "prompt_report": "build/benchmark_validation/prompt_benchmark.json",
             "flow_report": "build/benchmark_validation/flow_benchmark.json",
@@ -29,6 +30,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "runtime_complexity": {"violations": [], "provider_count": 3},
             "prompt_tuned_failures": 0,
             "prompt_tuned_unstable_groups": 0,
             "flow_mode_failures": 0,
@@ -48,10 +50,65 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert payload["pipeline"] == "benchmark_validation"
     assert payload["status"] == "completed"
     bench = payload["metadata"]["benchmark_validation"]
+    assert payload["status"] == "completed"
+    assert bench["status"] == "passed"
     assert bench["prompt_results"] == 24
     assert bench["flow_results"] == 16
     assert bench["flow_avg_prompt_calls"]["rapid"] == 6.0
     assert bench["flow_mode_failures"] == 0
+    assert bench["runtime_complexity"]["provider_count"] == 3
+
+
+@pytest.mark.asyncio
+async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monkeypatch, tmp_path):
+    from ageom.cli import _cmd_benchmark_validate
+    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+
+    reset_telemetry_runtime()
+    configure_dashboard_output(tmp_path)
+    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+    async def _fake_run_benchmark_validation(output_dir):
+        return {
+            "status": "failed",
+            "summary_report": "build/benchmark_validation/summary.json",
+            "prompt_report": "build/benchmark_validation/prompt_benchmark.json",
+            "flow_report": "build/benchmark_validation/flow_benchmark.json",
+            "prompt_cases": 12,
+            "prompt_results": 24,
+            "prompt_summary": "prompt summary",
+            "prompt_stability_summary": "fixture_good/tuned 12/12",
+            "flow_cases": 4,
+            "flow_results": 16,
+            "flow_summary": "flow summary",
+            "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "runtime_complexity": {
+                "provider_count": 5,
+                "legacy_provider_count": 1,
+                "violations": ["legacy_providers_present=codex_cli"],
+            },
+            "prompt_tuned_failures": 0,
+            "prompt_tuned_unstable_groups": 0,
+            "flow_mode_failures": 0,
+            "flow_mode_unstable_groups": 0,
+        }
+
+    monkeypatch.setattr(
+        "ageom.benchmark_validation.run_benchmark_validation",
+        _fake_run_benchmark_validation,
+    )
+
+    with pytest.raises(RuntimeError, match="benchmark validation failed"):
+        await _cmd_benchmark_validate(argparse.Namespace(output="build/benchmark_validation"))
+
+    persisted = sorted(tmp_path.glob("run_*.json"))
+    assert persisted
+    payload = json.loads(persisted[-1].read_text(encoding="utf-8"))
+    assert payload["pipeline"] == "benchmark_validation"
+    assert payload["status"] == "failed"
+    assert payload["metadata"]["benchmark_validation"]["status"] == "failed"
+    assert payload["metadata"]["benchmark_validation"]["runtime_complexity"]["legacy_provider_count"] == 1
 
 
 @pytest.mark.asyncio
@@ -89,6 +146,8 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "flow_summary": "flow summary",
                 "flow_stability_summary": "rapid 4/4, verified 4/4",
                 "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+                "status": "failed",
+                "runtime_complexity": {"provider_count": 5, "violations": ["legacy_providers_present=codex_cli"]},
                 "prompt_tuned_failures": 0,
                 "prompt_tuned_unstable_groups": 0,
                 "flow_mode_failures": 0,
@@ -112,3 +171,4 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
     assert payload["metadata"]["release_validation"]["runtime_complexity"]["legacy_provider_count"] == 1
     assert payload["metadata"]["benchmark_validation"]["flow_results"] == 16
     assert payload["metadata"]["benchmark_validation"]["flow_avg_prompt_calls"]["verified"] == 7.0
+    assert payload["metadata"]["benchmark_validation"]["status"] == "failed"

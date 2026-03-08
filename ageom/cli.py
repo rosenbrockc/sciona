@@ -3405,6 +3405,7 @@ async def _cmd_prompt_benchmark(args: argparse.Namespace) -> None:
 def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, object]:
     """Normalize benchmark-validation fields for telemetry/dashboard metadata."""
     return {
+        "status": str(summary.get("status", "") or ""),
         "summary_report": summary["summary_report"],
         "prompt_report": summary["prompt_report"],
         "flow_report": summary["flow_report"],
@@ -3427,6 +3428,7 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "flow_mode_unstable_groups": int(
             summary.get("flow_mode_unstable_groups", 0) or 0
         ),
+        "runtime_complexity": dict(summary.get("runtime_complexity", {}) or {}),
     }
 
 
@@ -3454,9 +3456,19 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
             },
             run_id=telemetry_run_id,
         )
-        finish_run(telemetry_run_id, status="completed")
+        if str(summary.get("status", "failed")) == "passed":
+            finish_run(telemetry_run_id, status="completed")
+        else:
+            finish_run(
+                telemetry_run_id,
+                status="failed",
+                error="benchmark validation failed",
+            )
+            raise RuntimeError("benchmark validation failed")
     except Exception as exc:
-        finish_run(telemetry_run_id, status="failed", error=str(exc))
+        current = str(summary.get("status", "")) if "summary" in locals() else ""
+        if current == "passed":
+            finish_run(telemetry_run_id, status="failed", error=str(exc))
         raise
     print("Prompt benchmark summary")
     print(summary["prompt_summary"])

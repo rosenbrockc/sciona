@@ -341,6 +341,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         ),
     }
     out["benchmark_summary"] = {
+        "status": str(benchmark.get("status", "") or ""),
         "prompt_cases": int(benchmark.get("prompt_cases", 0) or 0),
         "prompt_results": int(benchmark.get("prompt_results", 0) or 0),
         "flow_cases": int(benchmark.get("flow_cases", 0) or 0),
@@ -377,6 +378,11 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "flow_mode_unstable_groups": int(
             benchmark.get("flow_mode_unstable_groups", 0) or 0
         ),
+        "runtime_complexity": dict(
+            benchmark.get("runtime_complexity", {}) or {}
+        )
+        if isinstance(benchmark.get("runtime_complexity", {}), dict)
+        else {},
         "manifest": str(release_validation.get("manifest", "") or ""),
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),
