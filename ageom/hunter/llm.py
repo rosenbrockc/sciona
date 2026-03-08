@@ -610,6 +610,24 @@ def _warn_if_legacy_subprocess_provider(provider: str) -> None:
     )
 
 
+def _enforce_legacy_subprocess_policy(
+    provider: str,
+    *,
+    allow_legacy_subprocess: bool,
+) -> None:
+    cli = _LEGACY_SUBPROCESS_PROVIDER_CLI.get(provider)
+    if cli is None or allow_legacy_subprocess:
+        return
+    shim_provider = provider.replace("_cli", "_shim")
+    raise ValueError(
+        (
+            f"Provider '{provider}' is disabled by default because it uses the legacy "
+            f"one-shot subprocess path for {cli}. Prefer '{shim_provider}' or set "
+            "AGEOM_ALLOW_LEGACY_SUBPROCESS_PROVIDERS=true to opt in."
+        )
+    )
+
+
 def create_llm_client(
     *,
     provider: str,
@@ -621,10 +639,15 @@ def create_llm_client(
     llama_cpp_base_url: str = "",
     llama_cpp_api_key: str = "",
     use_agent_layer: bool = False,
+    allow_legacy_subprocess: bool = False,
 ) -> LLMClient:
     """Construct an LLM client for the requested provider."""
     normalized = provider.lower().strip()
     resolved_model = _normalized_model_for_provider(normalized, model)
+    _enforce_legacy_subprocess_policy(
+        normalized,
+        allow_legacy_subprocess=allow_legacy_subprocess,
+    )
     _warn_if_legacy_subprocess_provider(normalized)
 
     if normalized == "anthropic":

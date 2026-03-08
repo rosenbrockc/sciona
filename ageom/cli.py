@@ -69,6 +69,9 @@ def _create_llm(
         llama_cpp_base_url=config.llama_cpp_base_url,
         llama_cpp_api_key=config.llama_cpp_api_key,
         use_agent_layer=config.use_agent_layer,
+        allow_legacy_subprocess=getattr(
+            config, "allow_legacy_subprocess_providers", False
+        ),
     )
 
 
@@ -119,6 +122,9 @@ def _create_llm_router(
                 llama_cpp_base_url=config.llama_cpp_base_url,
                 llama_cpp_api_key=config.llama_cpp_api_key,
                 use_agent_layer=config.use_agent_layer,
+                allow_legacy_subprocess=getattr(
+                    config, "allow_legacy_subprocess_providers", False
+                ),
             )
         overrides[key] = client_cache[cache_key]
 

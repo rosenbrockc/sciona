@@ -68,6 +68,7 @@ class AgeomConfig(BaseSettings):
     llama_cpp_base_url: str = "http://127.0.0.1:8080/v1"
     llama_cpp_api_key: str = "local"
     use_agent_layer: bool = False  # prefix CLI commands with `al` (Agent Layer)
+    allow_legacy_subprocess_providers: bool = False
     shared_context_backend: str = "auto"  # "auto" | "memory" | "postgres"
     shared_context_postgres_table: str = "ageom_shared_context"
     shared_context_ttl_hours: int = 168

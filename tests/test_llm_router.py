@@ -827,64 +827,85 @@ class TestSubprocessCLIClient:
         assert proc1.kill.called
 
 
-@pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
 class TestCreateLLMClientCLIProviders:
+    def test_cli_providers_rejected_by_default(self):
+        with pytest.raises(ValueError, match="disabled by default because it uses the legacy one-shot subprocess path"):
+            create_llm_client(
+                provider="claude_cli", model="sonnet", max_tokens=1024,
+            )
+
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_claude_cli_creates_subprocess_client(self):
         client = create_llm_client(
             provider="claude_cli", model="sonnet", max_tokens=1024,
+            allow_legacy_subprocess=True,
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "claude"
 
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_codex_cli_creates_subprocess_client(self):
         client = create_llm_client(
             provider="codex_cli", model="o4-mini", max_tokens=1024,
+            allow_legacy_subprocess=True,
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "codex"
         assert client._model == "o4-mini"
 
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_gemini_cli_creates_subprocess_client(self):
         client = create_llm_client(
             provider="gemini_cli", model="pro", max_tokens=1024,
+            allow_legacy_subprocess=True,
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "gemini"
         assert client._model == "pro"
 
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_codex_cli_falls_back_from_claude_model(self):
         client = create_llm_client(
             provider="codex_cli", model="claude-sonnet-4-5-20250929", max_tokens=1024,
+            allow_legacy_subprocess=True,
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "codex"
         assert client._model == "gpt-5.3-codex"
 
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_claude_cli_falls_back_from_codex_model(self):
         client = create_llm_client(
             provider="claude_cli", model="o4-mini", max_tokens=1024,
+            allow_legacy_subprocess=True,
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "claude"
         assert client._model == "sonnet"
 
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_gemini_cli_falls_back_from_codex_model(self):
         client = create_llm_client(
             provider="gemini_cli", model="o4-mini", max_tokens=1024,
+            allow_legacy_subprocess=True,
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._cli == "gemini"
         assert client._model == "gemini-2.5-pro"
 
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_codex_cli_invalid_model_raises(self):
         with pytest.raises(ValueError, match="not codex-compatible"):
             create_llm_client(
                 provider="codex_cli", model="not-a-real-model", max_tokens=1024,
+                allow_legacy_subprocess=True,
             )
 
+    @pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
     def test_agent_layer_forwarded(self):
         client = create_llm_client(
             provider="claude_cli", model="m", max_tokens=1, use_agent_layer=True,
+            allow_legacy_subprocess=True,
         )
         assert isinstance(client, SubprocessCLIClient)
         assert client._use_agent_layer is True

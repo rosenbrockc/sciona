@@ -783,3 +783,23 @@
   - Result: `1239 passed, 17 skipped`
 - Commit:
   - `benchmark: surface latency summaries`
+
+## Legacy Provider Policy
+
+- Tightened runtime policy so legacy one-shot `*_cli` providers are no longer silently available by default.
+- `create_llm_client(...)` now rejects `claude_cli`, `codex_cli`, and `gemini_cli` unless legacy subprocess providers are explicitly enabled.
+- Added a central config escape hatch:
+  - `AGEOM_ALLOW_LEGACY_SUBPROCESS_PROVIDERS=true`
+- CLI round/default client creation now threads that policy through from config instead of relying on warning-only behavior.
+- Kept the legacy clients available for deliberate compatibility use, but only behind explicit opt-in.
+- Added regressions for:
+  - default rejection of legacy subprocess providers
+  - explicit opt-in still creating the legacy client and preserving the deprecation warning
+  - router helper compatibility with config stubs after the new policy field
+- Validation:
+  - `pytest -q tests/test_llm.py tests/test_llm_router.py`
+  - Result: `74 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1241 passed, 17 skipped`
+- Commit:
+  - `runtime: require opt-in for legacy cli providers`

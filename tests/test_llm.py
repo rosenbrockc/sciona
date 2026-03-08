@@ -77,7 +77,23 @@ class TestCreateLLMClient:
 
 
 class TestConcreteClients:
-    def test_legacy_subprocess_providers_warn(self):
+    def test_legacy_subprocess_providers_require_explicit_opt_in(self):
+        for provider, model in (
+            ("claude_cli", "sonnet"),
+            ("codex_cli", "gpt-5.3-codex"),
+            ("gemini_cli", "flash-lite"),
+        ):
+            with pytest.raises(
+                ValueError,
+                match="disabled by default because it uses the legacy one-shot subprocess path",
+            ):
+                create_llm_client(
+                    provider=provider,
+                    model=model,
+                    max_tokens=64,
+                )
+
+    def test_legacy_subprocess_providers_warn_when_explicitly_enabled(self):
         for provider, model in (
             ("claude_cli", "sonnet"),
             ("codex_cli", "gpt-5.3-codex"),
@@ -91,6 +107,7 @@ class TestConcreteClients:
                     provider=provider,
                     model=model,
                     max_tokens=64,
+                    allow_legacy_subprocess=True,
                 )
             assert isinstance(client, SubprocessCLIClient)
 
