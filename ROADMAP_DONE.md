@@ -1031,3 +1031,20 @@
   - Result: `1250 passed, 17 skipped`
 - Commit:
   - `benchmark: validate mode execution distinctness`
+
+## Live Execution Path Visibility
+
+- Added first-class live run execution summaries to the dashboard/API so mode behavior is visible without opening raw run metadata.
+- Dashboard/API run summaries now expose:
+  - `execution_mode`
+  - `execution_path`
+  - `rapid_direct_path`
+- Run list cards now show `mode=... path=...`, and the detailed run view shows a dedicated `mode/path` metric.
+- Added visualizer regressions for extracting those execution-path fields from persisted algorithm-creation runs.
+- Validation:
+  - `pytest -q tests/test_visualizer_api.py`
+  - Result: `16 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1250 passed, 17 skipped`
+- Commit:
+  - `dashboard: surface live execution paths`

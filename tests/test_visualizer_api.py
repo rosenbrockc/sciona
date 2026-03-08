@@ -317,6 +317,9 @@ class TestDashboardAPI:
             "prompt_inflight": 0,
             "events_count": 2,
             "metadata": {
+                "execution_mode": "structured",
+                "execution_path": "structured_single_pass",
+                "rapid_direct_path": False,
                 "retrieval_policy": {
                     "confidence_band": "high",
                     "skill_index": True,
@@ -390,6 +393,9 @@ class TestDashboardAPI:
         resp = client.get("/api/dashboard/runs/route123")
         assert resp.status_code == 200
         data = resp.json()
+        assert data["execution_summary"]["mode"] == "structured"
+        assert data["execution_summary"]["path"] == "structured_single_pass"
+        assert data["execution_summary"]["rapid_direct"] is False
         assert data["retrieval_summary"]["confidence_band"] == "high"
         assert data["retrieval_summary"]["semantic_backend"] == "lexical"
         assert data["routing_summary"]["architect"]["default"] == "anthropic:claude-sonnet"

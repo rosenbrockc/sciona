@@ -327,6 +327,7 @@
           const hung = r.is_hung ? " <span class=\"bad\">hung</span>" : "";
           const architect = r.architect_summary || {};
           const retrieval = r.retrieval_summary || {};
+          const execution = r.execution_summary || {};
           const routing = (r.routing_summary || {}).architect || {};
           const hunter = r.hunter_summary || {};
           const complexity = r.provider_complexity || {};
@@ -370,6 +371,7 @@
             `<span class="pill ${runStatusClass(r.status || "running")}">${r.status || "running"}</span>`,
             '</div>',
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
+            `<div class="run-meta">mode=${execution.mode || "--"} path=${execution.path || "--"}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
             `<div class="run-meta">critique_rejects=${critiqueRejects} retries=${Number(architect.retry_total || 0)} rewrites=${Number(architect.rewrite_action_count || 0)}</div>`,
             `<div class="run-meta">searches=${Number(hunter.search_iterations || 0)} candidates=${Number(hunter.new_candidates_total || 0)} verified=${verifiedMatches}</div>`,
@@ -404,6 +406,7 @@
         const staleCount = (run.stale_stages || []).length;
         const architect = run.architect_summary || {};
         const retrieval = run.retrieval_summary || {};
+        const execution = run.execution_summary || {};
         const architectRouting = (run.routing_summary || {}).architect || {};
         const hunterRouting = (run.routing_summary || {}).hunter || {};
         const hunter = run.hunter_summary || {};
@@ -422,6 +425,7 @@
         const metrics = [
           ["pipeline", run.pipeline || "--"],
           ["status", run.status || "--"],
+          ["mode/path", `${execution.mode || "--"} / ${execution.path || "--"}`],
           ["duration", fmtDuration(run.started_at, run.ended_at)],
           ["dispatches", String(run.prompt_dispatches || 0)],
           ["inflight", String(run.prompt_inflight || 0)],

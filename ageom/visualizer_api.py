@@ -182,6 +182,11 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "semantic_backend": retrieval.get("semantic_backend", "default"),
         "hunter_mode": retrieval.get("hunter_mode", "--"),
     }
+    out["execution_summary"] = {
+        "mode": str(metadata.get("execution_mode", "") or "--"),
+        "path": str(metadata.get("execution_path", "") or "--"),
+        "rapid_direct": bool(metadata.get("rapid_direct_path", False)),
+    }
     out["routing_summary"] = {
         "architect": _routing_line("architect"),
         "hunter": _routing_line("hunter"),
