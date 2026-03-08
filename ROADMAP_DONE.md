@@ -429,4 +429,4 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1217 passed, 17 skipped`
 - Commits:
-  - `TBD` `catalog: surface source alignment metrics`
+  - `00b352a` `catalog: surface source alignment metrics`
