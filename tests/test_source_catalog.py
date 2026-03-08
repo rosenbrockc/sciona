@@ -82,10 +82,11 @@ def detect_peaks(signal: "np.ndarray") -> "np.ndarray":
         sources=[AtomSource(name="demo-source", package="mypkg", path="repo")]
     )
     catalog = PrimitiveCatalog()
+    report = CatalogReport()
 
     before_modules = set(sys.modules)
     try:
-        added = seed_catalog_from_sources(catalog, config=config, base_dir=tmp_path)
+        added = seed_catalog_from_sources(catalog, config=config, base_dir=tmp_path, report=report)
         assert added == 1
 
         prim = catalog.get("detect_peaks")
@@ -100,6 +101,8 @@ def detect_peaks(signal: "np.ndarray") -> "np.ndarray":
         aliased = catalog.get("DetectPeaks")
         assert aliased is not None
         assert aliased.name == "detect_peaks"
+        assert report.source_live_registry_candidates == 1
+        assert report.source_cdg_metadata_matches == 1
     finally:
         for name in set(sys.modules) - before_modules:
             if name == "mypkg" or name.startswith("mypkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):
@@ -258,15 +261,18 @@ def bandpass_filter(signal: "np.ndarray", lowcut: float, highcut: float) -> "np.
         sources=[AtomSource(name="rich-source", package="richpkg", path="repo")]
     )
     catalog = PrimitiveCatalog()
+    report = CatalogReport()
 
     before_modules = set(sys.modules)
     try:
-        added = seed_catalog_from_sources(catalog, config=config, base_dir=tmp_path)
+        added = seed_catalog_from_sources(catalog, config=config, base_dir=tmp_path, report=report)
         assert added == 1
         prim = catalog.get("bandpass_filter")
         assert prim is not None
         assert prim.description == "Apply a stable bandpass stage to the signal."
         assert [port.name for port in prim.inputs] == ["signal", "lowcut", "highcut"]
+        assert report.source_live_registry_candidates == 1
+        assert report.source_witness_doc_fallbacks == 1
     finally:
         for name in set(sys.modules) - before_modules:
             if name == "richpkg" or name.startswith("richpkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):
@@ -298,6 +304,7 @@ def fft_transform(*args, **kwargs) -> object:
         sources=[AtomSource(name="broken-source", package="brokenpkg", path="repo")]
     )
     catalog = PrimitiveCatalog()
+    report = CatalogReport()
 
     before_modules = set(sys.modules)
     try:
@@ -306,6 +313,7 @@ def fft_transform(*args, **kwargs) -> object:
             config=config,
             base_dir=tmp_path,
             include_live_registries=False,
+            report=report,
         )
         assert added == 1
         prim = catalog.get("fft_transform")
@@ -315,6 +323,9 @@ def fft_transform(*args, **kwargs) -> object:
         assert prim.inputs[1].required is False
         assert prim.inputs[1].default_value_repr == "-1"
         assert prim.outputs[0].type_desc == "AbstractSpectrum"
+        assert report.source_ast_candidates == 1
+        assert report.source_witness_doc_fallbacks == 1
+        assert report.source_witness_signature_fallbacks == 1
     finally:
         for name in set(sys.modules) - before_modules:
             if name == "brokenpkg" or name.startswith("brokenpkg."):

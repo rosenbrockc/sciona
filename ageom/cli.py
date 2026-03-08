@@ -525,6 +525,21 @@ def _load_architect_catalog(
                 parts.append(f"{report.structural_skips} structural skips")
             parts.append(f"from {report.total_candidates} candidates")
             print(f"Catalog: {', '.join(parts)}")
+            source_parts: list[str] = []
+            if report.source_live_registry_candidates:
+                source_parts.append(f"{report.source_live_registry_candidates} live-registry")
+            if report.source_ast_candidates:
+                source_parts.append(f"{report.source_ast_candidates} ast-fallback")
+            if report.source_cdg_metadata_matches:
+                source_parts.append(f"{report.source_cdg_metadata_matches} cdg-matched")
+            if report.source_witness_doc_fallbacks:
+                source_parts.append(f"{report.source_witness_doc_fallbacks} witness-doc")
+            if report.source_witness_signature_fallbacks:
+                source_parts.append(
+                    f"{report.source_witness_signature_fallbacks} witness-signature"
+                )
+            if source_parts:
+                print(f"Catalog source alignment: {', '.join(source_parts)}")
     except Exception as exc:
         print(
             f"Warning: failed to derive primitives from configured sources: {exc}",

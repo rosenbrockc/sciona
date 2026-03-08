@@ -45,6 +45,11 @@ class CatalogReport:
     added: int = 0
     merged: int = 0
     structural_skips: int = 0
+    source_live_registry_candidates: int = 0
+    source_ast_candidates: int = 0
+    source_cdg_metadata_matches: int = 0
+    source_witness_doc_fallbacks: int = 0
+    source_witness_signature_fallbacks: int = 0
     merge_details: list[tuple[str, str, float]] = field(default_factory=list)
 
 

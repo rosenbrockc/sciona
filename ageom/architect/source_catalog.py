@@ -369,23 +369,30 @@ def _parse_register_atom_functions(package_root: Path, package_name: str) -> dic
             witness_doc = ""
             witness_inputs: list[IOSpec] = []
             witness_outputs: list[IOSpec] = []
+            doc_source = "impl"
+            signature_source = "impl"
             witness_func = function_defs.get(witness_name)
             if witness_func is not None:
                 witness_doc = ast.get_docstring(witness_func) or ""
                 witness_inputs, witness_outputs = _ports_from_ast_function(witness_func)
+                if not doc and witness_doc:
+                    doc_source = "witness"
                 if _ports_are_uninformative(inputs, outputs) and not _ports_are_uninformative(
                     witness_inputs, witness_outputs
                 ):
                     inputs = witness_inputs
                     outputs = witness_outputs
+                    signature_source = "witness"
             parsed[atom_name] = {
                 "impl": None,
                 "witness": None,
                 "doc": doc or witness_doc,
+                "doc_source": doc_source if (doc or witness_doc) else "",
                 "module": module_name,
                 "name": atom_name,
                 "ast_inputs": inputs,
                 "ast_outputs": outputs,
+                "signature_source": signature_source,
                 "witness_name": witness_name,
             }
     return parsed
@@ -415,19 +422,26 @@ def _registration_to_primitive(
     name: str,
     meta: dict[str, Any],
     atom_index: dict[str, list[_AtomicNodeMeta]],
+    *,
+    report: CatalogReport | None = None,
 ) -> tuple[AlgorithmicPrimitive, list[str]] | None:
     impl = meta.get("impl")
     witness = meta.get("witness")
     module_name = getattr(impl, "__module__", "") or getattr(witness, "__module__", "")
-    description = str(
-        meta.get("doc", "")
-        or getattr(impl, "__doc__", "")
-        or getattr(witness, "__doc__", "")
-        or ""
-    ).strip()
+    meta_doc = str(meta.get("doc", "") or "").strip()
+    impl_doc = str(getattr(impl, "__doc__", "") or "").strip()
+    witness_doc = str(getattr(witness, "__doc__", "") or "").strip()
+    description = str(meta_doc or impl_doc or witness_doc).strip()
+    if report is not None:
+        if meta.get("doc_source") == "witness" or (not meta_doc and not impl_doc and witness_doc):
+            report.source_witness_doc_fallbacks += 1
+        if meta.get("signature_source") == "witness":
+            report.source_witness_signature_fallbacks += 1
 
     matched = _match_atomic_meta(name, impl, atom_index)
     if matched is not None:
+        if report is not None:
+            report.source_cdg_metadata_matches += 1
         primitive = AlgorithmicPrimitive(
             name=name,
             source=source.name,
@@ -561,7 +575,15 @@ def seed_catalog_from_sources(
                         continue
                     if name in seen_names:
                         continue
-                    built = _registration_to_primitive(source, name, meta, atom_index)
+                    if report is not None:
+                        report.source_live_registry_candidates += 1
+                    built = _registration_to_primitive(
+                        source,
+                        name,
+                        meta,
+                        atom_index,
+                        report=report,
+                    )
                     if built is None:
                         continue
                     primitive, aliases = built
@@ -579,7 +601,15 @@ def seed_catalog_from_sources(
         for name, meta in ast_entries.items():
             if name in seen_names or catalog.get(name) is not None:
                 continue
-            built = _registration_to_primitive(source, name, meta, atom_index)
+            if report is not None:
+                report.source_ast_candidates += 1
+            built = _registration_to_primitive(
+                source,
+                name,
+                meta,
+                atom_index,
+                report=report,
+            )
             if built is None:
                 continue
             primitive, aliases = built

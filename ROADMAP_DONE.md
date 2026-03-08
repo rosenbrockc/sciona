@@ -408,3 +408,25 @@
   - Result: `1217 passed, 17 skipped`
 - Commits:
   - `3c1fcf8` `catalog: enrich witness-backed source extraction`
+
+## Catalog And Atom Registry Alignment Metrics
+
+- Extended `CatalogReport` so source-derived catalog seeding now records:
+  - live-registry candidates
+  - AST-fallback candidates
+  - CDG metadata matches
+  - witness-doc fallbacks
+  - witness-signature fallbacks
+- Wired those counters into architect catalog loading so CLI runs print a source-alignment summary instead of only raw add/merge counts.
+- Added regressions for:
+  - live-registry candidate accounting
+  - CDG metadata match accounting
+  - AST-fallback candidate accounting
+  - witness-doc and witness-signature fallback accounting
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_source_catalog.py tests/test_catalog.py`
+  - Result: `44 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1217 passed, 17 skipped`
+- Commits:
+  - `TBD` `catalog: surface source alignment metrics`
