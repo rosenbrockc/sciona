@@ -3232,6 +3232,24 @@ async def _cmd_prompt_benchmark(args: argparse.Namespace) -> None:
                 await maybe_result
 
 
+def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, object]:
+    """Normalize benchmark-validation fields for telemetry/dashboard metadata."""
+    return {
+        "summary_report": summary["summary_report"],
+        "prompt_report": summary["prompt_report"],
+        "flow_report": summary["flow_report"],
+        "prompt_cases": summary["prompt_cases"],
+        "prompt_results": summary["prompt_results"],
+        "prompt_summary": summary["prompt_summary"],
+        "prompt_stability_summary": summary.get("prompt_stability_summary", ""),
+        "flow_cases": summary["flow_cases"],
+        "flow_results": summary["flow_results"],
+        "flow_summary": summary["flow_summary"],
+        "flow_stability_summary": summary.get("flow_stability_summary", ""),
+        "flow_avg_prompt_calls": dict(summary.get("flow_avg_prompt_calls", {}) or {}),
+    }
+
+
 async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
     """Run deterministic release-style benchmark validation."""
     from ageom.benchmark_validation import run_benchmark_validation
@@ -3247,21 +3265,12 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
             "output_dir": str(args.output),
         },
     )
+
     try:
         summary = await run_benchmark_validation(args.output)
         merge_run_metadata(
             {
-                "benchmark_validation": {
-                    "summary_report": summary["summary_report"],
-                    "prompt_report": summary["prompt_report"],
-                    "flow_report": summary["flow_report"],
-                    "prompt_cases": summary["prompt_cases"],
-                    "prompt_results": summary["prompt_results"],
-                    "prompt_summary": summary["prompt_summary"],
-                    "flow_cases": summary["flow_cases"],
-                    "flow_results": summary["flow_results"],
-                    "flow_summary": summary["flow_summary"],
-                }
+                "benchmark_validation": _benchmark_validation_metadata(summary)
             },
             run_id=telemetry_run_id,
         )
@@ -3303,17 +3312,7 @@ async def _cmd_release_validate(args: argparse.Namespace) -> None:
                     "benchmarks_dir": summary["benchmarks_dir"],
                     "status": "passed",
                 },
-                "benchmark_validation": {
-                    "summary_report": benchmark_summary["summary_report"],
-                    "prompt_report": benchmark_summary["prompt_report"],
-                    "flow_report": benchmark_summary["flow_report"],
-                    "prompt_cases": benchmark_summary["prompt_cases"],
-                    "prompt_results": benchmark_summary["prompt_results"],
-                    "prompt_summary": benchmark_summary["prompt_summary"],
-                    "flow_cases": benchmark_summary["flow_cases"],
-                    "flow_results": benchmark_summary["flow_results"],
-                    "flow_summary": benchmark_summary["flow_summary"],
-                },
+                "benchmark_validation": _benchmark_validation_metadata(benchmark_summary),
             },
             run_id=telemetry_run_id,
         )

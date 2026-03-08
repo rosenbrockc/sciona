@@ -254,6 +254,22 @@
   - `conda run -n hpyexec pytest -q tests/test_flow_benchmark.py tests/test_e2e_flow_benchmark.py`
   - `conda run -n hpyexec pytest -q`
 
+## Validation Summary Visibility
+
+- Benchmark validation summaries now persist the newer benchmark signals instead of only the original pass/fail counts:
+  - prompt stability summary
+  - flow stability summary
+  - average flow prompt calls by variant
+- CLI telemetry metadata for `benchmark-validate` and `release-validate` now carries those fields through to persisted runs.
+- Dashboard/API benchmark summaries now expose those values, and the dashboard UI shows them in run cards/details.
+- Added regressions for:
+  - benchmark bundle summary contents
+  - validation telemetry persistence
+  - dashboard API benchmark summary derivation
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_benchmark_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:

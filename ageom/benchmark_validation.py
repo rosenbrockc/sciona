@@ -96,10 +96,21 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "prompt_results": len(prompt_results),
         "prompt_report": str(prompt_report),
         "prompt_summary": format_prompt_benchmark_summary(prompt_aggregates),
+        "prompt_stability_summary": ", ".join(
+            f"{agg.provider}/{agg.variant} {agg.stable_groups}/{agg.repeat_groups}"
+            for agg in prompt_aggregates
+        ),
         "flow_cases": len(flow_cases),
         "flow_results": len(flow_results),
         "flow_report": str(flow_report),
         "flow_summary": format_flow_benchmark_summary(flow_aggregates),
+        "flow_stability_summary": ", ".join(
+            f"{agg.variant} {agg.stable_groups}/{agg.repeat_groups}"
+            for agg in flow_aggregates
+        ),
+        "flow_avg_prompt_calls": {
+            agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
+        },
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

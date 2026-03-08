@@ -397,9 +397,12 @@ class TestDashboardAPI:
                     "prompt_cases": 12,
                     "prompt_results": 24,
                     "prompt_summary": "prompt summary",
+                    "prompt_stability_summary": "fixture_good/tuned 12/12",
                     "flow_cases": 4,
                     "flow_results": 16,
                     "flow_summary": "flow summary",
+                    "flow_stability_summary": "rapid 4/4, verified 4/4",
+                    "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
                 },
                 "release_validation": {
                     "manifest": "build/release_validation/release_validation.json",
@@ -418,6 +421,9 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["prompt_results"] == 24
         assert data["benchmark_summary"]["flow_cases"] == 4
         assert data["benchmark_summary"]["flow_results"] == 16
+        assert data["benchmark_summary"]["prompt_stability_summary"] == "fixture_good/tuned 12/12"
+        assert data["benchmark_summary"]["flow_stability_summary"] == "rapid 4/4, verified 4/4"
+        assert data["benchmark_summary"]["flow_avg_prompt_calls"]["rapid"] == 6.0
         assert data["benchmark_summary"]["release_status"] == "passed"
         assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")
 

@@ -35,6 +35,15 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     payload = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
     assert payload["prompt_results"] == summary["prompt_results"]
     assert payload["flow_results"] == summary["flow_results"]
+    assert "prompt_stability_summary" in payload
+    assert "flow_stability_summary" in payload
+    assert "flow_avg_prompt_calls" in payload
+    assert set(payload["flow_avg_prompt_calls"]) == {
+        "direct_baseline",
+        "rapid",
+        "structured",
+        "verified",
+    }
 
 
 @pytest.mark.asyncio

@@ -23,9 +23,12 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "prompt_cases": 12,
             "prompt_results": 24,
             "prompt_summary": "prompt summary",
+            "prompt_stability_summary": "fixture_good/tuned 12/12",
             "flow_cases": 4,
             "flow_results": 16,
             "flow_summary": "flow summary",
+            "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
         }
 
     monkeypatch.setattr(
@@ -43,6 +46,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     bench = payload["metadata"]["benchmark_validation"]
     assert bench["prompt_results"] == 24
     assert bench["flow_results"] == 16
+    assert bench["flow_avg_prompt_calls"]["rapid"] == 6.0
 
 
 @pytest.mark.asyncio
@@ -65,9 +69,12 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "prompt_cases": 12,
                 "prompt_results": 24,
                 "prompt_summary": "prompt summary",
+                "prompt_stability_summary": "fixture_good/tuned 12/12",
                 "flow_cases": 4,
                 "flow_results": 16,
                 "flow_summary": "flow summary",
+                "flow_stability_summary": "rapid 4/4, verified 4/4",
+                "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             },
         }
 
@@ -85,3 +92,4 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
     assert payload["status"] == "completed"
     assert payload["metadata"]["release_validation"]["status"] == "passed"
     assert payload["metadata"]["benchmark_validation"]["flow_results"] == 16
+    assert payload["metadata"]["benchmark_validation"]["flow_avg_prompt_calls"]["verified"] == 7.0

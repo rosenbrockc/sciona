@@ -191,7 +191,18 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "flow_cases": int(benchmark.get("flow_cases", 0) or 0),
         "flow_results": int(benchmark.get("flow_results", 0) or 0),
         "prompt_summary": str(benchmark.get("prompt_summary", "") or ""),
+        "prompt_stability_summary": str(
+            benchmark.get("prompt_stability_summary", "") or ""
+        ),
         "flow_summary": str(benchmark.get("flow_summary", "") or ""),
+        "flow_stability_summary": str(
+            benchmark.get("flow_stability_summary", "") or ""
+        ),
+        "flow_avg_prompt_calls": dict(
+            benchmark.get("flow_avg_prompt_calls", {}) or {}
+        )
+        if isinstance(benchmark.get("flow_avg_prompt_calls", {}), dict)
+        else {},
         "summary_report": str(benchmark.get("summary_report", "") or ""),
         "manifest": str(release_validation.get("manifest", "") or ""),
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
