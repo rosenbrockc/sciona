@@ -803,3 +803,20 @@
   - Result: `1241 passed, 17 skipped`
 - Commit:
   - `runtime: require opt-in for legacy cli providers`
+
+## Catalog Merge Visibility
+
+- Extended catalog-alignment telemetry to persist concrete merge examples instead of only a merged-count total.
+- Catalog run metadata now carries top merge examples from `CatalogReport.merge_details`, including:
+  - candidate primitive name
+  - incumbent primitive name
+  - similarity score
+- Added dashboard/API summaries for those merge examples and surfaced them in the run list and detailed run view.
+- Added regressions for dashboard extraction of merge examples from catalog-alignment metadata.
+- Validation:
+  - `pytest -q tests/test_catalog.py tests/test_visualizer_api.py`
+  - Result: `53 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1241 passed, 17 skipped`
+- Commit:
+  - `dashboard: surface catalog merge examples`

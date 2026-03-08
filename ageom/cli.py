@@ -589,6 +589,14 @@ def _load_architect_catalog(
         "source_witness_doc_fallbacks": report.source_witness_doc_fallbacks,
         "source_witness_signature_fallbacks": report.source_witness_signature_fallbacks,
         "source_breakdown": report.source_breakdown,
+        "merge_details": [
+            {
+                "candidate": candidate,
+                "incumbent": incumbent,
+                "similarity": similarity,
+            }
+            for candidate, incumbent, similarity in report.merge_details
+        ],
     }
     return catalog, report_payload
 

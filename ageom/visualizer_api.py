@@ -214,6 +214,24 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
             catalog_alignment.get("source_witness_signature_fallbacks", 0) or 0
         ),
     }
+    merge_details = catalog_alignment.get("merge_details", {})
+    if not isinstance(merge_details, list):
+        merge_details = []
+    merge_rows: list[dict[str, Any]] = []
+    for row in merge_details:
+        if not isinstance(row, dict):
+            continue
+        merge_rows.append(
+            {
+                "candidate": str(row.get("candidate", "") or ""),
+                "incumbent": str(row.get("incumbent", "") or ""),
+                "similarity": float(row.get("similarity", 0.0) or 0.0),
+            }
+        )
+    merge_rows.sort(
+        key=lambda row: (-row["similarity"], row["candidate"], row["incumbent"])
+    )
+    out["catalog_alignment_summary"]["top_merges"] = merge_rows[:5]
     source_breakdown = catalog_alignment.get("source_breakdown", {})
     if not isinstance(source_breakdown, dict):
         source_breakdown = {}

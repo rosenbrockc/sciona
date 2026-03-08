@@ -369,6 +369,18 @@ class TestDashboardAPI:
                             "ast_candidates": 7,
                         },
                     },
+                    "merge_details": [
+                        {
+                            "candidate": "heap_sort_v2",
+                            "incumbent": "heapsort",
+                            "similarity": 0.92,
+                        },
+                        {
+                            "candidate": "stable_bandpass",
+                            "incumbent": "design_bandpass_filter",
+                            "similarity": 0.88,
+                        },
+                    ],
                 },
             },
         }
@@ -401,6 +413,18 @@ class TestDashboardAPI:
                 "added": 7,
                 "live_registry_candidates": 0,
                 "ast_candidates": 7,
+            },
+        ]
+        assert data["catalog_alignment_summary"]["top_merges"] == [
+            {
+                "candidate": "heap_sort_v2",
+                "incumbent": "heapsort",
+                "similarity": 0.92,
+            },
+            {
+                "candidate": "stable_bandpass",
+                "incumbent": "design_bandpass_filter",
+                "similarity": 0.88,
             },
         ]
         assert data["provider_complexity"]["provider_count"] == 3
