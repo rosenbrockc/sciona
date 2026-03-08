@@ -912,3 +912,28 @@
   - Result: `1244 passed, 17 skipped`
 - Commit:
   - `benchmark: add mode-aware runtime budgets`
+
+## Rapid Mode Direct Path
+
+- Turned `run --mode rapid` into a real direct baseline path instead of a lightly trimmed orchestration flow.
+- `rapid` runs now:
+  - skip architect setup and decomposition entirely
+  - skip orchestration/refinement loops
+  - run a single Hunter pass directly against the goal statement
+  - emit a minimal one-node CDG artifact that records whether direct matching succeeded
+- Added a stable rapid-mode artifact contract:
+  - successful direct matches produce an atomic one-node CDG with `matched_primitive`
+  - failed direct matches produce a blocked one-node CDG with explicit failure notes
+  - run telemetry marks `rapid_direct_path=true`
+  - rapid runs no longer record unused architect routing/stages
+- Added regressions for:
+  - direct-match CDG success/failure semantics
+  - rapid direct-match result wrapping
+  - CLI telemetry/output behavior for `run --mode rapid`
+- Validation:
+  - `pytest -q tests/test_rapid_mode.py tests/test_cli_command_telemetry.py tests/test_execution_modes.py`
+  - Result: `10 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1248 passed, 17 skipped`
+- Commit:
+  - `cli: add rapid direct run path`

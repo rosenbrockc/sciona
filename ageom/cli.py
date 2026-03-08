@@ -696,6 +696,103 @@ def _write_shared_context_metrics_file(
     return path
 
 
+def _build_rapid_direct_cdg(
+    goal: str,
+    prover: "Prover",
+    match_result: Any,
+):
+    """Build a minimal one-node CDG for rapid direct-match runs."""
+    from ageom.architect.handoff import CDGExport
+    from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+
+    verified = getattr(match_result, "verified_match", None)
+    verified_decl = getattr(getattr(verified, "candidate", None), "declaration", None)
+    top_decl = None
+    if getattr(match_result, "all_candidates", None):
+        top_decl = getattr(match_result.all_candidates[0], "declaration", None)
+
+    type_signature = ""
+    matched_primitive = None
+    if verified_decl is not None:
+        type_signature = str(getattr(verified_decl, "type_signature", "") or "").strip()
+        matched_primitive = str(getattr(verified_decl, "name", "") or "").strip() or None
+    elif top_decl is not None:
+        type_signature = str(getattr(top_decl, "type_signature", "") or "").strip()
+
+    failure_notes = ""
+    for verification in getattr(match_result, "all_verifications", []) or []:
+        failure_notes = str(getattr(verification, "error_message", "") or "").strip()
+        if failure_notes:
+            break
+    if not failure_notes:
+        failure_notes = (
+            "Rapid direct match found no verified candidate."
+            if getattr(match_result, "all_candidates", None)
+            else "Rapid direct match found no candidates."
+        )
+
+    success = bool(getattr(match_result, "success", False))
+    node = AlgorithmicNode(
+        node_id="goal_0",
+        name="Direct Goal Match",
+        description=goal,
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.ATOMIC if success else NodeStatus.BLOCKED,
+        type_signature=type_signature,
+        matched_primitive=matched_primitive,
+        critic_notes=(
+            "Rapid direct match succeeded."
+            if success
+            else failure_notes
+        ),
+        conceptual_summary="Rapid-mode direct retrieval without architect decomposition.",
+    )
+    metadata = {
+        "goal": goal,
+        "prover": prover.value,
+        "execution_mode": "rapid",
+        "rapid_direct_path": True,
+        "num_nodes": 1,
+        "num_edges": 0,
+        "matched_directly": success,
+    }
+    if not success:
+        metadata["architect_error"] = f"Rapid direct match failed: {failure_notes}"
+    return CDGExport(nodes=[node], edges=[], metadata=metadata)
+
+
+async def _run_rapid_direct_match(
+    goal: str,
+    *,
+    prover: "Prover",
+    hunter: Any,
+):
+    """Run the rapid-mode direct Hunter path and wrap it in an orchestration result."""
+    from ageom.orchestrator import OrchestratorResult
+    from ageom.types import MatchFailureReport, PDGNode
+
+    pdg_node = PDGNode(
+        predicate_id="goal_0",
+        statement=goal,
+        informal_desc="rapid direct baseline without decomposition",
+        prover=prover,
+        context={"execution_mode": "rapid", "rapid_direct_path": "true"},
+    )
+    match_result = await hunter.find_match(pdg_node)
+    failures = []
+    ungroundable: list[str] = []
+    if not getattr(match_result, "success", False):
+        failures.append(MatchFailureReport.from_match_result(match_result))
+        ungroundable.append(pdg_node.predicate_id)
+    return OrchestratorResult(
+        cdg=_build_rapid_direct_cdg(goal, prover, match_result),
+        match_results=[match_result],
+        rounds_used=1,
+        failures=failures,
+        ungroundable=ungroundable,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="ageom",
@@ -2730,17 +2827,19 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         texts=[args.goal],
     )
     _print_retrieval_policy(retrieval_policy)
-    architect_routing = _summarize_prompt_routing(
-        config,
-        "architect",
-        [
-            "architect_strategy",
-            "architect_decompose",
-            "architect_critique",
-            "orchestrator_refine",
-        ],
-        mode_settings.mode,
-    )
+    architect_routing = None
+    if mode_settings.mode != "rapid":
+        architect_routing = _summarize_prompt_routing(
+            config,
+            "architect",
+            [
+                "architect_strategy",
+                "architect_decompose",
+                "architect_critique",
+                "orchestrator_refine",
+            ],
+            mode_settings.mode,
+        )
     hunter_routing = _summarize_prompt_routing(
         config,
         "hunter",
@@ -2769,110 +2868,124 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 or "default",
                 "hunter_mode": retrieval_policy.hunter_mode,
             },
-            "llm_routing": {
-                "architect": _routing_metadata_summary(architect_routing),
-                "hunter": _routing_metadata_summary(hunter_routing),
-            },
+            "rapid_direct_path": mode_settings.mode == "rapid",
+            "llm_routing": (
+                {
+                    "hunter": _routing_metadata_summary(hunter_routing),
+                }
+                if architect_routing is None
+                else {
+                    "architect": _routing_metadata_summary(architect_routing),
+                    "hunter": _routing_metadata_summary(hunter_routing),
+                }
+            ),
             "catalog_alignment": catalog_alignment,
         },
     )
 
+    architect_shared_metrics = None
+    hunter_shared_metrics = None
+    result = None
     try:
         with telemetry_scope(run_id=telemetry_run_id):
             update_stage(stage="setup", status="running", message="loading dependencies")
 
-            skill_index = _load_skill_index_or_empty(
-                config,
-                enabled=retrieval_policy.skill_index_enabled,
-            )
-
-            # Set up LLM
-            try:
-                from ageom.llm_router import (
-                    ARCHITECT_CRITIQUE,
-                    ARCHITECT_DECOMPOSE,
-                    ARCHITECT_STRATEGY,
-                    ORCHESTRATOR_REFINE,
+            skill_index = None
+            llm = None
+            if mode_settings.mode != "rapid":
+                skill_index = _load_skill_index_or_empty(
+                    config,
+                    enabled=retrieval_policy.skill_index_enabled,
                 )
 
-                architect_prompt_keys = [
-                    ARCHITECT_STRATEGY,
-                    ARCHITECT_DECOMPOSE,
-                    ARCHITECT_CRITIQUE,
-                    ORCHESTRATOR_REFINE,
-                ]
-                _print_prompt_routing_summary(
-                    config,
-                    "architect",
-                    architect_prompt_keys,
-                    mode_settings.mode,
-                )
-                llm = _create_llm_router(
-                    args,
-                    config,
-                    "architect",
-                    architect_prompt_keys,
-                )
-                await _warm_llm_if_supported(llm, "architect")
-            except (ValueError, ImportError) as exc:
-                print(f"Error: {exc}", file=sys.stderr)
-                finish_run(telemetry_run_id, status="failed", error=str(exc))
-                sys.exit(1)
+                try:
+                    from ageom.llm_router import (
+                        ARCHITECT_CRITIQUE,
+                        ARCHITECT_DECOMPOSE,
+                        ARCHITECT_STRATEGY,
+                        ORCHESTRATOR_REFINE,
+                    )
+
+                    architect_prompt_keys = [
+                        ARCHITECT_STRATEGY,
+                        ARCHITECT_DECOMPOSE,
+                        ARCHITECT_CRITIQUE,
+                        ORCHESTRATOR_REFINE,
+                    ]
+                    _print_prompt_routing_summary(
+                        config,
+                        "architect",
+                        architect_prompt_keys,
+                        mode_settings.mode,
+                    )
+                    llm = _create_llm_router(
+                        args,
+                        config,
+                        "architect",
+                        architect_prompt_keys,
+                    )
+                    await _warm_llm_if_supported(llm, "architect")
+                except (ValueError, ImportError) as exc:
+                    print(f"Error: {exc}", file=sys.stderr)
+                    finish_run(telemetry_run_id, status="failed", error=str(exc))
+                    sys.exit(1)
             update_stage(stage="setup", status="completed")
 
-            # Step 1: Decompose
-            print(f"Decomposing: {args.goal}")
+            cdg = None
+            if mode_settings.mode != "rapid":
+                print(f"Decomposing: {args.goal}")
 
-            retriever = None
-            graph_store_ctx = None
-            if retrieval_policy.graph_retrieval_enabled:
-                from ageom.architect.graph_retrieval import make_retriever
-                from ageom.graph_store import GraphStore as _GraphStore
+                retriever = None
+                graph_store_ctx = None
+                if retrieval_policy.graph_retrieval_enabled:
+                    from ageom.architect.graph_retrieval import make_retriever
+                    from ageom.graph_store import GraphStore as _GraphStore
 
-                graph_store_ctx = _GraphStore(
-                    uri=config.memgraph_uri,
-                    user=config.memgraph_user,
-                    password=config.memgraph_password,
+                    graph_store_ctx = _GraphStore(
+                        uri=config.memgraph_uri,
+                        user=config.memgraph_user,
+                        password=config.memgraph_password,
+                    )
+                architect_run_id = uuid.uuid4().hex
+                architect_shared_context, architect_shared_metrics = await _create_shared_context(
+                    config,
+                    enabled=mode_settings.architect_shared_context_enabled,
                 )
-            architect_run_id = uuid.uuid4().hex
-            architect_shared_context, architect_shared_metrics = await _create_shared_context(
-                config,
-                enabled=mode_settings.architect_shared_context_enabled,
-            )
 
-            with telemetry_stage("architect_decompose", message="building initial CDG"):
-                async with create_checkpointer(config.postgres_uri) as checkpointer:
-                    if graph_store_ctx is not None:
-                        async with graph_store_ctx as gstore:
-                            retriever = make_retriever(config, gstore, current_repo="")
+                with telemetry_stage("architect_decompose", message="building initial CDG"):
+                    async with create_checkpointer(config.postgres_uri) as checkpointer:
+                        if graph_store_ctx is not None:
+                            async with graph_store_ctx as gstore:
+                                retriever = make_retriever(config, gstore, current_repo="")
+                                architect = DecompositionAgent(
+                                    catalog=catalog,
+                                    skill_index=skill_index,
+                                    llm=llm,
+                                    checkpointer=checkpointer,
+                                    graph_retriever=retriever,
+                                    shared_context=architect_shared_context,
+                                    shared_context_metrics=architect_shared_metrics,
+                                    context_namespace=f"architect/{architect_run_id}",
+                                    context_budget_chars=config.architect_shared_context_budget_chars,
+                                )
+                                cdg = await architect.decompose(args.goal)
+                        else:
                             architect = DecompositionAgent(
                                 catalog=catalog,
                                 skill_index=skill_index,
                                 llm=llm,
                                 checkpointer=checkpointer,
-                                graph_retriever=retriever,
                                 shared_context=architect_shared_context,
                                 shared_context_metrics=architect_shared_metrics,
                                 context_namespace=f"architect/{architect_run_id}",
                                 context_budget_chars=config.architect_shared_context_budget_chars,
                             )
                             cdg = await architect.decompose(args.goal)
-                    else:
-                        architect = DecompositionAgent(
-                            catalog=catalog,
-                            skill_index=skill_index,
-                            llm=llm,
-                            checkpointer=checkpointer,
-                            shared_context=architect_shared_context,
-                            shared_context_metrics=architect_shared_metrics,
-                            context_namespace=f"architect/{architect_run_id}",
-                            context_budget_chars=config.architect_shared_context_budget_chars,
-                        )
-                        cdg = await architect.decompose(args.goal)
 
-            print(f"  Decomposed: {len(cdg.nodes)} nodes, {len(cdg.edges)} edges")
+                print(f"  Decomposed: {len(cdg.nodes)} nodes, {len(cdg.edges)} edges")
+            else:
+                print(f"Rapid mode: matching goal directly without decomposition: {args.goal}")
 
-            # Step 2: Set up Hunter
             index_dir = config.index_dir
             if not index_dir.exists():
                 print(
@@ -2886,6 +2999,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 )
                 sys.exit(1)
 
+            env = None
             with telemetry_stage("hunter_setup", message="loading retrieval index"):
                 index, index_mode = _load_semantic_index(
                     index_dir,
@@ -2960,29 +3074,40 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     context_budget_chars=config.hunter_shared_context_budget_chars,
                 )
 
-            # Step 3: Run orchestration loop
-            print(f"Running orchestration (max {args.max_rounds} rounds)...")
-            with telemetry_stage(
-                "orchestration",
-                message="architect->hunter refine loop",
-                total=int(args.max_rounds),
-            ):
-                try:
-                    result = await run_orchestration(
-                        cdg,
-                        hunter_agent=hunter,
-                        llm=llm,
-                        prover=prover,
-                        max_rounds=args.max_rounds,
-                        hunter_concurrency=config.orchestrator_hunter_concurrency,
+            try:
+                if mode_settings.mode == "rapid":
+                    with telemetry_stage(
+                        "rapid_direct_match",
+                        message="matching goal directly",
+                    ):
+                        result = await _run_rapid_direct_match(
+                            args.goal,
+                            prover=prover,
+                            hunter=hunter,
+                        )
+                else:
+                    print(f"Running orchestration (max {args.max_rounds} rounds)...")
+                    with telemetry_stage(
+                        "orchestration",
+                        message="architect->hunter refine loop",
+                        total=int(args.max_rounds),
+                    ):
+                        result = await run_orchestration(
+                            cdg,
+                            hunter_agent=hunter,
+                            llm=llm,
+                            prover=prover,
+                            max_rounds=args.max_rounds,
+                            hunter_concurrency=config.orchestrator_hunter_concurrency,
+                        )
+                    update_stage(
+                        stage="orchestration",
+                        completed=result.rounds_used,
+                        total=int(args.max_rounds),
                     )
-                finally:
+            finally:
+                if env is not None:
                     await env.close()
-            update_stage(
-                stage="orchestration",
-                completed=result.rounds_used,
-                total=int(args.max_rounds),
-            )
     except Exception as exc:
         finish_run(telemetry_run_id, status="failed", error=str(exc))
         raise

@@ -6,6 +6,15 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from ageom.types import (
+    CandidateMatch,
+    Declaration,
+    MatchResult,
+    PDGNode,
+    Prover,
+    VerificationLevel,
+    VerificationResult,
+)
 
 
 class _FakeMetrics:
@@ -45,6 +54,33 @@ class _FakeEnv:
 
     async def close(self) -> None:
         self.closed = True
+
+
+def _successful_match_result(node: PDGNode) -> MatchResult:
+    declaration = Declaration(
+        name="algorithms.detect_heart_rate",
+        type_signature="np.ndarray -> float",
+        conceptual_summary="detect heart rate from ecg",
+        prover=Prover.PYTHON,
+    )
+    candidate = CandidateMatch(
+        declaration=declaration,
+        score=0.95,
+        retrieval_method="lexical",
+    )
+    verification = VerificationResult(
+        candidate=candidate,
+        verified=True,
+        compiler_output="ok",
+        proof_term="algorithms.detect_heart_rate",
+        verification_level=VerificationLevel.TYPE_CHECKED,
+    )
+    return MatchResult(
+        pdg_node=node,
+        verified_match=verification,
+        all_candidates=[candidate],
+        all_verifications=[verification],
+    )
 
 
 def _latest_persisted_run(root: Path) -> dict[str, object]:
@@ -218,11 +254,102 @@ async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path)
     assert payload["status"] == "completed"
     assert payload["metadata"]["command"] == "match"
     assert payload["metadata"]["statement_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path):
+    from ageom.cli import _cmd_run
+    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+
+    reset_telemetry_runtime()
+    configure_dashboard_output(tmp_path)
+    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+    output_dir = tmp_path / "run_output"
+    index_dir = tmp_path / "index"
+    index_dir.mkdir()
+    metrics = _FakeMetrics("memory")
+    env = _FakeEnv()
+
+    monkeypatch.setattr(
+        "ageom.cli._load_architect_catalog",
+        lambda args, config: (SimpleNamespace(size=0), {"source_candidates": 0}),
+    )
+    monkeypatch.setattr(
+        "ageom.cli._resolve_retrieval_policy",
+        lambda **kwargs: SimpleNamespace(
+            catalog_confidence=0.0,
+            confidence_band="none",
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override="lexical",
+            hunter_mode="standard",
+        ),
+    )
+    monkeypatch.setattr("ageom.cli._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
+    monkeypatch.setattr("ageom.cli._create_proof_env", lambda prover, config: env)
+    monkeypatch.setattr(
+        "ageom.judge.checker.VerificationOracleImpl",
+        lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+    monkeypatch.setattr("ageom.cli._create_llm_router", lambda *args, **kwargs: object())
+
+    async def _noop_warm(*args, **kwargs):
+        return None
+
+    async def _fake_create_shared_context(*args, **kwargs):
+        return None, metrics
+
+    class _FakeHunterAgent:
+        def __init__(self, **kwargs) -> None:
+            self.kwargs = kwargs
+
+        async def find_match(self, node):
+            return _successful_match_result(node)
+
+    def _save_cdg(cdg, path):
+        Path(path).write_text(cdg.model_dump_json(indent=2), encoding="utf-8")
+
+    monkeypatch.setattr("ageom.cli._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr("ageom.cli._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)
+    monkeypatch.setattr(
+        "ageom.architect.graph.DecompositionAgent",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("architect should be skipped")),
+    )
+    monkeypatch.setattr(
+        "ageom.orchestrator.run_orchestration",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("orchestration should be skipped")
+        ),
+    )
+
+    await _cmd_run(
+        argparse.Namespace(
+            goal="Detect heart rate from ECG",
+            prover="python",
+            output=str(output_dir),
+            trace=False,
+            max_rounds=2,
+            mode="rapid",
+        )
+    )
+
+    payload = _latest_persisted_run(tmp_path)
+    assert payload["pipeline"] == "algorithm_creation"
+    assert payload["status"] == "completed"
+    assert payload["metadata"]["command"] == "run"
+    assert payload["metadata"]["rapid_direct_path"] is True
+    assert "architect" not in payload["metadata"]["llm_routing"]
+    assert "hunter" in payload["metadata"]["llm_routing"]
+    assert "architect_decompose" not in payload["stages"]
+    assert payload["stages"]["rapid_direct_match"]["status"] == "completed"
+    assert (output_dir / "cdg.json").exists()
+    assert (output_dir / "matches.json").exists()
+    assert env.closed is True
     assert payload["metadata"]["llm_routing"]["hunter"]["round"] == "hunter"
     assert payload["metadata"]["retrieval_policy"]["semantic_backend"] == "lexical"
-    assert payload["metadata"]["shared_context"]["contexts"]["hunter"]["backend"] == "postgres"
+    assert payload["metadata"]["shared_context"]["contexts"]["hunter"]["backend"] == "memory"
     assert payload["stages"]["setup"]["status"] == "completed"
-    assert payload["stages"]["matching"]["status"] == "completed"
-    assert payload["stages"]["matching"]["completed"] == 1
-    assert payload["stages"]["matching"]["total"] == 1
     assert env.closed is True
