@@ -128,6 +128,13 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
         },
+        "prompt_avg_latency_ms": {
+            f"{agg.provider}:{agg.variant}": round(float(agg.avg_latency_ms), 3)
+            for agg in prompt_aggregates
+        },
+        "flow_avg_latency_ms": {
+            agg.variant: round(float(agg.avg_latency_ms), 3) for agg in flow_aggregates
+        },
         "prompt_tuned_failures": prompt_tuned_failures,
         "prompt_tuned_unstable_groups": prompt_tuned_unstable_groups,
         "flow_mode_failures": flow_mode_failures,

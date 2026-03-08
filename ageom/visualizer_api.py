@@ -340,6 +340,16 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         )
         if isinstance(benchmark.get("flow_avg_prompt_calls", {}), dict)
         else {},
+        "prompt_avg_latency_ms": dict(
+            benchmark.get("prompt_avg_latency_ms", {}) or {}
+        )
+        if isinstance(benchmark.get("prompt_avg_latency_ms", {}), dict)
+        else {},
+        "flow_avg_latency_ms": dict(
+            benchmark.get("flow_avg_latency_ms", {}) or {}
+        )
+        if isinstance(benchmark.get("flow_avg_latency_ms", {}), dict)
+        else {},
         "summary_report": str(benchmark.get("summary_report", "") or ""),
         "prompt_tuned_failures": int(benchmark.get("prompt_tuned_failures", 0) or 0),
         "prompt_tuned_unstable_groups": int(

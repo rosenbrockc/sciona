@@ -765,3 +765,21 @@
   - Result: `1239 passed, 17 skipped`
 - Commit:
   - `dashboard: surface catalog source breakdown`
+
+## Benchmark Latency Summaries
+
+- Extended benchmark validation summaries to carry latency aggregates instead of only correctness and prompt-volume aggregates.
+- Validation summaries now persist:
+  - prompt average latency by provider/variant
+  - flow average latency by mode
+- The dashboard API now exposes those latency aggregates in `benchmark_summary`, and the dashboard UI shows them in run cards and run details.
+- Added regressions for:
+  - benchmark validation bundle latency fields
+  - dashboard extraction of prompt and flow latency summaries
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_visualizer_api.py`
+  - Result: `19 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1239 passed, 17 skipped`
+- Commit:
+  - `benchmark: surface latency summaries`

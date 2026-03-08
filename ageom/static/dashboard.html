@@ -333,8 +333,12 @@
           const catalog = r.catalog_alignment_summary || {};
           const benchmark = r.benchmark_summary || {};
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
+          const flowLatency = benchmark.flow_avg_latency_ms || {};
           const flowPromptCallSummary = Object.keys(flowPromptCalls).length
             ? Object.entries(flowPromptCalls).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(" ")
+            : "";
+          const flowLatencySummary = Object.keys(flowLatency).length
+            ? Object.entries(flowLatency).map(([k, v]) => `${k}=${Number(v).toFixed(1)}ms`).join(" ")
             : "";
           const topSources = (catalog.top_sources || []).map((row) => `${row.source}=${Number(row.added || 0)}`).join(" ");
           const shared = r.shared_context_summary || {};
@@ -367,6 +371,9 @@
             (flowPromptCallSummary
               ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>`
               : ""),
+            (flowLatencySummary
+              ? `<div class="run-meta">flow_latency ${flowLatencySummary}</div>`
+              : ""),
             validationLine
           ].join("");
           div.addEventListener("click", () => {
@@ -391,6 +398,8 @@
         const catalog = run.catalog_alignment_summary || {};
         const benchmark = run.benchmark_summary || {};
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
+        const flowLatency = benchmark.flow_avg_latency_ms || {};
+        const promptLatency = benchmark.prompt_avg_latency_ms || {};
         const topSources = (catalog.top_sources || []).map((row) => `${row.source}=${Number(row.added || 0)}`).join(", ");
         const shared = run.shared_context_summary || {};
         const metrics = [
@@ -446,6 +455,12 @@
           ["flow stable", benchmark.flow_stability_summary || "--"],
           ["flow prompts", Object.keys(flowPromptCalls).length
             ? Object.entries(flowPromptCalls).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(", ")
+            : "--"],
+          ["flow latency", Object.keys(flowLatency).length
+            ? Object.entries(flowLatency).map(([k, v]) => `${k}=${Number(v).toFixed(1)}ms`).join(", ")
+            : "--"],
+          ["prompt latency", Object.keys(promptLatency).length
+            ? Object.entries(promptLatency).map(([k, v]) => `${k}=${Number(v).toFixed(1)}ms`).join(", ")
             : "--"],
           ["flow regress", `${Number(benchmark.flow_mode_failures || 0)} / ${Number(benchmark.flow_mode_unstable_groups || 0)}`],
           ["release", benchmark.release_status || "--"],

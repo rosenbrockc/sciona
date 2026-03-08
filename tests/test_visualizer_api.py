@@ -447,6 +447,11 @@ class TestDashboardAPI:
                     "flow_summary": "flow summary",
                     "flow_stability_summary": "rapid 4/4, verified 4/4",
                     "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+                    "prompt_avg_latency_ms": {
+                        "codex_shim:tuned": 3954.8,
+                        "gemini_shim:tuned": 3771.8,
+                    },
+                    "flow_avg_latency_ms": {"rapid": 412.5, "verified": 611.2},
                     "prompt_tuned_failures": 0,
                     "prompt_tuned_unstable_groups": 0,
                     "flow_mode_failures": 0,
@@ -472,6 +477,8 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["prompt_stability_summary"] == "fixture_good/tuned 12/12"
         assert data["benchmark_summary"]["flow_stability_summary"] == "rapid 4/4, verified 4/4"
         assert data["benchmark_summary"]["flow_avg_prompt_calls"]["rapid"] == 6.0
+        assert data["benchmark_summary"]["prompt_avg_latency_ms"]["codex_shim:tuned"] == 3954.8
+        assert data["benchmark_summary"]["flow_avg_latency_ms"]["verified"] == 611.2
         assert data["benchmark_summary"]["prompt_tuned_failures"] == 0
         assert data["benchmark_summary"]["flow_mode_failures"] == 0
         assert data["benchmark_summary"]["release_status"] == "passed"
