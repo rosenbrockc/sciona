@@ -359,6 +359,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "flow_stability_summary": str(
             benchmark.get("flow_stability_summary", "") or ""
         ),
+        "flow_gate_summary": str(benchmark.get("flow_gate_summary", "") or ""),
+        "flow_execution_path_summary": str(
+            benchmark.get("flow_execution_path_summary", "") or ""
+        ),
         "flow_required_variants": list(
             benchmark.get("flow_required_variants", []) or []
         )

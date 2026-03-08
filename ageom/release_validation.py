@@ -26,6 +26,10 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "flow_report": benchmark_summary["flow_report"],
                 "prompt_results": benchmark_summary["prompt_results"],
                 "flow_results": benchmark_summary["flow_results"],
+                "flow_gate_summary": benchmark_summary.get("flow_gate_summary", ""),
+                "flow_execution_path_summary": benchmark_summary.get(
+                    "flow_execution_path_summary", ""
+                ),
                 "flow_required_variants": list(
                     benchmark_summary.get("flow_required_variants", []) or []
                 ),

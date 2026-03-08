@@ -51,6 +51,8 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert payload["flow_execution_paths"]["observed"]["structured"] == ["structured_single_pass"]
     assert payload["flow_execution_paths"]["observed"]["verified"] == ["verified_orchestration"]
     assert payload["flow_execution_paths"]["violations"] == []
+    assert "required[structured,verified]" in payload["flow_gate_summary"]
+    assert "rapid=rapid_direct" in payload["flow_execution_path_summary"]
     assert "flow_comparison_failures" in payload
     assert "flow_comparison_unstable_groups" in payload
     assert set(payload["flow_avg_prompt_calls"]) == {

@@ -29,6 +29,8 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
+            "flow_execution_path_summary": "rapid=rapid_direct",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_execution_paths": {
@@ -65,6 +67,8 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert bench["flow_results"] == 16
     assert bench["flow_avg_prompt_calls"]["rapid"] == 6.0
     assert bench["flow_mode_failures"] == 0
+    assert "required[structured,verified]" in bench["flow_gate_summary"]
+    assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
     assert bench["flow_required_variants"] == ["structured", "verified"]
     assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
     assert bench["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
@@ -94,6 +98,8 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
+            "flow_execution_path_summary": "rapid=rapid_direct",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_execution_paths": {
@@ -166,6 +172,8 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "flow_results": 16,
                 "flow_summary": "flow summary",
                 "flow_stability_summary": "rapid 4/4, verified 4/4",
+                "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
+                "flow_execution_path_summary": "rapid=rapid_direct",
                 "flow_required_variants": ["structured", "verified"],
                 "flow_comparison_variants": ["direct_baseline", "rapid"],
                 "flow_execution_paths": {

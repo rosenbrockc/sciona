@@ -125,6 +125,40 @@ def flow_execution_path_summary(flow_aggregates: list[Any]) -> dict[str, Any]:
     }
 
 
+def _format_flow_gate_summary(
+    required_variants: list[str],
+    comparison_variants: list[str],
+    *,
+    mode_failures: int,
+    mode_unstable_groups: int,
+    comparison_failures: int,
+    comparison_unstable_groups: int,
+) -> str:
+    return (
+        f"required[{','.join(required_variants) or '--'}] "
+        f"{mode_failures}/{mode_unstable_groups}; "
+        f"comparison[{','.join(comparison_variants) or '--'}] "
+        f"{comparison_failures}/{comparison_unstable_groups}"
+    )
+
+
+def _format_flow_execution_path_summary(summary: dict[str, Any]) -> str:
+    observed = summary.get("observed", {}) if isinstance(summary.get("observed"), dict) else {}
+    parts = []
+    for variant in sorted(observed):
+        paths = observed.get(variant, [])
+        if not isinstance(paths, list):
+            continue
+        parts.append(f"{variant}={'|'.join(str(path) for path in paths) or '--'}")
+    if not parts:
+        return "--"
+    suffix = ""
+    violations = summary.get("violations", [])
+    if isinstance(violations, list) and violations:
+        suffix = f" violations={len(violations)}"
+    return ", ".join(parts) + suffix
+
+
 def _transport_for_provider(provider: str) -> str:
     lowered = provider.strip().lower()
     if lowered.endswith("_shim"):
@@ -397,6 +431,8 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         and len(runtime_complexity["violations"]) == 0
     )
 
+    required_variants = sorted(_REQUIRED_FLOW_BENCHMARK_VARIANTS)
+    comparison_variants = sorted(comparison_flow_variants)
     summary = {
         "status": "passed" if benchmark_passed else "failed",
         "prompt_cases": len(prompt_cases),
@@ -415,9 +451,20 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
             f"{agg.variant} {agg.stable_groups}/{agg.repeat_groups}"
             for agg in flow_aggregates
         ),
-        "flow_required_variants": sorted(_REQUIRED_FLOW_BENCHMARK_VARIANTS),
-        "flow_comparison_variants": sorted(comparison_flow_variants),
+        "flow_required_variants": required_variants,
+        "flow_comparison_variants": comparison_variants,
         "flow_execution_paths": flow_execution_paths,
+        "flow_gate_summary": _format_flow_gate_summary(
+            required_variants,
+            comparison_variants,
+            mode_failures=flow_mode_failures,
+            mode_unstable_groups=flow_mode_unstable_groups,
+            comparison_failures=flow_comparison_failures,
+            comparison_unstable_groups=flow_comparison_unstable_groups,
+        ),
+        "flow_execution_path_summary": _format_flow_execution_path_summary(
+            flow_execution_paths
+        ),
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
         },

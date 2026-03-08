@@ -22,6 +22,8 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     runtime = manifest["checks"]["runtime_complexity"]
     assert bench["prompt_results"] > 0
     assert bench["flow_results"] > 0
+    assert "required[structured,verified]" in bench["flow_gate_summary"]
+    assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
     assert bench["flow_required_variants"] == ["structured", "verified"]
     assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
     assert bench["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
@@ -51,6 +53,8 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 3/4, verified 4/4",
+            "flow_gate_summary": "required[structured,verified] 0/1; comparison[direct_baseline,rapid] 2/0",
+            "flow_execution_path_summary": "rapid=rapid_direct",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_execution_paths": {
@@ -101,6 +105,8 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
             "flow_results": 16,
             "flow_summary": "flow summary",
             "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
+            "flow_execution_path_summary": "rapid=rapid_direct",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_execution_paths": {

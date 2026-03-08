@@ -1065,3 +1065,21 @@
   - Result: `1250 passed, 17 skipped`
 - Commit:
   - `benchmark: include execution paths in flow summary`
+
+## Benchmark Summary Ergonomics
+
+- Added compact benchmark summary fields so release bundles and dashboard summaries expose the mode policy without requiring nested JSON inspection.
+- Benchmark/release metadata now includes:
+  - `flow_gate_summary`
+  - `flow_execution_path_summary`
+- These summarize, in one line each:
+  - which flow variants are release-gated vs comparison-only
+  - which execution path each flow variant actually exercised
+- Dashboard benchmark summaries now surface those compact strings directly.
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `26 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1250 passed, 17 skipped`
+- Commit:
+  - `benchmark: add compact flow gate summaries`

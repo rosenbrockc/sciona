@@ -3596,6 +3596,10 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "flow_results": summary["flow_results"],
         "flow_summary": summary["flow_summary"],
         "flow_stability_summary": summary.get("flow_stability_summary", ""),
+        "flow_gate_summary": str(summary.get("flow_gate_summary", "") or ""),
+        "flow_execution_path_summary": str(
+            summary.get("flow_execution_path_summary", "") or ""
+        ),
         "flow_required_variants": list(summary.get("flow_required_variants", []) or []),
         "flow_comparison_variants": list(
             summary.get("flow_comparison_variants", []) or []
