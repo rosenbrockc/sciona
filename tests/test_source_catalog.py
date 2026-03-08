@@ -332,6 +332,52 @@ def fft_transform(*args, **kwargs) -> object:
                 sys.modules.pop(name, None)
 
 
+def test_seed_catalog_adds_suffix_aliases_for_dotted_registration_names(tmp_path: Path):
+    repo = tmp_path / "repo"
+    _write(repo / "brokenpkg" / "__init__.py", "from brokenpkg import missing_dependency\n")
+    _write(
+        repo / "brokenpkg" / "atoms.py",
+        """
+from __future__ import annotations
+
+from ageoa.ghost.registry import register_atom
+
+def witness_linear_solve(matrix: "AbstractMatrix", rhs: "AbstractVector") -> "AbstractVector":
+    return rhs
+
+@register_atom(witness_linear_solve, name="scipy.linalg.solve")
+def solve_impl(matrix: object, rhs: object) -> object:
+    return rhs
+""".strip()
+        + "\n",
+    )
+
+    config = SourcesConfig(
+        sources=[AtomSource(name="broken-source", package="brokenpkg", path="repo")]
+    )
+    catalog = PrimitiveCatalog()
+
+    before_modules = set(sys.modules)
+    try:
+        added = seed_catalog_from_sources(
+            catalog,
+            config=config,
+            base_dir=tmp_path,
+            include_live_registries=False,
+        )
+        assert added == 1
+        assert catalog.get("scipy.linalg.solve") is not None
+        assert catalog.get("solve") is not None
+        assert catalog.get("linalg.solve") is not None
+        assert catalog.get("linalg solve") is not None
+        assert catalog.get("linalg_solve") is not None
+        assert catalog.get("solve").name == "scipy.linalg.solve"
+    finally:
+        for name in set(sys.modules) - before_modules:
+            if name == "brokenpkg" or name.startswith("brokenpkg."):
+                sys.modules.pop(name, None)
+
+
 # ---------------------------------------------------------------------------
 # Mock SkillIndex for dedup integration tests
 # ---------------------------------------------------------------------------

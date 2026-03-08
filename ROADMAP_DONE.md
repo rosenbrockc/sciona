@@ -470,3 +470,20 @@
   - Result: `1222 passed, 17 skipped`
 - Commits:
   - `c95ddd6` `telemetry: surface validation benchmark summaries`
+
+## Dotted Source Name Alias Expansion
+
+- Improved source-derived primitive alignment for registry names that use dotted library-style names such as `scipy.linalg.solve`.
+- Source seeding now adds generic suffix aliases for dotted names, including:
+  - leaf function name, e.g. `solve`
+  - two-part dotted suffix, e.g. `linalg.solve`
+  - space and underscore variants, e.g. `linalg solve`, `linalg_solve`
+- This improves conceptual matching against source-derived atoms without adding task-specific exceptions.
+- Added regressions for dotted registration-name alias expansion during AST fallback seeding.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_source_catalog.py tests/test_catalog.py`
+  - Result: `45 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1223 passed, 17 skipped`
+- Commits:
+  - `TBD` `catalog: add dotted source name aliases`

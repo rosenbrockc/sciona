@@ -473,8 +473,19 @@ def _registration_to_primitive(
         outputs=outputs,
         type_signature=_signature_from_ports(inputs, outputs),
     )
-    aliases = [alias for alias in {getattr(impl, "__name__", ""), name.split(".")[-1]} if alias and alias != name]
+    aliases = sorted(_alias_candidates(name, impl))
     return primitive, aliases
+
+
+def _alias_candidates(name: str, impl: Any) -> set[str]:
+    aliases = {alias for alias in {getattr(impl, "__name__", ""), name.split(".")[-1]} if alias and alias != name}
+    parts = [part for part in name.split(".") if part]
+    if len(parts) >= 2:
+        suffix = parts[-2:]
+        aliases.add(".".join(suffix))
+        aliases.add(" ".join(suffix))
+        aliases.add("_".join(suffix))
+    return {alias for alias in aliases if alias and alias != name}
 
 
 def _add_primitive_with_aliases(
