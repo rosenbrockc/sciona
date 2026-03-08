@@ -219,6 +219,14 @@ class TestConfigPerPromptFields:
         )
         assert should_apply_prompt_override(config, "ingester_fix_type") is True
 
+    def test_structured_mode_suppresses_benchmarked_code_defaults(self):
+        from ageom.config import AgeomConfig, should_apply_prompt_override
+
+        config = AgeomConfig(_env_file=None, execution_mode="structured")
+        assert should_apply_prompt_override(
+            config, "hunter_score", execution_mode="structured"
+        ) is False
+
 
 class TestCreateLLMRouter:
     def test_architect_strategy_and_critique_use_codex_shim_overrides(self, monkeypatch):
@@ -444,6 +452,48 @@ class TestCreateLLMRouter:
         assert router is not None
         assert created == [("anthropic", "claude-sonnet-4-5-20250929")]
 
+    def test_structured_mode_suppresses_benchmark_default_overrides(self, monkeypatch):
+        from ageom.cli import _create_llm_router
+
+        created: list[tuple[str, str]] = []
+
+        def _fake_create_llm_client(*, provider, model, **kwargs):
+            created.append((provider, model))
+            client = MagicMock()
+            client.provider = provider
+            client.model = model
+            return client
+
+        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+
+        args = SimpleNamespace(
+            llm_provider=None,
+            llm_model=None,
+            llm_max_tokens=None,
+            mode="structured",
+        )
+        config = SimpleNamespace(
+            execution_mode="verified",
+            llm_provider="anthropic",
+            llm_model="claude-sonnet-4-5-20250929",
+            llm_max_tokens=4096,
+            anthropic_api_key="",
+            openai_api_key="",
+            openai_base_url="",
+            llama_cpp_base_url="http://127.0.0.1:8080/v1",
+            llama_cpp_api_key="local",
+            use_agent_layer=False,
+            hunter_llm_provider="",
+            hunter_llm_model="",
+            hunter_score_llm_provider="codex_shim",
+            hunter_score_llm_model="gpt-5.3-codex",
+        )
+
+        router = _create_llm_router(args, config, "hunter", ["hunter_score"])
+
+        assert router is not None
+        assert created == [("anthropic", "claude-sonnet-4-5-20250929")]
+
 
 class TestPromptRoutingSummary:
     def test_summary_reports_active_and_suppressed_overrides(self, capsys):
@@ -510,6 +560,26 @@ class TestPromptRoutingSummary:
         )
 
         assert summary["mode"] == "rapid"
+        assert summary["active_overrides"] == []
+        assert summary["suppressed_default_overrides"] == [
+            "hunter_score",
+            "hunter_reformulate",
+            "hunter_analyze_failure",
+        ]
+
+    def test_structured_mode_summary_suppresses_benchmark_defaults(self):
+        from ageom.cli import _summarize_prompt_routing
+        from ageom.config import AgeomConfig
+
+        config = AgeomConfig(_env_file=None)
+        summary = _summarize_prompt_routing(
+            config,
+            "hunter",
+            ["hunter_score", "hunter_reformulate", "hunter_analyze_failure"],
+            "structured",
+        )
+
+        assert summary["mode"] == "structured"
         assert summary["active_overrides"] == []
         assert summary["suppressed_default_overrides"] == [
             "hunter_score",

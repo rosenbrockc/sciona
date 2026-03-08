@@ -225,7 +225,7 @@ def should_apply_prompt_override(
     normalized_mode = str(
         execution_mode or getattr(config, "execution_mode", "verified") or "verified"
     ).strip().lower()
-    if normalized_mode == "rapid":
+    if normalized_mode in {"rapid", "structured"}:
         return not prompt_override_matches_code_default(config, prompt_key)
     if prompt_key in BENCHMARK_JUSTIFIED_PROMPT_KEYS:
         return True

@@ -206,6 +206,17 @@
   - `conda run -n hpyexec pytest -q tests/test_shared_context.py tests/test_decomposition.py tests/test_hunter.py tests/test_visualizer_api.py`
   - `conda run -n hpyexec pytest -q`
 
+## Structured-Mode Runtime Simplification
+
+- Tightened prompt-key override policy so `structured` mode now behaves like `rapid` for routing simplicity:
+  - benchmark-justified code-default overrides are suppressed
+  - explicit user overrides still apply
+- This keeps `verified` as the only mode that enables the benchmark-tuned multi-provider routing defaults automatically.
+- Updated routing-summary regressions and router-construction tests to assert the new `structured` behavior.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py tests/test_execution_modes.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:
