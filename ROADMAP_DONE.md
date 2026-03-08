@@ -270,6 +270,22 @@
   - `conda run -n hpyexec pytest -q tests/test_benchmark_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
   - `conda run -n hpyexec pytest -q`
 
+## Source-Catalog Alignment Visibility
+
+- The architect catalog loader now returns structured source-alignment metadata instead of only printing it.
+- Algorithm-creation telemetry runs now persist catalog/source alignment details, including:
+  - catalog size
+  - total source candidates
+  - added and merged primitives
+  - structural skips
+  - live-registry, AST, and CDG-matched counts
+  - witness-doc and witness-signature fallback counts
+- Dashboard/API now summarize that alignment data so source-derived catalog quality is visible alongside routing, retrieval, and shared-context usage.
+- Added dashboard regressions for catalog-alignment summary derivation.
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_visualizer_api.py tests/test_llm_router.py tests/test_execution_modes.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:

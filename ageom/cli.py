@@ -571,7 +571,19 @@ def _load_architect_catalog(
             file=sys.stderr,
         )
 
-    return catalog
+    report_payload = {
+        "catalog_size": catalog.size,
+        "total_candidates": report.total_candidates,
+        "added": report.added,
+        "merged": report.merged,
+        "structural_skips": report.structural_skips,
+        "source_live_registry_candidates": report.source_live_registry_candidates,
+        "source_ast_candidates": report.source_ast_candidates,
+        "source_cdg_metadata_matches": report.source_cdg_metadata_matches,
+        "source_witness_doc_fallbacks": report.source_witness_doc_fallbacks,
+        "source_witness_signature_fallbacks": report.source_witness_signature_fallbacks,
+    }
+    return catalog, report_payload
 
 
 def _load_skill_index_or_empty(
@@ -1402,7 +1414,7 @@ def _cmd_catalog_gaps(args: argparse.Namespace) -> None:
 
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
-    catalog = _load_architect_catalog(args, config)
+    catalog, _catalog_alignment = _load_architect_catalog(args, config)
 
     cdg_path = Path(args.cdg)
     if not cdg_path.exists():
@@ -1545,7 +1557,7 @@ def _cmd_skill_index(args: argparse.Namespace) -> None:
     config = AgeomConfig()
     output_dir = Path(args.output) if args.output else config.skill_index_dir
 
-    catalog = _load_architect_catalog(args, config)
+    catalog, _catalog_alignment = _load_architect_catalog(args, config)
 
     if catalog.size == 0:
         print(
@@ -1945,7 +1957,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     max_depth = args.max_depth or config.architect_max_depth
     _print_mode_summary("decompose", mode_settings)
 
-    catalog = _load_architect_catalog(args, config)
+    catalog, _catalog_alignment = _load_architect_catalog(args, config)
     retrieval_policy = _resolve_retrieval_policy(
         mode_settings=mode_settings,
         catalog=catalog,
@@ -2138,7 +2150,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
         print("Error: provide --statement or --pdg-file", file=sys.stderr)
         sys.exit(1)
 
-    catalog = _load_architect_catalog(args, config)
+    catalog, _catalog_alignment = _load_architect_catalog(args, config)
     retrieval_policy = _resolve_retrieval_policy(
         mode_settings=mode_settings,
         catalog=catalog,
@@ -2554,7 +2566,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     event_log.clear()
     if getattr(args, "trace", False):
         event_log.configure_live_output(output_dir / "trace.jsonl")
-    catalog = _load_architect_catalog(args, config)
+    catalog, catalog_alignment = _load_architect_catalog(args, config)
     retrieval_policy = _resolve_retrieval_policy(
         mode_settings=mode_settings,
         catalog=catalog,
@@ -2604,6 +2616,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 "architect": _routing_metadata_summary(architect_routing),
                 "hunter": _routing_metadata_summary(hunter_routing),
             },
+            "catalog_alignment": catalog_alignment,
         },
     )
 
@@ -2888,7 +2901,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     _print_mode_summary("optimize", mode_settings)
 
-    catalog = _load_architect_catalog(args, config)
+    catalog, _catalog_alignment = _load_architect_catalog(args, config)
     retrieval_policy = _resolve_retrieval_policy(
         mode_settings=mode_settings,
         catalog=catalog,

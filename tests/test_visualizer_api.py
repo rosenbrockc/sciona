@@ -346,6 +346,18 @@ class TestDashboardAPI:
                         "custom_nonbenchmark_overrides": [],
                     },
                 },
+                "catalog_alignment": {
+                    "catalog_size": 488,
+                    "total_candidates": 473,
+                    "added": 450,
+                    "merged": 12,
+                    "structural_skips": 11,
+                    "source_live_registry_candidates": 120,
+                    "source_ast_candidates": 353,
+                    "source_cdg_metadata_matches": 200,
+                    "source_witness_doc_fallbacks": 30,
+                    "source_witness_signature_fallbacks": 18,
+                },
             },
         }
         (tmp_path / "run_route123.json").write_text(json.dumps(payload))
@@ -359,6 +371,11 @@ class TestDashboardAPI:
         assert data["routing_summary"]["architect"]["default"] == "anthropic:claude-sonnet"
         assert data["routing_summary"]["architect"]["active_count"] == 1
         assert data["routing_summary"]["hunter"]["suppressed_count"] == 1
+        assert data["catalog_alignment_summary"]["catalog_size"] == 488
+        assert data["catalog_alignment_summary"]["added"] == 450
+        assert data["catalog_alignment_summary"]["merged"] == 12
+        assert data["catalog_alignment_summary"]["live_registry"] == 120
+        assert data["catalog_alignment_summary"]["ast_fallback"] == 353
         assert data["provider_complexity"]["provider_count"] == 3
         assert data["provider_complexity"]["provider_model_count"] == 3
         assert sorted(data["provider_complexity"]["transports"]) == [

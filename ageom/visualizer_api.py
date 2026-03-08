@@ -92,6 +92,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     benchmark = metadata.get("benchmark_validation", {})
     release_validation = metadata.get("release_validation", {})
     shared_context = metadata.get("shared_context", {})
+    catalog_alignment = metadata.get("catalog_alignment", {})
     if not isinstance(retrieval, dict):
         retrieval = {}
     if not isinstance(routing, dict):
@@ -102,6 +103,8 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         release_validation = {}
     if not isinstance(shared_context, dict):
         shared_context = {}
+    if not isinstance(catalog_alignment, dict):
+        catalog_alignment = {}
     contexts = shared_context.get("contexts", {})
     if not isinstance(contexts, dict):
         contexts = {}
@@ -184,6 +187,26 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "providers": sorted(providers),
         "provider_models": sorted(provider_models),
         "transports": sorted(transports),
+    }
+    out["catalog_alignment_summary"] = {
+        "catalog_size": int(catalog_alignment.get("catalog_size", 0) or 0),
+        "total_candidates": int(catalog_alignment.get("total_candidates", 0) or 0),
+        "added": int(catalog_alignment.get("added", 0) or 0),
+        "merged": int(catalog_alignment.get("merged", 0) or 0),
+        "structural_skips": int(catalog_alignment.get("structural_skips", 0) or 0),
+        "live_registry": int(
+            catalog_alignment.get("source_live_registry_candidates", 0) or 0
+        ),
+        "ast_fallback": int(catalog_alignment.get("source_ast_candidates", 0) or 0),
+        "cdg_matched": int(
+            catalog_alignment.get("source_cdg_metadata_matches", 0) or 0
+        ),
+        "witness_doc": int(
+            catalog_alignment.get("source_witness_doc_fallbacks", 0) or 0
+        ),
+        "witness_signature": int(
+            catalog_alignment.get("source_witness_signature_fallbacks", 0) or 0
+        ),
     }
     out["benchmark_summary"] = {
         "prompt_cases": int(benchmark.get("prompt_cases", 0) or 0),

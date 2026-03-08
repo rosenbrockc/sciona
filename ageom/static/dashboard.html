@@ -329,6 +329,7 @@
           const retrieval = r.retrieval_summary || {};
           const routing = (r.routing_summary || {}).architect || {};
           const complexity = r.provider_complexity || {};
+          const catalog = r.catalog_alignment_summary || {};
           const benchmark = r.benchmark_summary || {};
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
           const flowPromptCallSummary = Object.keys(flowPromptCalls).length
@@ -354,6 +355,7 @@
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
             `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides} providers=${Number(complexity.provider_count || 0)}</div>`,
+            `<div class="run-meta">catalog=${Number(catalog.catalog_size || 0)} added=${Number(catalog.added || 0)} merged=${Number(catalog.merged || 0)}</div>`,
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
             (flowPromptCallSummary
               ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>`
@@ -378,6 +380,7 @@
         const architectRouting = (run.routing_summary || {}).architect || {};
         const hunterRouting = (run.routing_summary || {}).hunter || {};
         const complexity = run.provider_complexity || {};
+        const catalog = run.catalog_alignment_summary || {};
         const benchmark = run.benchmark_summary || {};
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
         const shared = run.shared_context_summary || {};
@@ -401,6 +404,9 @@
           ["hunter llm", `${hunterRouting.default || "--"} +${hunterRouting.active_count || 0}`],
           ["providers", `${Number(complexity.provider_count || 0)} / ${Number(complexity.provider_model_count || 0)}`],
           ["transports", (complexity.transports || []).join(", ") || "--"],
+          ["catalog", `${Number(catalog.catalog_size || 0)} / ${Number(catalog.total_candidates || 0)}`],
+          ["catalog add/merge", `${Number(catalog.added || 0)} / ${Number(catalog.merged || 0)}`],
+          ["catalog sources", `live=${Number(catalog.live_registry || 0)} ast=${Number(catalog.ast_fallback || 0)} cdg=${Number(catalog.cdg_matched || 0)}`],
           ["shared ctx", `${Number(shared.active_context_count || 0)}/${Number(shared.context_count || 0)}`],
           ["ctx search/hit", `${Number(shared.total_searches || 0)}/${Number(shared.total_hits || 0)}`],
           ["ctx puts", String(Number(shared.total_puts || 0))],
@@ -435,6 +441,7 @@
           `error: ${run.error || "(none)"}\n` +
           `hung: ${run.is_hung ? "yes" : "no"}\n` +
           `provider_complexity: ${JSON.stringify(run.provider_complexity || {}, null, 2)}\n` +
+          `catalog_alignment_summary: ${JSON.stringify(run.catalog_alignment_summary || {}, null, 2)}\n` +
           `shared_context_summary: ${JSON.stringify(run.shared_context_summary || {}, null, 2)}\n` +
           `benchmark_summary: ${JSON.stringify(run.benchmark_summary || {}, null, 2)}\n` +
           `\nmetadata:\n${metadata}` +
