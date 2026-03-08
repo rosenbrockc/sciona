@@ -681,6 +681,7 @@ class TestSubprocessCLIClient:
         assert proc1.kill.called
 
 
+@pytest.mark.filterwarnings("ignore:Provider '.*_cli' uses the legacy one-shot subprocess path:DeprecationWarning")
 class TestCreateLLMClientCLIProviders:
     def test_claude_cli_creates_subprocess_client(self):
         client = create_llm_client(

@@ -258,6 +258,28 @@
 - Validation:
   - `conda run -n hpyexec pytest -q tests/test_llm_router.py`
   - Result: `54 passed`
+
+## Legacy One-Shot Runtime Deprecation
+
+- Marked the legacy one-shot subprocess providers as deprecated:
+  - `claude_cli`
+  - `codex_cli`
+  - `gemini_cli`
+- Factory construction now emits a `DeprecationWarning` that points users to the corresponding persistent socket-daemon shim:
+  - `claude_shim`
+  - `codex_shim`
+  - `gemini_shim`
+- Kept the legacy providers functional for compatibility while making the primary runtime path explicit.
+- Added regressions for:
+  - explicit deprecation warnings on legacy provider construction
+  - clean router/provider factory tests without expected-warning noise
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm.py tests/test_llm_router.py`
+  - Result: `66 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1215 passed, 17 skipped`
+- Commits:
+  - `TBD` `runtime: warn on legacy subprocess providers`
   - `conda run -n hpyexec pytest -q`
   - Result: `1207 passed, 17 skipped`
 - Commits:

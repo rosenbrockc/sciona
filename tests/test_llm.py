@@ -77,6 +77,23 @@ class TestCreateLLMClient:
 
 
 class TestConcreteClients:
+    def test_legacy_subprocess_providers_warn(self):
+        for provider, model in (
+            ("claude_cli", "sonnet"),
+            ("codex_cli", "gpt-5.3-codex"),
+            ("gemini_cli", "flash-lite"),
+        ):
+            with pytest.warns(
+                DeprecationWarning,
+                match="legacy one-shot subprocess path",
+            ):
+                client = create_llm_client(
+                    provider=provider,
+                    model=model,
+                    max_tokens=64,
+                )
+            assert isinstance(client, SubprocessCLIClient)
+
     def test_stage_gemini_home_copies_auth_state(self, tmp_path):
         source_home = tmp_path / "source-home"
         source_gemini = source_home / ".gemini"

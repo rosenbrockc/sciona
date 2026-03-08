@@ -8,6 +8,7 @@ import json as _json
 import os
 import random
 import time
+import warnings
 from pathlib import Path
 from asyncio.subprocess import PIPE
 from typing import Protocol, runtime_checkable
@@ -587,6 +588,28 @@ def _normalized_model_for_provider(provider: str, model: str) -> str:
     return cleaned or default_model
 
 
+_LEGACY_SUBPROCESS_PROVIDER_CLI = {
+    "claude_cli": "claude",
+    "codex_cli": "codex",
+    "gemini_cli": "gemini",
+}
+
+
+def _warn_if_legacy_subprocess_provider(provider: str) -> None:
+    cli = _LEGACY_SUBPROCESS_PROVIDER_CLI.get(provider)
+    if cli is None:
+        return
+    shim_provider = provider.replace("_cli", "_shim")
+    warnings.warn(
+        (
+            f"Provider '{provider}' uses the legacy one-shot subprocess path for {cli}. "
+            f"Prefer '{shim_provider}' for the persistent socket-daemon runtime."
+        ),
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
 def create_llm_client(
     *,
     provider: str,
@@ -602,6 +625,7 @@ def create_llm_client(
     """Construct an LLM client for the requested provider."""
     normalized = provider.lower().strip()
     resolved_model = _normalized_model_for_provider(normalized, model)
+    _warn_if_legacy_subprocess_provider(normalized)
 
     if normalized == "anthropic":
         if not anthropic_api_key:
