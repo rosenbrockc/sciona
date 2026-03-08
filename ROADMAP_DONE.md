@@ -469,4 +469,4 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1222 passed, 17 skipped`
 - Commits:
-  - `TBD` `telemetry: surface validation benchmark summaries`
+  - `c95ddd6` `telemetry: surface validation benchmark summaries`
