@@ -793,6 +793,37 @@ async def _run_rapid_direct_match(
     )
 
 
+async def _run_structured_single_pass(
+    cdg: Any,
+    *,
+    prover: "Prover",
+    hunter: Any,
+):
+    """Run one Hunter pass over decomposed leaves without orchestration refinement."""
+    from ageom.architect.handoff import to_pdg_nodes
+    from ageom.orchestrator import OrchestratorResult
+    from ageom.types import MatchFailureReport
+
+    pdg_nodes = to_pdg_nodes(cdg, prover=prover, strict=False)
+    match_results = []
+    failures = []
+    ungroundable: list[str] = []
+    for pdg_node in pdg_nodes:
+        match_result = await hunter.find_match(pdg_node)
+        match_results.append(match_result)
+        if getattr(match_result, "success", False):
+            continue
+        failures.append(MatchFailureReport.from_match_result(match_result))
+        ungroundable.append(pdg_node.predicate_id)
+    return OrchestratorResult(
+        cdg=cdg,
+        match_results=match_results,
+        rounds_used=1,
+        failures=failures,
+        ungroundable=ungroundable,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="ageom",
@@ -2858,6 +2889,13 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             "prover": prover.value,
             "max_rounds": int(args.max_rounds),
             "execution_mode": mode_settings.mode,
+            "execution_path": (
+                "rapid_direct"
+                if mode_settings.mode == "rapid"
+                else "structured_single_pass"
+                if mode_settings.mode == "structured"
+                else "verified_orchestration"
+            ),
             "mode_features": _mode_feature_summary(mode_settings),
             "retrieval_policy": {
                 "catalog_confidence": retrieval_policy.catalog_confidence,
@@ -3085,6 +3123,22 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                             prover=prover,
                             hunter=hunter,
                         )
+                elif mode_settings.mode == "structured":
+                    print("Running structured single-pass matching...")
+                    with telemetry_stage(
+                        "structured_match",
+                        message="matching decomposed leaves once",
+                    ):
+                        result = await _run_structured_single_pass(
+                            cdg,
+                            prover=prover,
+                            hunter=hunter,
+                        )
+                    update_stage(
+                        stage="structured_match",
+                        completed=len(result.match_results),
+                        total=len(result.match_results),
+                    )
                 else:
                     print(f"Running orchestration (max {args.max_rounds} rounds)...")
                     with telemetry_stage(
@@ -3117,7 +3171,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         event_log.configure_live_output(None)
 
     # Output
-    print("\nOrchestration complete:")
+    print("\nRun complete:")
     print(f"  Rounds used: {result.rounds_used}")
     print(
         f"  Matches: {sum(1 for mr in result.match_results if mr.success)}/{len(result.match_results)}"

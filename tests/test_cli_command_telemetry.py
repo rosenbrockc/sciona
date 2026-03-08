@@ -353,3 +353,125 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
     assert payload["metadata"]["shared_context"]["contexts"]["hunter"]["backend"] == "memory"
     assert payload["stages"]["setup"]["status"] == "completed"
     assert env.closed is True
+
+
+@pytest.mark.asyncio
+async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_path: Path):
+    from ageom.architect.handoff import CDGExport
+    from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+    from ageom.cli import _cmd_run
+    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+
+    reset_telemetry_runtime()
+    configure_dashboard_output(tmp_path)
+    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+    output_dir = tmp_path / "structured_output"
+    index_dir = tmp_path / "index"
+    index_dir.mkdir()
+    metrics = _FakeMetrics("memory")
+    env = _FakeEnv()
+
+    fake_cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="n1",
+                name="Design Filter",
+                description="Design stable ECG bandpass coefficients.",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                type_signature="FilterSpec -> Coefficients",
+            )
+        ],
+        edges=[],
+        metadata={"goal": "Detect heart rate from ECG"},
+    )
+
+    monkeypatch.setattr(
+        "ageom.cli._load_architect_catalog",
+        lambda args, config: (SimpleNamespace(size=2), {"source_candidates": 2}),
+    )
+    monkeypatch.setattr(
+        "ageom.cli._resolve_retrieval_policy",
+        lambda **kwargs: SimpleNamespace(
+            catalog_confidence=0.5,
+            confidence_band="medium",
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override="lexical",
+            hunter_mode="standard",
+        ),
+    )
+    monkeypatch.setattr("ageom.cli._load_skill_index_or_empty", lambda config, enabled=True: object())
+    monkeypatch.setattr("ageom.cli._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
+    monkeypatch.setattr("ageom.cli._create_proof_env", lambda prover, config: env)
+    monkeypatch.setattr(
+        "ageom.judge.checker.VerificationOracleImpl",
+        lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+    monkeypatch.setattr("ageom.cli._create_llm_router", lambda *args, **kwargs: object())
+
+    async def _noop_warm(*args, **kwargs):
+        return None
+
+    async def _fake_create_shared_context(*args, **kwargs):
+        return None, metrics
+
+    class _FakeArchitectAgent:
+        def __init__(self, **kwargs) -> None:
+            self.kwargs = kwargs
+
+        async def decompose(self, goal):
+            return fake_cdg
+
+    class _FakeHunterAgent:
+        def __init__(self, **kwargs) -> None:
+            self.kwargs = kwargs
+
+        async def find_match(self, node):
+            return _successful_match_result(node)
+
+    def _save_cdg(cdg, path):
+        Path(path).write_text(cdg.model_dump_json(indent=2), encoding="utf-8")
+
+    monkeypatch.setattr("ageom.cli._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr("ageom.cli._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr("ageom.architect.graph.DecompositionAgent", _FakeArchitectAgent)
+    monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)
+    monkeypatch.setattr(
+        "ageom.architect.checkpointer.create_checkpointer",
+        lambda uri: _AsyncNullContext(),
+    )
+    monkeypatch.setattr(
+        "ageom.orchestrator.run_orchestration",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("orchestration should be skipped")
+        ),
+    )
+
+    await _cmd_run(
+        argparse.Namespace(
+            goal="Detect heart rate from ECG",
+            prover="python",
+            output=str(output_dir),
+            trace=False,
+            max_rounds=2,
+            mode="structured",
+        )
+    )
+
+    payload = _latest_persisted_run(tmp_path)
+    assert payload["pipeline"] == "algorithm_creation"
+    assert payload["status"] == "completed"
+    assert payload["metadata"]["command"] == "run"
+    assert payload["metadata"]["execution_path"] == "structured_single_pass"
+    assert payload["metadata"]["rapid_direct_path"] is False
+    assert "architect" in payload["metadata"]["llm_routing"]
+    assert "hunter" in payload["metadata"]["llm_routing"]
+    assert payload["stages"]["architect_decompose"]["status"] == "completed"
+    assert payload["stages"]["structured_match"]["status"] == "completed"
+    assert "orchestration" not in payload["stages"]
+    assert (output_dir / "cdg.json").exists()
+    assert (output_dir / "matches.json").exists()
+    assert env.closed is True

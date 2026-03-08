@@ -937,3 +937,31 @@
   - Result: `1248 passed, 17 skipped`
 - Commit:
   - `cli: add rapid direct run path`
+
+## Structured Mode Single-Pass Flow
+
+- Turned `run --mode structured` into a real single-pass flow instead of reusing the full verified refine loop.
+- `structured` runs now:
+  - keep architect decomposition
+  - keep one Hunter pass over decomposed leaves
+  - skip orchestration refinement rounds entirely
+  - emit normal CDG and match artifacts after that single pass
+- Added explicit execution-path telemetry:
+  - `rapid_direct`
+  - `structured_single_pass`
+  - `verified_orchestration`
+- Structured-mode telemetry now records:
+  - architect decomposition stage
+  - `structured_match` stage
+  - no `orchestration` stage
+- Added regressions for:
+  - structured single-pass helper semantics
+  - CLI telemetry/output behavior for `run --mode structured`
+  - interaction with the existing rapid-mode helper tests
+- Validation:
+  - `pytest -q tests/test_structured_mode.py tests/test_rapid_mode.py tests/test_cli_command_telemetry.py tests/test_execution_modes.py`
+  - Result: `12 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1250 passed, 17 skipped`
+- Commit:
+  - `cli: add structured single-pass run path`
