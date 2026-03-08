@@ -84,6 +84,23 @@ class TestSharedContextMetrics:
         assert snap["template_injected_records"] == 2
         assert snap["template_injected_chars"] == 42
 
+    def test_failure_metrics_are_tracked_separately(self):
+        metrics = SharedContextMetrics()
+
+        metrics.record_failure_search(hits=1)
+        metrics.record_failure_search(hits=0)
+        metrics.record_failure_put()
+        metrics.record_failure_injection(chars=55, records=3)
+
+        snap = metrics.snapshot()
+        assert snap["failure_searches_total"] == 2
+        assert snap["failure_search_hits"] == 1
+        assert float(snap["failure_hit_rate"]) == pytest.approx(0.5)
+        assert snap["failure_puts_total"] == 1
+        assert snap["failure_injected_blocks"] == 1
+        assert snap["failure_injected_records"] == 3
+        assert snap["failure_injected_chars"] == 55
+
 
 class TestSharedContextFactory:
     @pytest.mark.asyncio

@@ -1792,11 +1792,13 @@ class TestSharedContext:
     async def test_decompose_node_injects_failure_context_from_shared_namespace(self):
         from ageom.architect.nodes import decompose_node
         from ageom.architect.state import DecompositionDeps
+        from ageom.shared_context import SharedContextMetrics
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
         llm = AsyncMock()
         captured_users: list[str] = []
+        metrics = SharedContextMetrics()
 
         async def complete(system: str, user: str) -> str:
             captured_users.append(user)
@@ -1851,6 +1853,7 @@ class TestSharedContext:
             skill_index=skill_index,
             llm=llm,
             shared_context=store,
+            shared_context_metrics=metrics,
             context_namespace="architect/test",
         )
 
@@ -1858,16 +1861,22 @@ class TestSharedContext:
 
         assert captured_users
         assert "Prior Failure Patterns" in captured_users[0]
+        snap = metrics.snapshot()
+        assert snap["failure_searches_total"] == 1
+        assert snap["failure_search_hits"] == 1
+        assert snap["failure_injected_blocks"] == 1
 
     @pytest.mark.asyncio
     async def test_critique_rejection_writes_failure_context_to_shared_namespace(self):
         from ageom.architect.nodes import critique_decomposition
         from ageom.architect.state import DecompositionDeps
+        from ageom.shared_context import SharedContextMetrics
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
         llm = AsyncMock()
         store = InMemorySharedContextStore()
+        metrics = SharedContextMetrics()
 
         parent = AlgorithmicNode(
             node_id="n_parent",
@@ -1911,6 +1920,7 @@ class TestSharedContext:
             skill_index=skill_index,
             llm=llm,
             shared_context=store,
+            shared_context_metrics=metrics,
             context_namespace="architect/test",
         )
 
@@ -1919,6 +1929,8 @@ class TestSharedContext:
         assert result["critique_passed"] is False
         records = await store.recent("architect/failures", limit=5)
         assert any("Parent: Sort" in r.text for r in records)
+        snap = metrics.snapshot()
+        assert snap["failure_puts_total"] == 1
 
 
 class TestDeterministicDecompose:

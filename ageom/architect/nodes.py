@@ -522,12 +522,20 @@ async def _search_failure_context(
         return ""
     try:
         records = await store.search(ns, query, limit=limit)
-        return format_context_block(
+        if deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_failure_search(hits=len(records))
+        block = format_context_block(
             "Prior Failure Patterns",
             records,
             max_chars=deps.context_budget_chars,
             metrics=deps.shared_context_metrics,
         )
+        if deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_failure_injection(
+                chars=len(block),
+                records=len(records),
+            )
+        return block
     except Exception:
         return ""
 
@@ -592,6 +600,8 @@ async def _put_failure_context(
     payload.setdefault("confidence", 0.9)
     try:
         await store.put(ns, text, metadata=payload)
+        if deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_failure_put()
     except Exception:
         return
 

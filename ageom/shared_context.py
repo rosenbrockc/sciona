@@ -77,6 +77,12 @@ class SharedContextMetrics:
     template_injected_blocks: int = 0
     template_injected_records: int = 0
     template_injected_chars: int = 0
+    failure_searches_total: int = 0
+    failure_search_hits: int = 0
+    failure_puts_total: int = 0
+    failure_injected_blocks: int = 0
+    failure_injected_records: int = 0
+    failure_injected_chars: int = 0
     duplicate_candidates: int = 0
     duplicates_suppressed: int = 0
     match_with_context_total: int = 0
@@ -129,6 +135,21 @@ class SharedContextMetrics:
         self.template_injected_chars += chars
         self.template_injected_records += max(0, records)
 
+    def record_failure_search(self, *, hits: int) -> None:
+        self.failure_searches_total += 1
+        if hits > 0:
+            self.failure_search_hits += 1
+
+    def record_failure_put(self) -> None:
+        self.failure_puts_total += 1
+
+    def record_failure_injection(self, *, chars: int, records: int) -> None:
+        if chars <= 0:
+            return
+        self.failure_injected_blocks += 1
+        self.failure_injected_chars += chars
+        self.failure_injected_records += max(0, records)
+
     def record_duplicate_filter(self, *, candidates: int, suppressed: int) -> None:
         self.duplicate_candidates += max(0, candidates)
         self.duplicates_suppressed += max(0, suppressed)
@@ -176,6 +197,11 @@ class SharedContextMetrics:
             if self.template_searches_total
             else 0.0
         )
+        failure_hit_rate = (
+            self.failure_search_hits / self.failure_searches_total
+            if self.failure_searches_total
+            else 0.0
+        )
         return {
             "backend": self.backend,
             "searches_total": self.searches_total,
@@ -198,6 +224,13 @@ class SharedContextMetrics:
             "template_injected_blocks": self.template_injected_blocks,
             "template_injected_records": self.template_injected_records,
             "template_injected_chars": self.template_injected_chars,
+            "failure_searches_total": self.failure_searches_total,
+            "failure_search_hits": self.failure_search_hits,
+            "failure_hit_rate": failure_hit_rate,
+            "failure_puts_total": self.failure_puts_total,
+            "failure_injected_blocks": self.failure_injected_blocks,
+            "failure_injected_records": self.failure_injected_records,
+            "failure_injected_chars": self.failure_injected_chars,
             "duplicate_candidates": self.duplicate_candidates,
             "duplicates_suppressed": self.duplicates_suppressed,
             "duplicate_suppression_rate": duplicate_suppression_rate,

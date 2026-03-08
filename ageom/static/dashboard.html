@@ -338,6 +338,7 @@
           const sharedContexts = Number(shared.active_context_count || shared.context_count || 0);
           const sharedSearches = Number(shared.total_searches || 0);
           const sharedTemplates = Number(shared.total_template_hits || 0);
+          const sharedFailures = Number(shared.total_failure_hits || 0);
           const validationLine = (benchmark.prompt_results || benchmark.flow_results)
             ? `<div class="run-meta">bench prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
@@ -349,7 +350,7 @@
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
             `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides} providers=${Number(complexity.provider_count || 0)}</div>`,
-            `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates}</div>`,
+            `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
             validationLine
           ].join("");
           div.addEventListener("click", () => {
@@ -398,6 +399,8 @@
           ["ctx injected", String(Number(shared.total_injected_blocks || 0))],
           ["template reuse", `${Number(shared.total_template_hits || 0)}/${Number(shared.total_template_searches || 0)}`],
           ["template writes", String(Number(shared.total_template_puts || 0))],
+          ["failure reuse", `${Number(shared.total_failure_hits || 0)}/${Number(shared.total_failure_searches || 0)}`],
+          ["failure writes", String(Number(shared.total_failure_puts || 0))],
           ["prompt bench", `${Number(benchmark.prompt_results || 0)}/${Number(benchmark.prompt_cases || 0)}`],
           ["flow bench", `${Number(benchmark.flow_results || 0)}/${Number(benchmark.flow_cases || 0)}`],
           ["release", benchmark.release_status || "--"],

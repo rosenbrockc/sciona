@@ -187,6 +187,25 @@
   - `conda run -n hpyexec pytest -q tests/test_visualizer_api.py`
   - `conda run -n hpyexec pytest -q`
 
+## Failure-Pattern Reuse Metrics
+
+- Added failure-pattern reuse counters to shared-context metrics, separate from generic context and template reuse:
+  - failure searches
+  - failure hits
+  - failure writes
+  - failure prompt injections
+- Architect failure-context search/write paths now record those counters explicitly.
+- Hunter failure-context retrieval and writeback paths now record the same counters, so repeated mismatch patterns are measurable across refinement loops.
+- Dashboard shared-context summaries now surface failure reuse totals alongside generic and template reuse metrics.
+- Added regressions for:
+  - failure-metric accounting in `SharedContextMetrics`
+  - architect failure-context search/write instrumentation
+  - hunter failure-context search/write instrumentation
+  - dashboard failure-summary derivation
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_shared_context.py tests/test_decomposition.py tests/test_hunter.py tests/test_visualizer_api.py`
+  - `conda run -n hpyexec pytest -q`
+
 ## Benchmark-Justified Routing Defaults
 
 - Per-prompt LLM overrides are now filtered so only a small benchmark-justified allowlist stays active by default:

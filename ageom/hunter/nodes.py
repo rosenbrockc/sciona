@@ -76,12 +76,19 @@ async def _search_context(
         return ""
     try:
         records = await store.search(f"{ns}/{channel}", query, limit=limit)
+        if channel == "failure" and deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_failure_search(hits=len(records))
         block = format_context_block(
             "Shared Context",
             records,
             max_chars=state.context_budget_chars,
             metrics=deps.shared_context_metrics,
         )
+        if channel == "failure" and deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_failure_injection(
+                chars=len(block),
+                records=len(records),
+            )
         if block:
             state.shared_context_used = True
         return block
@@ -103,6 +110,8 @@ async def _put_context(
         return
     try:
         await store.put(f"{ns}/{channel}", text, metadata=metadata)
+        if channel == "failure" and deps.shared_context_metrics is not None:
+            deps.shared_context_metrics.record_failure_put()
     except Exception:
         return
 

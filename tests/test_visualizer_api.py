@@ -458,6 +458,10 @@ class TestDashboardAPI:
                             "template_search_hits": 1,
                             "template_puts_total": 3,
                             "template_injected_blocks": 1,
+                            "failure_searches_total": 3,
+                            "failure_search_hits": 2,
+                            "failure_puts_total": 2,
+                            "failure_injected_blocks": 1,
                         },
                         "hunter": {
                             "backend": "postgres",
@@ -470,6 +474,10 @@ class TestDashboardAPI:
                             "template_search_hits": 0,
                             "template_puts_total": 0,
                             "template_injected_blocks": 0,
+                            "failure_searches_total": 1,
+                            "failure_search_hits": 0,
+                            "failure_puts_total": 1,
+                            "failure_injected_blocks": 0,
                         },
                     },
                 }
@@ -488,6 +496,9 @@ class TestDashboardAPI:
         assert data["shared_context_summary"]["total_puts"] == 9
         assert data["shared_context_summary"]["total_template_hits"] == 1
         assert data["shared_context_summary"]["total_template_puts"] == 3
+        assert data["shared_context_summary"]["total_failure_searches"] == 4
+        assert data["shared_context_summary"]["total_failure_hits"] == 2
+        assert data["shared_context_summary"]["total_failure_puts"] == 3
         assert data["shared_context_summary"]["metrics_path"].endswith(
             "shared_context_metrics.json"
         )

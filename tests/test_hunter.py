@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from ageom.shared_context import InMemorySharedContextStore
+from ageom.shared_context import SharedContextMetrics
 from ageom.hunter.state import HunterState
 from ageom.types import (
     Declaration,
@@ -158,6 +159,51 @@ class TestHunterRefinement:
         assert result.success
         assert result.verified_match is not None
         assert result.verified_match.candidate.declaration.name == "Nat.add_comm"
+
+    @pytest.mark.asyncio
+    async def test_failure_context_metrics_track_search_and_write(
+        self, pdg_node, correct_decl, wrong_decl
+    ):
+        from ageom.hunter.graph import HunterAgent
+
+        call_count = 0
+
+        def search_by_embedding(query, k=10):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return [(wrong_decl, 0.9)]
+            return [(correct_decl, 0.95)]
+
+        index = AsyncMock()
+        index.search_by_embedding = search_by_embedding
+        index.search_by_type = lambda sig, k=10: []
+
+        oracle = _make_mock_oracle({"Nat.add_comm"})
+        llm = _make_mock_llm(queries_response='["Nat.add_comm addition commutative"]')
+        store = InMemorySharedContextStore()
+        metrics = SharedContextMetrics()
+        await store.put(
+            "hunter/failure",
+            "Predicate: forall n m, n + m = m + n\nRejected: Nat.mul_comm\nSignal: type mismatch",
+        )
+
+        agent = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            max_iterations=5,
+            shared_context=store,
+            shared_context_metrics=metrics,
+        )
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        snap = metrics.snapshot()
+        assert snap["failure_searches_total"] >= 1
+        assert snap["failure_search_hits"] >= 1
+        assert snap["failure_puts_total"] >= 1
+        assert snap["failure_injected_blocks"] >= 1
 
 
 class TestHunterBudgetExhaustion:

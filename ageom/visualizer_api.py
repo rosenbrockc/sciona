@@ -207,6 +207,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     total_template_hits = 0
     total_template_puts = 0
     total_template_injected = 0
+    total_failure_searches = 0
+    total_failure_hits = 0
+    total_failure_puts = 0
+    total_failure_injected = 0
     backends: set[str] = set()
     active_contexts = 0
     for label, row in contexts.items():
@@ -221,6 +225,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         template_hits = int(row.get("template_search_hits", 0) or 0)
         template_puts = int(row.get("template_puts_total", 0) or 0)
         template_injected = int(row.get("template_injected_blocks", 0) or 0)
+        failure_searches = int(row.get("failure_searches_total", 0) or 0)
+        failure_hits = int(row.get("failure_search_hits", 0) or 0)
+        failure_puts = int(row.get("failure_puts_total", 0) or 0)
+        failure_injected = int(row.get("failure_injected_blocks", 0) or 0)
         backend = str(row.get("backend", "") or "").strip()
         if backend:
             backends.add(backend)
@@ -234,6 +242,9 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
                 template_searches,
                 template_puts,
                 template_injected,
+                failure_searches,
+                failure_puts,
+                failure_injected,
             )
         ):
             active_contexts += 1
@@ -246,6 +257,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         total_template_hits += template_hits
         total_template_puts += template_puts
         total_template_injected += template_injected
+        total_failure_searches += failure_searches
+        total_failure_hits += failure_hits
+        total_failure_puts += failure_puts
+        total_failure_injected += failure_injected
         shared_rows.append(
             {
                 "label": label,
@@ -259,6 +274,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
                 "template_hits": template_hits,
                 "template_puts": template_puts,
                 "template_injected_blocks": template_injected,
+                "failure_searches": failure_searches,
+                "failure_hits": failure_hits,
+                "failure_puts": failure_puts,
+                "failure_injected_blocks": failure_injected,
             }
         )
     out["shared_context_summary"] = {
@@ -274,6 +293,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "total_template_hits": total_template_hits,
         "total_template_puts": total_template_puts,
         "total_template_injected_blocks": total_template_injected,
+        "total_failure_searches": total_failure_searches,
+        "total_failure_hits": total_failure_hits,
+        "total_failure_puts": total_failure_puts,
+        "total_failure_injected_blocks": total_failure_injected,
         "metrics_path": str(shared_context.get("metrics_path", "") or ""),
         "contexts": sorted(shared_rows, key=lambda row: row["label"]),
     }
