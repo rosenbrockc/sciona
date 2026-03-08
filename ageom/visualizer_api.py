@@ -417,6 +417,28 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),
     }
+    catalog_validation = release_validation.get("catalog_validation", {})
+    if not isinstance(catalog_validation, dict):
+        catalog_validation = {}
+    out["catalog_validation_summary"] = {
+        "status": str(catalog_validation.get("status", "") or ""),
+        "configured_sources": int(catalog_validation.get("configured_sources", 0) or 0),
+        "resolved_sources": int(catalog_validation.get("resolved_sources", 0) or 0),
+        "source_candidates": int(catalog_validation.get("source_candidates", 0) or 0),
+        "source_added": int(catalog_validation.get("source_added", 0) or 0),
+        "missing_sources": list(catalog_validation.get("missing_sources", []) or [])
+        if isinstance(catalog_validation.get("missing_sources", []), list)
+        else [],
+        "zero_candidate_sources": list(
+            catalog_validation.get("zero_candidate_sources", []) or []
+        )
+        if isinstance(catalog_validation.get("zero_candidate_sources", []), list)
+        else [],
+        "violations": list(catalog_validation.get("violations", []) or [])
+        if isinstance(catalog_validation.get("violations", []), list)
+        else [],
+        "report": str(catalog_validation.get("report", "") or ""),
+    }
     shared_rows: list[dict[str, Any]] = []
     total_searches = 0
     total_hits = 0

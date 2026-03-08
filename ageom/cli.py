@@ -3696,6 +3696,7 @@ async def _cmd_release_validate(args: argparse.Namespace) -> None:
                     "manifest": summary["manifest"],
                     "benchmarks_dir": summary["benchmarks_dir"],
                     "runtime_complexity": dict(summary.get("runtime_complexity", {}) or {}),
+                    "catalog_validation": dict(summary.get("catalog_validation", {}) or {}),
                 },
                 "benchmark_validation": _benchmark_validation_metadata(benchmark_summary),
             },

@@ -152,6 +152,17 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
             "status": "failed",
             "manifest": "build/release_validation/release_validation.json",
             "benchmarks_dir": "build/release_validation/benchmarks",
+            "catalog_validation": {
+                "status": "failed",
+                "report": "build/release_validation/catalog/catalog_validation.json",
+                "configured_sources": 2,
+                "resolved_sources": 1,
+                "source_candidates": 3,
+                "source_added": 3,
+                "missing_sources": ["hpy-atoms"],
+                "zero_candidate_sources": ["hpy-atoms"],
+                "violations": ["missing_source:hpy-atoms"],
+            },
             "runtime_complexity": {
                 "provider_count": 5,
                 "provider_model_count": 6,
@@ -206,6 +217,7 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
     assert payload["pipeline"] == "release_validation"
     assert payload["status"] == "completed"
     assert payload["metadata"]["release_validation"]["status"] == "failed"
+    assert payload["metadata"]["release_validation"]["catalog_validation"]["status"] == "failed"
     assert payload["metadata"]["release_validation"]["runtime_complexity"]["legacy_provider_count"] == 1
     assert payload["metadata"]["benchmark_validation"]["flow_results"] == 16
     assert payload["metadata"]["benchmark_validation"]["flow_avg_prompt_calls"]["verified"] == 7.0

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ageom.benchmark_validation import run_benchmark_validation
+from ageom.catalog_validation import run_catalog_validation
 
 
 async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
@@ -15,8 +16,12 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     benchmark_summary = await run_benchmark_validation(out_dir / "benchmarks")
+    catalog_summary = await run_catalog_validation(out_dir / "catalog")
     runtime_complexity = dict(benchmark_summary.get("runtime_complexity", {}) or {})
-    release_passed = str(benchmark_summary.get("status", "failed")) == "passed"
+    release_passed = (
+        str(benchmark_summary.get("status", "failed")) == "passed"
+        and str(catalog_summary.get("status", "failed")) == "passed"
+    )
     manifest = {
         "status": "passed" if release_passed else "failed",
         "checks": {
@@ -54,6 +59,7 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                     "flow_comparison_unstable_groups", 0
                 ),
             },
+            "catalog_validation": catalog_summary,
             "runtime_complexity": runtime_complexity,
         },
     }
@@ -64,5 +70,6 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
         "manifest": str(manifest_path),
         "benchmarks_dir": str(out_dir / "benchmarks"),
         "benchmark_summary": benchmark_summary,
+        "catalog_validation": catalog_summary,
         "runtime_complexity": runtime_complexity,
     }

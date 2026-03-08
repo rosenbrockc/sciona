@@ -1083,3 +1083,26 @@
   - Result: `1250 passed, 17 skipped`
 - Commit:
   - `benchmark: add compact flow gate summaries`
+
+## Catalog Validation Release Gate
+
+- Added a release-style catalog validation artifact that audits configured source-derived catalog coverage and writes `catalog_validation.json`.
+- Release validation now runs that catalog check alongside benchmark validation and fails if configured sources are missing or produce zero source candidates.
+- Release telemetry and dashboard summaries now expose:
+  - catalog validation status
+  - configured vs resolved source counts
+  - missing sources
+  - zero-candidate sources
+  - catalog validation report path
+- Added regressions for:
+  - successful catalog validation report generation
+  - missing/zero-candidate source detection
+  - release validation failure when catalog validation fails
+  - dashboard/API catalog validation summary extraction
+- Validation:
+  - `pytest -q tests/test_catalog_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `25 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1253 passed, 17 skipped`
+- Commit:
+  - `release: validate source catalog coverage`

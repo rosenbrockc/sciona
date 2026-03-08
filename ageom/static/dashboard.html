@@ -412,6 +412,7 @@
         const hunter = run.hunter_summary || {};
         const complexity = run.provider_complexity || {};
         const catalog = run.catalog_alignment_summary || {};
+        const catalogValidation = run.catalog_validation_summary || {};
         const benchmark = run.benchmark_summary || {};
         const benchmarkRuntime = benchmark.runtime_complexity || {};
         const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
@@ -462,6 +463,8 @@
           ["catalog sources", `live=${Number(catalog.live_registry || 0)} ast=${Number(catalog.ast_fallback || 0)} cdg=${Number(catalog.cdg_matched || 0)}`],
           ["catalog top sources", topSources || "--"],
           ["catalog top merges", topMerges || "--"],
+          ["catalog validate", `${catalogValidation.status || "--"} ${Number(catalogValidation.resolved_sources || 0)}/${Number(catalogValidation.configured_sources || 0)} src ${Number(catalogValidation.source_added || 0)}/${Number(catalogValidation.source_candidates || 0)}`],
+          ["catalog issues", (catalogValidation.violations || []).join(", ") || "--"],
           ["shared ctx", `${Number(shared.active_context_count || 0)}/${Number(shared.context_count || 0)}`],
           ["ctx search/hit", `${Number(shared.total_searches || 0)}/${Number(shared.total_hits || 0)}`],
           ["ctx puts", String(Number(shared.total_puts || 0))],
