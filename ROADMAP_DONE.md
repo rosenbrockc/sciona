@@ -486,4 +486,4 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1223 passed, 17 skipped`
 - Commits:
-  - `TBD` `catalog: add dotted source name aliases`
+  - `da55c5a` `catalog: add dotted source name aliases`
