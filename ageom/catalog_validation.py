@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from ageom.architect.catalog import CatalogReport, PrimitiveCatalog, seed_builtin_primitives
-from ageom.architect.source_catalog import seed_catalog_from_sources
+from ageom.architect.source_catalog import (
+    audit_source_registration_alignment,
+    seed_catalog_from_sources,
+)
 from ageom.config import AgeomConfig
 from ageom.sources import load_sources, resolve_source
 
@@ -67,6 +70,10 @@ async def run_catalog_validation(output_dir: str | Path) -> dict[str, Any]:
             include_live_registries=False,
             report=report,
         )
+    alignment = audit_source_registration_alignment(
+        config=sources_cfg,
+        base_dir=Path.cwd(),
+    )
 
     zero_candidate_sources = sorted(
         row["source"]
@@ -114,6 +121,7 @@ async def run_catalog_validation(output_dir: str | Path) -> dict[str, Any]:
         "source_witness_signature_fallbacks": report.source_witness_signature_fallbacks,
         "source_rows": source_rows,
         "source_breakdown": report.source_breakdown,
+        "alignment": alignment,
         "violations": violations,
     }
     report_path = out_dir / "catalog_validation.json"

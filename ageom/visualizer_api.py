@@ -439,6 +439,21 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         else [],
         "report": str(catalog_validation.get("report", "") or ""),
     }
+    alignment = catalog_validation.get("alignment", {})
+    if not isinstance(alignment, dict):
+        alignment = {}
+    out["catalog_validation_summary"]["alignment"] = {
+        "source_count": int(alignment.get("source_count", 0) or 0),
+        "matched_total": int(alignment.get("matched_total", 0) or 0),
+        "registry_only_total": int(alignment.get("registry_only_total", 0) or 0),
+        "ast_only_total": int(alignment.get("ast_only_total", 0) or 0),
+        "drift_sources": list(alignment.get("drift_sources", []) or [])
+        if isinstance(alignment.get("drift_sources", []), list)
+        else [],
+        "registry_error_sources": list(alignment.get("registry_error_sources", []) or [])
+        if isinstance(alignment.get("registry_error_sources", []), list)
+        else [],
+    }
     shared_rows: list[dict[str, Any]] = []
     total_searches = 0
     total_hits = 0

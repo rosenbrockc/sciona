@@ -134,6 +134,45 @@ def _iter_registry_modules() -> Iterable[Any]:
             yield module
 
 
+def _live_registry_entries_for_source(
+    source: AtomSource,
+    *,
+    package_root: Path,
+    base_dir: Path | None = None,
+) -> dict[str, dict[str, Any]]:
+    entries: dict[str, dict[str, Any]] = {}
+    import_atoms(source, base_dir)
+    try:
+        importlib.import_module(f"{source.package}.ghost.registry")
+    except Exception:
+        pass
+
+    for registry_module in _iter_registry_modules():
+        registry = getattr(registry_module, "REGISTRY", {})
+        for name, meta in registry.items():
+            impl = meta.get("impl")
+            witness = meta.get("witness")
+            module_name = getattr(impl, "__module__", "") or getattr(witness, "__module__", "")
+            file_path = None
+            for fn in (impl, witness):
+                try:
+                    if fn is not None:
+                        file_path = inspect.getsourcefile(fn) or inspect.getfile(fn)
+                        if file_path:
+                            break
+                except Exception:
+                    continue
+            if not _module_belongs_to_source(
+                module_name,
+                file_path,
+                source=source,
+                package_root=package_root,
+            ):
+                continue
+            entries.setdefault(str(name), meta)
+    return entries
+
+
 def _package_python_files(package_root: Path) -> list[Path]:
     return sorted(path for path in package_root.rglob("*.py") if path.name != "__init__.py")
 
@@ -614,60 +653,35 @@ def seed_catalog_from_sources(
         ast_entries = _parse_register_atom_functions(package_root, source.package)
         seen_names: set[str] = set()
         if include_live_registries:
-            import_atoms(source, base_dir)
-            try:
-                importlib.import_module(f"{source.package}.ghost.registry")
-            except Exception:
-                pass
-
-            for registry_module in _iter_registry_modules():
-                registry = getattr(registry_module, "REGISTRY", {})
-                for name, meta in registry.items():
-                    impl = meta.get("impl")
-                    witness = meta.get("witness")
-                    module_name = getattr(impl, "__module__", "") or getattr(witness, "__module__", "")
-                    file_path = None
-                    for fn in (impl, witness):
-                        try:
-                            if fn is not None:
-                                file_path = inspect.getsourcefile(fn) or inspect.getfile(fn)
-                                if file_path:
-                                    break
-                        except Exception:
-                            continue
-                    if not _module_belongs_to_source(
-                        module_name,
-                        file_path,
-                        source=source,
-                        package_root=package_root,
-                    ):
-                        continue
-                    if name in seen_names:
-                        continue
-                    if report is not None:
-                        report.source_live_registry_candidates += 1
-                    _bump_source_breakdown(report, source.name, "live_registry_candidates")
-                    built = _registration_to_primitive(
-                        source,
-                        name,
-                        meta,
-                        atom_index,
-                        report=report,
-                    )
-                    if built is None:
-                        continue
-                    primitive, aliases = built
-                    if _add_primitive_with_aliases(
-                        catalog,
-                        primitive,
-                        aliases,
-                        skill_index=skill_index,
-                        dedup_threshold=dedup_threshold,
-                        report=report,
-                    ):
-                        added += 1
-                        _bump_source_breakdown(report, source.name, "added")
-                    seen_names.add(name)
+            for name, meta in _live_registry_entries_for_source(
+                source, package_root=package_root, base_dir=base_dir
+            ).items():
+                if name in seen_names:
+                    continue
+                if report is not None:
+                    report.source_live_registry_candidates += 1
+                _bump_source_breakdown(report, source.name, "live_registry_candidates")
+                built = _registration_to_primitive(
+                    source,
+                    name,
+                    meta,
+                    atom_index,
+                    report=report,
+                )
+                if built is None:
+                    continue
+                primitive, aliases = built
+                if _add_primitive_with_aliases(
+                    catalog,
+                    primitive,
+                    aliases,
+                    skill_index=skill_index,
+                    dedup_threshold=dedup_threshold,
+                    report=report,
+                ):
+                    added += 1
+                    _bump_source_breakdown(report, source.name, "added")
+                seen_names.add(name)
 
         for name, meta in ast_entries.items():
             if name in seen_names or catalog.get(name) is not None:
@@ -697,3 +711,66 @@ def seed_catalog_from_sources(
                 _bump_source_breakdown(report, source.name, "added")
             seen_names.add(name)
     return added
+
+
+def audit_source_registration_alignment(
+    *,
+    config: SourcesConfig | None = None,
+    base_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Compare AST-discovered registrations with live registry registrations."""
+    if config is None:
+        config = load_sources()
+
+    rows: list[dict[str, Any]] = []
+    for source in config.sources:
+        registry_error = ""
+        ast_names: set[str] = set()
+        live_names: set[str] = set()
+        try:
+            root = resolve_source(source, base_dir).expanduser().resolve()
+            package_root = root.joinpath(*source.package.split("."))
+            ast_names = set(_parse_register_atom_functions(package_root, source.package))
+            try:
+                live_names = set(
+                    _live_registry_entries_for_source(
+                        source, package_root=package_root, base_dir=base_dir
+                    )
+                )
+            except Exception as exc:
+                registry_error = str(exc)
+        except Exception as exc:
+            registry_error = str(exc)
+
+        registry_only = sorted(live_names - ast_names)
+        ast_only = sorted(ast_names - live_names)
+        rows.append(
+            {
+                "source": source.name,
+                "ast_count": len(ast_names),
+                "live_registry_count": len(live_names),
+                "matched_count": len(ast_names & live_names),
+                "registry_only_count": len(registry_only),
+                "ast_only_count": len(ast_only),
+                "registry_only_examples": registry_only[:5],
+                "ast_only_examples": ast_only[:5],
+                "registry_error": registry_error,
+            }
+        )
+
+    drift_sources = sorted(
+        row["source"]
+        for row in rows
+        if row["registry_error"]
+        or int(row["registry_only_count"]) > 0
+        or int(row["ast_only_count"]) > 0
+    )
+    return {
+        "rows": rows,
+        "source_count": len(rows),
+        "matched_total": sum(int(row["matched_count"]) for row in rows),
+        "registry_only_total": sum(int(row["registry_only_count"]) for row in rows),
+        "ast_only_total": sum(int(row["ast_only_count"]) for row in rows),
+        "drift_sources": drift_sources,
+        "registry_error_sources": sorted(row["source"] for row in rows if row["registry_error"]),
+    }

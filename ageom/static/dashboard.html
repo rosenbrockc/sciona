@@ -333,6 +333,8 @@
           const complexity = r.provider_complexity || {};
           const catalog = r.catalog_alignment_summary || {};
           const benchmark = r.benchmark_summary || {};
+          const catalogValidation = r.catalog_validation_summary || {};
+          const catalogValidationAlignment = catalogValidation.alignment || {};
           const benchmarkRuntime = benchmark.runtime_complexity || {};
           const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
@@ -377,6 +379,9 @@
             `<div class="run-meta">searches=${Number(hunter.search_iterations || 0)} candidates=${Number(hunter.new_candidates_total || 0)} verified=${verifiedMatches}</div>`,
             `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides} providers=${Number(complexity.provider_count || 0)}</div>`,
             `<div class="run-meta">catalog=${Number(catalog.catalog_size || 0)} added=${Number(catalog.added || 0)} merged=${Number(catalog.merged || 0)}</div>`,
+            ((catalogValidation.status || catalogValidationAlignment.source_count)
+              ? `<div class="run-meta">catalog_validate=${catalogValidation.status || "--"} drift=${Number(catalogValidationAlignment.registry_only_total || 0)}/${Number(catalogValidationAlignment.ast_only_total || 0)}</div>`
+              : ""),
             (topSources ? `<div class="run-meta">catalog_sources ${topSources}</div>` : ""),
             (topMerges ? `<div class="run-meta">catalog_merges ${topMerges}</div>` : ""),
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
@@ -413,6 +418,7 @@
         const complexity = run.provider_complexity || {};
         const catalog = run.catalog_alignment_summary || {};
         const catalogValidation = run.catalog_validation_summary || {};
+        const catalogValidationAlignment = catalogValidation.alignment || {};
         const benchmark = run.benchmark_summary || {};
         const benchmarkRuntime = benchmark.runtime_complexity || {};
         const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
@@ -465,6 +471,8 @@
           ["catalog top merges", topMerges || "--"],
           ["catalog validate", `${catalogValidation.status || "--"} ${Number(catalogValidation.resolved_sources || 0)}/${Number(catalogValidation.configured_sources || 0)} src ${Number(catalogValidation.source_added || 0)}/${Number(catalogValidation.source_candidates || 0)}`],
           ["catalog issues", (catalogValidation.violations || []).join(", ") || "--"],
+          ["catalog drift", `${Number(catalogValidationAlignment.registry_only_total || 0)} registry-only / ${Number(catalogValidationAlignment.ast_only_total || 0)} ast-only`],
+          ["catalog drift src", (catalogValidationAlignment.drift_sources || []).join(", ") || "--"],
           ["shared ctx", `${Number(shared.active_context_count || 0)}/${Number(shared.context_count || 0)}`],
           ["ctx search/hit", `${Number(shared.total_searches || 0)}/${Number(shared.total_hits || 0)}`],
           ["ctx puts", String(Number(shared.total_puts || 0))],

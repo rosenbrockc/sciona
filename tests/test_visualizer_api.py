@@ -543,6 +543,14 @@ class TestDashboardAPI:
                         "missing_sources": ["hpy-atoms"],
                         "zero_candidate_sources": ["hpy-atoms"],
                         "violations": ["missing_source:hpy-atoms"],
+                        "alignment": {
+                            "source_count": 2,
+                            "matched_total": 3,
+                            "registry_only_total": 1,
+                            "ast_only_total": 2,
+                            "drift_sources": ["hpy-atoms"],
+                            "registry_error_sources": ["hpy-atoms"],
+                        },
                     },
                 },
             },
@@ -577,6 +585,8 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")
         assert data["catalog_validation_summary"]["status"] == "failed"
         assert data["catalog_validation_summary"]["missing_sources"] == ["hpy-atoms"]
+        assert data["catalog_validation_summary"]["alignment"]["registry_only_total"] == 1
+        assert data["catalog_validation_summary"]["alignment"]["ast_only_total"] == 2
 
     def test_dashboard_run_includes_shared_context_summary(
         self, client, monkeypatch, tmp_path

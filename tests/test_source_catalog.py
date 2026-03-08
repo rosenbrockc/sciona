@@ -7,7 +7,10 @@ import sys
 from pathlib import Path
 
 from ageom.architect.catalog import CatalogReport, PrimitiveCatalog
-from ageom.architect.source_catalog import seed_catalog_from_sources
+from ageom.architect.source_catalog import (
+    audit_source_registration_alignment,
+    seed_catalog_from_sources,
+)
 from ageom.sources import AtomSource, SourcesConfig
 from ageom.types import Declaration, Prover
 
@@ -168,6 +171,91 @@ def smooth(signal: "np.ndarray", window: int = 5, method: str = "median") -> "np
         assert prim.inputs[1].default_value_repr == "5"
         assert prim.inputs[2].required is False
         assert prim.inputs[2].default_value_repr == "'median'"
+    finally:
+        for name in set(sys.modules) - before_modules:
+            if name == "mypkg" or name.startswith("mypkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):
+                sys.modules.pop(name, None)
+
+
+def test_audit_source_registration_alignment_reports_registry_ast_drift(tmp_path: Path):
+    repo = tmp_path / "repo"
+
+    _write(repo / "sharedpkg" / "__init__.py", "")
+    _write(repo / "sharedpkg" / "ghost" / "__init__.py", "")
+    _write(
+        repo / "sharedpkg" / "ghost" / "registry.py",
+        """
+from __future__ import annotations
+
+REGISTRY = {}
+
+def register_atom(witness, *, name=None):
+    def decorator(func):
+        atom_name = name or func.__name__
+        REGISTRY[atom_name] = {"impl": func, "witness": witness}
+        return func
+    return decorator
+""".strip()
+        + "\n",
+    )
+
+    _write(repo / "mypkg" / "__init__.py", "")
+    _write(
+        repo / "mypkg" / "atoms.py",
+        """
+from __future__ import annotations
+
+from sharedpkg.ghost.registry import register_atom
+
+def witness_common(signal: "AbstractSignal") -> "AbstractSignal":
+    return signal
+
+def witness_registry(signal: "AbstractSignal") -> "AbstractSignal":
+    return signal
+
+@register_atom(witness_common)
+def common_atom(signal: "np.ndarray") -> "np.ndarray":
+    return signal
+
+@register_atom(witness_registry)
+def registry_only_atom(signal: "np.ndarray") -> "np.ndarray":
+    return signal
+""".strip()
+        + "\n",
+    )
+    _write(
+        repo / "mypkg" / "extra.py",
+        """
+from __future__ import annotations
+
+from sharedpkg.ghost.registry import REGISTRY
+
+def witness_live_only(signal: "AbstractSignal") -> "AbstractSignal":
+    return signal
+
+def live_only(signal: "np.ndarray") -> "np.ndarray":
+    return signal
+
+REGISTRY["live_only_atom"] = {"impl": live_only, "witness": witness_live_only}
+""".strip()
+        + "\n",
+    )
+
+    config = SourcesConfig(
+        sources=[AtomSource(name="demo-source", package="mypkg", path="repo")]
+    )
+
+    before_modules = set(sys.modules)
+    try:
+        audit = audit_source_registration_alignment(config=config, base_dir=tmp_path)
+        assert audit["source_count"] == 1
+        assert audit["matched_total"] == 2
+        assert audit["registry_only_total"] == 1
+        assert audit["ast_only_total"] == 0
+        assert audit["drift_sources"] == ["demo-source"]
+        row = audit["rows"][0]
+        assert row["registry_only_examples"] == ["live_only_atom"]
+        assert row["ast_only_examples"] == []
     finally:
         for name in set(sys.modules) - before_modules:
             if name == "mypkg" or name.startswith("mypkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):

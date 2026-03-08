@@ -1106,3 +1106,26 @@
   - Result: `1253 passed, 17 skipped`
 - Commit:
   - `release: validate source catalog coverage`
+
+## Source Registry Alignment Audit
+
+- Added a deterministic source-alignment audit that compares AST-discovered `@register_atom` registrations against live registry registrations on a per-source basis.
+- Refactored live registry enumeration into a shared helper so the audit and catalog seeding path use the same source-membership logic.
+- Catalog validation now persists alignment details alongside coverage details, including:
+  - matched registration count
+  - registry-only count
+  - AST-only count
+  - drift sources
+  - registry-error sources
+- Dashboard/API catalog validation summaries now surface those alignment drift counts directly.
+- Added regressions for:
+  - live-registry vs AST drift detection
+  - catalog validation persistence of alignment details
+  - dashboard/API extraction of alignment summary fields
+- Validation:
+  - `pytest -q tests/test_source_catalog.py tests/test_catalog_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `35 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1254 passed, 17 skipped`
+- Commit:
+  - `catalog: audit source registry alignment`
