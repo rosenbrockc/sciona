@@ -216,8 +216,17 @@ def prompt_override_matches_code_default(config: AgeomConfig, prompt_key: str) -
     )
 
 
-def should_apply_prompt_override(config: AgeomConfig, prompt_key: str) -> bool:
+def should_apply_prompt_override(
+    config: AgeomConfig,
+    prompt_key: str,
+    execution_mode: str | None = None,
+) -> bool:
     """Apply override when benchmark-justified or explicitly changed by the user."""
+    normalized_mode = str(
+        execution_mode or getattr(config, "execution_mode", "verified") or "verified"
+    ).strip().lower()
+    if normalized_mode == "rapid":
+        return not prompt_override_matches_code_default(config, prompt_key)
     if prompt_key in BENCHMARK_JUSTIFIED_PROMPT_KEYS:
         return True
     return not prompt_override_matches_code_default(config, prompt_key)
@@ -228,7 +237,9 @@ def resolve_execution_mode(
     mode: str | None = None,
 ) -> ExecutionModeSettings:
     """Resolve high-level execution mode into concrete feature flags."""
-    normalized = str(mode or config.execution_mode or "verified").strip().lower()
+    normalized = str(
+        mode or getattr(config, "execution_mode", "verified") or "verified"
+    ).strip().lower()
 
     if normalized == "verified":
         return ExecutionModeSettings(

@@ -92,13 +92,16 @@ def _create_llm_router(
     overrides: dict[str, "LLMClient"] = {}
     # Cache by (provider, model) to avoid redundant connections
     client_cache: dict[tuple[str, str], "LLMClient"] = {}
+    execution_mode = str(
+        getattr(args, "mode", None) or getattr(config, "execution_mode", "verified") or "verified"
+    ).strip().lower()
 
     for key in prompt_keys:
         provider = getattr(config, f"{key}_llm_provider", "")
         model = getattr(config, f"{key}_llm_model", "")
         if not provider:
             continue
-        if not should_apply_prompt_override(config, key):
+        if not should_apply_prompt_override(config, key, execution_mode):
             continue
         # Fall back model to global if only provider is set
         if not model:
@@ -128,6 +131,7 @@ def _summarize_prompt_routing(
     config: "AgeomConfig",
     round_name: str,
     prompt_keys: list[str],
+    execution_mode: str | None = None,
 ) -> dict[str, Any]:
     """Summarize which prompt-key overrides are active vs suppressed."""
     from ageom.config import (
@@ -136,6 +140,9 @@ def _summarize_prompt_routing(
         should_apply_prompt_override,
     )
 
+    resolved_mode = str(
+        execution_mode or getattr(config, "execution_mode", "verified") or "verified"
+    ).strip().lower()
     default_provider = getattr(config, f"{round_name}_llm_provider", "") or config.llm_provider
     default_model = getattr(config, f"{round_name}_llm_model", "") or config.llm_model
     active_overrides: list[dict[str, str]] = []
@@ -147,7 +154,7 @@ def _summarize_prompt_routing(
         model = getattr(config, f"{key}_llm_model", "")
         if not provider:
             continue
-        if should_apply_prompt_override(config, key):
+        if should_apply_prompt_override(config, key, resolved_mode):
             model = model or config.llm_model
             active_overrides.append(
                 {"prompt_key": key, "provider": provider, "model": model}
@@ -160,6 +167,7 @@ def _summarize_prompt_routing(
 
     return {
         "round": round_name,
+        "mode": resolved_mode,
         "default_provider": default_provider,
         "default_model": default_model,
         "active_overrides": active_overrides,
@@ -172,9 +180,15 @@ def _print_prompt_routing_summary(
     config: "AgeomConfig",
     round_name: str,
     prompt_keys: list[str],
+    execution_mode: str | None = None,
 ) -> dict[str, Any]:
     """Print a compact routing audit and return the structured summary."""
-    summary = _summarize_prompt_routing(config, round_name, prompt_keys)
+    summary = _summarize_prompt_routing(
+        config,
+        round_name,
+        prompt_keys,
+        execution_mode,
+    )
     active = ", ".join(
         f"{row['prompt_key']}={row['provider']}:{row['model']}"
         for row in summary["active_overrides"]
@@ -183,6 +197,7 @@ def _print_prompt_routing_summary(
     custom = ", ".join(summary["custom_nonbenchmark_overrides"]) or "none"
     print(
         f"LLM routing ({round_name}): "
+        f"mode={summary['mode']} "
         f"default={summary['default_provider']}:{summary['default_model']} "
         f"active=[{active}] "
         f"suppressed_defaults=[{suppressed}] "
@@ -195,6 +210,7 @@ def _routing_metadata_summary(summary: dict[str, Any]) -> dict[str, Any]:
     """Shrink routing audit into dashboard-friendly run metadata."""
     return {
         "round": summary["round"],
+        "mode": summary["mode"],
         "default_provider": summary["default_provider"],
         "default_model": summary["default_model"],
         "active_overrides": [
@@ -1762,7 +1778,9 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             INGESTER_OPAQUE_WITNESS,
             INGESTER_DECOMPOSE,
         ]
-        _print_prompt_routing_summary(config, "ingester", prompt_keys)
+        _print_prompt_routing_summary(
+            config, "ingester", prompt_keys, getattr(args, "mode", None)
+        )
         llm = _create_llm_router(args, config, "ingester", prompt_keys)
 
         # Set up proof environment (Python/mypy)
@@ -1936,7 +1954,9 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
             ARCHITECT_DECOMPOSE,
             ARCHITECT_CRITIQUE,
         ]
-        _print_prompt_routing_summary(config, "architect", prompt_keys)
+        _print_prompt_routing_summary(
+            config, "architect", prompt_keys, getattr(args, "mode", None)
+        )
         llm = _create_llm_router(args, config, "architect", prompt_keys)
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -2144,7 +2164,9 @@ async def _cmd_match(args: argparse.Namespace) -> None:
             HUNTER_REFORMULATE,
             HUNTER_ANALYZE_FAILURE,
         ]
-        _print_prompt_routing_summary(config, "hunter", prompt_keys)
+        _print_prompt_routing_summary(
+            config, "hunter", prompt_keys, getattr(args, "mode", None)
+        )
         llm = _create_llm_router(args, config, "hunter", prompt_keys)
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -2397,7 +2419,9 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
             SYNTHESIZER_REPAIR,
             SYNTHESIZER_TACTIC,
         ]
-        _print_prompt_routing_summary(config, "synthesizer", prompt_keys)
+        _print_prompt_routing_summary(
+            config, "synthesizer", prompt_keys, getattr(args, "mode", None)
+        )
         llm = _create_llm_router(args, config, "synthesizer", prompt_keys)
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -2519,6 +2543,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             "architect_critique",
             "orchestrator_refine",
         ],
+        mode_settings.mode,
     )
     hunter_routing = _summarize_prompt_routing(
         config,
@@ -2528,6 +2553,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             "hunter_reformulate",
             "hunter_analyze_failure",
         ],
+        mode_settings.mode,
     )
     telemetry_run_id = start_run(
         "algorithm_creation",
@@ -2578,7 +2604,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     ARCHITECT_CRITIQUE,
                     ORCHESTRATOR_REFINE,
                 ]
-                _print_prompt_routing_summary(config, "architect", architect_prompt_keys)
+                _print_prompt_routing_summary(
+                    config,
+                    "architect",
+                    architect_prompt_keys,
+                    mode_settings.mode,
+                )
                 llm = _create_llm_router(
                     args,
                     config,
@@ -2689,7 +2720,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                         HUNTER_REFORMULATE,
                         HUNTER_ANALYZE_FAILURE,
                     ]
-                    _print_prompt_routing_summary(config, "hunter", hunter_prompt_keys)
+                    _print_prompt_routing_summary(
+                        config,
+                        "hunter",
+                        hunter_prompt_keys,
+                        mode_settings.mode,
+                    )
                     hunter_llm = _create_llm_router(
                         args,
                         config,
@@ -2837,7 +2873,9 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             ARCHITECT_DECOMPOSE,
             ARCHITECT_CRITIQUE,
         ]
-        _print_prompt_routing_summary(config, "architect", prompt_keys)
+        _print_prompt_routing_summary(
+            config, "architect", prompt_keys, getattr(args, "mode", None)
+        )
         llm = _create_llm_router(args, config, "architect", prompt_keys)
     except (ValueError, ImportError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

@@ -430,3 +430,22 @@
   - Result: `1217 passed, 17 skipped`
 - Commits:
   - `00b352a` `catalog: surface source alignment metrics`
+
+## Rapid Mode Router Simplification
+
+- Made `rapid` mode reduce actual runtime complexity instead of only changing surrounding feature gates.
+- In `rapid` mode, code-default prompt-key overrides are now suppressed so the router stays on the round default provider/model unless the user explicitly changed an override.
+- This keeps:
+  - benchmark-tuned default overrides in `structured` and `verified`
+  - explicit user escape hatches in `rapid`
+- Routing summaries and run telemetry now include the effective execution mode for each round so the simplification is visible.
+- Added regressions for:
+  - `rapid` mode suppressing benchmark-default overrides in router construction
+  - `rapid` mode routing summaries reporting benchmark-default suppression
+- Validation:
+  - `conda run -n hpyexec pytest -q tests/test_llm_router.py tests/test_execution_modes.py`
+  - Result: `60 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1219 passed, 17 skipped`
+- Commits:
+  - `TBD` `runtime: simplify rapid mode routing`
