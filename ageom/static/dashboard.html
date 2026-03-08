@@ -328,6 +328,7 @@
           const architect = r.architect_summary || {};
           const retrieval = r.retrieval_summary || {};
           const routing = (r.routing_summary || {}).architect || {};
+          const hunter = r.hunter_summary || {};
           const complexity = r.provider_complexity || {};
           const catalog = r.catalog_alignment_summary || {};
           const benchmark = r.benchmark_summary || {};
@@ -345,6 +346,7 @@
           const sharedTemplates = Number(shared.total_template_hits || 0);
           const sharedFailures = Number(shared.total_failure_hits || 0);
           const critiqueRejects = Number(architect.critique_reject_total || 0);
+          const verifiedMatches = Number(hunter.verified_matches || 0);
           const validationLine = (benchmark.prompt_results || benchmark.flow_results)
             ? `<div class="run-meta">bench prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
@@ -356,6 +358,7 @@
             `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
             `<div class="run-meta">critique_rejects=${critiqueRejects} retries=${Number(architect.retry_total || 0)} rewrites=${Number(architect.rewrite_action_count || 0)}</div>`,
+            `<div class="run-meta">searches=${Number(hunter.search_iterations || 0)} candidates=${Number(hunter.new_candidates_total || 0)} verified=${verifiedMatches}</div>`,
             `<div class="run-meta">retrieval=${retrievalBand} architect_overrides=${activeOverrides} providers=${Number(complexity.provider_count || 0)}</div>`,
             `<div class="run-meta">catalog=${Number(catalog.catalog_size || 0)} added=${Number(catalog.added || 0)} merged=${Number(catalog.merged || 0)}</div>`,
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
@@ -381,6 +384,7 @@
         const retrieval = run.retrieval_summary || {};
         const architectRouting = (run.routing_summary || {}).architect || {};
         const hunterRouting = (run.routing_summary || {}).hunter || {};
+        const hunter = run.hunter_summary || {};
         const complexity = run.provider_complexity || {};
         const catalog = run.catalog_alignment_summary || {};
         const benchmark = run.benchmark_summary || {};
@@ -406,6 +410,15 @@
           ["rewrite actions", String(architect.rewrite_action_count || 0)],
           ["any ports", `${(Number(architect.any_port_pct || 0) * 100).toFixed(1)}%`],
           ["any edges", `${(Number(architect.any_edge_pct || 0) * 100).toFixed(1)}%`],
+          ["hunter searches", String(hunter.search_iterations || 0)],
+          ["hunter candidates", `${Number(hunter.new_candidates_total || 0)} / ${Number(hunter.candidate_pool_size || 0)}`],
+          ["hunter verify", `${Number(hunter.verified_candidates_total || 0)} / ${Number(hunter.verify_batches || 0)}`],
+          ["hunter success/fail", `${Number(hunter.verification_success_total || 0)} / ${Number(hunter.verification_failure_total || 0)}`],
+          ["hunter reformulate", `${Number(hunter.reformulations || 0)} / ${Number(hunter.reformulate_fallbacks || 0)}`],
+          ["hunter analyses", String(hunter.failure_analyses || 0)],
+          ["hunter query count", String(hunter.query_count || 0)],
+          ["last query", hunter.last_query || "--"],
+          ["last verified", hunter.last_verified_candidate || "--"],
           ["retrieval", `${retrieval.confidence_band || "--"} / ${retrieval.semantic_backend || "--"}`],
           ["architect llm", `${architectRouting.default || "--"} +${architectRouting.active_count || 0}`],
           ["hunter llm", `${hunterRouting.default || "--"} +${hunterRouting.active_count || 0}`],
@@ -451,6 +464,7 @@
           `hung: ${run.is_hung ? "yes" : "no"}\n` +
           `provider_complexity: ${JSON.stringify(run.provider_complexity || {}, null, 2)}\n` +
           `architect_summary: ${JSON.stringify(run.architect_summary || {}, null, 2)}\n` +
+          `hunter_summary: ${JSON.stringify(run.hunter_summary || {}, null, 2)}\n` +
           `catalog_alignment_summary: ${JSON.stringify(run.catalog_alignment_summary || {}, null, 2)}\n` +
           `shared_context_summary: ${JSON.stringify(run.shared_context_summary || {}, null, 2)}\n` +
           `benchmark_summary: ${JSON.stringify(run.benchmark_summary || {}, null, 2)}\n` +

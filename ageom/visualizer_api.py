@@ -94,6 +94,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     shared_context = metadata.get("shared_context", {})
     catalog_alignment = metadata.get("catalog_alignment", {})
     architect_metrics = metadata.get("architect_metrics", {})
+    hunter_metrics = metadata.get("hunter_metrics", {})
     if not isinstance(retrieval, dict):
         retrieval = {}
     if not isinstance(routing, dict):
@@ -108,6 +109,8 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         catalog_alignment = {}
     if not isinstance(architect_metrics, dict):
         architect_metrics = {}
+    if not isinstance(hunter_metrics, dict):
+        hunter_metrics = {}
     contexts = shared_context.get("contexts", {})
     if not isinstance(contexts, dict):
         contexts = {}
@@ -249,6 +252,49 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "critique_reject_categories": top_critique_categories[:5],
         "retry_total": sum(int(count or 0) for count in retry_counts.values()),
         "retry_node_count": len(retry_counts),
+    }
+    out["hunter_summary"] = {
+        "search_iterations": int(hunter_metrics.get("search_iterations", 0) or 0),
+        "embedding_results_total": int(
+            hunter_metrics.get("embedding_results_total", 0) or 0
+        ),
+        "type_results_total": int(hunter_metrics.get("type_results_total", 0) or 0),
+        "new_candidates_total": int(
+            hunter_metrics.get("new_candidates_total", 0) or 0
+        ),
+        "candidate_pool_size": int(hunter_metrics.get("candidate_pool_size", 0) or 0),
+        "rank_calls": int(hunter_metrics.get("rank_calls", 0) or 0),
+        "ranked_candidate_count": int(
+            hunter_metrics.get("ranked_candidate_count", 0) or 0
+        ),
+        "verify_batches": int(hunter_metrics.get("verify_batches", 0) or 0),
+        "verified_candidates_total": int(
+            hunter_metrics.get("verified_candidates_total", 0) or 0
+        ),
+        "verification_success_total": int(
+            hunter_metrics.get("verification_success_total", 0) or 0
+        ),
+        "verification_failure_total": int(
+            hunter_metrics.get("verification_failure_total", 0) or 0
+        ),
+        "verified_matches": int(hunter_metrics.get("verified_matches", 0) or 0),
+        "reformulations": int(hunter_metrics.get("reformulations", 0) or 0),
+        "failure_analyses": int(hunter_metrics.get("failure_analyses", 0) or 0),
+        "reformulate_fallbacks": int(
+            hunter_metrics.get("reformulate_fallbacks", 0) or 0
+        ),
+        "empty_search_terminations": int(
+            hunter_metrics.get("empty_search_terminations", 0) or 0
+        ),
+        "empty_verify_batches": int(
+            hunter_metrics.get("empty_verify_batches", 0) or 0
+        ),
+        "query_count": int(hunter_metrics.get("query_count", 0) or 0),
+        "iteration": int(hunter_metrics.get("iteration", 0) or 0),
+        "last_query": str(hunter_metrics.get("last_query", "") or ""),
+        "last_verified_candidate": str(
+            hunter_metrics.get("last_verified_candidate", "") or ""
+        ),
     }
     out["benchmark_summary"] = {
         "prompt_cases": int(benchmark.get("prompt_cases", 0) or 0),

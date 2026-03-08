@@ -720,3 +720,26 @@
   - Result: `1237 passed, 17 skipped`
 - Commit:
   - `dashboard: summarize architect state`
+
+## Hunter Retrieval Quality Summary
+
+- Added first-class `hunter_metrics` telemetry so Hunter search and verification quality is visible in persisted runs.
+- Hunter now records:
+  - search iterations
+  - embedding/type result volume
+  - new candidate counts and candidate pool size
+  - ranking call counts
+  - verification batch counts and success/failure totals
+  - reformulation and fallback counts
+  - last query and last verified candidate
+- Added a derived `hunter_summary` to dashboard run payloads and updated the dashboard UI to surface search yield, verification volume, and reformulation churn directly.
+- Added regressions for:
+  - Hunter telemetry metadata persistence during a real agent run
+  - dashboard extraction of the new hunter summary
+- Validation:
+  - `pytest -q tests/test_hunter.py tests/test_visualizer_api.py`
+  - Result: `26 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1239 passed, 17 skipped`
+- Commit:
+  - `telemetry: summarize hunter retrieval quality`

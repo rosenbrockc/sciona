@@ -601,6 +601,68 @@ class TestDashboardAPI:
             {"category": "missing_flow", "count": 1},
         ]
 
+    def test_dashboard_run_includes_hunter_summary(
+        self, client, monkeypatch, tmp_path
+    ):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "hunter123",
+            "pipeline": "match",
+            "status": "completed",
+            "started_at": now - 8.0,
+            "last_update_at": now - 1.0,
+            "ended_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 4,
+            "prompt_successes": 4,
+            "prompt_failures": 0,
+            "prompt_inflight": 0,
+            "events_count": 9,
+            "metadata": {
+                "hunter_metrics": {
+                    "search_iterations": 2,
+                    "embedding_results_total": 7,
+                    "type_results_total": 2,
+                    "new_candidates_total": 5,
+                    "candidate_pool_size": 4,
+                    "rank_calls": 2,
+                    "ranked_candidate_count": 4,
+                    "verify_batches": 2,
+                    "verified_candidates_total": 3,
+                    "verification_success_total": 1,
+                    "verification_failure_total": 2,
+                    "verified_matches": 1,
+                    "reformulations": 1,
+                    "failure_analyses": 1,
+                    "reformulate_fallbacks": 0,
+                    "empty_search_terminations": 0,
+                    "empty_verify_batches": 0,
+                    "query_count": 2,
+                    "iteration": 1,
+                    "last_query": "Nat.add_comm addition commutative",
+                    "last_verified_candidate": "Nat.add_comm",
+                }
+            },
+        }
+        (tmp_path / "run_hunter123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs/hunter123")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["hunter_summary"]["search_iterations"] == 2
+        assert data["hunter_summary"]["new_candidates_total"] == 5
+        assert data["hunter_summary"]["verified_matches"] == 1
+        assert data["hunter_summary"]["verification_success_total"] == 1
+        assert data["hunter_summary"]["verification_failure_total"] == 2
+        assert data["hunter_summary"]["query_count"] == 2
+        assert data["hunter_summary"]["last_verified_candidate"] == "Nat.add_comm"
+
     def test_run_hang_annotation(self, client, monkeypatch, tmp_path):
         from ageom.telemetry import reset_telemetry_runtime
 

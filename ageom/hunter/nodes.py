@@ -33,6 +33,7 @@ from ageom.llm_router import (
     select_llm,
 )
 from ageom.shared_context import format_context_block
+from ageom.telemetry import increment_run_metadata_counter, merge_run_metadata
 from ageom.types import CandidateMatch, MatchResult
 
 _INT_ARRAY_GBNF = r"""
@@ -116,6 +117,14 @@ async def _put_context(
         return
 
 
+def _merge_hunter_metrics(payload: dict[str, Any]) -> None:
+    merge_run_metadata({"hunter_metrics": payload})
+
+
+def _increment_hunter_metric(metric: str, amount: int = 1) -> None:
+    increment_run_metadata_counter("hunter_metrics", metric, amount=amount)
+
+
 @dataclass
 class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
     """Search the semantic index using embedding and type queries."""
@@ -180,8 +189,21 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
                 state.candidates_found, key=lambda c: c.score, reverse=True
             )[: state.max_candidates_total]
 
+        _increment_hunter_metric("search_iterations")
+        _increment_hunter_metric("embedding_results_total", len(embedding_results))
+        _increment_hunter_metric("type_results_total", len(type_results))
+        _increment_hunter_metric("new_candidates_total", len(new_candidates))
+        _merge_hunter_metrics(
+            {
+                "candidate_pool_size": len(state.candidates_found),
+                "query_count": len(state.queries_tried),
+                "last_query": query,
+            }
+        )
+
         if not state.candidates_found:
             # No candidates at all - end immediately
+            _increment_hunter_metric("empty_search_terminations")
             if deps.shared_context_metrics is not None:
                 deps.shared_context_metrics.record_match_outcome(
                     used_context=state.shared_context_used,
@@ -249,6 +271,13 @@ class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
                 if i not in seen:
                     reordered.append(c)
             state.candidates_found = reordered
+            _increment_hunter_metric("rank_calls")
+            _merge_hunter_metrics(
+                {
+                    "candidate_pool_size": len(state.candidates_found),
+                    "ranked_candidate_count": len(reordered),
+                }
+            )
         except (json.JSONDecodeError, Exception):
             # If LLM ranking fails, keep original order
             pass
@@ -278,6 +307,7 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
 
         if not to_verify:
             # Nothing new to verify
+            _increment_hunter_metric("empty_verify_batches")
             if state.iteration >= state.max_iterations:
                 if deps.shared_context_metrics is not None:
                     deps.shared_context_metrics.record_match_outcome(
@@ -302,6 +332,18 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
         else:
             results = await deps.oracle.verify_candidates(state.pdg_node, to_verify)
         state.verification_results.extend(results)
+        verified_count = sum(1 for result in results if result.verified)
+        rejected_count = len(results) - verified_count
+        _increment_hunter_metric("verify_batches")
+        _increment_hunter_metric("verified_candidates_total", len(results))
+        _increment_hunter_metric("verification_success_total", verified_count)
+        _increment_hunter_metric("verification_failure_total", rejected_count)
+        _merge_hunter_metrics(
+            {
+                "verification_pool_size": len(state.verification_results),
+                "last_verify_batch_size": len(results),
+            }
+        )
 
         # Collect compiler feedback for potential reformulation
         for r in results:
@@ -343,6 +385,12 @@ class VerifyTopK(BaseNode[HunterState, HunterDeps, MatchResult]):
                     },
                 )
                 state.verified_match = r
+                _increment_hunter_metric("verified_matches")
+                _merge_hunter_metrics(
+                    {
+                        "last_verified_candidate": r.candidate.declaration.name,
+                    }
+                )
                 if deps.shared_context_metrics is not None:
                     deps.shared_context_metrics.record_match_outcome(
                         used_context=state.shared_context_used,
@@ -383,6 +431,8 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
         state = ctx.state
         deps = ctx.deps
         state.iteration += 1
+        _increment_hunter_metric("reformulations")
+        _merge_hunter_metrics({"iteration": state.iteration})
 
         # Analyze the most recent failure if available
         recent_failures = [r for r in state.verification_results if not r.verified]
@@ -399,6 +449,8 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
                 analysis = await select_llm(deps.llm, HUNTER_ANALYZE_FAILURE).complete(
                     ANALYZE_FAILURE_SYSTEM, analyze_msg
                 )
+                if analysis:
+                    _increment_hunter_metric("failure_analyses")
             except Exception:
                 analysis = ""
 
@@ -456,8 +508,21 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
                 max_keep = max(50, state.query_batch_size * 3)
                 if len(state.queries_tried) > max_keep:
                     state.queries_tried = state.queries_tried[-max_keep:]
+                _merge_hunter_metrics(
+                    {
+                        "query_count": len(state.queries_tried),
+                        "last_query": state.queries_tried[-1],
+                    }
+                )
         except (json.JSONDecodeError, Exception):
             # Fallback: try a simple variant
             state.queries_tried.append(state.pdg_node.statement)
+            _increment_hunter_metric("reformulate_fallbacks")
+            _merge_hunter_metrics(
+                {
+                    "query_count": len(state.queries_tried),
+                    "last_query": state.queries_tried[-1],
+                }
+            )
 
         return InitialSearch()

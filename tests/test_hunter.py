@@ -9,6 +9,7 @@ import pytest
 from ageom.shared_context import InMemorySharedContextStore
 from ageom.shared_context import SharedContextMetrics
 from ageom.hunter.state import HunterState
+from ageom.telemetry import get_runtime_run, reset_telemetry_runtime, start_run, telemetry_scope
 from ageom.types import (
     Declaration,
     PDGNode,
@@ -90,20 +91,28 @@ def _make_mock_llm(
     rank_response: str = "[0, 1, 2]", queries_response: str = '["query1"]'
 ):
     """Create a mock LLMClient."""
-    llm = AsyncMock()
+    class _StubLLM:
+        async def complete(self, system: str, user: str) -> str:
+            system_lower = system.lower()
+            if (
+                "json array of integer indices" in system_lower
+                or "rank" in system_lower
+                or "score" in system_lower
+            ):
+                return rank_response
+            if (
+                "json array of strings" in system_lower
+                or "generate search queries" in system_lower
+            ):
+                return queries_response
+            if "return exactly three lines" in system_lower or "analy" in system_lower:
+                return "The types don't match. Try searching for add_comm instead."
+            return '["fallback_query"]'
 
-    async def complete(system: str, user: str) -> str:
-        system_lower = system.lower()
-        if "json array of integer indices" in system_lower or "rank" in system_lower or "score" in system_lower:
-            return rank_response
-        elif "json array of strings" in system_lower or "generate search queries" in system_lower:
-            return queries_response
-        elif "return exactly three lines" in system_lower or "analy" in system_lower:
-            return "The types don't match. Try searching for add_comm instead."
-        return '["fallback_query"]'
+        async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
+            return await self.complete(system, user)
 
-    llm.complete = complete
-    return llm
+    return _StubLLM()
 
 
 class TestHunterHappyPath:
@@ -125,6 +134,39 @@ class TestHunterHappyPath:
         assert result.success
         assert result.verified_match is not None
         assert result.verified_match.candidate.declaration.name == "Nat.add_comm"
+
+    @pytest.mark.asyncio
+    async def test_records_hunter_metrics_in_telemetry(
+        self, pdg_node, correct_decl, wrong_decl
+    ):
+        from ageom.hunter.graph import HunterAgent
+
+        reset_telemetry_runtime()
+        run_id = start_run("match", run_id="hunter-metrics")
+
+        index = _make_mock_index([correct_decl, wrong_decl])
+        oracle = _make_mock_oracle({"Nat.add_comm"})
+        llm = _make_mock_llm()
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=3)
+        with telemetry_scope(run_id=run_id, stage="matching"):
+            result = await agent.find_match(pdg_node)
+
+        assert result.success
+        snapshot = get_runtime_run(run_id)
+        assert snapshot is not None
+        metrics = snapshot["metadata"]["hunter_metrics"]
+        assert metrics["search_iterations"] == 1
+        assert metrics["new_candidates_total"] == 2
+        assert metrics["candidate_pool_size"] == 2
+        assert metrics["rank_calls"] == 1
+        assert metrics["verify_batches"] == 1
+        assert metrics["verified_candidates_total"] == 1
+        assert metrics["verification_success_total"] == 1
+        assert metrics["verification_failure_total"] == 0
+        assert metrics["verified_matches"] == 1
+        assert metrics["query_count"] == 1
+        assert metrics["last_verified_candidate"] == "Nat.add_comm"
 
 
 class TestHunterRefinement:
