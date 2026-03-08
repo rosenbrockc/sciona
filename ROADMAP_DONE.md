@@ -279,7 +279,7 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1215 passed, 17 skipped`
 - Commits:
-  - `TBD` `runtime: warn on legacy subprocess providers`
+  - `9b1b33d` `runtime: warn on legacy subprocess providers`
   - `conda run -n hpyexec pytest -q`
   - Result: `1207 passed, 17 skipped`
 - Commits:
