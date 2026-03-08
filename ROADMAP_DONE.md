@@ -407,4 +407,4 @@
   - `conda run -n hpyexec pytest -q`
   - Result: `1217 passed, 17 skipped`
 - Commits:
-  - `TBD` `catalog: enrich witness-backed source extraction`
+  - `3c1fcf8` `catalog: enrich witness-backed source extraction`
