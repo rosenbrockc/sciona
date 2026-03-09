@@ -253,7 +253,10 @@ REGISTRY["live_only_atom"] = {"impl": live_only, "witness": witness_live_only}
         assert audit["registry_only_total"] == 1
         assert audit["ast_only_total"] == 0
         assert audit["drift_sources"] == ["demo-source"]
+        assert audit["highest_severity"] == "high"
+        assert audit["severity_counts"]["high"] == 1
         row = audit["rows"][0]
+        assert row["severity"] == "high"
         assert row["registry_only_examples"] == ["live_only_atom"]
         assert row["ast_only_examples"] == []
     finally:

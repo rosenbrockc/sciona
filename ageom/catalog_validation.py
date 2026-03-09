@@ -33,6 +33,7 @@ def _format_catalog_coverage_summary(summary: dict[str, Any]) -> str:
 
 def _format_catalog_alignment_summary(alignment: dict[str, Any]) -> str:
     return (
+        f"severity={str(alignment.get('highest_severity', '') or 'healthy')} "
         f"matched={int(alignment.get('matched_total', 0) or 0)} "
         f"registry_only={int(alignment.get('registry_only_total', 0) or 0)} "
         f"ast_only={int(alignment.get('ast_only_total', 0) or 0)} "

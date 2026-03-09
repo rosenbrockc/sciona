@@ -174,7 +174,7 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                 "source_candidates": 3,
                 "source_added": 3,
                 "coverage_summary": "resolved=1/2 added=3/3 missing=1 zero=1",
-                "alignment_summary": "matched=3 registry_only=0 ast_only=1 drift=1",
+                "alignment_summary": "severity=critical matched=3 registry_only=0 ast_only=1 drift=1",
                 "missing_sources": ["hpy-atoms"],
                 "zero_candidate_sources": ["hpy-atoms"],
                 "violations": ["missing_source:hpy-atoms"],

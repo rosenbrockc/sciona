@@ -460,6 +460,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "matched_total": int(alignment.get("matched_total", 0) or 0),
         "registry_only_total": int(alignment.get("registry_only_total", 0) or 0),
         "ast_only_total": int(alignment.get("ast_only_total", 0) or 0),
+        "highest_severity": str(alignment.get("highest_severity", "") or ""),
+        "severity_counts": dict(alignment.get("severity_counts", {}) or {})
+        if isinstance(alignment.get("severity_counts", {}), dict)
+        else {},
         "drift_sources": list(alignment.get("drift_sources", []) or [])
         if isinstance(alignment.get("drift_sources", []), list)
         else [],
@@ -479,6 +483,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
                 "source": str(row.get("source", "") or ""),
                 "registry_only_count": int(row.get("registry_only_count", 0) or 0),
                 "ast_only_count": int(row.get("ast_only_count", 0) or 0),
+                "severity": str(row.get("severity", "") or ""),
                 "registry_only_examples": list(row.get("registry_only_examples", []) or [])
                 if isinstance(row.get("registry_only_examples", []), list)
                 else [],

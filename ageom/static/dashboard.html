@@ -420,7 +420,7 @@
         const catalogValidation = run.catalog_validation_summary || {};
         const catalogValidationAlignment = catalogValidation.alignment || {};
         const topCatalogDrift = (run.catalog_validation_summary?.top_drift_sources || [])
-          .map((row) => `${row.source}:${Number(row.registry_only_count || 0)}/${Number(row.ast_only_count || 0)}`)
+          .map((row) => `${row.source}:${row.severity || "--"}:${Number(row.registry_only_count || 0)}/${Number(row.ast_only_count || 0)}`)
           .join(", ");
         const benchmark = run.benchmark_summary || {};
         const benchmarkRuntime = benchmark.runtime_complexity || {};
@@ -478,6 +478,7 @@
           ["catalog issues", (catalogValidation.violations || []).join(", ") || "--"],
           ["catalog drift", `${Number(catalogValidationAlignment.registry_only_total || 0)} registry-only / ${Number(catalogValidationAlignment.ast_only_total || 0)} ast-only`],
           ["catalog align sum", catalogValidation.alignment_summary || "--"],
+          ["catalog severity", `${catalogValidationAlignment.highest_severity || "--"} ${JSON.stringify(catalogValidationAlignment.severity_counts || {})}`],
           ["catalog drift src", (catalogValidationAlignment.drift_sources || []).join(", ") || "--"],
           ["catalog drift top", topCatalogDrift || "--"],
           ["shared ctx", `${Number(shared.active_context_count || 0)}/${Number(shared.context_count || 0)}`],

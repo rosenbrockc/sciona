@@ -47,6 +47,8 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
             "matched_total": 7,
             "registry_only_total": 1,
             "ast_only_total": 0,
+            "highest_severity": "high",
+            "severity_counts": {"healthy": 1, "medium": 0, "high": 1, "critical": 0},
             "drift_sources": ["hpy-atoms"],
             "registry_error_sources": [],
             "rows": [],
@@ -62,6 +64,7 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
     assert summary["source_added"] == 7
     assert summary["violations"] == []
     assert "resolved=2/2" in summary["coverage_summary"]
+    assert "severity=high" in summary["alignment_summary"]
     assert "registry_only=1" in summary["alignment_summary"]
     assert Path(summary["report"]).exists()
     payload = json.loads(Path(summary["report"]).read_text(encoding="utf-8"))
@@ -105,6 +108,8 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
             "matched_total": 3,
             "registry_only_total": 0,
             "ast_only_total": 1,
+            "highest_severity": "critical",
+            "severity_counts": {"healthy": 1, "medium": 0, "high": 0, "critical": 1},
             "drift_sources": ["missing-atoms"],
             "registry_error_sources": ["missing-atoms"],
             "rows": [],
@@ -119,5 +124,6 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
     assert summary["missing_sources"] == ["missing-atoms"]
     assert summary["zero_candidate_sources"] == ["missing-atoms"]
     assert summary["alignment"]["registry_error_sources"] == ["missing-atoms"]
+    assert "severity=critical" in summary["alignment_summary"]
     assert "missing=1" in summary["coverage_summary"]
     assert "drift=1" in summary["alignment_summary"]

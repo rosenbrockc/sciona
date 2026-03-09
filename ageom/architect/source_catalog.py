@@ -744,6 +744,13 @@ def audit_source_registration_alignment(
 
         registry_only = sorted(live_names - ast_names)
         ast_only = sorted(ast_names - live_names)
+        severity = "healthy"
+        if registry_error:
+            severity = "critical"
+        elif registry_only:
+            severity = "high"
+        elif ast_only:
+            severity = "medium"
         rows.append(
             {
                 "source": source.name,
@@ -755,6 +762,7 @@ def audit_source_registration_alignment(
                 "registry_only_examples": registry_only[:5],
                 "ast_only_examples": ast_only[:5],
                 "registry_error": registry_error,
+                "severity": severity,
             }
         )
 
@@ -765,6 +773,17 @@ def audit_source_registration_alignment(
         or int(row["registry_only_count"]) > 0
         or int(row["ast_only_count"]) > 0
     )
+    severity_counts = {"healthy": 0, "medium": 0, "high": 0, "critical": 0}
+    for row in rows:
+        severity = str(row.get("severity", "healthy") or "healthy")
+        if severity not in severity_counts:
+            continue
+        severity_counts[severity] += 1
+    highest_severity = "healthy"
+    for level in ("critical", "high", "medium", "healthy"):
+        if severity_counts[level] > 0:
+            highest_severity = level
+            break
     return {
         "rows": rows,
         "source_count": len(rows),
@@ -773,4 +792,6 @@ def audit_source_registration_alignment(
         "ast_only_total": sum(int(row["ast_only_count"]) for row in rows),
         "drift_sources": drift_sources,
         "registry_error_sources": sorted(row["source"] for row in rows if row["registry_error"]),
+        "severity_counts": severity_counts,
+        "highest_severity": highest_severity,
     }

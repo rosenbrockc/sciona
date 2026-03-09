@@ -1280,3 +1280,27 @@
   - Result: `1257 passed, 17 skipped`
 - Commit:
   - `dashboard: surface top catalog drift examples`
+
+## Catalog Drift Severity Classification
+
+- Added deterministic severity classification for source-registry alignment drift:
+  - `healthy`
+  - `medium` for AST-only drift
+  - `high` for live-registry-only drift
+  - `critical` for live registry load failures
+- Alignment audits now persist:
+  - per-source severity
+  - aggregate severity counts
+  - highest observed severity
+- Catalog validation summaries now include severity in the compact alignment line, and dashboard/API summaries expose severity counts and top-drift severity.
+- Added regressions for:
+  - high-severity live-registry-only drift classification
+  - catalog-validation alignment summaries carrying severity
+  - dashboard/API extraction of severity fields
+- Validation:
+  - `pytest -q tests/test_source_catalog.py tests/test_catalog_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `35 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1257 passed, 17 skipped`
+- Commit:
+  - `catalog: classify drift severity`

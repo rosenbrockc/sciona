@@ -563,7 +563,7 @@ class TestDashboardAPI:
                         "source_candidates": 3,
                         "source_added": 3,
                         "coverage_summary": "resolved=1/2 added=3/3 missing=1 zero=1",
-                        "alignment_summary": "matched=3 registry_only=1 ast_only=2 drift=1",
+                        "alignment_summary": "severity=critical matched=3 registry_only=1 ast_only=2 drift=1",
                         "missing_sources": ["hpy-atoms"],
                         "zero_candidate_sources": ["hpy-atoms"],
                         "violations": ["missing_source:hpy-atoms"],
@@ -572,6 +572,13 @@ class TestDashboardAPI:
                             "matched_total": 3,
                             "registry_only_total": 1,
                             "ast_only_total": 2,
+                            "highest_severity": "critical",
+                            "severity_counts": {
+                                "healthy": 1,
+                                "medium": 0,
+                                "high": 0,
+                                "critical": 1,
+                            },
                             "drift_sources": ["hpy-atoms"],
                             "registry_error_sources": ["hpy-atoms"],
                             "rows": [
@@ -579,6 +586,7 @@ class TestDashboardAPI:
                                     "source": "hpy-atoms",
                                     "registry_only_count": 1,
                                     "ast_only_count": 2,
+                                    "severity": "critical",
                                     "registry_only_examples": ["live_only_atom"],
                                     "ast_only_examples": ["ast_only_a", "ast_only_b"],
                                 }
@@ -622,10 +630,12 @@ class TestDashboardAPI:
         assert data["catalog_validation_summary"]["status"] == "failed"
         assert data["catalog_validation_summary"]["missing_sources"] == ["hpy-atoms"]
         assert "resolved=1/2" in data["catalog_validation_summary"]["coverage_summary"]
-        assert "registry_only=1" in data["catalog_validation_summary"]["alignment_summary"]
+        assert "severity=critical" in data["catalog_validation_summary"]["alignment_summary"]
         assert data["catalog_validation_summary"]["alignment"]["registry_only_total"] == 1
         assert data["catalog_validation_summary"]["alignment"]["ast_only_total"] == 2
+        assert data["catalog_validation_summary"]["alignment"]["highest_severity"] == "critical"
         assert data["catalog_validation_summary"]["top_drift_sources"][0]["source"] == "hpy-atoms"
+        assert data["catalog_validation_summary"]["top_drift_sources"][0]["severity"] == "critical"
         assert data["catalog_validation_summary"]["top_drift_sources"][0]["registry_only_examples"] == ["live_only_atom"]
 
     def test_dashboard_run_includes_shared_context_summary(
