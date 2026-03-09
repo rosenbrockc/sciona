@@ -47,25 +47,45 @@ def _format_release_failure_summary(
         return str(values[0] or "")
 
     benchmark_failure = ""
+    benchmark_subcheck = ""
     if str(benchmark_summary.get("status", "failed")) != "passed":
-        benchmark_failure = (
-            str(
-                _first_text((benchmark_summary.get("runtime_complexity", {}) or {}).get("violations", []))
-                or _first_text((benchmark_summary.get("flow_execution_paths", {}) or {}).get("violations", []))
-                or _first_text((benchmark_summary.get("flow_prompt_volume", {}) or {}).get("violations", []))
-                or (
-                    f"prompt_tuned_failures={int(benchmark_summary.get('prompt_tuned_failures', 0) or 0)}"
-                    if int(benchmark_summary.get("prompt_tuned_failures", 0) or 0) > 0
-                    else ""
-                )
-                or (
-                    f"flow_mode_failures={int(benchmark_summary.get('flow_mode_failures', 0) or 0)}"
-                    if int(benchmark_summary.get("flow_mode_failures", 0) or 0) > 0
-                    else ""
-                )
-            )
+        runtime_budget_failure = _first_text(
+            (benchmark_summary.get("runtime_complexity", {}) or {}).get("violations", [])
+        )
+        execution_path_failure = _first_text(
+            (benchmark_summary.get("flow_execution_paths", {}) or {}).get("violations", [])
+        )
+        prompt_volume_failure = _first_text(
+            (benchmark_summary.get("flow_prompt_volume", {}) or {}).get("violations", [])
+        )
+        prompt_tuned_failure = (
+            f"prompt_tuned_failures={int(benchmark_summary.get('prompt_tuned_failures', 0) or 0)}"
+            if int(benchmark_summary.get("prompt_tuned_failures", 0) or 0) > 0
+            else ""
+        )
+        flow_mode_failure = (
+            f"flow_mode_failures={int(benchmark_summary.get('flow_mode_failures', 0) or 0)}"
+            if int(benchmark_summary.get("flow_mode_failures", 0) or 0) > 0
+            else ""
+        )
+        benchmark_failure = str(
+            runtime_budget_failure
+            or execution_path_failure
+            or prompt_volume_failure
+            or prompt_tuned_failure
+            or flow_mode_failure
             or ""
         )
+        if runtime_budget_failure:
+            benchmark_subcheck = "runtime_budget"
+        elif execution_path_failure:
+            benchmark_subcheck = "execution_path"
+        elif prompt_volume_failure:
+            benchmark_subcheck = "prompt_volume"
+        elif prompt_tuned_failure:
+            benchmark_subcheck = "prompt_tuning"
+        elif flow_mode_failure:
+            benchmark_subcheck = "flow_mode"
     runtime_failure = _first_text(runtime_complexity.get("violations", []))
     catalog_failure = _first_text(catalog_summary.get("violations", []))
     top_failed_check = "none"
@@ -78,6 +98,8 @@ def _format_release_failure_summary(
     parts: list[str] = []
     if top_failed_check != "none":
         parts.append(f"check={top_failed_check}")
+    if benchmark_subcheck:
+        parts.append(f"benchmark_check={benchmark_subcheck}")
     if benchmark_failure:
         parts.append(f"benchmark={benchmark_failure}")
     if runtime_failure:
@@ -86,6 +108,7 @@ def _format_release_failure_summary(
         parts.append(f"catalog={catalog_failure}")
     return {
         "top_failed_check": top_failed_check,
+        "top_benchmark_subcheck": benchmark_subcheck,
         "top_benchmark_failure": benchmark_failure,
         "top_runtime_failure": runtime_failure,
         "top_catalog_failure": catalog_failure,

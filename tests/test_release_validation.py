@@ -23,6 +23,7 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert isinstance(manifest["warnings"]["top_catalog_warning"], str)
     assert manifest["failures"]["failure_summary"] == "none"
     assert manifest["failures"]["top_failed_check"] == "none"
+    assert manifest["failures"]["top_benchmark_subcheck"] == ""
     assert manifest["failures"]["top_benchmark_failure"] == ""
     assert manifest["failures"]["top_runtime_failure"] == ""
     assert manifest["failures"]["top_catalog_failure"] == ""
@@ -131,7 +132,10 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
     assert manifest["warnings"]["top_runtime_warning"] == ""
     assert manifest["warnings"]["top_catalog_warning"] == ""
     assert manifest["failures"]["top_failed_check"] == "benchmark_validation"
-    assert manifest["failures"]["failure_summary"].startswith("check=benchmark_validation ")
+    assert manifest["failures"]["top_benchmark_subcheck"] == "prompt_tuning"
+    assert manifest["failures"]["failure_summary"].startswith(
+        "check=benchmark_validation benchmark_check=prompt_tuning "
+    )
     assert manifest["failures"]["top_benchmark_failure"] == "prompt_tuned_failures=1"
     assert manifest["failures"]["top_runtime_failure"] == ""
     assert manifest["failures"]["top_catalog_failure"] == ""
@@ -236,7 +240,10 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
     assert manifest["warnings"]["top_runtime_warning"] == "provider_count=6 exceeds budget 4"
     assert manifest["warnings"]["top_catalog_warning"] == ""
     assert manifest["failures"]["top_failed_check"] == "runtime_complexity"
-    assert manifest["failures"]["failure_summary"].startswith("check=runtime_complexity ")
+    assert manifest["failures"]["top_benchmark_subcheck"] == "runtime_budget"
+    assert manifest["failures"]["failure_summary"].startswith(
+        "check=runtime_complexity benchmark_check=runtime_budget "
+    )
     assert manifest["failures"]["top_benchmark_failure"] == "provider_count=6 exceeds budget 4"
     assert manifest["failures"]["top_runtime_failure"] == "provider_count=6 exceeds budget 4"
     assert manifest["failures"]["top_catalog_failure"] == ""
@@ -244,6 +251,92 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
     assert runtime["legacy_provider_count"] == 1
     assert any("provider_count=6 exceeds budget 4" == item for item in runtime["violations"])
     assert any("legacy_providers_present=codex_cli" == item for item in runtime["violations"])
+
+
+@pytest.mark.asyncio
+async def test_run_release_validation_surfaces_benchmark_execution_path_subcheck(
+    monkeypatch, tmp_path
+):
+    async def _fake_run_benchmark_validation(output_dir):
+        return {
+            "status": "failed",
+            "summary_report": str(tmp_path / "benchmarks" / "summary.json"),
+            "prompt_report": str(tmp_path / "benchmarks" / "prompt_benchmark.json"),
+            "flow_report": str(tmp_path / "benchmarks" / "flow_benchmark.json"),
+            "prompt_cases": 12,
+            "prompt_results": 24,
+            "prompt_summary": "prompt summary",
+            "prompt_stability_summary": "fixture_good/tuned 12/12",
+            "flow_cases": 4,
+            "flow_results": 16,
+            "flow_summary": "flow summary",
+            "flow_stability_summary": "rapid 4/4, verified 4/4",
+            "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
+            "flow_execution_path_summary": "rapid=rapid_direct violations=1",
+            "runtime_override_policy_summary": "verified=5/0/0",
+            "flow_required_variants": ["structured", "verified"],
+            "flow_comparison_variants": ["direct_baseline", "rapid"],
+            "flow_execution_paths": {
+                "expected": {"rapid": "rapid_direct"},
+                "observed": {"rapid": ["verified_orchestration"]},
+                "violations": ["rapid expected rapid_direct got verified_orchestration"],
+            },
+            "flow_prompt_volume": {
+                "averages": {"rapid": 6.0, "structured": 7.0, "verified": 8.0},
+                "violations": [],
+            },
+            "flow_prompt_volume_summary": "rapid=6.0, structured=7.0, verified=8.0",
+            "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "runtime_complexity": {"violations": []},
+            "prompt_tuned_failures": 0,
+            "prompt_tuned_unstable_groups": 0,
+            "flow_mode_failures": 0,
+            "flow_mode_unstable_groups": 0,
+            "flow_comparison_failures": 2,
+            "flow_comparison_unstable_groups": 0,
+        }
+
+    monkeypatch.setattr(
+        "ageom.release_validation.run_benchmark_validation",
+        _fake_run_benchmark_validation,
+    )
+
+    async def _fake_run_catalog_validation(output_dir):
+        return {
+            "status": "passed",
+            "report": str(tmp_path / "catalog" / "catalog_validation.json"),
+            "configured_sources": 2,
+            "resolved_sources": 2,
+            "source_candidates": 10,
+            "source_added": 8,
+            "coverage_summary": "resolved=2/2 added=8/10 missing=0 zero=0",
+            "alignment_summary": "severity=healthy matched=8 registry_only=0 ast_only=0 drift=0",
+            "warning_summary": "warnings=0 high=0 medium=0",
+            "missing_sources": [],
+            "zero_candidate_sources": [],
+            "high_severity_sources": [],
+            "medium_severity_sources": [],
+            "warnings": [],
+            "violations": [],
+        }
+
+    monkeypatch.setattr(
+        "ageom.release_validation.run_catalog_validation",
+        _fake_run_catalog_validation,
+    )
+
+    summary = await run_release_validation(tmp_path)
+
+    manifest = json.loads(Path(summary["manifest"]).read_text(encoding="utf-8"))
+    assert manifest["status"] == "failed"
+    assert manifest["failures"]["top_failed_check"] == "benchmark_validation"
+    assert manifest["failures"]["top_benchmark_subcheck"] == "execution_path"
+    assert manifest["failures"]["top_benchmark_failure"] == (
+        "rapid expected rapid_direct got verified_orchestration"
+    )
+    assert manifest["failures"]["failure_summary"].startswith(
+        "check=benchmark_validation benchmark_check=execution_path "
+    )
 
 
 @pytest.mark.asyncio
@@ -325,6 +418,7 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
     assert manifest["warnings"]["top_runtime_warning"] == ""
     assert manifest["warnings"]["top_catalog_warning"] == ""
     assert manifest["failures"]["top_failed_check"] == "catalog_validation"
+    assert manifest["failures"]["top_benchmark_subcheck"] == ""
     assert manifest["failures"]["failure_summary"].startswith("check=catalog_validation ")
     assert manifest["failures"]["top_benchmark_failure"] == ""
     assert manifest["failures"]["top_runtime_failure"] == ""
@@ -413,6 +507,7 @@ async def test_run_release_validation_fails_when_catalog_alignment_is_critical(
     assert manifest["warnings"]["top_runtime_warning"] == ""
     assert manifest["warnings"]["top_catalog_warning"] == ""
     assert manifest["failures"]["top_failed_check"] == "catalog_validation"
+    assert manifest["failures"]["top_benchmark_subcheck"] == ""
     assert manifest["failures"]["failure_summary"].startswith("check=catalog_validation ")
     assert manifest["failures"]["top_benchmark_failure"] == ""
     assert manifest["failures"]["top_runtime_failure"] == ""

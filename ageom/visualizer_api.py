@@ -445,6 +445,9 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "release_top_failed_check": str(
             release_validation.get("top_failed_check", "") or ""
         ),
+        "release_top_benchmark_subcheck": str(
+            release_validation.get("top_benchmark_subcheck", "") or ""
+        ),
         "release_top_benchmark_failure": str(
             release_validation.get("top_benchmark_failure", "") or ""
         ),

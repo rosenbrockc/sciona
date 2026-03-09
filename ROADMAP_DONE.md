@@ -1442,3 +1442,31 @@
   - Result: `1259 passed, 17 skipped`
 - Commit:
   - `release: surface top failed check`
+
+## Release Benchmark Subcheck Diagnostics
+
+- Extended the release failure summary so benchmark-driven failures identify the top failed benchmark subcheck directly:
+  - `top_benchmark_subcheck`
+- The compact failure line now includes `benchmark_check=<...>` when the benchmark side failed, distinguishing:
+  - `runtime_budget`
+  - `execution_path`
+  - `prompt_volume`
+  - `prompt_tuning`
+  - `flow_mode`
+- Propagated that field through:
+  - release validation manifest
+  - release telemetry metadata
+  - dashboard/API benchmark-release summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - prompt-tuning benchmark failure classification
+  - runtime-budget benchmark failure classification
+  - execution-path benchmark failure classification
+  - release telemetry/dashboard extraction of benchmark subcheck diagnostics
+- Validation:
+  - `pytest -q tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `25 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1259 passed, 17 skipped`
+- Commit:
+  - `release: surface benchmark failure subcheck`

@@ -510,6 +510,7 @@
           ["release top warn", `${benchmark.release_top_runtime_warning || "--"} | ${benchmark.release_top_catalog_warning || "--"}`],
           ["release failures", benchmark.release_failure_summary || "--"],
           ["release failed check", benchmark.release_top_failed_check || "--"],
+          ["release bench check", benchmark.release_top_benchmark_subcheck || "--"],
           ["release top fail", `${benchmark.release_top_benchmark_failure || "--"} | ${benchmark.release_top_runtime_failure || "--"} | ${benchmark.release_top_catalog_failure || "--"}`],
           ["runtime modes", Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes).map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.provider_model_count || 0)}/${Number(row.transport_count || 0)}`).join(", ")
