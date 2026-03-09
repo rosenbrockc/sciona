@@ -638,6 +638,11 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
             "flow_mode_failures": flow_mode_failures,
         }
     )
+    flow_agg_map = {agg.variant: agg for agg in flow_aggregates}
+    _rapid_cov = getattr(flow_agg_map.get("rapid"), "avg_leaf_coverage", 0.0)
+    _struct_cov = getattr(flow_agg_map.get("structured"), "avg_leaf_coverage", 0.0)
+    _verif_cov = getattr(flow_agg_map.get("verified"), "avg_leaf_coverage", 0.0)
+    coverage_monotonic = _struct_cov >= _rapid_cov and _verif_cov >= _struct_cov
     benchmark_passed = (
         prompt_tuned_failures == 0
         and prompt_tuned_unstable_groups == 0
@@ -646,6 +651,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         and len(flow_execution_paths["violations"]) == 0
         and len(flow_prompt_volume["violations"]) == 0
         and len(runtime_complexity["violations"]) == 0
+        and coverage_monotonic
     )
 
     required_variants = sorted(_REQUIRED_FLOW_BENCHMARK_VARIANTS)
@@ -702,6 +708,12 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "flow_mode_unstable_groups": flow_mode_unstable_groups,
         "flow_comparison_failures": flow_comparison_failures,
         "flow_comparison_unstable_groups": flow_comparison_unstable_groups,
+        "coverage_monotonic": coverage_monotonic,
+        "coverage_by_variant": {
+            "rapid": round(_rapid_cov, 4),
+            "structured": round(_struct_cov, 4),
+            "verified": round(_verif_cov, 4),
+        },
         "runtime_complexity": runtime_complexity,
         "runtime_override_policy_summary": _format_runtime_override_policy_summary(
             runtime_complexity

@@ -56,6 +56,11 @@ class FlowBenchmarkResult:
     matched_leaves: int
     total_leaves: int
     node_count: int
+    leaf_coverage: float = 0.0
+    best_similarity: float = 0.0
+    decomposition_depth: int = 0
+    decomposition_leaf_count: int = 0
+    decomposition_edge_count: int = 0
     error: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -72,6 +77,8 @@ class FlowBenchmarkAggregate:
     avg_latency_ms: float = 0.0
     total_prompt_calls: int = 0
     avg_prompt_calls: float = 0.0
+    avg_leaf_coverage: float = 0.0
+    avg_best_similarity: float = 0.0
     repeat_groups: int = 0
     stable_groups: int = 0
     stability_rate: float = 1.0
@@ -90,6 +97,13 @@ class FlowBenchmarkAggregate:
         self.avg_latency_ms = total_latency / max(1, self.total_cases)
         self.total_prompt_calls += int(result.prompt_calls)
         self.avg_prompt_calls = self.total_prompt_calls / max(1, self.total_cases)
+        prev = self.total_cases - 1
+        self.avg_leaf_coverage = (
+            self.avg_leaf_coverage * prev + result.leaf_coverage
+        ) / self.total_cases
+        self.avg_best_similarity = (
+            self.avg_best_similarity * prev + result.best_similarity
+        ) / self.total_cases
         self._case_outcomes.setdefault(result.case_id, []).append(result.ok)
 
     def finalize(self) -> None:
@@ -112,6 +126,8 @@ class FlowBenchmarkAggregate:
             "avg_latency_ms": self.avg_latency_ms,
             "total_prompt_calls": self.total_prompt_calls,
             "avg_prompt_calls": self.avg_prompt_calls,
+            "avg_leaf_coverage": self.avg_leaf_coverage,
+            "avg_best_similarity": self.avg_best_similarity,
             "repeat_groups": self.repeat_groups,
             "stable_groups": self.stable_groups,
             "stability_rate": self.stability_rate,
@@ -324,9 +340,10 @@ def _make_declarations(case: FlowBenchmarkCase) -> list[Declaration]:
 async def _run_direct_baseline_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
     started = time.perf_counter()
     declarations = _make_declarations(case)
+    index = _LexicalSemanticIndex(declarations)
     hunter_llm = _BenchmarkHunterLLM()
     hunter = HunterAgent(
-        index=_LexicalSemanticIndex(declarations),  # type: ignore[arg-type]
+        index=index,  # type: ignore[arg-type]
         oracle=_LeafOracle({leaf.query_hint: leaf.declaration_name for leaf in case.leaves}),  # type: ignore[arg-type]
         llm=hunter_llm,
         max_iterations=1,
@@ -342,34 +359,43 @@ async def _run_direct_baseline_case(case: FlowBenchmarkCase) -> FlowBenchmarkRes
         )
     )
     matched = 1 if result.success else 0
+    total = len(case.leaves)
     latency_ms = (time.perf_counter() - started) * 1000.0
     return FlowBenchmarkResult(
         case_id=case.case_id,
         domain=case.domain,
         variant="direct_baseline",
         execution_path="direct_baseline",
-        ok=matched == len(case.leaves),
+        ok=matched == total,
         latency_ms=latency_ms,
         prompt_calls=hunter_llm.calls,
         matched_leaves=matched,
-        total_leaves=len(case.leaves),
+        total_leaves=total,
         node_count=1,
-        error="" if matched == len(case.leaves) else "single-shot retrieval did not cover all leaves",
+        leaf_coverage=matched / max(1, total),
+        best_similarity=_best_similarity_score(case, index),
+        decomposition_depth=1,
+        decomposition_leaf_count=1,
+        decomposition_edge_count=0,
+        error="" if matched == total else "single-shot retrieval did not cover all leaves",
     )
 
 
-def _make_hunter(case: FlowBenchmarkCase) -> tuple[HunterAgent, _BenchmarkHunterLLM]:
+def _make_hunter(
+    case: FlowBenchmarkCase,
+) -> tuple[HunterAgent, _BenchmarkHunterLLM, _LexicalSemanticIndex]:
     declarations = _make_declarations(case)
+    index = _LexicalSemanticIndex(declarations)
     hunter_llm = _BenchmarkHunterLLM()
     hunter = HunterAgent(
-        index=_LexicalSemanticIndex(declarations),  # type: ignore[arg-type]
+        index=index,  # type: ignore[arg-type]
         oracle=_LeafOracle({leaf.query_hint: leaf.declaration_name for leaf in case.leaves}),  # type: ignore[arg-type]
         llm=hunter_llm,
         max_iterations=2,
         top_k_verify=2,
         search_k=5,
     )
-    return hunter, hunter_llm
+    return hunter, hunter_llm, index
 
 
 def _matched_leaf_count(
@@ -386,6 +412,40 @@ def _matched_leaf_count(
         if name in expected:
             matched.add(name)
     return len(matched)
+
+
+def _best_similarity_score(
+    case: FlowBenchmarkCase,
+    index: _LexicalSemanticIndex,
+) -> float:
+    """Max token-overlap score between any leaf query_hint and any declaration."""
+    best = 0.0
+    for leaf in case.leaves:
+        ranked = index.search_by_embedding(leaf.query_hint, k=1)
+        for _decl, score in ranked:
+            best = max(best, score)
+    return best
+
+
+def _cdg_metrics(cdg: Any) -> tuple[int, int, int]:
+    """Return (depth, leaf_count, edge_count) for a CDG."""
+    leaf_count = len(cdg.leaf_nodes()) if hasattr(cdg, "leaf_nodes") else 0
+    edge_count = len(cdg.edges) if hasattr(cdg, "edges") else 0
+    children: dict[str, list[str]] = {}
+    for edge in getattr(cdg, "edges", []):
+        children.setdefault(edge.source_id, []).append(edge.target_id)
+    node_ids = {n.node_id for n in cdg.nodes} if hasattr(cdg, "nodes") else set()
+    child_ids = {edge.target_id for edge in getattr(cdg, "edges", [])}
+    roots = list((node_ids - child_ids) or node_ids)
+    depth = 0
+    frontier = roots
+    while frontier:
+        depth += 1
+        next_frontier: list[str] = []
+        for nid in frontier:
+            next_frontier.extend(children.get(nid, []))
+        frontier = next_frontier
+    return depth, leaf_count, edge_count
 
 
 async def _decompose_case(
@@ -407,26 +467,32 @@ async def _run_rapid_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
     from ageom.cli import _run_rapid_direct_match
 
     started = time.perf_counter()
-    hunter, hunter_llm = _make_hunter(case)
+    hunter, hunter_llm, index = _make_hunter(case)
     result = await _run_rapid_direct_match(
         case.prompt,
         prover=Prover.PYTHON,
         hunter=hunter,
     )
     matched = _matched_leaf_count(case, result.match_results)
+    total = len(case.leaves)
     latency_ms = (time.perf_counter() - started) * 1000.0
     return FlowBenchmarkResult(
         case_id=case.case_id,
         domain=case.domain,
         variant="rapid",
         execution_path="rapid_direct",
-        ok=matched == len(case.leaves),
+        ok=matched == total,
         latency_ms=latency_ms,
         prompt_calls=hunter_llm.calls,
         matched_leaves=matched,
-        total_leaves=len(case.leaves),
+        total_leaves=total,
         node_count=len(result.cdg.nodes),
-        error="" if matched == len(case.leaves) else "rapid direct match did not cover all leaves",
+        leaf_coverage=matched / max(1, total),
+        best_similarity=_best_similarity_score(case, index),
+        decomposition_depth=1,
+        decomposition_leaf_count=1,
+        decomposition_edge_count=0,
+        error="" if matched == total else "rapid direct match did not cover all leaves",
     )
 
 
@@ -435,33 +501,40 @@ async def _run_structured_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
 
     started = time.perf_counter()
     cdg, architect_llm = await _decompose_case(case)
-    hunter, hunter_llm = _make_hunter(case)
+    hunter, hunter_llm, index = _make_hunter(case)
     result = await _run_structured_single_pass(
         cdg,
         prover=Prover.PYTHON,
         hunter=hunter,
     )
     matched = _matched_leaf_count(case, result.match_results)
+    total = len(case.leaves)
+    depth, leaf_count, edge_count = _cdg_metrics(cdg)
     latency_ms = (time.perf_counter() - started) * 1000.0
     return FlowBenchmarkResult(
         case_id=case.case_id,
         domain=case.domain,
         variant="structured",
         execution_path="structured_single_pass",
-        ok=matched == len(case.leaves),
+        ok=matched == total,
         latency_ms=latency_ms,
         prompt_calls=architect_llm.calls + hunter_llm.calls,
         matched_leaves=matched,
-        total_leaves=len(case.leaves),
+        total_leaves=total,
         node_count=len(cdg.nodes),
-        error="" if matched == len(case.leaves) else "not all decomposed leaves matched",
+        leaf_coverage=matched / max(1, total),
+        best_similarity=_best_similarity_score(case, index),
+        decomposition_depth=depth,
+        decomposition_leaf_count=leaf_count,
+        decomposition_edge_count=edge_count,
+        error="" if matched == total else "not all decomposed leaves matched",
     )
 
 
 async def _run_verified_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
     started = time.perf_counter()
     cdg, architect_llm = await _decompose_case(case)
-    hunter, hunter_llm = _make_hunter(case)
+    hunter, hunter_llm, index = _make_hunter(case)
     result = await run_orchestration(
         cdg,
         hunter_agent=hunter,
@@ -471,19 +544,26 @@ async def _run_verified_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
         hunter_concurrency=1,
     )
     matched = _matched_leaf_count(case, result.match_results)
+    total = len(case.leaves)
+    depth, leaf_count, edge_count = _cdg_metrics(result.cdg)
     latency_ms = (time.perf_counter() - started) * 1000.0
     return FlowBenchmarkResult(
         case_id=case.case_id,
         domain=case.domain,
         variant="verified",
         execution_path="verified_orchestration",
-        ok=matched == len(case.leaves),
+        ok=matched == total,
         latency_ms=latency_ms,
         prompt_calls=architect_llm.calls + hunter_llm.calls,
         matched_leaves=matched,
-        total_leaves=len(case.leaves),
+        total_leaves=total,
         node_count=len(result.cdg.nodes),
-        error="" if matched == len(case.leaves) else "verified refinement did not ground all leaves",
+        leaf_coverage=matched / max(1, total),
+        best_similarity=_best_similarity_score(case, index),
+        decomposition_depth=depth,
+        decomposition_leaf_count=leaf_count,
+        decomposition_edge_count=edge_count,
+        error="" if matched == total else "verified refinement did not ground all leaves",
     )
 
 

@@ -35,6 +35,11 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     assert aggregate_map["verified"].execution_paths == ["verified_orchestration"]
     assert all(aggregate.stability_rate == pytest.approx(1.0) for aggregate in aggregates)
     assert all(aggregate.avg_prompt_calls >= 0.0 for aggregate in aggregates)
+    # Coverage monotonicity: structured >= rapid, verified >= structured
+    assert aggregate_map["structured"].avg_leaf_coverage == pytest.approx(1.0)
+    assert aggregate_map["verified"].avg_leaf_coverage == pytest.approx(1.0)
+    assert aggregate_map["structured"].avg_leaf_coverage >= aggregate_map["rapid"].avg_leaf_coverage
+    assert aggregate_map["verified"].avg_leaf_coverage >= aggregate_map["structured"].avg_leaf_coverage
 
     summary = format_flow_benchmark_summary(aggregates)
     assert "variant | paths | pass/total | stable | avg ms | avg prompts" in summary

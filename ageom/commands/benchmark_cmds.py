@@ -63,6 +63,8 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
             summary.get("flow_comparison_unstable_groups", 0) or 0
         ),
         "runtime_complexity": dict(summary.get("runtime_complexity", {}) or {}),
+        "coverage_monotonic": bool(summary.get("coverage_monotonic", True)),
+        "coverage_by_variant": dict(summary.get("coverage_by_variant", {}) or {}),
     }
 
 
