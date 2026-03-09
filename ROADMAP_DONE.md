@@ -1520,3 +1520,31 @@
   - Result: `1261 passed, 17 skipped`
 - Commit:
   - `benchmark: add compact failure summary`
+
+## Benchmark Warning Summary Line
+
+- Added a compact benchmark-level warning summary line parallel to the benchmark failure summary:
+  - `warning_summary`
+  - `top_warning_subcheck`
+  - `top_warning`
+- The benchmark bundle now surfaces non-blocking comparison-track warnings from:
+  - `flow_comparison_failures`
+  - `flow_comparison_unstable_groups`
+- Release validation now backfills those benchmark warning fields when older or synthetic benchmark summaries omit them, so `checks.benchmark_validation` stays stable across refactors and fixtures.
+- Propagated the benchmark warning summary through:
+  - benchmark-validation telemetry metadata
+  - release manifest `checks.benchmark_validation`
+  - dashboard/API benchmark summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - benchmark bundle persistence of benchmark warning diagnostics
+  - benchmark command telemetry persistence of benchmark warning diagnostics
+  - release-manifest fallback synthesis of benchmark warning diagnostics
+  - dashboard/API extraction of the compact benchmark warning line
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py tests/test_release_validation.py tests/test_cli_command_telemetry.py`
+  - Result: `39 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1262 passed, 17 skipped`
+- Commit:
+  - `benchmark: add compact warning summary`

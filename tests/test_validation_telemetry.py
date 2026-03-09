@@ -32,6 +32,9 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
             "flow_execution_path_summary": "rapid=rapid_direct",
             "runtime_override_policy_summary": "verified=5/0/0",
+            "warning_summary": "subcheck=comparison_failures warning=flow_comparison_failures=2",
+            "top_warning_subcheck": "comparison_failures",
+            "top_warning": "flow_comparison_failures=2",
             "failure_summary": "none",
             "top_failed_subcheck": "",
             "top_failure": "",
@@ -80,6 +83,11 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
     assert "verified=8.0" in bench["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
+    assert bench["warning_summary"] == (
+        "subcheck=comparison_failures warning=flow_comparison_failures=2"
+    )
+    assert bench["top_warning_subcheck"] == "comparison_failures"
+    assert bench["top_warning"] == "flow_comparison_failures=2"
     assert bench["failure_summary"] == "none"
     assert bench["top_failed_subcheck"] == ""
     assert bench["top_failure"] == ""
@@ -115,6 +123,9 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
             "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
             "flow_execution_path_summary": "rapid=rapid_direct",
             "runtime_override_policy_summary": "verified=5/1/1",
+            "warning_summary": "subcheck=comparison_failures warning=flow_comparison_failures=2",
+            "top_warning_subcheck": "comparison_failures",
+            "top_warning": "flow_comparison_failures=2",
             "failure_summary": "subcheck=runtime_budget failure=legacy_providers_present=codex_cli",
             "top_failed_subcheck": "runtime_budget",
             "top_failure": "legacy_providers_present=codex_cli",
@@ -158,6 +169,11 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
     assert payload["pipeline"] == "benchmark_validation"
     assert payload["status"] == "failed"
     assert payload["metadata"]["benchmark_validation"]["status"] == "failed"
+    assert payload["metadata"]["benchmark_validation"]["warning_summary"] == (
+        "subcheck=comparison_failures warning=flow_comparison_failures=2"
+    )
+    assert payload["metadata"]["benchmark_validation"]["top_warning_subcheck"] == "comparison_failures"
+    assert payload["metadata"]["benchmark_validation"]["top_warning"] == "flow_comparison_failures=2"
     assert payload["metadata"]["benchmark_validation"]["failure_summary"] == (
         "subcheck=runtime_budget failure=legacy_providers_present=codex_cli"
     )

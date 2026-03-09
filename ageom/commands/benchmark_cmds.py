@@ -35,6 +35,9 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "runtime_override_policy_summary": str(
             summary.get("runtime_override_policy_summary", "") or ""
         ),
+        "warning_summary": str(summary.get("warning_summary", "") or ""),
+        "top_warning_subcheck": str(summary.get("top_warning_subcheck", "") or ""),
+        "top_warning": str(summary.get("top_warning", "") or ""),
         "failure_summary": str(summary.get("failure_summary", "") or ""),
         "top_failed_subcheck": str(summary.get("top_failed_subcheck", "") or ""),
         "top_failure": str(summary.get("top_failure", "") or ""),

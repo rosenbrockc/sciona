@@ -6,7 +6,9 @@ import pytest
 
 from ageom.benchmark_validation import (
     benchmark_failure_summary,
+    benchmark_warning_summary,
     format_benchmark_failure_summary,
+    format_benchmark_warning_summary,
     flow_prompt_volume_summary,
     run_benchmark_validation,
     runtime_complexity_summary,
@@ -49,6 +51,9 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "prompt_avg_latency_ms" in payload
     assert "flow_avg_latency_ms" in payload
     assert "runtime_complexity" in payload
+    assert "warning_summary" in payload
+    assert "top_warning_subcheck" in payload
+    assert "top_warning" in payload
     assert "failure_summary" in payload
     assert "top_failed_subcheck" in payload
     assert "top_failure" in payload
@@ -89,6 +94,14 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert isinstance(payload["runtime_complexity"]["monotonic_violations"], list)
     assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["missing_required_overrides"] == []
     assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["unexpected_active_overrides"] == []
+    assert payload["warning_summary"] == (
+        "subcheck=comparison_failures "
+        f"warning=flow_comparison_failures={payload['flow_comparison_failures']}"
+    )
+    assert payload["top_warning_subcheck"] == "comparison_failures"
+    assert payload["top_warning"] == (
+        f"flow_comparison_failures={payload['flow_comparison_failures']}"
+    )
     assert payload["failure_summary"] == "none"
     assert payload["top_failed_subcheck"] == ""
     assert payload["top_failure"] == ""
@@ -182,6 +195,33 @@ def test_format_benchmark_failure_summary_renders_compact_line():
 
     assert rendered == (
         "subcheck=runtime_budget failure=legacy_providers_present=codex_cli"
+    )
+
+
+def test_benchmark_warning_summary_prefers_comparison_failures():
+    summary = benchmark_warning_summary(
+        {
+            "flow_comparison_failures": 2,
+            "flow_comparison_unstable_groups": 1,
+        }
+    )
+
+    assert summary == {
+        "top_warning_subcheck": "comparison_failures",
+        "top_warning": "flow_comparison_failures=2",
+    }
+
+
+def test_format_benchmark_warning_summary_renders_compact_line():
+    rendered = format_benchmark_warning_summary(
+        {
+            "top_warning_subcheck": "comparison_instability",
+            "top_warning": "flow_comparison_unstable_groups=1",
+        }
+    )
+
+    assert rendered == (
+        "subcheck=comparison_instability warning=flow_comparison_unstable_groups=1"
     )
 
 

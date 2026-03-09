@@ -310,6 +310,46 @@ def format_benchmark_failure_summary(summary: dict[str, Any]) -> str:
     return " ".join(parts) or "none"
 
 
+def benchmark_warning_summary(summary: dict[str, Any]) -> dict[str, str]:
+    """Return the first non-blocking benchmark warning and its subcheck classification."""
+    comparison_failure = (
+        f"flow_comparison_failures={int(summary.get('flow_comparison_failures', 0) or 0)}"
+        if int(summary.get("flow_comparison_failures", 0) or 0) > 0
+        else ""
+    )
+    comparison_instability = (
+        "flow_comparison_unstable_groups="
+        f"{int(summary.get('flow_comparison_unstable_groups', 0) or 0)}"
+        if int(summary.get("flow_comparison_unstable_groups", 0) or 0) > 0
+        else ""
+    )
+    if comparison_failure:
+        return {
+            "top_warning_subcheck": "comparison_failures",
+            "top_warning": comparison_failure,
+        }
+    if comparison_instability:
+        return {
+            "top_warning_subcheck": "comparison_instability",
+            "top_warning": comparison_instability,
+        }
+    return {"top_warning_subcheck": "", "top_warning": ""}
+
+
+def format_benchmark_warning_summary(summary: dict[str, Any]) -> str:
+    """Render a compact benchmark warning summary line."""
+    top_warning_subcheck = str(summary.get("top_warning_subcheck", "") or "")
+    top_warning = str(summary.get("top_warning", "") or "")
+    if not top_warning_subcheck and not top_warning:
+        return "none"
+    parts: list[str] = []
+    if top_warning_subcheck:
+        parts.append(f"subcheck={top_warning_subcheck}")
+    if top_warning:
+        parts.append(f"warning={top_warning}")
+    return " ".join(parts) or "none"
+
+
 def _transport_for_provider(provider: str) -> str:
     lowered = provider.strip().lower()
     if lowered.endswith("_shim"):
@@ -667,6 +707,12 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
             "flow_mode_failures": flow_mode_failures,
         }
     )
+    benchmark_warnings = benchmark_warning_summary(
+        {
+            "flow_comparison_failures": flow_comparison_failures,
+            "flow_comparison_unstable_groups": flow_comparison_unstable_groups,
+        }
+    )
     flow_agg_map = {agg.variant: agg for agg in flow_aggregates}
     _rapid_cov = getattr(flow_agg_map.get("rapid"), "avg_leaf_coverage", 0.0)
     _struct_cov = getattr(flow_agg_map.get("structured"), "avg_leaf_coverage", 0.0)
@@ -750,6 +796,9 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "top_failed_subcheck": benchmark_failures["top_failed_subcheck"],
         "top_failure": benchmark_failures["top_failure"],
         "failure_summary": format_benchmark_failure_summary(benchmark_failures),
+        "top_warning_subcheck": benchmark_warnings["top_warning_subcheck"],
+        "top_warning": benchmark_warnings["top_warning"],
+        "warning_summary": format_benchmark_warning_summary(benchmark_warnings),
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

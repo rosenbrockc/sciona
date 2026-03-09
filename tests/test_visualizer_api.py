@@ -480,6 +480,9 @@ class TestDashboardAPI:
                     "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
                     "flow_execution_path_summary": "rapid=rapid_direct, structured=structured_single_pass, verified=verified_orchestration",
                     "runtime_override_policy_summary": "rapid=0/0/0, structured=0/0/0, verified=1/1/1",
+                    "warning_summary": "subcheck=comparison_failures warning=flow_comparison_failures=2",
+                    "top_warning_subcheck": "comparison_failures",
+                    "top_warning": "flow_comparison_failures=2",
                     "failure_summary": "subcheck=runtime_budget failure=legacy_providers_present=codex_cli",
                     "top_failed_subcheck": "runtime_budget",
                     "top_failure": "legacy_providers_present=codex_cli",
@@ -639,6 +642,11 @@ class TestDashboardAPI:
         assert "structured=structured_single_pass" in data["benchmark_summary"]["flow_execution_path_summary"]
         assert "verified=8.0" in data["benchmark_summary"]["flow_prompt_volume_summary"]
         assert "verified=1/1/1" in data["benchmark_summary"]["runtime_override_policy_summary"]
+        assert data["benchmark_summary"]["warning_summary"] == (
+            "subcheck=comparison_failures warning=flow_comparison_failures=2"
+        )
+        assert data["benchmark_summary"]["top_warning_subcheck"] == "comparison_failures"
+        assert data["benchmark_summary"]["top_warning"] == "flow_comparison_failures=2"
         assert data["benchmark_summary"]["failure_summary"] == (
             "subcheck=runtime_budget failure=legacy_providers_present=codex_cli"
         )
