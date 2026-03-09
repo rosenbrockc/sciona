@@ -1320,3 +1320,24 @@
   - Result: `1259 passed, 17 skipped`
 - Commit:
   - `release: fail on critical catalog drift`
+
+## Catalog Warning Summaries For High Drift
+
+- Added explicit non-blocking warning summaries for `high` and `medium` catalog drift.
+- Catalog validation now persists:
+  - `warnings`
+  - `high_severity_sources`
+  - `medium_severity_sources`
+  - `warning_summary`
+- This makes risky-but-non-blocking catalog drift stand out in release artifacts and dashboard summaries without turning it into a release failure.
+- Added regressions for:
+  - high-severity warning emission during catalog validation
+  - warning summary propagation through release fixtures
+  - dashboard/API preservation of warning fields
+- Validation:
+  - `pytest -q tests/test_catalog_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `27 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1259 passed, 17 skipped`
+- Commit:
+  - `catalog: surface drift warnings`

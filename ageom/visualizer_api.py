@@ -439,6 +439,13 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "source_added": int(catalog_validation.get("source_added", 0) or 0),
         "coverage_summary": str(catalog_validation.get("coverage_summary", "") or ""),
         "alignment_summary": str(catalog_validation.get("alignment_summary", "") or ""),
+        "warning_summary": str(catalog_validation.get("warning_summary", "") or ""),
+        "high_severity_sources": list(catalog_validation.get("high_severity_sources", []) or [])
+        if isinstance(catalog_validation.get("high_severity_sources", []), list)
+        else [],
+        "medium_severity_sources": list(catalog_validation.get("medium_severity_sources", []) or [])
+        if isinstance(catalog_validation.get("medium_severity_sources", []), list)
+        else [],
         "missing_sources": list(catalog_validation.get("missing_sources", []) or [])
         if isinstance(catalog_validation.get("missing_sources", []), list)
         else [],
@@ -449,6 +456,9 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         else [],
         "violations": list(catalog_validation.get("violations", []) or [])
         if isinstance(catalog_validation.get("violations", []), list)
+        else [],
+        "warnings": list(catalog_validation.get("warnings", []) or [])
+        if isinstance(catalog_validation.get("warnings", []), list)
         else [],
         "report": str(catalog_validation.get("report", "") or ""),
     }

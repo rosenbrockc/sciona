@@ -41,6 +41,17 @@ def _format_catalog_alignment_summary(alignment: dict[str, Any]) -> str:
     )
 
 
+def _format_catalog_warning_summary(summary: dict[str, Any]) -> str:
+    warnings = summary.get("warnings", []) if isinstance(summary.get("warnings", []), list) else []
+    high_sources = summary.get("high_severity_sources", []) if isinstance(summary.get("high_severity_sources", []), list) else []
+    medium_sources = summary.get("medium_severity_sources", []) if isinstance(summary.get("medium_severity_sources", []), list) else []
+    return (
+        f"warnings={len(warnings)} "
+        f"high={len(high_sources)} "
+        f"medium={len(medium_sources)}"
+    )
+
+
 def _source_rows(config: Any, *, base_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
     rows: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -125,7 +136,21 @@ async def run_catalog_validation(output_dir: str | Path) -> dict[str, Any]:
         violations.append("no_source_candidates")
     if zero_candidate_sources:
         violations.extend(f"source_no_candidates:{name}" for name in zero_candidate_sources)
-    if str(alignment.get("highest_severity", "") or "").strip().lower() == "critical":
+    highest_severity = str(alignment.get("highest_severity", "") or "").strip().lower()
+    high_severity_sources = sorted(
+        str(row.get("source", "") or "")
+        for row in alignment.get("rows", [])
+        if isinstance(row, dict) and str(row.get("severity", "") or "").strip().lower() == "high"
+    )
+    medium_severity_sources = sorted(
+        str(row.get("source", "") or "")
+        for row in alignment.get("rows", [])
+        if isinstance(row, dict) and str(row.get("severity", "") or "").strip().lower() == "medium"
+    )
+    warnings: list[str] = []
+    warnings.extend(f"high_alignment_drift:{name}" for name in high_severity_sources)
+    warnings.extend(f"medium_alignment_drift:{name}" for name in medium_severity_sources)
+    if highest_severity == "critical":
         violations.append("critical_alignment_drift")
 
     status = "passed" if not violations else "failed"
@@ -145,10 +170,14 @@ async def run_catalog_validation(output_dir: str | Path) -> dict[str, Any]:
         "source_rows": source_rows,
         "source_breakdown": report.source_breakdown,
         "alignment": alignment,
+        "high_severity_sources": high_severity_sources,
+        "medium_severity_sources": medium_severity_sources,
+        "warnings": warnings,
         "violations": violations,
     }
     summary["coverage_summary"] = _format_catalog_coverage_summary(summary)
     summary["alignment_summary"] = _format_catalog_alignment_summary(alignment)
+    summary["warning_summary"] = _format_catalog_warning_summary(summary)
     report_path = out_dir / "catalog_validation.json"
     report_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     summary["report"] = str(report_path)

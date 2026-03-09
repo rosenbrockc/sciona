@@ -51,7 +51,14 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
             "severity_counts": {"healthy": 1, "medium": 0, "high": 1, "critical": 0},
             "drift_sources": ["hpy-atoms"],
             "registry_error_sources": [],
-            "rows": [],
+            "rows": [
+                {
+                    "source": "hpy-atoms",
+                    "severity": "high",
+                    "registry_only_count": 1,
+                    "ast_only_count": 0,
+                }
+            ],
         },
     )
 
@@ -63,8 +70,12 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
     assert summary["source_candidates"] == 11
     assert summary["source_added"] == 7
     assert summary["violations"] == []
+    assert summary["warnings"] == ["high_alignment_drift:hpy-atoms"]
+    assert summary["high_severity_sources"] == ["hpy-atoms"]
+    assert summary["medium_severity_sources"] == []
     assert "resolved=2/2" in summary["coverage_summary"]
     assert "severity=high" in summary["alignment_summary"]
+    assert "warnings=1 high=1 medium=0" == summary["warning_summary"]
     assert "registry_only=1" in summary["alignment_summary"]
     assert Path(summary["report"]).exists()
     payload = json.loads(Path(summary["report"]).read_text(encoding="utf-8"))
@@ -112,7 +123,14 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
             "severity_counts": {"healthy": 1, "medium": 0, "high": 0, "critical": 1},
             "drift_sources": ["missing-atoms"],
             "registry_error_sources": ["missing-atoms"],
-            "rows": [],
+            "rows": [
+                {
+                    "source": "missing-atoms",
+                    "severity": "critical",
+                    "registry_only_count": 0,
+                    "ast_only_count": 1,
+                }
+            ],
         },
     )
 
@@ -124,6 +142,7 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
     assert summary["missing_sources"] == ["missing-atoms"]
     assert summary["zero_candidate_sources"] == ["missing-atoms"]
     assert summary["alignment"]["registry_error_sources"] == ["missing-atoms"]
+    assert summary["warnings"] == []
     assert "severity=critical" in summary["alignment_summary"]
     assert "missing=1" in summary["coverage_summary"]
     assert "drift=1" in summary["alignment_summary"]
@@ -167,7 +186,14 @@ async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
             "severity_counts": {"healthy": 0, "medium": 0, "high": 0, "critical": 1},
             "drift_sources": ["ageo-atoms"],
             "registry_error_sources": ["ageo-atoms"],
-            "rows": [],
+            "rows": [
+                {
+                    "source": "ageo-atoms",
+                    "severity": "critical",
+                    "registry_only_count": 0,
+                    "ast_only_count": 1,
+                }
+            ],
         },
     )
 
@@ -175,6 +201,7 @@ async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
 
     assert summary["status"] == "failed"
     assert summary["violations"] == ["critical_alignment_drift"]
+    assert summary["warnings"] == []
     assert summary["missing_sources"] == []
     assert summary["zero_candidate_sources"] == []
     assert "severity=critical" in summary["alignment_summary"]
