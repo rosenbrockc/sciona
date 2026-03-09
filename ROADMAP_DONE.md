@@ -1262,3 +1262,21 @@
   - Result: `1257 passed, 17 skipped`
 - Commit:
   - `benchmark: gate flow prompt volume`
+
+## Catalog Drift Example Visibility
+
+- Surfaced the highest-drift source rows from catalog validation into the dashboard/API summaries.
+- Catalog validation summaries now expose `top_drift_sources`, including per-source:
+  - registry-only count
+  - AST-only count
+  - registry-only examples
+  - AST-only examples
+- Dashboard detail metrics now show a compact top-drift line so alignment regressions can be diagnosed without opening the raw catalog-validation report.
+- Added regressions for dashboard/API extraction of top drift-source examples.
+- Validation:
+  - `pytest -q tests/test_visualizer_api.py tests/test_catalog_validation.py`
+  - Result: `18 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1257 passed, 17 skipped`
+- Commit:
+  - `dashboard: surface top catalog drift examples`

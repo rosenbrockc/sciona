@@ -574,6 +574,15 @@ class TestDashboardAPI:
                             "ast_only_total": 2,
                             "drift_sources": ["hpy-atoms"],
                             "registry_error_sources": ["hpy-atoms"],
+                            "rows": [
+                                {
+                                    "source": "hpy-atoms",
+                                    "registry_only_count": 1,
+                                    "ast_only_count": 2,
+                                    "registry_only_examples": ["live_only_atom"],
+                                    "ast_only_examples": ["ast_only_a", "ast_only_b"],
+                                }
+                            ],
                         },
                     },
                 },
@@ -616,6 +625,8 @@ class TestDashboardAPI:
         assert "registry_only=1" in data["catalog_validation_summary"]["alignment_summary"]
         assert data["catalog_validation_summary"]["alignment"]["registry_only_total"] == 1
         assert data["catalog_validation_summary"]["alignment"]["ast_only_total"] == 2
+        assert data["catalog_validation_summary"]["top_drift_sources"][0]["source"] == "hpy-atoms"
+        assert data["catalog_validation_summary"]["top_drift_sources"][0]["registry_only_examples"] == ["live_only_atom"]
 
     def test_dashboard_run_includes_shared_context_summary(
         self, client, monkeypatch, tmp_path

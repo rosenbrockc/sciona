@@ -419,6 +419,9 @@
         const catalog = run.catalog_alignment_summary || {};
         const catalogValidation = run.catalog_validation_summary || {};
         const catalogValidationAlignment = catalogValidation.alignment || {};
+        const topCatalogDrift = (run.catalog_validation_summary?.top_drift_sources || [])
+          .map((row) => `${row.source}:${Number(row.registry_only_count || 0)}/${Number(row.ast_only_count || 0)}`)
+          .join(", ");
         const benchmark = run.benchmark_summary || {};
         const benchmarkRuntime = benchmark.runtime_complexity || {};
         const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
@@ -476,6 +479,7 @@
           ["catalog drift", `${Number(catalogValidationAlignment.registry_only_total || 0)} registry-only / ${Number(catalogValidationAlignment.ast_only_total || 0)} ast-only`],
           ["catalog align sum", catalogValidation.alignment_summary || "--"],
           ["catalog drift src", (catalogValidationAlignment.drift_sources || []).join(", ") || "--"],
+          ["catalog drift top", topCatalogDrift || "--"],
           ["shared ctx", `${Number(shared.active_context_count || 0)}/${Number(shared.context_count || 0)}`],
           ["ctx search/hit", `${Number(shared.total_searches || 0)}/${Number(shared.total_hits || 0)}`],
           ["ctx puts", String(Number(shared.total_puts || 0))],

@@ -467,6 +467,33 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         if isinstance(alignment.get("registry_error_sources", []), list)
         else [],
     }
+    alignment_rows = alignment.get("rows", {})
+    if not isinstance(alignment_rows, list):
+        alignment_rows = []
+    top_drift_rows: list[dict[str, Any]] = []
+    for row in alignment_rows:
+        if not isinstance(row, dict):
+            continue
+        top_drift_rows.append(
+            {
+                "source": str(row.get("source", "") or ""),
+                "registry_only_count": int(row.get("registry_only_count", 0) or 0),
+                "ast_only_count": int(row.get("ast_only_count", 0) or 0),
+                "registry_only_examples": list(row.get("registry_only_examples", []) or [])
+                if isinstance(row.get("registry_only_examples", []), list)
+                else [],
+                "ast_only_examples": list(row.get("ast_only_examples", []) or [])
+                if isinstance(row.get("ast_only_examples", []), list)
+                else [],
+            }
+        )
+    top_drift_rows.sort(
+        key=lambda row: (
+            -(int(row["registry_only_count"]) + int(row["ast_only_count"])),
+            row["source"],
+        )
+    )
+    out["catalog_validation_summary"]["top_drift_sources"] = top_drift_rows[:5]
     shared_rows: list[dict[str, Any]] = []
     total_searches = 0
     total_hits = 0
