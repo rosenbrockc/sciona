@@ -1417,3 +1417,28 @@
   - Result: `1259 passed, 17 skipped`
 - Commit:
   - `release: expose top failure causes`
+
+## Release Top Failed Check Summary
+
+- Extended the compact release failure summary so it names the top failed release check directly:
+  - `top_failed_check`
+- The failure summary line now starts with `check=<...>` when release validation fails, so operators can immediately see whether the first blocking surface was:
+  - `benchmark_validation`
+  - `runtime_complexity`
+  - `catalog_validation`
+- Propagated that field through:
+  - release validation manifest
+  - release telemetry metadata
+  - dashboard/API benchmark-release summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - release manifest top failed-check field
+  - release telemetry persistence of top failed-check metadata
+  - dashboard/API extraction of top failed-check diagnostics
+- Validation:
+  - `pytest -q tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `24 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1259 passed, 17 skipped`
+- Commit:
+  - `release: surface top failed check`

@@ -68,7 +68,16 @@ def _format_release_failure_summary(
         )
     runtime_failure = _first_text(runtime_complexity.get("violations", []))
     catalog_failure = _first_text(catalog_summary.get("violations", []))
+    top_failed_check = "none"
+    if runtime_failure:
+        top_failed_check = "runtime_complexity"
+    elif catalog_failure:
+        top_failed_check = "catalog_validation"
+    elif benchmark_failure:
+        top_failed_check = "benchmark_validation"
     parts: list[str] = []
+    if top_failed_check != "none":
+        parts.append(f"check={top_failed_check}")
     if benchmark_failure:
         parts.append(f"benchmark={benchmark_failure}")
     if runtime_failure:
@@ -76,6 +85,7 @@ def _format_release_failure_summary(
     if catalog_failure:
         parts.append(f"catalog={catalog_failure}")
     return {
+        "top_failed_check": top_failed_check,
         "top_benchmark_failure": benchmark_failure,
         "top_runtime_failure": runtime_failure,
         "top_catalog_failure": catalog_failure,

@@ -3719,6 +3719,7 @@ async def _cmd_release_validate(args: argparse.Namespace) -> None:
                     "top_runtime_warning": str(summary.get("top_runtime_warning", "") or ""),
                     "top_catalog_warning": str(summary.get("top_catalog_warning", "") or ""),
                     "failure_summary": str(summary.get("failure_summary", "") or ""),
+                    "top_failed_check": str(summary.get("top_failed_check", "") or ""),
                     "top_benchmark_failure": str(summary.get("top_benchmark_failure", "") or ""),
                     "top_runtime_failure": str(summary.get("top_runtime_failure", "") or ""),
                     "top_catalog_failure": str(summary.get("top_catalog_failure", "") or ""),
