@@ -439,6 +439,18 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "release_top_catalog_warning": str(
             release_validation.get("top_catalog_warning", "") or ""
         ),
+        "release_failure_summary": str(
+            release_validation.get("failure_summary", "") or ""
+        ),
+        "release_top_benchmark_failure": str(
+            release_validation.get("top_benchmark_failure", "") or ""
+        ),
+        "release_top_runtime_failure": str(
+            release_validation.get("top_runtime_failure", "") or ""
+        ),
+        "release_top_catalog_failure": str(
+            release_validation.get("top_catalog_failure", "") or ""
+        ),
         "manifest": str(release_validation.get("manifest", "") or ""),
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),

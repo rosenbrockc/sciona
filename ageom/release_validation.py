@@ -35,6 +35,54 @@ def _format_release_warning_summary(
     }
 
 
+def _format_release_failure_summary(
+    *,
+    benchmark_summary: dict[str, Any],
+    runtime_complexity: dict[str, Any],
+    catalog_summary: dict[str, Any],
+) -> dict[str, Any]:
+    def _first_text(values: Any) -> str:
+        if not isinstance(values, list) or not values:
+            return ""
+        return str(values[0] or "")
+
+    benchmark_failure = ""
+    if str(benchmark_summary.get("status", "failed")) != "passed":
+        benchmark_failure = (
+            str(
+                _first_text((benchmark_summary.get("runtime_complexity", {}) or {}).get("violations", []))
+                or _first_text((benchmark_summary.get("flow_execution_paths", {}) or {}).get("violations", []))
+                or _first_text((benchmark_summary.get("flow_prompt_volume", {}) or {}).get("violations", []))
+                or (
+                    f"prompt_tuned_failures={int(benchmark_summary.get('prompt_tuned_failures', 0) or 0)}"
+                    if int(benchmark_summary.get("prompt_tuned_failures", 0) or 0) > 0
+                    else ""
+                )
+                or (
+                    f"flow_mode_failures={int(benchmark_summary.get('flow_mode_failures', 0) or 0)}"
+                    if int(benchmark_summary.get("flow_mode_failures", 0) or 0) > 0
+                    else ""
+                )
+            )
+            or ""
+        )
+    runtime_failure = _first_text(runtime_complexity.get("violations", []))
+    catalog_failure = _first_text(catalog_summary.get("violations", []))
+    parts: list[str] = []
+    if benchmark_failure:
+        parts.append(f"benchmark={benchmark_failure}")
+    if runtime_failure:
+        parts.append(f"runtime={runtime_failure}")
+    if catalog_failure:
+        parts.append(f"catalog={catalog_failure}")
+    return {
+        "top_benchmark_failure": benchmark_failure,
+        "top_runtime_failure": runtime_failure,
+        "top_catalog_failure": catalog_failure,
+        "failure_summary": " ".join(parts) or "none",
+    }
+
+
 async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     """Run deterministic release validation and persist a manifest."""
     out_dir = Path(output_dir)
@@ -47,6 +95,11 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
         runtime_complexity=runtime_complexity,
         catalog_summary=catalog_summary,
     )
+    failure_summary = _format_release_failure_summary(
+        benchmark_summary=benchmark_summary,
+        runtime_complexity=runtime_complexity,
+        catalog_summary=catalog_summary,
+    )
     release_passed = (
         str(benchmark_summary.get("status", "failed")) == "passed"
         and str(catalog_summary.get("status", "failed")) == "passed"
@@ -54,6 +107,7 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     manifest = {
         "status": "passed" if release_passed else "failed",
         "warnings": warning_summary,
+        "failures": failure_summary,
         "checks": {
             "benchmark_validation": {
                 "summary_report": benchmark_summary["summary_report"],
@@ -112,4 +166,5 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
         "catalog_validation": catalog_summary,
         "runtime_complexity": runtime_complexity,
         **warning_summary,
+        **failure_summary,
     }

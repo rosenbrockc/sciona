@@ -560,6 +560,10 @@ class TestDashboardAPI:
                     "catalog_warning_count": 0,
                     "top_runtime_warning": "legacy_providers_present=codex_cli",
                     "top_catalog_warning": "",
+                    "failure_summary": "benchmark=legacy_providers_present=codex_cli runtime=legacy_providers_present=codex_cli catalog=missing_source:hpy-atoms",
+                    "top_benchmark_failure": "legacy_providers_present=codex_cli",
+                    "top_runtime_failure": "legacy_providers_present=codex_cli",
+                    "top_catalog_failure": "missing_source:hpy-atoms",
                     "catalog_validation": {
                         "status": "failed",
                         "report": "build/release_validation/catalog/catalog_validation.json",
@@ -640,6 +644,10 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["release_catalog_warning_count"] == 0
         assert data["benchmark_summary"]["release_top_runtime_warning"] == "legacy_providers_present=codex_cli"
         assert data["benchmark_summary"]["release_top_catalog_warning"] == ""
+        assert data["benchmark_summary"]["release_failure_summary"].startswith("benchmark=")
+        assert data["benchmark_summary"]["release_top_benchmark_failure"] == "legacy_providers_present=codex_cli"
+        assert data["benchmark_summary"]["release_top_runtime_failure"] == "legacy_providers_present=codex_cli"
+        assert data["benchmark_summary"]["release_top_catalog_failure"] == "missing_source:hpy-atoms"
         assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")
         assert data["catalog_validation_summary"]["status"] == "failed"
         assert data["catalog_validation_summary"]["missing_sources"] == ["hpy-atoms"]

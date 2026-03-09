@@ -1389,3 +1389,31 @@
   - Result: `1259 passed, 17 skipped`
 - Commit:
   - `release: expose top warning causes`
+
+## Release Top Failure Diagnostics
+
+- Added a compact release-level blocking failure summary parallel to the warning summary:
+  - `failure_summary`
+  - `top_benchmark_failure`
+  - `top_runtime_failure`
+  - `top_catalog_failure`
+- The release summary now surfaces the first concrete blocking cause from:
+  - benchmark validation
+  - runtime-complexity validation
+  - catalog validation
+- Propagated those fields through:
+  - release validation manifest
+  - release telemetry metadata
+  - dashboard/API benchmark-release summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - release manifest top failure fields
+  - release telemetry persistence of top failure fields
+  - dashboard/API extraction of release failure diagnostics
+- Validation:
+  - `pytest -q tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `24 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1259 passed, 17 skipped`
+- Commit:
+  - `release: expose top failure causes`

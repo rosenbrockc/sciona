@@ -171,6 +171,10 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
             "catalog_warning_count": 0,
             "top_runtime_warning": "legacy_providers_present=codex_cli",
             "top_catalog_warning": "",
+            "failure_summary": "benchmark=legacy_providers_present=codex_cli runtime=legacy_providers_present=codex_cli catalog=missing_source:hpy-atoms",
+            "top_benchmark_failure": "legacy_providers_present=codex_cli",
+            "top_runtime_failure": "legacy_providers_present=codex_cli",
+            "top_catalog_failure": "missing_source:hpy-atoms",
             "catalog_validation": {
                 "status": "failed",
                 "report": "build/release_validation/catalog/catalog_validation.json",
@@ -251,6 +255,10 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
     assert payload["metadata"]["release_validation"]["warning_summary"] == "runtime=1 top=legacy_providers_present=codex_cli catalog=0"
     assert payload["metadata"]["release_validation"]["top_runtime_warning"] == "legacy_providers_present=codex_cli"
     assert payload["metadata"]["release_validation"]["top_catalog_warning"] == ""
+    assert payload["metadata"]["release_validation"]["failure_summary"].startswith("benchmark=")
+    assert payload["metadata"]["release_validation"]["top_benchmark_failure"] == "legacy_providers_present=codex_cli"
+    assert payload["metadata"]["release_validation"]["top_runtime_failure"] == "legacy_providers_present=codex_cli"
+    assert payload["metadata"]["release_validation"]["top_catalog_failure"] == "missing_source:hpy-atoms"
     assert payload["metadata"]["release_validation"]["catalog_validation"]["status"] == "failed"
     assert payload["metadata"]["release_validation"]["runtime_complexity"]["legacy_provider_count"] == 1
     assert payload["metadata"]["benchmark_validation"]["flow_results"] == 16

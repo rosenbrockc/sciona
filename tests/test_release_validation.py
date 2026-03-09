@@ -21,6 +21,10 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert manifest["warnings"]["warning_summary"].startswith("runtime=")
     assert manifest["warnings"]["top_runtime_warning"] == ""
     assert isinstance(manifest["warnings"]["top_catalog_warning"], str)
+    assert manifest["failures"]["failure_summary"] == "none"
+    assert manifest["failures"]["top_benchmark_failure"] == ""
+    assert manifest["failures"]["top_runtime_failure"] == ""
+    assert manifest["failures"]["top_catalog_failure"] == ""
     bench = manifest["checks"]["benchmark_validation"]
     runtime = manifest["checks"]["runtime_complexity"]
     catalog = manifest["checks"]["catalog_validation"]
@@ -125,6 +129,9 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
     assert manifest["warnings"]["warning_summary"] == "runtime=0 catalog=0"
     assert manifest["warnings"]["top_runtime_warning"] == ""
     assert manifest["warnings"]["top_catalog_warning"] == ""
+    assert manifest["failures"]["top_benchmark_failure"] == "prompt_tuned_failures=1"
+    assert manifest["failures"]["top_runtime_failure"] == ""
+    assert manifest["failures"]["top_catalog_failure"] == ""
     bench = manifest["checks"]["benchmark_validation"]
     assert bench["prompt_tuned_failures"] == 1
     assert bench["prompt_tuned_unstable_groups"] == 2
@@ -225,6 +232,9 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
     assert manifest["warnings"]["warning_summary"] == "runtime=2 top=provider_count=6 exceeds budget 4 catalog=0"
     assert manifest["warnings"]["top_runtime_warning"] == "provider_count=6 exceeds budget 4"
     assert manifest["warnings"]["top_catalog_warning"] == ""
+    assert manifest["failures"]["top_benchmark_failure"] == "provider_count=6 exceeds budget 4"
+    assert manifest["failures"]["top_runtime_failure"] == "provider_count=6 exceeds budget 4"
+    assert manifest["failures"]["top_catalog_failure"] == ""
     runtime = manifest["checks"]["runtime_complexity"]
     assert runtime["legacy_provider_count"] == 1
     assert any("provider_count=6 exceeds budget 4" == item for item in runtime["violations"])
@@ -309,6 +319,9 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
     assert manifest["warnings"]["warning_summary"] == "runtime=0 catalog=0"
     assert manifest["warnings"]["top_runtime_warning"] == ""
     assert manifest["warnings"]["top_catalog_warning"] == ""
+    assert manifest["failures"]["top_benchmark_failure"] == ""
+    assert manifest["failures"]["top_runtime_failure"] == ""
+    assert manifest["failures"]["top_catalog_failure"] == "missing_source:hpy-atoms"
     assert manifest["checks"]["catalog_validation"]["status"] == "failed"
     assert "missing_source:hpy-atoms" in manifest["checks"]["catalog_validation"]["violations"]
 
@@ -392,6 +405,9 @@ async def test_run_release_validation_fails_when_catalog_alignment_is_critical(
     assert manifest["warnings"]["warning_summary"] == "runtime=0 catalog=0"
     assert manifest["warnings"]["top_runtime_warning"] == ""
     assert manifest["warnings"]["top_catalog_warning"] == ""
+    assert manifest["failures"]["top_benchmark_failure"] == ""
+    assert manifest["failures"]["top_runtime_failure"] == ""
+    assert manifest["failures"]["top_catalog_failure"] == "critical_alignment_drift"
     assert manifest["checks"]["catalog_validation"]["violations"] == [
         "critical_alignment_drift"
     ]
