@@ -366,6 +366,10 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "runtime_override_policy_summary": str(
             benchmark.get("runtime_override_policy_summary", "") or ""
         ),
+        "top_failed_subcheck": str(
+            benchmark.get("top_failed_subcheck", "") or ""
+        ),
+        "top_failure": str(benchmark.get("top_failure", "") or ""),
         "flow_required_variants": list(
             benchmark.get("flow_required_variants", []) or []
         )

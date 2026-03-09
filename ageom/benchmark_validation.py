@@ -237,6 +237,64 @@ def _format_flow_prompt_volume_summary(summary: dict[str, Any]) -> str:
     return rendered
 
 
+def benchmark_failure_summary(summary: dict[str, Any]) -> dict[str, str]:
+    """Return the first benchmark failure cause and its subcheck classification."""
+    runtime_budget_failure = ""
+    flow_execution_paths = summary.get("flow_execution_paths", {})
+    if isinstance(summary.get("runtime_complexity"), dict):
+        runtime_budget_failure = str(
+            ((summary.get("runtime_complexity", {}) or {}).get("violations", []) or [""])[0]
+            or ""
+        )
+    execution_path_failure = ""
+    if isinstance(flow_execution_paths, dict):
+        execution_path_failure = str(
+            ((flow_execution_paths.get("violations", []) or [""])[0]) or ""
+        )
+    flow_prompt_volume = summary.get("flow_prompt_volume", {})
+    prompt_volume_failure = ""
+    if isinstance(flow_prompt_volume, dict):
+        prompt_volume_failure = str(
+            ((flow_prompt_volume.get("violations", []) or [""])[0]) or ""
+        )
+    prompt_tuned_failure = (
+        f"prompt_tuned_failures={int(summary.get('prompt_tuned_failures', 0) or 0)}"
+        if int(summary.get("prompt_tuned_failures", 0) or 0) > 0
+        else ""
+    )
+    flow_mode_failure = (
+        f"flow_mode_failures={int(summary.get('flow_mode_failures', 0) or 0)}"
+        if int(summary.get("flow_mode_failures", 0) or 0) > 0
+        else ""
+    )
+    if runtime_budget_failure:
+        return {
+            "top_failed_subcheck": "runtime_budget",
+            "top_failure": runtime_budget_failure,
+        }
+    if execution_path_failure:
+        return {
+            "top_failed_subcheck": "execution_path",
+            "top_failure": execution_path_failure,
+        }
+    if prompt_volume_failure:
+        return {
+            "top_failed_subcheck": "prompt_volume",
+            "top_failure": prompt_volume_failure,
+        }
+    if prompt_tuned_failure:
+        return {
+            "top_failed_subcheck": "prompt_tuning",
+            "top_failure": prompt_tuned_failure,
+        }
+    if flow_mode_failure:
+        return {
+            "top_failed_subcheck": "flow_mode",
+            "top_failure": flow_mode_failure,
+        }
+    return {"top_failed_subcheck": "", "top_failure": ""}
+
+
 def _transport_for_provider(provider: str) -> str:
     lowered = provider.strip().lower()
     if lowered.endswith("_shim"):
@@ -557,6 +615,15 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
     flow_execution_paths = flow_execution_path_summary(flow_aggregates)
     flow_prompt_volume = flow_prompt_volume_summary(flow_aggregates)
     runtime_complexity = runtime_complexity_summary(_benchmark_validation_config())
+    benchmark_failures = benchmark_failure_summary(
+        {
+            "runtime_complexity": runtime_complexity,
+            "flow_execution_paths": flow_execution_paths,
+            "flow_prompt_volume": flow_prompt_volume,
+            "prompt_tuned_failures": prompt_tuned_failures,
+            "flow_mode_failures": flow_mode_failures,
+        }
+    )
     benchmark_passed = (
         prompt_tuned_failures == 0
         and prompt_tuned_unstable_groups == 0
@@ -625,6 +692,8 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "runtime_override_policy_summary": _format_runtime_override_policy_summary(
             runtime_complexity
         ),
+        "top_failed_subcheck": benchmark_failures["top_failed_subcheck"],
+        "top_failure": benchmark_failures["top_failure"],
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

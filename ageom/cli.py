@@ -3613,6 +3613,8 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "runtime_override_policy_summary": str(
             summary.get("runtime_override_policy_summary", "") or ""
         ),
+        "top_failed_subcheck": str(summary.get("top_failed_subcheck", "") or ""),
+        "top_failure": str(summary.get("top_failure", "") or ""),
         "flow_required_variants": list(summary.get("flow_required_variants", []) or []),
         "flow_comparison_variants": list(
             summary.get("flow_comparison_variants", []) or []

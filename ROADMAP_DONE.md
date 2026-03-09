@@ -1470,3 +1470,27 @@
   - Result: `1259 passed, 17 skipped`
 - Commit:
   - `release: surface benchmark failure subcheck`
+
+## Benchmark Bundle Failure Diagnostics
+
+- Promoted benchmark failure classification into the benchmark bundle itself:
+  - `top_failed_subcheck`
+  - `top_failure`
+- The benchmark `summary.json` now records the first failing benchmark surface directly instead of requiring release validation to derive it later.
+- Release validation now consumes those benchmark-bundle fields when present, so benchmark and release summaries stay consistent.
+- Propagated the benchmark failure fields through:
+  - benchmark-validation telemetry metadata
+  - dashboard/API benchmark summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - benchmark bundle persistence of top failure diagnostics
+  - benchmark-validation telemetry persistence of top failure diagnostics
+  - dashboard/API extraction of benchmark failure diagnostics
+  - execution-path failure prioritization over prompt-count failures
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py tests/test_release_validation.py`
+  - Result: `32 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1260 passed, 17 skipped`
+- Commit:
+  - `benchmark: surface top failed subcheck`

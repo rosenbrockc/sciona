@@ -4,8 +4,12 @@ import json
 
 import pytest
 
-from ageom.benchmark_validation import run_benchmark_validation, runtime_complexity_summary
-from ageom.benchmark_validation import flow_prompt_volume_summary
+from ageom.benchmark_validation import (
+    benchmark_failure_summary,
+    flow_prompt_volume_summary,
+    run_benchmark_validation,
+    runtime_complexity_summary,
+)
 from ageom.config import AgeomConfig
 from ageom.flow_benchmark import (
     default_flow_benchmark_cases,
@@ -44,6 +48,8 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "prompt_avg_latency_ms" in payload
     assert "flow_avg_latency_ms" in payload
     assert "runtime_complexity" in payload
+    assert "top_failed_subcheck" in payload
+    assert "top_failure" in payload
     assert "prompt_tuned_failures" in payload
     assert "flow_mode_failures" in payload
     assert payload["flow_required_variants"] == ["structured", "verified"]
@@ -78,6 +84,8 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert isinstance(payload["runtime_complexity"]["monotonic_violations"], list)
     assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["missing_required_overrides"] == []
     assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["unexpected_active_overrides"] == []
+    assert payload["top_failed_subcheck"] == ""
+    assert payload["top_failure"] == ""
 
 
 def test_runtime_complexity_summary_is_mode_aware():
@@ -137,6 +145,25 @@ def test_flow_prompt_volume_summary_flags_non_monotonic_modes():
 
     assert summary["averages"]["rapid"] == 5.0
     assert "rapid_prompt_calls=5.0 exceeds structured=4.0" in summary["violations"]
+
+
+def test_benchmark_failure_summary_prefers_execution_path_before_prompt_counts():
+    summary = benchmark_failure_summary(
+        {
+            "runtime_complexity": {"violations": []},
+            "flow_execution_paths": {
+                "violations": ["rapid:expected rapid_direct but observed verified_orchestration"]
+            },
+            "flow_prompt_volume": {"violations": []},
+            "prompt_tuned_failures": 2,
+            "flow_mode_failures": 1,
+        }
+    )
+
+    assert summary == {
+        "top_failed_subcheck": "execution_path",
+        "top_failure": "rapid:expected rapid_direct but observed verified_orchestration",
+    }
 
 
 @pytest.mark.asyncio
