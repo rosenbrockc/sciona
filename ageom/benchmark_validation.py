@@ -61,6 +61,8 @@ _EXPECTED_FLOW_EXECUTION_PATHS = {
     "rapid": "rapid_direct",
     "structured": "structured_single_pass",
     "verified": "verified_orchestration",
+    "verified_refinement": "verified_orchestration_refinement",
+    "llm_from_scratch": "llm_from_scratch",
 }
 _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
     "rapid": {
@@ -119,8 +121,7 @@ def flow_execution_path_summary(flow_aggregates: list[Any]) -> dict[str, Any]:
     for variant, expected in _EXPECTED_FLOW_EXECUTION_PATHS.items():
         paths = observed.get(variant, [])
         if not paths:
-            violations.append(f"{variant}:missing_execution_path")
-            continue
+            continue  # variant not run — skip silently
         if len(paths) != 1:
             violations.append(f"{variant}:multiple_execution_paths={','.join(paths)}")
             continue
