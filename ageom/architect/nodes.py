@@ -946,11 +946,17 @@ async def decompose_node(
             metadata={"node_id": current_id, "node_name": node.name},
         )
 
+    use_monadic_rewriter = False
+    if config and config.get("configurable") and config["configurable"].get("deps"):
+        deps_obj = config["configurable"]["deps"]
+        use_monadic_rewriter = getattr(deps_obj, "use_monadic_rewriter", False)
+
     try:
         built = build_deterministic_decomposition(
             parsed=parsed,
             parent=node,
             catalog=deps.catalog,
+            use_monadic_rewriter=use_monadic_rewriter,
         )
     except DeterministicRewriteError as exc:
         return {

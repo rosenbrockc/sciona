@@ -74,3 +74,4 @@ class DecompositionDeps:
     shared_context_metrics: SharedContextMetrics | None = field(default=None)
     context_namespace: str = field(default="")
     context_budget_chars: int = field(default=900)
+    use_monadic_rewriter: bool = field(default=False)

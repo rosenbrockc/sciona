@@ -1,0 +1,113 @@
+{
+  "run_id": "bee0a298671b4b78aac4a8843a1c5fa5",
+  "pipeline": "algorithm_creation",
+  "status": "running",
+  "started_at": 1772836071.1062279,
+  "ended_at": null,
+  "last_update_at": 1772836323.245016,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3,
+    "architect_metrics": {
+      "node_status_counts": {
+        "decomposed": 1,
+        "pending": 2,
+        "atomic": 6
+      },
+      "unresolved_leaf_count": 0,
+      "blocked_node_names": [],
+      "any_port_count": 0,
+      "total_port_count": 17,
+      "any_port_pct": 0.0,
+      "any_edge_count": 0,
+      "total_edge_count": 7,
+      "any_edge_pct": 0.0,
+      "last_node_name": "Design Filter",
+      "critique_reject_counts_by_category": {
+        "type_compatibility": 3
+      },
+      "retry_counts_by_node": {
+        "Design Filter": 3
+      }
+    }
+  },
+  "error": "",
+  "events_count": 72,
+  "prompt_dispatches": 9,
+  "prompt_successes": 8,
+  "prompt_failures": 0,
+  "prompt_inflight": 1,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 28834.65886116028,
+      "max_latency_ms": 28834.65886116028
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 4,
+      "succeeded": 4,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 21914.793252944946,
+      "max_latency_ms": 28473.5369682312
+    },
+    "architect_critique": {
+      "prompt_key": "architect_critique",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "dispatched": 4,
+      "succeeded": 3,
+      "failed": 0,
+      "inflight": 1,
+      "avg_latency_ms": 31494.72665786743,
+      "max_latency_ms": 41723.71816635132
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772836071.106993,
+      "ended_at": 1772836071.6187332,
+      "last_heartbeat_at": 1772836071.6187332,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "running",
+      "started_at": 1772836071.711869,
+      "ended_at": null,
+      "last_heartbeat_at": 1772836323.24394,
+      "message": "waiting on architect_critique (40s)",
+      "completed": 0,
+      "total": 0
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose"
+  ],
+  "inflight_prompts": {
+    "64c22f11ee9c4007933867d11642466c": {
+      "dispatch_id": "64c22f11ee9c4007933867d11642466c",
+      "prompt_key": "architect_critique",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "stage": "architect_decompose",
+      "started_at": 1772836283.2192068
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "run_id": "9dd3c64358c841b287beed3668532cd9",
+  "pipeline": "algorithm_creation",
+  "status": "running",
+  "started_at": 1772829869.2642791,
+  "ended_at": null,
+  "last_update_at": 1772829888.5935218,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3
+  },
+  "error": "",
+  "events_count": 5,
+  "prompt_dispatches": 1,
+  "prompt_successes": 1,
+  "prompt_failures": 0,
+  "prompt_inflight": 0,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 17274.550914764404,
+      "max_latency_ms": 17274.550914764404
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772829869.26476,
+      "ended_at": 1772829871.168651,
+      "last_heartbeat_at": 1772829871.168651,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "running",
+      "started_at": 1772829871.272913,
+      "ended_at": null,
+      "last_heartbeat_at": 1772829886.4518368,
+      "message": "waiting on architect_strategy (15s)",
+      "completed": 0,
+      "total": 0
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose"
+  ],
+  "inflight_prompts": {}
+}

@@ -1,0 +1,173 @@
+{
+  "run_id": "b49b503ab20747c79f3edcc0c80a6f1e",
+  "pipeline": "algorithm_creation",
+  "status": "running",
+  "started_at": 1772917299.3117929,
+  "ended_at": null,
+  "last_update_at": 1772917440.663114,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3,
+    "architect_metrics": {
+      "node_status_counts": {
+        "decomposed": 3,
+        "pending": 1,
+        "atomic": 11
+      },
+      "unresolved_leaf_count": 0,
+      "blocked_node_names": [],
+      "any_port_count": 0,
+      "total_port_count": 31,
+      "any_port_pct": 0.0,
+      "any_edge_count": 0,
+      "total_edge_count": 12,
+      "any_edge_pct": 0.0,
+      "last_node_name": "Validate Stability"
+    }
+  },
+  "error": "",
+  "events_count": 49,
+  "prompt_dispatches": 10,
+  "prompt_successes": 9,
+  "prompt_failures": 0,
+  "prompt_inflight": 1,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 7451.097249984741,
+      "max_latency_ms": 7451.097249984741
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 16128.71241569519,
+      "max_latency_ms": 17828.40585708618
+    },
+    "architect_critique": {
+      "prompt_key": "architect_critique",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 11834.604978561401,
+      "max_latency_ms": 15274.574995040894
+    },
+    "hunter_score": {
+      "prompt_key": "hunter_score",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 8537.109017372131,
+      "max_latency_ms": 9219.18797492981
+    },
+    "hunter_analyze_failure": {
+      "prompt_key": "hunter_analyze_failure",
+      "provider": "claude_shim",
+      "model": "claude-sonnet-4-5",
+      "dispatched": 2,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 1,
+      "avg_latency_ms": 15064.672946929932,
+      "max_latency_ms": 15064.672946929932
+    },
+    "hunter_reformulate": {
+      "prompt_key": "hunter_reformulate",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 41037.84680366516,
+      "max_latency_ms": 41037.84680366516
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772917299.3119879,
+      "ended_at": 1772917299.773814,
+      "last_heartbeat_at": 1772917299.773814,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "completed",
+      "started_at": 1772917299.875315,
+      "ended_at": 1772917363.461601,
+      "last_heartbeat_at": 1772917363.461601,
+      "message": "waiting on architect_critique (15s)",
+      "completed": 0,
+      "total": 0
+    },
+    "hunter_setup": {
+      "name": "hunter_setup",
+      "status": "completed",
+      "started_at": 1772917363.461901,
+      "ended_at": 1772917363.473622,
+      "last_heartbeat_at": 1772917363.473622,
+      "message": "loading retrieval index",
+      "completed": 0,
+      "total": 0
+    },
+    "orchestration": {
+      "name": "orchestration",
+      "status": "running",
+      "started_at": 1772917363.473981,
+      "ended_at": null,
+      "last_heartbeat_at": 1772917363.47423,
+      "message": "round 1/3",
+      "completed": 0,
+      "total": 3
+    },
+    "hunter_round_1": {
+      "name": "hunter_round_1",
+      "status": "running",
+      "started_at": 1772917363.4747021,
+      "ended_at": null,
+      "last_heartbeat_at": 1772917434.777157,
+      "message": "waiting on hunter_score (5s)",
+      "completed": 0,
+      "total": 11
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose",
+    "hunter_setup",
+    "orchestration",
+    "hunter_round_1"
+  ],
+  "inflight_prompts": {
+    "7b1138b4b0e84d6398c3cde27b1cd404": {
+      "dispatch_id": "7b1138b4b0e84d6398c3cde27b1cd404",
+      "prompt_key": "hunter_analyze_failure",
+      "provider": "claude_shim",
+      "model": "claude-sonnet-4-5",
+      "stage": "hunter_round_1",
+      "started_at": 1772917440.662556
+    }
+  }
+}

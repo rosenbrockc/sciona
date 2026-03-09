@@ -1,0 +1,151 @@
+{
+  "run_id": "eda18b810b49418190be6f4c159eb1b9",
+  "pipeline": "algorithm_creation",
+  "status": "running",
+  "started_at": 1772895174.021225,
+  "ended_at": null,
+  "last_update_at": 1772895277.496873,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3,
+    "architect_metrics": {
+      "node_status_counts": {
+        "decomposed": 3,
+        "pending": 1,
+        "atomic": 11
+      },
+      "unresolved_leaf_count": 0,
+      "blocked_node_names": [],
+      "any_port_count": 0,
+      "total_port_count": 31,
+      "any_port_pct": 0.0,
+      "any_edge_count": 0,
+      "total_edge_count": 12,
+      "any_edge_pct": 0.0,
+      "last_node_name": "Validate Stability"
+    }
+  },
+  "error": "",
+  "events_count": 37,
+  "prompt_dispatches": 6,
+  "prompt_successes": 5,
+  "prompt_failures": 0,
+  "prompt_inflight": 1,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 6878.545045852661,
+      "max_latency_ms": 6878.545045852661
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 15707.762598991394,
+      "max_latency_ms": 16367.982149124146
+    },
+    "architect_critique": {
+      "prompt_key": "architect_critique",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 16872.650980949402,
+      "max_latency_ms": 21510.6999874115
+    },
+    "hunter_score": {
+      "prompt_key": "hunter_score",
+      "provider": "gemini",
+      "model": "flash-lite",
+      "dispatched": 1,
+      "succeeded": 0,
+      "failed": 0,
+      "inflight": 1,
+      "avg_latency_ms": 0.0,
+      "max_latency_ms": 0.0
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772895174.030059,
+      "ended_at": 1772895174.543998,
+      "last_heartbeat_at": 1772895174.543998,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "completed",
+      "started_at": 1772895174.584094,
+      "ended_at": 1772895247.346153,
+      "last_heartbeat_at": 1772895247.346153,
+      "message": "waiting on architect_critique (10s)",
+      "completed": 0,
+      "total": 0
+    },
+    "hunter_setup": {
+      "name": "hunter_setup",
+      "status": "completed",
+      "started_at": 1772895247.346569,
+      "ended_at": 1772895247.4540339,
+      "last_heartbeat_at": 1772895247.4540339,
+      "message": "loading retrieval index",
+      "completed": 0,
+      "total": 0
+    },
+    "orchestration": {
+      "name": "orchestration",
+      "status": "running",
+      "started_at": 1772895247.454495,
+      "ended_at": null,
+      "last_heartbeat_at": 1772895247.454862,
+      "message": "round 1/3",
+      "completed": 0,
+      "total": 3
+    },
+    "hunter_round_1": {
+      "name": "hunter_round_1",
+      "status": "running",
+      "started_at": 1772895247.455596,
+      "ended_at": null,
+      "last_heartbeat_at": 1772895277.496112,
+      "message": "waiting on hunter_score (30s)",
+      "completed": 0,
+      "total": 11
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose",
+    "hunter_setup",
+    "orchestration",
+    "hunter_round_1"
+  ],
+  "inflight_prompts": {
+    "66731946675e489fba48aae6c021bdf5": {
+      "dispatch_id": "66731946675e489fba48aae6c021bdf5",
+      "prompt_key": "hunter_score",
+      "provider": "gemini",
+      "model": "flash-lite",
+      "stage": "hunter_round_1",
+      "started_at": 1772895247.471084
+    }
+  }
+}

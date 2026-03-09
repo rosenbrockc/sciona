@@ -89,6 +89,7 @@ class DecompositionAgent:
         shared_context_metrics: SharedContextMetrics | None = None,
         context_namespace: str = "",
         context_budget_chars: int = 900,
+        use_monadic_rewriter: bool = False,
     ) -> None:
         self._deps = DecompositionDeps(
             catalog=catalog,
@@ -99,6 +100,7 @@ class DecompositionAgent:
             shared_context_metrics=shared_context_metrics,
             context_namespace=context_namespace,
             context_budget_chars=context_budget_chars,
+            use_monadic_rewriter=use_monadic_rewriter,
         )
         self._max_depth = max_depth
         self._graph = build_graph().compile(checkpointer=checkpointer)

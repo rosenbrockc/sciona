@@ -1,0 +1,173 @@
+{
+  "run_id": "cf507da4c4254193be527d9ef2008fe2",
+  "pipeline": "algorithm_creation",
+  "status": "running",
+  "started_at": 1772917549.65204,
+  "ended_at": null,
+  "last_update_at": 1772917657.797754,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3,
+    "architect_metrics": {
+      "node_status_counts": {
+        "decomposed": 3,
+        "pending": 1,
+        "atomic": 11
+      },
+      "unresolved_leaf_count": 0,
+      "blocked_node_names": [],
+      "any_port_count": 0,
+      "total_port_count": 31,
+      "any_port_pct": 0.0,
+      "any_edge_count": 0,
+      "total_edge_count": 12,
+      "any_edge_pct": 0.0,
+      "last_node_name": "Validate Stability"
+    }
+  },
+  "error": "Failed to start Gemini shim worker: ",
+  "events_count": 46,
+  "prompt_dispatches": 12,
+  "prompt_successes": 7,
+  "prompt_failures": 4,
+  "prompt_inflight": 1,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 6133.031129837036,
+      "max_latency_ms": 6133.031129837036
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 13654.003977775574,
+      "max_latency_ms": 14212.431192398071
+    },
+    "architect_critique": {
+      "prompt_key": "architect_critique",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 20025.3643989563,
+      "max_latency_ms": 26522.33386039734
+    },
+    "hunter_score": {
+      "prompt_key": "hunter_score",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 3,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 1,
+      "avg_latency_ms": 9974.72596168518,
+      "max_latency_ms": 10401.262044906616
+    },
+    "hunter_analyze_failure": {
+      "prompt_key": "hunter_analyze_failure",
+      "provider": "gemini_shim",
+      "model": "flash",
+      "dispatched": 2,
+      "succeeded": 0,
+      "failed": 2,
+      "inflight": 0,
+      "avg_latency_ms": 1455.831527709961,
+      "max_latency_ms": 1635.1418495178223
+    },
+    "hunter_reformulate": {
+      "prompt_key": "hunter_reformulate",
+      "provider": "gemini_shim",
+      "model": "flash-lite",
+      "dispatched": 2,
+      "succeeded": 0,
+      "failed": 2,
+      "inflight": 0,
+      "avg_latency_ms": 1201.3555765151978,
+      "max_latency_ms": 1226.7000675201416
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772917549.652284,
+      "ended_at": 1772917550.053848,
+      "last_heartbeat_at": 1772917550.053848,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "completed",
+      "started_at": 1772917550.098282,
+      "ended_at": 1772917623.784822,
+      "last_heartbeat_at": 1772917623.784822,
+      "message": "waiting on architect_critique (25s)",
+      "completed": 0,
+      "total": 0
+    },
+    "hunter_setup": {
+      "name": "hunter_setup",
+      "status": "completed",
+      "started_at": 1772917623.785192,
+      "ended_at": 1772917623.801578,
+      "last_heartbeat_at": 1772917623.801578,
+      "message": "loading retrieval index",
+      "completed": 0,
+      "total": 0
+    },
+    "orchestration": {
+      "name": "orchestration",
+      "status": "running",
+      "started_at": 1772917623.801995,
+      "ended_at": null,
+      "last_heartbeat_at": 1772917623.8022301,
+      "message": "round 1/3",
+      "completed": 0,
+      "total": 3
+    },
+    "hunter_round_1": {
+      "name": "hunter_round_1",
+      "status": "running",
+      "started_at": 1772917623.802679,
+      "ended_at": null,
+      "last_heartbeat_at": 1772917657.79722,
+      "message": "waiting on hunter_score (5s)",
+      "completed": 0,
+      "total": 11
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose",
+    "hunter_setup",
+    "orchestration",
+    "hunter_round_1"
+  ],
+  "inflight_prompts": {
+    "473d15dfb99a422fbe0122a856f542d9": {
+      "dispatch_id": "473d15dfb99a422fbe0122a856f542d9",
+      "prompt_key": "hunter_score",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "stage": "hunter_round_1",
+      "started_at": 1772917652.795298
+    }
+  }
+}

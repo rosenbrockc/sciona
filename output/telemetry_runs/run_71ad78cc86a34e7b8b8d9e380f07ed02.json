@@ -1,0 +1,107 @@
+{
+  "run_id": "71ad78cc86a34e7b8b8d9e380f07ed02",
+  "pipeline": "algorithm_creation",
+  "status": "running",
+  "started_at": 1772836529.289037,
+  "ended_at": null,
+  "last_update_at": 1772836617.4930549,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3,
+    "architect_metrics": {
+      "node_status_counts": {
+        "decomposed": 1,
+        "pending": 2,
+        "atomic": 5
+      },
+      "unresolved_leaf_count": 0,
+      "blocked_node_names": [],
+      "any_port_count": 0,
+      "total_port_count": 15,
+      "any_port_pct": 0.0,
+      "any_edge_count": 0,
+      "total_edge_count": 5,
+      "any_edge_pct": 0.0,
+      "last_node_name": "Design Filter"
+    }
+  },
+  "error": "",
+  "events_count": 24,
+  "prompt_dispatches": 3,
+  "prompt_successes": 2,
+  "prompt_failures": 0,
+  "prompt_inflight": 1,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 26496.37007713318,
+      "max_latency_ms": 26496.37007713318
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 16011.82222366333,
+      "max_latency_ms": 16011.82222366333
+    },
+    "architect_critique": {
+      "prompt_key": "architect_critique",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "dispatched": 1,
+      "succeeded": 0,
+      "failed": 0,
+      "inflight": 1,
+      "avg_latency_ms": 0.0,
+      "max_latency_ms": 0.0
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772836529.2893171,
+      "ended_at": 1772836529.741688,
+      "last_heartbeat_at": 1772836529.741688,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "running",
+      "started_at": 1772836529.830013,
+      "ended_at": null,
+      "last_heartbeat_at": 1772836617.4921632,
+      "message": "waiting on architect_critique (45s)",
+      "completed": 0,
+      "total": 0
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose"
+  ],
+  "inflight_prompts": {
+    "3018cda840174e27867cf7f8798d73e1": {
+      "dispatch_id": "3018cda840174e27867cf7f8798d73e1",
+      "prompt_key": "architect_critique",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "stage": "architect_decompose",
+      "started_at": 1772836572.468391
+    }
+  }
+}

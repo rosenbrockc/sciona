@@ -1,0 +1,121 @@
+{
+  "run_id": "9db2a909fdf14d0f8a2a6750fffe96cd",
+  "pipeline": "algorithm_creation",
+  "status": "completed",
+  "started_at": 1772849080.095447,
+  "ended_at": 1772849166.6823628,
+  "last_update_at": 1772849166.6823628,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3,
+    "architect_metrics": {
+      "node_status_counts": {
+        "decomposed": 3,
+        "pending": 1,
+        "atomic": 10,
+        "high_risk": 1
+      },
+      "unresolved_leaf_count": 1,
+      "blocked_node_names": [],
+      "any_port_count": 0,
+      "total_port_count": 31,
+      "any_port_pct": 0.0,
+      "any_edge_count": 0,
+      "total_edge_count": 12,
+      "any_edge_pct": 0.0,
+      "last_node_name": "Validate Stability"
+    }
+  },
+  "error": "",
+  "events_count": 31,
+  "prompt_dispatches": 5,
+  "prompt_successes": 5,
+  "prompt_failures": 0,
+  "prompt_inflight": 0,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 6002.6960372924805,
+      "max_latency_ms": 6002.6960372924805
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 23793.119072914124,
+      "max_latency_ms": 32652.890920639038
+    },
+    "architect_critique": {
+      "prompt_key": "architect_critique",
+      "provider": "codex_shim",
+      "model": "gpt-5.3-codex",
+      "dispatched": 2,
+      "succeeded": 2,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 15953.540682792664,
+      "max_latency_ms": 19319.89622116089
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772849080.095754,
+      "ended_at": 1772849080.687891,
+      "last_heartbeat_at": 1772849080.687891,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "completed",
+      "started_at": 1772849080.868496,
+      "ended_at": 1772849166.65889,
+      "last_heartbeat_at": 1772849166.65889,
+      "message": "waiting on architect_critique (10s)",
+      "completed": 0,
+      "total": 0
+    },
+    "hunter_setup": {
+      "name": "hunter_setup",
+      "status": "completed",
+      "started_at": 1772849166.659308,
+      "ended_at": 1772849166.6786308,
+      "last_heartbeat_at": 1772849166.6786308,
+      "message": "loading retrieval index",
+      "completed": 0,
+      "total": 0
+    },
+    "orchestration": {
+      "name": "orchestration",
+      "status": "completed",
+      "started_at": 1772849166.6790779,
+      "ended_at": 1772849166.680514,
+      "last_heartbeat_at": 1772849166.680789,
+      "message": "Non-atomic leaves remain: Interpret Design Specification",
+      "completed": 0,
+      "total": 3
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose",
+    "hunter_setup",
+    "orchestration"
+  ],
+  "inflight_prompts": {}
+}

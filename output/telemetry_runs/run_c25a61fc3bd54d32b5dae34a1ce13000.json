@@ -1,0 +1,71 @@
+{
+  "run_id": "c25a61fc3bd54d32b5dae34a1ce13000",
+  "pipeline": "algorithm_creation",
+  "status": "failed",
+  "started_at": 1772676846.5328262,
+  "ended_at": 1772677047.874063,
+  "last_update_at": 1772677047.874063,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3
+  },
+  "error": "generator didn't stop after athrow()",
+  "events_count": 45,
+  "prompt_dispatches": 2,
+  "prompt_successes": 1,
+  "prompt_failures": 1,
+  "prompt_inflight": 0,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 19215.058088302612,
+      "max_latency_ms": 19215.058088302612
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "claude_shim",
+      "model": "claude-sonnet-4-5-20250929",
+      "dispatched": 1,
+      "succeeded": 0,
+      "failed": 1,
+      "inflight": 0,
+      "avg_latency_ms": 181754.84204292297,
+      "max_latency_ms": 181754.84204292297
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772676846.533089,
+      "ended_at": 1772676846.7237701,
+      "last_heartbeat_at": 1772676846.7237701,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "failed",
+      "started_at": 1772676846.818293,
+      "ended_at": 1772677047.873804,
+      "last_heartbeat_at": 1772677047.873804,
+      "message": "generator didn't stop after athrow()",
+      "completed": 0,
+      "total": 0
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose"
+  ],
+  "inflight_prompts": {}
+}

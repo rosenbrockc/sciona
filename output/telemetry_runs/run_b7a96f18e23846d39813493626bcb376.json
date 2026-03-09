@@ -1,0 +1,80 @@
+{
+  "run_id": "b7a96f18e23846d39813493626bcb376",
+  "pipeline": "algorithm_creation",
+  "status": "running",
+  "started_at": 1772669338.201835,
+  "ended_at": null,
+  "last_update_at": 1772669527.4558332,
+  "metadata": {
+    "command": "run",
+    "goal": "Detect heart rate from raw ECG signal",
+    "prover": "python",
+    "max_rounds": 3
+  },
+  "error": "",
+  "events_count": 40,
+  "prompt_dispatches": 2,
+  "prompt_successes": 1,
+  "prompt_failures": 0,
+  "prompt_inflight": 1,
+  "prompt_by_key": {
+    "architect_strategy": {
+      "prompt_key": "architect_strategy",
+      "provider": "llama_cpp",
+      "model": "qwen3:14b",
+      "dispatched": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "inflight": 0,
+      "avg_latency_ms": 23927.50597000122,
+      "max_latency_ms": 23927.50597000122
+    },
+    "architect_decompose": {
+      "prompt_key": "architect_decompose",
+      "provider": "claude_shim",
+      "model": "claude-sonnet-4-5-20250929",
+      "dispatched": 1,
+      "succeeded": 0,
+      "failed": 0,
+      "inflight": 1,
+      "avg_latency_ms": 0.0,
+      "max_latency_ms": 0.0
+    }
+  },
+  "stages": {
+    "setup": {
+      "name": "setup",
+      "status": "completed",
+      "started_at": 1772669338.202188,
+      "ended_at": 1772669338.361546,
+      "last_heartbeat_at": 1772669338.361546,
+      "message": "loading dependencies",
+      "completed": 0,
+      "total": 0
+    },
+    "architect_decompose": {
+      "name": "architect_decompose",
+      "status": "running",
+      "started_at": 1772669338.403863,
+      "ended_at": null,
+      "last_heartbeat_at": 1772669527.455331,
+      "message": "waiting on architect_decompose (165s)",
+      "completed": 0,
+      "total": 0
+    }
+  },
+  "stage_order": [
+    "setup",
+    "architect_decompose"
+  ],
+  "inflight_prompts": {
+    "d14e7a6146c540fd8a24e2963ffd2cd9": {
+      "dispatch_id": "d14e7a6146c540fd8a24e2963ffd2cd9",
+      "prompt_key": "architect_decompose",
+      "provider": "claude_shim",
+      "model": "claude-sonnet-4-5-20250929",
+      "stage": "architect_decompose",
+      "started_at": 1772669362.3907788
+    }
+  }
+}

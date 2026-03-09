@@ -80,6 +80,7 @@ class AgeomConfig(BaseSettings):
     telemetry_runs_dir: Path = Field(default=Path("output/telemetry_runs"))
     telemetry_stale_seconds: int = 120
     execution_mode: str = "verified"  # "rapid" | "structured" | "verified"
+    use_monadic_rewriter: bool = False  # Feature gate for formal DPO graph rewriting
 
     # Memgraph graph store
     memgraph_uri: str = "bolt://localhost:7687"

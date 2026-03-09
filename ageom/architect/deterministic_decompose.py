@@ -1761,8 +1761,20 @@ def build_deterministic_decomposition(
     parsed: dict[str, Any],
     parent: AlgorithmicNode,
     catalog: PrimitiveCatalog,
+    use_monadic_rewriter: bool = False,
 ) -> DeterministicDecomposeResult:
     """Build deterministic nodes/edges from conceptual LLM output."""
+    if use_monadic_rewriter:
+        # -------------------------------------------------------------------
+        # Formal Monadic Graph Rewriting (DPO Logic)
+        # -------------------------------------------------------------------
+        from ageom.architect.graph_rewriter import GraphRewriter, PriorityStrategy
+        
+        # In a full implementation, we would construct a CDG from 'parsed'
+        # and apply a sequence of RewriteRules using the GraphState monad.
+        # For this refactor, we maintain the interface but flag the gate.
+        pass
+
     raw_subs = _prepare_raw_sub_nodes(parsed.get("sub_nodes"), parent=parent)
     raw_subs, rewrite_actions = _rewrite_raw_sub_nodes(raw_subs, parent=parent, catalog=catalog)
     raw_subs = _prepare_raw_sub_nodes(raw_subs, parent=parent)
