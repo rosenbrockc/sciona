@@ -37,12 +37,22 @@ class PythonDeclarationSource:
     ) -> list[Declaration]:
         """Extract declarations from a package located at *repo_root*.
 
-        Temporarily inserts *repo_root* into ``sys.path`` so the package
-        can be imported, then delegates to ``get_declarations_from_package``.
+        Uses AST-based file walking to avoid import-time failures from
+        missing dependencies, syntax issues, or incomplete environments.
+        Falls back to import-based extraction only if file walking yields
+        nothing.
         """
+        root = Path(repo_root).resolve()
+        pkg_dir = root / package_name.replace(".", "/")
+        if pkg_dir.is_dir():
+            declarations = self._walk_package_files(pkg_dir, package_name)
+            if declarations:
+                return declarations
+
+        # Fallback: import-based extraction
         import sys as _sys
 
-        root_str = str(Path(repo_root).resolve())
+        root_str = str(root)
         inserted = root_str not in _sys.path
         if inserted:
             _sys.path.insert(0, root_str)
@@ -54,6 +64,42 @@ class PythonDeclarationSource:
                     _sys.path.remove(root_str)
                 except ValueError:
                     pass
+
+    def _walk_package_files(
+        self, pkg_dir: Path, package_name: str
+    ) -> list[Declaration]:
+        """Extract declarations by walking .py files and parsing AST directly."""
+        declarations: list[Declaration] = []
+        for py_file in sorted(pkg_dir.rglob("*.py")):
+            rel = py_file.relative_to(pkg_dir.parent)
+            parts = list(rel.with_suffix("").parts)
+            if parts[-1] == "__init__":
+                parts = parts[:-1]
+            if not parts:
+                continue
+            module_name = ".".join(parts)
+            try:
+                source = py_file.read_text(encoding="utf-8")
+                tree = ast.parse(source)
+            except (SyntaxError, UnicodeDecodeError):
+                logger.debug("Failed to parse %s, skipping", py_file)
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    info = self._ast_extract_function(node, module_name)
+                    if info is not None:
+                        type_sig = self._build_type_signature(info)
+                        declarations.append(
+                            Declaration(
+                                name=info.qualname,
+                                type_signature=type_sig,
+                                docstring=info.docstring,
+                                source_lib=module_name,
+                                prover=Prover.PYTHON,
+                                raw_code=info.source_code,
+                            )
+                        )
+        return declarations
 
     def get_declarations_from_package(self, package_name: str) -> list[Declaration]:
         """Extract declarations from all modules in a Python package."""
