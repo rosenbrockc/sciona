@@ -41,6 +41,24 @@ class _DeterministicCrossDomainLLM:
             if "spd" in user_lower:
                 return "CAUSE: missing solve step\nTARGET: solve vector routine\nNEXT: search cholesky solve"
             return "CAUSE: wrong algorithm\nTARGET: subsequence dynamic routine\nNEXT: search lcs"
+        if "algorithm critic" in lower or ("evaluate" in lower and '"approved"' in lower):
+            return '{"approved": true, "reason": "Decomposition is correct and complete"}'
+        if "decompose" in lower and ("sub-nodes" in lower or "sub_nodes" in lower):
+            if "filter" in user_lower or "ecg" in user_lower:
+                return '{"sub_nodes": [{"name": "Design Coefficients", "description": "Compute bandpass coefficients"}, {"name": "Apply Filter", "description": "Apply to signal"}]}'
+            if "shortest path" in user_lower or "graph" in user_lower:
+                return '{"sub_nodes": [{"name": "Init Distances", "description": "Set source 0, rest inf"}, {"name": "Relax Edges", "description": "Improve estimates"}]}'
+            if "linear" in user_lower or "spd" in user_lower:
+                return '{"sub_nodes": [{"name": "Cholesky Factor", "description": "Lower triangular factor"}, {"name": "Triangular Solve", "description": "Forward/back substitution"}]}'
+            return '{"sub_nodes": [{"name": "Build DP Table", "description": "Fill LCS lengths"}, {"name": "Backtrack", "description": "Reconstruct LCS"}]}'
+        if "paradigm" in lower and ("select" in lower or "algorithmic" in lower):
+            if "filter" in user_lower or "ecg" in user_lower:
+                return '{"paradigm": "signal_filter", "rationale": "Bandpass filtering"}'
+            if "shortest path" in user_lower or "weighted graph" in user_lower:
+                return '{"paradigm": "graph_optimization", "rationale": "SSSP"}'
+            if "linear system" in user_lower or "symmetric positive definite" in user_lower:
+                return '{"paradigm": "algebra", "rationale": "Linear algebra"}'
+            return '{"paradigm": "dynamic_programming", "rationale": "DP for LCS"}'
         return ""
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:

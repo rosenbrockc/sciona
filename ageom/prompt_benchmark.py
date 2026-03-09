@@ -8,6 +8,14 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
 
+from ageom.architect.prompts import (
+    CRITIQUE_SYSTEM,
+    CRITIQUE_USER,
+    DECOMPOSE_NODE_SYSTEM,
+    DECOMPOSE_NODE_USER,
+    SELECT_STRATEGY_SYSTEM,
+    SELECT_STRATEGY_USER,
+)
 from ageom.hunter.nodes import _INT_ARRAY_GBNF, _STRING_ARRAY_GBNF
 from ageom.hunter.prompts import (
     ANALYZE_FAILURE_SYSTEM,
@@ -19,6 +27,9 @@ from ageom.hunter.prompts import (
 )
 from ageom.json_utils import extract_json
 from ageom.llm_router import (
+    ARCHITECT_CRITIQUE,
+    ARCHITECT_DECOMPOSE,
+    ARCHITECT_STRATEGY,
     HUNTER_ANALYZE_FAILURE,
     HUNTER_REFORMULATE,
     HUNTER_SCORE,
@@ -248,6 +259,116 @@ def _analyze_failure_case(
     )
 
 
+def _strategy_case(
+    *,
+    case_id: str,
+    domain: str,
+    goal: str,
+    available_paradigms: str,
+    expected_paradigm: str,
+) -> PromptBenchmarkCase:
+    return PromptBenchmarkCase(
+        case_id=case_id,
+        domain=domain,
+        prompt_key=ARCHITECT_STRATEGY,
+        system=SELECT_STRATEGY_SYSTEM.format(available_paradigms=available_paradigms),
+        user=SELECT_STRATEGY_USER.format(goal=goal),
+        use_grammar=False,
+        expected={"kind": "strategy_json", "required_keys": ["paradigm", "rationale"], "expected_paradigm": expected_paradigm},
+        baseline_system=(
+            "Select the best algorithmic paradigm for this goal. "
+            'Return ONLY a JSON object with "paradigm" and "rationale" keys.'
+        ),
+        baseline_user=f"Goal: {goal}",
+    )
+
+
+def _decompose_case(
+    *,
+    case_id: str,
+    domain: str,
+    node_name: str,
+    node_description: str,
+    concept_type: str,
+    inputs: str,
+    outputs: str,
+    min_sub_nodes: int = 2,
+) -> PromptBenchmarkCase:
+    return PromptBenchmarkCase(
+        case_id=case_id,
+        domain=domain,
+        prompt_key=ARCHITECT_DECOMPOSE,
+        system=DECOMPOSE_NODE_SYSTEM,
+        user=DECOMPOSE_NODE_USER.format(
+            node_name=node_name,
+            node_description=node_description,
+            concept_type=concept_type,
+            inputs=inputs,
+            outputs=outputs,
+            depth=1,
+            max_depth=6,
+            primitives="(none)",
+            example_decompositions="",
+            retry_context="",
+        ),
+        use_grammar=False,
+        expected={"kind": "decompose_json", "required_keys": ["sub_nodes"], "min_sub_nodes": min_sub_nodes},
+        baseline_system=(
+            "Decompose this algorithmic node into sub-nodes. "
+            'Return ONLY a JSON object with a "sub_nodes" array.'
+        ),
+        baseline_user=(
+            f"Node: {node_name}\n"
+            f"Description: {node_description}\n"
+            f"Concept: {concept_type}\n"
+            f"Inputs: {inputs}\n"
+            f"Outputs: {outputs}"
+        ),
+    )
+
+
+def _critique_case(
+    *,
+    case_id: str,
+    domain: str,
+    parent_name: str,
+    parent_description: str,
+    parent_inputs: str,
+    parent_outputs: str,
+    sub_nodes: str,
+    edges: str,
+    should_approve: bool = True,
+) -> PromptBenchmarkCase:
+    return PromptBenchmarkCase(
+        case_id=case_id,
+        domain=domain,
+        prompt_key=ARCHITECT_CRITIQUE,
+        system=CRITIQUE_SYSTEM,
+        user=CRITIQUE_USER.format(
+            parent_name=parent_name,
+            parent_description=parent_description,
+            parent_inputs=parent_inputs,
+            parent_outputs=parent_outputs,
+            sub_nodes=sub_nodes,
+            edges=edges,
+            current_depth=1,
+            max_depth=6,
+            primitives="(none)",
+        ),
+        use_grammar=False,
+        expected={"kind": "critique_json", "required_keys": ["approved", "reason"]},
+        baseline_system=(
+            "Evaluate this decomposition for correctness and completeness. "
+            'Return ONLY a JSON object with "approved" (bool) and "reason" keys.'
+        ),
+        baseline_user=(
+            f"Parent: {parent_name} — {parent_description}\n"
+            f"Sub-nodes:\n{sub_nodes}\n"
+            f"Edges:\n{edges}"
+        ),
+    )
+
+
 def default_prompt_benchmark_cases() -> list[PromptBenchmarkCase]:
     """Cross-domain prompt suite for hunter prompt-key comparisons."""
     return [
@@ -379,6 +500,95 @@ def default_prompt_benchmark_cases() -> list[PromptBenchmarkCase]:
             compiler_output="Pattern match positions do not encode the longest common subsequence",
             target_terms=["subsequence", "dynamic"],
         ),
+        # --- Architect prompt benchmarks ---
+        _strategy_case(
+            case_id="strategy_dsp",
+            domain="dsp",
+            goal="Design and apply a stable bandpass filter to ECG samples.",
+            available_paradigms="sorting, searching, divide_and_conquer, greedy, dynamic_programming, graph_traversal, graph_optimization, string_matching, signal_transform, signal_filter",
+            expected_paradigm="signal_filter",
+        ),
+        _strategy_case(
+            case_id="strategy_graph",
+            domain="graph",
+            goal="Compute shortest path distances from a source node in a weighted graph.",
+            available_paradigms="sorting, searching, divide_and_conquer, greedy, dynamic_programming, graph_traversal, graph_optimization, string_matching, signal_transform, signal_filter",
+            expected_paradigm="graph_optimization",
+        ),
+        _strategy_case(
+            case_id="strategy_linear_algebra",
+            domain="linear_algebra",
+            goal="Solve a symmetric positive definite linear system.",
+            available_paradigms="sorting, searching, divide_and_conquer, greedy, dynamic_programming, graph_traversal, graph_optimization, algebra, analysis, signal_transform",
+            expected_paradigm="algebra",
+        ),
+        _strategy_case(
+            case_id="strategy_strings",
+            domain="strings",
+            goal="Compute the longest common subsequence of two strings.",
+            available_paradigms="sorting, searching, divide_and_conquer, greedy, dynamic_programming, graph_traversal, string_matching, signal_transform",
+            expected_paradigm="dynamic_programming",
+        ),
+        _decompose_case(
+            case_id="decompose_dsp",
+            domain="dsp",
+            node_name="Bandpass ECG Filter",
+            node_description="Design and apply a stable bandpass filter to ECG samples.",
+            concept_type="signal_filter",
+            inputs="signal: np.ndarray",
+            outputs="filtered_signal: np.ndarray",
+            min_sub_nodes=2,
+        ),
+        _decompose_case(
+            case_id="decompose_graph",
+            domain="graph",
+            node_name="Shortest Path Distances",
+            node_description="Compute shortest path distances from a source node in a weighted graph.",
+            concept_type="graph_optimization",
+            inputs="graph: Graph, source: Node",
+            outputs="distances: dict[node, float]",
+            min_sub_nodes=2,
+        ),
+        _decompose_case(
+            case_id="decompose_linear_algebra",
+            domain="linear_algebra",
+            node_name="SPD Linear Solve",
+            node_description="Solve a symmetric positive definite linear system Ax=b.",
+            concept_type="algebra",
+            inputs="matrix: np.ndarray, vector: np.ndarray",
+            outputs="solution: np.ndarray",
+            min_sub_nodes=2,
+        ),
+        _decompose_case(
+            case_id="decompose_strings",
+            domain="strings",
+            node_name="Longest Common Subsequence",
+            node_description="Compute the longest common subsequence of two strings using dynamic programming.",
+            concept_type="dynamic_programming",
+            inputs="s1: str, s2: str",
+            outputs="lcs: str",
+            min_sub_nodes=2,
+        ),
+        _critique_case(
+            case_id="critique_dsp",
+            domain="dsp",
+            parent_name="Bandpass ECG Filter",
+            parent_description="Design and apply a stable bandpass filter to ECG samples.",
+            parent_inputs="signal: np.ndarray",
+            parent_outputs="filtered_signal: np.ndarray",
+            sub_nodes="1. Design Filter — compute stable bandpass coefficients\n2. Apply Filter — apply coefficients to signal",
+            edges="Design Filter -> Apply Filter (coefficients)",
+        ),
+        _critique_case(
+            case_id="critique_graph",
+            domain="graph",
+            parent_name="Shortest Path Distances",
+            parent_description="Compute shortest path distances from source in a weighted graph.",
+            parent_inputs="graph: Graph, source: Node",
+            parent_outputs="distances: dict[node, float]",
+            sub_nodes="1. Initialize Distances — set source=0, others=inf\n2. Relax Edges — iteratively improve distances",
+            edges="Initialize Distances -> Relax Edges (distances)",
+        ),
     ]
 
 
@@ -432,6 +642,45 @@ def _validate_case_output(case: PromptBenchmarkCase, output: str) -> str:
         target_line = lines[1].lower()
         if target_terms and not any(term in target_line for term in target_terms):
             return f"expected TARGET line to mention one of {target_terms}"
+        return ""
+
+    if kind == "strategy_json":
+        parsed = extract_json(output)
+        if not isinstance(parsed, dict):
+            return "expected JSON object for strategy"
+        required_keys = case.expected.get("required_keys", [])
+        missing = [key for key in required_keys if key not in parsed]
+        if missing:
+            return f"missing required keys: {missing}"
+        expected_paradigm = case.expected.get("expected_paradigm", "")
+        if expected_paradigm and str(parsed.get("paradigm", "")).strip().lower() != expected_paradigm.lower():
+            return f"expected paradigm '{expected_paradigm}', got '{parsed.get('paradigm', '')}'"
+        return ""
+
+    if kind == "decompose_json":
+        parsed = extract_json(output)
+        if not isinstance(parsed, dict):
+            return "expected JSON object for decomposition"
+        required_keys = case.expected.get("required_keys", [])
+        missing = [key for key in required_keys if key not in parsed]
+        if missing:
+            return f"missing required keys: {missing}"
+        sub_nodes = parsed.get("sub_nodes", [])
+        if not isinstance(sub_nodes, list):
+            return "expected sub_nodes to be a list"
+        min_sub_nodes = int(case.expected.get("min_sub_nodes", 2))
+        if len(sub_nodes) < min_sub_nodes:
+            return f"expected at least {min_sub_nodes} sub_nodes, got {len(sub_nodes)}"
+        return ""
+
+    if kind == "critique_json":
+        parsed = extract_json(output)
+        if not isinstance(parsed, dict):
+            return "expected JSON object for critique"
+        required_keys = case.expected.get("required_keys", [])
+        missing = [key for key in required_keys if key not in parsed]
+        if missing:
+            return f"missing required keys: {missing}"
         return ""
 
     return f"unsupported benchmark expectation kind: {kind}"

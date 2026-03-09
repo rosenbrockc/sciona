@@ -553,6 +553,34 @@ class FixturePromptBenchmarkLLM:
             if "spd" in user_lower or "linear system" in user_lower:
                 return "CAUSE: decomposition without solve step\nTARGET: solve routine returning vector\nNEXT: search cholesky solve"
             return "CAUSE: pattern matcher not subsequence\nTARGET: dynamic subsequence routine\nNEXT: search lcs dynamic programming"
+        # Architect critique prompts (check first — most specific system prompt)
+        if "algorithm critic" in lower:
+            return '{"approved": true, "reason": "Decomposition is correct and complete"}'
+        # Architect decompose prompts (check before strategy — "decompose the given" is unique)
+        if "decompose the given algorithmic node" in lower:
+            user_lower = user.lower()
+            if "filter" in user_lower or "ecg" in user_lower:
+                return '{"sub_nodes": [{"name": "Design Filter Coefficients", "description": "Compute stable bandpass coefficients"}, {"name": "Apply Filter", "description": "Apply filter to signal"}]}'
+            if "shortest path" in user_lower or "graph" in user_lower:
+                return '{"sub_nodes": [{"name": "Initialize Distances", "description": "Set source to 0, others to infinity"}, {"name": "Relax Edges", "description": "Iteratively improve distance estimates"}]}'
+            if "linear" in user_lower or "spd" in user_lower:
+                return '{"sub_nodes": [{"name": "Cholesky Factor", "description": "Compute lower triangular factor"}, {"name": "Triangular Solve", "description": "Solve using forward/back substitution"}]}'
+            if "subsequence" in user_lower or "lcs" in user_lower:
+                return '{"sub_nodes": [{"name": "Build DP Table", "description": "Fill table of prefix LCS lengths"}, {"name": "Backtrack Solution", "description": "Reconstruct LCS from table"}]}'
+        # Architect strategy prompts
+        if "select the best algorithmic paradigm" in lower:
+            user_lower = user.lower()
+            if "filter" in user_lower or "ecg" in user_lower:
+                return '{"paradigm": "signal_filter", "rationale": "ECG filtering requires stable bandpass design"}'
+            if "shortest path" in user_lower or "weighted graph" in user_lower:
+                return '{"paradigm": "graph_optimization", "rationale": "Single-source shortest path is a graph optimization problem"}'
+            if "linear system" in user_lower or "symmetric positive definite" in user_lower:
+                return '{"paradigm": "algebra", "rationale": "SPD solve is a linear algebra operation"}'
+            if "longest common subsequence" in user_lower:
+                return '{"paradigm": "dynamic_programming", "rationale": "LCS uses optimal substructure via DP"}'
+        # Generic critique/evaluate fallback
+        if "critic" in lower or "evaluate" in lower or "approved" in lower:
+            return '{"approved": true, "reason": "Decomposition is correct and complete"}'
         return ""
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
