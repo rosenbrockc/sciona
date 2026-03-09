@@ -35,6 +35,9 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "flow_execution_path_summary": benchmark_summary.get(
                     "flow_execution_path_summary", ""
                 ),
+                "runtime_override_policy_summary": benchmark_summary.get(
+                    "runtime_override_policy_summary", ""
+                ),
                 "flow_required_variants": list(
                     benchmark_summary.get("flow_required_variants", []) or []
                 ),

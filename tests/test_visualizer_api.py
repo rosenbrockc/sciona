@@ -479,6 +479,7 @@ class TestDashboardAPI:
                     "flow_stability_summary": "rapid 4/4, verified 4/4",
                     "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
                     "flow_execution_path_summary": "rapid=rapid_direct, structured=structured_single_pass, verified=verified_orchestration",
+                    "runtime_override_policy_summary": "rapid=0/0/0, structured=0/0/0, verified=1/1/1",
                     "flow_required_variants": ["structured", "verified"],
                     "flow_comparison_variants": ["direct_baseline", "rapid"],
                     "flow_execution_paths": {
@@ -589,6 +590,7 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["flow_mode_failures"] == 0
         assert "required[structured,verified]" in data["benchmark_summary"]["flow_gate_summary"]
         assert "structured=structured_single_pass" in data["benchmark_summary"]["flow_execution_path_summary"]
+        assert "verified=1/1/1" in data["benchmark_summary"]["runtime_override_policy_summary"]
         assert data["benchmark_summary"]["flow_required_variants"] == ["structured", "verified"]
         assert set(data["benchmark_summary"]["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
         assert data["benchmark_summary"]["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]

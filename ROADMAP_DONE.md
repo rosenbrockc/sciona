@@ -1186,3 +1186,27 @@
   - Result: `1256 passed, 17 skipped`
 - Commit:
   - `release: gate verified override policy`
+
+## Runtime Policy Summary Ergonomics
+
+- Added a compact `runtime_override_policy_summary` field to benchmark/release artifacts so runtime override-policy health is visible without opening nested `runtime_complexity` JSON.
+- The summary renders per-mode override-policy counts as:
+  - required override count
+  - missing required override count
+  - unexpected active override count
+- Propagated that field through:
+  - benchmark validation bundle
+  - release validation manifest
+  - telemetry metadata normalization
+  - dashboard/API benchmark summaries
+- Added regressions for:
+  - benchmark bundle persistence of the runtime policy summary
+  - release manifest preservation of the summary
+  - telemetry/dashboard extraction of the summary field
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `28 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1256 passed, 17 skipped`
+- Commit:
+  - `benchmark: summarize runtime override policy`

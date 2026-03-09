@@ -363,6 +363,9 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "flow_execution_path_summary": str(
             benchmark.get("flow_execution_path_summary", "") or ""
         ),
+        "runtime_override_policy_summary": str(
+            benchmark.get("runtime_override_policy_summary", "") or ""
+        ),
         "flow_required_variants": list(
             benchmark.get("flow_required_variants", []) or []
         )

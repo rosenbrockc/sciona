@@ -25,6 +25,7 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert bench["flow_results"] > 0
     assert "required[structured,verified]" in bench["flow_gate_summary"]
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
+    assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
     assert bench["flow_required_variants"] == ["structured", "verified"]
     assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
     assert bench["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
@@ -58,6 +59,7 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
             "flow_stability_summary": "rapid 3/4, verified 4/4",
             "flow_gate_summary": "required[structured,verified] 0/1; comparison[direct_baseline,rapid] 2/0",
             "flow_execution_path_summary": "rapid=rapid_direct",
+            "runtime_override_policy_summary": "verified=5/1/1",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_execution_paths": {
@@ -127,6 +129,7 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
             "flow_stability_summary": "rapid 4/4, verified 4/4",
             "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
             "flow_execution_path_summary": "rapid=rapid_direct",
+            "runtime_override_policy_summary": "verified=5/0/0",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_execution_paths": {
@@ -212,6 +215,7 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
             "flow_stability_summary": "rapid 4/4, verified 4/4",
             "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
             "flow_execution_path_summary": "rapid=rapid_direct",
+            "runtime_override_policy_summary": "verified=5/0/0",
             "flow_required_variants": ["structured", "verified"],
             "flow_comparison_variants": ["direct_baseline", "rapid"],
             "flow_execution_paths": {

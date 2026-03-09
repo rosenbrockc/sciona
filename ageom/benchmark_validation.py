@@ -180,6 +180,32 @@ def _format_flow_execution_path_summary(summary: dict[str, Any]) -> str:
     return ", ".join(parts) + suffix
 
 
+def _format_runtime_override_policy_summary(runtime_complexity: dict[str, Any]) -> str:
+    """Render a compact summary of runtime override-policy health."""
+    by_mode = (
+        runtime_complexity.get("by_mode", {})
+        if isinstance(runtime_complexity.get("by_mode"), dict)
+        else {}
+    )
+    parts: list[str] = []
+    for mode in ("rapid", "structured", "verified"):
+        row = by_mode.get(mode, {})
+        if not isinstance(row, dict):
+            continue
+        policy = (
+            row.get("override_policy", {})
+            if isinstance(row.get("override_policy"), dict)
+            else {}
+        )
+        parts.append(
+            f"{mode}="
+            f"{len(policy.get('required_active_overrides', []) or [])}/"
+            f"{len(policy.get('missing_required_overrides', []) or [])}/"
+            f"{len(policy.get('unexpected_active_overrides', []) or [])}"
+        )
+    return ", ".join(parts) or "--"
+
+
 def _transport_for_provider(provider: str) -> str:
     lowered = provider.strip().lower()
     if lowered.endswith("_shim"):
@@ -559,6 +585,9 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "flow_comparison_failures": flow_comparison_failures,
         "flow_comparison_unstable_groups": flow_comparison_unstable_groups,
         "runtime_complexity": runtime_complexity,
+        "runtime_override_policy_summary": _format_runtime_override_policy_summary(
+            runtime_complexity
+        ),
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
