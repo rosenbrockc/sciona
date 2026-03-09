@@ -429,6 +429,8 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "resolved_sources": int(catalog_validation.get("resolved_sources", 0) or 0),
         "source_candidates": int(catalog_validation.get("source_candidates", 0) or 0),
         "source_added": int(catalog_validation.get("source_added", 0) or 0),
+        "coverage_summary": str(catalog_validation.get("coverage_summary", "") or ""),
+        "alignment_summary": str(catalog_validation.get("alignment_summary", "") or ""),
         "missing_sources": list(catalog_validation.get("missing_sources", []) or [])
         if isinstance(catalog_validation.get("missing_sources", []), list)
         else [],

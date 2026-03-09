@@ -36,6 +36,8 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert runtime["violations"] == []
     assert catalog["status"] == "passed"
     assert catalog["source_candidates"] > 0
+    assert "resolved=" in catalog["coverage_summary"]
+    assert "matched=" in catalog["alignment_summary"]
     assert (tmp_path / "benchmarks" / "summary.json").exists()
 
 
@@ -89,6 +91,8 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
             "resolved_sources": 2,
             "source_candidates": 10,
             "source_added": 8,
+            "coverage_summary": "resolved=2/2 added=8/10 missing=0 zero=0",
+            "alignment_summary": "matched=8 registry_only=0 ast_only=0 drift=0",
             "missing_sources": [],
             "zero_candidate_sources": [],
             "violations": [],
@@ -175,6 +179,8 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
             "resolved_sources": 2,
             "source_candidates": 10,
             "source_added": 8,
+            "coverage_summary": "resolved=2/2 added=8/10 missing=0 zero=0",
+            "alignment_summary": "matched=8 registry_only=0 ast_only=0 drift=0",
             "missing_sources": [],
             "zero_candidate_sources": [],
             "violations": [],
@@ -245,6 +251,8 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
             "resolved_sources": 1,
             "source_candidates": 3,
             "source_added": 3,
+            "coverage_summary": "resolved=1/2 added=3/3 missing=1 zero=1",
+            "alignment_summary": "matched=3 registry_only=0 ast_only=1 drift=1",
             "missing_sources": ["hpy-atoms"],
             "zero_candidate_sources": ["hpy-atoms"],
             "violations": ["missing_source:hpy-atoms", "source_no_candidates:hpy-atoms"],

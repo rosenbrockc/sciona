@@ -552,6 +552,8 @@ class TestDashboardAPI:
                         "resolved_sources": 1,
                         "source_candidates": 3,
                         "source_added": 3,
+                        "coverage_summary": "resolved=1/2 added=3/3 missing=1 zero=1",
+                        "alignment_summary": "matched=3 registry_only=1 ast_only=2 drift=1",
                         "missing_sources": ["hpy-atoms"],
                         "zero_candidate_sources": ["hpy-atoms"],
                         "violations": ["missing_source:hpy-atoms"],
@@ -599,6 +601,8 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")
         assert data["catalog_validation_summary"]["status"] == "failed"
         assert data["catalog_validation_summary"]["missing_sources"] == ["hpy-atoms"]
+        assert "resolved=1/2" in data["catalog_validation_summary"]["coverage_summary"]
+        assert "registry_only=1" in data["catalog_validation_summary"]["alignment_summary"]
         assert data["catalog_validation_summary"]["alignment"]["registry_only_total"] == 1
         assert data["catalog_validation_summary"]["alignment"]["ast_only_total"] == 2
 

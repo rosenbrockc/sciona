@@ -61,6 +61,8 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
     assert summary["source_candidates"] == 11
     assert summary["source_added"] == 7
     assert summary["violations"] == []
+    assert "resolved=2/2" in summary["coverage_summary"]
+    assert "registry_only=1" in summary["alignment_summary"]
     assert Path(summary["report"]).exists()
     payload = json.loads(Path(summary["report"]).read_text(encoding="utf-8"))
     assert payload["source_breakdown"]["ageo-atoms"]["ast_candidates"] == 8
@@ -117,3 +119,5 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
     assert summary["missing_sources"] == ["missing-atoms"]
     assert summary["zero_candidate_sources"] == ["missing-atoms"]
     assert summary["alignment"]["registry_error_sources"] == ["missing-atoms"]
+    assert "missing=1" in summary["coverage_summary"]
+    assert "drift=1" in summary["alignment_summary"]

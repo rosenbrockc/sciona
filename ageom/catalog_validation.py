@@ -20,6 +20,26 @@ def _catalog_validation_config() -> AgeomConfig:
     return AgeomConfig(_env_file=None)
 
 
+def _format_catalog_coverage_summary(summary: dict[str, Any]) -> str:
+    return (
+        f"resolved={int(summary.get('resolved_sources', 0) or 0)}/"
+        f"{int(summary.get('configured_sources', 0) or 0)} "
+        f"added={int(summary.get('source_added', 0) or 0)}/"
+        f"{int(summary.get('source_candidates', 0) or 0)} "
+        f"missing={len(summary.get('missing_sources', []) or [])} "
+        f"zero={len(summary.get('zero_candidate_sources', []) or [])}"
+    )
+
+
+def _format_catalog_alignment_summary(alignment: dict[str, Any]) -> str:
+    return (
+        f"matched={int(alignment.get('matched_total', 0) or 0)} "
+        f"registry_only={int(alignment.get('registry_only_total', 0) or 0)} "
+        f"ast_only={int(alignment.get('ast_only_total', 0) or 0)} "
+        f"drift={len(alignment.get('drift_sources', []) or [])}"
+    )
+
+
 def _source_rows(config: Any, *, base_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
     rows: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -124,6 +144,8 @@ async def run_catalog_validation(output_dir: str | Path) -> dict[str, Any]:
         "alignment": alignment,
         "violations": violations,
     }
+    summary["coverage_summary"] = _format_catalog_coverage_summary(summary)
+    summary["alignment_summary"] = _format_catalog_alignment_summary(alignment)
     report_path = out_dir / "catalog_validation.json"
     report_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     summary["report"] = str(report_path)

@@ -1210,3 +1210,29 @@
   - Result: `1256 passed, 17 skipped`
 - Commit:
   - `benchmark: summarize runtime override policy`
+
+## Catalog Validation Summary Ergonomics
+
+- Added compact catalog-validation summary fields so release artifacts and dashboards expose source-catalog health without drilling into nested validation payloads.
+- The catalog-validation artifact now includes:
+  - `coverage_summary`
+  - `alignment_summary`
+- These summarize, in one line each:
+  - resolved/configured sources, added/candidate counts, missing count, zero-candidate count
+  - matched registrations, registry-only drift, AST-only drift, drift-source count
+- Propagated those fields through:
+  - catalog validation reports
+  - release-validation manifests
+  - telemetry/dashboard API summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - catalog-validation summary generation
+  - release manifest preservation of the summary fields
+  - dashboard/API extraction of coverage/alignment summaries
+- Validation:
+  - `pytest -q tests/test_catalog_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `25 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1256 passed, 17 skipped`
+- Commit:
+  - `catalog: summarize validation health`
