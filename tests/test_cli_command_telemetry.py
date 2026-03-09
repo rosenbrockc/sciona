@@ -107,12 +107,13 @@ async def test_decompose_writes_persisted_telemetry_run(monkeypatch, tmp_path: P
         is_complete=lambda: True,
     )
 
+    _D = "ageom.commands.decompose_cmds"
     monkeypatch.setattr(
-        "ageom.cli._load_architect_catalog",
+        f"{_D}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=3), {"source_candidates": 3}),
     )
     monkeypatch.setattr(
-        "ageom.cli._resolve_retrieval_policy",
+        f"{_D}._resolve_retrieval_policy",
         lambda **kwargs: SimpleNamespace(
             catalog_confidence=0.9,
             confidence_band="high",
@@ -122,8 +123,8 @@ async def test_decompose_writes_persisted_telemetry_run(monkeypatch, tmp_path: P
             hunter_mode="standard",
         ),
     )
-    monkeypatch.setattr("ageom.cli._load_skill_index_or_empty", lambda config, enabled=True: object())
-    monkeypatch.setattr("ageom.cli._create_llm_router", lambda *args, **kwargs: object())
+    monkeypatch.setattr(f"{_D}._load_skill_index_or_empty", lambda config, enabled=True: object())
+    monkeypatch.setattr(f"{_D}._create_llm_router", lambda *args, **kwargs: object())
 
     async def _noop_warm(*args, **kwargs):
         return None
@@ -134,9 +135,9 @@ async def test_decompose_writes_persisted_telemetry_run(monkeypatch, tmp_path: P
     async def _fake_run_decompose(agent, args, max_depth, catalog):
         return fake_cdg
 
-    monkeypatch.setattr("ageom.cli._warm_llm_if_supported", _noop_warm)
-    monkeypatch.setattr("ageom.cli._create_shared_context", _fake_create_shared_context)
-    monkeypatch.setattr("ageom.cli._run_decompose", _fake_run_decompose)
+    monkeypatch.setattr(f"{_D}._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr(f"{_D}._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr(f"{_D}._run_decompose", _fake_run_decompose)
     monkeypatch.setattr(
         "ageom.architect.checkpointer.create_checkpointer",
         lambda uri: _AsyncNullContext(),
@@ -188,12 +189,13 @@ async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path)
     metrics = _FakeMetrics("postgres")
     env = _FakeEnv()
 
+    _M = "ageom.commands.match_cmds"
     monkeypatch.setattr(
-        "ageom.cli._load_architect_catalog",
+        f"{_M}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=5), {"source_candidates": 5}),
     )
     monkeypatch.setattr(
-        "ageom.cli._resolve_retrieval_policy",
+        f"{_M}._resolve_retrieval_policy",
         lambda **kwargs: SimpleNamespace(
             catalog_confidence=0.6,
             confidence_band="medium",
@@ -203,13 +205,13 @@ async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path)
             hunter_mode="standard",
         ),
     )
-    monkeypatch.setattr("ageom.cli._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
-    monkeypatch.setattr("ageom.cli._create_proof_env", lambda prover, config: env)
+    monkeypatch.setattr(f"{_M}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
+    monkeypatch.setattr(f"{_M}._create_proof_env", lambda prover, config: env)
     monkeypatch.setattr(
         "ageom.judge.checker.VerificationOracleImpl",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
-    monkeypatch.setattr("ageom.cli._create_llm_router", lambda *args, **kwargs: object())
+    monkeypatch.setattr(f"{_M}._create_llm_router", lambda *args, **kwargs: object())
 
     async def _noop_warm(*args, **kwargs):
         return None
@@ -235,8 +237,8 @@ async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path)
                 all_verifications=[],
             )
 
-    monkeypatch.setattr("ageom.cli._warm_llm_if_supported", _noop_warm)
-    monkeypatch.setattr("ageom.cli._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr(f"{_M}._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr(f"{_M}._create_shared_context", _fake_create_shared_context)
     monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
 
     await _cmd_match(
@@ -271,12 +273,13 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
     metrics = _FakeMetrics("memory")
     env = _FakeEnv()
 
+    _R = "ageom.commands.run_cmds"
     monkeypatch.setattr(
-        "ageom.cli._load_architect_catalog",
+        f"{_R}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=0), {"source_candidates": 0}),
     )
     monkeypatch.setattr(
-        "ageom.cli._resolve_retrieval_policy",
+        f"{_R}._resolve_retrieval_policy",
         lambda **kwargs: SimpleNamespace(
             catalog_confidence=0.0,
             confidence_band="none",
@@ -286,13 +289,13 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
             hunter_mode="standard",
         ),
     )
-    monkeypatch.setattr("ageom.cli._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
-    monkeypatch.setattr("ageom.cli._create_proof_env", lambda prover, config: env)
+    monkeypatch.setattr(f"{_R}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
+    monkeypatch.setattr(f"{_R}._create_proof_env", lambda prover, config: env)
     monkeypatch.setattr(
         "ageom.judge.checker.VerificationOracleImpl",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
-    monkeypatch.setattr("ageom.cli._create_llm_router", lambda *args, **kwargs: object())
+    monkeypatch.setattr(f"{_R}._create_llm_router", lambda *args, **kwargs: object())
 
     async def _noop_warm(*args, **kwargs):
         return None
@@ -310,8 +313,8 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
     def _save_cdg(cdg, path):
         Path(path).write_text(cdg.model_dump_json(indent=2), encoding="utf-8")
 
-    monkeypatch.setattr("ageom.cli._warm_llm_if_supported", _noop_warm)
-    monkeypatch.setattr("ageom.cli._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr(f"{_R}._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
     monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
     monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)
     monkeypatch.setattr(
@@ -387,12 +390,13 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
         metadata={"goal": "Detect heart rate from ECG"},
     )
 
+    _R = "ageom.commands.run_cmds"
     monkeypatch.setattr(
-        "ageom.cli._load_architect_catalog",
+        f"{_R}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=2), {"source_candidates": 2}),
     )
     monkeypatch.setattr(
-        "ageom.cli._resolve_retrieval_policy",
+        f"{_R}._resolve_retrieval_policy",
         lambda **kwargs: SimpleNamespace(
             catalog_confidence=0.5,
             confidence_band="medium",
@@ -402,14 +406,14 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
             hunter_mode="standard",
         ),
     )
-    monkeypatch.setattr("ageom.cli._load_skill_index_or_empty", lambda config, enabled=True: object())
-    monkeypatch.setattr("ageom.cli._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
-    monkeypatch.setattr("ageom.cli._create_proof_env", lambda prover, config: env)
+    monkeypatch.setattr(f"{_R}._load_skill_index_or_empty", lambda config, enabled=True: object())
+    monkeypatch.setattr(f"{_R}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
+    monkeypatch.setattr(f"{_R}._create_proof_env", lambda prover, config: env)
     monkeypatch.setattr(
         "ageom.judge.checker.VerificationOracleImpl",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
-    monkeypatch.setattr("ageom.cli._create_llm_router", lambda *args, **kwargs: object())
+    monkeypatch.setattr(f"{_R}._create_llm_router", lambda *args, **kwargs: object())
 
     async def _noop_warm(*args, **kwargs):
         return None
@@ -434,8 +438,8 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
     def _save_cdg(cdg, path):
         Path(path).write_text(cdg.model_dump_json(indent=2), encoding="utf-8")
 
-    monkeypatch.setattr("ageom.cli._warm_llm_if_supported", _noop_warm)
-    monkeypatch.setattr("ageom.cli._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr(f"{_R}._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
     monkeypatch.setattr("ageom.architect.graph.DecompositionAgent", _FakeArchitectAgent)
     monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
     monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)

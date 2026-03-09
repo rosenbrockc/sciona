@@ -84,70 +84,73 @@ def _annotate_hang_signals(
     return out
 
 
-def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
-    """Derive dashboard-friendly summaries from run metadata."""
-    metadata = run.get("metadata", {}) if isinstance(run.get("metadata"), dict) else {}
+def _transport_for_provider(provider: str) -> str:
+    """Classify a provider name into its transport category."""
+    lowered = provider.strip().lower()
+    if lowered.endswith("_shim"):
+        return "persistent_shim"
+    if lowered.endswith("_cli"):
+        return "legacy_cli"
+    if lowered == "llama_cpp":
+        return "local_server"
+    if lowered in {"anthropic", "codex", "openai"}:
+        return "api"
+    if not lowered:
+        return "--"
+    return "other"
+
+
+def _routing_line(routing: dict[str, Any], name: str) -> dict[str, Any]:
+    """Build a single routing-round summary line."""
+    section = routing.get(name, {})
+    if not isinstance(section, dict):
+        section = {}
+    active = section.get("active_overrides", [])
+    if not isinstance(active, list):
+        active = []
+    return {
+        "round": name,
+        "default": (
+            f"{section.get('default_provider', '--')}:{section.get('default_model', '--')}"
+        ),
+        "active_count": len(active),
+        "suppressed_count": len(section.get("suppressed_default_overrides", []) or []),
+        "custom_nonbenchmark_count": len(
+            section.get("custom_nonbenchmark_overrides", []) or []
+        ),
+    }
+
+
+def _build_retrieval_summary(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Build the retrieval_summary section."""
     retrieval = metadata.get("retrieval_policy", {})
-    routing = metadata.get("llm_routing", {})
-    benchmark = metadata.get("benchmark_validation", {})
-    release_validation = metadata.get("release_validation", {})
-    shared_context = metadata.get("shared_context", {})
-    catalog_alignment = metadata.get("catalog_alignment", {})
-    architect_metrics = metadata.get("architect_metrics", {})
-    hunter_metrics = metadata.get("hunter_metrics", {})
     if not isinstance(retrieval, dict):
         retrieval = {}
-    if not isinstance(routing, dict):
-        routing = {}
-    if not isinstance(benchmark, dict):
-        benchmark = {}
-    if not isinstance(release_validation, dict):
-        release_validation = {}
-    if not isinstance(shared_context, dict):
-        shared_context = {}
-    if not isinstance(catalog_alignment, dict):
-        catalog_alignment = {}
-    if not isinstance(architect_metrics, dict):
-        architect_metrics = {}
-    if not isinstance(hunter_metrics, dict):
-        hunter_metrics = {}
-    contexts = shared_context.get("contexts", {})
-    if not isinstance(contexts, dict):
-        contexts = {}
+    return {
+        "confidence_band": retrieval.get("confidence_band", "--"),
+        "skill_index": bool(retrieval.get("skill_index", False)),
+        "graph_retrieval": bool(retrieval.get("graph_retrieval", False)),
+        "semantic_backend": retrieval.get("semantic_backend", "default"),
+        "hunter_mode": retrieval.get("hunter_mode", "--"),
+    }
 
-    def _transport_for_provider(provider: str) -> str:
-        lowered = provider.strip().lower()
-        if lowered.endswith("_shim"):
-            return "persistent_shim"
-        if lowered.endswith("_cli"):
-            return "legacy_cli"
-        if lowered == "llama_cpp":
-            return "local_server"
-        if lowered in {"anthropic", "codex", "openai"}:
-            return "api"
-        if not lowered:
-            return "--"
-        return "other"
 
-    def _routing_line(name: str) -> dict[str, Any]:
-        section = routing.get(name, {})
-        if not isinstance(section, dict):
-            section = {}
-        active = section.get("active_overrides", [])
-        if not isinstance(active, list):
-            active = []
-        return {
-            "round": name,
-            "default": (
-                f"{section.get('default_provider', '--')}:{section.get('default_model', '--')}"
-            ),
-            "active_count": len(active),
-            "suppressed_count": len(section.get("suppressed_default_overrides", []) or []),
-            "custom_nonbenchmark_count": len(
-                section.get("custom_nonbenchmark_overrides", []) or []
-            ),
-        }
+def _build_execution_summary(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Build the execution_summary section."""
+    return {
+        "mode": str(metadata.get("execution_mode", "") or "--"),
+        "path": str(metadata.get("execution_path", "") or "--"),
+        "rapid_direct": bool(metadata.get("rapid_direct_path", False)),
+    }
 
+
+def _build_routing_summary(
+    routing: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Build routing_summary and provider_complexity sections.
+
+    Returns a (routing_summary, provider_complexity) tuple.
+    """
     provider_models: set[str] = set()
     providers: set[str] = set()
     transports: set[str] = set()
@@ -174,24 +177,11 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
             transports.add(_transport_for_provider(provider))
             provider_models.add(f"{provider}:{model or '--'}")
 
-    out = dict(run)
-    out["retrieval_summary"] = {
-        "confidence_band": retrieval.get("confidence_band", "--"),
-        "skill_index": bool(retrieval.get("skill_index", False)),
-        "graph_retrieval": bool(retrieval.get("graph_retrieval", False)),
-        "semantic_backend": retrieval.get("semantic_backend", "default"),
-        "hunter_mode": retrieval.get("hunter_mode", "--"),
+    routing_summary = {
+        "architect": _routing_line(routing, "architect"),
+        "hunter": _routing_line(routing, "hunter"),
     }
-    out["execution_summary"] = {
-        "mode": str(metadata.get("execution_mode", "") or "--"),
-        "path": str(metadata.get("execution_path", "") or "--"),
-        "rapid_direct": bool(metadata.get("rapid_direct_path", False)),
-    }
-    out["routing_summary"] = {
-        "architect": _routing_line("architect"),
-        "hunter": _routing_line("hunter"),
-    }
-    out["provider_complexity"] = {
+    provider_complexity = {
         "provider_count": len(providers),
         "provider_model_count": len(provider_models),
         "transport_count": len(transports),
@@ -199,7 +189,14 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "provider_models": sorted(provider_models),
         "transports": sorted(transports),
     }
-    out["catalog_alignment_summary"] = {
+    return routing_summary, provider_complexity
+
+
+def _build_catalog_alignment_summary(
+    catalog_alignment: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the catalog_alignment_summary section."""
+    summary: dict[str, Any] = {
         "catalog_size": int(catalog_alignment.get("catalog_size", 0) or 0),
         "total_candidates": int(catalog_alignment.get("total_candidates", 0) or 0),
         "added": int(catalog_alignment.get("added", 0) or 0),
@@ -236,7 +233,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     merge_rows.sort(
         key=lambda row: (-row["similarity"], row["candidate"], row["incumbent"])
     )
-    out["catalog_alignment_summary"]["top_merges"] = merge_rows[:5]
+    summary["top_merges"] = merge_rows[:5]
     source_breakdown = catalog_alignment.get("source_breakdown", {})
     if not isinstance(source_breakdown, dict):
         source_breakdown = {}
@@ -261,8 +258,13 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
             row["source"],
         )
     )
-    out["catalog_alignment_summary"]["source_count"] = len(source_rows)
-    out["catalog_alignment_summary"]["top_sources"] = source_rows[:5]
+    summary["source_count"] = len(source_rows)
+    summary["top_sources"] = source_rows[:5]
+    return summary
+
+
+def _build_architect_summary(architect_metrics: dict[str, Any]) -> dict[str, Any]:
+    """Build the architect_summary section."""
     status_counts = architect_metrics.get("node_status_counts", {})
     if not isinstance(status_counts, dict):
         status_counts = {}
@@ -288,7 +290,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         ),
         key=lambda row: (-row["count"], row["category"]),
     )
-    out["architect_summary"] = {
+    return {
         "unresolved_leaf_count": int(architect_metrics.get("unresolved_leaf_count", 0) or 0),
         "blocked_count": int(status_counts.get("blocked", 0) or 0),
         "blocked_node_names": [str(name) for name in blocked_names if str(name).strip()],
@@ -302,7 +304,11 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "retry_total": sum(int(count or 0) for count in retry_counts.values()),
         "retry_node_count": len(retry_counts),
     }
-    out["hunter_summary"] = {
+
+
+def _build_hunter_summary(hunter_metrics: dict[str, Any]) -> dict[str, Any]:
+    """Build the hunter_summary section."""
+    return {
         "search_iterations": int(hunter_metrics.get("search_iterations", 0) or 0),
         "embedding_results_total": int(
             hunter_metrics.get("embedding_results_total", 0) or 0
@@ -345,7 +351,14 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
             hunter_metrics.get("last_verified_candidate", "") or ""
         ),
     }
-    out["benchmark_summary"] = {
+
+
+def _build_benchmark_summary(
+    benchmark: dict[str, Any],
+    release_validation: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the benchmark_summary section (includes release_validation fields)."""
+    return {
         "status": str(benchmark.get("status", "") or ""),
         "prompt_cases": int(benchmark.get("prompt_cases", 0) or 0),
         "prompt_results": int(benchmark.get("prompt_results", 0) or 0),
@@ -465,10 +478,16 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),
     }
+
+
+def _build_catalog_validation_summary(
+    release_validation: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the catalog_validation_summary section."""
     catalog_validation = release_validation.get("catalog_validation", {})
     if not isinstance(catalog_validation, dict):
         catalog_validation = {}
-    out["catalog_validation_summary"] = {
+    summary: dict[str, Any] = {
         "status": str(catalog_validation.get("status", "") or ""),
         "configured_sources": int(catalog_validation.get("configured_sources", 0) or 0),
         "resolved_sources": int(catalog_validation.get("resolved_sources", 0) or 0),
@@ -502,7 +521,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     alignment = catalog_validation.get("alignment", {})
     if not isinstance(alignment, dict):
         alignment = {}
-    out["catalog_validation_summary"]["alignment"] = {
+    summary["alignment"] = {
         "source_count": int(alignment.get("source_count", 0) or 0),
         "matched_total": int(alignment.get("matched_total", 0) or 0),
         "registry_only_total": int(alignment.get("registry_only_total", 0) or 0),
@@ -545,7 +564,15 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
             row["source"],
         )
     )
-    out["catalog_validation_summary"]["top_drift_sources"] = top_drift_rows[:5]
+    summary["top_drift_sources"] = top_drift_rows[:5]
+    return summary
+
+
+def _build_shared_context_summary(shared_context: dict[str, Any]) -> dict[str, Any]:
+    """Build the shared_context_summary section."""
+    contexts = shared_context.get("contexts", {})
+    if not isinstance(contexts, dict):
+        contexts = {}
     shared_rows: list[dict[str, Any]] = []
     total_searches = 0
     total_hits = 0
@@ -629,7 +656,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
                 "failure_injected_blocks": failure_injected,
             }
         )
-    out["shared_context_summary"] = {
+    return {
         "context_count": len(shared_rows),
         "active_context_count": active_contexts,
         "backends": sorted(backends),
@@ -649,6 +676,46 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "metrics_path": str(shared_context.get("metrics_path", "") or ""),
         "contexts": sorted(shared_rows, key=lambda row: row["label"]),
     }
+
+
+def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
+    """Derive dashboard-friendly summaries from run metadata."""
+    metadata = run.get("metadata", {}) if isinstance(run.get("metadata"), dict) else {}
+    routing = metadata.get("llm_routing", {})
+    benchmark = metadata.get("benchmark_validation", {})
+    release_validation = metadata.get("release_validation", {})
+    shared_context = metadata.get("shared_context", {})
+    catalog_alignment = metadata.get("catalog_alignment", {})
+    architect_metrics = metadata.get("architect_metrics", {})
+    hunter_metrics = metadata.get("hunter_metrics", {})
+    if not isinstance(routing, dict):
+        routing = {}
+    if not isinstance(benchmark, dict):
+        benchmark = {}
+    if not isinstance(release_validation, dict):
+        release_validation = {}
+    if not isinstance(shared_context, dict):
+        shared_context = {}
+    if not isinstance(catalog_alignment, dict):
+        catalog_alignment = {}
+    if not isinstance(architect_metrics, dict):
+        architect_metrics = {}
+    if not isinstance(hunter_metrics, dict):
+        hunter_metrics = {}
+
+    routing_summary, provider_complexity = _build_routing_summary(routing)
+
+    out = dict(run)
+    out["retrieval_summary"] = _build_retrieval_summary(metadata)
+    out["execution_summary"] = _build_execution_summary(metadata)
+    out["routing_summary"] = routing_summary
+    out["provider_complexity"] = provider_complexity
+    out["catalog_alignment_summary"] = _build_catalog_alignment_summary(catalog_alignment)
+    out["architect_summary"] = _build_architect_summary(architect_metrics)
+    out["hunter_summary"] = _build_hunter_summary(hunter_metrics)
+    out["benchmark_summary"] = _build_benchmark_summary(benchmark, release_validation)
+    out["catalog_validation_summary"] = _build_catalog_validation_summary(release_validation)
+    out["shared_context_summary"] = _build_shared_context_summary(shared_context)
     return out
 
 
