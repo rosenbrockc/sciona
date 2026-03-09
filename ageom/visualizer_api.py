@@ -381,6 +381,14 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         )
         if isinstance(benchmark.get("flow_execution_paths", {}), dict)
         else {},
+        "flow_prompt_volume": dict(
+            benchmark.get("flow_prompt_volume", {}) or {}
+        )
+        if isinstance(benchmark.get("flow_prompt_volume", {}), dict)
+        else {},
+        "flow_prompt_volume_summary": str(
+            benchmark.get("flow_prompt_volume_summary", "") or ""
+        ),
         "flow_avg_prompt_calls": dict(
             benchmark.get("flow_avg_prompt_calls", {}) or {}
         )

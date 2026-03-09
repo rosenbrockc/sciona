@@ -1236,3 +1236,29 @@
   - Result: `1256 passed, 17 skipped`
 - Commit:
   - `catalog: summarize validation health`
+
+## Flow Prompt-Volume Monotonicity Gate
+
+- Added a benchmark validation check that enforces prompt-volume monotonicity across the full-flow execution modes.
+- The flow benchmark bundle now records:
+  - `flow_prompt_volume`
+  - `flow_prompt_volume_summary`
+- Benchmark/release validation now fails if:
+  - `rapid` uses more prompt calls than `structured`
+  - `structured` uses more prompt calls than `verified`
+- Propagated the new prompt-volume summary through:
+  - benchmark validation bundle
+  - release validation manifest
+  - telemetry/dashboard API summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - prompt-volume monotonicity failure detection
+  - benchmark bundle persistence of prompt-volume summaries
+  - release/telemetry/dashboard preservation of the new fields
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `29 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1257 passed, 17 skipped`
+- Commit:
+  - `benchmark: gate flow prompt volume`

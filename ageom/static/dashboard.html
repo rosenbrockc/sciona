@@ -495,6 +495,7 @@
             ? Object.entries(benchmarkFlowPaths.observed || {}).map(([variant, paths]) => `${variant}=${(paths || []).join("|")}`).join(", ")
             : "--"],
           ["flow path summary", benchmark.flow_execution_path_summary || "--"],
+          ["flow prompt volume", benchmark.flow_prompt_volume_summary || "--"],
           ["runtime budget", `${Number(benchmarkRuntime.provider_count || 0)} providers / ${Number(benchmarkRuntime.transport_count || 0)} transports / ${Number((benchmarkRuntime.violations || []).length || 0)} violations`],
           ["runtime policy", `${Number((benchmarkOverridePolicy.missing_required_overrides || []).length || 0)} missing / ${Number((benchmarkOverridePolicy.unexpected_active_overrides || []).length || 0)} unexpected`],
           ["runtime policy summary", benchmark.runtime_override_policy_summary || "--"],

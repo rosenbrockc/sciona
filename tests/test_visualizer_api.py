@@ -495,6 +495,16 @@ class TestDashboardAPI:
                         },
                         "violations": [],
                     },
+                    "flow_prompt_volume": {
+                        "averages": {
+                            "direct_baseline": 2.0,
+                            "rapid": 6.0,
+                            "structured": 7.0,
+                            "verified": 8.0,
+                        },
+                        "violations": [],
+                    },
+                    "flow_prompt_volume_summary": "direct_baseline=2.0, rapid=6.0, structured=7.0, verified=8.0",
                     "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
                     "prompt_avg_latency_ms": {
                         "codex_shim:tuned": 3954.8,
@@ -592,6 +602,7 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["flow_mode_failures"] == 0
         assert "required[structured,verified]" in data["benchmark_summary"]["flow_gate_summary"]
         assert "structured=structured_single_pass" in data["benchmark_summary"]["flow_execution_path_summary"]
+        assert "verified=8.0" in data["benchmark_summary"]["flow_prompt_volume_summary"]
         assert "verified=1/1/1" in data["benchmark_summary"]["runtime_override_policy_summary"]
         assert data["benchmark_summary"]["flow_required_variants"] == ["structured", "verified"]
         assert set(data["benchmark_summary"]["flow_comparison_variants"]) == {"direct_baseline", "rapid"}

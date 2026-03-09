@@ -5,6 +5,7 @@ import json
 import pytest
 
 from ageom.benchmark_validation import run_benchmark_validation, runtime_complexity_summary
+from ageom.benchmark_validation import flow_prompt_volume_summary
 from ageom.config import AgeomConfig
 from ageom.flow_benchmark import (
     default_flow_benchmark_cases,
@@ -53,6 +54,7 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert payload["flow_execution_paths"]["violations"] == []
     assert "required[structured,verified]" in payload["flow_gate_summary"]
     assert "rapid=rapid_direct" in payload["flow_execution_path_summary"]
+    assert "rapid=" in payload["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in payload["runtime_override_policy_summary"]
     assert "flow_comparison_failures" in payload
     assert "flow_comparison_unstable_groups" in payload
@@ -117,6 +119,24 @@ def test_runtime_complexity_summary_flags_verified_override_policy_drift():
     } == {"hunter_reformulate": "anthropic"}
     assert "verified:missing_required_override:hunter_reformulate=gemini_shim" in summary["violations"]
     assert "verified:unexpected_active_override:hunter_reformulate=anthropic" in summary["violations"]
+
+
+def test_flow_prompt_volume_summary_flags_non_monotonic_modes():
+    class _Agg:
+        def __init__(self, variant: str, avg_prompt_calls: float):
+            self.variant = variant
+            self.avg_prompt_calls = avg_prompt_calls
+
+    summary = flow_prompt_volume_summary(
+        [
+            _Agg("rapid", 5.0),
+            _Agg("structured", 4.0),
+            _Agg("verified", 7.0),
+        ]
+    )
+
+    assert summary["averages"]["rapid"] == 5.0
+    assert "rapid_prompt_calls=5.0 exceeds structured=4.0" in summary["violations"]
 
 
 @pytest.mark.asyncio

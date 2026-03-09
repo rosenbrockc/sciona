@@ -3618,6 +3618,10 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
             summary.get("flow_comparison_variants", []) or []
         ),
         "flow_execution_paths": dict(summary.get("flow_execution_paths", {}) or {}),
+        "flow_prompt_volume": dict(summary.get("flow_prompt_volume", {}) or {}),
+        "flow_prompt_volume_summary": str(
+            summary.get("flow_prompt_volume_summary", "") or ""
+        ),
         "flow_avg_prompt_calls": dict(summary.get("flow_avg_prompt_calls", {}) or {}),
         "prompt_avg_latency_ms": dict(summary.get("prompt_avg_latency_ms", {}) or {}),
         "flow_avg_latency_ms": dict(summary.get("flow_avg_latency_ms", {}) or {}),

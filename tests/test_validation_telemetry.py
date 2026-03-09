@@ -39,6 +39,11 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
                 "observed": {"rapid": ["rapid_direct"]},
                 "violations": [],
             },
+            "flow_prompt_volume": {
+                "averages": {"rapid": 6.0, "structured": 7.0, "verified": 8.0},
+                "violations": [],
+            },
+            "flow_prompt_volume_summary": "rapid=6.0, structured=7.0, verified=8.0",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {"violations": [], "provider_count": 3},
             "prompt_tuned_failures": 0,
@@ -70,6 +75,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert bench["flow_mode_failures"] == 0
     assert "required[structured,verified]" in bench["flow_gate_summary"]
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
+    assert "verified=8.0" in bench["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
     assert bench["flow_required_variants"] == ["structured", "verified"]
     assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
@@ -110,6 +116,11 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
                 "observed": {"rapid": ["rapid_direct"]},
                 "violations": [],
             },
+            "flow_prompt_volume": {
+                "averages": {"rapid": 8.0, "structured": 7.0, "verified": 9.0},
+                "violations": ["rapid_prompt_calls=8.0 exceeds structured=7.0"],
+            },
+            "flow_prompt_volume_summary": "rapid=8.0, structured=7.0, verified=9.0 violations=1",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {
                 "provider_count": 5,
@@ -198,6 +209,11 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
                     "observed": {"rapid": ["rapid_direct"]},
                     "violations": [],
                 },
+                "flow_prompt_volume": {
+                    "averages": {"rapid": 8.0, "structured": 7.0, "verified": 9.0},
+                    "violations": ["rapid_prompt_calls=8.0 exceeds structured=7.0"],
+                },
+                "flow_prompt_volume_summary": "rapid=8.0, structured=7.0, verified=9.0 violations=1",
                 "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
                 "status": "failed",
                 "runtime_complexity": {"provider_count": 5, "violations": ["legacy_providers_present=codex_cli"]},

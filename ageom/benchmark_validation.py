@@ -206,6 +206,37 @@ def _format_runtime_override_policy_summary(runtime_complexity: dict[str, Any]) 
     return ", ".join(parts) or "--"
 
 
+def flow_prompt_volume_summary(flow_aggregates: list[Any]) -> dict[str, Any]:
+    """Summarize whether prompt volume remains monotonic across execution modes."""
+    averages = {
+        agg.variant: round(float(agg.avg_prompt_calls), 3)
+        for agg in flow_aggregates
+    }
+    violations: list[str] = []
+    rapid = float(averages.get("rapid", 0.0) or 0.0)
+    structured = float(averages.get("structured", 0.0) or 0.0)
+    verified = float(averages.get("verified", 0.0) or 0.0)
+    if rapid > structured:
+        violations.append(
+            f"rapid_prompt_calls={rapid} exceeds structured={structured}"
+        )
+    if structured > verified:
+        violations.append(
+            f"structured_prompt_calls={structured} exceeds verified={verified}"
+        )
+    return {"averages": averages, "violations": violations}
+
+
+def _format_flow_prompt_volume_summary(summary: dict[str, Any]) -> str:
+    averages = summary.get("averages", {}) if isinstance(summary.get("averages"), dict) else {}
+    parts = [f"{variant}={float(value):.1f}" for variant, value in sorted(averages.items())]
+    rendered = ", ".join(parts) or "--"
+    violations = summary.get("violations", []) if isinstance(summary.get("violations"), list) else []
+    if violations:
+        rendered += f" violations={len(violations)}"
+    return rendered
+
+
 def _transport_for_provider(provider: str) -> str:
     lowered = provider.strip().lower()
     if lowered.endswith("_shim"):
@@ -524,6 +555,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         if agg.variant in comparison_flow_variants
     )
     flow_execution_paths = flow_execution_path_summary(flow_aggregates)
+    flow_prompt_volume = flow_prompt_volume_summary(flow_aggregates)
     runtime_complexity = runtime_complexity_summary(_benchmark_validation_config())
     benchmark_passed = (
         prompt_tuned_failures == 0
@@ -531,6 +563,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         and flow_mode_failures == 0
         and flow_mode_unstable_groups == 0
         and len(flow_execution_paths["violations"]) == 0
+        and len(flow_prompt_volume["violations"]) == 0
         and len(runtime_complexity["violations"]) == 0
     )
 
@@ -557,6 +590,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "flow_required_variants": required_variants,
         "flow_comparison_variants": comparison_variants,
         "flow_execution_paths": flow_execution_paths,
+        "flow_prompt_volume": flow_prompt_volume,
         "flow_gate_summary": _format_flow_gate_summary(
             required_variants,
             comparison_variants,
@@ -567,6 +601,9 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         ),
         "flow_execution_path_summary": _format_flow_execution_path_summary(
             flow_execution_paths
+        ),
+        "flow_prompt_volume_summary": _format_flow_prompt_volume_summary(
+            flow_prompt_volume
         ),
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates

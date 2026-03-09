@@ -25,6 +25,7 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert bench["flow_results"] > 0
     assert "required[structured,verified]" in bench["flow_gate_summary"]
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
+    assert "rapid=" in bench["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
     assert bench["flow_required_variants"] == ["structured", "verified"]
     assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
@@ -69,6 +70,11 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
                 "observed": {"rapid": ["rapid_direct"]},
                 "violations": [],
             },
+            "flow_prompt_volume": {
+                "averages": {"rapid": 6.0, "structured": 7.0, "verified": 8.0},
+                "violations": [],
+            },
+            "flow_prompt_volume_summary": "rapid=6.0, structured=7.0, verified=8.0",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {"violations": []},
             "prompt_tuned_failures": 1,
@@ -141,6 +147,11 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
                 "observed": {"rapid": ["rapid_direct"]},
                 "violations": [],
             },
+            "flow_prompt_volume": {
+                "averages": {"rapid": 6.0, "structured": 7.0, "verified": 8.0},
+                "violations": [],
+            },
+            "flow_prompt_volume_summary": "rapid=6.0, structured=7.0, verified=8.0",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {
                 "provider_count": 6,
@@ -229,6 +240,11 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
                 "observed": {"rapid": ["rapid_direct"]},
                 "violations": [],
             },
+            "flow_prompt_volume": {
+                "averages": {"rapid": 6.0, "structured": 7.0, "verified": 8.0},
+                "violations": [],
+            },
+            "flow_prompt_volume_summary": "rapid=6.0, structured=7.0, verified=8.0",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
             "runtime_complexity": {"violations": []},
             "prompt_tuned_failures": 0,
