@@ -78,3 +78,17 @@ async def test_flow_benchmark_noisy_stability():
     assert aggregates[0].repeat_groups == 1
     # Stability may be < 1.0 under noise — the point is the code path runs.
     assert 0.0 <= aggregates[0].stability_rate <= 1.0
+
+
+@pytest.mark.asyncio
+async def test_verified_refinement_recovers_from_initial_failure():
+    cases = default_flow_benchmark_cases()[:1]
+    results = await run_flow_benchmark(
+        cases=cases,
+        variants=("verified_refinement",),
+    )
+
+    assert len(results) == 1
+    assert results[0].ok is True
+    assert results[0].variant == "verified_refinement"
+    assert results[0].prompt_calls > 0

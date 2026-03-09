@@ -255,6 +255,22 @@ class _BenchmarkHunterLLM:
         return await self.complete(system, user)
 
 
+class _FailFirstHunterLLM(_BenchmarkHunterLLM):
+    """Hunter mock that reverses ranking on the first score call, then succeeds."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._first_score_done = False
+
+    async def complete(self, system: str, user: str) -> str:
+        self.calls += 1
+        lower = system.lower()
+        if ("rank" in lower or "score" in lower) and not self._first_score_done:
+            self._first_score_done = True
+            return "[3, 2, 1, 0]"  # reversed: distractor first
+        return await super().complete(system, user)
+
+
 class _LexicalSemanticIndex:
     def __init__(self, declarations: list[Declaration]) -> None:
         self._declarations = declarations
@@ -621,6 +637,62 @@ async def _run_verified_case(
     )
 
 
+def _make_fail_first_hunter(
+    case: FlowBenchmarkCase,
+) -> tuple[HunterAgent, _FailFirstHunterLLM, _LexicalSemanticIndex]:
+    declarations = _make_declarations(case)
+    index = _LexicalSemanticIndex(declarations)
+    hunter_llm = _FailFirstHunterLLM()
+    hunter = HunterAgent(
+        index=index,  # type: ignore[arg-type]
+        oracle=_LeafOracle({leaf.query_hint: leaf.declaration_name for leaf in case.leaves}),  # type: ignore[arg-type]
+        llm=hunter_llm,
+        max_iterations=3,
+        top_k_verify=2,
+        search_k=5,
+    )
+    return hunter, hunter_llm, index
+
+
+async def _run_verified_refinement_case(
+    case: FlowBenchmarkCase,
+) -> FlowBenchmarkResult:
+    """Verified variant using a fail-first Hunter to exercise the refinement loop."""
+    started = time.perf_counter()
+    cdg, architect_llm = await _decompose_case(case)
+    hunter, hunter_llm, index = _make_fail_first_hunter(case)
+    result = await run_orchestration(
+        cdg,
+        hunter_agent=hunter,
+        llm=architect_llm,  # type: ignore[arg-type]
+        prover=Prover.PYTHON,
+        max_rounds=3,
+        hunter_concurrency=1,
+    )
+    matched = _matched_leaf_count(case, result.match_results)
+    total = len(case.leaves)
+    depth, leaf_count, edge_count = _cdg_metrics(result.cdg)
+    latency_ms = (time.perf_counter() - started) * 1000.0
+    return FlowBenchmarkResult(
+        case_id=case.case_id,
+        domain=case.domain,
+        variant="verified_refinement",
+        execution_path="verified_orchestration_refinement",
+        ok=matched == total,
+        latency_ms=latency_ms,
+        prompt_calls=architect_llm.calls + hunter_llm.calls,
+        matched_leaves=matched,
+        total_leaves=total,
+        node_count=len(result.cdg.nodes),
+        leaf_coverage=matched / max(1, total),
+        best_similarity=_best_similarity_score(case, index),
+        decomposition_depth=depth,
+        decomposition_leaf_count=leaf_count,
+        decomposition_edge_count=edge_count,
+        error="" if matched == total else "refinement did not recover all leaves",
+    )
+
+
 def default_flow_benchmark_cases() -> list[FlowBenchmarkCase]:
     return [
         FlowBenchmarkCase(
@@ -862,6 +934,11 @@ async def run_flow_benchmark(
                         await _run_verified_case(
                             case, noisy=noisy, noise_seed=noise_seed
                         )
+                    )
+                    continue
+                if variant == "verified_refinement":
+                    results.append(
+                        await _run_verified_refinement_case(case)
                     )
                     continue
                 raise ValueError(f"Unsupported flow benchmark variant: {variant}")
