@@ -507,6 +507,7 @@
           ["runtime policy", `${Number((benchmarkOverridePolicy.missing_required_overrides || []).length || 0)} missing / ${Number((benchmarkOverridePolicy.unexpected_active_overrides || []).length || 0)} unexpected`],
           ["runtime policy summary", benchmark.runtime_override_policy_summary || "--"],
           ["release warnings", benchmark.release_warning_summary || "--"],
+          ["release top warn", `${benchmark.release_top_runtime_warning || "--"} | ${benchmark.release_top_catalog_warning || "--"}`],
           ["runtime modes", Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes).map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.provider_model_count || 0)}/${Number(row.transport_count || 0)}`).join(", ")
             : "--"],

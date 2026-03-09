@@ -166,9 +166,11 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
             "status": "failed",
             "manifest": "build/release_validation/release_validation.json",
             "benchmarks_dir": "build/release_validation/benchmarks",
-            "warning_summary": "runtime=1 catalog=0",
+            "warning_summary": "runtime=1 top=legacy_providers_present=codex_cli catalog=0",
             "runtime_warning_count": 1,
             "catalog_warning_count": 0,
+            "top_runtime_warning": "legacy_providers_present=codex_cli",
+            "top_catalog_warning": "",
             "catalog_validation": {
                 "status": "failed",
                 "report": "build/release_validation/catalog/catalog_validation.json",
@@ -246,7 +248,9 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
     assert payload["pipeline"] == "release_validation"
     assert payload["status"] == "completed"
     assert payload["metadata"]["release_validation"]["status"] == "failed"
-    assert payload["metadata"]["release_validation"]["warning_summary"] == "runtime=1 catalog=0"
+    assert payload["metadata"]["release_validation"]["warning_summary"] == "runtime=1 top=legacy_providers_present=codex_cli catalog=0"
+    assert payload["metadata"]["release_validation"]["top_runtime_warning"] == "legacy_providers_present=codex_cli"
+    assert payload["metadata"]["release_validation"]["top_catalog_warning"] == ""
     assert payload["metadata"]["release_validation"]["catalog_validation"]["status"] == "failed"
     assert payload["metadata"]["release_validation"]["runtime_complexity"]["legacy_provider_count"] == 1
     assert payload["metadata"]["benchmark_validation"]["flow_results"] == 16

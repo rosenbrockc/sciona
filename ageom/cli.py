@@ -3716,6 +3716,8 @@ async def _cmd_release_validate(args: argparse.Namespace) -> None:
                     "warning_summary": str(summary.get("warning_summary", "") or ""),
                     "runtime_warning_count": int(summary.get("runtime_warning_count", 0) or 0),
                     "catalog_warning_count": int(summary.get("catalog_warning_count", 0) or 0),
+                    "top_runtime_warning": str(summary.get("top_runtime_warning", "") or ""),
+                    "top_catalog_warning": str(summary.get("top_catalog_warning", "") or ""),
                     "catalog_validation": dict(summary.get("catalog_validation", {}) or {}),
                 },
                 "benchmark_validation": _benchmark_validation_metadata(benchmark_summary),

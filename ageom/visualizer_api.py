@@ -433,6 +433,12 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         "release_catalog_warning_count": int(
             release_validation.get("catalog_warning_count", 0) or 0
         ),
+        "release_top_runtime_warning": str(
+            release_validation.get("top_runtime_warning", "") or ""
+        ),
+        "release_top_catalog_warning": str(
+            release_validation.get("top_catalog_warning", "") or ""
+        ),
         "manifest": str(release_validation.get("manifest", "") or ""),
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),

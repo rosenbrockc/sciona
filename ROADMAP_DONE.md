@@ -1366,3 +1366,26 @@
   - Result: `1259 passed, 17 skipped`
 - Commit:
   - `release: summarize operator warnings`
+
+## Release Top Warning Diagnostics
+
+- Extended the release-level warning summary to include the first concrete warning cause from each side:
+  - `top_runtime_warning`
+  - `top_catalog_warning`
+- The compact release warning string now includes those top causes when present, so the operator-facing summary identifies the first runtime or catalog warning directly instead of only reporting counts.
+- Propagated those fields through:
+  - release validation manifest
+  - release telemetry metadata
+  - dashboard/API benchmark-release summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - release manifest top warning fields
+  - release telemetry persistence of top warning fields
+  - dashboard/API extraction of top warning diagnostics
+- Validation:
+  - `pytest -q tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `24 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1259 passed, 17 skipped`
+- Commit:
+  - `release: expose top warning causes`

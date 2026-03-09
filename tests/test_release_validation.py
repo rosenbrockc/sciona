@@ -19,6 +19,8 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["status"] == "passed"
     assert manifest["warnings"]["warning_summary"].startswith("runtime=")
+    assert manifest["warnings"]["top_runtime_warning"] == ""
+    assert isinstance(manifest["warnings"]["top_catalog_warning"], str)
     bench = manifest["checks"]["benchmark_validation"]
     runtime = manifest["checks"]["runtime_complexity"]
     catalog = manifest["checks"]["catalog_validation"]
@@ -121,6 +123,8 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
     manifest = json.loads(Path(summary["manifest"]).read_text(encoding="utf-8"))
     assert manifest["status"] == "failed"
     assert manifest["warnings"]["warning_summary"] == "runtime=0 catalog=0"
+    assert manifest["warnings"]["top_runtime_warning"] == ""
+    assert manifest["warnings"]["top_catalog_warning"] == ""
     bench = manifest["checks"]["benchmark_validation"]
     assert bench["prompt_tuned_failures"] == 1
     assert bench["prompt_tuned_unstable_groups"] == 2
@@ -218,7 +222,9 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
 
     manifest = json.loads(Path(summary["manifest"]).read_text(encoding="utf-8"))
     assert manifest["status"] == "failed"
-    assert manifest["warnings"]["warning_summary"] == "runtime=2 catalog=0"
+    assert manifest["warnings"]["warning_summary"] == "runtime=2 top=provider_count=6 exceeds budget 4 catalog=0"
+    assert manifest["warnings"]["top_runtime_warning"] == "provider_count=6 exceeds budget 4"
+    assert manifest["warnings"]["top_catalog_warning"] == ""
     runtime = manifest["checks"]["runtime_complexity"]
     assert runtime["legacy_provider_count"] == 1
     assert any("provider_count=6 exceeds budget 4" == item for item in runtime["violations"])
@@ -301,6 +307,8 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
     manifest = json.loads(Path(summary["manifest"]).read_text(encoding="utf-8"))
     assert manifest["status"] == "failed"
     assert manifest["warnings"]["warning_summary"] == "runtime=0 catalog=0"
+    assert manifest["warnings"]["top_runtime_warning"] == ""
+    assert manifest["warnings"]["top_catalog_warning"] == ""
     assert manifest["checks"]["catalog_validation"]["status"] == "failed"
     assert "missing_source:hpy-atoms" in manifest["checks"]["catalog_validation"]["violations"]
 
@@ -382,6 +390,8 @@ async def test_run_release_validation_fails_when_catalog_alignment_is_critical(
     manifest = json.loads(Path(summary["manifest"]).read_text(encoding="utf-8"))
     assert manifest["status"] == "failed"
     assert manifest["warnings"]["warning_summary"] == "runtime=0 catalog=0"
+    assert manifest["warnings"]["top_runtime_warning"] == ""
+    assert manifest["warnings"]["top_catalog_warning"] == ""
     assert manifest["checks"]["catalog_validation"]["violations"] == [
         "critical_alignment_drift"
     ]
