@@ -6,7 +6,7 @@ plan with exact file paths, data structures, and test case specifications.
 
 ---
 
-## Task 1: Continuous Quality Metrics on `FlowBenchmarkResult`
+## Task 1: Continuous Quality Metrics on `FlowBenchmarkResult` ✓ DONE
 
 **File**: `ageom/flow_benchmark.py`
 
@@ -135,9 +135,19 @@ assert payload["coverage_monotonic"] is True
 
 ---
 
-## Task 2: Expand Flow Benchmark Cases
+## Task 2: Expand Flow Benchmark Cases ✓ DONE
 
-**File**: `ageom/flow_benchmark.py`, function `default_flow_benchmark_cases` (line ~490)
+**File**: `ageom/flow_benchmark.py`, function `default_flow_benchmark_cases`
+
+**Implementation notes**: Single-leaf case was replaced with a 2-leaf binary
+search case because the `DecompositionAgent` graph state machine requires at
+least 2 sub-nodes for clean decomposition. All leaf names and query hints were
+tuned to avoid ambiguous token overlap in `_hint_matches` (e.g. "Compute FFT"
+→ "Fourier Transform" since "fft" doesn't appear in descriptions; matrix
+split/combine hints made fully distinct to avoid first-match collision in
+`_LeafOracle`).
+
+**Original plan below for reference**:
 
 ### 2a. Add a single-leaf case (rapid should pass)
 

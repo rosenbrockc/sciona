@@ -13,8 +13,8 @@ from ageom.flow_benchmark import (
 def test_default_flow_benchmark_cases_cover_multiple_domains():
     cases = default_flow_benchmark_cases()
 
-    assert len(cases) == 3
-    assert {case.domain for case in cases} == {"sorting", "graph", "dsp"}
+    assert len(cases) == 7
+    assert {case.domain for case in cases} >= {"sorting", "graph", "dsp", "linear_algebra", "strings"}
 
 
 @pytest.mark.asyncio
