@@ -64,16 +64,16 @@ _EXPECTED_FLOW_EXECUTION_PATHS = {
 }
 _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
     "rapid": {
-        "max_provider_count": 2,
-        "max_provider_model_count": 2,
-        "max_transport_count": 2,
+        "max_provider_count": 1,
+        "max_provider_model_count": 1,
+        "max_transport_count": 1,
         "max_active_override_count": 0,
         "allow_legacy_providers": False,
     },
     "structured": {
-        "max_provider_count": 2,
-        "max_provider_model_count": 2,
-        "max_transport_count": 2,
+        "max_provider_count": 1,
+        "max_provider_model_count": 1,
+        "max_transport_count": 1,
         "max_active_override_count": 0,
         "allow_legacy_providers": False,
     },

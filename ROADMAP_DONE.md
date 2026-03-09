@@ -1149,3 +1149,19 @@
   - Result: `1255 passed, 17 skipped`
 - Commit:
   - `runtime: simplify light-mode round defaults`
+
+## Light-Mode Runtime Budget Tightening
+
+- Tightened benchmark/release runtime-complexity budgets for `rapid` and `structured` so those modes are now validated as:
+  - one provider
+  - one provider/model pair
+  - one transport
+- This converts the earlier simplification work into an explicit release policy instead of leaving the lighter modes on a looser historical budget.
+- Added regressions to assert the stricter rapid/structured budgets in the runtime-complexity summary.
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `27 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1255 passed, 17 skipped`
+- Commit:
+  - `release: tighten light-mode runtime budgets`
