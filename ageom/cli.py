@@ -39,19 +39,25 @@ def _create_llm(
     """
     from ageom.hunter.llm import create_llm_client
 
-    provider_attr = f"{round_name}_llm_provider"
-    model_attr = f"{round_name}_llm_model"
     max_tokens_attr = f"{round_name}_llm_max_tokens" if round_name == "hunter" else None
+    from ageom.config import effective_round_provider_model
+
+    execution_mode = str(
+        getattr(args, "mode", None) or getattr(config, "execution_mode", "verified") or "verified"
+    ).strip().lower()
+    default_provider, default_model = effective_round_provider_model(
+        config,
+        round_name,
+        execution_mode=execution_mode,
+    )
 
     llm_provider = (
         getattr(args, "llm_provider", None)
-        or getattr(config, provider_attr, "")
-        or config.llm_provider
+        or default_provider
     )
     llm_model = (
         getattr(args, "llm_model", None)
-        or getattr(config, model_attr, "")
-        or config.llm_model
+        or default_model
     )
     llm_max_tokens = (
         getattr(args, "llm_max_tokens", None)
@@ -150,6 +156,7 @@ def _summarize_prompt_routing(
 ) -> dict[str, Any]:
     """Summarize which prompt-key overrides are active vs suppressed."""
     from ageom.config import (
+        effective_round_provider_model,
         BENCHMARK_JUSTIFIED_PROMPT_KEYS,
         prompt_override_matches_code_default,
         should_apply_prompt_override,
@@ -158,8 +165,11 @@ def _summarize_prompt_routing(
     resolved_mode = str(
         execution_mode or getattr(config, "execution_mode", "verified") or "verified"
     ).strip().lower()
-    default_provider = getattr(config, f"{round_name}_llm_provider", "") or config.llm_provider
-    default_model = getattr(config, f"{round_name}_llm_model", "") or config.llm_model
+    default_provider, default_model = effective_round_provider_model(
+        config,
+        round_name,
+        execution_mode=resolved_mode,
+    )
     active_overrides: list[dict[str, str]] = []
     suppressed_defaults: list[str] = []
     custom_nonbenchmark: list[str] = []

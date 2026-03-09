@@ -579,6 +579,8 @@ class TestPromptRoutingSummary:
         )
 
         assert summary["mode"] == "rapid"
+        assert summary["default_provider"] == "anthropic"
+        assert summary["default_model"] == "claude-sonnet-4-5-20250929"
         assert summary["active_overrides"] == []
         assert summary["suppressed_default_overrides"] == [
             "hunter_score",
@@ -599,6 +601,8 @@ class TestPromptRoutingSummary:
         )
 
         assert summary["mode"] == "structured"
+        assert summary["default_provider"] == "anthropic"
+        assert summary["default_model"] == "claude-sonnet-4-5-20250929"
         assert summary["active_overrides"] == []
         assert summary["suppressed_default_overrides"] == [
             "hunter_score",

@@ -80,6 +80,12 @@ def test_runtime_complexity_summary_is_mode_aware():
 
     assert set(summary["by_mode"]) == {"rapid", "structured", "verified"}
     assert summary["by_mode"]["rapid"]["mode"] == "rapid"
+    assert summary["by_mode"]["rapid"]["provider_count"] == 1
+    assert summary["by_mode"]["rapid"]["provider_model_count"] == 1
+    assert summary["by_mode"]["rapid"]["transport_count"] == 1
+    assert summary["by_mode"]["rapid"]["providers"] == ["anthropic"]
+    assert summary["by_mode"]["structured"]["provider_count"] == 1
+    assert summary["by_mode"]["structured"]["providers"] == ["anthropic"]
     assert summary["by_mode"]["verified"]["mode"] == "verified"
     assert "monotonic_violations" in summary
 

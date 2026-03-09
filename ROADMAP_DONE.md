@@ -1129,3 +1129,23 @@
   - Result: `1254 passed, 17 skipped`
 - Commit:
   - `catalog: audit source registry alignment`
+
+## Rapid And Structured Round-Default Simplification
+
+- Simplified `rapid` and `structured` mode routing so round-level provider/model defaults are now suppressed when they merely restate code defaults.
+- In those lighter modes, the effective round default now falls back to the top-level `llm_provider` / `llm_model` unless the operator explicitly changed the round override.
+- This reduces default runtime complexity in light modes from mixed round defaults to a single provider/model/transport by default.
+- Runtime-complexity benchmarking now reflects that stricter behavior:
+  - `rapid` provider count: `1`
+  - `structured` provider count: `1`
+- Added regressions for:
+  - effective round-provider fallback in rapid mode
+  - prompt-routing summaries using the simplified default provider/model in rapid and structured modes
+  - benchmark runtime-complexity summaries reflecting the collapsed light-mode provider surface
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_llm_router.py tests/test_execution_modes.py tests/test_release_validation.py tests/test_validation_telemetry.py`
+  - Result: `77 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1255 passed, 17 skipped`
+- Commit:
+  - `runtime: simplify light-mode round defaults`

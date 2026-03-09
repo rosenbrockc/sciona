@@ -6,7 +6,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ageom.config import AgeomConfig, should_apply_prompt_override
+from ageom.config import (
+    AgeomConfig,
+    effective_round_provider_model,
+    should_apply_prompt_override,
+)
 from ageom.flow_benchmark import (
     default_flow_benchmark_cases,
     format_flow_benchmark_summary,
@@ -186,9 +190,12 @@ def _runtime_complexity_for_mode(
     active_overrides: list[dict[str, str]] = []
     legacy_providers: set[str] = set()
 
-    for round_name, (provider_attr, model_attr) in _ROUND_DEFAULTS.items():
-        provider = str(getattr(config, provider_attr, "") or config.llm_provider or "").strip()
-        model = str(getattr(config, model_attr, "") or config.llm_model or "").strip()
+    for round_name in _ROUND_DEFAULTS:
+        provider, model = effective_round_provider_model(
+            config,
+            round_name,
+            execution_mode=execution_mode,
+        )
         if not provider:
             continue
         providers.add(provider)

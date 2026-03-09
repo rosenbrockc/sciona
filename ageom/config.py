@@ -217,6 +217,52 @@ def prompt_override_matches_code_default(config: AgeomConfig, prompt_key: str) -
     )
 
 
+def round_override_matches_code_default(config: AgeomConfig, round_name: str) -> bool:
+    """Return True when a per-round provider/model pair matches code defaults."""
+    provider_field = AgeomConfig.model_fields.get(f"{round_name}_llm_provider")
+    model_field = AgeomConfig.model_fields.get(f"{round_name}_llm_model")
+    if provider_field is None or model_field is None:
+        return False
+    return (
+        getattr(config, f"{round_name}_llm_provider", "") == provider_field.default
+        and getattr(config, f"{round_name}_llm_model", "") == model_field.default
+    )
+
+
+def should_apply_round_override(
+    config: AgeomConfig,
+    round_name: str,
+    execution_mode: str | None = None,
+) -> bool:
+    """Apply per-round overrides when mode or operator intent allows them."""
+    normalized_mode = str(
+        execution_mode or getattr(config, "execution_mode", "verified") or "verified"
+    ).strip().lower()
+    if normalized_mode in {"rapid", "structured"}:
+        return not round_override_matches_code_default(config, round_name)
+    return True
+
+
+def effective_round_provider_model(
+    config: AgeomConfig,
+    round_name: str,
+    *,
+    execution_mode: str | None = None,
+) -> tuple[str, str]:
+    """Resolve the effective default provider/model for a round."""
+    provider_attr = f"{round_name}_llm_provider"
+    model_attr = f"{round_name}_llm_model"
+    provider = getattr(config, provider_attr, "") or ""
+    model = getattr(config, model_attr, "") or ""
+    if not should_apply_round_override(config, round_name, execution_mode):
+        provider = ""
+        model = ""
+    return (
+        str(provider or getattr(config, "llm_provider", "") or "").strip(),
+        str(model or getattr(config, "llm_model", "") or "").strip(),
+    )
+
+
 def should_apply_prompt_override(
     config: AgeomConfig,
     prompt_key: str,
