@@ -303,7 +303,7 @@ assert aggregate_map["verified"].passed_cases == len(cases)
 
 ---
 
-## Task 3: Noisy Mock LLM for Meaningful Stability
+## Task 3: Noisy Mock LLM for Meaningful Stability ✓ DONE
 
 **File**: `ageom/flow_benchmark.py`
 
@@ -412,7 +412,7 @@ async def test_flow_benchmark_noisy_stability():
 
 ---
 
-## Task 4: Refinement-Required Case for Verified Mode
+## Task 4: Refinement-Required Case for Verified Mode ✓ DONE
 
 **File**: `ageom/flow_benchmark.py`
 
@@ -491,7 +491,7 @@ async def test_verified_refinement_recovers_from_initial_failure():
 
 ---
 
-## Task 5: New Flow Benchmark Variant — `llm_from_scratch`
+## Task 5: New Flow Benchmark Variant — `llm_from_scratch` ✓ DONE
 
 **File**: `ageom/flow_benchmark.py`
 
@@ -591,7 +591,7 @@ is the ceiling. Task 6 (below) adds the stochastic version for real measurement.
 
 ---
 
-## Task 6: Stochastic `llm_from_scratch` for Real Measurement
+## Task 6: Stochastic `llm_from_scratch` for Real Measurement ✓ DONE
 
 **File**: `ageom/flow_benchmark.py`
 
@@ -649,7 +649,7 @@ When `noisy=True` and variant is `llm_from_scratch`, use
 
 ---
 
-## Task 7: Architect Prompt Benchmarks
+## Task 7: Architect Prompt Benchmarks ✓ DONE
 
 **File**: `ageom/prompt_benchmark.py`
 
@@ -739,7 +739,7 @@ keywords like "paradigm" (strategy), "sub-nodes"/"sub_nodes" (decompose),
 
 ---
 
-## Task 8: Update Validation Gate for New Variants
+## Task 8: Update Validation Gate for New Variants ✓ DONE
 
 **File**: `ageom/benchmark_validation.py`
 
@@ -784,7 +784,7 @@ Add `coverage_monotonic` to `benchmark_passed` conjunction.
 
 ---
 
-## Task 9: Test Updates Summary
+## Task 9: Test Updates Summary ✓ DONE
 
 All test changes are additive. No existing assertions should be removed — only
 relaxed where the new single-leaf case changes expected counts.
