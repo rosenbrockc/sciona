@@ -77,7 +77,7 @@ def _cpp_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) -> 
         f"def {fn_name}_ffi({params}):",
         f'    """FFI bridge to C++ implementation of {atom.name}."""',
         f'    _lib = ctypes.CDLL("./{fn_name}.so")',
-        f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
+        f"    _func_name = \'{atom.method_names[0] if atom.method_names else fn_name}\'",
         "    _func = _lib[_func_name]",
     ]
 
@@ -138,7 +138,7 @@ def _rust_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) ->
         f'    """FFI bridge to Rust implementation of {atom.name}."""',
         '    # Ensure the Rust library is compiled with #[no_mangle] and pub extern "C"',
         '    _lib = ctypes.CDLL("./target/release/librust_robotics.so")',
-        f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
+        f"    _func_name = \'{atom.method_names[0] if atom.method_names else fn_name}\'",
         "    _func = _lib[_func_name]",
     ]
 
@@ -163,7 +163,7 @@ def _haskell_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str)
         f'    """FFI bridge to Haskell implementation of {atom.name}."""',
         f'    # Ensure Haskell is compiled with -dynamic -fPIC and has hs_init()',
         f'    _lib = ctypes.CDLL("./{fn_name}.so")',
-        f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
+        f"    _func_name = \'{atom.method_names[0] if atom.method_names else fn_name}\'",
         "    _func = _lib[_func_name]",
     ]
 
