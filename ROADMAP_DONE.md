@@ -1304,3 +1304,19 @@
   - Result: `1257 passed, 17 skipped`
 - Commit:
   - `catalog: classify drift severity`
+
+## Critical Catalog Drift Release Gate
+
+- Made the new catalog drift severity actionable in release policy.
+- Catalog validation now fails with `critical_alignment_drift` when the source-registry alignment audit reports `highest_severity=critical`, even if source paths and candidate counts otherwise look healthy.
+- This makes live registry load failures release-blocking while leaving `medium` and `high` severity drift visible but non-blocking for now.
+- Added regressions for:
+  - catalog validation failing on critical alignment drift alone
+  - release validation failing when catalog validation is critical only
+- Validation:
+  - `pytest -q tests/test_catalog_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `27 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1259 passed, 17 skipped`
+- Commit:
+  - `release: fail on critical catalog drift`

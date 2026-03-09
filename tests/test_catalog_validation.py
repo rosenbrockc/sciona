@@ -127,3 +127,54 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
     assert "severity=critical" in summary["alignment_summary"]
     assert "missing=1" in summary["coverage_summary"]
     assert "drift=1" in summary["alignment_summary"]
+
+
+@pytest.mark.asyncio
+async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
+    monkeypatch, tmp_path: Path
+):
+    sources = SourcesConfig(
+        sources=[
+            AtomSource(name="ageo-atoms", package="ageoa", path="../ageo-atoms"),
+        ]
+    )
+
+    monkeypatch.setattr("ageom.catalog_validation.load_sources", lambda path=None: sources)
+
+    def _resolve(source, base_dir=None):
+        return tmp_path / source.name
+
+    def _seed(catalog, **kwargs):
+        report: CatalogReport = kwargs["report"]
+        report.total_candidates = 5
+        report.added = 5
+        report.source_breakdown = {
+            "ageo-atoms": {"ast_candidates": 5, "added": 5},
+        }
+        return 5
+
+    (tmp_path / "ageo-atoms").mkdir()
+    monkeypatch.setattr("ageom.catalog_validation.resolve_source", _resolve)
+    monkeypatch.setattr("ageom.catalog_validation.seed_catalog_from_sources", _seed)
+    monkeypatch.setattr(
+        "ageom.catalog_validation.audit_source_registration_alignment",
+        lambda **kwargs: {
+            "source_count": 1,
+            "matched_total": 4,
+            "registry_only_total": 0,
+            "ast_only_total": 1,
+            "highest_severity": "critical",
+            "severity_counts": {"healthy": 0, "medium": 0, "high": 0, "critical": 1},
+            "drift_sources": ["ageo-atoms"],
+            "registry_error_sources": ["ageo-atoms"],
+            "rows": [],
+        },
+    )
+
+    summary = await run_catalog_validation(tmp_path)
+
+    assert summary["status"] == "failed"
+    assert summary["violations"] == ["critical_alignment_drift"]
+    assert summary["missing_sources"] == []
+    assert summary["zero_candidate_sources"] == []
+    assert "severity=critical" in summary["alignment_summary"]

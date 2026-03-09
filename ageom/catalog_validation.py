@@ -125,6 +125,8 @@ async def run_catalog_validation(output_dir: str | Path) -> dict[str, Any]:
         violations.append("no_source_candidates")
     if zero_candidate_sources:
         violations.extend(f"source_no_candidates:{name}" for name in zero_candidate_sources)
+    if str(alignment.get("highest_severity", "") or "").strip().lower() == "critical":
+        violations.append("critical_alignment_drift")
 
     status = "passed" if not violations else "failed"
     summary = {
