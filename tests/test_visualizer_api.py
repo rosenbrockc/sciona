@@ -503,6 +503,17 @@ class TestDashboardAPI:
                     "runtime_complexity": {
                         "provider_count": 5,
                         "transport_count": 4,
+                        "override_policy": {
+                            "required_active_overrides": [
+                                {"prompt_key": "hunter_score", "provider": "codex_shim"}
+                            ],
+                            "missing_required_overrides": [
+                                {"prompt_key": "hunter_score", "provider": "codex_shim"}
+                            ],
+                            "unexpected_active_overrides": [
+                                {"prompt_key": "hunter_score", "provider": "anthropic"}
+                            ],
+                        },
                         "by_mode": {
                             "rapid": {
                                 "provider_count": 2,
@@ -573,6 +584,7 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["flow_avg_latency_ms"]["verified"] == 611.2
         assert data["benchmark_summary"]["runtime_complexity"]["provider_count"] == 5
         assert data["benchmark_summary"]["runtime_complexity"]["by_mode"]["rapid"]["provider_count"] == 2
+        assert data["benchmark_summary"]["runtime_complexity"]["override_policy"]["missing_required_overrides"][0]["prompt_key"] == "hunter_score"
         assert data["benchmark_summary"]["prompt_tuned_failures"] == 0
         assert data["benchmark_summary"]["flow_mode_failures"] == 0
         assert "required[structured,verified]" in data["benchmark_summary"]["flow_gate_summary"]

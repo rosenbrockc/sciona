@@ -422,6 +422,7 @@
         const benchmark = run.benchmark_summary || {};
         const benchmarkRuntime = benchmark.runtime_complexity || {};
         const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
+        const benchmarkOverridePolicy = benchmarkRuntime.override_policy || {};
         const benchmarkFlowPaths = benchmark.flow_execution_paths || {};
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
         const flowLatency = benchmark.flow_avg_latency_ms || {};
@@ -493,6 +494,7 @@
             : "--"],
           ["flow path summary", benchmark.flow_execution_path_summary || "--"],
           ["runtime budget", `${Number(benchmarkRuntime.provider_count || 0)} providers / ${Number(benchmarkRuntime.transport_count || 0)} transports / ${Number((benchmarkRuntime.violations || []).length || 0)} violations`],
+          ["runtime policy", `${Number((benchmarkOverridePolicy.missing_required_overrides || []).length || 0)} missing / ${Number((benchmarkOverridePolicy.unexpected_active_overrides || []).length || 0)} unexpected`],
           ["runtime modes", Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes).map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.provider_model_count || 0)}/${Number(row.transport_count || 0)}`).join(", ")
             : "--"],

@@ -1165,3 +1165,24 @@
   - Result: `1255 passed, 17 skipped`
 - Commit:
   - `release: tighten light-mode runtime budgets`
+
+## Verified Override Policy Gate
+
+- Added an explicit verified-mode override policy at the benchmark/runtime-complexity layer.
+- The verified runtime summary now records:
+  - required prompt-key/provider override pairs
+  - missing required overrides
+  - unexpected active overrides
+- Benchmark/release runtime validation now fails if verified-mode routing drifts away from that explicit allowlist, instead of only checking coarse provider/transport counts.
+- Dashboard benchmark details now show a compact runtime-policy summary alongside the existing runtime budget metrics.
+- Added regressions for:
+  - verified mode passing with the current intended override policy
+  - verified mode failing when a required override is replaced with an unapproved provider
+  - dashboard/API preservation of the runtime override-policy payload
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `28 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1256 passed, 17 skipped`
+- Commit:
+  - `release: gate verified override policy`

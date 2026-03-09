@@ -85,6 +85,23 @@ _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
         "allow_legacy_providers": False,
     },
 }
+_MODE_OVERRIDE_POLICIES: dict[str, dict[str, tuple[tuple[str, str], ...]]] = {
+    "rapid": {
+        "required_active_overrides": (),
+    },
+    "structured": {
+        "required_active_overrides": (),
+    },
+    "verified": {
+        "required_active_overrides": (
+            ("architect_strategy", "codex_shim"),
+            ("architect_critique", "codex_shim"),
+            ("hunter_score", "codex_shim"),
+            ("hunter_reformulate", "gemini_shim"),
+            ("hunter_analyze_failure", "gemini_shim"),
+        ),
+    },
+}
 
 
 def _benchmark_validation_config() -> AgeomConfig:
@@ -225,6 +242,18 @@ def _runtime_complexity_for_mode(
             {"prompt_key": prompt_key, "provider": provider, "model": model}
         )
 
+    required_pairs = set(
+        _MODE_OVERRIDE_POLICIES.get(execution_mode, {}).get(
+            "required_active_overrides", ()
+        )
+    )
+    active_pairs = {
+        (str(row["prompt_key"]), str(row["provider"]))
+        for row in active_overrides
+    }
+    missing_required = sorted(required_pairs - active_pairs)
+    unexpected_active = sorted(active_pairs - required_pairs) if required_pairs else []
+
     summary = {
         "mode": execution_mode,
         "provider_count": len(providers),
@@ -241,6 +270,20 @@ def _runtime_complexity_for_mode(
         "legacy_provider_count": len(legacy_providers),
         "legacy_providers": sorted(legacy_providers),
         "budget": dict(_MODE_RUNTIME_BUDGETS[execution_mode]),
+        "override_policy": {
+            "required_active_overrides": [
+                {"prompt_key": prompt_key, "provider": provider}
+                for prompt_key, provider in sorted(required_pairs)
+            ],
+            "missing_required_overrides": [
+                {"prompt_key": prompt_key, "provider": provider}
+                for prompt_key, provider in missing_required
+            ],
+            "unexpected_active_overrides": [
+                {"prompt_key": prompt_key, "provider": provider}
+                for prompt_key, provider in unexpected_active
+            ],
+        },
     }
     summary["violations"] = runtime_complexity_violations(summary)
     return summary
@@ -284,6 +327,33 @@ def runtime_complexity_violations(summary: dict[str, Any]) -> list[str]:
     if not bool(budget.get("allow_legacy_providers", False)) and legacy_provider_count > 0:
         violations.append(
             f"legacy_providers_present={','.join(summary.get('legacy_providers', []) or [])}"
+        )
+    override_policy = (
+        summary.get("override_policy", {})
+        if isinstance(summary.get("override_policy"), dict)
+        else {}
+    )
+    missing_required = (
+        override_policy.get("missing_required_overrides", [])
+        if isinstance(override_policy.get("missing_required_overrides", []), list)
+        else []
+    )
+    unexpected_active = (
+        override_policy.get("unexpected_active_overrides", [])
+        if isinstance(override_policy.get("unexpected_active_overrides", []), list)
+        else []
+    )
+    if missing_required:
+        violations.extend(
+            f"missing_required_override:{row.get('prompt_key','')}={row.get('provider','')}"
+            for row in missing_required
+            if isinstance(row, dict)
+        )
+    if unexpected_active:
+        violations.extend(
+            f"unexpected_active_override:{row.get('prompt_key','')}={row.get('provider','')}"
+            for row in unexpected_active
+            if isinstance(row, dict)
         )
     return violations
 

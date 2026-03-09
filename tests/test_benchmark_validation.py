@@ -73,6 +73,8 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
         "verified",
     }
     assert isinstance(payload["runtime_complexity"]["monotonic_violations"], list)
+    assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["missing_required_overrides"] == []
+    assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["unexpected_active_overrides"] == []
 
 
 def test_runtime_complexity_summary_is_mode_aware():
@@ -89,7 +91,31 @@ def test_runtime_complexity_summary_is_mode_aware():
     assert summary["by_mode"]["structured"]["providers"] == ["anthropic"]
     assert summary["by_mode"]["structured"]["budget"]["max_provider_count"] == 1
     assert summary["by_mode"]["verified"]["mode"] == "verified"
+    assert summary["by_mode"]["verified"]["override_policy"]["missing_required_overrides"] == []
+    assert summary["by_mode"]["verified"]["override_policy"]["unexpected_active_overrides"] == []
     assert "monotonic_violations" in summary
+
+
+def test_runtime_complexity_summary_flags_verified_override_policy_drift():
+    summary = runtime_complexity_summary(
+        AgeomConfig(
+            _env_file=None,
+            hunter_reformulate_llm_provider="anthropic",
+            hunter_reformulate_llm_model="claude-sonnet-4-5-20250929",
+        )
+    )
+
+    verified = summary["by_mode"]["verified"]
+    assert {
+        row["prompt_key"]: row["provider"]
+        for row in verified["override_policy"]["missing_required_overrides"]
+    } == {"hunter_reformulate": "gemini_shim"}
+    assert {
+        row["prompt_key"]: row["provider"]
+        for row in verified["override_policy"]["unexpected_active_overrides"]
+    } == {"hunter_reformulate": "anthropic"}
+    assert "verified:missing_required_override:hunter_reformulate=gemini_shim" in summary["violations"]
+    assert "verified:unexpected_active_override:hunter_reformulate=anthropic" in summary["violations"]
 
 
 @pytest.mark.asyncio
