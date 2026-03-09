@@ -1494,3 +1494,29 @@
   - Result: `1260 passed, 17 skipped`
 - Commit:
   - `benchmark: surface top failed subcheck`
+
+## Benchmark Failure Summary Line
+
+- Added a compact benchmark-level failure summary line parallel to the release failure summary:
+  - `failure_summary`
+- The benchmark bundle now records one operator-facing line that combines:
+  - `subcheck=<...>`
+  - `failure=<...>`
+- Release validation now backfills that benchmark failure line when older or synthetic benchmark summaries omit it, so release manifests remain stable across refactors and test fixtures.
+- Propagated the benchmark failure summary through:
+  - benchmark-validation telemetry metadata
+  - release manifest `checks.benchmark_validation`
+  - dashboard/API benchmark summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - benchmark bundle persistence of `failure_summary`
+  - benchmark command telemetry persistence of `failure_summary`
+  - release-manifest fallback synthesis of benchmark failure diagnostics
+  - dashboard/API extraction of the compact benchmark failure line
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py tests/test_release_validation.py tests/test_cli_command_telemetry.py`
+  - Result: `37 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1261 passed, 17 skipped`
+- Commit:
+  - `benchmark: add compact failure summary`

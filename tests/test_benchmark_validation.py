@@ -6,6 +6,7 @@ import pytest
 
 from ageom.benchmark_validation import (
     benchmark_failure_summary,
+    format_benchmark_failure_summary,
     flow_prompt_volume_summary,
     run_benchmark_validation,
     runtime_complexity_summary,
@@ -48,6 +49,7 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "prompt_avg_latency_ms" in payload
     assert "flow_avg_latency_ms" in payload
     assert "runtime_complexity" in payload
+    assert "failure_summary" in payload
     assert "top_failed_subcheck" in payload
     assert "top_failure" in payload
     assert "prompt_tuned_failures" in payload
@@ -84,6 +86,7 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert isinstance(payload["runtime_complexity"]["monotonic_violations"], list)
     assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["missing_required_overrides"] == []
     assert payload["runtime_complexity"]["by_mode"]["verified"]["override_policy"]["unexpected_active_overrides"] == []
+    assert payload["failure_summary"] == "none"
     assert payload["top_failed_subcheck"] == ""
     assert payload["top_failure"] == ""
 
@@ -164,6 +167,19 @@ def test_benchmark_failure_summary_prefers_execution_path_before_prompt_counts()
         "top_failed_subcheck": "execution_path",
         "top_failure": "rapid:expected rapid_direct but observed verified_orchestration",
     }
+
+
+def test_format_benchmark_failure_summary_renders_compact_line():
+    rendered = format_benchmark_failure_summary(
+        {
+            "top_failed_subcheck": "runtime_budget",
+            "top_failure": "legacy_providers_present=codex_cli",
+        }
+    )
+
+    assert rendered == (
+        "subcheck=runtime_budget failure=legacy_providers_present=codex_cli"
+    )
 
 
 @pytest.mark.asyncio

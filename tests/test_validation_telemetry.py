@@ -32,6 +32,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
             "flow_execution_path_summary": "rapid=rapid_direct",
             "runtime_override_policy_summary": "verified=5/0/0",
+            "failure_summary": "none",
             "top_failed_subcheck": "",
             "top_failure": "",
             "flow_required_variants": ["structured", "verified"],
@@ -79,6 +80,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
     assert "verified=8.0" in bench["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
+    assert bench["failure_summary"] == "none"
     assert bench["top_failed_subcheck"] == ""
     assert bench["top_failure"] == ""
     assert bench["flow_required_variants"] == ["structured", "verified"]
@@ -113,6 +115,7 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
             "flow_gate_summary": "required[structured,verified] 0/0; comparison[direct_baseline,rapid] 2/0",
             "flow_execution_path_summary": "rapid=rapid_direct",
             "runtime_override_policy_summary": "verified=5/1/1",
+            "failure_summary": "subcheck=runtime_budget failure=legacy_providers_present=codex_cli",
             "top_failed_subcheck": "runtime_budget",
             "top_failure": "legacy_providers_present=codex_cli",
             "flow_required_variants": ["structured", "verified"],
@@ -155,6 +158,9 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
     assert payload["pipeline"] == "benchmark_validation"
     assert payload["status"] == "failed"
     assert payload["metadata"]["benchmark_validation"]["status"] == "failed"
+    assert payload["metadata"]["benchmark_validation"]["failure_summary"] == (
+        "subcheck=runtime_budget failure=legacy_providers_present=codex_cli"
+    )
     assert payload["metadata"]["benchmark_validation"]["top_failed_subcheck"] == "runtime_budget"
     assert payload["metadata"]["benchmark_validation"]["top_failure"] == "legacy_providers_present=codex_cli"
     assert payload["metadata"]["benchmark_validation"]["runtime_complexity"]["legacy_provider_count"] == 1

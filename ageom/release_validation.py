@@ -6,7 +6,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ageom.benchmark_validation import run_benchmark_validation
+from ageom.benchmark_validation import (
+    benchmark_failure_summary,
+    format_benchmark_failure_summary,
+    run_benchmark_validation,
+)
 from ageom.catalog_validation import run_catalog_validation
 
 
@@ -127,6 +131,16 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     benchmark_summary = await run_benchmark_validation(out_dir / "benchmarks")
     catalog_summary = await run_catalog_validation(out_dir / "catalog")
     runtime_complexity = dict(benchmark_summary.get("runtime_complexity", {}) or {})
+    benchmark_failure_details = benchmark_failure_summary(benchmark_summary)
+    benchmark_failure_summary_text = str(
+        benchmark_summary.get("failure_summary", "") or ""
+    ) or format_benchmark_failure_summary(benchmark_failure_details)
+    benchmark_top_failed_subcheck = str(
+        benchmark_summary.get("top_failed_subcheck", "") or ""
+    ) or benchmark_failure_details["top_failed_subcheck"]
+    benchmark_top_failure = str(
+        benchmark_summary.get("top_failure", "") or ""
+    ) or benchmark_failure_details["top_failure"]
     warning_summary = _format_release_warning_summary(
         runtime_complexity=runtime_complexity,
         catalog_summary=catalog_summary,
@@ -158,6 +172,9 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "runtime_override_policy_summary": benchmark_summary.get(
                     "runtime_override_policy_summary", ""
                 ),
+                "failure_summary": benchmark_failure_summary_text,
+                "top_failed_subcheck": benchmark_top_failed_subcheck,
+                "top_failure": benchmark_top_failure,
                 "flow_required_variants": list(
                     benchmark_summary.get("flow_required_variants", []) or []
                 ),

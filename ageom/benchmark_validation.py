@@ -295,6 +295,20 @@ def benchmark_failure_summary(summary: dict[str, Any]) -> dict[str, str]:
     return {"top_failed_subcheck": "", "top_failure": ""}
 
 
+def format_benchmark_failure_summary(summary: dict[str, Any]) -> str:
+    """Render a compact benchmark failure summary line."""
+    top_failed_subcheck = str(summary.get("top_failed_subcheck", "") or "")
+    top_failure = str(summary.get("top_failure", "") or "")
+    if not top_failed_subcheck and not top_failure:
+        return "none"
+    parts: list[str] = []
+    if top_failed_subcheck:
+        parts.append(f"subcheck={top_failed_subcheck}")
+    if top_failure:
+        parts.append(f"failure={top_failure}")
+    return " ".join(parts) or "none"
+
+
 def _transport_for_provider(provider: str) -> str:
     lowered = provider.strip().lower()
     if lowered.endswith("_shim"):
@@ -694,6 +708,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         ),
         "top_failed_subcheck": benchmark_failures["top_failed_subcheck"],
         "top_failure": benchmark_failures["top_failure"],
+        "failure_summary": format_benchmark_failure_summary(benchmark_failures),
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

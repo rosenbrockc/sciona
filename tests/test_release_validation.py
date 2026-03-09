@@ -36,6 +36,9 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
     assert "rapid=" in bench["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
+    assert bench["failure_summary"] == "none"
+    assert bench["top_failed_subcheck"] == ""
+    assert bench["top_failure"] == ""
     assert bench["flow_required_variants"] == ["structured", "verified"]
     assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
     assert bench["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
@@ -140,6 +143,11 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
     assert manifest["failures"]["top_runtime_failure"] == ""
     assert manifest["failures"]["top_catalog_failure"] == ""
     bench = manifest["checks"]["benchmark_validation"]
+    assert bench["failure_summary"] == (
+        "subcheck=prompt_tuning failure=prompt_tuned_failures=1"
+    )
+    assert bench["top_failed_subcheck"] == "prompt_tuning"
+    assert bench["top_failure"] == "prompt_tuned_failures=1"
     assert bench["prompt_tuned_failures"] == 1
     assert bench["prompt_tuned_unstable_groups"] == 2
     assert bench["flow_mode_unstable_groups"] == 1
@@ -248,6 +256,12 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
     assert manifest["failures"]["top_runtime_failure"] == "provider_count=6 exceeds budget 4"
     assert manifest["failures"]["top_catalog_failure"] == ""
     runtime = manifest["checks"]["runtime_complexity"]
+    bench = manifest["checks"]["benchmark_validation"]
+    assert bench["failure_summary"] == (
+        "subcheck=runtime_budget failure=provider_count=6 exceeds budget 4"
+    )
+    assert bench["top_failed_subcheck"] == "runtime_budget"
+    assert bench["top_failure"] == "provider_count=6 exceeds budget 4"
     assert runtime["legacy_provider_count"] == 1
     assert any("provider_count=6 exceeds budget 4" == item for item in runtime["violations"])
     assert any("legacy_providers_present=codex_cli" == item for item in runtime["violations"])
@@ -424,6 +438,10 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
     assert manifest["failures"]["top_runtime_failure"] == ""
     assert manifest["failures"]["top_catalog_failure"] == "missing_source:hpy-atoms"
     assert manifest["checks"]["catalog_validation"]["status"] == "failed"
+    bench = manifest["checks"]["benchmark_validation"]
+    assert bench["failure_summary"] == "none"
+    assert bench["top_failed_subcheck"] == ""
+    assert bench["top_failure"] == ""
     assert "missing_source:hpy-atoms" in manifest["checks"]["catalog_validation"]["violations"]
 
 
@@ -512,6 +530,10 @@ async def test_run_release_validation_fails_when_catalog_alignment_is_critical(
     assert manifest["failures"]["top_benchmark_failure"] == ""
     assert manifest["failures"]["top_runtime_failure"] == ""
     assert manifest["failures"]["top_catalog_failure"] == "critical_alignment_drift"
+    bench = manifest["checks"]["benchmark_validation"]
+    assert bench["failure_summary"] == "none"
+    assert bench["top_failed_subcheck"] == ""
+    assert bench["top_failure"] == ""
     assert manifest["checks"]["catalog_validation"]["violations"] == [
         "critical_alignment_drift"
     ]

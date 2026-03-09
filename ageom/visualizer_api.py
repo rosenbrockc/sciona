@@ -379,6 +379,7 @@ def _build_benchmark_summary(
         "runtime_override_policy_summary": str(
             benchmark.get("runtime_override_policy_summary", "") or ""
         ),
+        "failure_summary": str(benchmark.get("failure_summary", "") or ""),
         "top_failed_subcheck": str(
             benchmark.get("top_failed_subcheck", "") or ""
         ),
