@@ -18,7 +18,7 @@ def generate_ffi_imports(language: str) -> str:
     """Generate the import block for FFI bindings.
 
     Args:
-        language: ``"cpp"`` or ``"julia"``.
+        language: ``"cpp"``, ``"julia"``, ``"rust"``, or ``"haskell"``.
 
     Returns:
         Python source code for the import section.
@@ -29,6 +29,8 @@ def generate_ffi_imports(language: str) -> str:
         return "from juliacall import Main as jl\n"
     elif language == "rust":
         return "import ctypes\n" "import ctypes.util\n" "from pathlib import Path\n"
+    elif language == "haskell":
+        return "import ctypes\n" "import ctypes.util\n" "from pathlib import Path\n"
     else:
         return ""
 
@@ -38,7 +40,7 @@ def generate_ffi_stub(atom: MacroAtomSpec, language: str) -> str:
 
     Args:
         atom: The macro-atom specification.
-        language: ``"cpp"`` or ``"julia"``.
+        language: ``"cpp"``, ``"julia"``, ``"rust"``, or ``"haskell"``.
 
     Returns:
         Python source code for one FFI wrapper function.
@@ -63,6 +65,8 @@ def generate_ffi_stub(atom: MacroAtomSpec, language: str) -> str:
         return _julia_stub(fn_name, atom, params, ret_type)
     elif language == "rust":
         return _rust_stub(fn_name, atom, params, ret_type)
+    elif language == "haskell":
+        return _haskell_stub(fn_name, atom, params, ret_type)
     else:
         return ""
 
@@ -107,7 +111,7 @@ def generate_ffi_bindings(atoms: list[MacroAtomSpec], language: str) -> str:
 
     Args:
         atoms: List of macro-atom specifications.
-        language: ``"cpp"`` or ``"julia"``.
+        language: ``"cpp"``, ``"julia"``, ``"rust"``, or ``"haskell"``.
 
     Returns:
         Complete Python source code for the FFI binding module.
@@ -134,6 +138,31 @@ def _rust_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) ->
         f'    """FFI bridge to Rust implementation of {atom.name}."""',
         '    # Ensure the Rust library is compiled with #[no_mangle] and pub extern "C"',
         '    _lib = ctypes.CDLL("./target/release/librust_robotics.so")',
+        f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
+        "    _func = _lib[_func_name]",
+    ]
+
+    # Set argtypes
+    ctypes_args = []
+    for inp in atom.inputs:
+        ctypes_args.append("ctypes.c_void_p")
+    if ctypes_args:
+        lines.append(f"    _func.argtypes = [{', '.join(ctypes_args)}]")
+
+    # Set restype
+    lines.append("    _func.restype = ctypes.c_void_p")
+    lines.append(f"    return _func({params})")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _haskell_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) -> str:
+    """Generate a ctypes-based FFI stub for Haskell."""
+    lines = [
+        f"def {fn_name}_ffi({params}):",
+        f'    """FFI bridge to Haskell implementation of {atom.name}."""',
+        f'    # Ensure Haskell is compiled with -dynamic -fPIC and has hs_init()',
+        f'    _lib = ctypes.CDLL("./{fn_name}.so")',
         f"    _func_name = atom.method_names[0] if atom.method_names else '{fn_name}'",
         "    _func = _lib[_func_name]",
     ]

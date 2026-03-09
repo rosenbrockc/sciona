@@ -15,6 +15,7 @@ class SourceLanguage(str, Enum):
     CPP = "cpp"
     JULIA = "julia"
     RUST = "rust"
+    HASKELL = "haskell"
 
 
 EXTENSION_MAP: dict[str, SourceLanguage] = {
@@ -27,6 +28,7 @@ EXTENSION_MAP: dict[str, SourceLanguage] = {
     ".ipp": SourceLanguage.CPP,
     ".jl": SourceLanguage.JULIA,
     ".rs": SourceLanguage.RUST,
+    ".hs": SourceLanguage.HASKELL,
 }
 
 

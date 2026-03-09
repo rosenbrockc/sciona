@@ -95,6 +95,18 @@ def _collect_all_function_nodes(
             if name:
                 func_map[name] = fn_node
 
+    elif language == SourceLanguage.HASKELL:
+        for fn_node in _find_descendants(root, "function"):
+            is_def = False
+            name = ""
+            for child in fn_node.children:
+                if child.type == "variable":
+                    name = _node_text(child)
+                if child.type in ("exp", "body", "match"):
+                    is_def = True
+            if is_def and name:
+                func_map[name] = fn_node
+
     else:  # C++
         # Include both function_definition (with body) and declaration
         # (header-only forward declarations with function_declarator).
@@ -727,6 +739,56 @@ class _JuliaStructVisitor:
             self.cartesian_product_fields.append(product_group)
 
 
+class _HaskellFunctionVisitor:
+    """Extract metadata from a Haskell function definition."""
+
+    def __init__(self, func_node: TSNode, source_code: str):
+        self.func_node = func_node
+        self.source_code = source_code
+        self.func_name = ""
+        self.params: list[str] = []
+        self.return_type = ""
+        self.reads: set[str] = set()
+        self.writes: set[str] = set()
+        self.is_oracle = False
+
+    def visit(self):
+        """Parse Haskell AST node to extract properties."""
+        params_set = set()
+        for child in self.func_node.children:
+            if child.type == "variable":
+                self.func_name = _node_text(child)
+            elif child.type in ("exp", "body"):
+                self._visit_expression(child)
+            elif child.type in ("match", "patterns"):
+                for pat in _find_descendants(child, "variable"):
+                    params_set.add(_node_text(pat))
+        
+        self.params = sorted(list(params_set))
+
+        # Check for @oracle / @register_atom comments in source segment OR preceding siblings
+        src = _node_text(self.func_node)
+        
+        # Look at preceding siblings for comments
+        curr = self.func_node.prev_sibling
+        comment_text = ""
+        while curr and curr.type in ("comment", "signature"):
+            comment_text += _node_text(curr)
+            curr = curr.prev_sibling
+
+        if "@oracle" in src or "@oracle" in comment_text or "@register_atom" in src or "@register_atom" in comment_text:
+            self.is_oracle = True
+
+    def _visit_expression(self, node: TSNode):
+        """Heuristically find reads/writes from expression subtree."""
+        # Very simple: all variables in body are potential reads
+        for var in _find_descendants(node, "variable"):
+            name = _node_text(var)
+            if name not in self.params:
+                self.reads.add(name)
+
+
+
 class _JuliaFunctionVisitor:
     """Extract function metadata and associate methods with structs."""
 
@@ -1177,6 +1239,8 @@ class TreeSitterExtractor:
             lang_key = "cpp"
         elif language == SourceLanguage.JULIA:
             lang_key = "julia"
+        elif language == SourceLanguage.HASKELL:
+            lang_key = "haskell"
         else:
             lang_key = "rust"
         self._parser = get_parser(lang_key)
@@ -1546,6 +1610,59 @@ class TreeSitterExtractor:
             requires_logdet_jacobian=requires_logdet_jacobian,
         )
 
+    def _extract_haskell_functions_procedural(
+        self, root: TSNode, source_code: str
+    ) -> tuple[list[MethodFact], list[OracleEdge], list[DependencyEdge]]:
+        """Extract all functions from a Haskell module."""
+        methods: list[MethodFact] = []
+        source_lines = source_code.splitlines()
+
+        for fn_node in _find_descendants(root, "function"):
+            is_def = False
+            for child in fn_node.children:
+                if child.type in ("exp", "body", "match"):
+                    is_def = True
+            if not is_def:
+                continue
+
+            fv = _HaskellFunctionVisitor(fn_node, source_code)
+            fv.visit()
+            if not fv.func_name:
+                continue
+
+            start = fn_node.start_point[0]
+            end = fn_node.end_point[0] + 1
+            source_segment = "\n".join(source_lines[start:end])
+
+            callees = sorted(_extract_callees_from_body(fn_node))
+
+            methods.append(
+                MethodFact(
+                    name=fv.func_name,
+                    params=fv.params,
+                    return_type=fv.return_type,
+                    reads=sorted(fv.reads),
+                    writes=sorted(fv.writes),
+                    calls=callees,
+                    source_code=source_segment,
+                    is_oracle=fv.is_oracle,
+                )
+            )
+
+        return methods, [], []
+
+    def _extract_haskell_class(
+        self, root: TSNode, source_code: str, class_name: str
+    ) -> RawDataFlowGraph:
+        """Haskell has no classes; placeholder for protocol parity."""
+        return RawDataFlowGraph(
+            class_name=class_name,
+            source_code=source_code,
+            methods=[],
+            all_attributes={},
+            source_language=self.language.value,
+        )
+
     # ------------------------------------------------------------------
     # Private: build a MethodFact for a single function node
     # ------------------------------------------------------------------
@@ -1638,6 +1755,21 @@ class TreeSitterExtractor:
             )
             return fact, oracle_edges, inferred_edges
 
+        elif self.language == SourceLanguage.HASKELL:
+            fv = _HaskellFunctionVisitor(fn_node, source_code)
+            fv.visit()
+            fact = MethodFact(
+                name=fv.func_name or func_name,
+                params=fv.params,
+                return_type=fv.return_type,
+                reads=sorted(fv.reads),
+                writes=sorted(fv.writes),
+                calls=callees,
+                source_code=source,
+                is_oracle=fv.is_oracle,
+            )
+            return fact, oracle_edges, inferred_edges
+
         else:  # C++
             extracted_name = ""
             params: list[str] = []
@@ -1688,6 +1820,8 @@ class TreeSitterExtractor:
             return self._extract_cpp_class(root, source_code, class_name)
         elif self.language == SourceLanguage.JULIA:
             return self._extract_julia_struct(root, source_code, class_name)
+        elif self.language == SourceLanguage.HASKELL:
+            return self._extract_haskell_class(root, source_code, class_name)
         else:
             return self._extract_rust_struct(root, source_code, class_name)
 
@@ -1716,6 +1850,10 @@ class TreeSitterExtractor:
                 self._extract_julia_functions_procedural(root, source_code)
             )
             requires_logdet_jacobian = _scan_julia_bijectors(source_code)
+        elif self.language == SourceLanguage.HASKELL:
+            methods, oracle_edges, inferred_edges = (
+                self._extract_haskell_functions_procedural(root, source_code)
+            )
         else:
             methods, oracle_edges, inferred_edges = (
                 self._extract_rust_functions_procedural(root, source_code)
