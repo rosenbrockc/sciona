@@ -424,6 +424,15 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         )
         if isinstance(benchmark.get("runtime_complexity", {}), dict)
         else {},
+        "release_warning_summary": str(
+            release_validation.get("warning_summary", "") or ""
+        ),
+        "release_runtime_warning_count": int(
+            release_validation.get("runtime_warning_count", 0) or 0
+        ),
+        "release_catalog_warning_count": int(
+            release_validation.get("catalog_warning_count", 0) or 0
+        ),
         "manifest": str(release_validation.get("manifest", "") or ""),
         "benchmarks_dir": str(release_validation.get("benchmarks_dir", "") or ""),
         "release_status": str(release_validation.get("status", "") or ""),

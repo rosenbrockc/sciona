@@ -555,6 +555,9 @@ class TestDashboardAPI:
                     "manifest": "build/release_validation/release_validation.json",
                     "benchmarks_dir": "build/release_validation/benchmarks",
                     "status": "passed",
+                    "warning_summary": "runtime=1 catalog=0",
+                    "runtime_warning_count": 1,
+                    "catalog_warning_count": 0,
                     "catalog_validation": {
                         "status": "failed",
                         "report": "build/release_validation/catalog/catalog_validation.json",
@@ -630,6 +633,9 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
         assert data["benchmark_summary"]["flow_comparison_failures"] == 2
         assert data["benchmark_summary"]["release_status"] == "passed"
+        assert data["benchmark_summary"]["release_warning_summary"] == "runtime=1 catalog=0"
+        assert data["benchmark_summary"]["release_runtime_warning_count"] == 1
+        assert data["benchmark_summary"]["release_catalog_warning_count"] == 0
         assert data["benchmark_summary"]["manifest"].endswith("release_validation.json")
         assert data["catalog_validation_summary"]["status"] == "failed"
         assert data["catalog_validation_summary"]["missing_sources"] == ["hpy-atoms"]

@@ -1341,3 +1341,28 @@
   - Result: `1259 passed, 17 skipped`
 - Commit:
   - `catalog: surface drift warnings`
+
+## Release Warning Summary
+
+- Added a compact release-level warning summary that combines:
+  - runtime-complexity warning count
+  - non-blocking catalog warning count
+- Release validation now persists:
+  - `warning_summary`
+  - `runtime_warning_count`
+  - `catalog_warning_count`
+- Propagated those fields through:
+  - release validation manifest
+  - release telemetry metadata
+  - dashboard/API benchmark-release summary
+- Added regressions for:
+  - release manifest warning summary generation
+  - release telemetry persistence of warning summary fields
+  - dashboard/API extraction of release warning counts
+- Validation:
+  - `pytest -q tests/test_release_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py`
+  - Result: `24 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1259 passed, 17 skipped`
+- Commit:
+  - `release: summarize operator warnings`

@@ -10,6 +10,20 @@ from ageom.benchmark_validation import run_benchmark_validation
 from ageom.catalog_validation import run_catalog_validation
 
 
+def _format_release_warning_summary(
+    *,
+    runtime_complexity: dict[str, Any],
+    catalog_summary: dict[str, Any],
+) -> dict[str, Any]:
+    runtime_warning_count = len(runtime_complexity.get("violations", []) or [])
+    catalog_warning_count = len(catalog_summary.get("warnings", []) or [])
+    return {
+        "runtime_warning_count": runtime_warning_count,
+        "catalog_warning_count": catalog_warning_count,
+        "warning_summary": f"runtime={runtime_warning_count} catalog={catalog_warning_count}",
+    }
+
+
 async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     """Run deterministic release validation and persist a manifest."""
     out_dir = Path(output_dir)
@@ -18,12 +32,17 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     benchmark_summary = await run_benchmark_validation(out_dir / "benchmarks")
     catalog_summary = await run_catalog_validation(out_dir / "catalog")
     runtime_complexity = dict(benchmark_summary.get("runtime_complexity", {}) or {})
+    warning_summary = _format_release_warning_summary(
+        runtime_complexity=runtime_complexity,
+        catalog_summary=catalog_summary,
+    )
     release_passed = (
         str(benchmark_summary.get("status", "failed")) == "passed"
         and str(catalog_summary.get("status", "failed")) == "passed"
     )
     manifest = {
         "status": "passed" if release_passed else "failed",
+        "warnings": warning_summary,
         "checks": {
             "benchmark_validation": {
                 "summary_report": benchmark_summary["summary_report"],
@@ -81,4 +100,5 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
         "benchmark_summary": benchmark_summary,
         "catalog_validation": catalog_summary,
         "runtime_complexity": runtime_complexity,
+        **warning_summary,
     }
