@@ -58,3 +58,23 @@ async def test_flow_benchmark_repeat_stability_groups_cases():
     assert all(aggregate.repeat_groups == 1 for aggregate in aggregates)
     assert all(aggregate.stable_groups == 1 for aggregate in aggregates)
     assert all(aggregate.total_prompt_calls >= aggregate.total_cases for aggregate in aggregates)
+
+
+@pytest.mark.asyncio
+async def test_flow_benchmark_noisy_stability():
+    """Noisy mocks introduce perturbations; stability may be < 1.0."""
+    cases = default_flow_benchmark_cases()[:1]
+    results = await run_flow_benchmark(
+        cases=cases,
+        variants=("structured",),
+        repeats=5,
+        noisy=True,
+    )
+    aggregates = summarize_flow_benchmark(results)
+
+    assert len(aggregates) == 1
+    assert aggregates[0].variant == "structured"
+    assert aggregates[0].total_cases == 5
+    assert aggregates[0].repeat_groups == 1
+    # Stability may be < 1.0 under noise — the point is the code path runs.
+    assert 0.0 <= aggregates[0].stability_rate <= 1.0

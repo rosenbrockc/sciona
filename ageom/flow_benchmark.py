@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import random
 import re
 import time
 from dataclasses import asdict, dataclass, field
@@ -197,6 +198,42 @@ class _FlowArchitectLLM:
                 }
             )
         return "{}"
+
+
+class _NoisyFlowArchitectLLM(_FlowArchitectLLM):
+    """Architect mock that introduces controlled perturbations for stability testing."""
+
+    def __init__(
+        self,
+        case: FlowBenchmarkCase,
+        *,
+        seed: int | None = None,
+        shuffle_prob: float = 0.3,
+        drop_field_prob: float = 0.1,
+        alter_desc_prob: float = 0.2,
+    ) -> None:
+        super().__init__(case)
+        self._rng = random.Random(seed)
+        self._shuffle_prob = shuffle_prob
+        self._drop_field_prob = drop_field_prob
+        self._alter_desc_prob = alter_desc_prob
+
+    async def complete(self, system: str, user: str) -> str:
+        raw = await super().complete(system, user)
+        system_lower = system.lower()
+        if not ("sub-nodes" in system_lower or "sub_nodes" in system_lower):
+            return raw
+        parsed = json.loads(raw)
+        nodes = parsed.get("sub_nodes", [])
+        if self._rng.random() < self._shuffle_prob:
+            self._rng.shuffle(nodes)
+        for node in nodes:
+            if self._rng.random() < self._alter_desc_prob:
+                node["description"] = node["description"] + " (variant)"
+            if self._rng.random() < self._drop_field_prob:
+                node.pop("matched_primitive", None)
+        parsed["sub_nodes"] = nodes
+        return json.dumps(parsed)
 
 
 class _BenchmarkHunterLLM:
@@ -450,9 +487,16 @@ def _cdg_metrics(cdg: Any) -> tuple[int, int, int]:
 
 async def _decompose_case(
     case: FlowBenchmarkCase,
+    *,
+    noisy: bool = False,
+    noise_seed: int | None = None,
 ) -> tuple[Any, _FlowArchitectLLM]:
     catalog = _make_catalog(case)
-    architect_llm = _FlowArchitectLLM(case)
+    architect_llm: _FlowArchitectLLM
+    if noisy:
+        architect_llm = _NoisyFlowArchitectLLM(case, seed=noise_seed)
+    else:
+        architect_llm = _FlowArchitectLLM(case)
     agent = DecompositionAgent(
         catalog=catalog,
         skill_index=_EmptySkillIndex(),  # type: ignore[arg-type]
@@ -496,11 +540,16 @@ async def _run_rapid_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
     )
 
 
-async def _run_structured_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
+async def _run_structured_case(
+    case: FlowBenchmarkCase,
+    *,
+    noisy: bool = False,
+    noise_seed: int | None = None,
+) -> FlowBenchmarkResult:
     from ageom.cli import _run_structured_single_pass
 
     started = time.perf_counter()
-    cdg, architect_llm = await _decompose_case(case)
+    cdg, architect_llm = await _decompose_case(case, noisy=noisy, noise_seed=noise_seed)
     hunter, hunter_llm, index = _make_hunter(case)
     result = await _run_structured_single_pass(
         cdg,
@@ -531,9 +580,14 @@ async def _run_structured_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
     )
 
 
-async def _run_verified_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
+async def _run_verified_case(
+    case: FlowBenchmarkCase,
+    *,
+    noisy: bool = False,
+    noise_seed: int | None = None,
+) -> FlowBenchmarkResult:
     started = time.perf_counter()
-    cdg, architect_llm = await _decompose_case(case)
+    cdg, architect_llm = await _decompose_case(case, noisy=noisy, noise_seed=noise_seed)
     hunter, hunter_llm, index = _make_hunter(case)
     result = await run_orchestration(
         cdg,
@@ -782,11 +836,13 @@ async def run_flow_benchmark(
     cases: Sequence[FlowBenchmarkCase],
     variants: Sequence[str] = ("direct_baseline", "rapid", "structured", "verified"),
     repeats: int = 1,
+    noisy: bool = False,
 ) -> list[FlowBenchmarkResult]:
     results: list[FlowBenchmarkResult] = []
     repeat_count = max(1, int(repeats))
     for case in cases:
-        for _ in range(repeat_count):
+        for repeat_idx in range(repeat_count):
+            noise_seed = repeat_idx if noisy else None
             for variant in variants:
                 if variant == "direct_baseline":
                     results.append(await _run_direct_baseline_case(case))
@@ -795,10 +851,18 @@ async def run_flow_benchmark(
                     results.append(await _run_rapid_case(case))
                     continue
                 if variant == "structured":
-                    results.append(await _run_structured_case(case))
+                    results.append(
+                        await _run_structured_case(
+                            case, noisy=noisy, noise_seed=noise_seed
+                        )
+                    )
                     continue
                 if variant == "verified":
-                    results.append(await _run_verified_case(case))
+                    results.append(
+                        await _run_verified_case(
+                            case, noisy=noisy, noise_seed=noise_seed
+                        )
+                    )
                     continue
                 raise ValueError(f"Unsupported flow benchmark variant: {variant}")
     return results
