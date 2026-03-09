@@ -693,6 +693,108 @@ async def _run_verified_refinement_case(
     )
 
 
+class _LLMFromScratchMock:
+    """Simulates a raw LLM identifying library functions from a goal prompt."""
+
+    def __init__(self, case: FlowBenchmarkCase) -> None:
+        self._case = case
+        self.calls = 0
+
+    async def identify(self, prompt: str) -> str:
+        self.calls += 1
+        return json.dumps([
+            {
+                "name": leaf.declaration_name,
+                "type_signature": leaf.type_signature,
+                "description": leaf.description,
+            }
+            for leaf in self._case.leaves
+        ])
+
+
+class _NoisyLLMFromScratchMock(_LLMFromScratchMock):
+    """LLM-from-scratch mock with realistic error modes."""
+
+    def __init__(
+        self,
+        case: FlowBenchmarkCase,
+        *,
+        seed: int | None = None,
+        miss_leaf_prob: float = 0.2,
+        hallucinate_prob: float = 0.15,
+        rename_prob: float = 0.1,
+    ) -> None:
+        super().__init__(case)
+        self._rng = random.Random(seed)
+        self._miss_leaf_prob = miss_leaf_prob
+        self._hallucinate_prob = hallucinate_prob
+        self._rename_prob = rename_prob
+
+    async def identify(self, prompt: str) -> str:
+        self.calls += 1
+        results = []
+        for leaf in self._case.leaves:
+            if self._rng.random() < self._miss_leaf_prob:
+                continue
+            name = leaf.declaration_name
+            if self._rng.random() < self._rename_prob:
+                name = name.replace(".", ".wrong_")
+            results.append({
+                "name": name,
+                "type_signature": leaf.type_signature,
+                "description": leaf.description,
+            })
+        if self._rng.random() < self._hallucinate_prob:
+            results.append({
+                "name": "algorithms.hallucinated_function",
+                "type_signature": "any -> any",
+                "description": "This function does not exist.",
+            })
+        return json.dumps(results)
+
+
+async def _run_llm_from_scratch_case(
+    case: FlowBenchmarkCase,
+    *,
+    noisy: bool = False,
+    noise_seed: int | None = None,
+) -> FlowBenchmarkResult:
+    started = time.perf_counter()
+    llm: _LLMFromScratchMock
+    if noisy:
+        llm = _NoisyLLMFromScratchMock(case, seed=noise_seed)
+    else:
+        llm = _LLMFromScratchMock(case)
+    raw = await llm.identify(case.prompt)
+    parsed = json.loads(raw)
+    expected = {leaf.declaration_name for leaf in case.leaves}
+    matched: set[str] = set()
+    for entry in parsed:
+        name = str(entry.get("name", ""))
+        if name in expected:
+            matched.add(name)
+    latency_ms = (time.perf_counter() - started) * 1000.0
+    total = len(case.leaves)
+    n_matched = len(matched)
+    return FlowBenchmarkResult(
+        case_id=case.case_id,
+        domain=case.domain,
+        variant="llm_from_scratch",
+        execution_path="llm_from_scratch",
+        ok=n_matched == total,
+        latency_ms=latency_ms,
+        prompt_calls=llm.calls,
+        matched_leaves=n_matched,
+        total_leaves=total,
+        node_count=0,
+        leaf_coverage=n_matched / max(1, total),
+        best_similarity=0.0,
+        decomposition_depth=0,
+        decomposition_leaf_count=0,
+        decomposition_edge_count=0,
+    )
+
+
 def default_flow_benchmark_cases() -> list[FlowBenchmarkCase]:
     return [
         FlowBenchmarkCase(
@@ -939,6 +1041,13 @@ async def run_flow_benchmark(
                 if variant == "verified_refinement":
                     results.append(
                         await _run_verified_refinement_case(case)
+                    )
+                    continue
+                if variant == "llm_from_scratch":
+                    results.append(
+                        await _run_llm_from_scratch_case(
+                            case, noisy=noisy, noise_seed=noise_seed
+                        )
                     )
                     continue
                 raise ValueError(f"Unsupported flow benchmark variant: {variant}")

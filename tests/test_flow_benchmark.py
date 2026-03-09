@@ -92,3 +92,34 @@ async def test_verified_refinement_recovers_from_initial_failure():
     assert results[0].ok is True
     assert results[0].variant == "verified_refinement"
     assert results[0].prompt_calls > 0
+
+
+@pytest.mark.asyncio
+async def test_llm_from_scratch_deterministic_baseline_succeeds():
+    cases = default_flow_benchmark_cases()
+    results = await run_flow_benchmark(
+        cases=cases,
+        variants=("llm_from_scratch",),
+    )
+
+    assert len(results) == len(cases)
+    assert all(r.ok for r in results)
+    assert all(r.variant == "llm_from_scratch" for r in results)
+    assert all(r.leaf_coverage == 1.0 for r in results)
+
+
+@pytest.mark.asyncio
+async def test_llm_from_scratch_noisy_may_miss_leaves():
+    cases = default_flow_benchmark_cases()[:1]
+    results = await run_flow_benchmark(
+        cases=cases,
+        variants=("llm_from_scratch",),
+        repeats=10,
+        noisy=True,
+    )
+    aggregates = summarize_flow_benchmark(results)
+
+    assert len(aggregates) == 1
+    # Under noise some runs may fail — that's the point
+    assert aggregates[0].total_cases == 10
+    assert 0.0 <= aggregates[0].avg_leaf_coverage <= 1.0
