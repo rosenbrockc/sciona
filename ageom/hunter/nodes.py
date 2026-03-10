@@ -25,6 +25,7 @@ from ageom.hunter.prompts import (
     SCORE_CANDIDATES_SYSTEM,
     SCORE_CANDIDATES_USER,
 )
+from ageom.hunter.query_reformulator import derive_catalog_hints
 from ageom.hunter.state import HunterState
 from ageom.llm_router import (
     HUNTER_ANALYZE_FAILURE,
@@ -478,6 +479,16 @@ class ReformulateQuery(BaseNode[HunterState, HunterDeps, MatchResult]):
             queries_tried=queries_text,
             compiler_errors=errors_text,
         )
+        catalog_hints = derive_catalog_hints(
+            deps.index,
+            statement=state.pdg_node.statement,
+            informal_desc=state.pdg_node.informal_desc,
+            compiler_errors=errors_text,
+            queries_tried=state.queries_tried,
+        )
+        if catalog_hints:
+            reformulate_msg += "\n\n## Catalog Hints\n"
+            reformulate_msg += "\n".join(f"- {hint}" for hint in catalog_hints)
 
         try:
             if state.mode == "speculative_local":

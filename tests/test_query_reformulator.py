@@ -5,7 +5,11 @@ import json
 import pytest
 
 from ageom.hunter.prompts import REFORMULATE_QUERY_SYSTEM, REFORMULATE_QUERY_USER
-from ageom.hunter.query_reformulator import HeuristicQueryReformulator
+from ageom.hunter.query_reformulator import (
+    HeuristicQueryReformulator,
+    derive_catalog_hints,
+)
+from ageom.types import Declaration, Prover
 
 
 class _FallbackLLM:
@@ -140,3 +144,64 @@ async def test_query_reformulator_falls_back_for_ambiguous_prompt():
 
     assert json.loads(response) == ["fallback query"]
     assert fallback.calls == 1
+
+
+def test_derive_catalog_hints_prefers_relevant_namespaces_and_declarations():
+    class _Index:
+        def __init__(self) -> None:
+            self._declarations = [
+                Declaration(
+                    name="Data.PriorityQueue.popMin",
+                    type_signature="queue[node] -> node",
+                    docstring="Pop the next frontier node from the priority queue.",
+                    prover=Prover.LEAN4,
+                ),
+                Declaration(
+                    name="Data.PriorityQueue.insert",
+                    type_signature="node -> queue[node] -> queue[node]",
+                    docstring="Insert a node into the priority queue frontier.",
+                    prover=Prover.LEAN4,
+                ),
+                Declaration(
+                    name="Nat.add_comm",
+                    type_signature="forall n m, n + m = m + n",
+                    docstring="Commutativity of addition",
+                    prover=Prover.LEAN4,
+                ),
+            ]
+
+    hints = derive_catalog_hints(
+        _Index(),
+        statement="Extract the next frontier node",
+        informal_desc="priority queue based graph search",
+        compiler_errors="wrong helper returned an ordering",
+        queries_tried=["priority queue graph"],
+    )
+
+    assert any("namespace:Data.PriorityQueue" == hint for hint in hints)
+    assert any("declaration:Data.PriorityQueue.popMin" == hint for hint in hints)
+
+
+@pytest.mark.asyncio
+async def test_query_reformulator_uses_catalog_hints_for_generic_prompt():
+    fallback = _FallbackLLM('["fallback query"]')
+    reformulator = HeuristicQueryReformulator(fallback)
+    system, user = _reformulate_prompt(
+        predicate_id="p_catalog",
+        statement="Extract the next frontier node",
+        informal_desc="search helper",
+        prover="lean4",
+        queries_tried=["frontier node"],
+        compiler_errors="helper returned ordering",
+    )
+    user += (
+        "\n\n## Catalog Hints\n"
+        "- namespace:Data.PriorityQueue\n"
+        "- declaration:Data.PriorityQueue.popMin"
+    )
+
+    response = await reformulator.complete(system, user)
+
+    queries = json.loads(response)
+    assert any("Data.PriorityQueue" in query for query in queries)
+    assert fallback.calls == 0
