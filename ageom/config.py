@@ -124,6 +124,7 @@ class AgeomConfig(BaseSettings):
     architect_max_depth: int = 8
     architect_llm_provider: str = ""  # falls back to llm_provider when empty
     architect_llm_model: str = ""
+    architect_critique_llm_enabled: bool = False
     architect_shared_context_enabled: bool = True
     architect_shared_context_budget_chars: int = 900
 

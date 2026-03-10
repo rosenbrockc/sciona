@@ -158,9 +158,9 @@ class _FlowArchitectLLM:
         if "best" in system_lower and "paradigm" in system_lower:
             return json.dumps(
                 {
-                    "paradigm": self._case.concept_type.value,
-                    "rationale": f"{self._case.case_id} fits this paradigm",
-                    "variant_hint": self._case.case_id,
+                    "paradigm": ConceptType.CUSTOM.value,
+                    "rationale": f"{self._case.case_id} is benchmarked as a direct leaf decomposition",
+                    "variant_hint": "",
                 }
             )
         if "sub-nodes" in system_lower or "sub_nodes" in system_lower:

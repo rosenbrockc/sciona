@@ -819,7 +819,12 @@ class TestSelectStrategy:
 
         from ageom.architect.state import DecompositionDeps
 
-        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            architect_critique_llm_enabled=True,
+        )
         config = {"configurable": {"deps": deps}}
 
         result = await select_strategy(state, config)
@@ -862,7 +867,12 @@ class TestSelectStrategy:
 
         from ageom.architect.state import DecompositionDeps
 
-        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            architect_critique_llm_enabled=True,
+        )
         config = {"configurable": {"deps": deps}}
 
         result = await select_strategy(state, config)
@@ -870,6 +880,9 @@ class TestSelectStrategy:
         assert result["paradigm"] == "custom"
         # No skeleton for CUSTOM, so only root node
         assert len(result["nodes"]) == 1
+        assert result["pending_node_ids"] == [result["nodes"][0].node_id]
+        assert result["current_node_id"] == result["nodes"][0].node_id
+        assert result["done"] is False
 
     @pytest.mark.asyncio
     async def test_signal_transform_skeleton_nodes_bind_to_builtin_primitives(self):
@@ -906,7 +919,12 @@ class TestSelectStrategy:
             "error": "",
         }
 
-        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            architect_critique_llm_enabled=True,
+        )
         result = await select_strategy(state, {"configurable": {"deps": deps}})
 
         bound = {
@@ -1019,6 +1037,7 @@ class TestCritiqueRejection:
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
+        goal = "Build a bespoke list reconciliation workflow"
 
         call_count = 0
 
@@ -1083,6 +1102,13 @@ class TestCritiqueRejection:
                                 "output_name": "left",
                                 "input_name": "left",
                                 "data_type": "list",
+                            },
+                            {
+                                "source_name": "Split",
+                                "target_name": "merge",
+                                "output_name": "right",
+                                "input_name": "right",
+                                "data_type": "list",
                             }
                         ],
                     }
@@ -1090,9 +1116,9 @@ class TestCritiqueRejection:
             elif "best" in system_lower and "paradigm" in system_lower:
                 return json.dumps(
                     {
-                        "paradigm": "divide_and_conquer",
-                        "rationale": "D&C",
-                        "variant_hint": "merge_sort",
+                        "paradigm": "custom",
+                        "rationale": "Needs a bespoke decomposition",
+                        "variant_hint": "",
                     }
                 )
             return "{}"
@@ -1105,9 +1131,10 @@ class TestCritiqueRejection:
             skill_index=skill_index,
             llm=llm,
             max_depth=8,
+            architect_critique_llm_enabled=True,
         )
 
-        cdg = await agent.decompose("Implement merge sort")
+        cdg = await agent.decompose(goal)
 
         # Should eventually succeed after retry
         assert len(cdg.nodes) > 0
@@ -1311,6 +1338,89 @@ class TestCritiqueHardening:
     """Hardening behaviors for malformed critique payloads and retries."""
 
     @pytest.mark.asyncio
+    async def test_deterministic_only_critique_skips_llm_when_disabled(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        parent = AlgorithmicNode(
+            node_id="parent",
+            name="Filter Signal",
+            description="Apply a filter to a signal.",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        child1 = AlgorithmicNode(
+            node_id="c1",
+            parent_id="parent",
+            name="Design Filter",
+            description="Design coefficients.",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="coeffs", type_desc="np.ndarray")],
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+        child2 = AlgorithmicNode(
+            node_id="c2",
+            parent_id="parent",
+            name="Apply Filter",
+            description="Filter the signal.",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[
+                IOSpec(name="signal", type_desc="np.ndarray"),
+                IOSpec(name="coeffs", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+
+        state: DecompositionState = {
+            "goal": "filter",
+            "max_depth": 8,
+            "nodes": [parent, child1, child2],
+            "edges": [
+                DependencyEdge(
+                    source_id="c1",
+                    target_id="c2",
+                    output_name="coeffs",
+                    input_name="coeffs",
+                    source_type="np.ndarray",
+                    target_type="np.ndarray",
+                )
+            ],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "parent",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            architect_critique_llm_enabled=False,
+        )
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is True
+        assert "deterministic structural checks passed" in result["critique_reason"].lower()
+        assert llm.complete.await_count == 0
+
+    @pytest.mark.asyncio
     async def test_malformed_critique_schema_fails_open(self):
         from ageom.architect.nodes import critique_decomposition
         from ageom.architect.state import DecompositionDeps
@@ -1370,12 +1480,147 @@ class TestCritiqueHardening:
             "error": "",
         }
 
-        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            architect_critique_llm_enabled=True,
+        )
         config = {"configurable": {"deps": deps}}
         result = await critique_decomposition(state, config)
 
         assert result["critique_passed"] is True
         assert "invalid schema" in result["critique_reason"].lower()
+
+    @pytest.mark.asyncio
+    async def test_deterministic_critique_rejects_uncovered_parent_outputs(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        parent = AlgorithmicNode(
+            node_id="parent",
+            name="Assemble Result",
+            description="Produce a final result from input data.",
+            concept_type=ConceptType.CUSTOM,
+            inputs=[IOSpec(name="data", type_desc="DataFrame")],
+            outputs=[IOSpec(name="result", type_desc="Report")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        child1 = AlgorithmicNode(
+            node_id="c1",
+            parent_id="parent",
+            name="Validate Input",
+            description="Inspect the input data.",
+            concept_type=ConceptType.CUSTOM,
+            inputs=[IOSpec(name="data", type_desc="DataFrame")],
+            outputs=[IOSpec(name="validated", type_desc="DataFrame")],
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+        child2 = AlgorithmicNode(
+            node_id="c2",
+            parent_id="parent",
+            name="Summarize",
+            description="Generate diagnostics.",
+            concept_type=ConceptType.CUSTOM,
+            inputs=[IOSpec(name="validated", type_desc="DataFrame")],
+            outputs=[IOSpec(name="summary", type_desc="dict")],
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+
+        state: DecompositionState = {
+            "goal": "summarize",
+            "max_depth": 8,
+            "nodes": [parent, child1, child2],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "parent",
+            "paradigm": "custom",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is False
+        assert "parent outputs not produced" in result["critique_reason"].lower()
+
+    @pytest.mark.asyncio
+    async def test_deterministic_critique_rejects_duplicate_children(self):
+        from ageom.architect.nodes import critique_decomposition
+        from ageom.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        parent = AlgorithmicNode(
+            node_id="parent",
+            name="Prepare Data",
+            description="Prepare the data for use.",
+            concept_type=ConceptType.CUSTOM,
+            inputs=[IOSpec(name="data", type_desc="table")],
+            outputs=[IOSpec(name="prepared", type_desc="table")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        child1 = AlgorithmicNode(
+            node_id="c1",
+            parent_id="parent",
+            name="Normalize Data",
+            description="Normalize the data.",
+            concept_type=ConceptType.CUSTOM,
+            inputs=[IOSpec(name="data", type_desc="table")],
+            outputs=[IOSpec(name="prepared", type_desc="table")],
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+        child2 = AlgorithmicNode(
+            node_id="c2",
+            parent_id="parent",
+            name="Normalize Data",
+            description="Normalize the data again.",
+            concept_type=ConceptType.CUSTOM,
+            inputs=[IOSpec(name="data", type_desc="table")],
+            outputs=[IOSpec(name="prepared", type_desc="table")],
+            status=NodeStatus.PENDING,
+            depth=2,
+        )
+
+        state: DecompositionState = {
+            "goal": "prepare data",
+            "max_depth": 8,
+            "nodes": [parent, child1, child2],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": [],
+            "current_node_id": "parent",
+            "paradigm": "custom",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+        result = await critique_decomposition(state, {"configurable": {"deps": deps}})
+
+        assert result["critique_passed"] is False
+        assert "near-duplicate child nodes" in result["critique_reason"].lower()
 
     @pytest.mark.asyncio
     async def test_prepare_retry_rejects_prior_atomic_children(self):
@@ -2490,7 +2735,7 @@ class TestDeterministicDecompose:
             description="Choose a filter topology.",
             concept_type=ConceptType.SIGNAL_FILTER,
             inputs=[IOSpec(name="design_targets", type_desc="filter design targets")],
-            outputs=[IOSpec(name="design_strategy", type_desc="filter design strategy")],
+            outputs=[IOSpec(name="coefficients", type_desc="filter coefficients")],
             matched_primitive="choose_filter_topology",
             status=NodeStatus.ATOMIC,
             depth=2,

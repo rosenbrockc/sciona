@@ -90,6 +90,7 @@ class DecompositionAgent:
         context_namespace: str = "",
         context_budget_chars: int = 900,
         use_monadic_rewriter: bool = False,
+        architect_critique_llm_enabled: bool = True,
     ) -> None:
         self._deps = DecompositionDeps(
             catalog=catalog,
@@ -101,6 +102,7 @@ class DecompositionAgent:
             context_namespace=context_namespace,
             context_budget_chars=context_budget_chars,
             use_monadic_rewriter=use_monadic_rewriter,
+            architect_critique_llm_enabled=architect_critique_llm_enabled,
         )
         self._max_depth = max_depth
         self._graph = build_graph().compile(checkpointer=checkpointer)

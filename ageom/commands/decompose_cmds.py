@@ -198,6 +198,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
                                 shared_context_metrics=architect_shared_metrics,
                                 context_namespace=architect_context_namespace,
                                 context_budget_chars=config.architect_shared_context_budget_chars,
+                                architect_critique_llm_enabled=config.architect_critique_llm_enabled,
                             )
                             cdg = await _run_decompose(agent, args, max_depth, catalog)
                     else:
@@ -211,6 +212,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
                             shared_context_metrics=architect_shared_metrics,
                             context_namespace=architect_context_namespace,
                             context_budget_chars=config.architect_shared_context_budget_chars,
+                            architect_critique_llm_enabled=config.architect_critique_llm_enabled,
                         )
                         cdg = await _run_decompose(agent, args, max_depth, catalog)
 

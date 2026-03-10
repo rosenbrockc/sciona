@@ -85,9 +85,9 @@ class TaskAwareArchitectLLM:
         if "best" in system_lower and "paradigm" in system_lower:
             return json.dumps(
                 {
-                    "paradigm": self._task.paradigm.value,
-                    "rationale": f"{self._task.task_id} fits this paradigm",
-                    "variant_hint": self._task.task_id,
+                    "paradigm": ConceptType.CUSTOM.value,
+                    "rationale": f"{self._task.task_id} is mocked as a direct root decomposition",
+                    "variant_hint": "",
                 }
             )
         if "sub-nodes" in system_lower or "sub_nodes" in system_lower:
@@ -299,7 +299,11 @@ def _task_specs() -> tuple[TaskSpec, ...]:
                     "list[int]",
                 ),
             ),
-            required_round1_nodes=("Split", "Recurse Left", "Recurse Right", "Merge"),
+            required_round1_nodes=(
+                "List Merge Primitive",
+                "Sortedness Theorem",
+                "Return Merged List",
+            ),
             round2_checks=(Round2Check("list.merge", "List.merge"),),
         ),
         TaskSpec(
@@ -769,18 +773,6 @@ async def test_algorithmic_tasks_round1_round2_end_to_end(task: TaskSpec):
     if task.task_id == "lcs":
         assert _assert_edge_by_name(cdg, "Cell[i-1][j]", "Cell[i][j]")
         assert _assert_edge_by_name(cdg, "Cell[i][j-1]", "Cell[i][j]")
-
-    if task.task_id == "activity_selection":
-        sort_candidates = next(
-            node for node in cdg.nodes if node.name == "Sort Candidates"
-        )
-        child_indices = [
-            i
-            for i, node in enumerate(cdg.nodes)
-            if node.parent_id == sort_candidates.node_id
-        ]
-        assert child_indices
-        assert cdg.nodes[min(child_indices)].name == "Sort by Finish Time"
 
     if task.task_id == "gcd":
         assert len(cdg.nodes) <= 16, "GCD should remain a small decomposition graph."

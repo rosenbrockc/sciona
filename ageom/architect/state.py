@@ -75,3 +75,4 @@ class DecompositionDeps:
     context_namespace: str = field(default="")
     context_budget_chars: int = field(default=900)
     use_monadic_rewriter: bool = field(default=False)
+    architect_critique_llm_enabled: bool = field(default=True)

@@ -24,6 +24,7 @@ from ageom.architect.deterministic_decompose import (
     DeterministicRewriteError,
     build_deterministic_decomposition,
 )
+from ageom.architect.structural_critic import structural_critique_issues
 from ageom.architect.prompts import (
     CRITIQUE_SYSTEM,
     CRITIQUE_USER,
@@ -718,7 +719,7 @@ async def select_strategy(
         name=goal,
         description=goal,
         concept_type=paradigm,
-        status=NodeStatus.DECOMPOSED,
+        status=NodeStatus.PENDING,
         depth=0,
     )
 
@@ -732,7 +733,12 @@ async def select_strategy(
         skel_nodes, skel_edges = instantiate_skeleton(
             skeleton, goal, parent_id=root_id, base_depth=0
         )
-        root = root.model_copy(update={"children": [n.node_id for n in skel_nodes]})
+        root = root.model_copy(
+            update={
+                "status": NodeStatus.DECOMPOSED,
+                "children": [n.node_id for n in skel_nodes],
+            }
+        )
         nodes = [root] + skel_nodes
         edges = skel_edges
         skeleton_instantiated = True
@@ -755,7 +761,7 @@ async def select_strategy(
                 }
             )
 
-    # Build pending queue (non-root, non-atomic)
+    # Build pending queue. Without a skeleton, the root itself must be decomposed.
     pending = [n.node_id for n in nodes if n.status == NodeStatus.PENDING]
 
     current_node_id = pending[0] if pending else ""
@@ -1050,77 +1056,13 @@ async def critique_decomposition(
     # ------------------------------------------------------------------
     # Phase A: Deterministic checks (fast, free)
     # ------------------------------------------------------------------
-    issues: list[str] = []
-
-    # Check: at least 2 children
-    if len(children) < 2:
-        issues.append(f"Need at least 2 sub-nodes, got {len(children)}")
-
-    # Check: depth constraint
-    for child in children:
-        if child.depth > max_depth:
-            issues.append(
-                f"Node '{child.name}' exceeds max depth ({child.depth} > {max_depth})"
-            )
-
-    # Check: no self-loops in edges
-    for edge in child_edges:
-        if edge.source_id == edge.target_id:
-            issues.append(f"Self-loop detected on edge {edge.source_id}")
-
-    # Check: edge I/O name validity
-    child_by_id = {c.node_id: c for c in children}
-    for edge in child_edges:
-        src = child_by_id.get(edge.source_id)
-        tgt = child_by_id.get(edge.target_id)
-        if src and src.outputs:
-            out_names = {o.name for o in src.outputs}
-            if edge.output_name not in out_names and out_names:
-                issues.append(
-                    f"Edge output '{edge.output_name}' not in "
-                    f"source '{src.name}' outputs: {out_names}"
-                )
-        if tgt and tgt.inputs:
-            in_names = {i.name for i in tgt.inputs}
-            if edge.input_name not in in_names and in_names:
-                issues.append(
-                    f"Edge input '{edge.input_name}' not in "
-                    f"target '{tgt.name}' inputs: {in_names}"
-                )
-
-    # Check: atomic claims match catalog
-    for child in children:
-        if child.status == NodeStatus.ATOMIC and not deps.catalog.is_atomic(child):
-            issues.append(f"Node '{child.name}' claims atomic but not in catalog")
-        if (
-            child.status == NodeStatus.ATOMIC
-            and child.matched_primitive
-            and child.primitive_binding_source == "token_overlap"
-            and child.primitive_binding_confidence < 0.75
-        ):
-            issues.append(
-                f"Node '{child.name}' has weak primitive binding "
-                f"({child.matched_primitive}, confidence={child.primitive_binding_confidence:.2f})"
-            )
-
-    # Check: typed parents must not degrade into Any-typed children/edges.
-    parent_is_typed = any(not _is_any_type(io.type_desc) for io in parent.inputs + parent.outputs)
-    if parent_is_typed:
-        for child in children:
-            weak_inputs = [io.name for io in child.inputs if _is_any_type(io.type_desc)]
-            weak_outputs = [io.name for io in child.outputs if _is_any_type(io.type_desc)]
-            if weak_inputs or weak_outputs:
-                issues.append(
-                    f"Node '{child.name}' uses unresolved Any ports "
-                    f"(inputs={weak_inputs}, outputs={weak_outputs})"
-                )
-        for edge in child_edges:
-            if _is_any_type(edge.source_type) or _is_any_type(edge.target_type):
-                issues.append(
-                    "Edge "
-                    f"{edge.source_id}->{edge.target_id} uses unresolved Any types "
-                    f"({edge.source_type} -> {edge.target_type})"
-                )
+    issues = structural_critique_issues(
+        parent,
+        children,
+        child_edges,
+        max_depth=max_depth,
+        catalog=deps.catalog,
+    )
 
     if issues:
         reason = "Deterministic checks failed: " + "; ".join(issues)
@@ -1172,8 +1114,34 @@ async def critique_decomposition(
             ],
         }
 
+    if not getattr(deps, "architect_critique_llm_enabled", True):
+        reason = "Deterministic structural checks passed"
+        await _put_context(
+            deps,
+            config,
+            channel="critique",
+            text=(
+                f"Parent: {parent.name}\n"
+                "Approved: True\n"
+                f"Reason: {reason}"
+            ),
+            metadata={"node_id": current_id, "phase": "deterministic_only"},
+        )
+        return {
+            "critique_passed": True,
+            "critique_reason": reason,
+            "history": [
+                {
+                    "step": "critique",
+                    "phase": "deterministic_only",
+                    "approved": True,
+                    "reason": reason,
+                }
+            ],
+        }
+
     # ------------------------------------------------------------------
-    # Phase B: LLM critique (only if Phase A passes)
+    # Phase B: LLM critique (only if enabled and Phase A passes)
     # ------------------------------------------------------------------
     sub_nodes_str = "\n".join(
         f"  - {c.name} [{c.concept_type.value}] "

@@ -302,6 +302,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                                     shared_context_metrics=architect_shared_metrics,
                                     context_namespace=f"architect/{architect_run_id}",
                                     context_budget_chars=config.architect_shared_context_budget_chars,
+                                    architect_critique_llm_enabled=config.architect_critique_llm_enabled,
                                 )
                                 architect_service = ArchitectService(architect)
                                 cdg = await architect.decompose(args.goal)
@@ -315,6 +316,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                                 shared_context_metrics=architect_shared_metrics,
                                 context_namespace=f"architect/{architect_run_id}",
                                 context_budget_chars=config.architect_shared_context_budget_chars,
+                                architect_critique_llm_enabled=config.architect_critique_llm_enabled,
                             )
                             architect_service = ArchitectService(architect)
                             cdg = await architect.decompose(args.goal)
@@ -351,6 +353,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                                         shared_context_metrics=architect_shared_metrics,
                                         context_namespace=f"architect/{architect_run_id}",
                                         context_budget_chars=config.architect_shared_context_budget_chars,
+                                        architect_critique_llm_enabled=config.architect_critique_llm_enabled,
                                     )
                                     service = ArchitectService(architect)
                                     result = await service.decompose(request)

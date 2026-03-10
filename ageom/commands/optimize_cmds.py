@@ -100,6 +100,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             shared_context_metrics=architect_shared_metrics,
             context_namespace=f"architect/{architect_run_id}",
             context_budget_chars=config.architect_shared_context_budget_chars,
+            architect_critique_llm_enabled=config.architect_critique_llm_enabled,
         )
 
         sandbox = ExecutionSandbox(timeout_s=args.timeout)
