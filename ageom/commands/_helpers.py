@@ -88,8 +88,10 @@ def _create_llm_router(
     Clients with matching (provider, model) pairs are deduplicated.
     """
     from ageom.config import should_apply_prompt_override
+    from ageom.architect.strategy_classifier import StrategyClassifier
+    from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
     from ageom.hunter.llm import create_llm_client
-    from ageom.llm_router import LLMRouter
+    from ageom.llm_router import ARCHITECT_STRATEGY, HUNTER_SCORE, LLMRouter
 
     default = _create_llm(args, config, round_name)
     overrides: dict[str, "LLMClient"] = {}
@@ -127,6 +129,13 @@ def _create_llm_router(
                 ),
             )
         overrides[key] = client_cache[cache_key]
+
+    if round_name == "architect" and ARCHITECT_STRATEGY in prompt_keys:
+        strategy_fallback = overrides.get(ARCHITECT_STRATEGY, default)
+        overrides[ARCHITECT_STRATEGY] = StrategyClassifier(strategy_fallback)
+    if round_name == "hunter" and HUNTER_SCORE in prompt_keys:
+        score_fallback = overrides.get(HUNTER_SCORE, default)
+        overrides[HUNTER_SCORE] = HeuristicCandidateRanker(score_fallback)
 
     if not overrides:
         return default

@@ -24,6 +24,8 @@ from ageom.telemetry import (
     start_run,
     telemetry_scope,
 )
+from ageom.architect.strategy_classifier import StrategyClassifier
+from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
 
 
 def _make_mock_llm(name: str = "default") -> AsyncMock:
@@ -295,7 +297,8 @@ class TestCreateLLMRouter:
             ("anthropic", "claude-sonnet-4-5-20250929"),
             ("codex_shim", "gpt-5.3-codex"),
         ]
-        assert router.for_prompt("architect_strategy") is router.for_prompt("architect_critique")
+        assert isinstance(router.for_prompt("architect_strategy"), StrategyClassifier)
+        assert router.for_prompt("architect_critique") is not router.for_prompt("architect_strategy")
         assert router.for_prompt("architect_decompose") is router._default
 
     def test_hunter_prompts_use_gemini_shim_overrides(self, monkeypatch):
@@ -346,7 +349,8 @@ class TestCreateLLMRouter:
             ("gemini_shim", "flash-lite"),
             ("gemini_shim", "flash"),
         ]
-        assert router.for_prompt("hunter_score") is router.for_prompt("hunter_reformulate")
+        assert isinstance(router.for_prompt("hunter_score"), HeuristicCandidateRanker)
+        assert router.for_prompt("hunter_reformulate") is not router.for_prompt("hunter_score")
         assert router.for_prompt("hunter_analyze_failure") is not router.for_prompt("hunter_score")
 
     def test_architect_prompt_overrides_use_socket_shims(self, monkeypatch):
@@ -396,7 +400,8 @@ class TestCreateLLMRouter:
             ("anthropic", "claude-sonnet-4-5-20250929"),
             ("codex_shim", "gpt-5.3-codex"),
         ]
-        assert router.for_prompt("architect_strategy") is router.for_prompt("architect_critique")
+        assert isinstance(router.for_prompt("architect_strategy"), StrategyClassifier)
+        assert router.for_prompt("architect_critique") is not router.for_prompt("architect_strategy")
 
     def test_unbenchmarked_default_override_is_filtered_out(self, monkeypatch):
         from ageom.cli import _create_llm_router
