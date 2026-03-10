@@ -109,3 +109,17 @@ def test_retrieval_policy_uses_lexical_without_disabling_skill_index_for_medium_
     assert policy.graph_retrieval_enabled is False
     assert policy.semantic_index_backend_override == "lexical"
     assert policy.hunter_mode == "standard"
+
+
+def test_single_agent_mode_resolves_to_lightweight_tool_orchestration_profile():
+    config = AgeomConfig()
+
+    mode = resolve_execution_mode(config, "single_agent")
+
+    assert mode.mode == "single_agent"
+    assert mode.skill_index_enabled is True
+    assert mode.graph_retrieval_enabled is False
+    assert mode.architect_shared_context_enabled is False
+    assert mode.hunter_shared_context_enabled is False
+    assert mode.hunter_mode == "standard"
+    assert mode.hunter_use_gbnf is config.hunter_use_gbnf

@@ -479,3 +479,101 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
     assert (output_dir / "cdg.json").exists()
     assert (output_dir / "matches.json").exists()
     assert env.closed is True
+
+
+@pytest.mark.asyncio
+async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_path: Path):
+    from ageom.cli import _cmd_run
+    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+
+    reset_telemetry_runtime()
+    configure_dashboard_output(tmp_path)
+    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+    output_dir = tmp_path / "single_agent_output"
+    index_dir = tmp_path / "index"
+    index_dir.mkdir()
+    metrics = _FakeMetrics("memory")
+    env = _FakeEnv()
+
+    _R = "ageom.commands.run_cmds"
+    monkeypatch.setattr(
+        f"{_R}._load_architect_catalog",
+        lambda args, config: (SimpleNamespace(size=1), {"source_candidates": 1}),
+    )
+    monkeypatch.setattr(
+        f"{_R}._resolve_retrieval_policy",
+        lambda **kwargs: SimpleNamespace(
+            catalog_confidence=0.5,
+            confidence_band="medium",
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override="lexical",
+            hunter_mode="standard",
+        ),
+    )
+    monkeypatch.setattr(f"{_R}._load_skill_index_or_empty", lambda config, enabled=True: object())
+    monkeypatch.setattr(f"{_R}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
+    monkeypatch.setattr(f"{_R}._create_proof_env", lambda prover, config: env)
+    monkeypatch.setattr(
+        "ageom.judge.checker.VerificationOracleImpl",
+        lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+    monkeypatch.setattr(f"{_R}._create_llm_router", lambda *args, **kwargs: object())
+
+    async def _noop_warm(*args, **kwargs):
+        return None
+
+    async def _fake_create_shared_context(*args, **kwargs):
+        return None, metrics
+
+    class _FakeHunterAgent:
+        def __init__(self, **kwargs) -> None:
+            self.kwargs = kwargs
+
+        async def find_match(self, node):
+            return _successful_match_result(node)
+
+    def _save_cdg(cdg, path):
+        Path(path).write_text(cdg.model_dump_json(indent=2), encoding="utf-8")
+
+    monkeypatch.setattr(f"{_R}._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)
+    monkeypatch.setattr(
+        "ageom.architect.graph.DecompositionAgent",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("architect should be skipped on direct single-agent success")
+        ),
+    )
+    monkeypatch.setattr(
+        "ageom.orchestrator.run_orchestration",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("orchestration should be skipped on direct single-agent success")
+        ),
+    )
+
+    await _cmd_run(
+        argparse.Namespace(
+            goal="Detect heart rate from ECG",
+            prover="python",
+            output=str(output_dir),
+            trace=False,
+            max_rounds=2,
+            mode="single_agent",
+        )
+    )
+
+    payload = _latest_persisted_run(tmp_path)
+    assert payload["pipeline"] == "algorithm_creation"
+    assert payload["status"] == "completed"
+    assert payload["metadata"]["execution_mode"] == "single_agent"
+    assert payload["metadata"]["execution_path"] == "single_agent_direct"
+    assert payload["metadata"]["single_agent_mode"] is True
+    assert payload["stages"]["single_agent_planner"]["status"] == "completed"
+    assert "architect_decompose" not in payload["stages"]
+    assert payload["metadata"]["single_agent"]["steps"][0]["action"] == "direct_match"
+    assert (output_dir / "cdg.json").exists()
+    assert (output_dir / "matches.json").exists()
+    assert env.closed is True

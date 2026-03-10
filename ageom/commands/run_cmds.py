@@ -39,63 +39,15 @@ def _build_rapid_direct_cdg(
     match_result: Any,
 ):
     """Build a minimal one-node CDG for rapid direct-match runs."""
-    from ageom.architect.handoff import CDGExport
-    from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+    from ageom.services import build_direct_goal_cdg
 
-    verified = getattr(match_result, "verified_match", None)
-    verified_decl = getattr(getattr(verified, "candidate", None), "declaration", None)
-    top_decl = None
-    if getattr(match_result, "all_candidates", None):
-        top_decl = getattr(match_result.all_candidates[0], "declaration", None)
-
-    type_signature = ""
-    matched_primitive = None
-    if verified_decl is not None:
-        type_signature = str(getattr(verified_decl, "type_signature", "") or "").strip()
-        matched_primitive = str(getattr(verified_decl, "name", "") or "").strip() or None
-    elif top_decl is not None:
-        type_signature = str(getattr(top_decl, "type_signature", "") or "").strip()
-
-    failure_notes = ""
-    for verification in getattr(match_result, "all_verifications", []) or []:
-        failure_notes = str(getattr(verification, "error_message", "") or "").strip()
-        if failure_notes:
-            break
-    if not failure_notes:
-        failure_notes = (
-            "Rapid direct match found no verified candidate."
-            if getattr(match_result, "all_candidates", None)
-            else "Rapid direct match found no candidates."
-        )
-
-    success = bool(getattr(match_result, "success", False))
-    node = AlgorithmicNode(
-        node_id="goal_0",
-        name="Direct Goal Match",
-        description=goal,
-        concept_type=ConceptType.CUSTOM,
-        status=NodeStatus.ATOMIC if success else NodeStatus.BLOCKED,
-        type_signature=type_signature,
-        matched_primitive=matched_primitive,
-        critic_notes=(
-            "Rapid direct match succeeded."
-            if success
-            else failure_notes
-        ),
+    return build_direct_goal_cdg(
+        goal,
+        prover,
+        match_result,
+        execution_mode="rapid",
         conceptual_summary="Rapid-mode direct retrieval without architect decomposition.",
     )
-    metadata = {
-        "goal": goal,
-        "prover": prover.value,
-        "execution_mode": "rapid",
-        "rapid_direct_path": True,
-        "num_nodes": 1,
-        "num_edges": 0,
-        "matched_directly": success,
-    }
-    if not success:
-        metadata["architect_error"] = f"Rapid direct match failed: {failure_notes}"
-    return CDGExport(nodes=[node], edges=[], metadata=metadata)
 
 
 async def _run_rapid_direct_match(
@@ -105,28 +57,24 @@ async def _run_rapid_direct_match(
     hunter: Any,
 ):
     """Run the rapid-mode direct Hunter path and wrap it in an orchestration result."""
-    from ageom.orchestrator import OrchestratorResult
-    from ageom.types import MatchFailureReport, PDGNode
+    from ageom.services import HunterDirectMatchRequest, HunterService
 
-    pdg_node = PDGNode(
-        predicate_id="goal_0",
-        statement=goal,
-        informal_desc="rapid direct baseline without decomposition",
-        prover=prover,
-        context={"execution_mode": "rapid", "rapid_direct_path": "true"},
+    service = HunterService(hunter)
+    match_result = await service.match_goal(
+        HunterDirectMatchRequest(
+            goal=goal,
+            prover=prover,
+            informal_desc="rapid direct baseline without decomposition",
+            context={"execution_mode": "rapid", "rapid_direct_path": "true"},
+        )
     )
-    match_result = await hunter.find_match(pdg_node)
-    failures = []
-    ungroundable: list[str] = []
-    if not getattr(match_result, "success", False):
-        failures.append(MatchFailureReport.from_match_result(match_result))
-        ungroundable.append(pdg_node.predicate_id)
-    return OrchestratorResult(
-        cdg=_build_rapid_direct_cdg(goal, prover, match_result),
-        match_results=[match_result],
-        rounds_used=1,
-        failures=failures,
-        ungroundable=ungroundable,
+    return service.direct_match_result(
+        goal,
+        prover,
+        match_result,
+        execution_mode="rapid",
+        informal_desc="Rapid-mode direct retrieval without architect decomposition.",
+        context={"execution_mode": "rapid", "rapid_direct_path": "true"},
     )
 
 
@@ -139,25 +87,17 @@ async def _run_structured_single_pass(
     """Run one Hunter pass over decomposed leaves without orchestration refinement."""
     from ageom.architect.handoff import to_pdg_nodes
     from ageom.orchestrator import OrchestratorResult
-    from ageom.types import MatchFailureReport
+    from ageom.services import HunterBatchMatchRequest, HunterService
 
     pdg_nodes = to_pdg_nodes(cdg, prover=prover, strict=False)
-    match_results = []
-    failures = []
-    ungroundable: list[str] = []
-    for pdg_node in pdg_nodes:
-        match_result = await hunter.find_match(pdg_node)
-        match_results.append(match_result)
-        if getattr(match_result, "success", False):
-            continue
-        failures.append(MatchFailureReport.from_match_result(match_result))
-        ungroundable.append(pdg_node.predicate_id)
+    service = HunterService(hunter)
+    batch_result = await service.match_batch(HunterBatchMatchRequest(pdg_nodes=pdg_nodes))
     return OrchestratorResult(
         cdg=cdg,
-        match_results=match_results,
+        match_results=batch_result.match_results,
         rounds_used=1,
-        failures=failures,
-        ungroundable=ungroundable,
+        failures=batch_result.failures,
+        ungroundable=batch_result.ungroundable,
     )
 
 
@@ -171,6 +111,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     from ageom.hunter.graph import HunterAgent
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.orchestrator import run_orchestration
+    from ageom.services import ArchitectService, HunterService, SingleAgentPlanner
     from ageom.telemetry import (
         configure_dashboard_output,
         finish_run,
@@ -201,6 +142,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         mode_settings=mode_settings,
         catalog=catalog,
         texts=[args.goal],
+        config=config,
     )
     _print_retrieval_policy(retrieval_policy)
     architect_routing = None
@@ -239,6 +181,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 if mode_settings.mode == "rapid"
                 else "structured_single_pass"
                 if mode_settings.mode == "structured"
+                else "single_agent_planner"
+                if mode_settings.mode == "single_agent"
                 else "verified_orchestration"
             ),
             "mode_features": _mode_feature_summary(mode_settings),
@@ -252,6 +196,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                 "hunter_mode": retrieval_policy.hunter_mode,
             },
             "rapid_direct_path": mode_settings.mode == "rapid",
+            "single_agent_mode": mode_settings.mode == "single_agent",
             "llm_routing": (
                 {
                     "hunter": _routing_metadata_summary(hunter_routing),
@@ -269,6 +214,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     architect_shared_metrics = None
     hunter_shared_metrics = None
     result = None
+    planner_result = None
     try:
         with telemetry_scope(run_id=telemetry_run_id):
             update_stage(stage="setup", status="running", message="loading dependencies")
@@ -315,7 +261,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             update_stage(stage="setup", status="completed")
 
             cdg = None
-            if mode_settings.mode != "rapid":
+            architect_service = None
+            if mode_settings.mode not in {"rapid", "single_agent"}:
                 print(f"Decomposing: {args.goal}")
 
                 retriever = None
@@ -351,6 +298,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                                     context_namespace=f"architect/{architect_run_id}",
                                     context_budget_chars=config.architect_shared_context_budget_chars,
                                 )
+                                architect_service = ArchitectService(architect)
                                 cdg = await architect.decompose(args.goal)
                         else:
                             architect = DecompositionAgent(
@@ -363,11 +311,52 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                                 context_namespace=f"architect/{architect_run_id}",
                                 context_budget_chars=config.architect_shared_context_budget_chars,
                             )
+                            architect_service = ArchitectService(architect)
                             cdg = await architect.decompose(args.goal)
 
                 print(f"  Decomposed: {len(cdg.nodes)} nodes, {len(cdg.edges)} edges")
-            else:
+            elif mode_settings.mode == "rapid":
                 print(f"Rapid mode: matching goal directly without decomposition: {args.goal}")
+            else:
+                print("Single-agent mode: planner will attempt direct grounding before decomposition.")
+
+                async def _architect_factory():
+                    nonlocal architect_service, architect_shared_metrics
+                    if architect_service is not None:
+                        return architect_service
+
+                    architect_run_id = uuid.uuid4().hex
+                    architect_shared_context, architect_shared_metrics = await _create_shared_context(
+                        config,
+                        enabled=mode_settings.architect_shared_context_enabled,
+                    )
+                    class _LazyArchitectService:
+                        async def decompose(self, request):
+                            with telemetry_stage(
+                                "architect_decompose",
+                                message="building planner decomposition",
+                            ):
+                                async with create_checkpointer(config.postgres_uri) as checkpointer:
+                                    architect = DecompositionAgent(
+                                        catalog=catalog,
+                                        skill_index=skill_index,
+                                        llm=llm,
+                                        checkpointer=checkpointer,
+                                        shared_context=architect_shared_context,
+                                        shared_context_metrics=architect_shared_metrics,
+                                        context_namespace=f"architect/{architect_run_id}",
+                                        context_budget_chars=config.architect_shared_context_budget_chars,
+                                    )
+                                    service = ArchitectService(architect)
+                                    result = await service.decompose(request)
+                                    built_cdg = result.cdg
+                                    print(
+                                        f"  Decomposed: {len(built_cdg.nodes)} nodes, {len(built_cdg.edges)} edges"
+                                    )
+                                    return result
+
+                    architect_service = _LazyArchitectService()
+                    return architect_service
 
             index_dir = config.index_dir
             if not index_dir.exists():
@@ -456,6 +445,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     run_id=run_id,
                     context_budget_chars=config.hunter_shared_context_budget_chars,
                 )
+                hunter_service = HunterService(hunter)
 
             try:
                 if mode_settings.mode == "rapid":
@@ -468,6 +458,35 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                             prover=prover,
                             hunter=hunter,
                         )
+                elif mode_settings.mode == "single_agent":
+                    print("Running single-agent planner...")
+
+                    async def _architect_factory():
+                        if architect_service is None:
+                            raise RuntimeError("Architect service unavailable in single_agent mode")
+                        return architect_service
+
+                    planner = SingleAgentPlanner(
+                        hunter=hunter_service,
+                        architect_factory=_architect_factory,
+                        orchestrate=run_orchestration,
+                        llm=llm,
+                        hunter_agent=hunter,
+                        prover=prover,
+                        max_rounds=args.max_rounds,
+                        hunter_concurrency=config.orchestrator_hunter_concurrency,
+                    )
+                    with telemetry_stage(
+                        "single_agent_planner",
+                        message="tool-orchestrated direct->decompose->escalate planner",
+                    ):
+                        planner_result = await planner.run(args.goal)
+                        result = planner_result.result
+                    update_stage(
+                        stage="single_agent_planner",
+                        completed=len(planner_result.steps),
+                        total=len(planner_result.steps),
+                    )
                 elif mode_settings.mode == "structured":
                     print("Running structured single-pass matching...")
                     with telemetry_stage(
@@ -554,6 +573,23 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         },
         run_id=telemetry_run_id,
     )
+    if planner_result is not None:
+        merge_run_metadata(
+            {
+                "execution_path": planner_result.execution_path,
+                "single_agent": {
+                    "steps": [
+                        {
+                            "action": step.action,
+                            "detail": step.detail,
+                            "status": step.status,
+                        }
+                        for step in planner_result.steps
+                    ]
+                },
+            },
+            run_id=telemetry_run_id,
+        )
     if metrics_path is not None:
         print(f"  Shared context metrics: {metrics_path}")
 

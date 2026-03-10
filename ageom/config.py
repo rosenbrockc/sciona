@@ -79,7 +79,7 @@ class AgeomConfig(BaseSettings):
     shared_context_include_provenance: bool = True
     telemetry_runs_dir: Path = Field(default=Path("output/telemetry_runs"))
     telemetry_stale_seconds: int = 120
-    execution_mode: str = "verified"  # "rapid" | "structured" | "verified"
+    execution_mode: str = "verified"  # "rapid" | "structured" | "single_agent" | "verified"
     use_monadic_rewriter: bool = False  # Feature gate for formal DPO graph rewriting
 
     # Memgraph graph store
@@ -239,7 +239,7 @@ def should_apply_round_override(
     normalized_mode = str(
         execution_mode or getattr(config, "execution_mode", "verified") or "verified"
     ).strip().lower()
-    if normalized_mode in {"rapid", "structured"}:
+    if normalized_mode in {"rapid", "structured", "single_agent"}:
         return not round_override_matches_code_default(config, round_name)
     return True
 
@@ -273,7 +273,7 @@ def should_apply_prompt_override(
     normalized_mode = str(
         execution_mode or getattr(config, "execution_mode", "verified") or "verified"
     ).strip().lower()
-    if normalized_mode in {"rapid", "structured"}:
+    if normalized_mode in {"rapid", "structured", "single_agent"}:
         return not prompt_override_matches_code_default(config, prompt_key)
     if prompt_key in BENCHMARK_JUSTIFIED_PROMPT_KEYS:
         return True
@@ -304,6 +304,20 @@ def resolve_execution_mode(
         )
 
     if normalized == "structured":
+        return ExecutionModeSettings(
+            mode=normalized,
+            skill_index_enabled=True,
+            graph_retrieval_enabled=False,
+            architect_shared_context_enabled=False,
+            hunter_shared_context_enabled=False,
+            synthesizer_shared_context_enabled=False,
+            ingester_shared_context_enabled=False,
+            hunter_mode="standard",
+            hunter_use_gbnf=config.hunter_use_gbnf,
+            semantic_index_backend_override=None,
+        )
+
+    if normalized == "single_agent":
         return ExecutionModeSettings(
             mode=normalized,
             skill_index_enabled=True,

@@ -263,9 +263,16 @@ def _resolve_retrieval_policy(
     mode_settings: Any,
     catalog: Any | None,
     texts: list[str] | tuple[str, ...],
+    config: Any | None = None,
 ) -> RetrievalPolicy:
     """Decide whether retrieval should stay enabled for the current task."""
     semantic_override = getattr(mode_settings, "semantic_index_backend_override", None)
+    # Respect explicit config-level backend (e.g. AGEOM_SEMANTIC_INDEX_BACKEND=faiss)
+    # so users can force FAISS regardless of confidence band.
+    if semantic_override is None and config is not None:
+        cfg_backend = str(getattr(config, "semantic_index_backend", "auto")).strip().lower()
+        if cfg_backend not in {"auto", ""}:
+            semantic_override = cfg_backend
     hunter_mode = str(getattr(mode_settings, "hunter_mode", "standard"))
     graph_enabled = bool(getattr(mode_settings, "graph_retrieval_enabled", False))
     skill_enabled = bool(getattr(mode_settings, "skill_index_enabled", False))
@@ -377,7 +384,7 @@ def _add_mode_argument(parser: argparse.ArgumentParser) -> None:
     """Add a shared execution-mode argument to a subcommand parser."""
     parser.add_argument(
         "--mode",
-        choices=["rapid", "structured", "verified"],
+        choices=["rapid", "structured", "single_agent", "verified"],
         default=None,
         help="Execution mode override (default: AGEOM_EXECUTION_MODE or verified)",
     )
