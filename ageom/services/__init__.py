@@ -8,9 +8,11 @@ from ageom.services.models import (
     HunterBatchMatchRequest,
     HunterBatchMatchResult,
     HunterDirectMatchRequest,
+    OrchestrationRequest,
     PlannerRunResult,
     PlannerStep,
 )
+from ageom.services.orchestrator_service import OrchestratorService
 from ageom.services.planner_service import SingleAgentPlanner
 
 __all__ = [
@@ -21,6 +23,8 @@ __all__ = [
     "HunterBatchMatchResult",
     "HunterDirectMatchRequest",
     "HunterService",
+    "OrchestrationRequest",
+    "OrchestratorService",
     "PlannerRunResult",
     "PlannerStep",
     "SingleAgentPlanner",

@@ -111,7 +111,12 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     from ageom.hunter.graph import HunterAgent
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.orchestrator import run_orchestration
-    from ageom.services import ArchitectService, HunterService, SingleAgentPlanner
+    from ageom.services import (
+        ArchitectService,
+        HunterService,
+        OrchestratorService,
+        SingleAgentPlanner,
+    )
     from ageom.telemetry import (
         configure_dashboard_output,
         finish_run,
@@ -469,9 +474,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     planner = SingleAgentPlanner(
                         hunter=hunter_service,
                         architect_factory=_architect_factory,
-                        orchestrate=run_orchestration,
+                        orchestrator=OrchestratorService(hunter, run_orchestration),
                         llm=llm,
-                        hunter_agent=hunter,
                         prover=prover,
                         max_rounds=args.max_rounds,
                         hunter_concurrency=config.orchestrator_hunter_concurrency,

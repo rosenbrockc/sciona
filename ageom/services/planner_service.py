@@ -11,6 +11,7 @@ from ageom.services.models import (
     ArchitectDecomposeRequest,
     HunterBatchMatchRequest,
     HunterDirectMatchRequest,
+    OrchestrationRequest,
     PlannerRunResult,
     PlannerStep,
 )
@@ -30,18 +31,16 @@ class SingleAgentPlanner:
         *,
         hunter: Any,
         architect_factory: Callable[[], Awaitable[Any]],
-        orchestrate: Callable[..., Awaitable[OrchestratorResult]],
+        orchestrator: Any,
         llm: Any,
-        hunter_agent: Any,
         prover: Prover,
         max_rounds: int,
         hunter_concurrency: int,
     ) -> None:
         self._hunter = hunter
         self._architect_factory = architect_factory
-        self._orchestrate = orchestrate
+        self._orchestrator = orchestrator
         self._llm = llm
-        self._hunter_agent = hunter_agent
         self._prover = prover
         self._max_rounds = max_rounds
         self._hunter_concurrency = hunter_concurrency
@@ -117,13 +116,14 @@ class SingleAgentPlanner:
                 steps=steps,
             )
 
-        orchestrated = await self._orchestrate(
-            decompose_result.cdg,
-            hunter_agent=self._hunter_agent,
-            llm=self._llm,
-            prover=self._prover,
-            max_rounds=self._max_rounds,
-            hunter_concurrency=self._hunter_concurrency,
+        orchestrated = await self._orchestrator.run(
+            OrchestrationRequest(
+                cdg=decompose_result.cdg,
+                llm=self._llm,
+                prover=self._prover,
+                max_rounds=self._max_rounds,
+                hunter_concurrency=self._hunter_concurrency,
+            )
         )
         steps.append(
             PlannerStep(

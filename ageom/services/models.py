@@ -68,3 +68,14 @@ class PlannerRunResult:
     result: OrchestratorResult
     execution_path: str
     steps: list[PlannerStep]
+
+
+@dataclass(frozen=True)
+class OrchestrationRequest:
+    """Request model for full orchestration escalation."""
+
+    cdg: Any
+    llm: Any
+    prover: Prover
+    max_rounds: int
+    hunter_concurrency: int
