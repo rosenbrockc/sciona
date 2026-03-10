@@ -201,3 +201,60 @@ async def test_refine_on_failure_ungroundable():
     updated = await refine_on_failure(failure, cdg, llm)
     rejected = [n for n in updated.nodes if n.status == NodeStatus.REJECTED]
     assert len(rejected) == 1
+
+
+@pytest.mark.asyncio
+async def test_refine_on_failure_uses_deterministic_filter_split_before_llm():
+    node = AlgorithmicNode(
+        node_id="filter_step",
+        name="Bandpass ECG Filter",
+        description="Design and apply a stable bandpass filter to ECG samples.",
+        concept_type=ConceptType.SIGNAL_FILTER,
+        status=NodeStatus.ATOMIC,
+        depth=0,
+    )
+    cdg = CDGExport(nodes=[node], edges=[])
+    failure = MatchFailureReport(
+        pdg_node=PDGNode(
+            predicate_id="filter_step",
+            statement="Bandpass raw ECG into cardiac frequency region",
+            informal_desc="stable digital filter design and application",
+        ),
+        error_summaries=["Expected filtered_signal but got response tuple"],
+        suggested_action=FailureAction.SPLIT,
+    )
+    llm = AsyncMock()
+
+    updated = await refine_on_failure(failure, cdg, llm)
+
+    parent = next(n for n in updated.nodes if n.node_id == "filter_step")
+    children = [n for n in updated.nodes if n.parent_id == "filter_step"]
+    assert parent.status == NodeStatus.DECOMPOSED
+    assert [child.name for child in children] == ["Design Filter", "Apply Filter"]
+    llm.complete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refine_on_failure_falls_back_to_llm_for_generic_split():
+    cdg = _make_cdg("a")
+    failure = MatchFailureReport(
+        pdg_node=PDGNode(
+            predicate_id="a",
+            statement="nat -> nat",
+            informal_desc="generic helper",
+        ),
+        error_summaries=["type mismatch"],
+        suggested_action=FailureAction.SPLIT,
+    )
+    llm = AsyncMock()
+    llm.complete = AsyncMock(
+        return_value='[{"name": "sub1", "description": "sub", "type_signature": "nat -> nat"}]'
+    )
+
+    updated = await refine_on_failure(failure, cdg, llm)
+
+    parent = next(n for n in updated.nodes if n.node_id == "a")
+    children = [n for n in updated.nodes if n.parent_id == "a"]
+    assert parent.status == NodeStatus.DECOMPOSED
+    assert len(children) == 1
+    llm.complete.assert_awaited_once()
