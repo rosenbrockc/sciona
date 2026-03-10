@@ -90,8 +90,14 @@ def _create_llm_router(
     from ageom.config import should_apply_prompt_override
     from ageom.architect.strategy_classifier import StrategyClassifier
     from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
+    from ageom.hunter.query_reformulator import HeuristicQueryReformulator
     from ageom.hunter.llm import create_llm_client
-    from ageom.llm_router import ARCHITECT_STRATEGY, HUNTER_SCORE, LLMRouter
+    from ageom.llm_router import (
+        ARCHITECT_STRATEGY,
+        HUNTER_REFORMULATE,
+        HUNTER_SCORE,
+        LLMRouter,
+    )
 
     default = _create_llm(args, config, round_name)
     overrides: dict[str, "LLMClient"] = {}
@@ -136,6 +142,11 @@ def _create_llm_router(
     if round_name == "hunter" and HUNTER_SCORE in prompt_keys:
         score_fallback = overrides.get(HUNTER_SCORE, default)
         overrides[HUNTER_SCORE] = HeuristicCandidateRanker(score_fallback)
+    if round_name == "hunter" and HUNTER_REFORMULATE in prompt_keys:
+        reformulate_fallback = overrides.get(HUNTER_REFORMULATE, default)
+        overrides[HUNTER_REFORMULATE] = HeuristicQueryReformulator(
+            reformulate_fallback
+        )
 
     if not overrides:
         return default

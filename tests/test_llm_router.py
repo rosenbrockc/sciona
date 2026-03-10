@@ -26,6 +26,7 @@ from ageom.telemetry import (
 )
 from ageom.architect.strategy_classifier import StrategyClassifier
 from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
+from ageom.hunter.query_reformulator import HeuristicQueryReformulator
 
 
 def _make_mock_llm(name: str = "default") -> AsyncMock:
@@ -350,6 +351,9 @@ class TestCreateLLMRouter:
             ("gemini_shim", "flash"),
         ]
         assert isinstance(router.for_prompt("hunter_score"), HeuristicCandidateRanker)
+        assert isinstance(
+            router.for_prompt("hunter_reformulate"), HeuristicQueryReformulator
+        )
         assert router.for_prompt("hunter_reformulate") is not router.for_prompt("hunter_score")
         assert router.for_prompt("hunter_analyze_failure") is not router.for_prompt("hunter_score")
 
