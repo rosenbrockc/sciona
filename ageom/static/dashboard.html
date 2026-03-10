@@ -506,6 +506,7 @@
           ["runtime budget", `${Number(benchmarkRuntime.provider_count || 0)} providers / ${Number(benchmarkRuntime.transport_count || 0)} transports / ${Number((benchmarkRuntime.violations || []).length || 0)} violations`],
           ["runtime policy", `${Number((benchmarkOverridePolicy.missing_required_overrides || []).length || 0)} missing / ${Number((benchmarkOverridePolicy.unexpected_active_overrides || []).length || 0)} unexpected`],
           ["runtime policy summary", benchmark.runtime_override_policy_summary || "--"],
+          ["benchmark health", benchmark.health_summary || "--"],
           ["benchmark warnings", benchmark.warning_summary || "--"],
           ["benchmark warn check", benchmark.top_warning_subcheck || "--"],
           ["benchmark top warn", benchmark.top_warning || "--"],

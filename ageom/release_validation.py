@@ -9,6 +9,7 @@ from typing import Any
 from ageom.benchmark_validation import (
     benchmark_failure_summary,
     benchmark_warning_summary,
+    format_benchmark_health_summary,
     format_benchmark_failure_summary,
     format_benchmark_warning_summary,
     run_benchmark_validation,
@@ -153,6 +154,12 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     benchmark_top_warning = str(
         benchmark_summary.get("top_warning", "") or ""
     ) or benchmark_warning_details["top_warning"]
+    benchmark_health_summary = str(
+        benchmark_summary.get("health_summary", "") or ""
+    ) or format_benchmark_health_summary(
+        warning_summary=benchmark_warning_summary_text,
+        failure_summary=benchmark_failure_summary_text,
+    )
     warning_summary = _format_release_warning_summary(
         runtime_complexity=runtime_complexity,
         catalog_summary=catalog_summary,
@@ -184,6 +191,7 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
                 "runtime_override_policy_summary": benchmark_summary.get(
                     "runtime_override_policy_summary", ""
                 ),
+                "health_summary": benchmark_health_summary,
                 "warning_summary": benchmark_warning_summary_text,
                 "top_warning_subcheck": benchmark_top_warning_subcheck,
                 "top_warning": benchmark_top_warning,

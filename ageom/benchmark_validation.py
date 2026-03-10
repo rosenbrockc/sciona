@@ -350,6 +350,17 @@ def format_benchmark_warning_summary(summary: dict[str, Any]) -> str:
     return " ".join(parts) or "none"
 
 
+def format_benchmark_health_summary(
+    *,
+    warning_summary: str,
+    failure_summary: str,
+) -> str:
+    """Render a compact operator-facing benchmark health line."""
+    normalized_warning = str(warning_summary or "").strip() or "none"
+    normalized_failure = str(failure_summary or "").strip() or "none"
+    return f"warnings={normalized_warning} failures={normalized_failure}"
+
+
 def _transport_for_provider(provider: str) -> str:
     lowered = provider.strip().lower()
     if lowered.endswith("_shim"):
@@ -799,6 +810,10 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         "top_warning_subcheck": benchmark_warnings["top_warning_subcheck"],
         "top_warning": benchmark_warnings["top_warning"],
         "warning_summary": format_benchmark_warning_summary(benchmark_warnings),
+        "health_summary": format_benchmark_health_summary(
+            warning_summary=format_benchmark_warning_summary(benchmark_warnings),
+            failure_summary=format_benchmark_failure_summary(benchmark_failures),
+        ),
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

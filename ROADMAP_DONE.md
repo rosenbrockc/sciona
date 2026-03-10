@@ -1548,3 +1548,29 @@
   - Result: `1262 passed, 17 skipped`
 - Commit:
   - `benchmark: add compact warning summary`
+
+## Benchmark Health Summary Line
+
+- Added a compact combined benchmark health line parallel to the release operator summary:
+  - `health_summary`
+- The benchmark bundle now exposes one operator-facing line that combines:
+  - `warnings=<benchmark warning summary>`
+  - `failures=<benchmark failure summary>`
+- Release validation now backfills the benchmark health line when older or synthetic benchmark summaries omit it, so `checks.benchmark_validation` stays stable across refactors and test fixtures.
+- Propagated the benchmark health line through:
+  - benchmark-validation telemetry metadata
+  - release manifest `checks.benchmark_validation`
+  - dashboard/API benchmark summaries
+  - dashboard detail metrics
+- Added regressions for:
+  - benchmark bundle persistence of `health_summary`
+  - benchmark command telemetry persistence of `health_summary`
+  - release-manifest fallback synthesis of benchmark health summaries
+  - dashboard/API extraction of the compact benchmark health line
+- Validation:
+  - `pytest -q tests/test_benchmark_validation.py tests/test_validation_telemetry.py tests/test_visualizer_api.py tests/test_release_validation.py tests/test_cli_command_telemetry.py`
+  - Result: `40 passed`
+  - `conda run -n hpyexec pytest -q`
+  - Result: `1272 passed, 17 skipped`
+- Commit:
+  - `benchmark: add health summary`

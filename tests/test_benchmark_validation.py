@@ -8,6 +8,7 @@ from ageom.benchmark_validation import (
     benchmark_failure_summary,
     benchmark_warning_summary,
     format_benchmark_failure_summary,
+    format_benchmark_health_summary,
     format_benchmark_warning_summary,
     flow_prompt_volume_summary,
     run_benchmark_validation,
@@ -51,6 +52,7 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "prompt_avg_latency_ms" in payload
     assert "flow_avg_latency_ms" in payload
     assert "runtime_complexity" in payload
+    assert "health_summary" in payload
     assert "warning_summary" in payload
     assert "top_warning_subcheck" in payload
     assert "top_warning" in payload
@@ -97,6 +99,11 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert payload["warning_summary"] == (
         "subcheck=comparison_failures "
         f"warning=flow_comparison_failures={payload['flow_comparison_failures']}"
+    )
+    assert payload["health_summary"] == (
+        "warnings="
+        f"{payload['warning_summary']} "
+        "failures=none"
     )
     assert payload["top_warning_subcheck"] == "comparison_failures"
     assert payload["top_warning"] == (
@@ -222,6 +229,18 @@ def test_format_benchmark_warning_summary_renders_compact_line():
 
     assert rendered == (
         "subcheck=comparison_instability warning=flow_comparison_unstable_groups=1"
+    )
+
+
+def test_format_benchmark_health_summary_renders_compact_line():
+    rendered = format_benchmark_health_summary(
+        warning_summary="subcheck=comparison_failures warning=flow_comparison_failures=2",
+        failure_summary="subcheck=runtime_budget failure=legacy_providers_present=codex_cli",
+    )
+
+    assert rendered == (
+        "warnings=subcheck=comparison_failures warning=flow_comparison_failures=2 "
+        "failures=subcheck=runtime_budget failure=legacy_providers_present=codex_cli"
     )
 
 

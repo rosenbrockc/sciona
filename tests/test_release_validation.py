@@ -36,6 +36,11 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
     assert "rapid=" in bench["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
+    assert bench["health_summary"] == (
+        "warnings="
+        f"subcheck=comparison_failures warning=flow_comparison_failures={bench['flow_comparison_failures']} "
+        "failures=none"
+    )
     assert bench["warning_summary"] == (
         "subcheck=comparison_failures "
         f"warning=flow_comparison_failures={bench['flow_comparison_failures']}"
@@ -151,6 +156,10 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
     assert manifest["failures"]["top_runtime_failure"] == ""
     assert manifest["failures"]["top_catalog_failure"] == ""
     bench = manifest["checks"]["benchmark_validation"]
+    assert bench["health_summary"] == (
+        "warnings=subcheck=comparison_failures warning=flow_comparison_failures=2 "
+        "failures=subcheck=prompt_tuning failure=prompt_tuned_failures=1"
+    )
     assert bench["warning_summary"] == (
         "subcheck=comparison_failures warning=flow_comparison_failures=2"
     )
@@ -270,6 +279,10 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
     assert manifest["failures"]["top_catalog_failure"] == ""
     runtime = manifest["checks"]["runtime_complexity"]
     bench = manifest["checks"]["benchmark_validation"]
+    assert bench["health_summary"] == (
+        "warnings=subcheck=comparison_failures warning=flow_comparison_failures=2 "
+        "failures=subcheck=runtime_budget failure=provider_count=6 exceeds budget 4"
+    )
     assert bench["warning_summary"] == (
         "subcheck=comparison_failures warning=flow_comparison_failures=2"
     )
@@ -457,6 +470,10 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
     assert manifest["failures"]["top_catalog_failure"] == "missing_source:hpy-atoms"
     assert manifest["checks"]["catalog_validation"]["status"] == "failed"
     bench = manifest["checks"]["benchmark_validation"]
+    assert bench["health_summary"] == (
+        "warnings=subcheck=comparison_failures warning=flow_comparison_failures=2 "
+        "failures=none"
+    )
     assert bench["warning_summary"] == (
         "subcheck=comparison_failures warning=flow_comparison_failures=2"
     )
@@ -554,6 +571,10 @@ async def test_run_release_validation_fails_when_catalog_alignment_is_critical(
     assert manifest["failures"]["top_runtime_failure"] == ""
     assert manifest["failures"]["top_catalog_failure"] == "critical_alignment_drift"
     bench = manifest["checks"]["benchmark_validation"]
+    assert bench["health_summary"] == (
+        "warnings=subcheck=comparison_failures warning=flow_comparison_failures=2 "
+        "failures=none"
+    )
     assert bench["warning_summary"] == (
         "subcheck=comparison_failures warning=flow_comparison_failures=2"
     )
