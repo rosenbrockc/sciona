@@ -23,7 +23,12 @@ from ageom.commands._helpers import (
 async def _cmd_assemble(args: argparse.Namespace) -> None:
     """Assemble CDG + match results into a compilable skeleton."""
     from ageom.architect.handoff import load_json
-    from ageom.synthesizer.assembler import Assembler, AssemblyError
+    from ageom.services import (
+        SynthesizerAssembleRequest,
+        SynthesizerCompileRequest,
+        SynthesizerService,
+    )
+    from ageom.synthesizer.assembler import AssemblyError
     from ageom.types import MatchResult, Prover
 
     # Load CDG
@@ -46,11 +51,13 @@ async def _cmd_assemble(args: argparse.Namespace) -> None:
     match_results = [MatchResult.from_dict(d) for d in matches_data]
 
     prover = Prover(args.prover)
+    service = SynthesizerService(prover=prover)
 
     # Assemble
     try:
-        assembler = Assembler(prover)
-        skeleton = assembler.assemble(cdg, match_results)
+        skeleton = service.assemble(
+            SynthesizerAssembleRequest(cdg=cdg, match_results=match_results)
+        ).skeleton
     except AssemblyError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -73,14 +80,16 @@ async def _cmd_assemble(args: argparse.Namespace) -> None:
     # Optional compilation check
     if args.check:
         from ageom.config import AgeomConfig
-        from ageom.synthesizer.compiler import SkeletonCompiler
 
         config = AgeomConfig()
         env = _create_proof_env(prover, config)
 
         try:
-            compiler = SkeletonCompiler(env)
-            result = await compiler.compile(skeleton)
+            result = (
+                await service.compile(
+                    SynthesizerCompileRequest(skeleton=skeleton, env=env)
+                )
+            ).result
             if result.compiled_ok:
                 print("  Compilation: OK")
             else:
@@ -169,8 +178,13 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     """Assemble CDG + match results, then repair via the synthesizer agent."""
     from ageom.architect.handoff import load_json
     from ageom.config import AgeomConfig, resolve_execution_mode
+    from ageom.services import (
+        SynthesizerAssembleRequest,
+        SynthesizerRepairRequest,
+        SynthesizerService,
+    )
     from ageom.synthesizer.agent import SynthesizerAgent
-    from ageom.synthesizer.assembler import Assembler, AssemblyError
+    from ageom.synthesizer.assembler import AssemblyError
     from ageom.types import MatchResult, Prover
 
     config = AgeomConfig()
@@ -197,11 +211,13 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     match_results = [MatchResult.from_dict(d) for d in matches_data]
 
     prover = Prover(args.prover)
+    base_service = SynthesizerService(prover=prover)
 
     # Phase 1: Assemble
     try:
-        assembler = Assembler(prover)
-        skeleton = assembler.assemble(cdg, match_results)
+        skeleton = base_service.assemble(
+            SynthesizerAssembleRequest(cdg=cdg, match_results=match_results)
+        ).skeleton
     except AssemblyError as exc:
         print(f"Error assembling skeleton: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -252,8 +268,9 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
             context_namespace=f"synthesizer/{synth_run_id}",
             context_budget_chars=config.synthesizer_shared_context_budget_chars,
         )
+        service = SynthesizerService(prover=prover, repair_agent=agent)
         print(f"Starting repair loop (max {max_iterations} iterations)...")
-        result = await agent.synthesize(skeleton)
+        result = (await service.repair(SynthesizerRepairRequest(skeleton=skeleton))).result
 
         # Output
         if prover == Prover.LEAN4:

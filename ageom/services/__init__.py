@@ -11,9 +11,18 @@ from ageom.services.models import (
     OrchestrationRequest,
     PlannerRunResult,
     PlannerStep,
+    SynthesizerAssembleAndCheckRequest,
+    SynthesizerAssembleAndCheckResult,
+    SynthesizerAssembleRequest,
+    SynthesizerAssembleResult,
+    SynthesizerCompileRequest,
+    SynthesizerCompileResult,
+    SynthesizerRepairRequest,
+    SynthesizerRepairResult,
 )
 from ageom.services.orchestrator_service import OrchestratorService
 from ageom.services.planner_service import SingleAgentPlanner
+from ageom.services.synthesizer_service import SynthesizerService
 
 __all__ = [
     "ArchitectDecomposeRequest",
@@ -28,5 +37,14 @@ __all__ = [
     "PlannerRunResult",
     "PlannerStep",
     "SingleAgentPlanner",
+    "SynthesizerAssembleAndCheckRequest",
+    "SynthesizerAssembleAndCheckResult",
+    "SynthesizerAssembleRequest",
+    "SynthesizerAssembleResult",
+    "SynthesizerCompileRequest",
+    "SynthesizerCompileResult",
+    "SynthesizerRepairRequest",
+    "SynthesizerRepairResult",
+    "SynthesizerService",
     "build_direct_goal_cdg",
 ]

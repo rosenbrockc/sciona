@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ageom.orchestrator import OrchestratorResult
+from ageom.protocols import ProofEnvironment
+from ageom.synthesizer.models import AssemblyResult, SkeletonFile, SynthesisResult
 from ageom.types import MatchFailureReport, MatchResult, PDGNode, Prover
 
 
@@ -79,3 +81,64 @@ class OrchestrationRequest:
     prover: Prover
     max_rounds: int
     hunter_concurrency: int
+
+
+@dataclass(frozen=True)
+class SynthesizerAssembleRequest:
+    """Request model for building a skeleton from CDG + verified matches."""
+
+    cdg: Any
+    match_results: list[MatchResult]
+
+
+@dataclass(frozen=True)
+class SynthesizerAssembleResult:
+    """Structured response for skeleton assembly."""
+
+    skeleton: SkeletonFile
+
+
+@dataclass(frozen=True)
+class SynthesizerCompileRequest:
+    """Request model for compiling a synthesized skeleton."""
+
+    skeleton: SkeletonFile
+    env: ProofEnvironment
+
+
+@dataclass(frozen=True)
+class SynthesizerCompileResult:
+    """Structured response for skeleton compilation."""
+
+    result: AssemblyResult
+
+
+@dataclass(frozen=True)
+class SynthesizerAssembleAndCheckRequest:
+    """Request model for assemble + optional ghost sim + compile."""
+
+    cdg: Any
+    match_results: list[MatchResult]
+    env: ProofEnvironment
+    skip_ghost_sim: bool = False
+
+
+@dataclass(frozen=True)
+class SynthesizerAssembleAndCheckResult:
+    """Structured response for assemble-and-check execution."""
+
+    result: AssemblyResult
+
+
+@dataclass(frozen=True)
+class SynthesizerRepairRequest:
+    """Request model for repair-loop synthesis."""
+
+    skeleton: SkeletonFile
+
+
+@dataclass(frozen=True)
+class SynthesizerRepairResult:
+    """Structured response for synthesizer repair."""
+
+    result: SynthesisResult
