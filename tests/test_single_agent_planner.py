@@ -90,6 +90,14 @@ async def test_single_agent_planner_returns_direct_result_without_decomposition(
     assert result.execution_path == "single_agent_direct"
     assert result.result is direct_result
     assert [step.action for step in result.steps] == ["direct_match"]
+    assert [step.action for step in result.state.tool_trace] == ["direct_match"]
+    assert result.state.policy.direct_grounding_enabled is True
+    assert result.state.policy.decomposition_mode == "single_pass"
+    assert result.state.budget.steps_used == 1
+    assert result.state.budget.max_steps == 4
+    assert result.state.verification_status == "verified"
+    assert result.state.termination_reason == "direct_verified"
+    assert result.state.open_failures == []
     assert hunter.goal_calls == 1
     assert hunter.batch_calls == 0
     assert architect_called is False
@@ -143,6 +151,15 @@ async def test_single_agent_planner_returns_structured_result_without_escalation
         "decompose",
         "match_decomposed",
     ]
+    assert [step.status for step in result.state.tool_trace] == [
+        "failed",
+        "completed",
+        "completed",
+    ]
+    assert result.state.budget.steps_used == 3
+    assert result.state.verification_status == "verified"
+    assert result.state.termination_reason == "structured_verified"
+    assert result.state.open_failures == []
     assert hunter.goal_calls == 1
     assert hunter.batch_calls == 1
     assert architect.calls == 1
@@ -202,8 +219,69 @@ async def test_single_agent_planner_escalates_after_unresolved_single_pass():
         "match_decomposed",
         "escalate_orchestration",
     ]
+    assert [step.status for step in result.state.tool_trace] == [
+        "failed",
+        "completed",
+        "partial",
+        "completed",
+    ]
+    assert result.state.budget.steps_used == 4
+    assert result.state.verification_status == "verified"
+    assert result.state.termination_reason == "escalated_after_unresolved_leaves"
+    assert result.state.open_failures == []
     assert hunter.goal_calls == 1
     assert hunter.batch_calls == 1
     assert architect.calls == 1
     assert orchestrator.calls == 1
     assert orchestrator.requests[0].cdg is cdg
+
+
+@pytest.mark.asyncio
+async def test_single_agent_planner_skips_direct_match_for_compound_goals():
+    cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="n1",
+                name="Bandpass ECG",
+                description="Bandpass the ECG waveform.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="np.ndarray -> np.ndarray",
+            )
+        ],
+        edges=[],
+        metadata={},
+    )
+    structured_result = OrchestratorResult(cdg=cdg, match_results=[], rounds_used=1)
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=True),
+        batch_result=HunterBatchMatchResult(match_results=[], failures=[], ungroundable=[]),
+        direct_result=structured_result,
+    )
+    architect = _FakeArchitectService(cdg)
+    orchestrator = _FakeOrchestratorService(structured_result)
+
+    async def _architect_factory():
+        return architect
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=orchestrator,
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+
+    result = await planner.run("Bandpass ECG and then detect heart rate")
+
+    assert result.execution_path == "single_agent_structured"
+    assert [step.action for step in result.steps] == ["decompose", "match_decomposed"]
+    assert result.state.policy.direct_grounding_enabled is False
+    assert result.state.verification_status == "verified"
+    assert result.state.termination_reason == "structured_verified"
+    assert hunter.goal_calls == 0
+    assert hunter.batch_calls == 1
+    assert architect.calls == 1
+    assert orchestrator.calls == 0

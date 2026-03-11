@@ -658,7 +658,10 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["top_failed_subcheck"] == "runtime_budget"
         assert data["benchmark_summary"]["top_failure"] == "legacy_providers_present=codex_cli"
         assert data["benchmark_summary"]["flow_required_variants"] == ["structured", "verified"]
-        assert set(data["benchmark_summary"]["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
+        assert set(data["benchmark_summary"]["flow_comparison_variants"]) == {
+            "direct_baseline",
+            "rapid",
+        }
         assert data["benchmark_summary"]["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
         assert data["benchmark_summary"]["flow_comparison_failures"] == 2
         assert data["benchmark_summary"]["release_status"] == "passed"

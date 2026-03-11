@@ -59,6 +59,7 @@ _REQUIRED_FLOW_BENCHMARK_VARIANTS = {"structured", "verified"}
 _EXPECTED_FLOW_EXECUTION_PATHS = {
     "direct_baseline": "direct_baseline",
     "rapid": "rapid_direct",
+    "single_agent": "single_agent_structured",
     "structured": "structured_single_pass",
     "verified": "verified_orchestration",
     "verified_refinement": "verified_orchestration_refinement",

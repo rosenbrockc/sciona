@@ -53,8 +53,15 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert bench["top_failed_subcheck"] == ""
     assert bench["top_failure"] == ""
     assert bench["flow_required_variants"] == ["structured", "verified"]
-    assert set(bench["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
+    assert set(bench["flow_comparison_variants"]) == {
+        "direct_baseline",
+        "rapid",
+        "single_agent",
+    }
     assert bench["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
+    assert bench["flow_execution_paths"]["observed"]["single_agent"] == [
+        "single_agent_structured"
+    ]
     assert bench["prompt_tuned_failures"] == 0
     assert bench["flow_mode_failures"] == 0
     assert runtime["provider_count"] > 0

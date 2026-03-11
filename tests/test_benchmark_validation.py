@@ -62,8 +62,15 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "prompt_tuned_failures" in payload
     assert "flow_mode_failures" in payload
     assert payload["flow_required_variants"] == ["structured", "verified"]
-    assert set(payload["flow_comparison_variants"]) == {"direct_baseline", "rapid"}
+    assert set(payload["flow_comparison_variants"]) == {
+        "direct_baseline",
+        "rapid",
+        "single_agent",
+    }
     assert payload["flow_execution_paths"]["observed"]["rapid"] == ["rapid_direct"]
+    assert payload["flow_execution_paths"]["observed"]["single_agent"] == [
+        "single_agent_structured"
+    ]
     assert payload["flow_execution_paths"]["observed"]["structured"] == ["structured_single_pass"]
     assert payload["flow_execution_paths"]["observed"]["verified"] == ["verified_orchestration"]
     assert payload["flow_execution_paths"]["violations"] == []
@@ -72,6 +79,7 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert payload["coverage_by_variant"]["verified"] >= payload["coverage_by_variant"]["structured"]
     assert "required[structured,verified]" in payload["flow_gate_summary"]
     assert "rapid=rapid_direct" in payload["flow_execution_path_summary"]
+    assert "single_agent=single_agent_structured" in payload["flow_execution_path_summary"]
     assert "rapid=" in payload["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in payload["runtime_override_policy_summary"]
     assert "flow_comparison_failures" in payload
@@ -79,12 +87,14 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert set(payload["flow_avg_prompt_calls"]) == {
         "direct_baseline",
         "rapid",
+        "single_agent",
         "structured",
         "verified",
     }
     assert set(payload["flow_avg_latency_ms"]) == {
         "direct_baseline",
         "rapid",
+        "single_agent",
         "structured",
         "verified",
     }
@@ -253,4 +263,10 @@ async def test_flow_benchmark_report_contains_all_variants(tmp_path):
 
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     variants = {row["variant"] for row in payload["aggregates"]}
-    assert variants == {"direct_baseline", "rapid", "structured", "verified"}
+    assert variants == {
+        "direct_baseline",
+        "rapid",
+        "single_agent",
+        "structured",
+        "verified",
+    }

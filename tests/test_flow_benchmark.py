@@ -28,9 +28,11 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     assert aggregates[0].variant in {"structured", "verified"}
     assert aggregate_map["direct_baseline"].failed_cases == len(cases)
     assert aggregate_map["rapid"].failed_cases == len(cases)
+    assert aggregate_map["single_agent"].passed_cases == len(cases)
     assert aggregate_map["structured"].passed_cases == len(cases)
     assert aggregate_map["verified"].passed_cases == len(cases)
     assert aggregate_map["rapid"].execution_paths == ["rapid_direct"]
+    assert aggregate_map["single_agent"].execution_paths == ["single_agent_structured"]
     assert aggregate_map["structured"].execution_paths == ["structured_single_pass"]
     assert aggregate_map["verified"].execution_paths == ["verified_orchestration"]
     assert all(aggregate.stability_rate == pytest.approx(1.0) for aggregate in aggregates)
@@ -38,12 +40,14 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     # Coverage monotonicity: structured >= rapid, verified >= structured
     assert aggregate_map["structured"].avg_leaf_coverage == pytest.approx(1.0)
     assert aggregate_map["verified"].avg_leaf_coverage == pytest.approx(1.0)
+    assert aggregate_map["single_agent"].avg_leaf_coverage >= aggregate_map["rapid"].avg_leaf_coverage
     assert aggregate_map["structured"].avg_leaf_coverage >= aggregate_map["rapid"].avg_leaf_coverage
     assert aggregate_map["verified"].avg_leaf_coverage >= aggregate_map["structured"].avg_leaf_coverage
 
     summary = format_flow_benchmark_summary(aggregates)
     assert "variant | paths | pass/total | stable | avg ms | avg prompts" in summary
     assert "rapid | rapid_direct |" in summary
+    assert "single_agent | single_agent_structured |" in summary
     assert "structured | structured_single_pass |" in summary
 
 

@@ -491,8 +491,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                         result = planner_result.result
                     update_stage(
                         stage="single_agent_planner",
-                        completed=len(planner_result.steps),
-                        total=len(planner_result.steps),
+                        completed=planner_result.state.budget.steps_used,
+                        total=planner_result.state.budget.max_steps,
                     )
                 elif mode_settings.mode == "structured":
                     print("Running structured single-pass matching...")
@@ -585,6 +585,16 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             {
                 "execution_path": planner_result.execution_path,
                 "single_agent": {
+                    "policy": {
+                        "direct_grounding_enabled": planner_result.state.policy.direct_grounding_enabled,
+                        "decomposition_mode": planner_result.state.policy.decomposition_mode,
+                        "escalation_enabled": planner_result.state.policy.escalation_enabled,
+                    },
+                    "termination_reason": planner_result.state.termination_reason,
+                    "verification_status": planner_result.state.verification_status,
+                    "step_budget": planner_result.state.budget.max_steps,
+                    "steps_used": planner_result.state.budget.steps_used,
+                    "open_failures": list(planner_result.state.open_failures),
                     "steps": [
                         {
                             "action": step.action,

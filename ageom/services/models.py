@@ -64,12 +64,44 @@ class PlannerStep:
 
 
 @dataclass(frozen=True)
+class PlannerPolicy:
+    """Explicit execution policy for the single-agent planner."""
+
+    direct_grounding_enabled: bool = True
+    decomposition_mode: str = "single_pass"
+    escalation_enabled: bool = True
+
+
+@dataclass
+class PlannerBudget:
+    """Bounded planner budget used for deterministic tool orchestration."""
+
+    max_steps: int = 4
+    steps_used: int = 0
+
+
+@dataclass
+class PlannerState:
+    """Mutable planner state captured for telemetry and benchmarking."""
+
+    goal: str
+    policy: PlannerPolicy = field(default_factory=PlannerPolicy)
+    budget: PlannerBudget = field(default_factory=PlannerBudget)
+    current_focus: str = "goal"
+    open_failures: list[str] = field(default_factory=list)
+    tool_trace: list[PlannerStep] = field(default_factory=list)
+    verification_status: str = "pending"
+    termination_reason: str = ""
+
+
+@dataclass(frozen=True)
 class PlannerRunResult:
     """Top-level result for the first-cut single-agent planner runtime."""
 
     result: OrchestratorResult
     execution_path: str
     steps: list[PlannerStep]
+    state: PlannerState
 
 
 @dataclass(frozen=True)

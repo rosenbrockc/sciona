@@ -8,6 +8,7 @@ import re
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Sequence
 
 from ageom.architect.graph import DecompositionAgent
@@ -15,6 +16,7 @@ from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 from ageom.hunter.graph import HunterAgent
 from ageom.orchestrator import run_orchestration
+from ageom.services import HunterService, OrchestratorService, SingleAgentPlanner
 from ageom.types import (
     CandidateMatch,
     Declaration,
@@ -596,6 +598,67 @@ async def _run_structured_case(
     )
 
 
+async def _run_single_agent_case(
+    case: FlowBenchmarkCase,
+    *,
+    noisy: bool = False,
+    noise_seed: int | None = None,
+) -> FlowBenchmarkResult:
+    started = time.perf_counter()
+    hunter, hunter_llm, index = _make_hunter(case)
+    hunter_service = HunterService(hunter)
+    architect_llm: _FlowArchitectLLM | None = None
+
+    async def _architect_factory():
+        nonlocal architect_llm
+        cdg, architect_llm = await _decompose_case(
+            case,
+            noisy=noisy,
+            noise_seed=noise_seed,
+        )
+
+        class _StaticArchitectService:
+            async def decompose(self, request):
+                return SimpleNamespace(goal=request.goal, cdg=cdg)
+
+        return _StaticArchitectService()
+
+    planner = SingleAgentPlanner(
+        hunter=hunter_service,
+        architect_factory=_architect_factory,
+        orchestrator=OrchestratorService(hunter, run_orchestration),
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+    planner_result = await planner.run(case.prompt)
+    result = planner_result.result
+    matched = _matched_leaf_count(case, result.match_results)
+    total = len(case.leaves)
+    depth, leaf_count, edge_count = _cdg_metrics(result.cdg)
+    latency_ms = (time.perf_counter() - started) * 1000.0
+    architect_prompt_calls = 0 if architect_llm is None else architect_llm.calls
+    return FlowBenchmarkResult(
+        case_id=case.case_id,
+        domain=case.domain,
+        variant="single_agent",
+        execution_path=planner_result.execution_path,
+        ok=matched == total,
+        latency_ms=latency_ms,
+        prompt_calls=architect_prompt_calls + hunter_llm.calls,
+        matched_leaves=matched,
+        total_leaves=total,
+        node_count=len(result.cdg.nodes),
+        leaf_coverage=matched / max(1, total),
+        best_similarity=_best_similarity_score(case, index),
+        decomposition_depth=depth,
+        decomposition_leaf_count=leaf_count,
+        decomposition_edge_count=edge_count,
+        error="" if matched == total else "single-agent planner did not ground all leaves",
+    )
+
+
 async def _run_verified_case(
     case: FlowBenchmarkCase,
     *,
@@ -1008,7 +1071,13 @@ def default_flow_benchmark_cases() -> list[FlowBenchmarkCase]:
 async def run_flow_benchmark(
     *,
     cases: Sequence[FlowBenchmarkCase],
-    variants: Sequence[str] = ("direct_baseline", "rapid", "structured", "verified"),
+    variants: Sequence[str] = (
+        "direct_baseline",
+        "rapid",
+        "single_agent",
+        "structured",
+        "verified",
+    ),
     repeats: int = 1,
     noisy: bool = False,
 ) -> list[FlowBenchmarkResult]:
@@ -1023,6 +1092,13 @@ async def run_flow_benchmark(
                     continue
                 if variant == "rapid":
                     results.append(await _run_rapid_case(case))
+                    continue
+                if variant == "single_agent":
+                    results.append(
+                        await _run_single_agent_case(
+                            case, noisy=noisy, noise_seed=noise_seed
+                        )
+                    )
                     continue
                 if variant == "structured":
                     results.append(

@@ -17,11 +17,12 @@ async def test_flow_benchmark_e2e_compares_direct_baseline_against_modes():
 
     results = await run_flow_benchmark(cases=cases)
 
-    assert len(results) == len(cases) * 4
+    assert len(results) == len(cases) * 5
 
     aggregates = {aggregate.variant: aggregate for aggregate in summarize_flow_benchmark(results)}
 
     assert aggregates["direct_baseline"].passed_cases == 0
     assert aggregates["rapid"].passed_cases == 0
+    assert aggregates["single_agent"].passed_cases == len(cases)
     assert aggregates["structured"].passed_cases == len(cases)
     assert aggregates["verified"].passed_cases == len(cases)
