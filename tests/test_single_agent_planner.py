@@ -111,6 +111,10 @@ async def test_single_agent_planner_returns_direct_result_without_decomposition(
         "match_results": "direct_match_result",
     }
     assert result.state.artifact_mutations == {"cdg": 1, "match_results": 1}
+    assert set(result.state.tool_metrics) == {"hunter.match_goal"}
+    assert result.state.tool_metrics["hunter.match_goal"]["dispatches"] == 1
+    assert result.state.tool_metrics["hunter.match_goal"]["latency_ms_total"] >= 0.0
+    assert result.state.escalation_events == []
     assert result.state.attempt_history == ["direct_match"]
     assert hunter.goal_calls == 1
     assert hunter.batch_calls == 0
@@ -559,6 +563,18 @@ async def test_single_agent_planner_single_pass_policy_skips_selective_redecompo
         "match_decomposed",
         "retry_retrieval",
         "escalate_orchestration",
+    ]
+    assert result.state.escalation_events == [
+        {
+            "from": "direct_grounding",
+            "to": "decomposition",
+            "reason": "compound_goal_markers",
+        },
+        {
+            "from": "decomposed_matching",
+            "to": "orchestration",
+            "reason": "unresolved_leaves_after_single_agent_attempts",
+        },
     ]
     assert "selective_redecompose" not in result.state.attempt_history
     assert hunter.goal_calls == 0

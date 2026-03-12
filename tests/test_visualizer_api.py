@@ -809,6 +809,16 @@ class TestDashboardAPI:
                     "verification_status": "verified",
                     "step_budget": 6,
                     "steps_used": 1,
+                    "tool_dispatch_count_total": 1,
+                    "tool_latency_ms_total": 1.25,
+                    "tool_metrics": {
+                        "hunter.match_goal": {
+                            "dispatches": 1,
+                            "latency_ms_total": 1.25,
+                            "avg_latency_ms": 1.25,
+                        }
+                    },
+                    "escalation_events": [],
                     "open_failures": [],
                     "attempt_history": ["direct_match"],
                     "artifact_manifest_path": "build/demo/planner_artifacts.json",
@@ -851,6 +861,9 @@ class TestDashboardAPI:
         )
         assert data["single_agent_summary"]["artifact_count"] == 2
         assert data["single_agent_summary"]["artifacts"][0]["name"] == "cdg"
+        assert data["single_agent_summary"]["tool_dispatch_count_total"] == 1
+        assert data["single_agent_summary"]["tool_metrics"][0]["name"] == "hunter.match_goal"
+        assert data["single_agent_summary"]["escalation_events"] == []
         assert data["single_agent_summary"]["policy"]["retrieval_intensity"] == "light"
 
     def test_dashboard_run_includes_architect_summary(

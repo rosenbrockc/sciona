@@ -95,7 +95,9 @@ class PlannerState:
     open_failures: list[str] = field(default_factory=list)
     artifacts: dict[str, str] = field(default_factory=dict)
     artifact_mutations: dict[str, int] = field(default_factory=dict)
+    tool_metrics: dict[str, dict[str, float | int]] = field(default_factory=dict)
     attempt_history: list[str] = field(default_factory=list)
+    escalation_events: list[dict[str, str]] = field(default_factory=list)
     tool_trace: list[PlannerStep] = field(default_factory=list)
     verification_status: str = "pending"
     termination_reason: str = ""

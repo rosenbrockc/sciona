@@ -580,6 +580,10 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     assert payload["metadata"]["single_agent"]["verification_status"] == "verified"
     assert payload["metadata"]["single_agent"]["step_budget"] == 6
     assert payload["metadata"]["single_agent"]["steps_used"] == 1
+    assert payload["metadata"]["single_agent"]["tool_dispatch_count_total"] == 1
+    assert payload["metadata"]["single_agent"]["tool_latency_ms_total"] >= 0.0
+    assert payload["metadata"]["single_agent"]["tool_metrics"]["hunter.match_goal"]["dispatches"] == 1
+    assert payload["metadata"]["single_agent"]["escalation_events"] == []
     assert payload["metadata"]["single_agent"]["open_failures"] == []
     assert payload["metadata"]["single_agent"]["artifacts"] == {
         "cdg": "direct_goal_cdg",
@@ -593,6 +597,8 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     assert manifest_path.exists()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["execution_path"] == "single_agent_direct"
+    assert manifest["escalation_events"] == []
+    assert manifest["tool_metrics"]["hunter.match_goal"]["dispatches"] == 1
     assert manifest["artifacts"]["cdg"]["path"] == str(output_dir / "cdg.json")
     assert manifest["artifacts"]["cdg"]["exists"] is True
     assert manifest["artifacts"]["match_results"]["path"] == str(output_dir / "matches.json")

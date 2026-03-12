@@ -591,6 +591,19 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             "execution_path": planner_result.execution_path,
             "termination_reason": planner_result.state.termination_reason,
             "verification_status": planner_result.state.verification_status,
+            "escalation_events": [dict(event) for event in planner_result.state.escalation_events],
+            "tool_metrics": {
+                name: {
+                    "dispatches": int(metrics.get("dispatches", 0) or 0),
+                    "latency_ms_total": round(
+                        float(metrics.get("latency_ms_total", 0.0) or 0.0), 4
+                    ),
+                    "avg_latency_ms": round(
+                        float(metrics.get("avg_latency_ms", 0.0) or 0.0), 4
+                    ),
+                }
+                for name, metrics in sorted(planner_result.state.tool_metrics.items())
+            },
             "artifacts": {
                 "cdg": {
                     "source": planner_result.state.artifacts.get("cdg", ""),
@@ -634,6 +647,34 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             {
                 "execution_path": planner_result.execution_path,
                 "single_agent": {
+                    "tool_metrics": {
+                        name: {
+                            "dispatches": int(metrics.get("dispatches", 0) or 0),
+                            "latency_ms_total": round(
+                                float(metrics.get("latency_ms_total", 0.0) or 0.0), 4
+                            ),
+                            "avg_latency_ms": round(
+                                float(metrics.get("avg_latency_ms", 0.0) or 0.0), 4
+                            ),
+                        }
+                        for name, metrics in sorted(
+                            planner_result.state.tool_metrics.items()
+                        )
+                    },
+                    "tool_dispatch_count_total": sum(
+                        int(metrics.get("dispatches", 0) or 0)
+                        for metrics in planner_result.state.tool_metrics.values()
+                    ),
+                    "escalation_events": [
+                        dict(event) for event in planner_result.state.escalation_events
+                    ],
+                    "tool_latency_ms_total": round(
+                        sum(
+                            float(metrics.get("latency_ms_total", 0.0) or 0.0)
+                            for metrics in planner_result.state.tool_metrics.values()
+                        ),
+                        4,
+                    ),
                     "policy": {
                         "direct_grounding_enabled": planner_result.state.policy.direct_grounding_enabled,
                         "decomposition_mode": planner_result.state.policy.decomposition_mode,

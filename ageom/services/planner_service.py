@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+import time
 from typing import Any
 
 from ageom.architect.handoff import to_pdg_nodes
@@ -87,7 +88,10 @@ class SingleAgentPlanner:
         )
 
         if state.policy.direct_grounding_enabled:
-            direct_match = await self._hunter.match_goal(
+            direct_match = await self._timed_tool_call(
+                state,
+                "hunter.match_goal",
+                self._hunter.match_goal,
                 HunterDirectMatchRequest(
                     goal=goal,
                     prover=self._prover,
@@ -96,7 +100,7 @@ class SingleAgentPlanner:
                         "execution_mode": "single_agent",
                         "single_agent_direct_path": "true",
                     },
-                )
+                ),
             )
             self._record_step(
                 state,
@@ -132,22 +136,27 @@ class SingleAgentPlanner:
             state.current_focus = "decomposition"
             state.open_failures = ["goal_0"]
             state.verification_status = "needs_decomposition"
+            self._record_escalation(
+                state,
+                from_focus="direct_grounding",
+                to_focus="decomposition",
+                reason="direct_match_failed",
+            )
         else:
             state.current_focus = "decomposition"
             state.verification_status = "policy_decompose_first"
-            log_event(
-                "planner",
-                "decision",
-                "PLANNER_ESCALATION",
-                payload={
-                    "from": "direct_grounding",
-                    "to": "decomposition",
-                    "reason": "compound_goal_markers",
-                },
+            self._record_escalation(
+                state,
+                from_focus="direct_grounding",
+                to_focus="decomposition",
+                reason="compound_goal_markers",
             )
         architect = await self._architect_factory()
-        decompose_result = await architect.decompose(
-            ArchitectDecomposeRequest(goal=goal)
+        decompose_result = await self._timed_tool_call(
+            state,
+            "architect.decompose",
+            architect.decompose,
+            ArchitectDecomposeRequest(goal=goal),
         )
         state.artifacts["cdg"] = "architect_decompose"
         self._bump_artifact(state, "cdg")
@@ -162,8 +171,11 @@ class SingleAgentPlanner:
         )
 
         pdg_nodes = to_pdg_nodes(decompose_result.cdg, prover=self._prover, strict=False)
-        batch_result = await self._hunter.match_batch(
-            HunterBatchMatchRequest(pdg_nodes=pdg_nodes)
+        batch_result = await self._timed_tool_call(
+            state,
+            "hunter.match_batch",
+            self._hunter.match_batch,
+            HunterBatchMatchRequest(pdg_nodes=pdg_nodes),
         )
         state.current_focus = "decomposed_matching"
         state.open_failures = list(batch_result.ungroundable)
@@ -298,8 +310,11 @@ class SingleAgentPlanner:
                 retry_nodes = [n for n in new_pdg_nodes if n.predicate_id not in already_matched]
 
                 if retry_nodes:
-                    retry_result = await self._hunter.match_batch(
-                        HunterBatchMatchRequest(pdg_nodes=retry_nodes)
+                    retry_result = await self._timed_tool_call(
+                        state,
+                        "hunter.match_batch",
+                        self._hunter.match_batch,
+                        HunterBatchMatchRequest(pdg_nodes=retry_nodes),
                     )
                     # Merge results
                     all_results = [
@@ -344,14 +359,23 @@ class SingleAgentPlanner:
                     )
 
         state.current_focus = "orchestration"
-        orchestrated = await self._orchestrator.run(
+        self._record_escalation(
+            state,
+            from_focus="decomposed_matching",
+            to_focus="orchestration",
+            reason="unresolved_leaves_after_single_agent_attempts",
+        )
+        orchestrated = await self._timed_tool_call(
+            state,
+            "orchestrator.run",
+            self._orchestrator.run,
             OrchestrationRequest(
                 cdg=decompose_result.cdg,
                 llm=self._llm,
                 prover=self._prover,
                 max_rounds=self._max_rounds,
                 hunter_concurrency=self._hunter_concurrency,
-            )
+            ),
         )
         state.artifacts["orchestration"] = "run_orchestration"
         state.artifacts["match_results"] = "orchestrated_match_results"
@@ -400,6 +424,10 @@ class SingleAgentPlanner:
                 "open_failures": list(state.open_failures),
                 "artifacts": dict(state.artifacts),
                 "artifact_mutations": dict(state.artifact_mutations),
+                "tool_metrics": {
+                    name: dict(metrics) for name, metrics in state.tool_metrics.items()
+                },
+                "escalation_events": [dict(event) for event in state.escalation_events],
                 "steps_used": state.budget.steps_used,
                 "step_budget": state.budget.max_steps,
             },
@@ -425,6 +453,10 @@ class SingleAgentPlanner:
                 "open_failures": list(state.open_failures),
                 "artifacts": dict(state.artifacts),
                 "artifact_mutations": dict(state.artifact_mutations),
+                "tool_metrics": {
+                    name: dict(metrics) for name, metrics in state.tool_metrics.items()
+                },
+                "escalation_events": [dict(event) for event in state.escalation_events],
                 "policy": {
                     "direct_grounding_enabled": state.policy.direct_grounding_enabled,
                     "decomposition_mode": state.policy.decomposition_mode,
@@ -446,6 +478,74 @@ class SingleAgentPlanner:
     def _bump_artifact(self, state: PlannerState, artifact_name: str) -> None:
         state.artifact_mutations[artifact_name] = (
             int(state.artifact_mutations.get(artifact_name, 0) or 0) + 1
+        )
+
+    async def _timed_tool_call(
+        self,
+        state: PlannerState,
+        tool_name: str,
+        tool: Callable[..., Awaitable[Any]],
+        *args: Any,
+    ) -> Any:
+        started = time.perf_counter()
+        try:
+            return await tool(*args)
+        finally:
+            self._record_tool_metric(
+                state,
+                tool_name,
+                latency_ms=(time.perf_counter() - started) * 1000.0,
+            )
+
+    def _record_tool_metric(
+        self,
+        state: PlannerState,
+        tool_name: str,
+        *,
+        latency_ms: float,
+    ) -> None:
+        current = state.tool_metrics.setdefault(
+            tool_name,
+            {
+                "dispatches": 0,
+                "latency_ms_total": 0.0,
+                "avg_latency_ms": 0.0,
+            },
+        )
+        current["dispatches"] = int(current.get("dispatches", 0) or 0) + 1
+        current["latency_ms_total"] = float(
+            current.get("latency_ms_total", 0.0) or 0.0
+        ) + max(0.0, latency_ms)
+        current["avg_latency_ms"] = (
+            float(current["latency_ms_total"]) / max(1, int(current["dispatches"]))
+        )
+
+    def _record_escalation(
+        self,
+        state: PlannerState,
+        *,
+        from_focus: str,
+        to_focus: str,
+        reason: str,
+    ) -> None:
+        event = {
+            "from": from_focus,
+            "to": to_focus,
+            "reason": reason,
+        }
+        state.escalation_events.append(event)
+        log_event(
+            "planner",
+            "decision",
+            "PLANNER_ESCALATION",
+            payload={
+                "goal": state.goal,
+                "from": from_focus,
+                "to": to_focus,
+                "reason": reason,
+                "steps_used": state.budget.steps_used,
+                "step_budget": state.budget.max_steps,
+            },
         )
 
     async def _retry_retrieval(
@@ -471,8 +571,11 @@ class SingleAgentPlanner:
             if not retry_nodes:
                 break
             state.current_focus = "retrieval_retry"
-            current = await self._hunter.match_batch(
-                HunterBatchMatchRequest(pdg_nodes=retry_nodes)
+            current = await self._timed_tool_call(
+                state,
+                "hunter.match_batch",
+                self._hunter.match_batch,
+                HunterBatchMatchRequest(pdg_nodes=retry_nodes),
             )
             for mr in current.match_results:
                 result_by_node[str(mr.pdg_node.predicate_id)] = mr

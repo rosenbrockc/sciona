@@ -363,6 +363,12 @@ def _build_single_agent_summary(single_agent: dict[str, Any]) -> dict[str, Any]:
     concrete_artifacts = single_agent.get("concrete_artifacts", {})
     if not isinstance(concrete_artifacts, dict):
         concrete_artifacts = {}
+    tool_metrics = single_agent.get("tool_metrics", {})
+    if not isinstance(tool_metrics, dict):
+        tool_metrics = {}
+    escalation_events = single_agent.get("escalation_events", {})
+    if not isinstance(escalation_events, list):
+        escalation_events = []
     artifacts: list[dict[str, Any]] = []
     for name in sorted(concrete_artifacts):
         row = concrete_artifacts.get(name, {})
@@ -377,6 +383,21 @@ def _build_single_agent_summary(single_agent: dict[str, Any]) -> dict[str, Any]:
                 "mutations": int(row.get("mutations", 0) or 0),
             }
         )
+    tool_rows: list[dict[str, Any]] = []
+    for name in sorted(tool_metrics):
+        row = tool_metrics.get(name, {})
+        if not isinstance(row, dict):
+            continue
+        tool_rows.append(
+            {
+                "name": name,
+                "dispatches": int(row.get("dispatches", 0) or 0),
+                "latency_ms_total": round(
+                    float(row.get("latency_ms_total", 0.0) or 0.0), 4
+                ),
+                "avg_latency_ms": round(float(row.get("avg_latency_ms", 0.0) or 0.0), 4),
+            }
+        )
     return {
         "termination_reason": str(single_agent.get("termination_reason", "") or ""),
         "verification_status": str(single_agent.get("verification_status", "") or ""),
@@ -389,6 +410,22 @@ def _build_single_agent_summary(single_agent: dict[str, Any]) -> dict[str, Any]:
         ),
         "artifact_count": len(artifacts),
         "artifacts": artifacts,
+        "tool_dispatch_count_total": int(
+            single_agent.get("tool_dispatch_count_total", 0) or 0
+        ),
+        "tool_latency_ms_total": round(
+            float(single_agent.get("tool_latency_ms_total", 0.0) or 0.0), 4
+        ),
+        "tool_metrics": tool_rows,
+        "escalation_events": [
+            {
+                "from": str(row.get("from", "") or ""),
+                "to": str(row.get("to", "") or ""),
+                "reason": str(row.get("reason", "") or ""),
+            }
+            for row in escalation_events
+            if isinstance(row, dict)
+        ],
         "policy": {
             "direct_grounding_enabled": bool(
                 policy.get("direct_grounding_enabled", False)

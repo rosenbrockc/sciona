@@ -339,6 +339,14 @@
           const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
           const singleAgent = r.single_agent_summary || {};
           const singleAgentPolicy = singleAgent.policy || {};
+          const singleAgentTools = singleAgent.tool_metrics || [];
+          const singleAgentEscalations = singleAgent.escalation_events || [];
+          const singleAgentToolSummary = singleAgentTools.length
+            ? singleAgentTools.map((row) => `${row.name}=${Number(row.dispatches || 0)}/${Number(row.avg_latency_ms || 0).toFixed(1)}ms`).join(" ")
+            : "";
+          const singleAgentEscalationSummary = singleAgentEscalations.length
+            ? singleAgentEscalations.map((row) => `${row.from}->${row.to}`).join(" ")
+            : "";
           const singleAgentComparisonSummary = benchmark.single_agent_comparison_summary || "";
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
           const flowLatency = benchmark.flow_avg_latency_ms || {};
@@ -363,7 +371,13 @@
           const verifiedMatches = Number(hunter.verified_matches || 0);
           const benchmarkStatus = benchmark.status || "--";
           const singleAgentLine = singleAgent.termination_reason
-            ? `<div class="run-meta">single_agent=${singleAgent.termination_reason} steps=${Number(singleAgent.steps_used || 0)}/${Number(singleAgent.step_budget || 0)} retrieval=${singleAgentPolicy.retrieval_intensity || "--"} artifacts=${Number(singleAgent.artifact_count || 0)}</div>`
+            ? `<div class="run-meta">single_agent=${singleAgent.termination_reason} steps=${Number(singleAgent.steps_used || 0)}/${Number(singleAgent.step_budget || 0)} retrieval=${singleAgentPolicy.retrieval_intensity || "--"} tools=${Number(singleAgent.tool_dispatch_count_total || 0)} latency=${Number(singleAgent.tool_latency_ms_total || 0).toFixed(1)}ms artifacts=${Number(singleAgent.artifact_count || 0)}</div>`
+            : "";
+          const singleAgentToolLine = singleAgentToolSummary
+            ? `<div class="run-meta">single_agent_tools ${singleAgentToolSummary}</div>`
+            : "";
+          const singleAgentEscalationLine = singleAgentEscalationSummary
+            ? `<div class="run-meta">single_agent_escalations ${singleAgentEscalationSummary}</div>`
             : "";
           const singleAgentBenchmarkLine = singleAgentComparisonSummary
             ? `<div class="run-meta">single_agent_bench ${singleAgentComparisonSummary}</div>`
@@ -404,6 +418,8 @@
               ? `<div class="run-meta">runtime_modes ${runtimeModeSummary}</div>`
               : ""),
             singleAgentLine,
+            singleAgentToolLine,
+            singleAgentEscalationLine,
             singleAgentBenchmarkLine,
             validationLine
           ].join("");
@@ -440,6 +456,8 @@
         const benchmarkFlowPaths = benchmark.flow_execution_paths || {};
         const singleAgent = run.single_agent_summary || {};
         const singleAgentPolicy = singleAgent.policy || {};
+        const singleAgentTools = singleAgent.tool_metrics || [];
+        const singleAgentEscalations = singleAgent.escalation_events || [];
         const singleAgentComparisonSummary = benchmark.single_agent_comparison_summary || "";
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
         const flowLatency = benchmark.flow_avg_latency_ms || {};
@@ -509,6 +527,13 @@
           ["single-agent verify", singleAgent.verification_status || "--"],
           ["single-agent budget", `${Number(singleAgent.steps_used || 0)}/${Number(singleAgent.step_budget || 0)}`],
           ["single-agent policy", `${singleAgentPolicy.decomposition_mode || "--"} / ${singleAgentPolicy.retrieval_intensity || "--"} / ${singleAgentPolicy.repair_policy || "--"}`],
+          ["single-agent tools", `${Number(singleAgent.tool_dispatch_count_total || 0)} / ${Number(singleAgent.tool_latency_ms_total || 0).toFixed(1)}ms`],
+          ["single-agent tool detail", singleAgentTools.length
+            ? singleAgentTools.map((row) => `${row.name}:${Number(row.dispatches || 0)}@${Number(row.avg_latency_ms || 0).toFixed(1)}ms`).join(", ")
+            : "--"],
+          ["single-agent escalations", singleAgentEscalations.length
+            ? singleAgentEscalations.map((row) => `${row.from}->${row.to}:${row.reason || "--"}`).join(", ")
+            : "--"],
           ["single-agent artifacts", String(Number(singleAgent.artifact_count || 0))],
           ["single-agent manifest", singleAgent.artifact_manifest_path || "--"],
           ["single-agent failures", (singleAgent.open_failures || []).join(", ") || "--"],
