@@ -399,6 +399,9 @@
                 .map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.transport_count || 0)}`)
                 .join(" ")
             : "";
+          const releaseWarningLine = benchmark.release_warning_summary
+            ? `<div class="run-meta">release_warn runtime=${Number(benchmark.release_runtime_warning_count || 0)} catalog=${Number(benchmark.release_catalog_warning_count || 0)} benchmark=${Number(benchmark.release_benchmark_warning_count || 0)}</div>`
+            : "";
           const validationLine = (benchmark.prompt_results || benchmark.flow_results)
             ? `<div class="run-meta">bench=${benchmarkStatus} prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)} runtime_providers=${Number(benchmarkRuntime.provider_count || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
@@ -440,6 +443,7 @@
             singleAgentEscalationLine,
             singleAgentBenchmarkLine,
             singleAgentOverheadLine,
+            releaseWarningLine,
             validationLine
           ].join("");
           div.addEventListener("click", () => {
@@ -584,6 +588,7 @@
           ["benchmark subcheck", benchmark.top_failed_subcheck || "--"],
           ["benchmark top fail", benchmark.top_failure || "--"],
           ["release warnings", benchmark.release_warning_summary || "--"],
+          ["release warning counts", `${Number(benchmark.release_runtime_warning_count || 0)} runtime / ${Number(benchmark.release_catalog_warning_count || 0)} catalog / ${Number(benchmark.release_benchmark_warning_count || 0)} benchmark`],
           ["release top warn", `${benchmark.release_top_runtime_warning || "--"} | ${benchmark.release_top_catalog_warning || "--"} | ${benchmark.release_top_benchmark_warning || "--"}`],
           ["release failures", benchmark.release_failure_summary || "--"],
           ["release failed check", benchmark.release_top_failed_check || "--"],
