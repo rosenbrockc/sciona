@@ -99,12 +99,14 @@ def _create_llm_router(
     from ageom.ingester.ast_state_hoister import ASTStateHoister
     from ageom.ingester.deterministic_ghost_fixer import DeterministicGhostFixer
     from ageom.ingester.deterministic_type_fixer import DeterministicTypeFixer
+    from ageom.ingester.template_abstractor import TemplateAbstractor
     from ageom.hunter.llm import create_llm_client
     from ageom.llm_router import (
         ARCHITECT_STRATEGY,
         HUNTER_ANALYZE_FAILURE,
         HUNTER_REFORMULATE,
         HUNTER_SCORE,
+        INGESTER_ABSTRACT,
         INGESTER_FIX_GHOST,
         INGESTER_FIX_TYPE,
         INGESTER_HOIST_STATE,
@@ -174,6 +176,9 @@ def _create_llm_router(
     if round_name == "ingester" and INGESTER_FIX_GHOST in prompt_keys:
         ghost_fallback = overrides.get(INGESTER_FIX_GHOST, default)
         overrides[INGESTER_FIX_GHOST] = DeterministicGhostFixer(ghost_fallback)
+    if round_name == "ingester" and INGESTER_ABSTRACT in prompt_keys:
+        abstract_fallback = overrides.get(INGESTER_ABSTRACT, default)
+        overrides[INGESTER_ABSTRACT] = TemplateAbstractor(abstract_fallback)
     if round_name == "ingester" and INGESTER_HOIST_STATE in prompt_keys:
         hoist_fallback = overrides.get(INGESTER_HOIST_STATE, default)
         overrides[INGESTER_HOIST_STATE] = ASTStateHoister(hoist_fallback)
