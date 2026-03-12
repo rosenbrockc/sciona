@@ -26,6 +26,7 @@ from ageom.telemetry import (
 )
 from ageom.architect.strategy_classifier import StrategyClassifier
 from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
+from ageom.hunter.failure_analyzer import DeterministicFailureAnalyzer
 from ageom.hunter.query_reformulator import HeuristicQueryReformulator
 
 
@@ -353,6 +354,9 @@ class TestCreateLLMRouter:
         assert isinstance(router.for_prompt("hunter_score"), HeuristicCandidateRanker)
         assert isinstance(
             router.for_prompt("hunter_reformulate"), HeuristicQueryReformulator
+        )
+        assert isinstance(
+            router.for_prompt("hunter_analyze_failure"), DeterministicFailureAnalyzer
         )
         assert router.for_prompt("hunter_reformulate") is not router.for_prompt("hunter_score")
         assert router.for_prompt("hunter_analyze_failure") is not router.for_prompt("hunter_score")
