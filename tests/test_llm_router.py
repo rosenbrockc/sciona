@@ -26,6 +26,7 @@ from ageom.telemetry import (
 )
 from ageom.architect.strategy_classifier import StrategyClassifier
 from ageom.architect.deterministic_decompose import DeterministicDecomposer
+from ageom.architect.deterministic_critic import DeterministicCritic
 from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
 from ageom.hunter.failure_analyzer import DeterministicFailureAnalyzer
 from ageom.hunter.query_reformulator import HeuristicQueryReformulator
@@ -312,7 +313,7 @@ class TestCreateLLMRouter:
             ("codex_shim", "gpt-5.4-codex"),
         ]
         assert isinstance(router.for_prompt("architect_strategy"), StrategyClassifier)
-        assert router.for_prompt("architect_critique") is not router.for_prompt("architect_strategy")
+        assert isinstance(router.for_prompt("architect_critique"), DeterministicCritic)
         assert isinstance(router.for_prompt("architect_decompose"), DeterministicDecomposer)
 
     def test_hunter_prompts_use_explicit_overrides(self, monkeypatch):
@@ -420,7 +421,7 @@ class TestCreateLLMRouter:
         assert isinstance(router, LLMRouter)
         assert isinstance(router.for_prompt("architect_strategy"), StrategyClassifier)
         assert isinstance(router.for_prompt("architect_decompose"), DeterministicDecomposer)
-        assert router.for_prompt("architect_critique") is not router.for_prompt("architect_strategy")
+        assert isinstance(router.for_prompt("architect_critique"), DeterministicCritic)
 
     def test_unbenchmarked_default_override_is_filtered_out(self, monkeypatch):
         from ageom.cli import _create_llm_router
