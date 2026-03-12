@@ -103,6 +103,7 @@ def _create_llm_router(
     from ageom.ingester.deterministic_ghost_fixer import DeterministicGhostFixer
     from ageom.ingester.deterministic_type_fixer import DeterministicTypeFixer
     from ageom.ingester.template_abstractor import TemplateAbstractor
+    from ageom.ingester.template_witness_generator import TemplateWitnessGenerator
     from ageom.hunter.llm import create_llm_client
     from ageom.llm_router import (
         ARCHITECT_STRATEGY,
@@ -116,6 +117,7 @@ def _create_llm_router(
         INGESTER_FIX_GHOST,
         INGESTER_FIX_TYPE,
         INGESTER_HOIST_STATE,
+        INGESTER_OPAQUE_WITNESS,
         LLMRouter,
         SYNTHESIZER_TACTIC,
     )
@@ -191,6 +193,9 @@ def _create_llm_router(
     if round_name == "ingester" and INGESTER_FIX_MESSAGE_CYCLE in prompt_keys:
         cycle_fallback = overrides.get(INGESTER_FIX_MESSAGE_CYCLE, default)
         overrides[INGESTER_FIX_MESSAGE_CYCLE] = DeterministicCycleBreaker(cycle_fallback)
+    if round_name == "ingester" and INGESTER_OPAQUE_WITNESS in prompt_keys:
+        opaque_fallback = overrides.get(INGESTER_OPAQUE_WITNESS, default)
+        overrides[INGESTER_OPAQUE_WITNESS] = TemplateWitnessGenerator(opaque_fallback)
     if round_name == "ingester" and INGESTER_ABSTRACT in prompt_keys:
         abstract_fallback = overrides.get(INGESTER_ABSTRACT, default)
         overrides[INGESTER_ABSTRACT] = TemplateAbstractor(abstract_fallback)
