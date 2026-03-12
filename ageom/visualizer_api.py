@@ -353,6 +353,53 @@ def _build_hunter_summary(hunter_metrics: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _build_single_agent_summary(single_agent: dict[str, Any]) -> dict[str, Any]:
+    """Build the single_agent_summary section."""
+    if not single_agent:
+        return {}
+    policy = single_agent.get("policy", {})
+    if not isinstance(policy, dict):
+        policy = {}
+    concrete_artifacts = single_agent.get("concrete_artifacts", {})
+    if not isinstance(concrete_artifacts, dict):
+        concrete_artifacts = {}
+    artifacts: list[dict[str, Any]] = []
+    for name in sorted(concrete_artifacts):
+        row = concrete_artifacts.get(name, {})
+        if not isinstance(row, dict):
+            continue
+        artifacts.append(
+            {
+                "name": name,
+                "source": str(row.get("source", "") or ""),
+                "path": str(row.get("path", "") or ""),
+                "exists": bool(row.get("exists", False)),
+                "mutations": int(row.get("mutations", 0) or 0),
+            }
+        )
+    return {
+        "termination_reason": str(single_agent.get("termination_reason", "") or ""),
+        "verification_status": str(single_agent.get("verification_status", "") or ""),
+        "steps_used": int(single_agent.get("steps_used", 0) or 0),
+        "step_budget": int(single_agent.get("step_budget", 0) or 0),
+        "open_failures": list(single_agent.get("open_failures", []) or []),
+        "attempt_history": list(single_agent.get("attempt_history", []) or []),
+        "artifact_manifest_path": str(
+            single_agent.get("artifact_manifest_path", "") or ""
+        ),
+        "artifact_count": len(artifacts),
+        "artifacts": artifacts,
+        "policy": {
+            "direct_grounding_enabled": bool(
+                policy.get("direct_grounding_enabled", False)
+            ),
+            "decomposition_mode": str(policy.get("decomposition_mode", "") or ""),
+            "retrieval_intensity": str(policy.get("retrieval_intensity", "") or ""),
+            "repair_policy": str(policy.get("repair_policy", "") or ""),
+        },
+    }
+
+
 def _build_benchmark_summary(
     benchmark: dict[str, Any],
     release_validation: dict[str, Any],
@@ -700,6 +747,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     benchmark = metadata.get("benchmark_validation", {})
     release_validation = metadata.get("release_validation", {})
     shared_context = metadata.get("shared_context", {})
+    single_agent = metadata.get("single_agent", {})
     catalog_alignment = metadata.get("catalog_alignment", {})
     architect_metrics = metadata.get("architect_metrics", {})
     hunter_metrics = metadata.get("hunter_metrics", {})
@@ -711,6 +759,8 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         release_validation = {}
     if not isinstance(shared_context, dict):
         shared_context = {}
+    if not isinstance(single_agent, dict):
+        single_agent = {}
     if not isinstance(catalog_alignment, dict):
         catalog_alignment = {}
     if not isinstance(architect_metrics, dict):
@@ -728,6 +778,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     out["catalog_alignment_summary"] = _build_catalog_alignment_summary(catalog_alignment)
     out["architect_summary"] = _build_architect_summary(architect_metrics)
     out["hunter_summary"] = _build_hunter_summary(hunter_metrics)
+    out["single_agent_summary"] = _build_single_agent_summary(single_agent)
     out["benchmark_summary"] = _build_benchmark_summary(benchmark, release_validation)
     out["catalog_validation_summary"] = _build_catalog_validation_summary(release_validation)
     out["shared_context_summary"] = _build_shared_context_summary(shared_context)

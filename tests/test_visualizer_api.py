@@ -779,6 +779,80 @@ class TestDashboardAPI:
             "hunter",
         ]
 
+    def test_dashboard_run_includes_single_agent_summary(
+        self, client, monkeypatch, tmp_path
+    ):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "singleagent123",
+            "pipeline": "algorithm_creation",
+            "status": "completed",
+            "started_at": now - 8.0,
+            "last_update_at": now - 1.0,
+            "ended_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 1,
+            "prompt_successes": 1,
+            "prompt_failures": 0,
+            "prompt_inflight": 0,
+            "events_count": 6,
+            "metadata": {
+                "execution_mode": "single_agent",
+                "execution_path": "single_agent_direct",
+                "single_agent": {
+                    "termination_reason": "direct_verified",
+                    "verification_status": "verified",
+                    "step_budget": 6,
+                    "steps_used": 1,
+                    "open_failures": [],
+                    "attempt_history": ["direct_match"],
+                    "artifact_manifest_path": "build/demo/planner_artifacts.json",
+                    "concrete_artifacts": {
+                        "cdg": {
+                            "source": "direct_goal_cdg",
+                            "path": "build/demo/cdg.json",
+                            "exists": True,
+                            "mutations": 1,
+                        },
+                        "match_results": {
+                            "source": "direct_match_result",
+                            "path": "build/demo/matches.json",
+                            "exists": True,
+                            "mutations": 1,
+                        },
+                    },
+                    "policy": {
+                        "direct_grounding_enabled": True,
+                        "decomposition_mode": "single_pass",
+                        "retrieval_intensity": "light",
+                        "repair_policy": "bounded",
+                    },
+                },
+            },
+        }
+        (tmp_path / "run_singleagent123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs/singleagent123")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["execution_summary"]["mode"] == "single_agent"
+        assert data["single_agent_summary"]["termination_reason"] == "direct_verified"
+        assert data["single_agent_summary"]["verification_status"] == "verified"
+        assert data["single_agent_summary"]["step_budget"] == 6
+        assert data["single_agent_summary"]["steps_used"] == 1
+        assert data["single_agent_summary"]["artifact_manifest_path"].endswith(
+            "planner_artifacts.json"
+        )
+        assert data["single_agent_summary"]["artifact_count"] == 2
+        assert data["single_agent_summary"]["artifacts"][0]["name"] == "cdg"
+        assert data["single_agent_summary"]["policy"]["retrieval_intensity"] == "light"
+
     def test_dashboard_run_includes_architect_summary(
         self, client, monkeypatch, tmp_path
     ):

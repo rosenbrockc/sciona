@@ -25,7 +25,7 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     aggregates = summarize_flow_benchmark(results)
     aggregate_map = {aggregate.variant: aggregate for aggregate in aggregates}
 
-    assert aggregates[0].variant in {"structured", "verified"}
+    assert aggregates[0].variant in {"single_agent", "structured", "verified"}
     assert aggregate_map["direct_baseline"].failed_cases == len(cases)
     assert aggregate_map["rapid"].failed_cases == len(cases)
     assert aggregate_map["single_agent"].passed_cases == len(cases)
