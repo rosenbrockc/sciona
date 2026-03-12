@@ -337,6 +337,7 @@
           const catalogValidationAlignment = catalogValidation.alignment || {};
           const benchmarkRuntime = benchmark.runtime_complexity || {};
           const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
+          const singleAgentComparison = benchmark.single_agent_comparison || {};
           const singleAgent = r.single_agent_summary || {};
           const singleAgentPolicy = singleAgent.policy || {};
           const singleAgentTools = singleAgent.tool_metrics || [];
@@ -390,6 +391,9 @@
           const singleAgentBenchmarkLine = singleAgentComparisonSummary
             ? `<div class="run-meta">single_agent_bench ${singleAgentComparisonSummary}</div>`
             : "";
+          const singleAgentOverheadLine = singleAgentComparison.overhead_driver
+            ? `<div class="run-meta">single_agent_overhead driver=${singleAgentComparison.overhead_driver} tools=${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} escalations=${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)}</div>`
+            : "";
           const runtimeModeSummary = Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes)
                 .map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.transport_count || 0)}`)
@@ -435,6 +439,7 @@
             singleAgentToolLine,
             singleAgentEscalationLine,
             singleAgentBenchmarkLine,
+            singleAgentOverheadLine,
             validationLine
           ].join("");
           div.addEventListener("click", () => {
@@ -468,6 +473,7 @@
         const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
         const benchmarkOverridePolicy = benchmarkRuntime.override_policy || {};
         const benchmarkFlowPaths = benchmark.flow_execution_paths || {};
+        const singleAgentComparison = benchmark.single_agent_comparison || {};
         const singleAgent = run.single_agent_summary || {};
         const singleAgentPolicy = singleAgent.policy || {};
         const singleAgentTools = singleAgent.tool_metrics || [];
@@ -604,6 +610,9 @@
           ["flow gate", `${(benchmark.flow_required_variants || []).join(",") || "--"} | ${Number(benchmark.flow_mode_failures || 0)} / ${Number(benchmark.flow_mode_unstable_groups || 0)}`],
           ["flow compare", `${(benchmark.flow_comparison_variants || []).join(",") || "--"} | ${Number(benchmark.flow_comparison_failures || 0)} / ${Number(benchmark.flow_comparison_unstable_groups || 0)}`],
           ["single-agent bench", singleAgentComparisonSummary || "--"],
+          ["single-agent overhead", singleAgentComparison.overhead_driver
+            ? `${singleAgentComparison.overhead_driver} / ${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} tools / ${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)} escalations`
+            : "--"],
           ["release", benchmark.release_status || "--"],
           ["started", fmtTime(run.started_at)],
           ["updated", fmtTime(run.last_update_at)]

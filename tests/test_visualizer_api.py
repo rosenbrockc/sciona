@@ -512,6 +512,13 @@ class TestDashboardAPI:
                         "violations": [],
                     },
                     "flow_prompt_volume_summary": "direct_baseline=2.0, rapid=6.0, structured=7.0, verified=8.0",
+                    "single_agent_comparison": {
+                        "present": True,
+                        "overhead_driver": "tool_chatter",
+                        "avg_planner_tool_dispatches": 4.0,
+                        "avg_planner_escalations": 1.0,
+                    },
+                    "single_agent_comparison_summary": "driver=tool_chatter",
                     "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
                     "flow_avg_planner_tool_dispatches": {
                         "rapid": 0.0,
@@ -656,8 +663,8 @@ class TestDashboardAPI:
         assert "structured=structured_single_pass" in data["benchmark_summary"]["flow_execution_path_summary"]
         assert "verified=8.0" in data["benchmark_summary"]["flow_prompt_volume_summary"]
         assert "verified=1/1/1" in data["benchmark_summary"]["runtime_override_policy_summary"]
-        assert data["benchmark_summary"]["single_agent_comparison"] == {}
-        assert data["benchmark_summary"]["single_agent_comparison_summary"] == ""
+        assert data["benchmark_summary"]["single_agent_comparison"]["overhead_driver"] == "tool_chatter"
+        assert data["benchmark_summary"]["single_agent_comparison_summary"] == "driver=tool_chatter"
         assert data["benchmark_summary"]["health_summary"] == (
             "warnings=subcheck=comparison_failures warning=flow_comparison_failures=2 "
             "failures=subcheck=runtime_budget failure=legacy_providers_present=codex_cli"
