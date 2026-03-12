@@ -221,7 +221,7 @@ class SubprocessCLIClient:
             if model:
                 cmd += ["-m", model]
         elif self._cli == "gemini":
-            cmd += ["gemini", "-p", "--output-format", "text", "--extensions", ""]
+            cmd += ["gemini", "-p", "", "--output-format", "text", "--extensions", ""]
             if self._model:
                 cmd += ["--model", self._model]
         return cmd
