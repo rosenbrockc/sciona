@@ -486,6 +486,14 @@ def benchmark_warning_summary(summary: dict[str, Any]) -> dict[str, str]:
     if not isinstance(single_agent_comparison, dict):
         single_agent_comparison = {}
     overhead_driver = str(single_agent_comparison.get("overhead_driver", "") or "")
+    prune_recommendation = str(
+        single_agent_comparison.get("prune_recommendation", "") or ""
+    )
+    single_agent_prune = (
+        f"single_agent_prune={prune_recommendation}"
+        if prune_recommendation == "review_single_agent_routing"
+        else ""
+    )
     single_agent_overhead = (
         f"single_agent_overhead={overhead_driver}"
         if overhead_driver in {"tool_chatter", "tool_latency", "escalation_heavy"}
@@ -500,6 +508,11 @@ def benchmark_warning_summary(summary: dict[str, Any]) -> dict[str, str]:
         return {
             "top_warning_subcheck": "comparison_instability",
             "top_warning": comparison_instability,
+        }
+    if single_agent_prune:
+        return {
+            "top_warning_subcheck": "single_agent_prune",
+            "top_warning": single_agent_prune,
         }
     if single_agent_overhead:
         return {

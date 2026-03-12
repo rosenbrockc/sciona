@@ -349,6 +349,24 @@ def test_benchmark_warning_summary_falls_back_to_single_agent_overhead():
         {
             "flow_comparison_failures": 0,
             "flow_comparison_unstable_groups": 0,
+            "single_agent_comparison": {
+                "overhead_driver": "tool_chatter",
+                "prune_recommendation": "keep_current",
+            },
+        }
+    )
+
+    assert summary == {
+        "top_warning_subcheck": "single_agent_overhead",
+        "top_warning": "single_agent_overhead=tool_chatter",
+    }
+
+
+def test_benchmark_warning_summary_prefers_single_agent_prune_over_generic_overhead():
+    summary = benchmark_warning_summary(
+        {
+            "flow_comparison_failures": 0,
+            "flow_comparison_unstable_groups": 0,
             "single_agent_comparison": {"overhead_driver": "tool_chatter"},
         }
     )
@@ -356,6 +374,22 @@ def test_benchmark_warning_summary_falls_back_to_single_agent_overhead():
     assert summary == {
         "top_warning_subcheck": "single_agent_overhead",
         "top_warning": "single_agent_overhead=tool_chatter",
+    }
+
+    summary = benchmark_warning_summary(
+        {
+            "flow_comparison_failures": 0,
+            "flow_comparison_unstable_groups": 0,
+            "single_agent_comparison": {
+                "overhead_driver": "tool_chatter",
+                "prune_recommendation": "review_single_agent_routing",
+            },
+        }
+    )
+
+    assert summary == {
+        "top_warning_subcheck": "single_agent_prune",
+        "top_warning": "single_agent_prune=review_single_agent_routing",
     }
 
 
