@@ -459,6 +459,15 @@ def benchmark_warning_summary(summary: dict[str, Any]) -> dict[str, str]:
         if int(summary.get("flow_comparison_unstable_groups", 0) or 0) > 0
         else ""
     )
+    single_agent_comparison = summary.get("single_agent_comparison", {})
+    if not isinstance(single_agent_comparison, dict):
+        single_agent_comparison = {}
+    overhead_driver = str(single_agent_comparison.get("overhead_driver", "") or "")
+    single_agent_overhead = (
+        f"single_agent_overhead={overhead_driver}"
+        if overhead_driver in {"tool_chatter", "tool_latency", "escalation_heavy"}
+        else ""
+    )
     if comparison_failure:
         return {
             "top_warning_subcheck": "comparison_failures",
@@ -468,6 +477,11 @@ def benchmark_warning_summary(summary: dict[str, Any]) -> dict[str, str]:
         return {
             "top_warning_subcheck": "comparison_instability",
             "top_warning": comparison_instability,
+        }
+    if single_agent_overhead:
+        return {
+            "top_warning_subcheck": "single_agent_overhead",
+            "top_warning": single_agent_overhead,
         }
     return {"top_warning_subcheck": "", "top_warning": ""}
 
@@ -864,6 +878,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         {
             "flow_comparison_failures": flow_comparison_failures,
             "flow_comparison_unstable_groups": flow_comparison_unstable_groups,
+            "single_agent_comparison": single_agent_comparison,
         }
     )
     flow_agg_map = {agg.variant: agg for agg in flow_aggregates}

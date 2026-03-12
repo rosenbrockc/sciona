@@ -295,12 +295,28 @@ def test_benchmark_warning_summary_prefers_comparison_failures():
         {
             "flow_comparison_failures": 2,
             "flow_comparison_unstable_groups": 1,
+            "single_agent_comparison": {"overhead_driver": "tool_chatter"},
         }
     )
 
     assert summary == {
         "top_warning_subcheck": "comparison_failures",
         "top_warning": "flow_comparison_failures=2",
+    }
+
+
+def test_benchmark_warning_summary_falls_back_to_single_agent_overhead():
+    summary = benchmark_warning_summary(
+        {
+            "flow_comparison_failures": 0,
+            "flow_comparison_unstable_groups": 0,
+            "single_agent_comparison": {"overhead_driver": "tool_chatter"},
+        }
+    )
+
+    assert summary == {
+        "top_warning_subcheck": "single_agent_overhead",
+        "top_warning": "single_agent_overhead=tool_chatter",
     }
 
 
