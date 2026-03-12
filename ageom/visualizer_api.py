@@ -576,6 +576,9 @@ def _build_benchmark_summary(
         "release_top_benchmark_warning": str(
             release_validation.get("top_benchmark_warning", "") or ""
         ),
+        "release_top_benchmark_warning_subcheck": str(
+            release_validation.get("top_benchmark_warning_subcheck", "") or ""
+        ),
         "release_failure_summary": str(
             release_validation.get("failure_summary", "") or ""
         ),

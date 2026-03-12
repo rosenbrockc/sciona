@@ -594,7 +594,7 @@
           ["benchmark top fail", benchmark.top_failure || "--"],
           ["release warnings", benchmark.release_warning_summary || "--"],
           ["release warning counts", `${Number(benchmark.release_runtime_warning_count || 0)} runtime / ${Number(benchmark.release_catalog_warning_count || 0)} catalog / ${Number(benchmark.release_benchmark_warning_count || 0)} benchmark`],
-          ["release top warn", `${benchmark.release_top_runtime_warning || "--"} | ${benchmark.release_top_catalog_warning || "--"} | ${benchmark.release_top_benchmark_warning || "--"}`],
+          ["release top warn", `${benchmark.release_top_runtime_warning || "--"} | ${benchmark.release_top_catalog_warning || "--"} | ${benchmark.release_top_benchmark_warning_subcheck || "--"}:${benchmark.release_top_benchmark_warning || "--"}`],
           ["release failures", benchmark.release_failure_summary || "--"],
           ["release failed check", benchmark.release_top_failed_check || "--"],
           ["release bench check", benchmark.release_top_benchmark_subcheck || "--"],
