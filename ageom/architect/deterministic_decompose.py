@@ -10,6 +10,7 @@ This module deterministically synthesizes operational details:
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 import re
 import uuid
@@ -23,6 +24,8 @@ from ageom.architect.models import (
     IOSpec,
     NodeStatus,
 )
+from ageom.architect.skeletons import get_skeleton, instantiate_skeleton
+from ageom.architect.strategy_classifier import StrategyClassifier
 
 
 @dataclass
@@ -45,6 +48,26 @@ class PrimitiveBindingSuggestion:
     primitive: Any | None
     confidence: float
     source: str
+
+
+@dataclass(frozen=True)
+class ParsedDecomposePrompt:
+    """Structured fields extracted from the Architect decompose prompt."""
+
+    node_name: str
+    node_description: str
+    concept_type: ConceptType | None
+    inputs: list[IOSpec]
+    outputs: list[IOSpec]
+    depth: int
+    max_depth: int
+
+
+_SUPPORTED_DETERMINISTIC_DECOMPOSE: tuple[ConceptType, ...] = (
+    ConceptType.DIVIDE_AND_CONQUER,
+    ConceptType.DYNAMIC_PROGRAMMING,
+    ConceptType.SIGNAL_FILTER,
+)
 
 
 def _invariant_error(code: str, message: str) -> DeterministicRewriteError:
@@ -1754,6 +1777,199 @@ def _prepare_raw_sub_nodes(
         cleaned.append(item)
         existing_norm.add(name_norm)
     return cleaned
+
+
+def _extract_prompt_value(user: str, label: str) -> str:
+    pattern = re.compile(rf"^\s*{re.escape(label)}:\s*(.*)$", re.MULTILINE)
+    match = pattern.search(user)
+    return match.group(1).strip() if match is not None else ""
+
+
+def _parse_prompt_io(raw: str) -> list[IOSpec]:
+    text = raw.strip()
+    if not text or text.lower() == "none":
+        return []
+    parts = re.split(r", (?=[A-Za-z_][A-Za-z0-9_]*: )", text)
+    ports: list[IOSpec] = []
+    for part in parts:
+        if ":" not in part:
+            continue
+        name, rest = part.split(":", 1)
+        port_name = name.strip()
+        if not port_name:
+            continue
+        required = "(optional" not in rest
+        default_match = re.search(r"default=([^)]+)", rest)
+        type_desc = re.sub(r"\s*\(optional.*\)$", "", rest).strip()
+        ports.append(
+            IOSpec(
+                name=port_name,
+                type_desc=type_desc or "Any",
+                required=required,
+                default_value_repr=default_match.group(1).strip() if default_match else "",
+            )
+        )
+    return ports
+
+
+def _parse_decompose_prompt(user: str) -> ParsedDecomposePrompt:
+    concept_raw = _extract_prompt_value(user, "Concept type")
+    try:
+        concept_type = ConceptType(concept_raw)
+    except ValueError:
+        concept_type = None
+    try:
+        depth = int(_extract_prompt_value(user, "Current depth") or 0)
+    except ValueError:
+        depth = 0
+    try:
+        max_depth = int(_extract_prompt_value(user, "Max depth") or 0)
+    except ValueError:
+        max_depth = 0
+    return ParsedDecomposePrompt(
+        node_name=_extract_prompt_value(user, "Name"),
+        node_description=_extract_prompt_value(user, "Description"),
+        concept_type=concept_type,
+        inputs=_parse_prompt_io(_extract_prompt_value(user, "Inputs")),
+        outputs=_parse_prompt_io(_extract_prompt_value(user, "Outputs")),
+        depth=depth,
+        max_depth=max_depth,
+    )
+
+
+def _goal_text_from_prompt(prompt: ParsedDecomposePrompt) -> str:
+    parts = [prompt.node_name, prompt.node_description]
+    if prompt.concept_type is not None:
+        parts.append(prompt.concept_type.value.replace("_", " "))
+    return " ".join(part for part in parts if part).strip()
+
+
+def _is_template_node_name(concept: ConceptType, node_name: str) -> bool:
+    skeleton = get_skeleton(concept)
+    if skeleton is None:
+        return False
+    target = _norm(node_name)
+    return any(_norm(node.name) == target for node in skeleton.template_nodes)
+
+
+def _choose_decomposition_strategy(
+    prompt: ParsedDecomposePrompt,
+    classifier: StrategyClassifier,
+) -> tuple[ConceptType, float, str, str] | None:
+    goal_text = _goal_text_from_prompt(prompt)
+    decision = classifier.classify(goal_text, allowed=list(_SUPPORTED_DETERMINISTIC_DECOMPOSE))
+    if decision is not None and decision[1] >= 0.8:
+        return decision
+    if (
+        prompt.concept_type in _SUPPORTED_DETERMINISTIC_DECOMPOSE
+        and not _is_template_node_name(prompt.concept_type, prompt.node_name)
+    ):
+        return (
+            prompt.concept_type,
+            0.85,
+            "deterministic parent concept fallback",
+            "",
+        )
+    return None
+
+
+def _emit_from_skeleton(
+    strategy: ConceptType,
+    *,
+    prompt: ParsedDecomposePrompt,
+    variant_hint: str = "",
+) -> dict[str, Any] | None:
+    skeleton = get_skeleton(strategy, variant=variant_hint or None)
+    if skeleton is None:
+        return None
+    goal_text = _goal_text_from_prompt(prompt) or prompt.node_name or strategy.value.replace("_", " ")
+    nodes, edges = instantiate_skeleton(skeleton, goal_text, parent_id="deterministic_parent", base_depth=0)
+    if len(nodes) < 2:
+        return None
+
+    sub_nodes: list[dict[str, Any]] = []
+    for idx, node in enumerate(nodes):
+        inputs = prompt.inputs if idx == 0 and prompt.inputs else node.inputs
+        outputs = prompt.outputs if idx == len(nodes) - 1 and prompt.outputs else node.outputs
+        sub_nodes.append(
+            {
+                "name": node.name,
+                "description": node.description,
+                "concept_type": node.concept_type.value,
+                "inputs": [port.model_dump() for port in inputs],
+                "outputs": [port.model_dump() for port in outputs],
+            }
+        )
+
+    node_names = {node.node_id: node.name for node in nodes}
+    flow_hints = [
+        {
+            "from": node_names[edge.source_id],
+            "to": node_names[edge.target_id],
+            "why": f"{edge.output_name} feeds {edge.input_name}",
+        }
+        for edge in edges
+        if edge.source_id in node_names and edge.target_id in node_names
+    ]
+    return {
+        "progress_updates": [
+            f"instantiate {strategy.value} decomposition skeleton",
+            f"emit {len(sub_nodes)} conceptual sub-steps",
+        ],
+        "sub_nodes": sub_nodes,
+        "flow_hints": flow_hints,
+    }
+
+
+class DeterministicDecomposer:
+    """Deterministic skeleton-backed wrapper for architect_decompose."""
+
+    _telemetry_provider = "deterministic"
+    _telemetry_model = "decomposer_v1"
+
+    def __init__(self, fallback: Any) -> None:
+        self._fallback = fallback
+        self._strategy_classifier = StrategyClassifier(fallback)
+        self._last_completion_metadata: dict[str, Any] = {}
+        self._last_error_metadata: dict[str, Any] = {}
+
+    def get_last_completion_metadata(self) -> dict[str, Any]:
+        return dict(self._last_completion_metadata)
+
+    def get_last_error_metadata(self) -> dict[str, Any]:
+        return dict(self._last_error_metadata)
+
+    async def complete(self, system: str, user: str) -> str:
+        prompt = _parse_decompose_prompt(user)
+        decision = _choose_decomposition_strategy(prompt, self._strategy_classifier)
+        if decision is None:
+            self._last_completion_metadata = {"decompose_source": "fallback"}
+            self._last_error_metadata = {}
+            return await self._fallback.complete(system, user)
+
+        strategy, confidence, rationale, variant_hint = decision
+        payload = _emit_from_skeleton(
+            strategy,
+            prompt=prompt,
+            variant_hint=variant_hint,
+        )
+        if payload is None:
+            self._last_completion_metadata = {"decompose_source": "fallback"}
+            self._last_error_metadata = {}
+            return await self._fallback.complete(system, user)
+
+        self._last_completion_metadata = {
+            "decompose_source": "deterministic",
+            "decompose_strategy": strategy.value,
+            "decompose_confidence": round(confidence, 3),
+            "decompose_variant_hint": variant_hint,
+            "decompose_rationale": rationale,
+        }
+        self._last_error_metadata = {}
+        return json.dumps(payload)
+
+    async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
+        return await self.complete(system, user)
 
 
 def build_deterministic_decomposition(

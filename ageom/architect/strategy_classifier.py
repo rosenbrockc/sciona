@@ -149,6 +149,15 @@ class StrategyClassifier:
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         return await self.complete(system, user)
 
+    def classify(
+        self,
+        goal: str,
+        allowed: list[ConceptType] | None = None,
+    ) -> tuple[ConceptType, float, str, str] | None:
+        """Classify a goal without going through prompt formatting."""
+        allowed_concepts = allowed or list(SKELETON_TEMPLATES)
+        return self._classify(goal, allowed_concepts)
+
     def _classify(
         self,
         goal: str,

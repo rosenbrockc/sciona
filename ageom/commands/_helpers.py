@@ -91,6 +91,7 @@ def _create_llm_router(
     Clients with matching (provider, model) pairs are deduplicated.
     """
     from ageom.config import should_apply_prompt_override
+    from ageom.architect.deterministic_decompose import DeterministicDecomposer
     from ageom.architect.strategy_classifier import StrategyClassifier
     from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
     from ageom.hunter.embedding_reranker import EmbeddingReranker
@@ -104,6 +105,7 @@ def _create_llm_router(
     from ageom.hunter.llm import create_llm_client
     from ageom.llm_router import (
         ARCHITECT_STRATEGY,
+        ARCHITECT_DECOMPOSE,
         HUNTER_ANALYZE_FAILURE,
         HUNTER_REFORMULATE,
         HUNTER_SCORE,
@@ -157,6 +159,9 @@ def _create_llm_router(
     if round_name == "architect" and ARCHITECT_STRATEGY in prompt_keys:
         strategy_fallback = overrides.get(ARCHITECT_STRATEGY, default)
         overrides[ARCHITECT_STRATEGY] = StrategyClassifier(strategy_fallback)
+    if round_name == "architect" and ARCHITECT_DECOMPOSE in prompt_keys:
+        decompose_fallback = overrides.get(ARCHITECT_DECOMPOSE, default)
+        overrides[ARCHITECT_DECOMPOSE] = DeterministicDecomposer(decompose_fallback)
     if round_name == "hunter" and HUNTER_SCORE in prompt_keys:
         score_fallback = overrides.get(HUNTER_SCORE, default)
         heuristic_ranker = HeuristicCandidateRanker(score_fallback)
