@@ -181,6 +181,127 @@ class SingleAgentPlanner:
                 state=state,
             )
 
+        # --- Partial result acceptance ---
+        # If most leaves matched, accept the partial result without escalation
+        if state.policy.partial_accept_enabled:
+            total_leaves = len(pdg_nodes)
+            matched_leaves = total_leaves - len(batch_result.ungroundable)
+            if total_leaves > 0 and matched_leaves / total_leaves >= 0.7:
+                state.current_focus = "goal_grounded"
+                state.termination_reason = "partial_accept"
+                state.verification_status = "partial_verified"
+                self._record_step(
+                    state,
+                    action="partial_accept",
+                    detail=(
+                        f"Accepted partial result: {matched_leaves}/{total_leaves} leaves matched "
+                        f"({len(batch_result.ungroundable)} unresolved)."
+                    ),
+                )
+                log_event(
+                    "planner",
+                    "decision",
+                    "PLANNER_PARTIAL_ACCEPT",
+                    payload={
+                        "matched": matched_leaves,
+                        "total": total_leaves,
+                        "ungroundable": list(batch_result.ungroundable),
+                    },
+                )
+                return self._complete(
+                    result=OrchestratorResult(
+                        cdg=decompose_result.cdg,
+                        match_results=batch_result.match_results,
+                        rounds_used=1,
+                        failures=batch_result.failures,
+                        ungroundable=batch_result.ungroundable,
+                    ),
+                    execution_path="single_agent_partial",
+                    state=state,
+                )
+
+        # --- Selective re-decomposition ---
+        # Instead of escalating the entire CDG, re-decompose only the failed leaves
+        # and retry matching just those. This avoids the expense of full orchestration.
+        if (
+            state.policy.selective_redecompose_enabled
+            and batch_result.failures
+            and state.budget.steps_used < state.budget.max_steps - 1
+        ):
+            from ageom.orchestrator import (
+                _deterministic_split_subnodes,
+                _find_cdg_node,
+                _apply_split_subnodes,
+            )
+
+            cdg = decompose_result.cdg
+            split_count = 0
+            for failure in batch_result.failures:
+                original = _find_cdg_node(cdg, failure.pdg_node.predicate_id)
+                sub_nodes = _deterministic_split_subnodes(failure, original)
+                if sub_nodes and original is not None:
+                    _apply_split_subnodes(cdg, original, sub_nodes)
+                    split_count += 1
+
+            if split_count > 0:
+                self._record_step(
+                    state,
+                    action="selective_redecompose",
+                    detail=f"Deterministically re-decomposed {split_count} failed leaves.",
+                )
+                # Re-match only the new sub-nodes
+                new_pdg_nodes = to_pdg_nodes(cdg, prover=self._prover, strict=False)
+                already_matched = {
+                    mr.pdg_node.predicate_id
+                    for mr in batch_result.match_results
+                    if getattr(mr, "success", False)
+                }
+                retry_nodes = [n for n in new_pdg_nodes if n.predicate_id not in already_matched]
+
+                if retry_nodes:
+                    retry_result = await self._hunter.match_batch(
+                        HunterBatchMatchRequest(pdg_nodes=retry_nodes)
+                    )
+                    # Merge results
+                    all_results = [
+                        mr for mr in batch_result.match_results
+                        if mr.pdg_node.predicate_id in already_matched
+                    ] + retry_result.match_results
+                    all_ungroundable = retry_result.ungroundable
+                    all_failures = retry_result.failures
+
+                    self._record_step(
+                        state,
+                        action="retry_match",
+                        detail=f"Retried {len(retry_nodes)} nodes after re-decomposition.",
+                        status="completed" if not all_ungroundable else "partial",
+                    )
+
+                    if not all_ungroundable:
+                        state.current_focus = "goal_grounded"
+                        state.open_failures = []
+                        state.termination_reason = "redecompose_verified"
+                        state.verification_status = "verified"
+                        return self._complete(
+                            result=OrchestratorResult(
+                                cdg=cdg,
+                                match_results=all_results,
+                                rounds_used=1,
+                                failures=all_failures,
+                                ungroundable=all_ungroundable,
+                            ),
+                            execution_path="single_agent_redecomposed",
+                            state=state,
+                        )
+
+                    # Update state for potential escalation
+                    state.open_failures = list(all_ungroundable)
+                    batch_result = type(batch_result)(
+                        match_results=all_results,
+                        failures=all_failures,
+                        ungroundable=all_ungroundable,
+                    )
+
         state.current_focus = "orchestration"
         orchestrated = await self._orchestrator.run(
             OrchestrationRequest(

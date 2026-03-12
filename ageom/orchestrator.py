@@ -194,6 +194,196 @@ def _deterministic_split_subnodes(
             },
         ]
 
+    # Matrix factorization / decomposition
+    if any(term in lowered for term in ("matrix factori", "svd", "eigenvalue", "eigen decomp")):
+        return [
+            {
+                "name": "Factorize Matrix",
+                "description": "Compute the factorization of the input matrix.",
+                "type_signature": "",
+            },
+            {
+                "name": "Extract Components",
+                "description": "Extract the desired components from the factorization result.",
+                "type_signature": "",
+            },
+        ]
+
+    # Optimization / minimization
+    if any(term in lowered for term in ("optimi", "minimi", "maximi", "gradient descent", "loss function")):
+        return [
+            {
+                "name": "Initialize Parameters",
+                "description": "Set initial parameter values for the optimization.",
+                "type_signature": "",
+            },
+            {
+                "name": "Iterate Optimization",
+                "description": "Run the iterative optimization loop until convergence.",
+                "type_signature": "",
+            },
+            {
+                "name": "Extract Solution",
+                "description": "Extract the optimal parameters from the converged state.",
+                "type_signature": "",
+            },
+        ]
+
+    # FFT / spectral analysis
+    if any(term in lowered for term in ("fft", "fourier", "spectral", "frequency spectrum")):
+        return [
+            {
+                "name": "Compute Transform",
+                "description": "Apply the forward frequency-domain transform to the signal.",
+                "type_signature": "",
+            },
+            {
+                "name": "Analyze Spectrum",
+                "description": "Extract the relevant spectral features from the transform output.",
+                "type_signature": "",
+            },
+        ]
+
+    # Sorting algorithms
+    if any(term in lowered for term in ("sort", "order", "arrange", "rank element")):
+        return [
+            {
+                "name": "Partition Elements",
+                "description": "Divide elements into sub-groups for ordered processing.",
+                "type_signature": "",
+            },
+            {
+                "name": "Merge Ordered",
+                "description": "Combine partitioned sub-groups into the final sorted order.",
+                "type_signature": "",
+            },
+        ]
+
+    # String matching / edit distance
+    if any(term in lowered for term in ("edit distance", "levenshtein", "string matching", "string align")):
+        return [
+            {
+                "name": "Build Distance Table",
+                "description": "Compute the edit distance table between the two sequences.",
+                "type_signature": "",
+            },
+            {
+                "name": "Trace Alignment",
+                "description": "Recover the optimal alignment or edit operations from the table.",
+                "type_signature": "",
+            },
+        ]
+
+    # Signal processing: detect + compute pattern (e.g. R-peak → heart rate)
+    if ("detect" in lowered or "peak" in lowered) and ("comput" in lowered or "rate" in lowered or "measur" in lowered):
+        return [
+            {
+                "name": "Detect Features",
+                "description": "Identify the key features or events in the input signal.",
+                "type_signature": "",
+            },
+            {
+                "name": "Compute Metric",
+                "description": "Derive the target metric from the detected features.",
+                "type_signature": "",
+            },
+        ]
+
+    # Interpolation / approximation
+    if any(term in lowered for term in ("interpolat", "spline", "approximat", "curve fit")):
+        return [
+            {
+                "name": "Fit Model",
+                "description": "Fit the interpolation or approximation model to the data points.",
+                "type_signature": "",
+            },
+            {
+                "name": "Evaluate Model",
+                "description": "Evaluate the fitted model at the target query points.",
+                "type_signature": "",
+            },
+        ]
+
+    # Clustering
+    if any(term in lowered for term in ("cluster", "k-means", "kmeans", "dbscan", "group similar")):
+        return [
+            {
+                "name": "Assign Clusters",
+                "description": "Assign data points to cluster centroids or groups.",
+                "type_signature": "",
+            },
+            {
+                "name": "Refine Centroids",
+                "description": "Update cluster centroids or boundaries based on assignments.",
+                "type_signature": "",
+            },
+        ]
+
+    # Statistical inference / Bayesian
+    if any(term in lowered for term in ("posterior", "bayesian", "likelihood", "prior", "inference", "sampling")):
+        return [
+            {
+                "name": "Specify Model",
+                "description": "Define the probabilistic model with prior and likelihood.",
+                "type_signature": "",
+            },
+            {
+                "name": "Fit Or Sample",
+                "description": "Perform inference via sampling or optimization.",
+                "type_signature": "",
+            },
+            {
+                "name": "Summarize Results",
+                "description": "Extract posterior summaries or point estimates.",
+                "type_signature": "",
+            },
+        ]
+
+    # Tree / graph traversal
+    if any(term in lowered for term in ("travers", "bfs", "dfs", "breadth first", "depth first", "search tree")):
+        return [
+            {
+                "name": "Initialize Traversal",
+                "description": "Set up the traversal frontier with the starting node(s).",
+                "type_signature": "",
+            },
+            {
+                "name": "Explore Neighbors",
+                "description": "Iteratively visit neighbors and collect results.",
+                "type_signature": "",
+            },
+        ]
+
+    # Convolution / correlation
+    if any(term in lowered for term in ("convolv", "convolution", "correlat", "cross-correlat")):
+        return [
+            {
+                "name": "Prepare Kernel",
+                "description": "Set up the convolution or correlation kernel.",
+                "type_signature": "",
+            },
+            {
+                "name": "Apply Convolution",
+                "description": "Apply the kernel operation across the input signal.",
+                "type_signature": "",
+            },
+        ]
+
+    # Normalization / standardization
+    if any(term in lowered for term in ("normaliz", "standardiz", "scale feature", "feature scal")):
+        return [
+            {
+                "name": "Compute Statistics",
+                "description": "Compute the normalization statistics (mean, std, min, max).",
+                "type_signature": "",
+            },
+            {
+                "name": "Apply Transform",
+                "description": "Apply the normalization transform to the data.",
+                "type_signature": "",
+            },
+        ]
+
     return _split_on_connectors(description or statement)
 
 

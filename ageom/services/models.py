@@ -70,13 +70,15 @@ class PlannerPolicy:
     direct_grounding_enabled: bool = True
     decomposition_mode: str = "single_pass"
     escalation_enabled: bool = True
+    partial_accept_enabled: bool = True
+    selective_redecompose_enabled: bool = True
 
 
 @dataclass
 class PlannerBudget:
     """Bounded planner budget used for deterministic tool orchestration."""
 
-    max_steps: int = 4
+    max_steps: int = 6
     steps_used: int = 0
 
 

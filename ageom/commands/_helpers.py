@@ -94,10 +94,12 @@ def _create_llm_router(
     from ageom.architect.strategy_classifier import StrategyClassifier
     from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
     from ageom.hunter.embedding_reranker import EmbeddingReranker
+    from ageom.hunter.failure_analyzer import DeterministicFailureAnalyzer
     from ageom.hunter.query_reformulator import HeuristicQueryReformulator
     from ageom.hunter.llm import create_llm_client
     from ageom.llm_router import (
         ARCHITECT_STRATEGY,
+        HUNTER_ANALYZE_FAILURE,
         HUNTER_REFORMULATE,
         HUNTER_SCORE,
         LLMRouter,
@@ -150,6 +152,9 @@ def _create_llm_router(
             overrides[HUNTER_SCORE] = EmbeddingReranker(embedder, heuristic_ranker)
         else:
             overrides[HUNTER_SCORE] = heuristic_ranker
+    if round_name == "hunter" and HUNTER_ANALYZE_FAILURE in prompt_keys:
+        analyze_fallback = overrides.get(HUNTER_ANALYZE_FAILURE, default)
+        overrides[HUNTER_ANALYZE_FAILURE] = DeterministicFailureAnalyzer(analyze_fallback)
     if round_name == "hunter" and HUNTER_REFORMULATE in prompt_keys:
         reformulate_fallback = overrides.get(HUNTER_REFORMULATE, default)
         overrides[HUNTER_REFORMULATE] = HeuristicQueryReformulator(

@@ -94,20 +94,82 @@ _NAMESPACE_RE = re.compile(r"unknown namespace '?([A-Za-z_][\w.]*)'?")
 _PYTHON_MODULE_RE = re.compile(r"(?:No module named|module named) '([A-Za-z_][\w.]*)'?")
 
 
+_TYPE_EXPECTED_GOT_RE = re.compile(
+    r"expected\s+['\"]?(\S+)['\"]?.*got\s+['\"]?(\S+)", re.IGNORECASE
+)
+_INCOMPATIBLE_RETURN_RE = re.compile(
+    r'Incompatible return value type \(got "([^"]+)", expected "([^"]+)"\)', re.IGNORECASE
+)
+_ARG_INCOMPATIBLE_RE = re.compile(
+    r'Argument \d+ .* has incompatible type "([^"]+)".*expected "([^"]+)"', re.IGNORECASE
+)
+_UNDEFINED_NAME_RE = re.compile(r'Name "(\w+)" is not defined', re.IGNORECASE)
+_ATTR_MISSING_RE = re.compile(r'"(\w+)" has no attribute "(\w+)"', re.IGNORECASE)
+
+# Known coercions: (from_type, to_type) → fix expression
+_PYTHON_COERCIONS: dict[tuple[str, str], str] = {
+    ("int", "float"): "float({expr})",
+    ("float", "int"): "int({expr})",
+    ("str", "int"): "int({expr})",
+    ("str", "float"): "float({expr})",
+    ("list", "ndarray"): "np.array({expr})",
+    ("ndarray", "list"): "{expr}.tolist()",
+    ("List[float]", "ndarray"): "np.array({expr})",
+    ("List[int]", "ndarray"): "np.array({expr})",
+    ("tuple", "list"): "list({expr})",
+    ("list", "tuple"): "tuple({expr})",
+}
+
+# Lean4 coercions
+_LEAN_COERCIONS: dict[tuple[str, str], str] = {
+    ("Nat", "Int"): "Int.ofNat",
+    ("Int", "Nat"): "Int.toNat",
+    ("Fin n", "Nat"): "Fin.val",
+    ("List α", "Array α"): "List.toArray",
+    ("Array α", "List α"): "Array.toList",
+}
+
+# Common Python import suggestions for undefined names
+_COMMON_IMPORTS: dict[str, str] = {
+    "np": "import numpy as np",
+    "numpy": "import numpy",
+    "pd": "import pandas as pd",
+    "plt": "import matplotlib.pyplot as plt",
+    "scipy": "import scipy",
+    "signal": "from scipy import signal",
+    "linalg": "from scipy import linalg",
+    "ndarray": "from numpy import ndarray",
+    "Optional": "from typing import Optional",
+    "List": "from typing import List",
+    "Dict": "from typing import Dict",
+    "Tuple": "from typing import Tuple",
+    "Callable": "from typing import Callable",
+    "Any": "from typing import Any",
+}
+
+
 def suggest_deterministic_fix(category: ErrorCategory, error_text: str) -> str | None:
     """Return a deterministic fix string if one exists, else None.
 
-    Currently handles:
-    - MISSING_IMPORT: suggests `open {namespace}` or `import Mathlib.{module}`
+    Handles:
+    - MISSING_IMPORT: suggests `open {namespace}`, `import module`, or common imports
+    - TYPE_MISMATCH: suggests coercions for known type pairs
+    - SYNTAX: suggests common syntax corrections
     """
-    if category != ErrorCategory.MISSING_IMPORT:
-        return None
+    if category == ErrorCategory.MISSING_IMPORT:
+        return _fix_missing_import(error_text)
+    if category == ErrorCategory.TYPE_MISMATCH:
+        return _fix_type_mismatch(error_text)
+    if category == ErrorCategory.SYNTAX:
+        return _fix_syntax(error_text)
+    return None
 
-    # Try to extract the identifier
+
+def _fix_missing_import(error_text: str) -> str | None:
+    # Lean: unknown identifier/constant
     m = _IMPORT_IDENT_RE.search(error_text)
     if m:
         ident = m.group(1)
-        # If it has a namespace prefix, suggest opening that namespace
         parts = ident.rsplit(".", 1)
         if len(parts) == 2:
             return f"open {parts[0]}"
@@ -118,10 +180,93 @@ def suggest_deterministic_fix(category: ErrorCategory, error_text: str) -> str |
         ns = m.group(1)
         return f"open {ns}"
 
-    # Python: "No module named 'foo'" or "Cannot find ... module named 'foo'"
+    # Python: "No module named 'foo'"
     m = _PYTHON_MODULE_RE.search(error_text)
     if m:
         module = m.group(1)
         return f"import {module}"
 
+    # Python: Name "X" is not defined
+    m = _UNDEFINED_NAME_RE.search(error_text)
+    if m:
+        name = m.group(1)
+        if name in _COMMON_IMPORTS:
+            return _COMMON_IMPORTS[name]
+        return f"# Undefined name '{name}' — add the appropriate import"
+
+    return None
+
+
+def _fix_type_mismatch(error_text: str) -> str | None:
+    # Python: Incompatible return value type
+    m = _INCOMPATIBLE_RETURN_RE.search(error_text)
+    if m:
+        got, expected = m.group(1), m.group(2)
+        coercion = _lookup_coercion(got, expected)
+        if coercion:
+            return f"Wrap return value: {coercion.format(expr='result')}"
+        return f"Cast return value from '{got}' to '{expected}'"
+
+    # Python: Argument N has incompatible type
+    m = _ARG_INCOMPATIBLE_RE.search(error_text)
+    if m:
+        got, expected = m.group(1), m.group(2)
+        coercion = _lookup_coercion(got, expected)
+        if coercion:
+            return f"Wrap argument: {coercion.format(expr='arg')}"
+        return f"Cast argument from '{got}' to '{expected}'"
+
+    # General expected/got pattern (Lean or Python)
+    m = _TYPE_EXPECTED_GOT_RE.search(error_text)
+    if m:
+        expected, got = m.group(1), m.group(2)
+        # Check Lean coercions
+        for (from_t, to_t), fix in _LEAN_COERCIONS.items():
+            if got.startswith(from_t.split()[0]) and expected.startswith(to_t.split()[0]):
+                return f"Apply coercion: {fix}"
+        return f"Type coercion needed: '{got}' → '{expected}'"
+
+    # Missing attribute
+    m = _ATTR_MISSING_RE.search(error_text)
+    if m:
+        type_name, attr = m.group(1), m.group(2)
+        return f"'{type_name}' has no attribute '{attr}' — check method name or cast to correct type"
+
+    return None
+
+
+def _fix_syntax(error_text: str) -> str | None:
+    lower = error_text.lower()
+
+    # Python: invalid syntax near annotation
+    if "perhaps you forgot a comma" in lower:
+        return "Check for invalid type annotation syntax — ensure variable annotations use valid types"
+
+    # Python: unexpected indent
+    if "unexpected indent" in lower or "indentationerror" in lower:
+        return "Fix indentation — ensure consistent use of spaces (not tabs)"
+
+    # Lean: expected token
+    if "expected token" in lower:
+        return "Check for missing delimiters (parentheses, braces, or keywords)"
+
+    # General parse error
+    if "parse error" in lower or "unexpected token" in lower:
+        return "Review syntax near the error location — check for missing or extra delimiters"
+
+    return None
+
+
+def _lookup_coercion(from_type: str, to_type: str) -> str | None:
+    """Look up a known coercion between Python types."""
+    # Exact match
+    key = (from_type, to_type)
+    if key in _PYTHON_COERCIONS:
+        return _PYTHON_COERCIONS[key]
+    # Strip generic params for partial matches
+    from_base = from_type.split("[")[0].strip()
+    to_base = to_type.split("[")[0].strip()
+    key = (from_base, to_base)
+    if key in _PYTHON_COERCIONS:
+        return _PYTHON_COERCIONS[key]
     return None

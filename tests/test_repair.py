@@ -169,12 +169,13 @@ class TestErrorClassifier:
         )
         assert fix == "open Finset"
 
-    def test_deterministic_fix_returns_none_for_type_mismatch(self):
+    def test_deterministic_fix_handles_type_mismatch(self):
         fix = suggest_deterministic_fix(
             ErrorCategory.TYPE_MISMATCH,
             "type mismatch, expected Nat, got Int",
         )
-        assert fix is None
+        assert fix is not None
+        assert "Int.toNat" in fix
 
     def test_deterministic_fix_returns_none_for_unknown(self):
         fix = suggest_deterministic_fix(
@@ -503,8 +504,8 @@ class TestRepairGraph:
         env = _make_mock_env(
             [
                 CompilerFeedback(
-                    raw_output="type mismatch",
-                    errors=["type mismatch, expected Nat, got Int"],
+                    raw_output="application type mismatch",
+                    errors=["application type mismatch in complex term elaboration"],
                 ),
                 CompilerFeedback(raw_output="", errors=[], goals_remaining=[]),
             ]

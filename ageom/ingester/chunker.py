@@ -717,6 +717,39 @@ async def _decompose_single_atom(
     if not source_code.strip():
         return atom
 
+    # Try deterministic control-flow decomposition first
+    from ageom.ingester.control_flow_decomposer import decompose_function
+
+    primary_method = atom.method_names[0] if atom.method_names else atom.name
+    cf_result = decompose_function(source_code, primary_method)
+    if cf_result is not None and cf_result.confidence >= 0.5:
+        children = []
+        for sub in cf_result.sub_atoms:
+            child = MacroAtomSpec(
+                name=sub.name,
+                description=sub.description,
+                method_names=[],
+                inputs=[IOSpec(name=i, type_desc="") for i in sub.inputs],
+                outputs=[IOSpec(name=o, type_desc="") for o in sub.outputs],
+                concept_type=atom.concept_type,
+                depth=current_depth + 1,
+                source_lines=list(range(sub.source_lines[0], sub.source_lines[1] + 1)),
+            )
+            children.append(child)
+        if children:
+            atom.children = children
+            atom.sub_edges = [
+                (e["from"], e["to"], e.get("data", ""))
+                for e in cf_result.edges
+            ]
+            logger.info(
+                "Deterministic CFG decomposition for %s: %d sub-atoms (confidence=%.2f)",
+                atom.name,
+                len(children),
+                cf_result.confidence,
+            )
+            return atom
+
     inputs_str = ", ".join(f"{i.name}: {i.type_desc}" for i in atom.inputs) or "(none)"
     outputs_str = ", ".join(f"{o.name}: {o.type_desc}" for o in atom.outputs) or "(none)"
     calls_str = ", ".join(internal_calls) if internal_calls else "(none)"
