@@ -589,9 +589,20 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
         "cdg": 1,
         "match_results": 1,
     }
+    manifest_path = Path(payload["metadata"]["single_agent"]["artifact_manifest_path"])
+    assert manifest_path.exists()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["execution_path"] == "single_agent_direct"
+    assert manifest["artifacts"]["cdg"]["path"] == str(output_dir / "cdg.json")
+    assert manifest["artifacts"]["cdg"]["exists"] is True
+    assert manifest["artifacts"]["match_results"]["path"] == str(output_dir / "matches.json")
+    assert payload["metadata"]["single_agent"]["concrete_artifacts"]["cdg"]["path"] == str(
+        output_dir / "cdg.json"
+    )
     assert payload["metadata"]["single_agent"]["attempt_history"] == ["direct_match"]
     assert payload["metadata"]["single_agent"]["steps"][0]["action"] == "direct_match"
     assert payload["metadata"]["single_agent"]["steps"][0]["status"] == "completed"
     assert (output_dir / "cdg.json").exists()
     assert (output_dir / "matches.json").exists()
+    assert (output_dir / "planner_artifacts.json").exists()
     assert env.closed is True

@@ -560,6 +560,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         matches_data = [mr.to_dict() for mr in result.match_results]
         with open(output_dir / "matches.json", "w") as f:
             json.dump(matches_data, f, indent=2)
+    matches_path = output_dir / "matches.json"
+    cdg_path = output_dir / "cdg.json"
 
     print(f"  Output: {output_dir}/")
     _print_shared_context_metrics("architect", architect_shared_metrics)
@@ -584,6 +586,50 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         run_id=telemetry_run_id,
     )
     if planner_result is not None:
+        planner_artifact_manifest_path = output_dir / "planner_artifacts.json"
+        planner_artifact_manifest = {
+            "execution_path": planner_result.execution_path,
+            "termination_reason": planner_result.state.termination_reason,
+            "verification_status": planner_result.state.verification_status,
+            "artifacts": {
+                "cdg": {
+                    "source": planner_result.state.artifacts.get("cdg", ""),
+                    "path": str(cdg_path),
+                    "exists": cdg_path.exists(),
+                    "mutations": int(planner_result.state.artifact_mutations.get("cdg", 0) or 0),
+                },
+                "match_results": {
+                    "source": planner_result.state.artifacts.get("match_results", ""),
+                    "path": str(matches_path),
+                    "exists": matches_path.exists(),
+                    "mutations": int(
+                        planner_result.state.artifact_mutations.get("match_results", 0) or 0
+                    ),
+                },
+            },
+            "attempt_history": list(planner_result.state.attempt_history),
+            "steps": [
+                {
+                    "action": step.action,
+                    "detail": step.detail,
+                    "status": step.status,
+                }
+                for step in planner_result.steps
+            ],
+        }
+        if "orchestration" in planner_result.state.artifacts:
+            planner_artifact_manifest["artifacts"]["orchestration"] = {
+                "source": planner_result.state.artifacts.get("orchestration", ""),
+                "path": str(cdg_path),
+                "exists": cdg_path.exists(),
+                "mutations": int(
+                    planner_result.state.artifact_mutations.get("orchestration", 0) or 0
+                ),
+            }
+        planner_artifact_manifest_path.write_text(
+            json.dumps(planner_artifact_manifest, indent=2),
+            encoding="utf-8",
+        )
         merge_run_metadata(
             {
                 "execution_path": planner_result.execution_path,
@@ -604,6 +650,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     "open_failures": list(planner_result.state.open_failures),
                     "artifacts": dict(planner_result.state.artifacts),
                     "artifact_mutations": dict(planner_result.state.artifact_mutations),
+                    "artifact_manifest_path": str(planner_artifact_manifest_path),
+                    "concrete_artifacts": planner_artifact_manifest["artifacts"],
                     "attempt_history": list(planner_result.state.attempt_history),
                     "steps": [
                         {
