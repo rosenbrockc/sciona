@@ -309,6 +309,10 @@ def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any
         avg_planner_tool_latency_ms=avg_planner_tool_latency_ms,
         avg_planner_escalations=avg_planner_escalations,
     )
+    prune_recommendation = _single_agent_prune_recommendation(
+        overhead_driver=overhead_driver,
+        comparisons=comparisons,
+    )
 
     return {
         "present": True,
@@ -323,6 +327,7 @@ def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any
         "avg_planner_tool_latency_ms": avg_planner_tool_latency_ms,
         "avg_planner_escalations": avg_planner_escalations,
         "overhead_driver": overhead_driver,
+        "prune_recommendation": prune_recommendation,
         "comparisons": comparisons,
     }
 
@@ -343,6 +348,23 @@ def _single_agent_overhead_driver(
     return "light"
 
 
+def _single_agent_prune_recommendation(
+    *,
+    overhead_driver: str,
+    comparisons: dict[str, dict[str, float]],
+) -> str:
+    structured = comparisons.get("structured", {})
+    if not isinstance(structured, dict):
+        structured = {}
+    if (
+        overhead_driver in {"tool_chatter", "tool_latency", "escalation_heavy"}
+        and float(structured.get("pass_rate_delta", 0.0)) <= 0.0
+        and float(structured.get("latency_ms_delta", 0.0)) >= 0.0
+    ):
+        return "review_single_agent_routing"
+    return "keep_current"
+
+
 def _format_single_agent_comparison_summary(summary: dict[str, Any]) -> str:
     """Render a compact single_agent positioning line for dashboards and manifests."""
     if not bool(summary.get("present", False)):
@@ -359,6 +381,7 @@ def _format_single_agent_comparison_summary(summary: dict[str, Any]) -> str:
         f"tool_latency_ms={float(summary.get('avg_planner_tool_latency_ms', 0.0)):.1f}",
         f"escalations={float(summary.get('avg_planner_escalations', 0.0)):.1f}",
         f"driver={str(summary.get('overhead_driver', '') or 'light')}",
+        f"prune={str(summary.get('prune_recommendation', '') or 'keep_current')}",
     ]
     for variant in ("rapid", "structured", "verified"):
         row = comparisons.get(variant)

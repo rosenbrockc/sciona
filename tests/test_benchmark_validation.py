@@ -248,6 +248,7 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
     assert summary["avg_planner_tool_latency_ms"] == 180.0
     assert summary["avg_planner_escalations"] == 1.0
     assert summary["overhead_driver"] == "escalation_heavy"
+    assert summary["prune_recommendation"] == "keep_current"
     assert summary["comparisons"]["rapid"]["pass_rate_delta"] == 1.0
     assert summary["comparisons"]["structured"]["prompt_calls_delta"] == -1.0
     assert summary["comparisons"]["verified"]["latency_ms_delta"] == -100.0
@@ -256,6 +257,44 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
 
     rendered = _format_single_agent_comparison_summary(summary)
     assert "driver=escalation_heavy" in rendered
+    assert "prune=keep_current" in rendered
+
+
+def test_single_agent_comparison_summary_flags_prune_candidate_when_slower_than_structured():
+    class _Agg:
+        def __init__(
+            self,
+            variant: str,
+            passed_cases: int,
+            total_cases: int,
+            avg_leaf_coverage: float,
+            avg_prompt_calls: float,
+            avg_latency_ms: float,
+            avg_planner_tool_dispatches: float = 0.0,
+            avg_planner_tool_latency_ms: float = 0.0,
+            avg_planner_escalations: float = 0.0,
+        ):
+            self.variant = variant
+            self.passed_cases = passed_cases
+            self.total_cases = total_cases
+            self.avg_leaf_coverage = avg_leaf_coverage
+            self.avg_prompt_calls = avg_prompt_calls
+            self.avg_latency_ms = avg_latency_ms
+            self.avg_planner_tool_dispatches = avg_planner_tool_dispatches
+            self.avg_planner_tool_latency_ms = avg_planner_tool_latency_ms
+            self.avg_planner_escalations = avg_planner_escalations
+
+    summary = single_agent_comparison_summary(
+        [
+            _Agg("rapid", 2, 4, 0.5, 1.0, 100.0),
+            _Agg("single_agent", 4, 4, 1.0, 5.0, 360.0, 6.0, 220.0, 1.0),
+            _Agg("structured", 4, 4, 1.0, 4.0, 280.0),
+            _Agg("verified", 4, 4, 1.0, 6.0, 420.0),
+        ]
+    )
+
+    assert summary["overhead_driver"] == "escalation_heavy"
+    assert summary["prune_recommendation"] == "review_single_agent_routing"
 
 
 def test_benchmark_failure_summary_prefers_execution_path_before_prompt_counts():

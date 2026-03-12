@@ -392,7 +392,7 @@
             ? `<div class="run-meta">single_agent_bench ${singleAgentComparisonSummary}</div>`
             : "";
           const singleAgentOverheadLine = singleAgentComparison.overhead_driver
-            ? `<div class="run-meta">single_agent_overhead driver=${singleAgentComparison.overhead_driver} tools=${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} escalations=${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)}</div>`
+            ? `<div class="run-meta">single_agent_overhead driver=${singleAgentComparison.overhead_driver} prune=${singleAgentComparison.prune_recommendation || "keep_current"} tools=${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} escalations=${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)}</div>`
             : "";
           const runtimeModeSummary = Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes)
@@ -616,7 +616,7 @@
           ["flow compare", `${(benchmark.flow_comparison_variants || []).join(",") || "--"} | ${Number(benchmark.flow_comparison_failures || 0)} / ${Number(benchmark.flow_comparison_unstable_groups || 0)}`],
           ["single-agent bench", singleAgentComparisonSummary || "--"],
           ["single-agent overhead", singleAgentComparison.overhead_driver
-            ? `${singleAgentComparison.overhead_driver} / ${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} tools / ${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)} escalations`
+            ? `${singleAgentComparison.overhead_driver} / ${singleAgentComparison.prune_recommendation || "keep_current"} / ${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} tools / ${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)} escalations`
             : "--"],
           ["release", benchmark.release_status || "--"],
           ["started", fmtTime(run.started_at)],
