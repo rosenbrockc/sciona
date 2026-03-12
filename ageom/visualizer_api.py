@@ -510,6 +510,21 @@ def _build_benchmark_summary(
         )
         if isinstance(benchmark.get("flow_avg_prompt_calls", {}), dict)
         else {},
+        "flow_avg_planner_tool_dispatches": dict(
+            benchmark.get("flow_avg_planner_tool_dispatches", {}) or {}
+        )
+        if isinstance(benchmark.get("flow_avg_planner_tool_dispatches", {}), dict)
+        else {},
+        "flow_avg_planner_tool_latency_ms": dict(
+            benchmark.get("flow_avg_planner_tool_latency_ms", {}) or {}
+        )
+        if isinstance(benchmark.get("flow_avg_planner_tool_latency_ms", {}), dict)
+        else {},
+        "flow_avg_planner_escalations": dict(
+            benchmark.get("flow_avg_planner_escalations", {}) or {}
+        )
+        if isinstance(benchmark.get("flow_avg_planner_escalations", {}), dict)
+        else {},
         "prompt_avg_latency_ms": dict(
             benchmark.get("prompt_avg_latency_ms", {}) or {}
         )

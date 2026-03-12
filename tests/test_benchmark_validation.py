@@ -50,6 +50,9 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "prompt_stability_summary" in payload
     assert "flow_stability_summary" in payload
     assert "flow_avg_prompt_calls" in payload
+    assert "flow_avg_planner_tool_dispatches" in payload
+    assert "flow_avg_planner_tool_latency_ms" in payload
+    assert "flow_avg_planner_escalations" in payload
     assert "prompt_avg_latency_ms" in payload
     assert "flow_avg_latency_ms" in payload
     assert "single_agent_comparison" in payload
@@ -98,6 +101,15 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
         "structured",
         "verified",
     }
+    assert set(payload["flow_avg_planner_tool_dispatches"]) == {
+        "direct_baseline",
+        "rapid",
+        "single_agent",
+        "structured",
+        "verified",
+    }
+    assert payload["flow_avg_planner_tool_dispatches"]["single_agent"] > 0.0
+    assert payload["flow_avg_planner_escalations"]["single_agent"] >= 0.0
     assert set(payload["flow_avg_latency_ms"]) == {
         "direct_baseline",
         "rapid",
@@ -206,6 +218,9 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
             avg_leaf_coverage: float,
             avg_prompt_calls: float,
             avg_latency_ms: float,
+            avg_planner_tool_dispatches: float = 0.0,
+            avg_planner_tool_latency_ms: float = 0.0,
+            avg_planner_escalations: float = 0.0,
         ):
             self.variant = variant
             self.passed_cases = passed_cases
@@ -213,11 +228,14 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
             self.avg_leaf_coverage = avg_leaf_coverage
             self.avg_prompt_calls = avg_prompt_calls
             self.avg_latency_ms = avg_latency_ms
+            self.avg_planner_tool_dispatches = avg_planner_tool_dispatches
+            self.avg_planner_tool_latency_ms = avg_planner_tool_latency_ms
+            self.avg_planner_escalations = avg_planner_escalations
 
     summary = single_agent_comparison_summary(
         [
             _Agg("rapid", 0, 4, 0.2, 1.0, 100.0),
-            _Agg("single_agent", 4, 4, 1.0, 3.0, 250.0),
+            _Agg("single_agent", 4, 4, 1.0, 3.0, 250.0, 4.0, 180.0, 1.0),
             _Agg("structured", 4, 4, 1.0, 4.0, 300.0),
             _Agg("verified", 4, 4, 1.0, 5.0, 350.0),
         ]
@@ -225,9 +243,14 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
 
     assert summary["present"] is True
     assert summary["pass_rate"] == 1.0
+    assert summary["avg_planner_tool_dispatches"] == 4.0
+    assert summary["avg_planner_tool_latency_ms"] == 180.0
+    assert summary["avg_planner_escalations"] == 1.0
     assert summary["comparisons"]["rapid"]["pass_rate_delta"] == 1.0
     assert summary["comparisons"]["structured"]["prompt_calls_delta"] == -1.0
     assert summary["comparisons"]["verified"]["latency_ms_delta"] == -100.0
+    assert summary["comparisons"]["rapid"]["planner_tool_dispatches_delta"] == 4.0
+    assert summary["comparisons"]["verified"]["planner_escalations_delta"] == 1.0
 
 
 def test_benchmark_failure_summary_prefers_execution_path_before_prompt_counts():

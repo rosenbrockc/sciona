@@ -276,6 +276,21 @@ def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any
             "latency_ms_delta": round(
                 float(single_agent.avg_latency_ms) - float(other.avg_latency_ms), 4
             ),
+            "planner_tool_dispatches_delta": round(
+                float(getattr(single_agent, "avg_planner_tool_dispatches", 0.0) or 0.0)
+                - float(getattr(other, "avg_planner_tool_dispatches", 0.0) or 0.0),
+                4,
+            ),
+            "planner_tool_latency_ms_delta": round(
+                float(getattr(single_agent, "avg_planner_tool_latency_ms", 0.0) or 0.0)
+                - float(getattr(other, "avg_planner_tool_latency_ms", 0.0) or 0.0),
+                4,
+            ),
+            "planner_escalations_delta": round(
+                float(getattr(single_agent, "avg_planner_escalations", 0.0) or 0.0)
+                - float(getattr(other, "avg_planner_escalations", 0.0) or 0.0),
+                4,
+            ),
         }
 
     return {
@@ -287,6 +302,15 @@ def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any
         "avg_leaf_coverage": round(float(single_agent.avg_leaf_coverage), 4),
         "avg_prompt_calls": round(float(single_agent.avg_prompt_calls), 4),
         "avg_latency_ms": round(float(single_agent.avg_latency_ms), 4),
+        "avg_planner_tool_dispatches": round(
+            float(getattr(single_agent, "avg_planner_tool_dispatches", 0.0) or 0.0), 4
+        ),
+        "avg_planner_tool_latency_ms": round(
+            float(getattr(single_agent, "avg_planner_tool_latency_ms", 0.0) or 0.0), 4
+        ),
+        "avg_planner_escalations": round(
+            float(getattr(single_agent, "avg_planner_escalations", 0.0) or 0.0), 4
+        ),
         "comparisons": comparisons,
     }
 
@@ -303,6 +327,9 @@ def _format_single_agent_comparison_summary(summary: dict[str, Any]) -> str:
         f"coverage={float(summary.get('avg_leaf_coverage', 0.0)):.2f}",
         f"prompts={float(summary.get('avg_prompt_calls', 0.0)):.1f}",
         f"latency_ms={float(summary.get('avg_latency_ms', 0.0)):.1f}",
+        f"tools={float(summary.get('avg_planner_tool_dispatches', 0.0)):.1f}",
+        f"tool_latency_ms={float(summary.get('avg_planner_tool_latency_ms', 0.0)):.1f}",
+        f"escalations={float(summary.get('avg_planner_escalations', 0.0)):.1f}",
     ]
     for variant in ("rapid", "structured", "verified"):
         row = comparisons.get(variant)
@@ -311,7 +338,9 @@ def _format_single_agent_comparison_summary(summary: dict[str, Any]) -> str:
         parts.append(
             f"vs_{variant}=pass:{float(row.get('pass_rate_delta', 0.0)):+.2f}/"
             f"prompts:{float(row.get('prompt_calls_delta', 0.0)):+.1f}/"
-            f"latency:{float(row.get('latency_ms_delta', 0.0)):+.1f}"
+            f"latency:{float(row.get('latency_ms_delta', 0.0)):+.1f}/"
+            f"tools:{float(row.get('planner_tool_dispatches_delta', 0.0)):+.1f}/"
+            f"escalations:{float(row.get('planner_escalations_delta', 0.0)):+.1f}"
         )
     return ", ".join(parts)
 
@@ -868,6 +897,24 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         ),
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
+        },
+        "flow_avg_planner_tool_dispatches": {
+            agg.variant: round(
+                float(getattr(agg, "avg_planner_tool_dispatches", 0.0) or 0.0), 3
+            )
+            for agg in flow_aggregates
+        },
+        "flow_avg_planner_tool_latency_ms": {
+            agg.variant: round(
+                float(getattr(agg, "avg_planner_tool_latency_ms", 0.0) or 0.0), 3
+            )
+            for agg in flow_aggregates
+        },
+        "flow_avg_planner_escalations": {
+            agg.variant: round(
+                float(getattr(agg, "avg_planner_escalations", 0.0) or 0.0), 3
+            )
+            for agg in flow_aggregates
         },
         "prompt_avg_latency_ms": {
             f"{agg.provider}:{agg.variant}": round(float(agg.avg_latency_ms), 3)

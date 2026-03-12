@@ -52,6 +52,9 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
             },
             "flow_prompt_volume_summary": "rapid=6.0, structured=7.0, verified=8.0",
             "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+            "flow_avg_planner_tool_dispatches": {"rapid": 0.0, "single_agent": 4.0},
+            "flow_avg_planner_tool_latency_ms": {"rapid": 0.0, "single_agent": 180.0},
+            "flow_avg_planner_escalations": {"rapid": 0.0, "single_agent": 1.0},
             "runtime_complexity": {"violations": [], "provider_count": 3},
             "prompt_tuned_failures": 0,
             "prompt_tuned_unstable_groups": 0,
@@ -79,6 +82,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
     assert bench["prompt_results"] == 24
     assert bench["flow_results"] == 16
     assert bench["flow_avg_prompt_calls"]["rapid"] == 6.0
+    assert bench["flow_avg_planner_tool_dispatches"]["single_agent"] == 4.0
     assert bench["flow_mode_failures"] == 0
     assert "required[structured,verified]" in bench["flow_gate_summary"]
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]

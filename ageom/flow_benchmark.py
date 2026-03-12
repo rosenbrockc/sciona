@@ -64,6 +64,9 @@ class FlowBenchmarkResult:
     decomposition_depth: int = 0
     decomposition_leaf_count: int = 0
     decomposition_edge_count: int = 0
+    planner_tool_dispatches: int = 0
+    planner_tool_latency_ms: float = 0.0
+    planner_escalation_count: int = 0
     error: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -80,6 +83,12 @@ class FlowBenchmarkAggregate:
     avg_latency_ms: float = 0.0
     total_prompt_calls: int = 0
     avg_prompt_calls: float = 0.0
+    total_planner_tool_dispatches: int = 0
+    avg_planner_tool_dispatches: float = 0.0
+    total_planner_tool_latency_ms: float = 0.0
+    avg_planner_tool_latency_ms: float = 0.0
+    total_planner_escalations: int = 0
+    avg_planner_escalations: float = 0.0
     avg_leaf_coverage: float = 0.0
     avg_best_similarity: float = 0.0
     repeat_groups: int = 0
@@ -100,6 +109,18 @@ class FlowBenchmarkAggregate:
         self.avg_latency_ms = total_latency / max(1, self.total_cases)
         self.total_prompt_calls += int(result.prompt_calls)
         self.avg_prompt_calls = self.total_prompt_calls / max(1, self.total_cases)
+        self.total_planner_tool_dispatches += int(result.planner_tool_dispatches)
+        self.avg_planner_tool_dispatches = (
+            self.total_planner_tool_dispatches / max(1, self.total_cases)
+        )
+        self.total_planner_tool_latency_ms += float(result.planner_tool_latency_ms)
+        self.avg_planner_tool_latency_ms = (
+            self.total_planner_tool_latency_ms / max(1, self.total_cases)
+        )
+        self.total_planner_escalations += int(result.planner_escalation_count)
+        self.avg_planner_escalations = (
+            self.total_planner_escalations / max(1, self.total_cases)
+        )
         prev = self.total_cases - 1
         self.avg_leaf_coverage = (
             self.avg_leaf_coverage * prev + result.leaf_coverage
@@ -129,6 +150,12 @@ class FlowBenchmarkAggregate:
             "avg_latency_ms": self.avg_latency_ms,
             "total_prompt_calls": self.total_prompt_calls,
             "avg_prompt_calls": self.avg_prompt_calls,
+            "total_planner_tool_dispatches": self.total_planner_tool_dispatches,
+            "avg_planner_tool_dispatches": self.avg_planner_tool_dispatches,
+            "total_planner_tool_latency_ms": self.total_planner_tool_latency_ms,
+            "avg_planner_tool_latency_ms": self.avg_planner_tool_latency_ms,
+            "total_planner_escalations": self.total_planner_escalations,
+            "avg_planner_escalations": self.avg_planner_escalations,
             "avg_leaf_coverage": self.avg_leaf_coverage,
             "avg_best_similarity": self.avg_best_similarity,
             "repeat_groups": self.repeat_groups,
@@ -655,6 +682,15 @@ async def _run_single_agent_case(
         decomposition_depth=depth,
         decomposition_leaf_count=leaf_count,
         decomposition_edge_count=edge_count,
+        planner_tool_dispatches=sum(
+            int(metrics.get("dispatches", 0) or 0)
+            for metrics in planner_result.state.tool_metrics.values()
+        ),
+        planner_tool_latency_ms=sum(
+            float(metrics.get("latency_ms_total", 0.0) or 0.0)
+            for metrics in planner_result.state.tool_metrics.values()
+        ),
+        planner_escalation_count=len(planner_result.state.escalation_events),
         error="" if matched == total else "single-agent planner did not ground all leaves",
     )
 

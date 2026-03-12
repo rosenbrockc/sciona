@@ -349,9 +349,17 @@
             : "";
           const singleAgentComparisonSummary = benchmark.single_agent_comparison_summary || "";
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
+          const flowPlannerTools = benchmark.flow_avg_planner_tool_dispatches || {};
+          const flowPlannerEscalations = benchmark.flow_avg_planner_escalations || {};
           const flowLatency = benchmark.flow_avg_latency_ms || {};
           const flowPromptCallSummary = Object.keys(flowPromptCalls).length
             ? Object.entries(flowPromptCalls).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(" ")
+            : "";
+          const flowPlannerToolSummary = Object.keys(flowPlannerTools).length
+            ? Object.entries(flowPlannerTools).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(" ")
+            : "";
+          const flowPlannerEscalationSummary = Object.keys(flowPlannerEscalations).length
+            ? Object.entries(flowPlannerEscalations).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(" ")
             : "";
           const flowLatencySummary = Object.keys(flowLatency).length
             ? Object.entries(flowLatency).map(([k, v]) => `${k}=${Number(v).toFixed(1)}ms`).join(" ")
@@ -411,6 +419,12 @@
             (flowPromptCallSummary
               ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>`
               : ""),
+            (flowPlannerToolSummary
+              ? `<div class="run-meta">flow_tools ${flowPlannerToolSummary}</div>`
+              : ""),
+            (flowPlannerEscalationSummary
+              ? `<div class="run-meta">flow_escalations ${flowPlannerEscalationSummary}</div>`
+              : ""),
             (flowLatencySummary
               ? `<div class="run-meta">flow_latency ${flowLatencySummary}</div>`
               : ""),
@@ -460,6 +474,8 @@
         const singleAgentEscalations = singleAgent.escalation_events || [];
         const singleAgentComparisonSummary = benchmark.single_agent_comparison_summary || "";
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
+        const flowPlannerTools = benchmark.flow_avg_planner_tool_dispatches || {};
+        const flowPlannerEscalations = benchmark.flow_avg_planner_escalations || {};
         const flowLatency = benchmark.flow_avg_latency_ms || {};
         const promptLatency = benchmark.prompt_avg_latency_ms || {};
         const topSources = (catalog.top_sources || []).map((row) => `${row.source}=${Number(row.added || 0)}`).join(", ");
@@ -572,6 +588,12 @@
             : "--"],
           ["flow prompts", Object.keys(flowPromptCalls).length
             ? Object.entries(flowPromptCalls).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(", ")
+            : "--"],
+          ["flow planner tools", Object.keys(flowPlannerTools).length
+            ? Object.entries(flowPlannerTools).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(", ")
+            : "--"],
+          ["flow planner escalations", Object.keys(flowPlannerEscalations).length
+            ? Object.entries(flowPlannerEscalations).map(([k, v]) => `${k}=${Number(v).toFixed(1)}`).join(", ")
             : "--"],
           ["flow latency", Object.keys(flowLatency).length
             ? Object.entries(flowLatency).map(([k, v]) => `${k}=${Number(v).toFixed(1)}ms`).join(", ")

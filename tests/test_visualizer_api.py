@@ -513,6 +513,18 @@ class TestDashboardAPI:
                     },
                     "flow_prompt_volume_summary": "direct_baseline=2.0, rapid=6.0, structured=7.0, verified=8.0",
                     "flow_avg_prompt_calls": {"rapid": 6.0, "verified": 7.0},
+                    "flow_avg_planner_tool_dispatches": {
+                        "rapid": 0.0,
+                        "single_agent": 4.0,
+                    },
+                    "flow_avg_planner_tool_latency_ms": {
+                        "rapid": 0.0,
+                        "single_agent": 180.0,
+                    },
+                    "flow_avg_planner_escalations": {
+                        "rapid": 0.0,
+                        "single_agent": 1.0,
+                    },
                     "prompt_avg_latency_ms": {
                         "codex_shim:tuned": 3954.8,
                         "gemini_shim:tuned": 3771.8,
@@ -632,6 +644,7 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["prompt_stability_summary"] == "fixture_good/tuned 12/12"
         assert data["benchmark_summary"]["flow_stability_summary"] == "rapid 4/4, verified 4/4"
         assert data["benchmark_summary"]["flow_avg_prompt_calls"]["rapid"] == 6.0
+        assert data["benchmark_summary"]["flow_avg_planner_tool_dispatches"]["single_agent"] == 4.0
         assert data["benchmark_summary"]["prompt_avg_latency_ms"]["codex_shim:tuned"] == 3954.8
         assert data["benchmark_summary"]["flow_avg_latency_ms"]["verified"] == 611.2
         assert data["benchmark_summary"]["runtime_complexity"]["provider_count"] == 5
