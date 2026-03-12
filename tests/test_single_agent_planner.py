@@ -323,7 +323,8 @@ async def test_single_agent_planner_skips_direct_match_for_compound_goals():
     assert result.state.policy.direct_grounding_enabled is False
     assert result.state.policy.decomposition_mode == "selective_redecompose"
     assert result.state.policy.retrieval_intensity == "standard"
-    assert result.state.policy.partial_accept_enabled is False
+    assert result.state.policy.partial_accept_enabled is True
+    assert result.state.policy.repair_policy == "bounded"
     assert result.state.verification_status == "verified"
     assert result.state.termination_reason == "structured_verified"
     assert hunter.goal_calls == 0
@@ -541,3 +542,92 @@ async def test_single_agent_planner_uses_aggressive_retrieval_for_long_compound_
     assert result.execution_path == "single_agent_structured"
     assert result.state.policy.direct_grounding_enabled is False
     assert result.state.policy.retrieval_intensity == "aggressive"
+    assert result.state.policy.repair_policy == "until_verified"
+
+
+@pytest.mark.asyncio
+async def test_single_agent_planner_until_verified_policy_skips_partial_accept():
+    cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="n1",
+                name="Stage One",
+                description="First stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="A -> B",
+            ),
+            AlgorithmicNode(
+                node_id="n2",
+                name="Stage Two",
+                description="Second stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="B -> C",
+            ),
+            AlgorithmicNode(
+                node_id="n3",
+                name="Stage Three",
+                description="Third stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="C -> D",
+            ),
+            AlgorithmicNode(
+                node_id="n4",
+                name="Stage Four",
+                description="Fourth stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="D -> E",
+            ),
+        ],
+        edges=[],
+        metadata={},
+    )
+    orchestrated_result = OrchestratorResult(cdg=cdg, match_results=[], rounds_used=2)
+    unresolved = HunterBatchMatchResult(
+        match_results=[
+            SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n1")),
+            SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n2")),
+            SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n3")),
+        ],
+        failures=[],
+        ungroundable=["n4"],
+    )
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=False),
+        batch_result=[unresolved, unresolved, unresolved],
+        direct_result=orchestrated_result,
+    )
+    architect = _FakeArchitectService(cdg)
+    orchestrator = _FakeOrchestratorService(orchestrated_result)
+
+    async def _architect_factory():
+        return architect
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=orchestrator,
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+
+    result = await planner.run(
+        "Bandpass ECG and then detect heart rate while comparing baseline drift before final reporting"
+    )
+
+    assert result.execution_path == "single_agent_escalated"
+    assert "partial_accept" not in [step.action for step in result.steps]
+    assert [step.action for step in result.steps] == [
+        "decompose",
+        "match_decomposed",
+        "retry_retrieval",
+        "retry_retrieval",
+        "escalate_orchestration",
+    ]
+    assert result.state.policy.repair_policy == "until_verified"
+    assert orchestrator.calls == 1

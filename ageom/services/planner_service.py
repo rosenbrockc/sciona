@@ -220,7 +220,7 @@ class SingleAgentPlanner:
 
         # --- Partial result acceptance ---
         # If most leaves matched, accept the partial result without escalation
-        if state.policy.partial_accept_enabled:
+        if self._allows_partial_accept(state.policy):
             total_leaves = len(pdg_nodes)
             matched_leaves = total_leaves - len(batch_result.ungroundable)
             if total_leaves > 0 and matched_leaves / total_leaves >= 0.7:
@@ -261,7 +261,7 @@ class SingleAgentPlanner:
         # Instead of escalating the entire CDG, re-decompose only the failed leaves
         # and retry matching just those. This avoids the expense of full orchestration.
         if (
-            state.policy.selective_redecompose_enabled
+            self._allows_selective_redecompose(state.policy)
             and batch_result.failures
             and state.budget.steps_used < state.budget.max_steps - 1
         ):
@@ -519,6 +519,16 @@ class SingleAgentPlanner:
             return 1
         return 0
 
+    def _allows_partial_accept(self, policy: PlannerPolicy) -> bool:
+        if not policy.partial_accept_enabled:
+            return False
+        return policy.repair_policy == "bounded"
+
+    def _allows_selective_redecompose(self, policy: PlannerPolicy) -> bool:
+        if not policy.selective_redecompose_enabled:
+            return False
+        return policy.repair_policy in {"bounded", "until_verified"}
+
     def _select_policy(self, goal: str) -> PlannerPolicy:
         token_count = self._goal_token_count(goal)
         if self._is_compound_goal(goal):
@@ -528,8 +538,10 @@ class SingleAgentPlanner:
                 retrieval_intensity=(
                     "aggressive" if token_count >= self._AGGRESSIVE_GOAL_TOKENS else "standard"
                 ),
-                repair_policy="bounded",
-                partial_accept_enabled=False,
+                repair_policy=(
+                    "until_verified" if token_count >= self._AGGRESSIVE_GOAL_TOKENS else "bounded"
+                ),
+                partial_accept_enabled=True,
                 selective_redecompose_enabled=True,
             )
         if token_count > self._MAX_DIRECT_GOAL_TOKENS:
