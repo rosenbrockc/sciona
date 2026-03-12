@@ -18,6 +18,8 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
 
+from ageom.architect.catalog import PrimitiveCatalog
+from ageom.architect.deterministic_decompose import _infer_concept_type
 from ageom.hunter.llm import LLMClient
 from ageom.architect.models import ConceptType, IOSpec
 from ageom.ingester.monitor import IngestMonitor
@@ -25,6 +27,7 @@ from ageom.ingester.models import (
     ConceptualProfile,
     DependencyEdge,
     MacroAtomSpec,
+    MethodFact,
     ProposedMacroPlan,
     RawDataFlowGraph,
     StateModelSpec,
@@ -58,6 +61,7 @@ from ageom.protocols import SemanticIndex
 logger = logging.getLogger(__name__)
 
 _MAX_RETRIES = 3
+_IGNORED_METHOD_NAMES = {"__init__", "__repr__", "__str__"}
 
 
 # ---------------------------------------------------------------------------
@@ -244,6 +248,154 @@ def _compute_state_edges(
     return edges
 
 
+def _is_public_method_name(name: str) -> bool:
+    return not name.startswith("_") and name not in _IGNORED_METHOD_NAMES
+
+
+def _method_line_count(method: MethodFact) -> int:
+    source = (method.source_code or "").strip()
+    return len(source.splitlines()) if source else 0
+
+
+def _is_simple_class(dfg: RawDataFlowGraph) -> bool:
+    public_methods = [method for method in dfg.methods if _is_public_method_name(method.name)]
+    if not public_methods:
+        return False
+    if any(_method_line_count(method) > 30 for method in public_methods):
+        return False
+    internal_dispatch = dfg.internal_call_graph or {}
+    public_names = {method.name for method in public_methods}
+    for method in public_methods:
+        direct_calls = set(method.calls) | set(internal_dispatch.get(method.name, []))
+        if direct_calls & public_names:
+            return False
+    if dfg.cross_window_attrs:
+        return False
+    if dfg.config_branches:
+        return False
+    base_classes = [base for base in dfg.opaque_base_classes if base and base != "object"]
+    if base_classes:
+        return False
+    touched_attrs = {attr for method in public_methods for attr in (*method.reads, *method.writes)}
+    if set(dfg.all_attributes) - touched_attrs:
+        return False
+    return True
+
+
+def _dedupe_ios(specs: list[IOSpec]) -> list[IOSpec]:
+    seen: set[str] = set()
+    deduped: list[IOSpec] = []
+    for spec in specs:
+        if spec.name in seen:
+            continue
+        seen.add(spec.name)
+        deduped.append(spec)
+    return deduped
+
+
+def _atom_name_for_method(method_name: str) -> str:
+    return method_name.replace("_", " ").strip().title()
+
+
+def _infer_method_concept(method: MethodFact) -> ConceptType:
+    catalog = PrimitiveCatalog()
+    return _infer_concept_type(
+        {
+            "name": _atom_name_for_method(method.name),
+            "description": method.docstring or method.name.replace("_", " "),
+        },
+        parent_type=ConceptType.CUSTOM,
+        catalog=catalog,
+    )
+
+
+def _outputs_for_method(method: MethodFact) -> list[IOSpec]:
+    outputs: list[IOSpec] = []
+    return_type = (method.return_type or "").strip()
+    if return_type and return_type.lower() != "none":
+        outputs.append(IOSpec(name="result", type_desc=return_type))
+    outputs.extend(IOSpec(name=attr, type_desc="Any") for attr in method.writes)
+    return _dedupe_ios(outputs)
+
+
+def _inputs_for_method(method: MethodFact) -> list[IOSpec]:
+    inputs = [
+        IOSpec(name=param, type_desc="Any")
+        for param in method.params
+        if param and param != "self"
+    ]
+    inputs.extend(IOSpec(name=attr, type_desc="Any") for attr in method.reads)
+    return _dedupe_ios(inputs)
+
+
+def _deterministic_chunk_edges(atoms: list[MacroAtomSpec]) -> list[DependencyEdge]:
+    edges: list[DependencyEdge] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    for idx, atom in enumerate(atoms):
+        source_outputs = {output.name: output.type_desc for output in atom.outputs}
+        for next_idx in range(idx + 1, len(atoms)):
+            next_atom = atoms[next_idx]
+            target_inputs = {input_.name: input_.type_desc for input_ in next_atom.inputs}
+            shared_names = sorted(set(source_outputs) & set(target_inputs))
+            if shared_names:
+                for name in shared_names:
+                    key = (atom.name, next_atom.name, name, name)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    edges.append(
+                        DependencyEdge(
+                            source_id=atom.name,
+                            target_id=next_atom.name,
+                            output_name=name,
+                            input_name=name,
+                            source_type=source_outputs[name] or "Any",
+                            target_type=target_inputs[name] or "Any",
+                        )
+                    )
+                continue
+
+            if next_idx != idx + 1:
+                continue
+            if atom.outputs and next_atom.inputs:
+                src = atom.outputs[0]
+                tgt = next_atom.inputs[0]
+                key = (atom.name, next_atom.name, src.name, tgt.name)
+                if key in seen:
+                    continue
+                seen.add(key)
+                edges.append(
+                    DependencyEdge(
+                        source_id=atom.name,
+                        target_id=next_atom.name,
+                        output_name=src.name,
+                        input_name=tgt.name,
+                        source_type=src.type_desc or "Any",
+                        target_type=tgt.type_desc or "Any",
+                    )
+                )
+    return edges
+
+
+def _chunk_by_method(dfg: RawDataFlowGraph) -> ProposedMacroPlan:
+    public_methods = [method for method in dfg.methods if _is_public_method_name(method.name)]
+    atoms = [
+        MacroAtomSpec(
+            name=_atom_name_for_method(method.name),
+            description=method.docstring or f"Execute {method.name.replace('_', ' ')}.",
+            method_names=[method.name],
+            inputs=_inputs_for_method(method),
+            outputs=_outputs_for_method(method),
+            concept_type=_infer_method_concept(method),
+        )
+        for method in public_methods
+    ]
+    return ProposedMacroPlan(
+        macro_atoms=atoms,
+        edge_definitions=_deterministic_chunk_edges(atoms),
+    )
+
+
 def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
     atoms = []
     for item in raw.get("macro_atoms", []):
@@ -335,6 +487,9 @@ async def propose_macro_atoms(
             is_opaque=True,
         )
         return {"proposed_plan": ProposedMacroPlan(macro_atoms=[atom])}
+
+    if _is_simple_class(dfg):
+        return {"proposed_plan": _chunk_by_method(dfg)}
 
     retry_context = ""
     if state.get("retry_count", 0) > 0:

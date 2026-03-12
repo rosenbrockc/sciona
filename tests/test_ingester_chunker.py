@@ -54,6 +54,56 @@ def _make_dfg() -> RawDataFlowGraph:
     )
 
 
+def _make_simple_utility_dfg() -> RawDataFlowGraph:
+    return RawDataFlowGraph(
+        class_name="SignalUtility",
+        methods=[
+            MethodFact(
+                name="normalize",
+                params=["samples"],
+                return_type="ndarray",
+                docstring="Normalize raw samples before scoring.",
+                reads=[],
+                writes=[],
+                source_code="def normalize(self, samples):\n    return samples / self.scale\n",
+            ),
+            MethodFact(
+                name="score",
+                params=["normalized"],
+                return_type="float",
+                docstring="Score the normalized signal.",
+                reads=[],
+                writes=[],
+                source_code="def score(self, normalized):\n    return float(normalized.mean())\n",
+            ),
+            MethodFact(
+                name="finalize",
+                params=["score_value"],
+                return_type="bool",
+                docstring="Check the score against the threshold.",
+                reads=[],
+                writes=[],
+                source_code="def finalize(self, score_value):\n    return score_value > self.threshold\n",
+            ),
+        ],
+        all_attributes={},
+        cross_window_attrs=[],
+    )
+
+
+def _make_internal_dispatch_dfg() -> RawDataFlowGraph:
+    dfg = _make_simple_utility_dfg()
+    dfg.methods[0].calls = ["score"]
+    dfg.internal_call_graph = {"normalize": ["score"]}
+    return dfg
+
+
+def _make_inherited_dfg() -> RawDataFlowGraph:
+    dfg = _make_simple_utility_dfg()
+    dfg.opaque_base_classes = ["BaseUtility"]
+    return dfg
+
+
 def _make_llm_response(method_names: list[str] | None = None) -> str:
     """Build a valid LLM JSON response for propose_macro_atoms."""
     if method_names is None:
@@ -131,6 +181,78 @@ class TestProposeMacroAtoms:
         result = await propose_macro_atoms(state, config)
         plan = result["proposed_plan"]
         assert len(plan.macro_atoms) == 0  # graceful fallback
+
+    @pytest.mark.asyncio
+    async def test_simple_class_chunks_by_public_method_without_llm(self):
+        mock_llm = AsyncMock()
+        state: ChunkerState = {
+            "raw_dfg": _make_simple_utility_dfg(),
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": ValidatedMacroPlan(plan=ProposedMacroPlan()),
+            "critique_passed": False,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": ChunkerDeps(llm=mock_llm)}}
+
+        result = await propose_macro_atoms(state, config)
+        plan = result["proposed_plan"]
+
+        assert [atom.name for atom in plan.macro_atoms] == [
+            "Normalize",
+            "Score",
+            "Finalize",
+        ]
+        assert [atom.method_names for atom in plan.macro_atoms] == [
+            ["normalize"],
+            ["score"],
+            ["finalize"],
+        ]
+        mock_llm.complete.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_internal_dispatch_falls_back_to_llm_chunking(self):
+        mock_llm = AsyncMock()
+        mock_llm.complete.return_value = _make_llm_response(["normalize", "score", "finalize"])
+        state: ChunkerState = {
+            "raw_dfg": _make_internal_dispatch_dfg(),
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": ValidatedMacroPlan(plan=ProposedMacroPlan()),
+            "critique_passed": False,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": ChunkerDeps(llm=mock_llm)}}
+
+        result = await propose_macro_atoms(state, config)
+
+        assert result["proposed_plan"].macro_atoms[0].name == "Data Processor"
+        mock_llm.complete.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_complex_inheritance_falls_back_to_llm_chunking(self):
+        mock_llm = AsyncMock()
+        mock_llm.complete.return_value = _make_llm_response(["normalize", "score", "finalize"])
+        state: ChunkerState = {
+            "raw_dfg": _make_inherited_dfg(),
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": ValidatedMacroPlan(plan=ProposedMacroPlan()),
+            "critique_passed": False,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": ChunkerDeps(llm=mock_llm)}}
+
+        result = await propose_macro_atoms(state, config)
+
+        assert result["proposed_plan"].macro_atoms[0].name == "Data Processor"
+        mock_llm.complete.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------
