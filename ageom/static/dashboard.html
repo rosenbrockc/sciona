@@ -337,6 +337,8 @@
           const catalogValidationAlignment = catalogValidation.alignment || {};
           const benchmarkRuntime = benchmark.runtime_complexity || {};
           const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
+          const singleAgent = r.single_agent_summary || {};
+          const singleAgentPolicy = singleAgent.policy || {};
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
           const flowLatency = benchmark.flow_avg_latency_ms || {};
           const flowPromptCallSummary = Object.keys(flowPromptCalls).length
@@ -359,6 +361,9 @@
           const critiqueRejects = Number(architect.critique_reject_total || 0);
           const verifiedMatches = Number(hunter.verified_matches || 0);
           const benchmarkStatus = benchmark.status || "--";
+          const singleAgentLine = singleAgent.termination_reason
+            ? `<div class="run-meta">single_agent=${singleAgent.termination_reason} steps=${Number(singleAgent.steps_used || 0)}/${Number(singleAgent.step_budget || 0)} retrieval=${singleAgentPolicy.retrieval_intensity || "--"} artifacts=${Number(singleAgent.artifact_count || 0)}</div>`
+            : "";
           const runtimeModeSummary = Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes)
                 .map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.transport_count || 0)}`)
@@ -394,6 +399,7 @@
             (runtimeModeSummary
               ? `<div class="run-meta">runtime_modes ${runtimeModeSummary}</div>`
               : ""),
+            singleAgentLine,
             validationLine
           ].join("");
           div.addEventListener("click", () => {
@@ -427,6 +433,8 @@
         const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
         const benchmarkOverridePolicy = benchmarkRuntime.override_policy || {};
         const benchmarkFlowPaths = benchmark.flow_execution_paths || {};
+        const singleAgent = run.single_agent_summary || {};
+        const singleAgentPolicy = singleAgent.policy || {};
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
         const flowLatency = benchmark.flow_avg_latency_ms || {};
         const promptLatency = benchmark.prompt_avg_latency_ms || {};
@@ -491,6 +499,15 @@
           ["template writes", String(Number(shared.total_template_puts || 0))],
           ["failure reuse", `${Number(shared.total_failure_hits || 0)}/${Number(shared.total_failure_searches || 0)}`],
           ["failure writes", String(Number(shared.total_failure_puts || 0))],
+          ["single-agent", singleAgent.termination_reason || "--"],
+          ["single-agent verify", singleAgent.verification_status || "--"],
+          ["single-agent budget", `${Number(singleAgent.steps_used || 0)}/${Number(singleAgent.step_budget || 0)}`],
+          ["single-agent policy", `${singleAgentPolicy.decomposition_mode || "--"} / ${singleAgentPolicy.retrieval_intensity || "--"} / ${singleAgentPolicy.repair_policy || "--"}`],
+          ["single-agent artifacts", String(Number(singleAgent.artifact_count || 0))],
+          ["single-agent manifest", singleAgent.artifact_manifest_path || "--"],
+          ["single-agent failures", (singleAgent.open_failures || []).join(", ") || "--"],
+          ["single-agent attempts", (singleAgent.attempt_history || []).join(", ") || "--"],
+          ["single-agent artifact paths", (singleAgent.artifacts || []).map((row) => `${row.name}:${row.path}`).join(", ") || "--"],
           ["prompt bench", `${Number(benchmark.prompt_results || 0)}/${Number(benchmark.prompt_cases || 0)}`],
           ["benchmark status", benchmark.status || "--"],
           ["prompt stable", benchmark.prompt_stability_summary || "--"],
@@ -554,6 +571,7 @@
           `provider_complexity: ${JSON.stringify(run.provider_complexity || {}, null, 2)}\n` +
           `architect_summary: ${JSON.stringify(run.architect_summary || {}, null, 2)}\n` +
           `hunter_summary: ${JSON.stringify(run.hunter_summary || {}, null, 2)}\n` +
+          `single_agent_summary: ${JSON.stringify(run.single_agent_summary || {}, null, 2)}\n` +
           `catalog_alignment_summary: ${JSON.stringify(run.catalog_alignment_summary || {}, null, 2)}\n` +
           `shared_context_summary: ${JSON.stringify(run.shared_context_summary || {}, null, 2)}\n` +
           `benchmark_summary: ${JSON.stringify(run.benchmark_summary || {}, null, 2)}\n` +
