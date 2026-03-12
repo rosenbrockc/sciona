@@ -584,8 +584,10 @@ class TestDashboardAPI:
                     "warning_summary": "runtime=1 top=legacy_providers_present=codex_cli catalog=0",
                     "runtime_warning_count": 1,
                     "catalog_warning_count": 0,
+                    "benchmark_warning_count": 1,
                     "top_runtime_warning": "legacy_providers_present=codex_cli",
                     "top_catalog_warning": "",
+                    "top_benchmark_warning": "flow_comparison_failures=2",
                     "failure_summary": "check=runtime_complexity benchmark_check=runtime_budget benchmark=legacy_providers_present=codex_cli runtime=legacy_providers_present=codex_cli catalog=missing_source:hpy-atoms",
                     "top_failed_check": "runtime_complexity",
                     "top_benchmark_subcheck": "runtime_budget",
@@ -690,8 +692,10 @@ class TestDashboardAPI:
         assert data["benchmark_summary"]["release_warning_summary"] == "runtime=1 top=legacy_providers_present=codex_cli catalog=0"
         assert data["benchmark_summary"]["release_runtime_warning_count"] == 1
         assert data["benchmark_summary"]["release_catalog_warning_count"] == 0
+        assert data["benchmark_summary"]["release_benchmark_warning_count"] == 1
         assert data["benchmark_summary"]["release_top_runtime_warning"] == "legacy_providers_present=codex_cli"
         assert data["benchmark_summary"]["release_top_catalog_warning"] == ""
+        assert data["benchmark_summary"]["release_top_benchmark_warning"] == "flow_comparison_failures=2"
         assert data["benchmark_summary"]["release_failure_summary"].startswith(
             "check=runtime_complexity benchmark_check=runtime_budget "
         )

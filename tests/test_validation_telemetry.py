@@ -221,8 +221,10 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
             "warning_summary": "runtime=1 top=legacy_providers_present=codex_cli catalog=0",
             "runtime_warning_count": 1,
             "catalog_warning_count": 0,
+            "benchmark_warning_count": 1,
             "top_runtime_warning": "legacy_providers_present=codex_cli",
             "top_catalog_warning": "",
+            "top_benchmark_warning": "flow_comparison_failures=2",
             "failure_summary": "check=runtime_complexity benchmark_check=runtime_budget benchmark=legacy_providers_present=codex_cli runtime=legacy_providers_present=codex_cli catalog=missing_source:hpy-atoms",
             "top_failed_check": "runtime_complexity",
             "top_benchmark_subcheck": "runtime_budget",
@@ -309,6 +311,8 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
     assert payload["metadata"]["release_validation"]["warning_summary"] == "runtime=1 top=legacy_providers_present=codex_cli catalog=0"
     assert payload["metadata"]["release_validation"]["top_runtime_warning"] == "legacy_providers_present=codex_cli"
     assert payload["metadata"]["release_validation"]["top_catalog_warning"] == ""
+    assert payload["metadata"]["release_validation"]["benchmark_warning_count"] == 1
+    assert payload["metadata"]["release_validation"]["top_benchmark_warning"] == "flow_comparison_failures=2"
     assert payload["metadata"]["release_validation"]["failure_summary"].startswith(
         "check=runtime_complexity benchmark_check=runtime_budget "
     )

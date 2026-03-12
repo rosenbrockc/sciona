@@ -230,8 +230,14 @@ async def _cmd_release_validate(args: argparse.Namespace) -> None:
                     "warning_summary": str(summary.get("warning_summary", "") or ""),
                     "runtime_warning_count": int(summary.get("runtime_warning_count", 0) or 0),
                     "catalog_warning_count": int(summary.get("catalog_warning_count", 0) or 0),
+                    "benchmark_warning_count": int(
+                        summary.get("benchmark_warning_count", 0) or 0
+                    ),
                     "top_runtime_warning": str(summary.get("top_runtime_warning", "") or ""),
                     "top_catalog_warning": str(summary.get("top_catalog_warning", "") or ""),
+                    "top_benchmark_warning": str(
+                        summary.get("top_benchmark_warning", "") or ""
+                    ),
                     "failure_summary": str(summary.get("failure_summary", "") or ""),
                     "top_failed_check": str(summary.get("top_failed_check", "") or ""),
                     "top_benchmark_subcheck": str(summary.get("top_benchmark_subcheck", "") or ""),

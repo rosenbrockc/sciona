@@ -564,11 +564,17 @@ def _build_benchmark_summary(
         "release_catalog_warning_count": int(
             release_validation.get("catalog_warning_count", 0) or 0
         ),
+        "release_benchmark_warning_count": int(
+            release_validation.get("benchmark_warning_count", 0) or 0
+        ),
         "release_top_runtime_warning": str(
             release_validation.get("top_runtime_warning", "") or ""
         ),
         "release_top_catalog_warning": str(
             release_validation.get("top_catalog_warning", "") or ""
+        ),
+        "release_top_benchmark_warning": str(
+            release_validation.get("top_benchmark_warning", "") or ""
         ),
         "release_failure_summary": str(
             release_validation.get("failure_summary", "") or ""
