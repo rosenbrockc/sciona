@@ -21,23 +21,30 @@ def _format_release_warning_summary(
     *,
     runtime_complexity: dict[str, Any],
     catalog_summary: dict[str, Any],
+    benchmark_warning: str,
 ) -> dict[str, Any]:
     runtime_warnings = list(runtime_complexity.get("violations", []) or [])
     catalog_warnings = list(catalog_summary.get("warnings", []) or [])
+    benchmark_warning = str(benchmark_warning or "")
     runtime_warning_count = len(runtime_warnings)
     catalog_warning_count = len(catalog_warnings)
+    benchmark_warning_count = 1 if benchmark_warning else 0
     top_runtime_warning = str(runtime_warnings[0] if runtime_warnings else "")
     top_catalog_warning = str(catalog_warnings[0] if catalog_warnings else "")
     return {
         "runtime_warning_count": runtime_warning_count,
         "catalog_warning_count": catalog_warning_count,
+        "benchmark_warning_count": benchmark_warning_count,
         "top_runtime_warning": top_runtime_warning,
         "top_catalog_warning": top_catalog_warning,
+        "top_benchmark_warning": benchmark_warning,
         "warning_summary": (
             f"runtime={runtime_warning_count}"
             f"{f' top={top_runtime_warning}' if top_runtime_warning else ''} "
             f"catalog={catalog_warning_count}"
             f"{f' top={top_catalog_warning}' if top_catalog_warning else ''}"
+            f" benchmark={benchmark_warning_count}"
+            f"{f' top={benchmark_warning}' if benchmark_warning else ''}"
         ),
     }
 
@@ -163,6 +170,7 @@ async def run_release_validation(output_dir: str | Path) -> dict[str, Any]:
     warning_summary = _format_release_warning_summary(
         runtime_complexity=runtime_complexity,
         catalog_summary=catalog_summary,
+        benchmark_warning=benchmark_top_warning,
     )
     failure_summary = _format_release_failure_summary(
         benchmark_summary=benchmark_summary,
