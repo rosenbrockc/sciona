@@ -97,6 +97,7 @@ def _create_llm_router(
     from ageom.hunter.failure_analyzer import DeterministicFailureAnalyzer
     from ageom.hunter.query_reformulator import HeuristicQueryReformulator
     from ageom.ingester.ast_state_hoister import ASTStateHoister
+    from ageom.ingester.deterministic_cycle_breaker import DeterministicCycleBreaker
     from ageom.ingester.deterministic_ghost_fixer import DeterministicGhostFixer
     from ageom.ingester.deterministic_type_fixer import DeterministicTypeFixer
     from ageom.ingester.template_abstractor import TemplateAbstractor
@@ -107,6 +108,7 @@ def _create_llm_router(
         HUNTER_REFORMULATE,
         HUNTER_SCORE,
         INGESTER_ABSTRACT,
+        INGESTER_FIX_MESSAGE_CYCLE,
         INGESTER_FIX_GHOST,
         INGESTER_FIX_TYPE,
         INGESTER_HOIST_STATE,
@@ -176,6 +178,9 @@ def _create_llm_router(
     if round_name == "ingester" and INGESTER_FIX_GHOST in prompt_keys:
         ghost_fallback = overrides.get(INGESTER_FIX_GHOST, default)
         overrides[INGESTER_FIX_GHOST] = DeterministicGhostFixer(ghost_fallback)
+    if round_name == "ingester" and INGESTER_FIX_MESSAGE_CYCLE in prompt_keys:
+        cycle_fallback = overrides.get(INGESTER_FIX_MESSAGE_CYCLE, default)
+        overrides[INGESTER_FIX_MESSAGE_CYCLE] = DeterministicCycleBreaker(cycle_fallback)
     if round_name == "ingester" and INGESTER_ABSTRACT in prompt_keys:
         abstract_fallback = overrides.get(INGESTER_ABSTRACT, default)
         overrides[INGESTER_ABSTRACT] = TemplateAbstractor(abstract_fallback)
