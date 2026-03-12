@@ -106,13 +106,7 @@ _MODE_OVERRIDE_POLICIES: dict[str, dict[str, tuple[tuple[str, str], ...]]] = {
         "required_active_overrides": (),
     },
     "verified": {
-        "required_active_overrides": (
-            ("architect_strategy", "codex_shim"),
-            ("architect_critique", "codex_shim"),
-            ("hunter_score", "codex_shim"),
-            ("hunter_reformulate", "gemini_shim"),
-            ("hunter_analyze_failure", "gemini_shim"),
-        ),
+        "required_active_overrides": (),
     },
 }
 

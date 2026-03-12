@@ -250,9 +250,20 @@ class TestConfigPerPromptFields:
             config, "hunter_score", execution_mode="structured"
         ) is False
 
+    def test_verified_mode_suppresses_deterministic_code_defaults(self):
+        from ageom.config import AgeomConfig, should_apply_prompt_override
+
+        config = AgeomConfig(_env_file=None, execution_mode="verified")
+        assert should_apply_prompt_override(
+            config, "hunter_score", execution_mode="verified"
+        ) is False
+        assert should_apply_prompt_override(
+            config, "architect_strategy", execution_mode="verified"
+        ) is False
+
 
 class TestCreateLLMRouter:
-    def test_architect_strategy_and_critique_use_codex_shim_overrides(self, monkeypatch):
+    def test_architect_strategy_and_critique_use_explicit_overrides(self, monkeypatch):
         from ageom.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
@@ -280,11 +291,11 @@ class TestCreateLLMRouter:
             architect_llm_provider="",
             architect_llm_model="",
             architect_strategy_llm_provider="codex_shim",
-            architect_strategy_llm_model="gpt-5.3-codex",
+            architect_strategy_llm_model="gpt-5.4-codex",
             architect_decompose_llm_provider="",
             architect_decompose_llm_model="",
             architect_critique_llm_provider="codex_shim",
-            architect_critique_llm_model="gpt-5.3-codex",
+            architect_critique_llm_model="gpt-5.4-codex",
         )
 
         router = _create_llm_router(
@@ -297,13 +308,13 @@ class TestCreateLLMRouter:
         assert isinstance(router, LLMRouter)
         assert created == [
             ("anthropic", "claude-sonnet-4-5-20250929"),
-            ("codex_shim", "gpt-5.3-codex"),
+            ("codex_shim", "gpt-5.4-codex"),
         ]
         assert isinstance(router.for_prompt("architect_strategy"), StrategyClassifier)
         assert router.for_prompt("architect_critique") is not router.for_prompt("architect_strategy")
         assert router.for_prompt("architect_decompose") is router._default
 
-    def test_hunter_prompts_use_gemini_shim_overrides(self, monkeypatch):
+    def test_hunter_prompts_use_explicit_overrides(self, monkeypatch):
         from ageom.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
@@ -330,12 +341,12 @@ class TestCreateLLMRouter:
             use_agent_layer=False,
             hunter_llm_provider="",
             hunter_llm_model="",
-            hunter_score_llm_provider="gemini_shim",
-            hunter_score_llm_model="flash-lite",
+            hunter_score_llm_provider="codex_shim",
+            hunter_score_llm_model="gpt-5.4-codex",
             hunter_reformulate_llm_provider="gemini_shim",
-            hunter_reformulate_llm_model="flash-lite",
+            hunter_reformulate_llm_model="flash-exp",
             hunter_analyze_failure_llm_provider="gemini_shim",
-            hunter_analyze_failure_llm_model="flash",
+            hunter_analyze_failure_llm_model="flash-pro",
         )
 
         router = _create_llm_router(
@@ -348,8 +359,9 @@ class TestCreateLLMRouter:
         assert isinstance(router, LLMRouter)
         assert created == [
             ("anthropic", "claude-sonnet-4-5-20250929"),
-            ("gemini_shim", "flash-lite"),
-            ("gemini_shim", "flash"),
+            ("codex_shim", "gpt-5.4-codex"),
+            ("gemini_shim", "flash-exp"),
+            ("gemini_shim", "flash-pro"),
         ]
         assert isinstance(router.for_prompt("hunter_score"), HeuristicCandidateRanker)
         assert isinstance(
@@ -361,7 +373,7 @@ class TestCreateLLMRouter:
         assert router.for_prompt("hunter_reformulate") is not router.for_prompt("hunter_score")
         assert router.for_prompt("hunter_analyze_failure") is not router.for_prompt("hunter_score")
 
-    def test_architect_prompt_overrides_use_socket_shims(self, monkeypatch):
+    def test_architect_code_defaults_do_not_spawn_extra_override_clients(self, monkeypatch):
         from ageom.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
@@ -403,11 +415,8 @@ class TestCreateLLMRouter:
             ["architect_strategy", "architect_decompose", "architect_critique"],
         )
 
+        assert created == [("anthropic", "claude-sonnet-4-5-20250929")]
         assert isinstance(router, LLMRouter)
-        assert created == [
-            ("anthropic", "claude-sonnet-4-5-20250929"),
-            ("codex_shim", "gpt-5.3-codex"),
-        ]
         assert isinstance(router.for_prompt("architect_strategy"), StrategyClassifier)
         assert router.for_prompt("architect_critique") is not router.for_prompt("architect_strategy")
 

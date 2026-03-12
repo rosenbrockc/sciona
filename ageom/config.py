@@ -8,15 +8,9 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BENCHMARK_JUSTIFIED_PROMPT_KEYS = frozenset(
-    {
-        "architect_strategy",
-        "architect_critique",
-        "hunter_score",
-        "hunter_reformulate",
-        "hunter_analyze_failure",
-    }
-)
+# Prompt-specific code defaults are retained for opt-in debugging and benchmark
+# work, but deterministic wrappers should not auto-activate them at runtime.
+BENCHMARK_JUSTIFIED_PROMPT_KEYS = frozenset()
 
 
 @dataclass(frozen=True)

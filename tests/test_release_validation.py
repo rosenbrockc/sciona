@@ -37,7 +37,7 @@ async def test_run_release_validation_writes_manifest_and_benchmark_bundle(tmp_p
     assert "required[structured,verified]" in bench["flow_gate_summary"]
     assert "rapid=rapid_direct" in bench["flow_execution_path_summary"]
     assert "rapid=" in bench["flow_prompt_volume_summary"]
-    assert "verified=5/0/0" in bench["runtime_override_policy_summary"]
+    assert "verified=0/0/0" in bench["runtime_override_policy_summary"]
     assert bench["health_summary"] == (
         "warnings="
         f"subcheck=comparison_failures warning=flow_comparison_failures={bench['flow_comparison_failures']} "

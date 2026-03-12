@@ -88,7 +88,7 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "rapid=rapid_direct" in payload["flow_execution_path_summary"]
     assert "single_agent=single_agent_structured" in payload["flow_execution_path_summary"]
     assert "rapid=" in payload["flow_prompt_volume_summary"]
-    assert "verified=5/0/0" in payload["runtime_override_policy_summary"]
+    assert "verified=0/0/0" in payload["runtime_override_policy_summary"]
     assert payload["single_agent_comparison"]["present"] is True
     assert payload["single_agent_comparison"]["comparisons"]["rapid"]["pass_rate_delta"] >= 0.0
     assert payload["single_agent_comparison"]["comparisons"]["structured"]["pass_rate_delta"] <= 0.0
@@ -175,7 +175,7 @@ def test_runtime_complexity_summary_is_mode_aware():
     assert "monotonic_violations" in summary
 
 
-def test_runtime_complexity_summary_flags_verified_override_policy_drift():
+def test_runtime_complexity_summary_treats_explicit_verified_prompt_override_as_nonblocking():
     summary = runtime_complexity_summary(
         AgeomConfig(
             _env_file=None,
@@ -185,16 +185,22 @@ def test_runtime_complexity_summary_flags_verified_override_policy_drift():
     )
 
     verified = summary["by_mode"]["verified"]
-    assert {
-        row["prompt_key"]: row["provider"]
-        for row in verified["override_policy"]["missing_required_overrides"]
-    } == {"hunter_reformulate": "gemini_shim"}
-    assert {
-        row["prompt_key"]: row["provider"]
-        for row in verified["override_policy"]["unexpected_active_overrides"]
-    } == {"hunter_reformulate": "anthropic"}
-    assert "verified:missing_required_override:hunter_reformulate=gemini_shim" in summary["violations"]
-    assert "verified:unexpected_active_override:hunter_reformulate=anthropic" in summary["violations"]
+    assert verified["override_policy"]["required_active_overrides"] == []
+    assert verified["override_policy"]["missing_required_overrides"] == []
+    assert verified["override_policy"]["unexpected_active_overrides"] == []
+    assert verified["active_override_count"] == 1
+    assert verified["active_overrides"] == [
+        {
+            "prompt_key": "hunter_reformulate",
+            "provider": "anthropic",
+            "model": "claude-sonnet-4-5-20250929",
+        }
+    ]
+    assert all(
+        "missing_required_override" not in violation
+        and "unexpected_active_override" not in violation
+        for violation in summary["violations"]
+    )
 
 
 def test_flow_prompt_volume_summary_flags_non_monotonic_modes():
