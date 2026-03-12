@@ -418,11 +418,14 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                         hunter_prompt_keys,
                         mode_settings.mode,
                     )
+                    # Extract embedder from index for embedding-based reranking
+                    _embedder = getattr(index, "_embedder", None)
                     hunter_llm = _create_llm_router(
                         args,
                         config,
                         "hunter",
                         hunter_prompt_keys,
+                        embedder=_embedder,
                     )
                     await _warm_llm_if_supported(hunter_llm, "hunter")
                 except (ValueError, ImportError) as exc:

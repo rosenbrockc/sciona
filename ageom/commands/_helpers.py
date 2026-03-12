@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.hunter.llm import LLMClient
+    from ageom.indexer.embedder import Embedder
     from ageom.protocols import ProofEnvironment, SemanticIndex
     from ageom.shared_context import SharedContextMetrics, SharedContextStore
     from ageom.types import Prover
@@ -80,6 +81,8 @@ def _create_llm_router(
     config: "AgeomConfig",
     round_name: str,
     prompt_keys: list[str],
+    *,
+    embedder: "Embedder | None" = None,
 ) -> "LLMClient":
     """Create an ``LLMRouter`` wrapping the default client with per-prompt overrides.
 
@@ -90,6 +93,7 @@ def _create_llm_router(
     from ageom.config import should_apply_prompt_override
     from ageom.architect.strategy_classifier import StrategyClassifier
     from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
+    from ageom.hunter.embedding_reranker import EmbeddingReranker
     from ageom.hunter.query_reformulator import HeuristicQueryReformulator
     from ageom.hunter.llm import create_llm_client
     from ageom.llm_router import (
@@ -141,7 +145,11 @@ def _create_llm_router(
         overrides[ARCHITECT_STRATEGY] = StrategyClassifier(strategy_fallback)
     if round_name == "hunter" and HUNTER_SCORE in prompt_keys:
         score_fallback = overrides.get(HUNTER_SCORE, default)
-        overrides[HUNTER_SCORE] = HeuristicCandidateRanker(score_fallback)
+        heuristic_ranker = HeuristicCandidateRanker(score_fallback)
+        if embedder is not None:
+            overrides[HUNTER_SCORE] = EmbeddingReranker(embedder, heuristic_ranker)
+        else:
+            overrides[HUNTER_SCORE] = heuristic_ranker
     if round_name == "hunter" and HUNTER_REFORMULATE in prompt_keys:
         reformulate_fallback = overrides.get(HUNTER_REFORMULATE, default)
         overrides[HUNTER_REFORMULATE] = HeuristicQueryReformulator(

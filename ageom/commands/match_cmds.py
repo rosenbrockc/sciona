@@ -172,7 +172,10 @@ async def _cmd_match(args: argparse.Namespace) -> None:
                     _print_prompt_routing_summary(
                         config, "hunter", prompt_keys, getattr(args, "mode", None)
                     )
-                    llm = _create_llm_router(args, config, "hunter", prompt_keys)
+                    _embedder = getattr(index, "_embedder", None)
+                    llm = _create_llm_router(
+                        args, config, "hunter", prompt_keys, embedder=_embedder
+                    )
                     await _warm_llm_if_supported(llm, "hunter")
                 except ValueError as exc:
                     print(f"Error: {exc}", file=sys.stderr)

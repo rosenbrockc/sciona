@@ -76,7 +76,11 @@ class VerificationOracleImpl:
         Attempts direct type checking: `@{candidate_name}` as term for `pdg_node.statement`.
         """
         env = self._get_env(pdg_node.prover)
-        term = f"@{candidate.declaration.name}"
+        # Use bare function name for Python (@ prefix is Lean syntax)
+        if pdg_node.prover == Prover.PYTHON:
+            term = candidate.declaration.name
+        else:
+            term = f"@{candidate.declaration.name}"
 
         success, output = await env.check_term(term, pdg_node.statement)
         level = self._resolve_verification_level(pdg_node.prover, success)

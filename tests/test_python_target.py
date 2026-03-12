@@ -290,7 +290,7 @@ class TestPythonEnvironment:
         mock_proc.returncode = 0
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
-            fb = await env._run("x: int = 1\n")
+            fb = await env._run_mypy("x: int = 1\n")
             assert fb.success is True
 
         await env.close()
@@ -324,7 +324,7 @@ class TestPythonEnvironment:
             "asyncio.create_subprocess_exec",
             side_effect=FileNotFoundError("mypy not found"),
         ):
-            fb = await env._run("x: int = 1\n")
+            fb = await env._run_mypy("x: int = 1\n")
             assert fb.success is False
             assert "mypy not found" in fb.errors[0]
 

@@ -194,7 +194,7 @@ class AgeomConfig(BaseSettings):
     # Orchestrator per-prompt
     orchestrator_refine_llm_provider: str = "llama_cpp"
     orchestrator_refine_llm_model: str = "qwen3:14b"  # medium: predicate splitting
-    orchestrator_hunter_concurrency: int = 1
+    orchestrator_hunter_concurrency: int = 4
 
     # Python target
     python_path: str = "python"
