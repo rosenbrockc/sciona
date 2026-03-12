@@ -26,10 +26,16 @@ class _FakeHunterService:
 
     async def match_goal(self, request):
         self.goal_calls += 1
+        if isinstance(self._direct_match, list):
+            index = min(self.goal_calls - 1, len(self._direct_match) - 1)
+            return self._direct_match[index]
         return self._direct_match
 
     async def match_batch(self, request):
         self.batch_calls += 1
+        if isinstance(self._batch_result, list):
+            index = min(self.batch_calls - 1, len(self._batch_result) - 1)
+            return self._batch_result[index]
         return self._batch_result
 
     def direct_match_result(self, *args, **kwargs):
@@ -409,3 +415,129 @@ async def test_single_agent_planner_accepts_high_coverage_partial_result():
     assert result.state.termination_reason == "partial_accept"
     assert result.state.open_failures == ["n4"]
     assert orchestrator.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_single_agent_planner_retries_retrieval_before_escalation():
+    cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="n1",
+                name="Stage One",
+                description="First stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="A -> B",
+            ),
+            AlgorithmicNode(
+                node_id="n2",
+                name="Stage Two",
+                description="Second stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="B -> C",
+            ),
+        ],
+        edges=[],
+        metadata={},
+    )
+    structured_result = OrchestratorResult(cdg=cdg, match_results=[], rounds_used=1)
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=False),
+        batch_result=[
+            HunterBatchMatchResult(
+                match_results=[
+                    SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n1"))
+                ],
+                failures=[],
+                ungroundable=["n2"],
+            ),
+            HunterBatchMatchResult(
+                match_results=[
+                    SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n2"))
+                ],
+                failures=[],
+                ungroundable=[],
+            ),
+        ],
+        direct_result=structured_result,
+    )
+    architect = _FakeArchitectService(cdg)
+    orchestrator = _FakeOrchestratorService(structured_result)
+
+    async def _architect_factory():
+        return architect
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=orchestrator,
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+
+    result = await planner.run(
+        "Bandpass ECG signal and then detect heart rate from filtered waveform"
+    )
+
+    assert result.execution_path == "single_agent_retried"
+    assert [step.action for step in result.steps] == [
+        "decompose",
+        "match_decomposed",
+        "retry_retrieval",
+    ]
+    assert result.state.policy.retrieval_intensity == "standard"
+    assert result.state.verification_status == "verified"
+    assert result.state.termination_reason == "retrieval_retry_verified"
+    assert hunter.goal_calls == 0
+    assert hunter.batch_calls == 2
+    assert orchestrator.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_single_agent_planner_uses_aggressive_retrieval_for_long_compound_goal():
+    cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="n1",
+                name="Stage One",
+                description="First stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="A -> B",
+            )
+        ],
+        edges=[],
+        metadata={},
+    )
+    structured_result = OrchestratorResult(cdg=cdg, match_results=[], rounds_used=1)
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=False),
+        batch_result=HunterBatchMatchResult(match_results=[], failures=[], ungroundable=[]),
+        direct_result=structured_result,
+    )
+    architect = _FakeArchitectService(cdg)
+    orchestrator = _FakeOrchestratorService(structured_result)
+
+    async def _architect_factory():
+        return architect
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=orchestrator,
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+
+    result = await planner.run(
+        "Bandpass ECG and then detect heart rate while comparing baseline drift before final reporting"
+    )
+
+    assert result.execution_path == "single_agent_structured"
+    assert result.state.policy.direct_grounding_enabled is False
+    assert result.state.policy.retrieval_intensity == "aggressive"

@@ -10,6 +10,7 @@ from ageom.orchestrator import OrchestratorResult
 from ageom.services.models import (
     ArchitectDecomposeRequest,
     HunterBatchMatchRequest,
+    HunterBatchMatchResult,
     HunterDirectMatchRequest,
     OrchestrationRequest,
     PlannerBudget,
@@ -43,6 +44,7 @@ class SingleAgentPlanner:
         " workflow",
     )
     _MAX_DIRECT_GOAL_TOKENS = 6
+    _AGGRESSIVE_GOAL_TOKENS = 12
 
     def __init__(
         self,
@@ -190,6 +192,31 @@ class SingleAgentPlanner:
                 execution_path="single_agent_structured",
                 state=state,
             )
+
+        retry_limit = self._retrieval_retry_limit(state.policy)
+        if retry_limit > 0 and batch_result.ungroundable:
+            retried = await self._retry_retrieval(
+                state=state,
+                pdg_nodes=pdg_nodes,
+                batch_result=batch_result,
+            )
+            batch_result = retried
+            if not batch_result.ungroundable:
+                state.current_focus = "goal_grounded"
+                state.open_failures = []
+                state.termination_reason = "retrieval_retry_verified"
+                state.verification_status = "verified"
+                return self._complete(
+                    result=OrchestratorResult(
+                        cdg=decompose_result.cdg,
+                        match_results=batch_result.match_results,
+                        rounds_used=1,
+                        failures=batch_result.failures,
+                        ungroundable=batch_result.ungroundable,
+                    ),
+                    execution_path="single_agent_retried",
+                    state=state,
+                )
 
         # --- Partial result acceptance ---
         # If most leaves matched, accept the partial result without escalation
@@ -421,21 +448,97 @@ class SingleAgentPlanner:
             int(state.artifact_mutations.get(artifact_name, 0) or 0) + 1
         )
 
+    async def _retry_retrieval(
+        self,
+        *,
+        state: PlannerState,
+        pdg_nodes: list[Any],
+        batch_result: HunterBatchMatchResult,
+    ) -> HunterBatchMatchResult:
+        pending_ids = set(batch_result.ungroundable)
+        current = batch_result
+        result_by_node = {
+            str(mr.pdg_node.predicate_id): mr for mr in batch_result.match_results
+        }
+        failure_by_node = {
+            str(failure.pdg_node.predicate_id): failure for failure in batch_result.failures
+        }
+
+        for attempt_idx in range(self._retrieval_retry_limit(state.policy)):
+            if not pending_ids or state.budget.steps_used >= state.budget.max_steps - 1:
+                break
+            retry_nodes = [node for node in pdg_nodes if node.predicate_id in pending_ids]
+            if not retry_nodes:
+                break
+            state.current_focus = "retrieval_retry"
+            current = await self._hunter.match_batch(
+                HunterBatchMatchRequest(pdg_nodes=retry_nodes)
+            )
+            for mr in current.match_results:
+                result_by_node[str(mr.pdg_node.predicate_id)] = mr
+            failure_by_node = {
+                str(failure.pdg_node.predicate_id): failure for failure in current.failures
+            }
+            state.artifacts["match_results"] = "retrieval_retry"
+            self._bump_artifact(state, "match_results")
+            pending_ids = set(current.ungroundable)
+            state.open_failures = sorted(pending_ids)
+            state.verification_status = (
+                "verified" if not pending_ids else "needs_refinement"
+            )
+            self._record_step(
+                state,
+                action="retry_retrieval",
+                detail=(
+                    f"Retried unresolved leaves ({attempt_idx + 1}/"
+                    f"{self._retrieval_retry_limit(state.policy)})."
+                ),
+                status="completed" if not pending_ids else "partial",
+            )
+
+        ordered_results = [
+            result_by_node[node.predicate_id]
+            for node in pdg_nodes
+            if node.predicate_id in result_by_node
+        ]
+        ordered_failures = [
+            failure_by_node[node.predicate_id]
+            for node in pdg_nodes
+            if node.predicate_id in failure_by_node
+        ]
+        return HunterBatchMatchResult(
+            match_results=ordered_results,
+            failures=ordered_failures,
+            ungroundable=sorted(pending_ids),
+        )
+
+    def _retrieval_retry_limit(self, policy: PlannerPolicy) -> int:
+        if policy.retrieval_intensity == "aggressive":
+            return 2
+        if policy.retrieval_intensity == "standard":
+            return 1
+        return 0
+
     def _select_policy(self, goal: str) -> PlannerPolicy:
+        token_count = self._goal_token_count(goal)
         if self._is_compound_goal(goal):
             return PlannerPolicy(
                 direct_grounding_enabled=False,
                 decomposition_mode="selective_redecompose",
-                retrieval_intensity="standard",
+                retrieval_intensity=(
+                    "aggressive" if token_count >= self._AGGRESSIVE_GOAL_TOKENS else "standard"
+                ),
                 repair_policy="bounded",
                 partial_accept_enabled=False,
                 selective_redecompose_enabled=True,
             )
-        if self._goal_token_count(goal) > self._MAX_DIRECT_GOAL_TOKENS:
+        if token_count > self._MAX_DIRECT_GOAL_TOKENS:
             return PlannerPolicy(
                 direct_grounding_enabled=False,
                 decomposition_mode="single_pass",
-                retrieval_intensity="standard",
+                retrieval_intensity=(
+                    "aggressive" if token_count >= self._AGGRESSIVE_GOAL_TOKENS else "standard"
+                ),
                 repair_policy="bounded",
             )
         return PlannerPolicy()
