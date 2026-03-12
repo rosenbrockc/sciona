@@ -394,6 +394,9 @@
           const singleAgentOverheadLine = singleAgentComparison.overhead_driver
             ? `<div class="run-meta">single_agent_overhead driver=${singleAgentComparison.overhead_driver} prune=${singleAgentComparison.prune_recommendation || "keep_current"} tools=${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} escalations=${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)}</div>`
             : "";
+          const singleAgentPruneLine = benchmark.top_warning_subcheck === "single_agent_prune"
+            ? `<div class="run-meta">single_agent_prune ${benchmark.top_warning || "--"}</div>`
+            : "";
           const runtimeModeSummary = Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes)
                 .map(([mode, row]) => `${mode}=${Number(row.provider_count || 0)}/${Number(row.transport_count || 0)}`)
@@ -443,6 +446,7 @@
             singleAgentEscalationLine,
             singleAgentBenchmarkLine,
             singleAgentOverheadLine,
+            singleAgentPruneLine,
             releaseWarningLine,
             validationLine
           ].join("");
@@ -584,6 +588,7 @@
           ["benchmark warnings", benchmark.warning_summary || "--"],
           ["benchmark warn check", benchmark.top_warning_subcheck || "--"],
           ["benchmark top warn", benchmark.top_warning || "--"],
+          ["single-agent prune warn", benchmark.top_warning_subcheck === "single_agent_prune" ? (benchmark.top_warning || "--") : "--"],
           ["benchmark failures", benchmark.failure_summary || "--"],
           ["benchmark subcheck", benchmark.top_failed_subcheck || "--"],
           ["benchmark top fail", benchmark.top_failure || "--"],
