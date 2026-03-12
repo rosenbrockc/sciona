@@ -13,7 +13,7 @@ from ageom.services import (
     OrchestrationRequest,
     SingleAgentPlanner,
 )
-from ageom.types import Prover
+from ageom.types import FailureAction, MatchFailureReport, PDGNode, Prover
 
 
 class _FakeHunterService:
@@ -495,6 +495,75 @@ async def test_single_agent_planner_retries_retrieval_before_escalation():
     assert hunter.goal_calls == 0
     assert hunter.batch_calls == 2
     assert orchestrator.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_single_agent_planner_single_pass_policy_skips_selective_redecompose():
+    cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="filter_step",
+                name="Bandpass ECG Filter",
+                description="Design and apply a stable bandpass filter to ECG samples.",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                type_signature="np.ndarray -> np.ndarray",
+            )
+        ],
+        edges=[],
+        metadata={},
+    )
+    orchestrated_result = OrchestratorResult(cdg=cdg, match_results=[], rounds_used=2)
+    unresolved = HunterBatchMatchResult(
+        match_results=[],
+        failures=[
+            MatchFailureReport(
+                pdg_node=PDGNode(
+                    predicate_id="filter_step",
+                    statement="Bandpass raw ECG into cardiac frequency region",
+                    informal_desc="stable digital filter design and application",
+                ),
+                error_summaries=["Expected filtered_signal but got response tuple"],
+                suggested_action=FailureAction.SPLIT,
+            )
+        ],
+        ungroundable=["filter_step"],
+    )
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=False),
+        batch_result=[unresolved, unresolved],
+        direct_result=orchestrated_result,
+    )
+    architect = _FakeArchitectService(cdg)
+    orchestrator = _FakeOrchestratorService(orchestrated_result)
+
+    async def _architect_factory():
+        return architect
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=orchestrator,
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+
+    result = await planner.run("Bandpass ECG filter design for stable waveform preprocessing")
+
+    assert result.execution_path == "single_agent_escalated"
+    assert result.state.policy.decomposition_mode == "single_pass"
+    assert [step.action for step in result.steps] == [
+        "decompose",
+        "match_decomposed",
+        "retry_retrieval",
+        "escalate_orchestration",
+    ]
+    assert "selective_redecompose" not in result.state.attempt_history
+    assert hunter.goal_calls == 0
+    assert hunter.batch_calls == 2
+    assert orchestrator.calls == 1
 
 
 @pytest.mark.asyncio

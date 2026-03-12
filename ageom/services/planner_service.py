@@ -527,6 +527,8 @@ class SingleAgentPlanner:
     def _allows_selective_redecompose(self, policy: PlannerPolicy) -> bool:
         if not policy.selective_redecompose_enabled:
             return False
+        if policy.decomposition_mode != "selective_redecompose":
+            return False
         return policy.repair_policy in {"bounded", "until_verified"}
 
     def _select_policy(self, goal: str) -> PlannerPolicy:
