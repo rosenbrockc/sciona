@@ -293,6 +293,23 @@ def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any
             ),
         }
 
+    avg_latency_ms = round(float(single_agent.avg_latency_ms), 4)
+    avg_planner_tool_dispatches = round(
+        float(getattr(single_agent, "avg_planner_tool_dispatches", 0.0) or 0.0), 4
+    )
+    avg_planner_tool_latency_ms = round(
+        float(getattr(single_agent, "avg_planner_tool_latency_ms", 0.0) or 0.0), 4
+    )
+    avg_planner_escalations = round(
+        float(getattr(single_agent, "avg_planner_escalations", 0.0) or 0.0), 4
+    )
+    overhead_driver = _single_agent_overhead_driver(
+        avg_latency_ms=avg_latency_ms,
+        avg_planner_tool_dispatches=avg_planner_tool_dispatches,
+        avg_planner_tool_latency_ms=avg_planner_tool_latency_ms,
+        avg_planner_escalations=avg_planner_escalations,
+    )
+
     return {
         "present": True,
         "pass_rate": round(
@@ -301,18 +318,29 @@ def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any
         ),
         "avg_leaf_coverage": round(float(single_agent.avg_leaf_coverage), 4),
         "avg_prompt_calls": round(float(single_agent.avg_prompt_calls), 4),
-        "avg_latency_ms": round(float(single_agent.avg_latency_ms), 4),
-        "avg_planner_tool_dispatches": round(
-            float(getattr(single_agent, "avg_planner_tool_dispatches", 0.0) or 0.0), 4
-        ),
-        "avg_planner_tool_latency_ms": round(
-            float(getattr(single_agent, "avg_planner_tool_latency_ms", 0.0) or 0.0), 4
-        ),
-        "avg_planner_escalations": round(
-            float(getattr(single_agent, "avg_planner_escalations", 0.0) or 0.0), 4
-        ),
+        "avg_latency_ms": avg_latency_ms,
+        "avg_planner_tool_dispatches": avg_planner_tool_dispatches,
+        "avg_planner_tool_latency_ms": avg_planner_tool_latency_ms,
+        "avg_planner_escalations": avg_planner_escalations,
+        "overhead_driver": overhead_driver,
         "comparisons": comparisons,
     }
+
+
+def _single_agent_overhead_driver(
+    *,
+    avg_latency_ms: float,
+    avg_planner_tool_dispatches: float,
+    avg_planner_tool_latency_ms: float,
+    avg_planner_escalations: float,
+) -> str:
+    if avg_planner_escalations >= 0.5:
+        return "escalation_heavy"
+    if avg_planner_tool_dispatches >= 4.0:
+        return "tool_chatter"
+    if avg_planner_tool_latency_ms >= max(50.0, avg_latency_ms * 0.25):
+        return "tool_latency"
+    return "light"
 
 
 def _format_single_agent_comparison_summary(summary: dict[str, Any]) -> str:
@@ -330,6 +358,7 @@ def _format_single_agent_comparison_summary(summary: dict[str, Any]) -> str:
         f"tools={float(summary.get('avg_planner_tool_dispatches', 0.0)):.1f}",
         f"tool_latency_ms={float(summary.get('avg_planner_tool_latency_ms', 0.0)):.1f}",
         f"escalations={float(summary.get('avg_planner_escalations', 0.0)):.1f}",
+        f"driver={str(summary.get('overhead_driver', '') or 'light')}",
     ]
     for variant in ("rapid", "structured", "verified"):
         row = comparisons.get(variant)

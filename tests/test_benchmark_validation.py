@@ -5,6 +5,7 @@ import json
 import pytest
 
 from ageom.benchmark_validation import (
+    _format_single_agent_comparison_summary,
     benchmark_failure_summary,
     benchmark_warning_summary,
     format_benchmark_failure_summary,
@@ -246,11 +247,15 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
     assert summary["avg_planner_tool_dispatches"] == 4.0
     assert summary["avg_planner_tool_latency_ms"] == 180.0
     assert summary["avg_planner_escalations"] == 1.0
+    assert summary["overhead_driver"] == "escalation_heavy"
     assert summary["comparisons"]["rapid"]["pass_rate_delta"] == 1.0
     assert summary["comparisons"]["structured"]["prompt_calls_delta"] == -1.0
     assert summary["comparisons"]["verified"]["latency_ms_delta"] == -100.0
     assert summary["comparisons"]["rapid"]["planner_tool_dispatches_delta"] == 4.0
     assert summary["comparisons"]["verified"]["planner_escalations_delta"] == 1.0
+
+    rendered = _format_single_agent_comparison_summary(summary)
+    assert "driver=escalation_heavy" in rendered
 
 
 def test_benchmark_failure_summary_prefers_execution_path_before_prompt_counts():
