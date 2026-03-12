@@ -96,12 +96,14 @@ def _create_llm_router(
     from ageom.hunter.embedding_reranker import EmbeddingReranker
     from ageom.hunter.failure_analyzer import DeterministicFailureAnalyzer
     from ageom.hunter.query_reformulator import HeuristicQueryReformulator
+    from ageom.ingester.deterministic_type_fixer import DeterministicTypeFixer
     from ageom.hunter.llm import create_llm_client
     from ageom.llm_router import (
         ARCHITECT_STRATEGY,
         HUNTER_ANALYZE_FAILURE,
         HUNTER_REFORMULATE,
         HUNTER_SCORE,
+        INGESTER_FIX_TYPE,
         LLMRouter,
     )
 
@@ -160,6 +162,9 @@ def _create_llm_router(
         overrides[HUNTER_REFORMULATE] = HeuristicQueryReformulator(
             reformulate_fallback
         )
+    if round_name == "ingester" and INGESTER_FIX_TYPE in prompt_keys:
+        fix_type_fallback = overrides.get(INGESTER_FIX_TYPE, default)
+        overrides[INGESTER_FIX_TYPE] = DeterministicTypeFixer(fix_type_fallback)
 
     if not overrides:
         return default
