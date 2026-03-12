@@ -643,6 +643,8 @@ class TestDashboardAPI:
         assert "structured=structured_single_pass" in data["benchmark_summary"]["flow_execution_path_summary"]
         assert "verified=8.0" in data["benchmark_summary"]["flow_prompt_volume_summary"]
         assert "verified=1/1/1" in data["benchmark_summary"]["runtime_override_policy_summary"]
+        assert data["benchmark_summary"]["single_agent_comparison"] == {}
+        assert data["benchmark_summary"]["single_agent_comparison_summary"] == ""
         assert data["benchmark_summary"]["health_summary"] == (
             "warnings=subcheck=comparison_failures warning=flow_comparison_failures=2 "
             "failures=subcheck=runtime_budget failure=legacy_providers_present=codex_cli"

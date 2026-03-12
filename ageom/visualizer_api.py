@@ -413,6 +413,14 @@ def _build_benchmark_summary(
         "flow_prompt_volume_summary": str(
             benchmark.get("flow_prompt_volume_summary", "") or ""
         ),
+        "single_agent_comparison": dict(
+            benchmark.get("single_agent_comparison", {}) or {}
+        )
+        if isinstance(benchmark.get("single_agent_comparison", {}), dict)
+        else {},
+        "single_agent_comparison_summary": str(
+            benchmark.get("single_agent_comparison_summary", "") or ""
+        ),
         "flow_avg_prompt_calls": dict(
             benchmark.get("flow_avg_prompt_calls", {}) or {}
         )

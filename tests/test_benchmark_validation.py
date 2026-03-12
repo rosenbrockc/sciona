@@ -12,6 +12,7 @@ from ageom.benchmark_validation import (
     format_benchmark_warning_summary,
     flow_prompt_volume_summary,
     run_benchmark_validation,
+    single_agent_comparison_summary,
     runtime_complexity_summary,
 )
 from ageom.config import AgeomConfig
@@ -51,6 +52,8 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "flow_avg_prompt_calls" in payload
     assert "prompt_avg_latency_ms" in payload
     assert "flow_avg_latency_ms" in payload
+    assert "single_agent_comparison" in payload
+    assert "single_agent_comparison_summary" in payload
     assert "runtime_complexity" in payload
     assert "health_summary" in payload
     assert "warning_summary" in payload
@@ -82,6 +85,10 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert "single_agent=single_agent_structured" in payload["flow_execution_path_summary"]
     assert "rapid=" in payload["flow_prompt_volume_summary"]
     assert "verified=5/0/0" in payload["runtime_override_policy_summary"]
+    assert payload["single_agent_comparison"]["present"] is True
+    assert payload["single_agent_comparison"]["comparisons"]["rapid"]["pass_rate_delta"] >= 0.0
+    assert payload["single_agent_comparison"]["comparisons"]["structured"]["pass_rate_delta"] <= 0.0
+    assert "vs_structured=" in payload["single_agent_comparison_summary"]
     assert "flow_comparison_failures" in payload
     assert "flow_comparison_unstable_groups" in payload
     assert set(payload["flow_avg_prompt_calls"]) == {
@@ -187,6 +194,40 @@ def test_flow_prompt_volume_summary_flags_non_monotonic_modes():
 
     assert summary["averages"]["rapid"] == 5.0
     assert "rapid_prompt_calls=5.0 exceeds structured=4.0" in summary["violations"]
+
+
+def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
+    class _Agg:
+        def __init__(
+            self,
+            variant: str,
+            passed_cases: int,
+            total_cases: int,
+            avg_leaf_coverage: float,
+            avg_prompt_calls: float,
+            avg_latency_ms: float,
+        ):
+            self.variant = variant
+            self.passed_cases = passed_cases
+            self.total_cases = total_cases
+            self.avg_leaf_coverage = avg_leaf_coverage
+            self.avg_prompt_calls = avg_prompt_calls
+            self.avg_latency_ms = avg_latency_ms
+
+    summary = single_agent_comparison_summary(
+        [
+            _Agg("rapid", 0, 4, 0.2, 1.0, 100.0),
+            _Agg("single_agent", 4, 4, 1.0, 3.0, 250.0),
+            _Agg("structured", 4, 4, 1.0, 4.0, 300.0),
+            _Agg("verified", 4, 4, 1.0, 5.0, 350.0),
+        ]
+    )
+
+    assert summary["present"] is True
+    assert summary["pass_rate"] == 1.0
+    assert summary["comparisons"]["rapid"]["pass_rate_delta"] == 1.0
+    assert summary["comparisons"]["structured"]["prompt_calls_delta"] == -1.0
+    assert summary["comparisons"]["verified"]["latency_ms_delta"] == -100.0
 
 
 def test_benchmark_failure_summary_prefers_execution_path_before_prompt_counts():

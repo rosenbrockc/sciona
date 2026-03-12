@@ -51,6 +51,12 @@ def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, obje
         "flow_prompt_volume_summary": str(
             summary.get("flow_prompt_volume_summary", "") or ""
         ),
+        "single_agent_comparison": dict(
+            summary.get("single_agent_comparison", {}) or {}
+        ),
+        "single_agent_comparison_summary": str(
+            summary.get("single_agent_comparison_summary", "") or ""
+        ),
         "flow_avg_prompt_calls": dict(summary.get("flow_avg_prompt_calls", {}) or {}),
         "prompt_avg_latency_ms": dict(summary.get("prompt_avg_latency_ms", {}) or {}),
         "flow_avg_latency_ms": dict(summary.get("flow_avg_latency_ms", {}) or {}),

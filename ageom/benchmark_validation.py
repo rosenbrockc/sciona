@@ -249,6 +249,73 @@ def _format_flow_prompt_volume_summary(summary: dict[str, Any]) -> str:
     return rendered
 
 
+def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any]:
+    """Position single_agent against rapid/structured/verified benchmark modes."""
+    by_variant = {agg.variant: agg for agg in flow_aggregates}
+    single_agent = by_variant.get("single_agent")
+    if single_agent is None:
+        return {"present": False, "comparisons": {}}
+
+    comparisons: dict[str, dict[str, float]] = {}
+    for variant in ("rapid", "structured", "verified"):
+        other = by_variant.get(variant)
+        if other is None:
+            continue
+        single_pass_rate = (
+            float(single_agent.passed_cases) / max(1, int(single_agent.total_cases or 0))
+        )
+        other_pass_rate = float(other.passed_cases) / max(1, int(other.total_cases or 0))
+        comparisons[variant] = {
+            "pass_rate_delta": round(single_pass_rate - other_pass_rate, 4),
+            "coverage_delta": round(
+                float(single_agent.avg_leaf_coverage) - float(other.avg_leaf_coverage), 4
+            ),
+            "prompt_calls_delta": round(
+                float(single_agent.avg_prompt_calls) - float(other.avg_prompt_calls), 4
+            ),
+            "latency_ms_delta": round(
+                float(single_agent.avg_latency_ms) - float(other.avg_latency_ms), 4
+            ),
+        }
+
+    return {
+        "present": True,
+        "pass_rate": round(
+            float(single_agent.passed_cases) / max(1, int(single_agent.total_cases or 0)),
+            4,
+        ),
+        "avg_leaf_coverage": round(float(single_agent.avg_leaf_coverage), 4),
+        "avg_prompt_calls": round(float(single_agent.avg_prompt_calls), 4),
+        "avg_latency_ms": round(float(single_agent.avg_latency_ms), 4),
+        "comparisons": comparisons,
+    }
+
+
+def _format_single_agent_comparison_summary(summary: dict[str, Any]) -> str:
+    """Render a compact single_agent positioning line for dashboards and manifests."""
+    if not bool(summary.get("present", False)):
+        return "--"
+    comparisons = summary.get("comparisons", {})
+    if not isinstance(comparisons, dict):
+        comparisons = {}
+    parts = [
+        f"pass={float(summary.get('pass_rate', 0.0)):.2f}",
+        f"coverage={float(summary.get('avg_leaf_coverage', 0.0)):.2f}",
+        f"prompts={float(summary.get('avg_prompt_calls', 0.0)):.1f}",
+        f"latency_ms={float(summary.get('avg_latency_ms', 0.0)):.1f}",
+    ]
+    for variant in ("rapid", "structured", "verified"):
+        row = comparisons.get(variant)
+        if not isinstance(row, dict):
+            continue
+        parts.append(
+            f"vs_{variant}=pass:{float(row.get('pass_rate_delta', 0.0)):+.2f}/"
+            f"prompts:{float(row.get('prompt_calls_delta', 0.0)):+.1f}/"
+            f"latency:{float(row.get('latency_ms_delta', 0.0)):+.1f}"
+        )
+    return ", ".join(parts)
+
+
 def benchmark_failure_summary(summary: dict[str, Any]) -> dict[str, str]:
     """Return the first benchmark failure cause and its subcheck classification."""
     runtime_budget_failure = ""
@@ -724,6 +791,7 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
     )
     flow_execution_paths = flow_execution_path_summary(flow_aggregates)
     flow_prompt_volume = flow_prompt_volume_summary(flow_aggregates)
+    single_agent_comparison = single_agent_comparison_summary(flow_aggregates)
     runtime_complexity = runtime_complexity_summary(_benchmark_validation_config())
     benchmark_failures = benchmark_failure_summary(
         {
@@ -793,6 +861,10 @@ async def run_benchmark_validation(output_dir: str | Path) -> dict[str, Any]:
         ),
         "flow_prompt_volume_summary": _format_flow_prompt_volume_summary(
             flow_prompt_volume
+        ),
+        "single_agent_comparison": single_agent_comparison,
+        "single_agent_comparison_summary": _format_single_agent_comparison_summary(
+            single_agent_comparison
         ),
         "flow_avg_prompt_calls": {
             agg.variant: round(float(agg.avg_prompt_calls), 3) for agg in flow_aggregates
