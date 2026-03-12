@@ -105,7 +105,9 @@ def _create_llm_router(
         HUNTER_SCORE,
         INGESTER_FIX_TYPE,
         LLMRouter,
+        SYNTHESIZER_TACTIC,
     )
+    from ageom.synthesizer.tactic_suggester import DeterministicTacticSuggester
 
     default = _create_llm(args, config, round_name)
     overrides: dict[str, "LLMClient"] = {}
@@ -165,6 +167,9 @@ def _create_llm_router(
     if round_name == "ingester" and INGESTER_FIX_TYPE in prompt_keys:
         fix_type_fallback = overrides.get(INGESTER_FIX_TYPE, default)
         overrides[INGESTER_FIX_TYPE] = DeterministicTypeFixer(fix_type_fallback)
+    if round_name == "synthesizer" and SYNTHESIZER_TACTIC in prompt_keys:
+        tactic_fallback = overrides.get(SYNTHESIZER_TACTIC, default)
+        overrides[SYNTHESIZER_TACTIC] = DeterministicTacticSuggester(tactic_fallback)
 
     if not overrides:
         return default
