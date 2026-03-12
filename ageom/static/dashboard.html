@@ -339,6 +339,7 @@
           const benchmarkRuntimeModes = benchmarkRuntime.by_mode || {};
           const singleAgent = r.single_agent_summary || {};
           const singleAgentPolicy = singleAgent.policy || {};
+          const singleAgentComparisonSummary = benchmark.single_agent_comparison_summary || "";
           const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
           const flowLatency = benchmark.flow_avg_latency_ms || {};
           const flowPromptCallSummary = Object.keys(flowPromptCalls).length
@@ -363,6 +364,9 @@
           const benchmarkStatus = benchmark.status || "--";
           const singleAgentLine = singleAgent.termination_reason
             ? `<div class="run-meta">single_agent=${singleAgent.termination_reason} steps=${Number(singleAgent.steps_used || 0)}/${Number(singleAgent.step_budget || 0)} retrieval=${singleAgentPolicy.retrieval_intensity || "--"} artifacts=${Number(singleAgent.artifact_count || 0)}</div>`
+            : "";
+          const singleAgentBenchmarkLine = singleAgentComparisonSummary
+            ? `<div class="run-meta">single_agent_bench ${singleAgentComparisonSummary}</div>`
             : "";
           const runtimeModeSummary = Object.keys(benchmarkRuntimeModes).length
             ? Object.entries(benchmarkRuntimeModes)
@@ -400,6 +404,7 @@
               ? `<div class="run-meta">runtime_modes ${runtimeModeSummary}</div>`
               : ""),
             singleAgentLine,
+            singleAgentBenchmarkLine,
             validationLine
           ].join("");
           div.addEventListener("click", () => {
@@ -435,6 +440,7 @@
         const benchmarkFlowPaths = benchmark.flow_execution_paths || {};
         const singleAgent = run.single_agent_summary || {};
         const singleAgentPolicy = singleAgent.policy || {};
+        const singleAgentComparisonSummary = benchmark.single_agent_comparison_summary || "";
         const flowPromptCalls = benchmark.flow_avg_prompt_calls || {};
         const flowLatency = benchmark.flow_avg_latency_ms || {};
         const promptLatency = benchmark.prompt_avg_latency_ms || {};
@@ -550,6 +556,7 @@
             : "--"],
           ["flow gate", `${(benchmark.flow_required_variants || []).join(",") || "--"} | ${Number(benchmark.flow_mode_failures || 0)} / ${Number(benchmark.flow_mode_unstable_groups || 0)}`],
           ["flow compare", `${(benchmark.flow_comparison_variants || []).join(",") || "--"} | ${Number(benchmark.flow_comparison_failures || 0)} / ${Number(benchmark.flow_comparison_unstable_groups || 0)}`],
+          ["single-agent bench", singleAgentComparisonSummary || "--"],
           ["release", benchmark.release_status || "--"],
           ["started", fmtTime(run.started_at)],
           ["updated", fmtTime(run.last_update_at)]
