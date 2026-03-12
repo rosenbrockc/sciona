@@ -1,9 +1,22 @@
 # AGEO-Matcher Roles
 
-The AGEO-Matcher pipeline decomposes algorithm synthesis into specialized roles,
-each solving a distinct subproblem. No single role has full knowledge of the
-pipeline -- they communicate through typed data contracts (CDG, PDGNode,
-MatchResult, SkeletonFile).
+AGEO-Matcher implements **verified retrieval-augmented composition**: decompose a
+goal into typed sub-problems, match those sub-problems against a catalog of real
+library functions, verify that the matches actually work, and assemble the result.
+
+The pipeline is organized into specialized roles, each solving a distinct
+subproblem. No single role has full knowledge of the pipeline -- they communicate
+through typed data contracts (CDG, PDGNode, MatchResult, SkeletonFile).
+
+Roles follow the **deterministic-first, LLM-fallback** principle: every operation
+that can be handled by a regex, AST walk, embedding lookup, or type check is
+handled deterministically. LLMs are reserved for conceptual decomposition and
+ambiguous cases. This is the core architectural bet -- each deterministic tool is
+a permanent cost, latency, and reliability win.
+
+The pipeline supports **graduated execution tiers** (`rapid`, `structured`,
+`single_agent`, `verified`) so the overhead scales with the task's correctness
+requirements. Not every role is active in every mode.
 
 ---
 
@@ -22,9 +35,12 @@ existing classes/structs/modules and produces `IngestionBundle`s:
    reads/writes, init chains, call graphs, and SSA edges. All extractors produce
    the same schema -- downstream phases are language-agnostic.
 
-2. **Phase 2 -- Semantic Chunking**: LLM groups methods into `MacroAtomSpec`s,
-   hoists cross-window state into `StateModelSpec`s, and defines dependency edges.
-   A critic validates attribute coverage.
+2. **Phase 2 -- Semantic Chunking**: A control-flow decomposer first attempts
+   deterministic AST-based splitting at structural boundaries (loops,
+   conditionals, significant function calls). If the confidence is high enough,
+   this replaces the LLM call entirely. Otherwise, the LLM groups methods into
+   `MacroAtomSpec`s, hoists cross-window state into `StateModelSpec`s, and
+   defines dependency edges. A critic validates attribute coverage.
 
 3. **Phase 3 -- Code Generation**: Deterministic emission of `@register_atom`
    wrappers (with decorator passthrough and external atom support), Pydantic state
@@ -43,7 +59,7 @@ repair on failure.
 
 **Key files:** `ageom/ingester/graph.py`, `ageom/ingester/base_extractor.py`,
 `ageom/ingester/treesitter_extractor.py`, `ageom/ingester/emitter.py`,
-`ageom/ingester/ffi_emitter.py`
+`ageom/ingester/ffi_emitter.py`, `ageom/ingester/control_flow_decomposer.py`
 
 ---
 
@@ -55,14 +71,22 @@ grounding when the first attempt fails.
 **What it does:** Runs the top-level loop: Architect decomposes a goal, Hunter
 tries to ground each atomic node, and failures feed back to the Architect for
 re-decomposition. Manages a configurable round budget (default: 3) and decides
-when to mark nodes as ungroundable.
+when to mark nodes as ungroundable. Includes deterministic split patterns for
+~20 domain-specific failure cases (matrix factorization, optimization, FFT,
+clustering, sorting, etc.) that re-decompose failed leaves without an LLM call.
+
+In `single_agent` mode, the **SingleAgentPlanner** wraps the orchestrator with
+a deterministic decision tree: direct match -> decompose -> batch match ->
+partial acceptance (>=70% leaves) -> selective re-decomposition -> escalation.
+Most goals resolve before reaching full orchestration.
 
 **Interacts with:**
 - **Architect** -- invokes decomposition and refinement
 - **Hunter** -- invokes matching for each atomic node
 - **User** -- receives the initial goal, returns final artifacts
 
-**Key files:** `ageom/orchestrator.py`, `ageom/cli.py`
+**Key files:** `ageom/orchestrator.py`, `ageom/services/planner_service.py`,
+`ageom/cli.py`
 
 ---
 
@@ -160,10 +184,13 @@ verified library function.
 **What it does:** A pydantic-graph state machine with 4 nodes that, for each
 PDGNode:
 1. **InitialSearch** -- queries the FAISS index by embedding and type signature
-2. **RankCandidates** -- uses LLM to reorder candidates by relevance
+2. **RankCandidates** -- an embedding reranker scores candidates by cosine
+   similarity with a type-token bonus; falls back to LLM only when the top-2
+   margin is below threshold
 3. **VerifyTopK** -- sends top candidates to the Judge for type-checking
-4. **ReformulateQuery** -- on failure, analyzes compiler errors and generates
-   new search queries
+4. **ReformulateQuery** -- a deterministic failure analyzer handles known error
+   patterns (unknown identifier, arity mismatch, type incompatibility) via
+   regex; falls back to LLM for unrecognized errors
 
 Loops until a verified match is found or the iteration budget is exhausted.
 
@@ -174,7 +201,8 @@ Loops until a verified match is found or the iteration budget is exhausted.
   Architect refinement
 
 **Key files:** `ageom/hunter/nodes.py`, `ageom/hunter/graph.py`,
-`ageom/hunter/state.py`
+`ageom/hunter/state.py`, `ageom/hunter/embedding_reranker.py`,
+`ageom/hunter/failure_analyzer.py`
 
 ---
 
@@ -210,7 +238,9 @@ compiler as the oracle.
 appropriate proof environment:
 - **Lean 4:** compiles `example : {type} := @{candidate}` via lean-interact
 - **Coq:** compiles `Definition _check : {type} := {candidate}.` via coqpyt
-- **Python:** type-checks `_result: {type} = {candidate}` via mypy --strict
+- **Python:** import-based verification (default) -- checks that the function
+  is importable, callable, and has compatible arity via `inspect.signature`.
+  Optional mypy --strict mode available via `verify_mode="mypy"`.
 
 Returns a VerificationResult with success/failure, compiler output, and a
 VerificationLevel (KERNEL_PROOF, TYPE_CHECKED, CONTRACT_CHECKED, UNVERIFIED).
@@ -281,7 +311,8 @@ obligations (sorry/Admitted/NotImplementedError) in the assembled skeleton.
 1. **CompileCheck** -- compiles the skeleton, classifies errors, detects
    regressions (rolls back if error count increases)
 2. **DeterministicFix** -- applies all mechanical fixes in one pass (missing
-   imports, missing opens)
+   imports/opens, type coercions for known type pairs, common syntax
+   corrections, undefined name resolution via common import database)
 3. **LLMRepair** -- sends the highest-priority error to the LLM for a targeted
    patch (JSON with line range + replacement)
 4. **SorryElimination** -- generates proof tactics or implementations to replace

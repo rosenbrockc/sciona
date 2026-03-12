@@ -1,16 +1,41 @@
 # Architecture
 
-AGEO-Matcher implements a four-round Agentic Development Cycle, wrapped by an optional **Principal** meta-optimizer:
+AGEO-Matcher implements **verified retrieval-augmented composition**: decompose a goal into typed sub-problems, match those sub-problems against a catalog of real library functions, verify that the matches actually work, and assemble the result.
 
-- **Round 0 (Ingester)**: Parses existing source code (Python, C++, Julia, Rust) into data-flow graphs, semantically chunks them into macro-atoms, and generates `@register_atom` wrappers, state models, ghost witnesses, and FFI bindings. Produces `IngestionBundle`s that feed directly into the Synthesizer.
+The system is organized as a four-round Agentic Development Cycle, wrapped by an optional **Principal** meta-optimizer. All rounds follow the **deterministic-first, LLM-fallback** principle: every operation that can be handled by a regex, AST walk, embedding lookup, or type check is handled deterministically. LLMs are reserved for conceptual decomposition and ambiguous cases.
+
+- **Round 0 (Ingester)**: Parses existing source code (Python, C++, Julia, Rust) into data-flow graphs, chunks them into macro-atoms (deterministic AST-based splitting when confident, LLM chunking otherwise), and generates `@register_atom` wrappers, state models, ghost witnesses, and FFI bindings. Produces `IngestionBundle`s that feed directly into the Synthesizer.
 - **Round 1 (Architect)**: Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) via LangGraph, with PostgreSQL-backed persistence for checkpoint time-travel and forking.
-- **Round 2 (Hunter)**: Grounds each atomic CDG leaf into a verified library function in Lean 4/Mathlib or Coq/Rocq.
-- **Round 3 (Synthesizer)**: Assembles matched atoms into compilable skeleton files. Runs an optional ghost witness simulation pass (via `ageoa`) to catch structural mismatches before expensive compilation, then compiles, repairs, and exports.
+- **Round 2 (Hunter)**: Grounds each atomic CDG leaf into a verified library function in Lean 4/Mathlib, Coq/Rocq, or Python. Candidate ranking uses embedding reranking (cosine similarity + type-token bonus) before falling back to LLM. Failure analysis uses regex-based pattern matching for known error classes before falling back to LLM.
+- **Round 3 (Synthesizer)**: Assembles matched atoms into compilable skeleton files. Runs an optional ghost witness simulation pass (via `ageoa`) to catch structural mismatches before expensive compilation. Repair uses an expanded deterministic fix database (type coercions, common imports, syntax corrections) before LLM patching.
 - **Principal (Meta-Optimizer)**: Wraps all four rounds in a NAS-style optimisation loop. Uses Optuna HPO, ghost-simulation early pruning, interval-arithmetic precision gradients, per-node credit assignment, and the Architect's checkpoint time-travel for coordinate descent over decomposition structure.
+
+## Execution Modes
+
+The pipeline supports graduated execution tiers so the overhead scales with the task's correctness requirements:
+
+| Mode | What runs | Best for |
+|------|-----------|----------|
+| `rapid` | Direct Hunter match, no decomposition | Simple single-predicate lookups |
+| `structured` | Architect decomposition + single-pass Hunter batch match | Standard tasks with clear decomposition |
+| `single_agent` | Deterministic planner: direct match -> decompose -> batch match -> partial acceptance (>=70%) -> selective re-decomposition -> escalation | Most production tasks; avoids full orchestration overhead |
+| `verified` | Full multi-round orchestration with Architect refinement loops | High-correctness tasks where every leaf must be verified |
+
+Set via `--mode <mode>` or `AGEOM_EXECUTION_MODE` in `.env`.
 
 ## Design principle
 
-**Deterministic -> Agentic -> Deterministic** sandwich (applies to all rounds):
+**Deterministic -> Agentic -> Deterministic** sandwich (applies to all rounds).
+
+Each prompt key in the system has a deterministic tool that tries to handle the request first. The LLM is only invoked when the deterministic tool's confidence is too low or the pattern is unrecognized. Current deterministic coverage:
+
+| Phase | Prompt Key | Deterministic Tool | Fallback |
+|-------|-----------|-------------------|----------|
+| Ingester | `INGESTER_DECOMPOSE` | Control-flow decomposer (AST-based) | LLM chunking |
+| Hunter | `HUNTER_SCORE` | Embedding reranker (cosine + type bonus) | LLM ranking |
+| Hunter | `HUNTER_ANALYZE_FAILURE` | Regex failure analyzer | LLM analysis |
+| Synthesizer | `SYNTHESIZER_REPAIR` | Classifier fix database (imports, coercions, syntax) | LLM patching |
+| Orchestrator | refinement splits | Domain-specific split patterns (~20 domains) | LLM re-decomposition |
 
 ```
 Existing Source Code (.py, .cpp, .jl, .rs)
@@ -35,7 +60,8 @@ High-Level Goal
 [Semantic Indexer]      deterministic -- vector search, no LLM
   |
   v
-[Retrieval Agent]       agentic -- LLM ranks candidates, reformulates queries
+[Retrieval Agent]       deterministic-first -- embedding reranker + regex failure analyzer,
+  |                       LLM fallback for low-confidence ranking and unknown errors
   |
   v
 [Verification Oracle]   deterministic -- compiler says yes or no
@@ -53,7 +79,7 @@ MatchResult
 [Compiler]              deterministic -- proof assistant says yes or no
   |
   v
-[Repair Agent]          agentic -- compile-analyze-patch loop
+[Repair Agent]          deterministic-first -- classifier fix DB, then LLM patching
   |
   v
 SkeletonFile + VerificationCertificate
@@ -127,7 +153,8 @@ Source file (.py / .cpp / .jl / .rs)
 Phase 1: Extraction          deterministic -- AST or tree-sitter parsing
   |  RawDataFlowGraph (methods, fields, reads/writes, init chain, call graph)
   v
-Phase 2: Semantic Chunking   agentic -- LLM groups methods into MacroAtomSpecs
+Phase 2: Semantic Chunking   deterministic-first -- AST control-flow decomposer,
+  |                             then LLM chunking if confidence is low
   |  ValidatedMacroPlan (macro_atoms, state_models, edges)
   v
 Phase 3: Code Generation     deterministic -- @register_atom wrappers, state models,
@@ -155,7 +182,8 @@ For non-Python sources, the emitter appends FFI stubs so generated atoms can cal
 | `python_extractor.py` | `PythonASTExtractor` -- adapter wrapping existing `ast`-based extraction |
 | `treesitter_extractor.py` | `TreeSitterExtractor` -- C++/Julia/Rust class/struct extraction via tree-sitter |
 | `extractor.py` | Phase 1 Python implementation: `_SelfAccessVisitor`, config branches, SSA edges |
-| `chunker.py` | Phase 2: LLM-driven semantic chunking sub-graph |
+| `control_flow_decomposer.py` | Deterministic AST-based function splitting at structural boundaries |
+| `chunker.py` | Phase 2: semantic chunking (deterministic-first, then LLM) |
 | `emitter.py` | Phase 3: `@register_atom` wrappers (with decorator passthrough), state models, ghost witnesses, CDG construction |
 | `ffi_emitter.py` | FFI binding generation for C++, Julia, and Rust |
 | `graph.py` | `IngesterAgent` state machine, `_get_extractor()` dispatch, verification/repair loops |
@@ -232,9 +260,10 @@ Compiler-based proof checking. No approximation -- the compiler is the ground tr
 
 - **`LeanEnvironment`** -- Wraps `lean-interact`'s `LeanServer` with a `TempRequireProject` configured for Mathlib. Checks terms via `example : {type} := {term}` and proofs via `theorem _check : {stmt} := by {body}`. All calls are `async` (sync REPL wrapped in `asyncio.to_thread`).
 - **`CoqEnvironment`** -- Writes to temporary `.v` files and compiles via `coqpyt`. Same interface: `Definition _check` / `Lemma _check`.
+- **`PythonEnvironment`** -- Import-based verification (default): checks that the function is importable, callable, and has compatible arity via `inspect.signature`. Optional mypy --strict mode via `verify_mode="mypy"`.
 - **`VerificationOracleImpl`** -- Routes to the correct environment based on `pdg_node.prover`. `verify_candidates()` short-circuits on first verified match.
 
-Verification strategy: attempt direct type unification -- `@CandidateName` as a term for the PDG node's statement. If the compiler accepts it, the match is proven correct.
+Verification strategy: for Lean/Coq, attempt direct type unification -- `@CandidateName` as a term for the PDG node's statement. For Python, verify the function exists and is callable with the expected signature. If the check passes, the match is accepted.
 
 ### Retrieval Agent (`ageom/hunter/`)
 
@@ -255,9 +284,9 @@ InitialSearch ──> RankCandidates ──> VerifyTopK ──> End[MatchResult]
 | Node | What it does | Transitions |
 |------|-------------|-------------|
 | `InitialSearch` | Vector search + type search, merge/dedup candidates | `RankCandidates` or `End` (no candidates) |
-| `RankCandidates` | LLM scores and reorders candidates by match likelihood | `VerifyTopK` |
+| `RankCandidates` | Embedding reranker (cosine similarity + type-token bonus); falls back to LLM when top-2 margin < 0.05 | `VerifyTopK` |
 | `VerifyTopK` | Sends top-K to Verification Oracle | `End` (verified) or `ReformulateQuery` or `End` (budget exhausted) |
-| `ReformulateQuery` | LLM analyzes compiler errors, generates new search queries | `InitialSearch` |
+| `ReformulateQuery` | Deterministic failure analyzer for known error patterns; falls back to LLM for unrecognized errors | `InitialSearch` |
 
 #### State and dependencies
 
@@ -280,10 +309,10 @@ Built-in implementations:
 
 `create_llm_client(...)` selects the provider (`anthropic`, `codex`, or `llama_cpp`) from config/CLI.
 
-Three prompt templates drive the agent's reasoning:
+Three prompt templates drive the agent's reasoning, each with a deterministic tool that intercepts when possible:
 - **`REFORMULATE_QUERY`** -- Given failed queries + compiler errors, generate new search terms
-- **`SCORE_CANDIDATES`** -- Given predicate + candidate list, return ranked indices
-- **`ANALYZE_FAILURE`** -- Given compiler error, explain why and suggest direction
+- **`SCORE_CANDIDATES`** -- Embedding reranker handles most cases; LLM called only on low-confidence rankings
+- **`ANALYZE_FAILURE`** -- Deterministic regex analyzer handles known error classes (unknown identifier, arity mismatch, type incompatibility, syntax errors); LLM called only for unrecognized patterns
 
 ### Synthesizer (`ageom/synthesizer/`) -- Round 3
 
@@ -336,7 +365,8 @@ ageoa (ageo-atoms)                    ageom (ageo-matcher)
 | `toposort.py` | `toposort_nodes()` -- Kahn's algorithm for dependency ordering |
 | `contracts.py` | `ContractGenerator` -- generates icontract decorators, recognizes DSP constraint patterns |
 | `models.py` | `AssemblyUnit`, `GlueEdge`, `SkeletonFile`, `AssemblyResult`, `SynthesisResult`, `VerificationCertificate`, `ExportBundle` |
-| `repair.py` | Compile-analyze-patch loop (fills `sorry` / `Admitted` / `NotImplementedError` stubs) |
+| `classifier.py` | Regex error classifier + deterministic fix database (imports, type coercions, syntax) |
+| `repair.py` | Compile-analyze-patch loop (deterministic fixes first, then LLM for remaining errors) |
 | `extractor.py` | FFI export and verification certificate generation |
 
 ### Principal Meta-Optimizer (`ageom/principal/`)

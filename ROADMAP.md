@@ -4,20 +4,22 @@
 
 This package should not try to be the fastest possible way to create any algorithm.
 
-Strong general LLMs can already do well on many simple algorithm-design tasks when:
+Strong general LLMs can already do well on many algorithm-design tasks when:
 - the specification is clear
 - evaluation is cheap
 - the human is comfortable iterating directly on generated code
 
-The niche for this package is narrower and more defensible:
-- constrained algorithm design
-- typed and auditable decomposition
-- reusable verified primitives and atoms
-- deterministic guidance that prevents wasted agent cycles
-- repeatable, inspectable multi-step development under correctness pressure
+The niche for this package is **verified retrieval-augmented composition**: decompose a goal into typed sub-problems, match those sub-problems against a catalog of real library functions, verify that the matches actually work, and assemble the result. The value is narrower and more defensible than general code generation:
 
-If the package stays focused there, the complexity is justified.
-If it expands toward a general-purpose LLM coding platform, the complexity will outrun the value.
+- **Verification-first output.** The system checks its own work — every candidate match is verified (importable, callable, type-compatible, arity-correct) before it is accepted. A raw LLM can hallucinate a function name; this system proves the function exists and fits.
+- **Deterministic-first, LLM-fallback.** Every prompt call that can be replaced by a regex, AST walk, embedding lookup, or type check is a permanent cost, latency, and reliability win. LLMs handle conceptual decomposition and ambiguous cases; deterministic tools handle everything with a known structure. This is the core architectural bet, not just an optimization.
+- **Compounding reuse.** Every successful match enriches the catalog. Every solved decomposition pattern can be reused. Every failure analysis refines future routing. The system gets cheaper and faster over time on the same domain — a flywheel, not a one-shot tool.
+- **Typed, auditable decomposition.** Goals are split into a typed dependency graph with explicit interfaces between sub-problems. The decomposition is an inspectable artifact, not a hidden prompt chain.
+- **Graduated execution tiers.** Not every task needs full orchestration. The system supports distinct modes — from lightweight single-agent (deterministic planner with partial acceptance and selective re-decomposition) through full verified orchestration — so the overhead scales with the task's correctness requirements.
+
+The package has two failure modes to guard against:
+1. If it expands toward a general-purpose LLM coding platform, the complexity will outrun the value.
+2. If new capabilities add prompt keys instead of deterministic tools, cost and latency grow linearly with scope instead of amortizing.
 
 ## Where This Package Is Better Than Direct LLM Coding
 

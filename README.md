@@ -1,26 +1,50 @@
 # AGEO-Matcher
 
-Functional Matching Agent that grounds high-level predicates into verified library functions in **Lean 4/Mathlib** and **Coq/Rocq**.
+**Verified retrieval-augmented composition** for algorithm synthesis. Decomposes a goal into typed sub-problems, matches each against a catalog of real library functions, verifies the matches actually work, and assembles the result.
 
-Given a predicate like `forall n m : Nat, n + m = m + n`, AGEO-Matcher searches a proof library, ranks candidates, and verifies matches through the compiler -- returning `Nat.add_comm` with a machine-checked proof that the types unify.
+Given a predicate like `forall n m : Nat, n + m = m + n`, AGEO-Matcher searches a proof library, ranks candidates, and verifies matches through the compiler -- returning `Nat.add_comm` with a machine-checked proof that the types unify. For Python targets, it verifies that matched functions are importable, callable, and have compatible signatures.
+
+## Why not just use an LLM?
+
+Strong LLMs already handle simple coding tasks well. This system targets a narrower, more defensible niche:
+
+- **Verification-first.** Every match is verified (compiler proof, import check, arity check) before acceptance. The system proves its outputs work, rather than hoping they do.
+- **Deterministic-first.** Every prompt call that can be replaced by a regex, AST walk, embedding lookup, or type check has been. LLMs handle conceptual decomposition and ambiguous cases; deterministic tools handle everything with a known structure.
+- **Compounding reuse.** Each successful match enriches the catalog. Each solved decomposition pattern can be reused. The system gets cheaper and faster over time on the same domain.
+
+See [ROADMAP.md](ROADMAP.md) for the full positioning rationale.
+
+## Execution modes
+
+The pipeline supports graduated tiers so the overhead scales with the task:
+
+| Mode | What runs | Best for |
+|------|-----------|----------|
+| `rapid` | Direct Hunter match, no decomposition | Simple single-predicate lookups |
+| `structured` | Architect decomposition + single-pass batch match | Standard tasks with clear decomposition |
+| `single_agent` | Deterministic planner with partial acceptance and selective re-decomposition | Most production tasks |
+| `verified` | Full multi-round orchestration with Architect refinement | High-correctness tasks |
+
+Set via `--mode <mode>` or `AGEOM_EXECUTION_MODE` in `.env`.
 
 ## How it works
 
-The system implements an **Agentic Development Cycle** with four rounds, wrapped by an optional **Principal** meta-optimizer:
+The system implements an **Agentic Development Cycle** with four rounds, wrapped by an optional **Principal** meta-optimizer. All rounds follow the **Deterministic -> Agentic -> Deterministic** sandwich pattern.
 
-**Round 0 -- Ingester** (Smart Ingester): parses existing source code (Python, C++, Julia, Rust) into `RawDataFlowGraph` models via language-specific extractors. Dispatches by file extension: Python uses `ast`, foreign languages use tree-sitter. The output feeds into LLM-driven semantic chunking, then deterministic code generation of `@register_atom` wrappers, Pydantic state models, ghost witnesses, and FFI bindings (ctypes for C++/Rust, juliacall for Julia). External atoms and decorator metadata are preserved through the pipeline.
+**Round 0 -- Ingester** (Smart Ingester): parses existing source code (Python, C++, Julia, Rust) into `RawDataFlowGraph` models via language-specific extractors. A control-flow decomposer attempts deterministic AST-based splitting first; the LLM is only used for chunking when confidence is low. Generates `@register_atom` wrappers, Pydantic state models, ghost witnesses, and FFI bindings.
 
 **Round 1 -- Architect** (Conceptual Dependency Agent): decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) using LangGraph, with PostgreSQL-backed checkpointing for time-travel and fork/resume.
 
-**Round 2 -- Hunter** (Functional Matching Agent): grounds each atomic CDG leaf into a verified library function through a **Deterministic -> Agentic -> Deterministic** sandwich:
+**Round 2 -- Hunter** (Functional Matching Agent): grounds each atomic CDG leaf into a verified library function through:
 
 1. **Semantic Indexer** -- embeds library declarations with UniXcoder into a FAISS vector store
-2. **Retrieval Agent** -- LLM-driven search loop with query reformulation (pydantic-graph state machine)
-3. **Verification Oracle** -- compiler-based type checking via Lean 4 / Coq REPLs
+2. **Embedding Reranker** -- cosine similarity + type-token bonus ranking; falls back to LLM only when the top-2 margin is below threshold
+3. **Verification Oracle** -- compiler-based checking (Lean 4, Coq) or import-based verification (Python)
+4. **Failure Analyzer** -- deterministic regex analysis for known error patterns; LLM fallback for unrecognized errors
 
-**Round 3 -- Synthesizer** (Assembly + Verification): assembles matched atoms into compilable skeleton files, with an optional **ghost witness simulation pass** that catches structural mismatches (shape, dtype, domain) before expensive compilation.
+**Round 3 -- Synthesizer** (Assembly + Verification): assembles matched atoms into compilable skeleton files, with an optional ghost witness simulation pass. Repair uses a deterministic fix database (type coercions, common imports, syntax corrections) before LLM patching.
 
-The handoff between rounds is validated: every atomic leaf must have a `type_signature` and `description` before conversion to PDG nodes. DSP atoms are also checked via ghost witness simulation when the `ageoa` package is installed.
+The handoff between rounds is validated: every atomic leaf must have a `type_signature` and `description` before conversion to PDG nodes.
 
 **Principal** (Meta-Optimizer): wraps the four rounds in a NAS-style optimisation loop (Forward → Evaluate → Backward → Update). Uses Optuna for HPO, ghost simulation for early pruning, interval-arithmetic precision gradients for credit assignment, and the Architect's checkpoint time-travel for coordinate descent over decomposition structure.
 
@@ -193,6 +217,8 @@ ageom/
     nodes.py          pydantic-graph nodes (search/rank/verify/reformulate cycle)
     graph.py          Graph assembly + HunterAgent
     llm.py            LLM clients (Anthropic Claude + Codex/OpenAI)
+    embedding_reranker.py  Cosine similarity + type-token bonus ranking
+    failure_analyzer.py    Deterministic regex-based failure analysis
     prompts.py        Prompt templates
   ingester/         Round 0 -- Smart Ingester (multi-language)
     models.py         RawDataFlowGraph, MethodFact, MacroAtomSpec, IngestionBundle, ...
@@ -200,11 +226,15 @@ ageom/
     python_extractor.py  PythonASTExtractor (wraps ast-based extraction)
     treesitter_extractor.py  TreeSitterExtractor (C++, Julia via tree-sitter)
     extractor.py      Phase 1: Python AST extraction (_SelfAccessVisitor, SSA edges)
-    chunker.py        Phase 2: LLM-driven semantic chunking into MacroAtomSpecs
+    control_flow_decomposer.py  Deterministic AST-based function splitting
+    chunker.py        Phase 2: deterministic-first chunking, then LLM fallback
     emitter.py        Phase 3: code generation (@register_atom wrappers, state models, CDG, FFI)
     ffi_emitter.py    FFI binding generation (ctypes for C++/Rust, juliacall for Julia)
     graph.py          IngesterAgent state machine + extractor dispatch (_get_extractor)
     prompts.py        LLM prompt templates for chunker/repair
+  services/         Service-layer runtime wrappers
+    planner_service.py  SingleAgentPlanner (deterministic decision tree)
+    models.py         PlannerPolicy, PlannerState, PlannerRunResult, ...
   principal/        Meta-Optimizer (NAS-style loop over the pipeline)
     models.py         OptimizationMetric, NodeTelemetry, BenchmarkResult, NodeGradient
     evaluator.py      ExecutionSandbox (subprocess benchmark + trace parsing)
@@ -218,8 +248,9 @@ ageom/
     compiler.py       SkeletonCompiler (wraps ProofEnvironment)
     toposort.py       Kahn's algorithm for dependency ordering
     contracts.py      ContractGenerator with DSP constraint pattern recognition
+    classifier.py     Regex error classifier + deterministic fix database
     models.py         AssemblyUnit, GlueEdge, SkeletonFile, AssemblyResult, ...
-    repair.py         Compile-analyze-patch repair loop
+    repair.py         Compile-analyze-patch repair loop (deterministic-first)
     extractor.py      FFI export and verification certificates
 tests/
 ```
