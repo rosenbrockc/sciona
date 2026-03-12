@@ -92,6 +92,12 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     assert payload["single_agent_comparison"]["present"] is True
     assert payload["single_agent_comparison"]["comparisons"]["rapid"]["pass_rate_delta"] >= 0.0
     assert payload["single_agent_comparison"]["comparisons"]["structured"]["pass_rate_delta"] <= 0.0
+    assert payload["single_agent_comparison"]["dominant_planner_termination_reason"] == (
+        "structured_verified"
+    )
+    assert payload["single_agent_comparison"]["planner_action_summary"] == (
+        "decompose:7,match_decomposed:7"
+    )
     assert "vs_structured=" in payload["single_agent_comparison_summary"]
     assert "flow_comparison_failures" in payload
     assert "flow_comparison_unstable_groups" in payload
@@ -222,6 +228,9 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
             avg_planner_tool_dispatches: float = 0.0,
             avg_planner_tool_latency_ms: float = 0.0,
             avg_planner_escalations: float = 0.0,
+            dominant_planner_termination_reason: str = "",
+            dominant_planner_action_signature: str = "",
+            planner_action_counts: dict[str, int] | None = None,
         ):
             self.variant = variant
             self.passed_cases = passed_cases
@@ -232,11 +241,27 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
             self.avg_planner_tool_dispatches = avg_planner_tool_dispatches
             self.avg_planner_tool_latency_ms = avg_planner_tool_latency_ms
             self.avg_planner_escalations = avg_planner_escalations
+            self.dominant_planner_termination_reason = dominant_planner_termination_reason
+            self.dominant_planner_action_signature = dominant_planner_action_signature
+            self.planner_action_counts = planner_action_counts or {}
 
     summary = single_agent_comparison_summary(
         [
             _Agg("rapid", 0, 4, 0.2, 1.0, 100.0),
-            _Agg("single_agent", 4, 4, 1.0, 3.0, 250.0, 4.0, 180.0, 1.0),
+            _Agg(
+                "single_agent",
+                4,
+                4,
+                1.0,
+                3.0,
+                250.0,
+                4.0,
+                180.0,
+                1.0,
+                "structured_verified",
+                "decompose>match_decomposed",
+                {"decompose": 4, "match_decomposed": 4},
+            ),
             _Agg("structured", 4, 4, 1.0, 4.0, 300.0),
             _Agg("verified", 4, 4, 1.0, 5.0, 350.0),
         ]
@@ -247,6 +272,9 @@ def test_single_agent_comparison_summary_positions_mode_between_benchmarks():
     assert summary["avg_planner_tool_dispatches"] == 4.0
     assert summary["avg_planner_tool_latency_ms"] == 180.0
     assert summary["avg_planner_escalations"] == 1.0
+    assert summary["dominant_planner_termination_reason"] == "structured_verified"
+    assert summary["dominant_planner_action_signature"] == "decompose>match_decomposed"
+    assert summary["planner_action_summary"] == "decompose:4,match_decomposed:4"
     assert summary["overhead_driver"] == "escalation_heavy"
     assert summary["prune_recommendation"] == "keep_current"
     assert summary["comparisons"]["rapid"]["pass_rate_delta"] == 1.0
@@ -273,6 +301,9 @@ def test_single_agent_comparison_summary_flags_prune_candidate_when_slower_than_
             avg_planner_tool_dispatches: float = 0.0,
             avg_planner_tool_latency_ms: float = 0.0,
             avg_planner_escalations: float = 0.0,
+            dominant_planner_termination_reason: str = "",
+            dominant_planner_action_signature: str = "",
+            planner_action_counts: dict[str, int] | None = None,
         ):
             self.variant = variant
             self.passed_cases = passed_cases
@@ -283,11 +314,32 @@ def test_single_agent_comparison_summary_flags_prune_candidate_when_slower_than_
             self.avg_planner_tool_dispatches = avg_planner_tool_dispatches
             self.avg_planner_tool_latency_ms = avg_planner_tool_latency_ms
             self.avg_planner_escalations = avg_planner_escalations
+            self.dominant_planner_termination_reason = dominant_planner_termination_reason
+            self.dominant_planner_action_signature = dominant_planner_action_signature
+            self.planner_action_counts = planner_action_counts or {}
 
     summary = single_agent_comparison_summary(
         [
             _Agg("rapid", 2, 4, 0.5, 1.0, 100.0),
-            _Agg("single_agent", 4, 4, 1.0, 5.0, 360.0, 6.0, 220.0, 1.0),
+            _Agg(
+                "single_agent",
+                4,
+                4,
+                1.0,
+                5.0,
+                360.0,
+                6.0,
+                220.0,
+                1.0,
+                "escalated_after_unresolved_leaves",
+                "decompose>match_decomposed>retry_retrieval>escalate_orchestration",
+                {
+                    "decompose": 4,
+                    "match_decomposed": 4,
+                    "retry_retrieval": 4,
+                    "escalate_orchestration": 4,
+                },
+            ),
             _Agg("structured", 4, 4, 1.0, 4.0, 280.0),
             _Agg("verified", 4, 4, 1.0, 6.0, 420.0),
         ]
@@ -295,6 +347,7 @@ def test_single_agent_comparison_summary_flags_prune_candidate_when_slower_than_
 
     assert summary["overhead_driver"] == "escalation_heavy"
     assert summary["prune_recommendation"] == "review_single_agent_routing"
+    assert summary["dominant_planner_termination_reason"] == "escalated_after_unresolved_leaves"
 
 
 def test_benchmark_failure_summary_prefers_execution_path_before_prompt_counts():

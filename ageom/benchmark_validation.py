@@ -326,10 +326,28 @@ def single_agent_comparison_summary(flow_aggregates: list[Any]) -> dict[str, Any
         "avg_planner_tool_dispatches": avg_planner_tool_dispatches,
         "avg_planner_tool_latency_ms": avg_planner_tool_latency_ms,
         "avg_planner_escalations": avg_planner_escalations,
+        "dominant_planner_termination_reason": str(
+            getattr(single_agent, "dominant_planner_termination_reason", "") or ""
+        ),
+        "dominant_planner_action_signature": str(
+            getattr(single_agent, "dominant_planner_action_signature", "") or ""
+        ),
+        "planner_action_summary": _planner_action_summary(single_agent),
         "overhead_driver": overhead_driver,
         "prune_recommendation": prune_recommendation,
         "comparisons": comparisons,
     }
+
+
+def _planner_action_summary(aggregate: Any) -> str:
+    counts = getattr(aggregate, "planner_action_counts", {}) or {}
+    if not isinstance(counts, dict) or not counts:
+        return ""
+    ordered = sorted(
+        ((str(name), int(count or 0)) for name, count in counts.items()),
+        key=lambda item: (-item[1], item[0]),
+    )
+    return ",".join(f"{name}:{count}" for name, count in ordered[:4])
 
 
 def _single_agent_overhead_driver(

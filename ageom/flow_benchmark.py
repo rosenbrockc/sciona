@@ -67,6 +67,9 @@ class FlowBenchmarkResult:
     planner_tool_dispatches: int = 0
     planner_tool_latency_ms: float = 0.0
     planner_escalation_count: int = 0
+    planner_termination_reason: str = ""
+    planner_action_signature: str = ""
+    planner_actions: tuple[str, ...] = ()
     error: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -89,6 +92,11 @@ class FlowBenchmarkAggregate:
     avg_planner_tool_latency_ms: float = 0.0
     total_planner_escalations: int = 0
     avg_planner_escalations: float = 0.0
+    planner_termination_counts: dict[str, int] = field(default_factory=dict)
+    planner_action_counts: dict[str, int] = field(default_factory=dict)
+    planner_action_signature_counts: dict[str, int] = field(default_factory=dict)
+    dominant_planner_termination_reason: str = ""
+    dominant_planner_action_signature: str = ""
     avg_leaf_coverage: float = 0.0
     avg_best_similarity: float = 0.0
     repeat_groups: int = 0
@@ -121,6 +129,25 @@ class FlowBenchmarkAggregate:
         self.avg_planner_escalations = (
             self.total_planner_escalations / max(1, self.total_cases)
         )
+        if result.planner_termination_reason:
+            self.planner_termination_counts[result.planner_termination_reason] = (
+                int(self.planner_termination_counts.get(result.planner_termination_reason, 0) or 0)
+                + 1
+            )
+        if result.planner_action_signature:
+            self.planner_action_signature_counts[result.planner_action_signature] = (
+                int(
+                    self.planner_action_signature_counts.get(
+                        result.planner_action_signature, 0
+                    )
+                    or 0
+                )
+                + 1
+            )
+        for action in result.planner_actions:
+            self.planner_action_counts[action] = (
+                int(self.planner_action_counts.get(action, 0) or 0) + 1
+            )
         prev = self.total_cases - 1
         self.avg_leaf_coverage = (
             self.avg_leaf_coverage * prev + result.leaf_coverage
@@ -139,6 +166,12 @@ class FlowBenchmarkAggregate:
         self.stability_rate = (
             self.stable_groups / self.repeat_groups if self.repeat_groups else 1.0
         )
+        self.dominant_planner_termination_reason = _dominant_count_key(
+            self.planner_termination_counts
+        )
+        self.dominant_planner_action_signature = _dominant_count_key(
+            self.planner_action_signature_counts
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -156,6 +189,13 @@ class FlowBenchmarkAggregate:
             "avg_planner_tool_latency_ms": self.avg_planner_tool_latency_ms,
             "total_planner_escalations": self.total_planner_escalations,
             "avg_planner_escalations": self.avg_planner_escalations,
+            "planner_termination_counts": dict(sorted(self.planner_termination_counts.items())),
+            "planner_action_counts": dict(sorted(self.planner_action_counts.items())),
+            "planner_action_signature_counts": dict(
+                sorted(self.planner_action_signature_counts.items())
+            ),
+            "dominant_planner_termination_reason": self.dominant_planner_termination_reason,
+            "dominant_planner_action_signature": self.dominant_planner_action_signature,
             "avg_leaf_coverage": self.avg_leaf_coverage,
             "avg_best_similarity": self.avg_best_similarity,
             "repeat_groups": self.repeat_groups,
@@ -166,6 +206,15 @@ class FlowBenchmarkAggregate:
 
 def _slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
+def _dominant_count_key(counts: dict[str, int]) -> str:
+    if not counts:
+        return ""
+    return min(
+        counts.items(),
+        key=lambda item: (-int(item[1] or 0), str(item[0])),
+    )[0]
 
 
 def _hint_matches(text: str, hint: str) -> bool:
@@ -691,6 +740,13 @@ async def _run_single_agent_case(
             for metrics in planner_result.state.tool_metrics.values()
         ),
         planner_escalation_count=len(planner_result.state.escalation_events),
+        planner_termination_reason=str(planner_result.state.termination_reason or ""),
+        planner_action_signature=">".join(
+            step.action for step in planner_result.steps if getattr(step, "action", "")
+        ),
+        planner_actions=tuple(
+            step.action for step in planner_result.steps if getattr(step, "action", "")
+        ),
         error="" if matched == total else "single-agent planner did not ground all leaves",
     )
 

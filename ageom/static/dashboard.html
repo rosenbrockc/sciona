@@ -391,6 +391,9 @@
           const singleAgentBenchmarkLine = singleAgentComparisonSummary
             ? `<div class="run-meta">single_agent_bench ${singleAgentComparisonSummary}</div>`
             : "";
+          const singleAgentDecisionLine = singleAgentComparison.dominant_planner_termination_reason || singleAgentComparison.planner_action_summary
+            ? `<div class="run-meta">single_agent_route term=${singleAgentComparison.dominant_planner_termination_reason || "--"} actions=${singleAgentComparison.planner_action_summary || "--"}</div>`
+            : "";
           const singleAgentOverheadLine = singleAgentComparison.overhead_driver
             ? `<div class="run-meta">single_agent_overhead driver=${singleAgentComparison.overhead_driver} prune=${singleAgentComparison.prune_recommendation || "keep_current"} tools=${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} escalations=${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)}</div>`
             : "";
@@ -445,6 +448,7 @@
             singleAgentToolLine,
             singleAgentEscalationLine,
             singleAgentBenchmarkLine,
+            singleAgentDecisionLine,
             singleAgentOverheadLine,
             singleAgentPruneLine,
             releaseWarningLine,
@@ -620,6 +624,10 @@
           ["flow gate", `${(benchmark.flow_required_variants || []).join(",") || "--"} | ${Number(benchmark.flow_mode_failures || 0)} / ${Number(benchmark.flow_mode_unstable_groups || 0)}`],
           ["flow compare", `${(benchmark.flow_comparison_variants || []).join(",") || "--"} | ${Number(benchmark.flow_comparison_failures || 0)} / ${Number(benchmark.flow_comparison_unstable_groups || 0)}`],
           ["single-agent bench", singleAgentComparisonSummary || "--"],
+          ["single-agent route", singleAgentComparison.dominant_planner_termination_reason
+            ? `${singleAgentComparison.dominant_planner_termination_reason} / ${singleAgentComparison.planner_action_summary || "--"}`
+            : "--"],
+          ["single-agent route signature", singleAgentComparison.dominant_planner_action_signature || "--"],
           ["single-agent overhead", singleAgentComparison.overhead_driver
             ? `${singleAgentComparison.overhead_driver} / ${singleAgentComparison.prune_recommendation || "keep_current"} / ${Number(singleAgentComparison.avg_planner_tool_dispatches || 0).toFixed(1)} tools / ${Number(singleAgentComparison.avg_planner_escalations || 0).toFixed(1)} escalations`
             : "--"],

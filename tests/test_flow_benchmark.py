@@ -35,6 +35,13 @@ async def test_flow_benchmark_summary_orders_variants_by_success():
     assert aggregate_map["single_agent"].execution_paths == ["single_agent_structured"]
     assert aggregate_map["structured"].execution_paths == ["structured_single_pass"]
     assert aggregate_map["verified"].execution_paths == ["verified_orchestration"]
+    assert aggregate_map["single_agent"].dominant_planner_termination_reason == "structured_verified"
+    assert aggregate_map["single_agent"].planner_action_counts["decompose"] == len(cases)
+    assert aggregate_map["single_agent"].planner_action_counts["match_decomposed"] == len(cases)
+    assert (
+        aggregate_map["single_agent"].dominant_planner_action_signature
+        == "decompose>match_decomposed"
+    )
     assert all(aggregate.stability_rate == pytest.approx(1.0) for aggregate in aggregates)
     assert all(aggregate.avg_prompt_calls >= 0.0 for aggregate in aggregates)
     # Coverage monotonicity: structured >= rapid, verified >= structured
