@@ -69,7 +69,9 @@ class PlannerPolicy:
 
     direct_grounding_enabled: bool = True
     decomposition_mode: str = "single_pass"
+    retrieval_intensity: str = "light"
     escalation_enabled: bool = True
+    repair_policy: str = "bounded"
     partial_accept_enabled: bool = True
     selective_redecompose_enabled: bool = True
 
@@ -91,6 +93,9 @@ class PlannerState:
     budget: PlannerBudget = field(default_factory=PlannerBudget)
     current_focus: str = "goal"
     open_failures: list[str] = field(default_factory=list)
+    artifacts: dict[str, str] = field(default_factory=dict)
+    artifact_mutations: dict[str, int] = field(default_factory=dict)
+    attempt_history: list[str] = field(default_factory=list)
     tool_trace: list[PlannerStep] = field(default_factory=list)
     verification_status: str = "pending"
     termination_reason: str = ""

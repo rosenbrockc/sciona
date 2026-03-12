@@ -73,6 +73,13 @@ _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
         "max_active_override_count": 0,
         "allow_legacy_providers": False,
     },
+    "single_agent": {
+        "max_provider_count": 1,
+        "max_provider_model_count": 1,
+        "max_transport_count": 1,
+        "max_active_override_count": 0,
+        "allow_legacy_providers": False,
+    },
     "structured": {
         "max_provider_count": 1,
         "max_provider_model_count": 1,
@@ -90,6 +97,9 @@ _MODE_RUNTIME_BUDGETS: dict[str, dict[str, int | bool]] = {
 }
 _MODE_OVERRIDE_POLICIES: dict[str, dict[str, tuple[tuple[str, str], ...]]] = {
     "rapid": {
+        "required_active_overrides": (),
+    },
+    "single_agent": {
         "required_active_overrides": (),
     },
     "structured": {
@@ -190,7 +200,7 @@ def _format_runtime_override_policy_summary(runtime_complexity: dict[str, Any]) 
         else {}
     )
     parts: list[str] = []
-    for mode in ("rapid", "structured", "verified"):
+    for mode in ("rapid", "single_agent", "structured", "verified"):
         row = by_mode.get(mode, {})
         if not isinstance(row, dict):
             continue
@@ -544,7 +554,7 @@ def runtime_complexity_summary(config: AgeomConfig) -> dict[str, Any]:
     """Summarize routing complexity across execution modes."""
     by_mode = {
         mode: _runtime_complexity_for_mode(config, execution_mode=mode)
-        for mode in ("rapid", "structured", "verified")
+        for mode in ("rapid", "single_agent", "structured", "verified")
     }
     monotonic_violations: list[str] = []
     metric_names = (
@@ -555,11 +565,16 @@ def runtime_complexity_summary(config: AgeomConfig) -> dict[str, Any]:
     )
     for metric in metric_names:
         rapid_value = int(by_mode["rapid"].get(metric, 0) or 0)
+        single_agent_value = int(by_mode["single_agent"].get(metric, 0) or 0)
         structured_value = int(by_mode["structured"].get(metric, 0) or 0)
         verified_value = int(by_mode["verified"].get(metric, 0) or 0)
-        if rapid_value > structured_value:
+        if rapid_value > single_agent_value:
             monotonic_violations.append(
-                f"{metric}: rapid={rapid_value} exceeds structured={structured_value}"
+                f"{metric}: rapid={rapid_value} exceeds single_agent={single_agent_value}"
+            )
+        if single_agent_value > structured_value:
+            monotonic_violations.append(
+                f"{metric}: single_agent={single_agent_value} exceeds structured={structured_value}"
             )
         if structured_value > verified_value:
             monotonic_violations.append(

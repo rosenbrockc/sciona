@@ -100,6 +100,7 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
     }
     assert set(payload["runtime_complexity"]["by_mode"]) == {
         "rapid",
+        "single_agent",
         "structured",
         "verified",
     }
@@ -127,13 +128,18 @@ async def test_run_benchmark_validation_writes_bundle(tmp_path):
 def test_runtime_complexity_summary_is_mode_aware():
     summary = runtime_complexity_summary(AgeomConfig(_env_file=None))
 
-    assert set(summary["by_mode"]) == {"rapid", "structured", "verified"}
+    assert set(summary["by_mode"]) == {"rapid", "single_agent", "structured", "verified"}
     assert summary["by_mode"]["rapid"]["mode"] == "rapid"
     assert summary["by_mode"]["rapid"]["provider_count"] == 1
     assert summary["by_mode"]["rapid"]["provider_model_count"] == 1
     assert summary["by_mode"]["rapid"]["transport_count"] == 1
     assert summary["by_mode"]["rapid"]["providers"] == ["anthropic"]
     assert summary["by_mode"]["rapid"]["budget"]["max_provider_count"] == 1
+    assert summary["by_mode"]["single_agent"]["mode"] == "single_agent"
+    assert summary["by_mode"]["single_agent"]["provider_count"] == 1
+    assert summary["by_mode"]["single_agent"]["providers"] == ["anthropic"]
+    assert summary["by_mode"]["single_agent"]["budget"]["max_provider_count"] == 1
+    assert summary["by_mode"]["single_agent"]["override_policy"]["missing_required_overrides"] == []
     assert summary["by_mode"]["structured"]["provider_count"] == 1
     assert summary["by_mode"]["structured"]["providers"] == ["anthropic"]
     assert summary["by_mode"]["structured"]["budget"]["max_provider_count"] == 1

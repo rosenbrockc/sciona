@@ -93,11 +93,19 @@ async def test_single_agent_planner_returns_direct_result_without_decomposition(
     assert [step.action for step in result.state.tool_trace] == ["direct_match"]
     assert result.state.policy.direct_grounding_enabled is True
     assert result.state.policy.decomposition_mode == "single_pass"
+    assert result.state.policy.retrieval_intensity == "light"
+    assert result.state.policy.repair_policy == "bounded"
     assert result.state.budget.steps_used == 1
-    assert result.state.budget.max_steps == 4
+    assert result.state.budget.max_steps == 6
     assert result.state.verification_status == "verified"
     assert result.state.termination_reason == "direct_verified"
     assert result.state.open_failures == []
+    assert result.state.artifacts == {
+        "cdg": "direct_goal_cdg",
+        "match_results": "direct_match_result",
+    }
+    assert result.state.artifact_mutations == {"cdg": 1, "match_results": 1}
+    assert result.state.attempt_history == ["direct_match"]
     assert hunter.goal_calls == 1
     assert hunter.batch_calls == 0
     assert architect_called is False
@@ -157,9 +165,20 @@ async def test_single_agent_planner_returns_structured_result_without_escalation
         "completed",
     ]
     assert result.state.budget.steps_used == 3
+    assert result.state.budget.max_steps == 6
     assert result.state.verification_status == "verified"
     assert result.state.termination_reason == "structured_verified"
     assert result.state.open_failures == []
+    assert result.state.artifacts == {
+        "cdg": "architect_decompose",
+        "match_results": "hunter_batch_match",
+    }
+    assert result.state.artifact_mutations == {"cdg": 1, "match_results": 1}
+    assert result.state.attempt_history == [
+        "direct_match",
+        "decompose",
+        "match_decomposed",
+    ]
     assert hunter.goal_calls == 1
     assert hunter.batch_calls == 1
     assert architect.calls == 1
@@ -226,9 +245,26 @@ async def test_single_agent_planner_escalates_after_unresolved_single_pass():
         "completed",
     ]
     assert result.state.budget.steps_used == 4
+    assert result.state.budget.max_steps == 6
     assert result.state.verification_status == "verified"
     assert result.state.termination_reason == "escalated_after_unresolved_leaves"
     assert result.state.open_failures == []
+    assert result.state.artifacts == {
+        "cdg": "architect_decompose",
+        "match_results": "orchestrated_match_results",
+        "orchestration": "run_orchestration",
+    }
+    assert result.state.artifact_mutations == {
+        "cdg": 1,
+        "match_results": 2,
+        "orchestration": 1,
+    }
+    assert result.state.attempt_history == [
+        "direct_match",
+        "decompose",
+        "match_decomposed",
+        "escalate_orchestration",
+    ]
     assert hunter.goal_calls == 1
     assert hunter.batch_calls == 1
     assert architect.calls == 1
@@ -279,9 +315,97 @@ async def test_single_agent_planner_skips_direct_match_for_compound_goals():
     assert result.execution_path == "single_agent_structured"
     assert [step.action for step in result.steps] == ["decompose", "match_decomposed"]
     assert result.state.policy.direct_grounding_enabled is False
+    assert result.state.policy.decomposition_mode == "selective_redecompose"
+    assert result.state.policy.retrieval_intensity == "standard"
+    assert result.state.policy.partial_accept_enabled is False
     assert result.state.verification_status == "verified"
     assert result.state.termination_reason == "structured_verified"
     assert hunter.goal_calls == 0
     assert hunter.batch_calls == 1
     assert architect.calls == 1
+    assert orchestrator.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_single_agent_planner_accepts_high_coverage_partial_result():
+    cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="n1",
+                name="Stage One",
+                description="First stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="A -> B",
+            ),
+            AlgorithmicNode(
+                node_id="n2",
+                name="Stage Two",
+                description="Second stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="B -> C",
+            ),
+            AlgorithmicNode(
+                node_id="n3",
+                name="Stage Three",
+                description="Third stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="C -> D",
+            ),
+            AlgorithmicNode(
+                node_id="n4",
+                name="Stage Four",
+                description="Fourth stage.",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                type_signature="D -> E",
+            ),
+        ],
+        edges=[],
+        metadata={},
+    )
+    partial_result = OrchestratorResult(cdg=cdg, match_results=[], rounds_used=1)
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=False),
+        batch_result=HunterBatchMatchResult(
+            match_results=[
+                SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n1")),
+                SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n2")),
+                SimpleNamespace(success=True, pdg_node=SimpleNamespace(predicate_id="n3")),
+            ],
+            failures=[],
+            ungroundable=["n4"],
+        ),
+        direct_result=partial_result,
+    )
+    architect = _FakeArchitectService(cdg)
+    orchestrator = _FakeOrchestratorService(partial_result)
+
+    async def _architect_factory():
+        return architect
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=orchestrator,
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+    )
+
+    result = await planner.run("Detect heart rate from ECG")
+
+    assert result.execution_path == "single_agent_partial"
+    assert [step.action for step in result.steps] == [
+        "direct_match",
+        "decompose",
+        "match_decomposed",
+        "partial_accept",
+    ]
+    assert result.state.verification_status == "partial_verified"
+    assert result.state.termination_reason == "partial_accept"
+    assert result.state.open_failures == ["n4"]
     assert orchestrator.calls == 0

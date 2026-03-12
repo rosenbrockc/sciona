@@ -67,7 +67,7 @@ class SingleAgentPlanner:
         state = PlannerState(
             goal=goal,
             policy=self._select_policy(goal),
-            budget=PlannerBudget(max_steps=4),
+            budget=PlannerBudget(max_steps=6),
         )
         log_event(
             "planner",
@@ -77,7 +77,9 @@ class SingleAgentPlanner:
                 "goal": goal,
                 "direct_grounding_enabled": state.policy.direct_grounding_enabled,
                 "decomposition_mode": state.policy.decomposition_mode,
+                "retrieval_intensity": state.policy.retrieval_intensity,
                 "escalation_enabled": state.policy.escalation_enabled,
+                "repair_policy": state.policy.repair_policy,
                 "reason": self._policy_reason(goal, state.policy),
             },
         )
@@ -103,6 +105,10 @@ class SingleAgentPlanner:
             if getattr(direct_match, "success", False):
                 state.current_focus = "goal_grounded"
                 state.open_failures = []
+                state.artifacts["cdg"] = "direct_goal_cdg"
+                state.artifacts["match_results"] = "direct_match_result"
+                self._bump_artifact(state, "cdg")
+                self._bump_artifact(state, "match_results")
                 state.verification_status = "verified"
                 state.termination_reason = "direct_verified"
                 return self._complete(
@@ -141,6 +147,8 @@ class SingleAgentPlanner:
         decompose_result = await architect.decompose(
             ArchitectDecomposeRequest(goal=goal)
         )
+        state.artifacts["cdg"] = "architect_decompose"
+        self._bump_artifact(state, "cdg")
         self._record_step(
             state,
             action="decompose",
@@ -157,6 +165,8 @@ class SingleAgentPlanner:
         )
         state.current_focus = "decomposed_matching"
         state.open_failures = list(batch_result.ungroundable)
+        state.artifacts["match_results"] = "hunter_batch_match"
+        self._bump_artifact(state, "match_results")
         state.verification_status = (
             "verified" if not batch_result.ungroundable else "needs_refinement"
         )
@@ -244,6 +254,8 @@ class SingleAgentPlanner:
                     split_count += 1
 
             if split_count > 0:
+                state.artifacts["cdg"] = "selective_redecompose"
+                self._bump_artifact(state, "cdg")
                 self._record_step(
                     state,
                     action="selective_redecompose",
@@ -269,6 +281,8 @@ class SingleAgentPlanner:
                     ] + retry_result.match_results
                     all_ungroundable = retry_result.ungroundable
                     all_failures = retry_result.failures
+                    state.artifacts["match_results"] = "retry_match"
+                    self._bump_artifact(state, "match_results")
 
                     self._record_step(
                         state,
@@ -312,6 +326,10 @@ class SingleAgentPlanner:
                 hunter_concurrency=self._hunter_concurrency,
             )
         )
+        state.artifacts["orchestration"] = "run_orchestration"
+        state.artifacts["match_results"] = "orchestrated_match_results"
+        self._bump_artifact(state, "orchestration")
+        self._bump_artifact(state, "match_results")
         state.open_failures = list(orchestrated.ungroundable)
         state.verification_status = (
             "verified" if not orchestrated.ungroundable else "partial"
@@ -341,6 +359,7 @@ class SingleAgentPlanner:
         step = PlannerStep(action=action, detail=detail, status=status)
         state.tool_trace.append(step)
         state.budget.steps_used += 1
+        state.attempt_history.append(action)
         log_event(
             "planner",
             "decision",
@@ -352,6 +371,8 @@ class SingleAgentPlanner:
                 "goal": state.goal,
                 "current_focus": state.current_focus,
                 "open_failures": list(state.open_failures),
+                "artifacts": dict(state.artifacts),
+                "artifact_mutations": dict(state.artifact_mutations),
                 "steps_used": state.budget.steps_used,
                 "step_budget": state.budget.max_steps,
             },
@@ -375,10 +396,16 @@ class SingleAgentPlanner:
                 "steps_used": state.budget.steps_used,
                 "step_budget": state.budget.max_steps,
                 "open_failures": list(state.open_failures),
+                "artifacts": dict(state.artifacts),
+                "artifact_mutations": dict(state.artifact_mutations),
                 "policy": {
                     "direct_grounding_enabled": state.policy.direct_grounding_enabled,
                     "decomposition_mode": state.policy.decomposition_mode,
+                    "retrieval_intensity": state.policy.retrieval_intensity,
                     "escalation_enabled": state.policy.escalation_enabled,
+                    "repair_policy": state.policy.repair_policy,
+                    "partial_accept_enabled": state.policy.partial_accept_enabled,
+                    "selective_redecompose_enabled": state.policy.selective_redecompose_enabled,
                 },
             },
         )
@@ -389,9 +416,28 @@ class SingleAgentPlanner:
             state=state,
         )
 
+    def _bump_artifact(self, state: PlannerState, artifact_name: str) -> None:
+        state.artifact_mutations[artifact_name] = (
+            int(state.artifact_mutations.get(artifact_name, 0) or 0) + 1
+        )
+
     def _select_policy(self, goal: str) -> PlannerPolicy:
-        if self._is_compound_goal(goal) or self._goal_token_count(goal) > self._MAX_DIRECT_GOAL_TOKENS:
-            return PlannerPolicy(direct_grounding_enabled=False)
+        if self._is_compound_goal(goal):
+            return PlannerPolicy(
+                direct_grounding_enabled=False,
+                decomposition_mode="selective_redecompose",
+                retrieval_intensity="standard",
+                repair_policy="bounded",
+                partial_accept_enabled=False,
+                selective_redecompose_enabled=True,
+            )
+        if self._goal_token_count(goal) > self._MAX_DIRECT_GOAL_TOKENS:
+            return PlannerPolicy(
+                direct_grounding_enabled=False,
+                decomposition_mode="single_pass",
+                retrieval_intensity="standard",
+                repair_policy="bounded",
+            )
         return PlannerPolicy()
 
     def _is_compound_goal(self, goal: str) -> bool:

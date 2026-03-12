@@ -575,11 +575,21 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     assert "architect_decompose" not in payload["stages"]
     assert payload["metadata"]["single_agent"]["policy"]["direct_grounding_enabled"] is True
     assert payload["metadata"]["single_agent"]["policy"]["decomposition_mode"] == "single_pass"
+    assert payload["metadata"]["single_agent"]["policy"]["retrieval_intensity"] == "light"
     assert payload["metadata"]["single_agent"]["termination_reason"] == "direct_verified"
     assert payload["metadata"]["single_agent"]["verification_status"] == "verified"
-    assert payload["metadata"]["single_agent"]["step_budget"] == 4
+    assert payload["metadata"]["single_agent"]["step_budget"] == 6
     assert payload["metadata"]["single_agent"]["steps_used"] == 1
     assert payload["metadata"]["single_agent"]["open_failures"] == []
+    assert payload["metadata"]["single_agent"]["artifacts"] == {
+        "cdg": "direct_goal_cdg",
+        "match_results": "direct_match_result",
+    }
+    assert payload["metadata"]["single_agent"]["artifact_mutations"] == {
+        "cdg": 1,
+        "match_results": 1,
+    }
+    assert payload["metadata"]["single_agent"]["attempt_history"] == ["direct_match"]
     assert payload["metadata"]["single_agent"]["steps"][0]["action"] == "direct_match"
     assert payload["metadata"]["single_agent"]["steps"][0]["status"] == "completed"
     assert (output_dir / "cdg.json").exists()

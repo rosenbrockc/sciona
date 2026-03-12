@@ -591,13 +591,20 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     "policy": {
                         "direct_grounding_enabled": planner_result.state.policy.direct_grounding_enabled,
                         "decomposition_mode": planner_result.state.policy.decomposition_mode,
+                        "retrieval_intensity": planner_result.state.policy.retrieval_intensity,
                         "escalation_enabled": planner_result.state.policy.escalation_enabled,
+                        "repair_policy": planner_result.state.policy.repair_policy,
+                        "partial_accept_enabled": planner_result.state.policy.partial_accept_enabled,
+                        "selective_redecompose_enabled": planner_result.state.policy.selective_redecompose_enabled,
                     },
                     "termination_reason": planner_result.state.termination_reason,
                     "verification_status": planner_result.state.verification_status,
                     "step_budget": planner_result.state.budget.max_steps,
                     "steps_used": planner_result.state.budget.steps_used,
                     "open_failures": list(planner_result.state.open_failures),
+                    "artifacts": dict(planner_result.state.artifacts),
+                    "artifact_mutations": dict(planner_result.state.artifact_mutations),
+                    "attempt_history": list(planner_result.state.attempt_history),
                     "steps": [
                         {
                             "action": step.action,
