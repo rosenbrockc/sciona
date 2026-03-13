@@ -17,6 +17,11 @@
       --accent: #38bdf8;
       --border: #334155;
       --mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+      --phase-architect: #818cf8;
+      --phase-hunter: #34d399;
+      --phase-synthesizer: #fb923c;
+      --phase-llm: #a78bfa;
+      --phase-ingester: #22d3ee;
     }
 
     * { box-sizing: border-box; }
@@ -57,6 +62,16 @@
     }
 
     select, button {
+      border: 1px solid var(--border);
+      background: var(--panel-soft);
+      color: var(--text);
+      border-radius: 6px;
+      font-size: 12px;
+      padding: 6px 8px;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
       border: 1px solid var(--border);
       background: var(--panel-soft);
       color: var(--text);
@@ -133,16 +148,61 @@
       font-size: 11px;
       border: 1px solid var(--border);
       font-family: var(--mono);
+      display: inline-block;
     }
 
     .s-running { color: var(--warn); border-color: rgba(245, 158, 11, 0.45); }
     .s-completed { color: var(--ok); border-color: rgba(22, 163, 74, 0.45); }
     .s-failed { color: var(--bad); border-color: rgba(239, 68, 68, 0.45); }
 
+    /* Tab system */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(2, 6, 23, 0.35);
+      overflow-x: auto;
+    }
+
+    .tab-bar button {
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .tab-bar button:hover { color: var(--text); }
+    .tab-bar button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
     #details {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #details > .card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .tab-body {
+      flex: 1;
+      overflow-y: auto;
       min-height: 0;
     }
 
@@ -177,8 +237,11 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
+      padding: 12px;
       min-height: 0;
     }
+
+    .split > .card { min-height: 200px; }
 
     .table-wrap {
       height: 100%;
@@ -205,6 +268,180 @@
     .bad { color: var(--bad); }
     .warn { color: var(--warn); }
     .ok { color: var(--ok); }
+
+    /* Timeline styles */
+    .timeline-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(2, 6, 23, 0.25);
+      flex-wrap: wrap;
+    }
+
+    .timeline-controls label {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    .timeline-list {
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .timeline-event {
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--muted);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.3);
+    }
+
+    .timeline-event.phase-architect { border-left-color: var(--phase-architect); }
+    .timeline-event.phase-hunter { border-left-color: var(--phase-hunter); }
+    .timeline-event.phase-synthesizer { border-left-color: var(--phase-synthesizer); }
+    .timeline-event.phase-llm { border-left-color: var(--phase-llm); }
+    .timeline-event.phase-ingester { border-left-color: var(--phase-ingester); }
+    .timeline-event.is-error { border-left-color: var(--bad); background: rgba(239, 68, 68, 0.06); }
+
+    .tl-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .tl-ts {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      min-width: 80px;
+    }
+
+    .tl-type {
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .tl-detail {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .tl-duration {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .tl-payload {
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: #94a3b8;
+      white-space: pre-wrap;
+      max-height: 60px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .tl-payload.expanded { max-height: none; }
+
+    .timeline-more {
+      text-align: center;
+      padding: 10px;
+    }
+
+    /* Coverage styles */
+    .coverage-summary {
+      display: flex;
+      gap: 16px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .coverage-big {
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .coverage-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .coverage-bar-bg {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 4px;
+      height: 6px;
+      width: 100px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .coverage-bar-fill {
+      background: var(--accent);
+      border-radius: 4px;
+      height: 100%;
+      transition: width 0.3s;
+    }
+
+    /* Error styles */
+    .error-card {
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-left: 3px solid var(--bad);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: rgba(239, 68, 68, 0.04);
+    }
+
+    .error-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    .error-msg {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--bad);
+      margin-top: 4px;
+    }
+
+    .error-retry {
+      margin-top: 6px;
+      padding-left: 12px;
+      border-left: 2px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .sse-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-right: 4px;
+    }
+
+    .sse-indicator.connected { background: var(--ok); }
 
     @media (max-width: 1100px) {
       main { grid-template-columns: 1fr; height: auto; }
@@ -237,25 +474,72 @@
 
     <section id="details">
       <section class="card">
-        <h2>Summary</h2>
-        <div id="summary"></div>
-        <div id="meta-block">Select a run to inspect details.</div>
-      </section>
+        <nav class="tab-bar" id="tab-bar">
+          <button class="active" data-tab="overview">Overview</button>
+          <button data-tab="timeline">Timeline</button>
+          <button data-tab="coverage">Coverage</button>
+          <button data-tab="errors">Errors</button>
+        </nav>
 
-      <section class="split">
-        <section class="card">
-          <h2>Stages</h2>
-          <div class="table-wrap"><table id="stages-table"></table></div>
-        </section>
-        <section class="card">
-          <h2>Prompt Aggregates</h2>
-          <div class="table-wrap"><table id="prompts-table"></table></div>
-        </section>
-      </section>
+        <div class="tab-body">
+          <!-- Overview tab -->
+          <div id="tab-overview" class="tab-content active">
+            <div id="summary"></div>
+            <div id="meta-block">Select a run to inspect details.</div>
+            <div class="split">
+              <div class="card">
+                <h2>Stages</h2>
+                <div class="table-wrap"><table id="stages-table"></table></div>
+              </div>
+              <div class="card">
+                <h2>Prompt Aggregates</h2>
+                <div class="table-wrap"><table id="prompts-table"></table></div>
+              </div>
+            </div>
+            <div class="card" style="margin: 12px;">
+              <h2>In-Flight Dispatches</h2>
+              <div class="table-wrap"><table id="inflight-table"></table></div>
+            </div>
+          </div>
 
-      <section class="card">
-        <h2>In-Flight Dispatches</h2>
-        <div class="table-wrap"><table id="inflight-table"></table></div>
+          <!-- Timeline tab -->
+          <div id="tab-timeline" class="tab-content">
+            <div class="timeline-controls">
+              <select id="tl-round-filter">
+                <option value="">all rounds</option>
+                <option value="architect">architect</option>
+                <option value="hunter">hunter</option>
+                <option value="synthesizer">synthesizer</option>
+                <option value="llm">llm</option>
+                <option value="ingester">ingester</option>
+              </select>
+              <select id="tl-type-filter">
+                <option value="">all types</option>
+              </select>
+              <input type="text" id="tl-search" placeholder="filter prompt_key / node_id" style="width:200px">
+              <label><input type="checkbox" id="tl-live"> <span class="sse-indicator" id="sse-dot"></span>Live</label>
+              <span id="tl-count" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
+            </div>
+            <div id="timeline-list" class="timeline-list"></div>
+            <div class="timeline-more" id="tl-more-wrap" style="display:none;">
+              <button id="tl-load-more">Load more</button>
+            </div>
+          </div>
+
+          <!-- Coverage tab -->
+          <div id="tab-coverage" class="tab-content">
+            <div class="coverage-summary" id="coverage-summary"></div>
+            <div class="table-wrap">
+              <table id="coverage-table"></table>
+            </div>
+          </div>
+
+          <!-- Errors tab -->
+          <div id="tab-errors" class="tab-content">
+            <div id="error-summary" style="padding:12px;font-size:13px;border-bottom:1px solid var(--border);"></div>
+            <div id="error-list" style="padding:12px;"></div>
+          </div>
+        </div>
       </section>
     </section>
   </main>
@@ -264,6 +548,7 @@
     (function () {
       "use strict";
 
+      // ─── DOM refs ───
       const runList = document.getElementById("run-list");
       const summary = document.getElementById("summary");
       const metaBlock = document.getElementById("meta-block");
@@ -273,13 +558,40 @@
       const stateFilter = document.getElementById("state-filter");
       const btnRefresh = document.getElementById("btn-refresh");
       const lastRefresh = document.getElementById("last-refresh");
+      const tabBar = document.getElementById("tab-bar");
+      const timelineList = document.getElementById("timeline-list");
+      const tlRoundFilter = document.getElementById("tl-round-filter");
+      const tlTypeFilter = document.getElementById("tl-type-filter");
+      const tlSearch = document.getElementById("tl-search");
+      const tlLive = document.getElementById("tl-live");
+      const sseDot = document.getElementById("sse-dot");
+      const tlCount = document.getElementById("tl-count");
+      const tlMoreWrap = document.getElementById("tl-more-wrap");
+      const tlLoadMore = document.getElementById("tl-load-more");
+      const coverageSummary = document.getElementById("coverage-summary");
+      const coverageTable = document.getElementById("coverage-table");
+      const errorSummary = document.getElementById("error-summary");
+      const errorList = document.getElementById("error-list");
 
       let selectedRunId = "";
       let latestRuns = [];
+      let activeTab = "overview";
+      let activeEventSource = null;
+      let timelineOffset = 0;
+      const TIMELINE_PAGE = 200;
 
+      // ─── Utilities ───
       function fmtTime(ts) {
         if (!ts) return "--";
         try { return new Date(ts * 1000).toLocaleTimeString(); } catch (_) { return "--"; }
+      }
+
+      function fmtTimeFull(ts) {
+        if (!ts) return "--";
+        try {
+          const d = new Date(ts * 1000);
+          return d.toLocaleTimeString() + "." + String(d.getMilliseconds()).padStart(3, "0");
+        } catch (_) { return "--"; }
       }
 
       function fmtAgeSec(ts) {
@@ -300,6 +612,35 @@
         return "s-running";
       }
 
+      function phaseClass(round) {
+        if (round === "architect") return "phase-architect";
+        if (round === "hunter") return "phase-hunter";
+        if (round === "synthesizer") return "phase-synthesizer";
+        if (round === "llm") return "phase-llm";
+        if (round === "ingester") return "phase-ingester";
+        return "";
+      }
+
+      function esc(s) {
+        const div = document.createElement("div");
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      // ─── Tab switching ───
+      tabBar.addEventListener("click", (e) => {
+        const tab = e.target.dataset.tab;
+        if (!tab) return;
+        activeTab = tab;
+        tabBar.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+        document.querySelectorAll(".tab-content").forEach((c) => c.classList.toggle("active", c.id === "tab-" + tab));
+        if (tab === "timeline") loadTimeline();
+        if (tab === "coverage") loadCoverage();
+        if (tab === "errors") loadErrors();
+        if (tab !== "timeline") closeSSE();
+      });
+
+      // ─── API helpers ───
       async function fetchRuns() {
         const state = encodeURIComponent(stateFilter.value || "all");
         const res = await fetch(`/api/dashboard/runs?limit=100&state=${state}`);
@@ -314,6 +655,30 @@
         return await res.json();
       }
 
+      async function fetchEvents(runId, offset, limit, filters) {
+        const params = new URLSearchParams({ offset, limit });
+        if (filters.round) params.set("round", filters.round);
+        if (filters.event_type) params.set("event_type", filters.event_type);
+        if (filters.prompt_key) params.set("prompt_key", filters.prompt_key);
+        if (filters.has_error !== undefined) params.set("has_error", filters.has_error);
+        const res = await fetch(`/api/dashboard/runs/${encodeURIComponent(runId)}/events?${params}`);
+        if (!res.ok) throw new Error(`events api error ${res.status}`);
+        return await res.json();
+      }
+
+      async function fetchCoverage(runId) {
+        const res = await fetch(`/api/dashboard/runs/${encodeURIComponent(runId)}/coverage`);
+        if (!res.ok) throw new Error(`coverage api error ${res.status}`);
+        return await res.json();
+      }
+
+      async function fetchErrorDrilldown(runId) {
+        const res = await fetch(`/api/dashboard/runs/${encodeURIComponent(runId)}/errors`);
+        if (!res.ok) throw new Error(`errors api error ${res.status}`);
+        return await res.json();
+      }
+
+      // ─── Run list (unchanged) ───
       function renderRunList(rows) {
         runList.innerHTML = "";
         if (!rows.length) {
@@ -429,30 +794,14 @@
             (topSources ? `<div class="run-meta">catalog_sources ${topSources}</div>` : ""),
             (topMerges ? `<div class="run-meta">catalog_merges ${topMerges}</div>` : ""),
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
-            (flowPromptCallSummary
-              ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>`
-              : ""),
-            (flowPlannerToolSummary
-              ? `<div class="run-meta">flow_tools ${flowPlannerToolSummary}</div>`
-              : ""),
-            (flowPlannerEscalationSummary
-              ? `<div class="run-meta">flow_escalations ${flowPlannerEscalationSummary}</div>`
-              : ""),
-            (flowLatencySummary
-              ? `<div class="run-meta">flow_latency ${flowLatencySummary}</div>`
-              : ""),
-            (runtimeModeSummary
-              ? `<div class="run-meta">runtime_modes ${runtimeModeSummary}</div>`
-              : ""),
-            singleAgentLine,
-            singleAgentToolLine,
-            singleAgentEscalationLine,
-            singleAgentBenchmarkLine,
-            singleAgentDecisionLine,
-            singleAgentOverheadLine,
-            singleAgentPruneLine,
-            releaseWarningLine,
-            validationLine
+            (flowPromptCallSummary ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>` : ""),
+            (flowPlannerToolSummary ? `<div class="run-meta">flow_tools ${flowPlannerToolSummary}</div>` : ""),
+            (flowPlannerEscalationSummary ? `<div class="run-meta">flow_escalations ${flowPlannerEscalationSummary}</div>` : ""),
+            (flowLatencySummary ? `<div class="run-meta">flow_latency ${flowLatencySummary}</div>` : ""),
+            (runtimeModeSummary ? `<div class="run-meta">runtime_modes ${runtimeModeSummary}</div>` : ""),
+            singleAgentLine, singleAgentToolLine, singleAgentEscalationLine, singleAgentBenchmarkLine,
+            singleAgentDecisionLine, singleAgentOverheadLine, singleAgentPruneLine,
+            releaseWarningLine, validationLine
           ].join("");
           div.addEventListener("click", () => {
             selectedRunId = r.run_id || "";
@@ -463,6 +812,7 @@
         });
       }
 
+      // ─── Overview tab (existing) ───
       function setSummary(run) {
         const stages = run.stages || {};
         const stageCount = Object.keys(stages).length;
@@ -662,26 +1012,15 @@
 
       function setStages(run) {
         const rows = Object.entries(run.stages || {});
-        rows.sort((a, b) => {
-          const av = Number((a[1] || {}).started_at || 0);
-          const bv = Number((b[1] || {}).started_at || 0);
-          return av - bv;
-        });
-        const header =
-          "<thead><tr><th>stage</th><th>status</th><th>progress</th><th>heartbeat</th><th>message</th></tr></thead>";
+        rows.sort((a, b) => Number((a[1] || {}).started_at || 0) - Number((b[1] || {}).started_at || 0));
+        const header = "<thead><tr><th>stage</th><th>status</th><th>progress</th><th>heartbeat</th><th>message</th></tr></thead>";
         const body = rows.map(([name, row]) => {
           const status = String((row || {}).status || "running");
           const cls = status === "completed" ? "ok" : status === "failed" ? "bad" : "warn";
           const completed = Number((row || {}).completed || 0);
           const total = Number((row || {}).total || 0);
           const progress = total > 0 ? `${completed}/${total}` : String(completed);
-          return `<tr>
-            <td class="mono">${name}</td>
-            <td class="${cls}">${status}</td>
-            <td class="mono">${progress}</td>
-            <td class="mono">${fmtAgeSec(Number((row || {}).last_heartbeat_at || 0))}</td>
-            <td>${String((row || {}).message || "")}</td>
-          </tr>`;
+          return `<tr><td class="mono">${name}</td><td class="${cls}">${status}</td><td class="mono">${progress}</td><td class="mono">${fmtAgeSec(Number((row || {}).last_heartbeat_at || 0))}</td><td>${String((row || {}).message || "")}</td></tr>`;
         }).join("");
         stagesTable.innerHTML = header + "<tbody>" + body + "</tbody>";
       }
@@ -689,43 +1028,243 @@
       function setPrompts(run) {
         const prompts = Object.entries(run.prompt_by_key || {});
         prompts.sort((a, b) => Number((b[1] || {}).dispatched || 0) - Number((a[1] || {}).dispatched || 0));
-        const header =
-          "<thead><tr><th>prompt key</th><th>provider/model</th><th>dispatched</th><th>ok</th><th>fail</th><th>inflight</th><th>avg ms</th></tr></thead>";
+        const header = "<thead><tr><th>prompt key</th><th>provider/model</th><th>dispatched</th><th>ok</th><th>fail</th><th>inflight</th><th>avg ms</th></tr></thead>";
         const body = prompts.map(([key, row]) => {
-          const provider = String((row || {}).provider || "");
-          const model = String((row || {}).model || "");
-          const providerModel = [provider, model].filter(Boolean).join("/") || "--";
-          return `<tr>
-            <td class="mono">${key}</td>
-            <td class="mono">${providerModel}</td>
-            <td class="mono">${Number((row || {}).dispatched || 0)}</td>
-            <td class="ok mono">${Number((row || {}).succeeded || 0)}</td>
-            <td class="bad mono">${Number((row || {}).failed || 0)}</td>
-            <td class="warn mono">${Number((row || {}).inflight || 0)}</td>
-            <td class="mono">${Number((row || {}).avg_latency_ms || 0).toFixed(1)}</td>
-          </tr>`;
+          const providerModel = [String((row||{}).provider||""), String((row||{}).model||"")].filter(Boolean).join("/") || "--";
+          return `<tr><td class="mono">${key}</td><td class="mono">${providerModel}</td><td class="mono">${Number((row||{}).dispatched||0)}</td><td class="ok mono">${Number((row||{}).succeeded||0)}</td><td class="bad mono">${Number((row||{}).failed||0)}</td><td class="warn mono">${Number((row||{}).inflight||0)}</td><td class="mono">${Number((row||{}).avg_latency_ms||0).toFixed(1)}</td></tr>`;
         }).join("");
         promptsTable.innerHTML = header + "<tbody>" + body + "</tbody>";
       }
 
       function setInflight(run) {
         const inflight = Object.values(run.inflight_prompts || {});
-        inflight.sort((a, b) => Number((a || {}).started_at || 0) - Number((b || {}).started_at || 0));
-        const header =
-          "<thead><tr><th>dispatch</th><th>prompt key</th><th>provider/model</th><th>stage</th><th>age</th></tr></thead>";
+        inflight.sort((a, b) => Number((a||{}).started_at||0) - Number((b||{}).started_at||0));
+        const header = "<thead><tr><th>dispatch</th><th>prompt key</th><th>provider/model</th><th>stage</th><th>age</th></tr></thead>";
         const body = inflight.map((row) => {
-          const providerModel = [row.provider || "", row.model || ""].filter(Boolean).join("/") || "--";
-          return `<tr>
-            <td class="mono">${String(row.dispatch_id || "").slice(0, 10)}</td>
-            <td class="mono">${String(row.prompt_key || "")}</td>
-            <td class="mono">${providerModel}</td>
-            <td class="mono">${String(row.stage || "")}</td>
-            <td class="mono">${fmtAgeSec(Number(row.started_at || 0))}</td>
-          </tr>`;
+          const providerModel = [row.provider||"", row.model||""].filter(Boolean).join("/") || "--";
+          return `<tr><td class="mono">${String(row.dispatch_id||"").slice(0,10)}</td><td class="mono">${String(row.prompt_key||"")}</td><td class="mono">${providerModel}</td><td class="mono">${String(row.stage||"")}</td><td class="mono">${fmtAgeSec(Number(row.started_at||0))}</td></tr>`;
         }).join("");
         inflightTable.innerHTML = header + "<tbody>" + body + "</tbody>";
       }
 
+      // ─── Timeline tab ───
+      function renderTimelineEvent(ev) {
+        const div = document.createElement("div");
+        const isError = ev.event_type && (ev.event_type.includes("ERROR") || ev.event_type.includes("FAIL"));
+        div.className = "timeline-event " + phaseClass(ev.round || "") + (isError ? " is-error" : "");
+        const parts = [
+          `<span class="tl-ts">${fmtTimeFull(ev.timestamp)}</span>`,
+          `<span class="pill ${runStatusClass(ev.round === "llm" ? "running" : "completed")}" style="font-size:10px;padding:1px 6px;">${esc(ev.round || "")}</span>`,
+          `<span class="tl-type">${esc(ev.event_type || "")}</span>`,
+        ];
+        if (ev.prompt_key) parts.push(`<span class="tl-detail">${esc(ev.prompt_key)}</span>`);
+        if (ev.node_id) parts.push(`<span class="tl-detail">node=${esc(ev.node_id)}</span>`);
+        if (ev.provider) parts.push(`<span class="tl-detail">${esc(ev.provider)}${ev.model ? "/" + esc(ev.model) : ""}</span>`);
+        if (ev.duration_ms) parts.push(`<span class="tl-duration">${Number(ev.duration_ms).toFixed(1)}ms</span>`);
+        let html = `<div class="tl-header">${parts.join(" ")}</div>`;
+        if (ev.payload && Object.keys(ev.payload).length) {
+          const payloadStr = JSON.stringify(ev.payload, null, 2);
+          if (payloadStr.length > 4) {
+            html += `<div class="tl-payload" onclick="this.classList.toggle('expanded')">${esc(payloadStr)}</div>`;
+          }
+        }
+        div.innerHTML = html;
+        return div;
+      }
+
+      function getTimelineFilters() {
+        const search = tlSearch.value.trim();
+        const filters = {};
+        if (tlRoundFilter.value) filters.round = tlRoundFilter.value;
+        if (tlTypeFilter.value) filters.event_type = tlTypeFilter.value;
+        if (search) filters.prompt_key = search;
+        return filters;
+      }
+
+      async function loadTimeline(append) {
+        if (!selectedRunId) {
+          timelineList.innerHTML = '<div class="run-meta" style="padding:10px;">Select a run.</div>';
+          return;
+        }
+        if (!append) {
+          timelineOffset = 0;
+          timelineList.innerHTML = "";
+        }
+        try {
+          const data = await fetchEvents(selectedRunId, timelineOffset, TIMELINE_PAGE, getTimelineFilters());
+          const events = data.events || [];
+          events.forEach((ev) => timelineList.appendChild(renderTimelineEvent(ev)));
+          timelineOffset += events.length;
+          tlCount.textContent = `${timelineOffset} / ${data.total} events`;
+          tlMoreWrap.style.display = timelineOffset < data.total ? "" : "none";
+
+          // Populate type filter from first page
+          if (!append && events.length) {
+            const types = new Set(events.map((e) => e.event_type).filter(Boolean));
+            const current = tlTypeFilter.value;
+            tlTypeFilter.innerHTML = '<option value="">all types</option>';
+            [...types].sort().forEach((t) => {
+              const opt = document.createElement("option");
+              opt.value = t;
+              opt.textContent = t;
+              if (t === current) opt.selected = true;
+              tlTypeFilter.appendChild(opt);
+            });
+          }
+        } catch (err) {
+          timelineList.innerHTML = `<div class="run-meta bad" style="padding:10px;">${esc(err.message)}</div>`;
+        }
+      }
+
+      tlLoadMore.addEventListener("click", () => loadTimeline(true));
+      tlRoundFilter.addEventListener("change", () => loadTimeline());
+      tlTypeFilter.addEventListener("change", () => loadTimeline());
+      let tlSearchTimer;
+      tlSearch.addEventListener("input", () => {
+        clearTimeout(tlSearchTimer);
+        tlSearchTimer = setTimeout(() => loadTimeline(), 300);
+      });
+
+      // ─── SSE live streaming ───
+      function closeSSE() {
+        if (activeEventSource) {
+          activeEventSource.close();
+          activeEventSource = null;
+        }
+        sseDot.classList.remove("connected");
+        tlLive.checked = false;
+      }
+
+      function openSSE() {
+        closeSSE();
+        if (!selectedRunId) return;
+        const url = `/api/dashboard/runs/${encodeURIComponent(selectedRunId)}/stream`;
+        activeEventSource = new EventSource(url);
+        sseDot.classList.add("connected");
+
+        activeEventSource.addEventListener("PROMPT_DISPATCH_START", handleSSEEvent);
+        activeEventSource.addEventListener("PROMPT_DISPATCH_DONE", handleSSEEvent);
+        activeEventSource.addEventListener("PROMPT_DISPATCH_ERROR", handleSSEEvent);
+        activeEventSource.addEventListener("event", handleSSEEvent);
+        // Catch any event type
+        activeEventSource.onmessage = handleSSEEvent;
+
+        activeEventSource.addEventListener("done", () => {
+          sseDot.classList.remove("connected");
+        });
+
+        activeEventSource.onerror = () => {
+          sseDot.classList.remove("connected");
+        };
+      }
+
+      function handleSSEEvent(e) {
+        try {
+          const ev = JSON.parse(e.data);
+          // Apply filters
+          const filters = getTimelineFilters();
+          if (filters.round && ev.round !== filters.round) return;
+          if (filters.event_type && ev.event_type !== filters.event_type) return;
+          if (filters.prompt_key && !(ev.prompt_key || "").includes(filters.prompt_key) && !(ev.node_id || "").includes(filters.prompt_key)) return;
+
+          const el = renderTimelineEvent(ev);
+          timelineList.appendChild(el);
+          // Auto-scroll if near bottom
+          const tabBody = timelineList.closest(".tab-body");
+          if (tabBody && tabBody.scrollHeight - tabBody.scrollTop - tabBody.clientHeight < 100) {
+            el.scrollIntoView({ behavior: "smooth", block: "end" });
+          }
+        } catch (_) {}
+      }
+
+      tlLive.addEventListener("change", () => {
+        if (tlLive.checked) {
+          openSSE();
+        } else {
+          closeSSE();
+        }
+      });
+
+      // ─── Coverage tab ───
+      async function loadCoverage() {
+        if (!selectedRunId) {
+          coverageSummary.innerHTML = "";
+          coverageTable.innerHTML = "";
+          return;
+        }
+        try {
+          const data = await fetchCoverage(selectedRunId);
+          const pct = data.overall_deterministic_pct || 0;
+          const pctColor = pct >= 60 ? "ok" : pct >= 30 ? "warn" : "bad";
+          coverageSummary.innerHTML = [
+            `<div><div class="coverage-big ${pctColor}">${pct.toFixed(1)}%</div><div class="coverage-label">deterministic</div></div>`,
+            `<div><div class="coverage-big">${data.total_dispatches || 0}</div><div class="coverage-label">total dispatches</div></div>`,
+          ].join("");
+
+          const header = "<thead><tr><th>prompt key</th><th>total</th><th>deterministic</th><th>llm fallback</th><th>det %</th><th>coverage</th><th>avg ms</th><th>errors</th></tr></thead>";
+          const body = (data.prompt_keys || []).map((row) => {
+            const p = row.deterministic_pct || 0;
+            const cls = p >= 80 ? "ok" : p >= 40 ? "warn" : "bad";
+            return `<tr>
+              <td class="mono">${esc(row.prompt_key)}</td>
+              <td class="mono">${row.total_dispatches}</td>
+              <td class="mono ok">${row.deterministic_count}</td>
+              <td class="mono warn">${row.llm_fallback_count}</td>
+              <td class="mono ${cls}">${p.toFixed(1)}%</td>
+              <td><div class="coverage-bar-bg"><div class="coverage-bar-fill" style="width:${p}%"></div></div></td>
+              <td class="mono">${row.avg_latency_ms.toFixed(1)}</td>
+              <td class="mono ${row.error_count ? 'bad' : ''}">${row.error_count}</td>
+            </tr>`;
+          }).join("");
+          coverageTable.innerHTML = header + "<tbody>" + body + "</tbody>";
+        } catch (err) {
+          coverageSummary.innerHTML = `<div class="bad">${esc(err.message)}</div>`;
+        }
+      }
+
+      // ─── Errors tab ───
+      async function loadErrors() {
+        if (!selectedRunId) {
+          errorSummary.innerHTML = "";
+          errorList.innerHTML = "";
+          return;
+        }
+        try {
+          const data = await fetchErrorDrilldown(selectedRunId);
+          const count = data.error_count || 0;
+          errorSummary.innerHTML = `<span class="${count ? 'bad' : 'ok'}">${count} error${count !== 1 ? "s" : ""}</span> in run <span class="mono">${esc((selectedRunId || "").slice(0, 12))}</span>`;
+
+          if (!count) {
+            errorList.innerHTML = '<div class="run-meta" style="padding:10px;">No errors recorded.</div>';
+            return;
+          }
+          errorList.innerHTML = "";
+          (data.errors || []).forEach((err) => {
+            const card = document.createElement("div");
+            card.className = "error-card";
+            let html = `<div class="error-header">
+              <span class="tl-ts">${fmtTimeFull(err.timestamp)}</span>
+              <span class="pill s-failed" style="font-size:10px;padding:1px 6px;">${esc(err.event_type)}</span>
+              <span class="mono">${esc(err.prompt_key || "")}</span>
+              <span class="tl-detail">${esc(err.provider || "")}${err.model ? "/" + esc(err.model) : ""}</span>
+              <span class="tl-detail">stage=${esc(err.stage || "")}</span>
+            </div>`;
+            html += `<div class="error-msg">${esc(err.error_message)}</div>`;
+            if (err.retry_count > 0) {
+              const retries = (err.retry_history || []).map((r) =>
+                `attempt ${r.attempt}: ${fmtTimeFull(r.timestamp)} - ${esc(r.error || "ok")}`
+              ).join("\n");
+              html += `<div class="error-retry">${err.retry_count} retries:\n${retries}</div>`;
+            }
+            card.innerHTML = html;
+            errorList.appendChild(card);
+          });
+        } catch (err) {
+          errorSummary.innerHTML = `<div class="bad">${esc(err.message)}</div>`;
+        }
+      }
+
+      // ─── Load selected run ───
       async function loadSelected() {
         if (!selectedRunId) {
           summary.innerHTML = "";
@@ -744,8 +1283,15 @@
         } catch (err) {
           metaBlock.textContent = `Failed to load run ${selectedRunId}: ${err.message}`;
         }
+        // Reload active tab data
+        if (activeTab === "timeline") loadTimeline();
+        if (activeTab === "coverage") loadCoverage();
+        if (activeTab === "errors") loadErrors();
+        // Close SSE if run changed
+        if (activeEventSource && tlLive.checked) openSSE();
       }
 
+      // ─── Refresh loop ───
       async function refresh() {
         try {
           latestRuns = await fetchRuns();

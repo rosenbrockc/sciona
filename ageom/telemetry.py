@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import contextvars
 import json
+import queue
 import threading
 import time
 import uuid
@@ -40,13 +41,25 @@ class PipelineEvent:
     dispatch_id: str = ""
 
 
+@dataclass
+class _Subscriber:
+    """Internal subscriber for live event streaming."""
+
+    sub_queue: queue.SimpleQueue
+    run_id: str  # empty string means "all runs"
+
+
 class EventLog:
-    """Append-only event log with JSONL export."""
+    """Append-only event log with JSONL export and live subscribers."""
+
+    _MAX_SUBSCRIBER_BACKLOG = 10_000
 
     def __init__(self) -> None:
         self._events: list[PipelineEvent] = []
         self._live_path: Path | None = None
         self._lock = threading.Lock()
+        self._subscribers: dict[str, _Subscriber] = {}
+        self._sub_lock = threading.Lock()
 
     def append(self, event: PipelineEvent) -> None:
         payload = json.dumps(asdict(event), default=str)
@@ -57,6 +70,37 @@ class EventLog:
                 with self._live_path.open("a", encoding="utf-8") as fh:
                     fh.write(payload)
                     fh.write("\n")
+        # Notify subscribers (outside main lock to avoid contention)
+        event_dict = asdict(event)
+        with self._sub_lock:
+            stale_ids: list[str] = []
+            for sub_id, sub in self._subscribers.items():
+                if sub.run_id and event.run_id != sub.run_id:
+                    continue
+                if sub.sub_queue.qsize() >= self._MAX_SUBSCRIBER_BACKLOG:
+                    stale_ids.append(sub_id)
+                    continue
+                sub.sub_queue.put(event_dict)
+            for sub_id in stale_ids:
+                self._subscribers.pop(sub_id, None)
+
+    def subscribe(self, run_id: str = "") -> tuple[str, queue.SimpleQueue]:
+        """Subscribe to live events. Returns (subscriber_id, queue)."""
+        sub_id = uuid.uuid4().hex
+        q: queue.SimpleQueue = queue.SimpleQueue()
+        with self._sub_lock:
+            self._subscribers[sub_id] = _Subscriber(sub_queue=q, run_id=run_id)
+        return sub_id, q
+
+    def unsubscribe(self, subscriber_id: str) -> None:
+        """Remove a subscriber."""
+        with self._sub_lock:
+            self._subscribers.pop(subscriber_id, None)
+
+    def events_for_run(self, run_id: str) -> list[PipelineEvent]:
+        """Return events matching a given run_id."""
+        with self._lock:
+            return [ev for ev in self._events if ev.run_id == run_id]
 
     @property
     def events(self) -> list[PipelineEvent]:
@@ -487,6 +531,16 @@ _registry = TelemetryRegistry()
 def get_event_log() -> EventLog:
     """Return the global event log singleton."""
     return _global_log
+
+
+def subscribe_events(run_id: str = "") -> tuple[str, queue.SimpleQueue]:
+    """Subscribe to live pipeline events. Returns (subscriber_id, queue)."""
+    return _global_log.subscribe(run_id)
+
+
+def unsubscribe_events(subscriber_id: str) -> None:
+    """Remove an event subscriber."""
+    _global_log.unsubscribe(subscriber_id)
 
 
 def log_event(

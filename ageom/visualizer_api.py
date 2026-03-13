@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
+import queue
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from pathlib import Path
 import time
 from typing import Any
@@ -11,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
 from starlette.types import Receive, Scope, Send
 
 
@@ -916,6 +921,237 @@ async def get_latest_dashboard_run() -> dict[str, Any]:
     if not isinstance(latest, dict):
         raise HTTPException(status_code=404, detail="No telemetry runs found")
     return latest
+
+
+@app.get("/api/dashboard/runs/{run_id}/events")
+async def list_run_events(
+    run_id: str,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(200, ge=1, le=2000),
+    phase: str | None = Query(None),
+    event_type: str | None = Query(None),
+    prompt_key: str | None = Query(None),
+    round_name: str | None = Query(None, alias="round"),
+    has_error: bool | None = Query(None),
+) -> dict[str, Any]:
+    """List events for a telemetry run with optional filters."""
+    from ageom.telemetry import get_event_log
+
+    events = get_event_log().events_for_run(run_id)
+    filtered: list[dict[str, Any]] = []
+    for ev in events:
+        if phase and ev.phase != phase:
+            continue
+        if event_type and ev.event_type != event_type:
+            continue
+        if prompt_key and ev.prompt_key != prompt_key:
+            continue
+        if round_name and ev.round != round_name:
+            continue
+        d = asdict(ev)
+        if has_error is True:
+            is_error = (
+                "ERROR" in ev.event_type
+                or "FAIL" in ev.event_type
+                or "error" in ev.payload
+            )
+            if not is_error:
+                continue
+        if has_error is False:
+            is_error = (
+                "ERROR" in ev.event_type
+                or "FAIL" in ev.event_type
+                or "error" in ev.payload
+            )
+            if is_error:
+                continue
+        filtered.append(d)
+
+    total = len(filtered)
+    page = filtered[offset : offset + limit]
+    return {"run_id": run_id, "total": total, "offset": offset, "limit": limit, "events": page}
+
+
+@app.get("/api/dashboard/runs/{run_id}/stream")
+async def stream_run_events(run_id: str) -> EventSourceResponse:
+    """SSE endpoint that streams live events for a run."""
+    from ageom.telemetry import get_runtime_run, subscribe_events, unsubscribe_events
+
+    sub_id, q = subscribe_events(run_id)
+
+    async def event_generator():
+        keepalive_counter = 0
+        try:
+            while True:
+                try:
+                    event_dict = await asyncio.to_thread(q.get, True, 1.0)
+                    yield {
+                        "event": event_dict.get("event_type", "event"),
+                        "data": json.dumps(event_dict, default=str),
+                    }
+                    keepalive_counter = 0
+                except queue.Empty:
+                    keepalive_counter += 1
+                    # Send keepalive every ~15 seconds
+                    if keepalive_counter >= 15:
+                        yield {"comment": "keepalive"}
+                        keepalive_counter = 0
+                    # Check if run is done
+                    run = get_runtime_run(run_id)
+                    if run and run.get("status") in ("completed", "failed"):
+                        # Drain remaining events
+                        while True:
+                            try:
+                                event_dict = q.get(block=False)
+                                yield {
+                                    "event": event_dict.get("event_type", "event"),
+                                    "data": json.dumps(event_dict, default=str),
+                                }
+                            except queue.Empty:
+                                break
+                        yield {"event": "done", "data": json.dumps({"status": run["status"]})}
+                        return
+        finally:
+            unsubscribe_events(sub_id)
+
+    return EventSourceResponse(event_generator())
+
+
+@app.get("/api/dashboard/runs/{run_id}/coverage")
+async def run_prompt_coverage(run_id: str) -> dict[str, Any]:
+    """Deterministic vs LLM fallback coverage per prompt key."""
+    from ageom.telemetry import get_event_log
+
+    events = get_event_log().events_for_run(run_id)
+    keys: dict[str, dict[str, Any]] = {}
+    for ev in events:
+        if ev.event_type not in ("PROMPT_DISPATCH_DONE", "PROMPT_DISPATCH_ERROR"):
+            continue
+        pk = ev.prompt_key or "(unknown)"
+        row = keys.get(pk)
+        if row is None:
+            row = {
+                "prompt_key": pk,
+                "total_dispatches": 0,
+                "deterministic_count": 0,
+                "llm_fallback_count": 0,
+                "providers": set(),
+                "error_count": 0,
+                "latency_total_ms": 0.0,
+            }
+            keys[pk] = row
+        row["total_dispatches"] += 1
+        provider = ev.provider or ""
+        if provider:
+            row["providers"].add(provider)
+        is_deterministic = (
+            provider == "deterministic"
+            or "_shim" in provider
+            or provider.endswith("_cli")
+            or ev.payload.get("critique_source") == "deterministic"
+            or ev.payload.get("ghost_fix_source") == "deterministic"
+            or ev.payload.get("state_hoist_source") == "deterministic"
+            or ev.payload.get("tactic_source") == "deterministic"
+        )
+        if is_deterministic:
+            row["deterministic_count"] += 1
+        else:
+            row["llm_fallback_count"] += 1
+        if ev.event_type == "PROMPT_DISPATCH_ERROR":
+            row["error_count"] += 1
+        if ev.duration_ms and ev.duration_ms > 0:
+            row["latency_total_ms"] += ev.duration_ms
+
+    prompt_keys = []
+    total_dispatches = 0
+    total_deterministic = 0
+    for row in sorted(keys.values(), key=lambda r: r["total_dispatches"], reverse=True):
+        total = row["total_dispatches"]
+        det = row["deterministic_count"]
+        total_dispatches += total
+        total_deterministic += det
+        prompt_keys.append({
+            "prompt_key": row["prompt_key"],
+            "total_dispatches": total,
+            "deterministic_count": det,
+            "llm_fallback_count": row["llm_fallback_count"],
+            "deterministic_pct": round(det / total * 100, 1) if total else 0.0,
+            "providers": sorted(row["providers"]),
+            "avg_latency_ms": round(row["latency_total_ms"] / total, 1) if total else 0.0,
+            "error_count": row["error_count"],
+        })
+
+    return {
+        "run_id": run_id,
+        "prompt_keys": prompt_keys,
+        "overall_deterministic_pct": round(
+            total_deterministic / total_dispatches * 100, 1
+        )
+        if total_dispatches
+        else 0.0,
+        "total_dispatches": total_dispatches,
+    }
+
+
+@app.get("/api/dashboard/runs/{run_id}/errors")
+async def run_error_drilldown(run_id: str) -> dict[str, Any]:
+    """Structured error list with retry grouping."""
+    from ageom.telemetry import get_event_log
+
+    events = get_event_log().events_for_run(run_id)
+
+    # Group dispatches by prompt_key+node_id for retry detection
+    dispatch_groups: dict[str, list[dict[str, Any]]] = {}
+    errors: list[dict[str, Any]] = []
+
+    for ev in events:
+        if ev.event_type not in ("PROMPT_DISPATCH_DONE", "PROMPT_DISPATCH_ERROR"):
+            continue
+        group_key = f"{ev.prompt_key}:{ev.node_id}"
+        dispatch_groups.setdefault(group_key, []).append(asdict(ev))
+
+    for ev in events:
+        is_error = (
+            "ERROR" in ev.event_type
+            or "FAIL" in ev.event_type
+            or "error" in ev.payload
+        )
+        if not is_error:
+            continue
+        error_msg = (
+            ev.payload.get("error", "")
+            or ev.payload.get("message", "")
+            or ev.event_type
+        )
+        group_key = f"{ev.prompt_key}:{ev.node_id}"
+        group = dispatch_groups.get(group_key, [])
+        retry_history = []
+        for attempt_idx, attempt in enumerate(group):
+            if attempt.get("timestamp", 0) > ev.timestamp:
+                break
+            if attempt.get("event_type") in ("PROMPT_DISPATCH_ERROR",):
+                retry_history.append({
+                    "attempt": attempt_idx + 1,
+                    "timestamp": attempt["timestamp"],
+                    "error": attempt.get("payload", {}).get("error", ""),
+                })
+
+        errors.append({
+            "timestamp": ev.timestamp,
+            "event_type": ev.event_type,
+            "node_id": ev.node_id,
+            "prompt_key": ev.prompt_key,
+            "provider": ev.provider,
+            "model": ev.model,
+            "stage": ev.stage,
+            "error_message": str(error_msg),
+            "dispatch_id": ev.dispatch_id,
+            "retry_count": len(retry_history),
+            "retry_history": retry_history,
+        })
+
+    errors.sort(key=lambda e: e["timestamp"])
+    return {"run_id": run_id, "error_count": len(errors), "errors": errors}
 
 
 @app.get("/api/cdgs")
