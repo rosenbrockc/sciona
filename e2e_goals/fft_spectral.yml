@@ -1,0 +1,6 @@
+goal: "Window a signal, compute its FFT, extract the magnitude spectrum"
+prover: python
+ground_truth_patterns:
+  - "window|hann|hamming"
+  - "rfft|fft"
+  - "magnitude|amplitude|abs"

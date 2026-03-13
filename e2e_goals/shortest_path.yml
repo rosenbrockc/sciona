@@ -1,0 +1,6 @@
+goal: "Compute shortest path distances from a source in a weighted graph"
+prover: python
+ground_truth_patterns:
+  - "dijkstra"
+  - "relax|update_distance"
+  - "priority_queue|heap"

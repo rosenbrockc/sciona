@@ -98,6 +98,7 @@ class AgeomConfig(BaseSettings):
     hunter_llm_provider: str = "llama_cpp"  # default local quantized worker
     hunter_llm_model: str = "qwen2.5-coder:7b"
     hunter_llm_max_tokens: int = 1024
+    hunter_embedding_query_expander: bool = True
     hunter_mode: str = "speculative_local"  # "standard" | "speculative_local"
     hunter_use_gbnf: bool = True
     hunter_max_iterations: int = 5

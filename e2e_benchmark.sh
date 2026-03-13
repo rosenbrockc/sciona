@@ -30,8 +30,18 @@ fail()  { echo -e "${RED}[FAIL]${NC} $*"; }
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-GOAL="Detect heart rate from raw ECG signal"
-PROVER="python"
+# Optional: pass a YAML goal config as $1 (e.g. e2e_goals/ecg_heart_rate.yml)
+if [ -n "${1:-}" ] && [ -f "$1" ]; then
+    _goal_config="$1"
+    GOAL=$("$BENCHMARK_PYTHON" -c "import yaml, sys; print(yaml.safe_load(open('$_goal_config'))['goal'])")
+    PROVER=$("$BENCHMARK_PYTHON" -c "import yaml, sys; print(yaml.safe_load(open('$_goal_config')).get('prover', 'python'))")
+    _gt_json=$("$BENCHMARK_PYTHON" -c "import yaml, json, sys; print(json.dumps(yaml.safe_load(open('$_goal_config')).get('ground_truth_patterns', [])))")
+    info "Loaded goal config from $_goal_config"
+else
+    GOAL="Detect heart rate from raw ECG signal"
+    PROVER="python"
+    _gt_json=""
+fi
 export LLM_PROVIDER="${E2E_LLM_PROVIDER:-codex_shim}"
 export LLM_MODEL="${E2E_LLM_MODEL:-gpt-5.3-codex}"
 
@@ -72,6 +82,13 @@ for key in "${PROMPT_OVERRIDE_KEYS[@]}"; do
     export "AGEOM_${key}_LLM_MODEL=$LLM_MODEL"
 done
 
+# When E2E_GENERIC_ONLY=true, disable phrase rules so the benchmark exercises
+# the generic keyword/embedding path only.
+if [[ "$(printf '%s' "${E2E_GENERIC_ONLY:-}" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+    export AGEOM_DISABLE_PHRASE_RULES=1
+    info "Generic-only mode: AGEOM_DISABLE_PHRASE_RULES=1"
+fi
+
 # Force FAISS semantic index — the default retrieval policy degrades to
 # lexical when catalog confidence is < 0.70 (medium band), which prevents
 # the benchmark from exercising the full semantic search pipeline.
@@ -89,14 +106,22 @@ export MPLCONFIGDIR="${E2E_MPLCONFIGDIR:-/tmp/ageom-mplcfg}"
 export JULIA_DEPOT_PATH="${E2E_JULIA_DEPOT_PATH:-/tmp/ageom-julia-depot}"
 mkdir -p "$MPLCONFIGDIR" "$JULIA_DEPOT_PATH"
 
-# Ground truth: the essential atoms for ECG heart rate detection.
-# Each entry is a keyword pattern that should appear in at least one matched
-# function name. Order = pipeline order (filter → detect → compute).
-GROUND_TRUTH_PATTERNS=(
-    "bandpass_filter"
-    "r_peak_detection|hamilton_segment"
-    "heart_rate_computation"
-)
+# Ground truth: essential atoms that should appear in matched function names.
+if [ -n "$_gt_json" ]; then
+    # Parse from YAML config
+    _gt_count=$("$BENCHMARK_PYTHON" -c "import json; print(len(json.loads('$_gt_json')))")
+    GROUND_TRUTH_PATTERNS=()
+    for _i in $(seq 0 $((_gt_count - 1))); do
+        GROUND_TRUTH_PATTERNS+=("$("$BENCHMARK_PYTHON" -c "import json; print(json.loads('$_gt_json')[$_i])")")
+    done
+else
+    # Fallback: hardcoded ECG values for backwards compatibility
+    GROUND_TRUTH_PATTERNS=(
+        "bandpass_filter"
+        "r_peak_detection|hamilton_segment"
+        "heart_rate_computation"
+    )
+fi
 
 # ---------------------------------------------------------------------------
 # Helpers

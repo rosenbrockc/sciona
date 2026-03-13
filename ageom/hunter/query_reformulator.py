@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections import Counter
 from typing import Any
@@ -97,6 +98,10 @@ _DOMAIN_ANCHORS = {
 }
 
 
+def _phrase_rules_enabled() -> bool:
+    return os.environ.get("AGEOM_DISABLE_PHRASE_RULES", "").strip() not in {"1", "true", "yes"}
+
+
 def _tokenize(text: str) -> list[str]:
     return _TOKEN_RE.findall(text.lower().replace(".", " ").replace("-", " "))
 
@@ -157,6 +162,8 @@ def _parse_prompt(user: str) -> dict[str, Any]:
 
 
 def _phrase_rules(text: str) -> list[str]:
+    if not _phrase_rules_enabled():
+        return []
     lower = text.lower()
     if all(term in lower for term in ("ecg", "bandpass", "filter")):
         return [
@@ -219,7 +226,8 @@ def _keyword_variants(
         for token in _tokenize(source):
             if token in _STOPWORDS:
                 continue
-            if len(token) <= 2 and token not in {"dp", "ecg"}:
+            short_allowed = {"dp", "ecg"} if _phrase_rules_enabled() else {"dp"}
+            if len(token) <= 2 and token not in short_allowed:
                 continue
             if token not in priorities:
                 priorities.append(token)
@@ -408,9 +416,16 @@ class HeuristicQueryReformulator:
     _telemetry_provider = "deterministic"
     _telemetry_model = "query_reformulator_v1"
 
-    def __init__(self, fallback: Any, *, min_queries: int = 3) -> None:
+    def __init__(
+        self,
+        fallback: Any,
+        *,
+        min_queries: int = 3,
+        query_expander: Any | None = None,
+    ) -> None:
         self._fallback = fallback
         self._min_queries = min_queries
+        self._query_expander = query_expander
         self._last_completion_metadata: dict[str, Any] = {}
         self._last_error_metadata: dict[str, Any] = {}
 
@@ -452,7 +467,12 @@ class HeuristicQueryReformulator:
 
         combined = " ".join(part for part in (statement, informal_desc, compiler_errors) if part)
         anchor_tokens = set(_tokenize(combined))
-        candidates = _phrase_rules(combined)
+        if self._query_expander is not None:
+            candidates = self._query_expander.expand(combined)
+        elif _phrase_rules_enabled():
+            candidates = _phrase_rules(combined)
+        else:
+            candidates = []
         candidates.extend(
             _catalog_hint_variants(
                 statement,

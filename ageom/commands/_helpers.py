@@ -181,8 +181,22 @@ def _create_llm_router(
         overrides[HUNTER_ANALYZE_FAILURE] = DeterministicFailureAnalyzer(analyze_fallback)
     if round_name == "hunter" and HUNTER_REFORMULATE in prompt_keys:
         reformulate_fallback = overrides.get(HUNTER_REFORMULATE, default)
+        query_expander = None
+        if embedder is not None and config.hunter_embedding_query_expander:
+            from ageom.hunter.embedding_query_expander import EmbeddingQueryExpander
+            from ageom.hunter.query_reformulator import _extract_declarations
+            from ageom.indexer.faiss_store import FAISSStore
+
+            try:
+                store = FAISSStore.load(config.index_dir)
+                decls = list(store._declarations.values()) if hasattr(store, '_declarations') and isinstance(store._declarations, dict) else []
+                if decls:
+                    query_expander = EmbeddingQueryExpander(embedder, decls)
+            except Exception:
+                pass  # graceful degradation to phrase rules / keyword fallback
         overrides[HUNTER_REFORMULATE] = HeuristicQueryReformulator(
-            reformulate_fallback
+            reformulate_fallback,
+            query_expander=query_expander,
         )
     if round_name == "ingester" and INGESTER_FIX_TYPE in prompt_keys:
         fix_type_fallback = overrides.get(INGESTER_FIX_TYPE, default)

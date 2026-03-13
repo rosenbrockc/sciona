@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
@@ -204,4 +205,58 @@ async def test_query_reformulator_uses_catalog_hints_for_generic_prompt():
 
     queries = json.loads(response)
     assert any("Data.PriorityQueue" in query for query in queries)
+    assert fallback.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_disable_phrase_rules_env_var_skips_hardcoded_phrases(monkeypatch):
+    """With AGEOM_DISABLE_PHRASE_RULES=1, the ECG case must NOT produce hardcoded phrases."""
+    monkeypatch.setenv("AGEOM_DISABLE_PHRASE_RULES", "1")
+    fallback = _FallbackLLM('["fallback query"]')
+    reformulator = HeuristicQueryReformulator(fallback)
+    system, user = _reformulate_prompt(
+        predicate_id="p_ecg",
+        statement="Bandpass raw ECG into cardiac frequency region",
+        informal_desc="stable digital filter design and application",
+        prover="python",
+        queries_tried=["generic query"],
+        compiler_errors="Expected filtered_signal but got response tuple",
+    )
+
+    response = await reformulator.complete(system, user)
+
+    queries = [str(item).lower() for item in json.loads(response)]
+    hardcoded = {"stable ecg filter", "iir bandpass filter", "bandpass cardiac signal filter"}
+    for query in queries:
+        assert query not in hardcoded, f"Hardcoded phrase rule leaked: {query}"
+
+
+@pytest.mark.asyncio
+async def test_reformulator_with_expander_produces_queries():
+    """HeuristicQueryReformulator with an injected expander should use it instead of phrase rules."""
+
+    class _MockExpander:
+        def expand(self, text: str, max_queries: int = 5) -> list[str]:
+            return [
+                "bandpass_filter apply_iir_filter",
+                "r_peak_detection hamilton",
+                "heart_rate_computation cardiac",
+            ]
+
+    fallback = _FallbackLLM('["fallback"]')
+    reformulator = HeuristicQueryReformulator(fallback, query_expander=_MockExpander())
+    system, user = _reformulate_prompt(
+        predicate_id="p_ecg",
+        statement="Bandpass raw ECG into cardiac frequency region",
+        informal_desc="stable digital filter design and application",
+        prover="python",
+        queries_tried=["generic query"],
+        compiler_errors="Expected filtered_signal",
+    )
+
+    response = await reformulator.complete(system, user)
+
+    queries = json.loads(response)
+    assert len(queries) >= 3
+    assert any("bandpass_filter" in q for q in queries)
     assert fallback.calls == 0

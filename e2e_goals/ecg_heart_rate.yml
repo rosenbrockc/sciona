@@ -1,0 +1,6 @@
+goal: "Detect heart rate from raw ECG signal"
+prover: python
+ground_truth_patterns:
+  - "bandpass_filter"
+  - "r_peak_detection|hamilton_segment"
+  - "heart_rate_computation"

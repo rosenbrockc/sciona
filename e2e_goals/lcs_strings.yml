@@ -1,0 +1,6 @@
+goal: "Compute the longest common subsequence of two strings"
+prover: python
+ground_truth_patterns:
+  - "lcs|longest_common"
+  - "dp_table|recurrence"
+  - "backtrack|traceback"
