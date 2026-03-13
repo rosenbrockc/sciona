@@ -97,6 +97,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     )
     telemetry_run_id = start_run(
         "match",
+        label=getattr(args, "label", ""),
         metadata={
             "command": "match",
             "prover": prover.value,

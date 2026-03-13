@@ -573,7 +573,9 @@
       const errorSummary = document.getElementById("error-summary");
       const errorList = document.getElementById("error-list");
 
-      let selectedRunId = "";
+      // Deep link: ?run=abc123 selects a run on load
+      const _urlParams = new URLSearchParams(window.location.search);
+      let selectedRunId = _urlParams.get("run") || "";
       let latestRuns = [];
       let activeTab = "overview";
       let activeEventSource = null;
@@ -781,7 +783,7 @@
             `<span class="run-id">${(r.run_id || "").slice(0, 12)}</span>`,
             `<span class="pill ${runStatusClass(r.status || "running")}">${r.status || "running"}</span>`,
             '</div>',
-            `<div class="run-meta">${r.pipeline || "run"} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
+            `<div class="run-meta">${r.pipeline || "run"}${r.label ? " · " + esc(r.label) : ""} · updated ${fmtAgeSec(r.last_update_at)} ago${hung}</div>`,
             `<div class="run-meta">mode=${execution.mode || "--"} path=${execution.path || "--"}</div>`,
             `<div class="run-meta">dispatches=${r.prompt_dispatches || 0} inflight=${r.prompt_inflight || 0} unresolved=${unresolved} blocked=${blocked}</div>`,
             `<div class="run-meta">critique_rejects=${critiqueRejects} retries=${Number(architect.retry_total || 0)} rewrites=${Number(architect.rewrite_action_count || 0)}</div>`,
@@ -805,6 +807,10 @@
           ].join("");
           div.addEventListener("click", () => {
             selectedRunId = r.run_id || "";
+            const u = new URL(window.location);
+            if (selectedRunId) u.searchParams.set("run", selectedRunId);
+            else u.searchParams.delete("run");
+            history.replaceState(null, "", u);
             renderRunList(latestRuns);
             loadSelected();
           });
@@ -851,6 +857,7 @@
         const shared = run.shared_context_summary || {};
         const metrics = [
           ["pipeline", run.pipeline || "--"],
+          ["label", run.label || "--"],
           ["status", run.status || "--"],
           ["mode/path", `${execution.mode || "--"} / ${execution.path || "--"}`],
           ["duration", fmtDuration(run.started_at, run.ended_at)],

@@ -175,6 +175,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     )
     telemetry_run_id = start_run(
         "algorithm_creation",
+        label=getattr(args, "label", ""),
         metadata={
             "command": "run",
             "goal": args.goal,

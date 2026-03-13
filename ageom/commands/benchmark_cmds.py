@@ -165,6 +165,7 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
     configure_dashboard_output(config.telemetry_runs_dir)
     telemetry_run_id = start_run(
         "benchmark_validation",
+        label=getattr(args, "label", ""),
         metadata={
             "command": "benchmark-validate",
             "output_dir": str(args.output),
@@ -212,6 +213,7 @@ async def _cmd_release_validate(args: argparse.Namespace) -> None:
     configure_dashboard_output(config.telemetry_runs_dir)
     telemetry_run_id = start_run(
         "release_validation",
+        label=getattr(args, "label", ""),
         metadata={
             "command": "release-validate",
             "output_dir": str(args.output),

@@ -97,6 +97,7 @@ async def _cmd_decompose(args: argparse.Namespace) -> None:
     )
     telemetry_run_id = start_run(
         "decompose",
+        label=getattr(args, "label", ""),
         metadata={
             "command": "decompose",
             "goal": args.goal,

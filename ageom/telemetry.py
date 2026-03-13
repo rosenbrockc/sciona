@@ -227,6 +227,7 @@ class RunSnapshot:
 
     run_id: str
     pipeline: str
+    label: str = ""
     status: str = "running"  # running | completed | failed
     started_at: float = field(default_factory=time.time)
     ended_at: float | None = None
@@ -268,6 +269,7 @@ class TelemetryRegistry:
         pipeline: str,
         *,
         run_id: str | None = None,
+        label: str = "",
         metadata: dict[str, Any] | None = None,
     ) -> str:
         rid = run_id or uuid.uuid4().hex
@@ -276,6 +278,7 @@ class TelemetryRegistry:
             self._runs[rid] = RunSnapshot(
                 run_id=rid,
                 pipeline=pipeline,
+                label=label,
                 started_at=now,
                 last_update_at=now,
                 metadata=metadata or {},
@@ -666,10 +669,11 @@ def start_run(
     pipeline: str,
     *,
     run_id: str | None = None,
+    label: str = "",
     metadata: dict[str, Any] | None = None,
 ) -> str:
     """Create a telemetry run and return its identifier."""
-    return _registry.start_run(pipeline, run_id=run_id, metadata=metadata)
+    return _registry.start_run(pipeline, run_id=run_id, label=label, metadata=metadata)
 
 
 def finish_run(

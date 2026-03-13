@@ -11,6 +11,7 @@ import sys
 # ---------------------------------------------------------------------------
 from ageom.commands._helpers import (  # noqa: F401
     RetrievalPolicy,
+    _add_label_argument,
     _add_mode_argument,
     _create_llm,
     _create_llm_router,
@@ -75,6 +76,10 @@ from ageom.commands.synthesize_cmds import (  # noqa: F401
     _cmd_assemble,
     _cmd_export,
     _cmd_synthesize,
+)
+from ageom.commands.telemetry_cmds import (  # noqa: F401
+    _cmd_telemetry_list,
+    _cmd_telemetry_show,
 )
 from ageom.commands.upsert_cmds import _cmd_upsert_cdg  # noqa: F401
 from ageom.commands.visualize_cmds import _cmd_visualize  # noqa: F401
@@ -215,6 +220,7 @@ def main() -> None:
         help="Write pipeline event trace to {output_dir}/trace.jsonl",
     )
     _add_mode_argument(decompose_parser)
+    _add_label_argument(decompose_parser)
 
     # --- history ---
     history_parser = subparsers.add_parser(
@@ -366,6 +372,7 @@ def main() -> None:
         "--trace", action="store_true", default=False, help="Write trace.jsonl"
     )
     _add_mode_argument(run_parser)
+    _add_label_argument(run_parser)
 
     # --- export ---
     export_parser = subparsers.add_parser(
@@ -476,6 +483,12 @@ def main() -> None:
         "--dataset", type=str, required=True, help="Path to the benchmark dataset (CSV/JSON)"
     )
     profile_parser.add_argument(
+        "--dataset-var",
+        action="append",
+        default=[],
+        help="Adapter variable substitution in KEY=VALUE form; repeat as needed",
+    )
+    profile_parser.add_argument(
         "--metric",
         choices=["latency", "memory", "precision", "flop_count"],
         default="precision",
@@ -535,6 +548,7 @@ def main() -> None:
         default="build/benchmark_validation",
         help="Directory where validation reports will be written.",
     )
+    _add_label_argument(benchmark_validate_parser)
 
     release_validate_parser = subparsers.add_parser(
         "release-validate",
@@ -546,6 +560,7 @@ def main() -> None:
         default="build/release_validation",
         help="Directory where the release validation bundle will be written.",
     )
+    _add_label_argument(release_validate_parser)
 
     # --- sources ---
     sources_parser = subparsers.add_parser(
@@ -688,6 +703,7 @@ def main() -> None:
         help="Write pipeline event trace to trace.jsonl",
     )
     _add_mode_argument(match_parser)
+    _add_label_argument(match_parser)
 
     # --- catalog-gaps ---
     gaps_parser = subparsers.add_parser(
@@ -735,6 +751,26 @@ def main() -> None:
         default=None,
         help="Memgraph bolt URI override (default: from config)",
     )
+
+    # --- telemetry ---
+    telemetry_parser = subparsers.add_parser(
+        "telemetry", help="Inspect telemetry runs"
+    )
+    telemetry_sub = telemetry_parser.add_subparsers(dest="telemetry_command")
+
+    tl_list_parser = telemetry_sub.add_parser("list", help="List recent telemetry runs")
+    tl_list_parser.add_argument(
+        "--limit", type=int, default=20, help="Max runs to show (default: 20)"
+    )
+    tl_list_parser.add_argument(
+        "--state",
+        choices=["all", "running", "completed", "failed"],
+        default="all",
+        help="Filter by state",
+    )
+
+    tl_show_parser = telemetry_sub.add_parser("show", help="Show details for a run")
+    tl_show_parser.add_argument("run_id", type=str, help="Run ID to inspect")
 
     args = parser.parse_args()
 
@@ -800,6 +836,18 @@ def main() -> None:
         _cmd_catalog_gaps(args)
     elif args.command == "upsert-cdg":
         _run_async_command(_cmd_upsert_cdg(args))
+    elif args.command == "telemetry":
+        telemetry_cmd = getattr(args, "telemetry_command", None)
+        if telemetry_cmd == "list":
+            _cmd_telemetry_list(args)
+        elif telemetry_cmd == "show":
+            _cmd_telemetry_show(args)
+        else:
+            print(
+                "Error: provide a telemetry subcommand (list, show)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     else:
         parser.print_help()
         sys.exit(1)

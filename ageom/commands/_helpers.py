@@ -468,6 +468,16 @@ def _add_mode_argument(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_label_argument(parser: argparse.ArgumentParser) -> None:
+    """Add a --label argument for tagging telemetry runs."""
+    parser.add_argument(
+        "--label",
+        type=str,
+        default="",
+        help="Human-readable label for this telemetry run",
+    )
+
+
 def _mode_feature_summary(mode_settings: Any) -> dict[str, str]:
     """Render the resolved execution-mode feature gates for display/telemetry."""
     return {
