@@ -637,10 +637,12 @@ def _load_architect_catalog(
     catalog = PrimitiveCatalog()
     seed_builtin_primitives(catalog)
 
+    sources_only = bool(getattr(args, "sources_only", False))
+
     if getattr(args, "catalog", None):
         catalog = PrimitiveCatalog.load(args.catalog)
         seed_builtin_primitives(catalog)
-    else:
+    elif not sources_only:
         search_dir = config.skill_index_dir
         if search_dir.exists():
             for cat_file in sorted(search_dir.glob("catalog_*.json")):

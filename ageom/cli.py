@@ -153,6 +153,12 @@ def main() -> None:
     skill_index_parser.add_argument(
         "--output", type=str, default=None, help="Output directory for skill index"
     )
+    skill_index_parser.add_argument(
+        "--sources-only",
+        action="store_true",
+        default=False,
+        help="Ignore persisted catalog_*.json snapshots and rebuild from built-ins plus sources.yml only",
+    )
 
     skill_search_parser = skill_sub.add_parser("search", help="Search the skill index")
     skill_search_parser.add_argument("query", type=str, help="Search query")
