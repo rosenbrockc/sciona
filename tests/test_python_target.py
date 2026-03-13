@@ -330,6 +330,24 @@ class TestPythonEnvironment:
 
         await env.close()
 
+    @pytest.mark.asyncio
+    async def test_check_proof_executes_file_not_mypy(self):
+        from ageom.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (b"", b"")
+        mock_proc.returncode = 0
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_proc) as create_proc:
+            success, _output = await env.check_proof("def foo() -> int:", "    return 1")
+            assert success is True
+            assert create_proc.await_args_list[0].args[0] == env._python_path
+            assert create_proc.await_args_list[0].args[1].endswith("_check.py")
+
+        await env.close()
+
 
 # ---------------------------------------------------------------------------
 # TestPythonAssembler

@@ -83,6 +83,11 @@ SYNTH_TIMEOUT_S="${E2E_SYNTH_TIMEOUT_S:-240}"
 EXPORT_TIMEOUT_S="${E2E_EXPORT_TIMEOUT_S:-120}"
 PROFILE_TIMEOUT_S="${E2E_PROFILE_TIMEOUT_S:-180}"
 PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/adapter.yml}"
+PROFILE_DATASET_VARS="${E2E_PROFILE_DATASET_VARS:-}"
+export E2E_PROFILE_DATASET_VARS="$PROFILE_DATASET_VARS"
+export MPLCONFIGDIR="${E2E_MPLCONFIGDIR:-/tmp/ageom-mplcfg}"
+export JULIA_DEPOT_PATH="${E2E_JULIA_DEPOT_PATH:-/tmp/ageom-julia-depot}"
+mkdir -p "$MPLCONFIGDIR" "$JULIA_DEPOT_PATH"
 
 # Ground truth: the essential atoms for ECG heart rate detection.
 # Each entry is a keyword pattern that should appear in at least one matched
@@ -313,7 +318,11 @@ from ageom.cli import main; main()
             profile_ms \
             profile_rc \
             "$BENCHMARK_PYTHON" -c "
-import sys; sys.argv = ['ageom', 'profile', '--cdg', '$mode_dir/cdg.json', '--artifact', '$synth_out', '--dataset', '$PROFILE_DATASET', '--metric', 'precision']
+import os, sys
+argv = ['ageom', 'profile', '--cdg', '$mode_dir/cdg.json', '--artifact', '$synth_out', '--dataset', '$PROFILE_DATASET', '--metric', 'precision']
+for item in filter(None, os.environ.get('E2E_PROFILE_DATASET_VARS', '').split(',')):
+    argv.extend(['--dataset-var', item])
+sys.argv = argv
 from ageom.cli import main; main()
 "
         if [ -f "$profile_log" ] && rg -q "=== Profiling Results ===" "$profile_log"; then

@@ -23,6 +23,20 @@ from ageom.commands._helpers import (
 )
 
 
+def _parse_dataset_vars(entries: list[str] | None) -> dict[str, str]:
+    """Parse repeated ``KEY=VALUE`` CLI args into a dict."""
+    result: dict[str, str] = {}
+    for entry in entries or []:
+        key, sep, value = entry.partition("=")
+        key = key.strip()
+        if not sep or not key:
+            raise ValueError(
+                f"Invalid dataset var {entry!r}; expected KEY=VALUE."
+            )
+        result[key] = value
+    return result
+
+
 async def _cmd_optimize(args: argparse.Namespace) -> None:
     """Run the Principal NAS/AutoML optimisation loop."""
     from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
@@ -162,6 +176,11 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
 
     cdg = load_json(cdg_path)
     metric = OptimizationMetric(args.metric)
+    try:
+        dataset_varset = _parse_dataset_vars(getattr(args, "dataset_var", None))
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     bundle = ExportBundle(
         target="python-pkg",
@@ -178,6 +197,7 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
             bundle=bundle,
             dataset_path=str(dataset_path),
             metric=metric,
+            dataset_varset=dataset_varset or None,
         )
 
         if not gradients:

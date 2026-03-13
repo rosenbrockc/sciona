@@ -83,6 +83,32 @@ async def test_synthesizer_service_assemble_and_compile():
 
 
 @pytest.mark.asyncio
+async def test_synthesizer_service_compile_sanitizes_python_annotations():
+    service = SynthesizerService(prover=Prover.PYTHON)
+    skeleton = SkeletonFile(
+        prover="python",
+        source_code=(
+            "def apply_filter(spec: filter specification) -> filter design targets:\n"
+            "    return spec\n"
+        ),
+    )
+    env = AsyncMock()
+    env.prover_name = "python"
+    env._run = AsyncMock(
+        return_value=CompilerFeedback(raw_output="ok", errors=[], warnings=[])
+    )
+
+    compile_result = await service.compile(
+        SynthesizerCompileRequest(skeleton=skeleton, env=env)
+    )
+
+    compiled_source = env._run.await_args_list[0].args[0]
+    assert "spec: 'filter specification'" in compiled_source
+    assert "-> 'filter design targets':" in compiled_source
+    assert compile_result.result.compiled_ok is True
+
+
+@pytest.mark.asyncio
 async def test_synthesizer_service_assemble_and_check_delegates():
     fake_result = AssemblyResult(
         skeleton=SkeletonFile(prover="lean4", source_code="def x := 1"),

@@ -180,6 +180,7 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.services import (
         SynthesizerAssembleRequest,
+        SynthesizerCompileRequest,
         SynthesizerRepairRequest,
         SynthesizerService,
     )
@@ -229,48 +230,65 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
     # Set up ProofEnvironment
     env = _create_proof_env(prover, config)
 
-    # Set up LLM
     try:
-        from ageom.llm_router import SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC
-
-        prompt_keys = [
-            SYNTHESIZER_REPAIR,
-            SYNTHESIZER_TACTIC,
-        ]
-        _print_prompt_routing_summary(
-            config, "synthesizer", prompt_keys, getattr(args, "mode", None)
+        compile_result = await base_service.compile(
+            SynthesizerCompileRequest(skeleton=skeleton, env=env)
         )
-        llm = _create_llm_router(args, config, "synthesizer", prompt_keys)
-        await _warm_llm_if_supported(llm, "synthesizer")
-    except ValueError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
-    except ImportError as exc:
-        print(f"Error: missing LLM dependency ({exc})", file=sys.stderr)
-        sys.exit(1)
+        if compile_result.result.compiled_ok:
+            from ageom.synthesizer.models import SynthesisResult
 
-    import uuid
+            result = SynthesisResult(
+                skeleton=compile_result.result.skeleton,
+                compiled_ok=True,
+                sorry_remaining=compile_result.result.skeleton.sorry_count,
+                patches_applied=0,
+                iterations_used=0,
+            )
+            synth_shared_metrics = None
+        else:
+            # Set up LLM only when repair is required.
+            try:
+                from ageom.llm_router import SYNTHESIZER_REPAIR, SYNTHESIZER_TACTIC
 
-    max_iterations = args.max_iterations or config.synthesizer_max_iterations
-    synth_run_id = uuid.uuid4().hex
-    synth_shared_context, synth_shared_metrics = await _create_shared_context(
-        config,
-        enabled=mode_settings.synthesizer_shared_context_enabled,
-    )
+                prompt_keys = [
+                    SYNTHESIZER_REPAIR,
+                    SYNTHESIZER_TACTIC,
+                ]
+                _print_prompt_routing_summary(
+                    config, "synthesizer", prompt_keys, getattr(args, "mode", None)
+                )
+                llm = _create_llm_router(args, config, "synthesizer", prompt_keys)
+                await _warm_llm_if_supported(llm, "synthesizer")
+            except ValueError as exc:
+                print(f"Error: {exc}", file=sys.stderr)
+                sys.exit(1)
+            except ImportError as exc:
+                print(f"Error: missing LLM dependency ({exc})", file=sys.stderr)
+                sys.exit(1)
 
-    try:
-        agent = SynthesizerAgent(
-            env=env,
-            llm=llm,
-            max_iterations=max_iterations,
-            shared_context=synth_shared_context,
-            shared_context_metrics=synth_shared_metrics,
-            context_namespace=f"synthesizer/{synth_run_id}",
-            context_budget_chars=config.synthesizer_shared_context_budget_chars,
-        )
-        service = SynthesizerService(prover=prover, repair_agent=agent)
-        print(f"Starting repair loop (max {max_iterations} iterations)...")
-        result = (await service.repair(SynthesizerRepairRequest(skeleton=skeleton))).result
+            import uuid
+
+            max_iterations = args.max_iterations or config.synthesizer_max_iterations
+            synth_run_id = uuid.uuid4().hex
+            synth_shared_context, synth_shared_metrics = await _create_shared_context(
+                config,
+                enabled=mode_settings.synthesizer_shared_context_enabled,
+            )
+
+            agent = SynthesizerAgent(
+                env=env,
+                llm=llm,
+                max_iterations=max_iterations,
+                shared_context=synth_shared_context,
+                shared_context_metrics=synth_shared_metrics,
+                context_namespace=f"synthesizer/{synth_run_id}",
+                context_budget_chars=config.synthesizer_shared_context_budget_chars,
+            )
+            service = SynthesizerService(prover=prover, repair_agent=agent)
+            print(f"Starting repair loop (max {max_iterations} iterations)...")
+            result = (
+                await service.repair(SynthesizerRepairRequest(skeleton=skeleton))
+            ).result
 
         # Output
         if prover == Prover.LEAN4:
@@ -289,13 +307,14 @@ async def _cmd_synthesize(args: argparse.Namespace) -> None:
         print(f"  Iterations used: {result.iterations_used}")
         print(f"  Patches applied: {result.patches_applied}")
         print(f"  Sorry remaining: {result.sorry_remaining}")
-        _print_shared_context_metrics("synthesizer", synth_shared_metrics)
-        metrics_path = _write_shared_context_metrics_file(
-            output_path.parent / "shared_context_metrics.json",
-            {"synthesizer": synth_shared_metrics},
-        )
-        if metrics_path is not None:
-            print(f"  Shared context metrics: {metrics_path}")
+        if synth_shared_metrics is not None:
+            _print_shared_context_metrics("synthesizer", synth_shared_metrics)
+            metrics_path = _write_shared_context_metrics_file(
+                output_path.parent / "shared_context_metrics.json",
+                {"synthesizer": synth_shared_metrics},
+            )
+            if metrics_path is not None:
+                print(f"  Shared context metrics: {metrics_path}")
 
         if result.error_history:
             print("  Errors encountered:")

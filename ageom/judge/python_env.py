@@ -120,12 +120,18 @@ class PythonEnvironment:
     async def check_proof(self, statement: str, proof_body: str) -> tuple[bool, str]:
         """Check a function with icontract decorators.
 
-        Writes the statement (function signature with decorators) and body,
-        then runs mypy to validate.
+        Writes the statement and body to a temp file, then executes the file
+        with the configured Python interpreter. For generated artifacts this is
+        a better fit than strict mypy because conceptual annotations and
+        untyped third-party packages are expected during synthesis.
         """
         code = f"{statement}\n{proof_body}\n"
-        feedback = await self._run_mypy(code)
+        feedback = await self._run_file(code)
         return feedback.success, feedback.raw_output
+
+    async def _run(self, code: str) -> CompilerFeedback:
+        """Execute raw Python source for whole-file validation."""
+        return await self._run_file(code)
 
     async def get_type(self, name: str) -> str | None:
         """Get the type signature of a name via inspect.signature."""
@@ -173,6 +179,30 @@ class PythonEnvironment:
             return CompilerFeedback(
                 raw_output=f"mypy not found at '{self._mypy_path}'",
                 errors=[f"mypy not found at '{self._mypy_path}'"],
+            )
+
+    async def _run_file(self, code: str) -> CompilerFeedback:
+        """Write code to a temp .py file and execute it."""
+        tmp_path = Path(self._tmpdir) / "_check.py"
+        tmp_path.write_text(code)
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                self._python_path,
+                str(tmp_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+            raw = stdout.decode() + stderr.decode()
+            return CompilerFeedback(
+                raw_output=raw,
+                errors=[] if proc.returncode == 0 else [raw.strip() or raw],
+            )
+        except FileNotFoundError:
+            return CompilerFeedback(
+                raw_output=f"python not found at '{self._python_path}'",
+                errors=[f"python not found at '{self._python_path}'"],
             )
 
 

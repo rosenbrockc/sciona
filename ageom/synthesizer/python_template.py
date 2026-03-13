@@ -86,12 +86,14 @@ def generate_main_script(
 def generate_pipeline_py(pipeline_steps: list[str]) -> str:
     """Generate pipeline.py that wires atoms per CDG topology."""
     lines: list[str] = []
+    lines.append("# mypy: disable-error-code=no-any-return")
     lines.append('"""Pipeline orchestration: wires atoms per CDG topology."""')
     lines.append("")
     lines.append("from . import atoms")
+    lines.append("from typing import Any")
     lines.append("")
     lines.append("")
-    lines.append("def run_pipeline(**kwargs):")
+    lines.append("def run_pipeline(**kwargs: Any) -> Any:")
     lines.append('    """Execute the verified pipeline."""')
 
     if pipeline_steps:

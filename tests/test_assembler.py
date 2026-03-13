@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 from unittest.mock import AsyncMock
 
@@ -16,7 +17,12 @@ from ageom.architect.models import (
     NodeStatus,
 )
 from ageom.judge.models import CompilerFeedback
-from ageom.synthesizer.assembler import Assembler, AssemblyError, sanitize_name
+from ageom.synthesizer.assembler import (
+    Assembler,
+    AssemblyError,
+    sanitize_name,
+    sanitize_python_source_annotations,
+)
 from ageom.synthesizer.compiler import SkeletonCompiler
 from ageom.synthesizer.models import AssemblyUnit
 from ageom.synthesizer.pipeline import assemble_and_check
@@ -135,6 +141,19 @@ def _make_match_result(node_id: str, decl_name: str, type_sig: str) -> MatchResu
         all_candidates=[candidate],
         all_verifications=[vr],
     )
+
+
+def test_sanitize_python_source_annotations_quotes_conceptual_types():
+    source = """\
+def apply_filter(spec: filter specification, signal: np.ndarray) -> filter design targets:
+    return bandpass_filter(spec, signal)
+"""
+
+    sanitized = sanitize_python_source_annotations(source)
+
+    ast.parse(sanitized)
+    assert "spec: 'filter specification'" in sanitized
+    assert "-> 'filter design targets':" in sanitized
 
 
 @pytest.fixture
@@ -402,6 +421,61 @@ class TestAssembler:
 
         assert skeleton.metadata["goal"] == "Sort and search"
         assert "timestamp" in skeleton.metadata
+
+    def test_python_annotations_quote_conceptual_types(self):
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Design Filter",
+                description="Design a stable filter",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.DECOMPOSED,
+                children=["leaf"],
+                depth=0,
+                type_signature="filter specification -> filter coefficients",
+                inputs=[IOSpec(name="spec", type_desc="filter specification")],
+                outputs=[IOSpec(name="coeffs", type_desc="filter coefficients")],
+            ),
+            AlgorithmicNode(
+                node_id="leaf",
+                parent_id="root",
+                name="Parse Filter Requirements",
+                description="Parse the filter spec",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="parse_filter_requirements",
+                type_signature="filter specification -> filter design targets",
+                inputs=[IOSpec(name="spec", type_desc="filter specification")],
+                outputs=[IOSpec(name="targets", type_desc="filter design targets")],
+                depth=1,
+            ),
+        ]
+        cdg = CDGExport(nodes=nodes, edges=[], metadata={"goal": "Design Filter"})
+        decl = Declaration(
+            name="ageoa.pronto.blip_filter.atoms.bandpass_filter",
+            type_signature="(signal: np.ndarray) -> np.ndarray",
+            prover=Prover.PYTHON,
+        )
+        candidate = CandidateMatch(
+            declaration=decl, score=0.95, retrieval_method="embedding"
+        )
+        verified = VerificationResult(candidate=candidate, verified=True)
+        matches = [
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="leaf", statement=decl.type_signature),
+                verified_match=verified,
+                all_candidates=[candidate],
+                all_verifications=[verified],
+            )
+        ]
+
+        assembler = Assembler(Prover.PYTHON)
+        skeleton = assembler.assemble(cdg, matches)
+
+        ast.parse(skeleton.source_code)
+        assert "spec: " in skeleton.source_code
+        assert "filter specification" in skeleton.source_code
+        assert "filter coefficients" in skeleton.source_code
 
 
 # ---------------------------------------------------------------------------

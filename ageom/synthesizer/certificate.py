@@ -11,8 +11,17 @@ from ageom.synthesizer.models import SkeletonFile, VerificationCertificate
 
 
 def _sha256(path: Path) -> str:
-    """Compute SHA-256 hex digest of a file."""
+    """Compute SHA-256 hex digest of a file or directory tree."""
     h = hashlib.sha256()
+    if path.is_dir():
+        for child in sorted(p for p in path.rglob("*") if p.is_file()):
+            rel = child.relative_to(path)
+            h.update(str(rel).encode("utf-8"))
+            with open(child, "rb") as f:
+                for chunk in iter(lambda: f.read(8192), b""):
+                    h.update(chunk)
+        return h.hexdigest()
+
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)

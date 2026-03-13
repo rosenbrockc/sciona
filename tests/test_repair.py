@@ -543,6 +543,35 @@ class TestRepairGraph:
         records = await store.recent("synth/test/repair", limit=5)
         assert any("Patch:" in r.text for r in records)
 
+    @pytest.mark.asyncio
+    async def test_compile_check_sanitizes_python_annotations_before_compile(self):
+        """Python repair should not loop on conceptual annotation syntax."""
+        skeleton = _make_skeleton(
+            "def apply_filter(spec: filter specification) -> filter design targets:\n"
+            "    return spec\n",
+            prover="python",
+        )
+        env = AsyncMock()
+        env.prover_name = "python"
+        env._run = AsyncMock(
+            return_value=CompilerFeedback(raw_output="", errors=[], goals_remaining=[])
+        )
+        env.close = AsyncMock()
+        llm = _make_mock_llm([])
+
+        state = RepairState(skeleton=skeleton, max_iterations=3)
+        result = await repair_graph.run(
+            CompileCheck(),
+            state=state,
+            deps=RepairDeps(env=env, llm=llm),
+        )
+
+        compiled_source = env._run.await_args_list[0].args[0]
+        assert "spec: 'filter specification'" in compiled_source
+        assert "-> 'filter design targets':" in compiled_source
+        assert state.compiled_ok is True
+        assert result.output.source_code == compiled_source
+
 
 # ===========================================================================
 # TestSynthesizerAgent

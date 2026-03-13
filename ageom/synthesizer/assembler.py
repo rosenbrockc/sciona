@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from datetime import datetime, timezone
 
@@ -59,6 +60,131 @@ def sanitize_name(name: str) -> str:
     if s and not s[0].isalpha():
         s = "n_" + s
     return s or "unnamed"
+
+
+def _python_annotation_expr(type_desc: str) -> str:
+    """Return a syntactically valid Python annotation expression.
+
+    Conceptual labels from the architect catalog often contain spaces
+    (for example ``filter specification``). Those are useful to preserve,
+    but they are not valid Python expressions unless quoted.
+    """
+    annotation = type_desc.strip()
+    if not annotation:
+        return "object"
+    try:
+        ast.parse(annotation, mode="eval")
+    except SyntaxError:
+        return repr(annotation)
+    return annotation
+
+
+def _split_top_level(text: str, delimiter: str) -> list[str]:
+    """Split *text* on a delimiter, ignoring nested bracket scopes."""
+    parts: list[str] = []
+    start = 0
+    depth = 0
+    for idx, char in enumerate(text):
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth = max(0, depth - 1)
+        elif char == delimiter and depth == 0:
+            parts.append(text[start:idx])
+            start = idx + 1
+    parts.append(text[start:])
+    return parts
+
+
+def _find_top_level(text: str, needle: str) -> int:
+    """Find a top-level delimiter position, ignoring nested bracket scopes."""
+    depth = 0
+    for idx, char in enumerate(text):
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth = max(0, depth - 1)
+        elif char == needle and depth == 0:
+            return idx
+    return -1
+
+
+def _sanitize_python_param_annotation(param: str) -> str:
+    """Quote conceptual Python annotations inside a single function param."""
+    colon = _find_top_level(param, ":")
+    if colon < 0:
+        return param
+
+    left = param[:colon].rstrip()
+    right = param[colon + 1 :]
+    default_idx = _find_top_level(right, "=")
+    if default_idx >= 0:
+        annotation = right[:default_idx].strip()
+        default = right[default_idx:]
+    else:
+        annotation = right.strip()
+        default = ""
+
+    sanitized = _python_annotation_expr(annotation)
+    rebuilt = f"{left}: {sanitized}"
+    if default:
+        rebuilt += default
+    return rebuilt
+
+
+def sanitize_python_source_annotations(source: str) -> str:
+    """Rewrite invalid Python def annotations into syntactically valid forms."""
+    lines = source.splitlines()
+    sanitized_lines: list[str] = []
+
+    for line in lines:
+        if not re.match(r"^\s*def\s+\w+\s*\(", line):
+            sanitized_lines.append(line)
+            continue
+
+        open_paren = line.find("(")
+        if open_paren < 0:
+            sanitized_lines.append(line)
+            continue
+
+        depth = 0
+        close_paren = -1
+        for idx in range(open_paren, len(line)):
+            char = line[idx]
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    close_paren = idx
+                    break
+        if close_paren < 0:
+            sanitized_lines.append(line)
+            continue
+
+        prefix = line[: open_paren + 1]
+        params_text = line[open_paren + 1 : close_paren]
+        suffix = line[close_paren + 1 :]
+
+        sanitized_params = ",".join(
+            _sanitize_python_param_annotation(param)
+            for param in _split_top_level(params_text, ",")
+        )
+
+        sanitized_suffix = suffix
+        arrow_idx = suffix.find("->")
+        colon_idx = suffix.rfind(":")
+        if arrow_idx >= 0 and colon_idx > arrow_idx:
+            annotation = suffix[arrow_idx + 2 : colon_idx].strip()
+            sanitized_return = _python_annotation_expr(annotation)
+            sanitized_suffix = f" -> {sanitized_return}{suffix[colon_idx:]}"
+
+        sanitized_lines.append(f"{prefix}{sanitized_params}){sanitized_suffix}")
+
+    result = "\n".join(sanitized_lines)
+    if source.endswith("\n"):
+        result += "\n"
+    return result
 
 
 def _infer_cast(source_type: str, target_type: str) -> str:
@@ -462,6 +588,8 @@ class Assembler:
         sorry_count = 0
 
         # Header
+        lines.append("from __future__ import annotations")
+        lines.append("")
         lines.append('"""')
         lines.append("AGEO-Matcher Skeleton")
         goal = metadata.get("goal", "")
@@ -514,13 +642,13 @@ class Assembler:
             params: list[str] = []
             for inp in unit.inputs:
                 if inp.type_desc:
-                    params.append(f"{inp.name}: {inp.type_desc}")
+                    params.append(f"{inp.name}: {_python_annotation_expr(inp.type_desc)}")
                 else:
                     params.append(inp.name)
 
             ret_type = ""
             if unit.outputs:
-                ret_type = unit.outputs[0].type_desc
+                ret_type = _python_annotation_expr(unit.outputs[0].type_desc)
 
             param_str = ", ".join(params)
             ret_str = f" -> {ret_type}" if ret_type else ""
@@ -552,14 +680,14 @@ class Assembler:
                 params = []
                 for inp in root.inputs:
                     if inp.type_desc:
-                        params.append(f"{inp.name}: {inp.type_desc}")
+                        params.append(f"{inp.name}: {_python_annotation_expr(inp.type_desc)}")
                     else:
                         params.append(inp.name)
                 param_str = ", ".join(params) if params else ""
 
                 ret_type = ""
                 if root.outputs:
-                    ret_type = root.outputs[0].type_desc
+                    ret_type = _python_annotation_expr(root.outputs[0].type_desc)
                 ret_str = f" -> {ret_type}" if ret_type else ""
 
                 lines.append(f"def {rname}_composition({param_str}){ret_str}:")

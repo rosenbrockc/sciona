@@ -18,6 +18,7 @@ from ageom.synthesizer.certificate import (
     save_certificate,
     verify_certificate,
 )
+from ageom.synthesizer.extractor import _prepare_python_package_source
 from ageom.synthesizer.lakefile_template import generate_lakefile
 from ageom.synthesizer.models import (
     AssemblyUnit,
@@ -31,6 +32,7 @@ from ageom.synthesizer.optimizer import (
     OptimizationRule,
     Optimizer,
 )
+from ageom.synthesizer.python_template import generate_pipeline_py
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -242,6 +244,37 @@ class TestCertificate:
         )
         assert cert.source_hash
         assert cert.artifact_hash == ""
+
+    def test_generate_certificate_directory_artifact(self, tmp_path: Path):
+        source = tmp_path / "verified.py"
+        source.write_text("print('ok')\n")
+        artifact = tmp_path / "pkg"
+        artifact.mkdir()
+        (artifact / "__init__.py").write_text("__all__ = []\n")
+        (artifact / "atoms.py").write_text("def run():\n    return 1\n")
+
+        skeleton = _make_skeleton(source="print('ok')\n", prover="python")
+        cert = generate_certificate(source, artifact, skeleton, "python")
+
+        assert cert.source_hash
+        assert cert.artifact_hash
+
+    def test_prepare_python_package_source_adds_mypy_guards(self):
+        source = (
+            "from __future__ import annotations\n"
+            "import ageoa\n"
+            "import numpy\n"
+            "import scipy\n"
+            "def foo(x: np.ndarray) -> 'concept type':\n"
+            "    return x\n"
+        )
+        prepared = _prepare_python_package_source(source)
+        assert "import numpy as np" in prepared
+
+    def test_generate_pipeline_py_is_typed(self):
+        pipeline = generate_pipeline_py([])
+        assert "from typing import Any" in pipeline
+        assert "def run_pipeline(**kwargs: Any) -> Any:" in pipeline
 
     def test_save_load_roundtrip(self, tmp_path: Path):
         cert = VerificationCertificate(

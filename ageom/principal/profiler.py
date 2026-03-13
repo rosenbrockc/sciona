@@ -19,6 +19,8 @@ async def profile_algorithm_error(
     bundle: ExportBundle,
     dataset_path: str,
     metric: OptimizationMetric = OptimizationMetric.PRECISION,
+    *,
+    dataset_varset: dict[str, str] | None = None,
 ) -> list[NodeGradient]:
     """Evaluate an existing CDG against a dataset and rank error contributors.
 
@@ -36,7 +38,12 @@ async def profile_algorithm_error(
     # 1. Execute the compiled artifact against the dataset to gather empirical telemetry
     sandbox = ExecutionSandbox()
     if dataset_path.endswith((".yml", ".yaml")):
-        benchmark = await sandbox.evaluate_adapter(bundle, dataset_path, metric)
+        benchmark = await sandbox.evaluate_adapter(
+            bundle,
+            dataset_path,
+            metric,
+            varset=dataset_varset,
+        )
     else:
         benchmark = await sandbox.evaluate(bundle, dataset_path, metric)
     

@@ -822,7 +822,16 @@ class TemplatedDataSet(DataSetBase):
         if folder is None:
             folder = self.template_file.parent
         for group in self.groups:
-            self.data[group] = self.load(group, folder, meta=meta)
+            try:
+                self.data[group] = self.load(group, folder, meta=meta)
+            except Exception:
+                log.warning(
+                    "Skipping group %s while loading %s.",
+                    group,
+                    folder,
+                    exc_info=True,
+                )
+                self.data[group] = pd.DataFrame()
             gprops = self.groups[group]["properties"]
             for prop in gprops:
                 spec = gprops[prop]

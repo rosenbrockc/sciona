@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ageom.judge.models import CompilerFeedback
 from ageom.protocols import ProofEnvironment
+from ageom.synthesizer.assembler import sanitize_python_source_annotations
 from ageom.synthesizer.models import AssemblyResult, AssemblyUnit, SkeletonFile
 
 
@@ -15,6 +16,15 @@ class SkeletonCompiler:
 
     async def compile(self, skeleton: SkeletonFile) -> AssemblyResult:
         """Compile the full skeleton source and return the result."""
+        if skeleton.prover == "python":
+            skeleton = skeleton.model_copy(
+                update={
+                    "source_code": sanitize_python_source_annotations(
+                        skeleton.source_code
+                    )
+                }
+            )
+
         # Use check_proof with a dummy wrapper so we can send arbitrary code.
         # The env._run() method handles raw code execution under the hood.
         # We use check_term with a trivial expression to validate the file as

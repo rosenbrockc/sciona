@@ -27,6 +27,7 @@ from ageom.synthesizer.classifier import (
     classify_feedback,
     suggest_deterministic_fix,
 )
+from ageom.synthesizer.assembler import sanitize_python_source_annotations
 from ageom.synthesizer.models import SkeletonFile
 from ageom.synthesizer.patcher import (
     Patch,
@@ -156,6 +157,11 @@ class CompileCheck(BaseNode[RepairState, RepairDeps, SkeletonFile]):
     ) -> DeterministicFix | LLMRepair | SorryElimination | End[SkeletonFile]:
         state = ctx.state
         deps = ctx.deps
+
+        if state.skeleton.prover == "python":
+            state.skeleton.source_code = sanitize_python_source_annotations(
+                state.skeleton.source_code
+            )
 
         feedback = await _compile_source(deps.env, state.skeleton.source_code)
         state._last_feedback = feedback

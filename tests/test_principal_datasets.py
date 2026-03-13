@@ -428,6 +428,49 @@ class TestTemplatedDataSet:
         ds.load_group_data(folder=tmp_path)
         assert len(ds._sensor_t) == 0
 
+    def test_load_group_data_skips_failed_group(self, tmp_path, monkeypatch):
+        adapter = tmp_path / "adapter.yml"
+        adapter.write_text(textwrap.dedent("""\
+            name: FaultTolerant
+            groups:
+              sensor:
+                reader:
+                  fqn: pandas.read_csv
+                source: data.csv
+                time: t
+                properties:
+                  t: {source: t}
+                  value: {source: value}
+              broken:
+                reader:
+                  fqn: pandas.read_csv
+                source: missing.csv
+                time: t
+                properties:
+                  t: {source: t}
+                  value: {source: value}
+        """))
+        (tmp_path / "data.csv").write_text("t,value\n1,10\n2,20\n")
+
+        ds = TemplatedDataSet(adapter)
+        ds.create_group("sensor")
+        ds.create_group("broken")
+
+        real_load = ds.load
+
+        def _fake_load(group, folder, meta=None):
+            if group == "broken":
+                raise ValueError("boom")
+            return real_load(group, folder, meta=meta)
+
+        monkeypatch.setattr(ds, "load", _fake_load)
+        ds.load_group_data(folder=tmp_path)
+
+        np.testing.assert_array_equal(ds._sensor_t, [1.0, 2.0])
+        np.testing.assert_array_equal(ds._sensor_value, [10, 20])
+        assert len(ds._broken_t) == 0
+        assert len(ds._broken_value) == 0
+
     def test_from_folder(self, tmp_path):
         adapter = _write_csv_adapter(tmp_path)
         ds = TemplatedDataSet.from_folder(tmp_path, adapter=adapter)
