@@ -43,6 +43,7 @@ export AGEOM_HUNTER_LLM_PROVIDER="$LLM_PROVIDER"
 export AGEOM_HUNTER_LLM_MODEL="$LLM_MODEL"
 export AGEOM_ARCHITECT_LLM_PROVIDER="$LLM_PROVIDER"
 export AGEOM_ARCHITECT_LLM_MODEL="$LLM_MODEL"
+export PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}"
 if [[ "$LLM_PROVIDER" == *_cli ]]; then
     export AGEOM_ALLOW_LEGACY_SUBPROCESS_PROVIDERS="${E2E_ALLOW_LEGACY_SUBPROCESS:-true}"
 fi
@@ -77,6 +78,11 @@ done
 export AGEOM_SEMANTIC_INDEX_BACKEND=faiss
 MODE_TIMEOUT_S="${E2E_MODE_TIMEOUT_S:-240}"
 RAW_TIMEOUT_S="${E2E_RAW_TIMEOUT_S:-120}"
+INCLUDE_SYNTHESIS="${E2E_INCLUDE_SYNTHESIS:-false}"
+SYNTH_TIMEOUT_S="${E2E_SYNTH_TIMEOUT_S:-240}"
+EXPORT_TIMEOUT_S="${E2E_EXPORT_TIMEOUT_S:-120}"
+PROFILE_TIMEOUT_S="${E2E_PROFILE_TIMEOUT_S:-180}"
+PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/adapter.yml}"
 
 # Ground truth: the essential atoms for ECG heart rate detection.
 # Each entry is a keyword pattern that should appear in at least one matched
@@ -93,6 +99,50 @@ GROUND_TRUTH_PATTERNS=(
 elapsed_ms() {
     local start="$1" end="$2"
     "$BENCHMARK_PYTHON" -c "print(int(($end - $start) * 1000))"
+}
+
+run_logged_command() {
+    local label="$1"
+    local log_path="$2"
+    local timeout_s="$3"
+    local ms_var="$4"
+    local rc_var="$5"
+    shift 5
+
+    local _start _end _elapsed _rc _timed_out _pid _deadline _now
+    _start=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
+    (
+        "$@" 2>&1
+    ) | tee "$log_path" &
+    _pid=$!
+    _rc=0
+    _timed_out=0
+    _deadline=$("$BENCHMARK_PYTHON" -c "import time; print(time.time() + float('$timeout_s'))")
+    while kill -0 "$_pid" 2>/dev/null; do
+        _now=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
+        if "$BENCHMARK_PYTHON" -c "import sys; sys.exit(0 if float('$_now') < float('$_deadline') else 1)"; then
+            sleep 1
+            continue
+        fi
+        _timed_out=1
+        warn "$label exceeded ${timeout_s}s; terminating benchmark wrapper"
+        kill "$_pid" 2>/dev/null || true
+        sleep 2
+        kill -9 "$_pid" 2>/dev/null || true
+        break
+    done
+    if [ "$_timed_out" -eq 0 ]; then
+        wait "$_pid"
+        _rc=$?
+    else
+        wait "$_pid" 2>/dev/null || true
+        _rc=124
+    fi
+    _end=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
+    _elapsed=$(elapsed_ms "$_start" "$_end")
+
+    printf -v "$ms_var" '%s' "$_elapsed"
+    printf -v "$rc_var" '%s' "$_rc"
 }
 
 check_ground_truth() {
@@ -145,40 +195,17 @@ run_pipeline() {
     mkdir -p "$out_dir"
 
     info "Running pipeline ($mode): $GOAL"
-    local start end elapsed rc timed_out pid deadline now
-    start=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
-    (
+    local elapsed rc
+    run_logged_command \
+        "$mode" \
+        "$out_dir/stdout.txt" \
+        "$MODE_TIMEOUT_S" \
+        elapsed \
+        rc \
         "$BENCHMARK_PYTHON" -c "
 import sys; sys.argv = ['ageom', 'run', '$GOAL', '--prover', '$PROVER', '--mode', '$mode', '--llm-provider', '$LLM_PROVIDER', '--llm-model', '$LLM_MODEL', '--output', '$out_dir']
 from ageom.cli import main; main()
-" 2>&1
-    ) | tee "$out_dir/stdout.txt" &
-    pid=$!
-    rc=0
-    timed_out=0
-    deadline=$("$BENCHMARK_PYTHON" -c "import time; print(time.time() + float('$MODE_TIMEOUT_S'))")
-    while kill -0 "$pid" 2>/dev/null; do
-        now=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
-        if "$BENCHMARK_PYTHON" -c "import sys; sys.exit(0 if float('$now') < float('$deadline') else 1)"; then
-            sleep 1
-            continue
-        fi
-        timed_out=1
-        warn "$mode exceeded ${MODE_TIMEOUT_S}s; terminating benchmark wrapper"
-        kill "$pid" 2>/dev/null || true
-        sleep 2
-        kill -9 "$pid" 2>/dev/null || true
-        break
-    done
-    if [ "$timed_out" -eq 0 ]; then
-        wait "$pid"
-        rc=$?
-    else
-        wait "$pid" 2>/dev/null || true
-        rc=124
-    fi
-    end=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
-    elapsed=$(elapsed_ms "$start" "$end")
+"
 
     # Export latency for caller
     eval "$ms_var=$elapsed"
@@ -191,6 +218,142 @@ from ageom.cli import main; main()
         info "  $mode completed in ${elapsed}ms"
     fi
     return "$rc"
+}
+
+run_pipeline_postprocess() {
+    local mode="$1"
+    local mode_dir="$2"
+    local synth_out="$mode_dir/verified.py"
+    local export_dir="$mode_dir/export_python_pkg"
+    local post_json="$mode_dir/postprocess.json"
+    local synth_log="$mode_dir/synthesize.stdout.txt"
+    local export_log="$mode_dir/export.stdout.txt"
+    local profile_log="$mode_dir/profile.stdout.txt"
+    local synth_ms=0
+    local synth_rc=99
+    local export_ms=0
+    local export_rc=99
+    local profile_ms=0
+    local profile_rc=99
+    local synth_exists=false
+    local synth_compiled_ok=false
+    local export_exists=false
+    local profile_has_gradients=false
+    local profile_attempted=false
+
+    if [ ! -f "$mode_dir/cdg.json" ] || [ ! -f "$mode_dir/matches.json" ]; then
+        warn "$mode postprocess skipped: missing cdg.json or matches.json"
+        cat > "$post_json" <<EOF
+{
+  "attempted": true,
+  "mode": "$mode",
+  "dataset": "$PROFILE_DATASET",
+  "skipped": "missing_artifacts"
+}
+EOF
+        return
+    fi
+
+    info "Running synthesize ($mode)"
+    run_logged_command \
+        "synthesize:$mode" \
+        "$synth_log" \
+        "$SYNTH_TIMEOUT_S" \
+        synth_ms \
+        synth_rc \
+        "$BENCHMARK_PYTHON" -c "
+import sys; sys.argv = ['ageom', 'synthesize', '$mode_dir/cdg.json', '$mode_dir/matches.json', '--prover', '$PROVER', '--mode', '$mode', '--llm-provider', '$LLM_PROVIDER', '--llm-model', '$LLM_MODEL', '--output', '$synth_out']
+from ageom.cli import main; main()
+"
+    if [ -f "$synth_out" ]; then
+        synth_exists=true
+    fi
+    if [ -f "$synth_log" ] && rg -q "Compiled OK: True" "$synth_log"; then
+        synth_compiled_ok=true
+    fi
+    if [ "$synth_rc" -eq 0 ]; then
+        info "  synthesize ($mode) completed in ${synth_ms}ms"
+    elif [ "$synth_rc" -eq 124 ] && [ "$synth_exists" = true ]; then
+        warn "synthesize ($mode) timed out after ${synth_ms}ms but produced verified.py"
+    else
+        fail "synthesize ($mode) failed (exit $synth_rc) after ${synth_ms}ms"
+    fi
+
+    if [ "$synth_exists" = true ]; then
+        info "Running export ($mode)"
+        run_logged_command \
+            "export:$mode" \
+            "$export_log" \
+            "$EXPORT_TIMEOUT_S" \
+            export_ms \
+            export_rc \
+            "$BENCHMARK_PYTHON" -c "
+import sys; sys.argv = ['ageom', 'export', '$synth_out', '--target', 'python-pkg', '--prover', '$PROVER', '--output-dir', '$export_dir']
+from ageom.cli import main; main()
+"
+        if [ -d "$export_dir" ]; then
+            export_exists=true
+        fi
+        if [ "$export_rc" -eq 0 ]; then
+            info "  export ($mode) completed in ${export_ms}ms"
+        elif [ "$export_rc" -eq 124 ] && [ "$export_exists" = true ]; then
+            warn "export ($mode) timed out after ${export_ms}ms but produced output"
+        else
+            fail "export ($mode) failed (exit $export_rc) after ${export_ms}ms"
+        fi
+    fi
+
+    if [ -f "$PROFILE_DATASET" ] && [ "$synth_exists" = true ]; then
+        profile_attempted=true
+        info "Running profile ($mode)"
+        run_logged_command \
+            "profile:$mode" \
+            "$profile_log" \
+            "$PROFILE_TIMEOUT_S" \
+            profile_ms \
+            profile_rc \
+            "$BENCHMARK_PYTHON" -c "
+import sys; sys.argv = ['ageom', 'profile', '--cdg', '$mode_dir/cdg.json', '--artifact', '$synth_out', '--dataset', '$PROFILE_DATASET', '--metric', 'precision']
+from ageom.cli import main; main()
+"
+        if [ -f "$profile_log" ] && rg -q "=== Profiling Results ===" "$profile_log"; then
+            profile_has_gradients=true
+        fi
+        if [ "$profile_rc" -eq 0 ]; then
+            info "  profile ($mode) completed in ${profile_ms}ms"
+        else
+            fail "profile ($mode) failed (exit $profile_rc) after ${profile_ms}ms"
+        fi
+    elif [ ! -f "$PROFILE_DATASET" ]; then
+        warn "profile ($mode) skipped: dataset not found at $PROFILE_DATASET"
+    fi
+
+    cat > "$post_json" <<EOF
+{
+  "attempted": true,
+  "mode": "$mode",
+  "dataset": "$PROFILE_DATASET",
+  "synthesize": {
+    "latency_ms": $synth_ms,
+    "exit_code": $synth_rc,
+    "output_path": "$synth_out",
+    "output_exists": $synth_exists,
+    "compiled_ok": $synth_compiled_ok
+  },
+  "export": {
+    "latency_ms": $export_ms,
+    "exit_code": $export_rc,
+    "output_dir": "$export_dir",
+    "output_exists": $export_exists
+  },
+  "profile": {
+    "attempted": $profile_attempted,
+    "latency_ms": $profile_ms,
+    "exit_code": $profile_rc,
+    "has_gradients": $profile_has_gradients
+  }
+}
+EOF
 }
 
 # ---------------------------------------------------------------------------
@@ -265,13 +428,16 @@ $(cat "$RAW_DIR/function_list.txt")
 Return JSON: {"functions": ["function1", "function2", ...]}
 USERPROMPT
 
-RAW_MS=0
-START=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
-(
-"$BENCHMARK_PYTHON" << 'PYEOF' 2>&1
-import asyncio, json, re, sys, os
+RAW_RUNNER="$RAW_DIR/raw_llm_runner.py"
+cat > "$RAW_RUNNER" <<'PYEOF'
+import asyncio
+import json
+import os
+import re
+import sys
 
 RAW_DIR = os.environ.get("RAW_DIR", "")
+
 
 async def run():
     from ageom.config import AgeomConfig
@@ -304,11 +470,9 @@ async def run():
     with open(f"{RAW_DIR}/response.txt", "w") as f:
         f.write(response)
 
-    # Parse the JSON response
     functions = []
     try:
         text = response.strip()
-        # Strip markdown code fences
         if text.startswith("```"):
             lines = text.split("\n")
             end = len(lines) - 1 if lines[-1].strip().startswith("```") else len(lines)
@@ -326,51 +490,37 @@ async def run():
         if not functions:
             print("WARNING: could not parse JSON from LLM response", file=sys.stderr)
 
-    # Convert to matches.json-compatible format for ground truth checking
     matches = []
     for fn in functions:
-        matches.append({
-            "verified_match": None,
-            "all_candidates": [{
-                "declaration": {"name": fn},
-                "score": 1.0,
-                "retrieval_method": "raw_llm"
-            }],
-            "all_verifications": []
-        })
+        matches.append(
+            {
+                "verified_match": None,
+                "all_candidates": [
+                    {
+                        "declaration": {"name": fn},
+                        "score": 1.0,
+                        "retrieval_method": "raw_llm",
+                    }
+                ],
+                "all_verifications": [],
+            }
+        )
     with open(f"{RAW_DIR}/matches.json", "w") as f:
         json.dump(matches, f, indent=2)
     print(f"Raw LLM identified {len(functions)} functions: {functions}")
 
+
 asyncio.run(run())
 PYEOF
-) | tee "$RAW_DIR/stdout.txt" &
-RAW_PID=$!
-RAW_RC=0
-RAW_TIMED_OUT=0
-RAW_DEADLINE=$("$BENCHMARK_PYTHON" -c "import time; print(time.time() + float('$RAW_TIMEOUT_S'))")
-while kill -0 "$RAW_PID" 2>/dev/null; do
-    RAW_NOW=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
-    if "$BENCHMARK_PYTHON" -c "import sys; sys.exit(0 if float('$RAW_NOW') < float('$RAW_DEADLINE') else 1)"; then
-        sleep 1
-        continue
-    fi
-    RAW_TIMED_OUT=1
-    warn "raw LLM exceeded ${RAW_TIMEOUT_S}s; terminating benchmark wrapper"
-    kill "$RAW_PID" 2>/dev/null || true
-    sleep 2
-    kill -9 "$RAW_PID" 2>/dev/null || true
-    break
-done
-if [ "$RAW_TIMED_OUT" -eq 0 ]; then
-    wait "$RAW_PID"
-    RAW_RC=$?
-else
-    wait "$RAW_PID" 2>/dev/null || true
-    RAW_RC=124
-fi
-END=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
-RAW_MS=$(elapsed_ms "$START" "$END")
+
+RAW_MS=0
+run_logged_command \
+    "raw_llm" \
+    "$RAW_DIR/stdout.txt" \
+    "$RAW_TIMEOUT_S" \
+    RAW_MS \
+    RAW_RC \
+    "$BENCHMARK_PYTHON" "$RAW_RUNNER"
 if [ "$RAW_RC" -eq 124 ] && [ -f "$RAW_DIR/matches.json" ]; then
     warn "raw LLM timed out after ${RAW_MS}ms but produced matches.json"
 elif [ "$RAW_RC" -ne 0 ]; then
@@ -380,7 +530,18 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Ground truth evaluation
+# 5. Optional synthesis/export/profile for pipeline modes
+# ---------------------------------------------------------------------------
+if [[ "$(printf '%s' "$INCLUDE_SYNTHESIS" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+    echo ""
+    info "Running optional synthesize/export/profile phases..."
+    run_pipeline_postprocess rapid "$RAPID_DIR"
+    run_pipeline_postprocess structured "$STRUCTURED_DIR"
+    run_pipeline_postprocess verified "$VERIFIED_DIR"
+fi
+
+# ---------------------------------------------------------------------------
+# 6. Ground truth evaluation
 # ---------------------------------------------------------------------------
 echo ""
 info "Evaluating ground truth coverage..."
@@ -402,17 +563,32 @@ for label_dir in \
 done
 
 # ---------------------------------------------------------------------------
-# 6. Summary report
+# 7. Summary report
 # ---------------------------------------------------------------------------
 echo ""
 info "Generating summary..."
 
-"$BENCHMARK_PYTHON" -c "
+OUTPUT_DIR_FOR_SUMMARY="$OUTPUT_DIR" \
+RAPID_DIR_FOR_SUMMARY="$RAPID_DIR" \
+STRUCTURED_DIR_FOR_SUMMARY="$STRUCTURED_DIR" \
+VERIFIED_DIR_FOR_SUMMARY="$VERIFIED_DIR" \
+RAW_DIR_FOR_SUMMARY="$RAW_DIR" \
+PROFILE_DATASET_FOR_SUMMARY="$PROFILE_DATASET" \
+RAPID_MS_FOR_SUMMARY="$RAPID_MS" \
+STRUCTURED_MS_FOR_SUMMARY="$STRUCTURED_MS" \
+VERIFIED_MS_FOR_SUMMARY="$VERIFIED_MS" \
+RAW_MS_FOR_SUMMARY="$RAW_MS" \
+TOTAL_GT_FOR_SUMMARY="${#GROUND_TRUTH_PATTERNS[@]}" \
+GOAL_FOR_SUMMARY="$GOAL" \
+PROVER_FOR_SUMMARY="$PROVER" \
+LLM_PROVIDER_FOR_SUMMARY="$LLM_PROVIDER" \
+"$BENCHMARK_PYTHON" <<'PYEOF' 2>&1 | tee "$OUTPUT_DIR/summary_table.txt"
 import json
+import os
 from pathlib import Path
 
-output_dir = Path('$OUTPUT_DIR')
-total_gt = ${#GROUND_TRUTH_PATTERNS[@]}
+output_dir = Path(os.environ['OUTPUT_DIR_FOR_SUMMARY'])
+total_gt = int(os.environ['TOTAL_GT_FOR_SUMMARY'])
 
 def read_hits(label):
     p = output_dir / f'{label}_hits.txt'
@@ -428,40 +604,49 @@ def read_matches(label_dir):
                    if m.get('verified_match') and m['verified_match'].get('verified'))
     return total, verified
 
-rapid_total, rapid_verified = read_matches('$RAPID_DIR')
-structured_total, structured_verified = read_matches('$STRUCTURED_DIR')
-verified_total, verified_verified = read_matches('$VERIFIED_DIR')
-raw_total, raw_verified = read_matches('$RAW_DIR')
+def read_postprocess(label_dir):
+    p = Path(label_dir) / 'postprocess.json'
+    if not p.exists():
+        return None
+    return json.load(open(p))
+
+rapid_total, rapid_verified = read_matches(os.environ['RAPID_DIR_FOR_SUMMARY'])
+structured_total, structured_verified = read_matches(os.environ['STRUCTURED_DIR_FOR_SUMMARY'])
+verified_total, verified_verified = read_matches(os.environ['VERIFIED_DIR_FOR_SUMMARY'])
+raw_total, raw_verified = read_matches(os.environ['RAW_DIR_FOR_SUMMARY'])
+rapid_post = read_postprocess(os.environ['RAPID_DIR_FOR_SUMMARY'])
+structured_post = read_postprocess(os.environ['STRUCTURED_DIR_FOR_SUMMARY'])
+verified_post = read_postprocess(os.environ['VERIFIED_DIR_FOR_SUMMARY'])
 
 report = {
-    'goal': '$GOAL',
-    'prover': '$PROVER',
-    'llm_provider': '$LLM_PROVIDER',
+    'goal': os.environ['GOAL_FOR_SUMMARY'],
+    'prover': os.environ['PROVER_FOR_SUMMARY'],
+    'llm_provider': os.environ['LLM_PROVIDER_FOR_SUMMARY'],
     'ground_truth_atoms': total_gt,
     'results': {
         'rapid': {
-            'latency_ms': $RAPID_MS,
+            'latency_ms': int(os.environ['RAPID_MS_FOR_SUMMARY']),
             'matches_total': rapid_total,
             'matches_verified': rapid_verified,
             'ground_truth_hits': read_hits('rapid'),
             'ground_truth_coverage': round(read_hits('rapid') / total_gt, 2),
         },
         'structured': {
-            'latency_ms': $STRUCTURED_MS,
+            'latency_ms': int(os.environ['STRUCTURED_MS_FOR_SUMMARY']),
             'matches_total': structured_total,
             'matches_verified': structured_verified,
             'ground_truth_hits': read_hits('structured'),
             'ground_truth_coverage': round(read_hits('structured') / total_gt, 2),
         },
         'verified': {
-            'latency_ms': $VERIFIED_MS,
+            'latency_ms': int(os.environ['VERIFIED_MS_FOR_SUMMARY']),
             'matches_total': verified_total,
             'matches_verified': verified_verified,
             'ground_truth_hits': read_hits('verified'),
             'ground_truth_coverage': round(read_hits('verified') / total_gt, 2),
         },
         'raw_llm': {
-            'latency_ms': $RAW_MS,
+            'latency_ms': int(os.environ['RAW_MS_FOR_SUMMARY']),
             'matches_total': raw_total,
             'matches_verified': 0,
             'ground_truth_hits': read_hits('raw_llm'),
@@ -469,6 +654,14 @@ report = {
         },
     },
 }
+if any(item is not None for item in (rapid_post, structured_post, verified_post)):
+    report['postprocess'] = {
+        'enabled': True,
+        'dataset': os.environ['PROFILE_DATASET_FOR_SUMMARY'],
+        'rapid': rapid_post,
+        'structured': structured_post,
+        'verified': verified_post,
+    }
 
 with open(output_dir / 'summary.json', 'w') as f:
     json.dump(report, f, indent=2)
@@ -479,15 +672,28 @@ print('variant | latency | matches | verified | GT coverage')
 print('--- | ---: | ---: | ---: | ---:')
 for variant in ['rapid', 'structured', 'verified', 'raw_llm']:
     r = report['results'][variant]
-    lat = f\"{r['latency_ms']}ms\"
-    gt = f\"{r['ground_truth_hits']}/{total_gt}\"
-    cov = f\"{r['ground_truth_coverage']:.0%}\"
-    print(f\"{variant} | {lat} | {r['matches_total']} | {r['matches_verified']} | {gt} ({cov})\")
+    lat = f"{r['latency_ms']}ms"
+    gt = f"{r['ground_truth_hits']}/{total_gt}"
+    cov = f"{r['ground_truth_coverage']:.0%}"
+    print(f"{variant} | {lat} | {r['matches_total']} | {r['matches_verified']} | {gt} ({cov})")
+if report.get('postprocess', {}).get('enabled'):
+    print()
+    print('postprocess variant | synth rc | compiled_ok | export rc | profile rc | gradients')
+    print('--- | ---: | --- | ---: | ---: | ---')
+    for variant in ['rapid', 'structured', 'verified']:
+        data = report['postprocess'].get(variant) or {}
+        synth = data.get('synthesize') or {}
+        export = data.get('export') or {}
+        profile = data.get('profile') or {}
+        print(
+            f"{variant} | {synth.get('exit_code', '')} | {synth.get('compiled_ok', '')} | "
+            f"{export.get('exit_code', '')} | {profile.get('exit_code', '')} | {profile.get('has_gradients', '')}"
+        )
 print()
-" 2>&1 | tee "$OUTPUT_DIR/summary_table.txt"
+PYEOF
 
 # ---------------------------------------------------------------------------
-# 7. Final verdict
+# 8. Final verdict
 # ---------------------------------------------------------------------------
 echo ""
 info "Results saved to $OUTPUT_DIR/"
