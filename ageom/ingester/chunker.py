@@ -269,6 +269,7 @@ def _is_simple_class(dfg: RawDataFlowGraph) -> bool:
         direct_calls = set(method.calls) | set(internal_dispatch.get(method.name, []))
         if direct_calls & public_names:
             return False
+    # TODO: relax to `len(...) > 3` once simple-class path handles stateful classes
     if dfg.cross_window_attrs:
         return False
     if dfg.config_branches:

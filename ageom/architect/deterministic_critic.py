@@ -109,9 +109,49 @@ def _concept_baseline(child_concept: str, parent_tokens: set[str]) -> float:
     return overlap / len(concept_tokens)
 
 
+def _check_structural_issues(prompt: CritiquePrompt) -> list[str]:
+    """Lightweight structural checks on the parsed critique prompt."""
+    issues: list[str] = []
+
+    # Duplicate child names
+    seen_names: set[str] = set()
+    for child in prompt.sub_nodes:
+        lower_name = child.name.lower().strip()
+        if lower_name in seen_names:
+            issues.append(f"Duplicate sub-node name: '{child.name}'")
+        seen_names.add(lower_name)
+
+    # Near-duplicate child names (Jaccard ≥ 0.85)
+    child_token_sets = [(_tokenize(c.name), c.name) for c in prompt.sub_nodes]
+    for i, (left_tokens, left_name) in enumerate(child_token_sets):
+        if not left_tokens:
+            continue
+        for right_tokens, right_name in child_token_sets[i + 1:]:
+            if not right_tokens:
+                continue
+            union = len(left_tokens | right_tokens)
+            similarity = len(left_tokens & right_tokens) / union if union else 0.0
+            if similarity >= 0.85:
+                issues.append(
+                    f"Near-duplicate sub-nodes: '{left_name}' and '{right_name}'"
+                )
+
+    # Children with no inputs AND no outputs are suspicious
+    for child in prompt.sub_nodes:
+        if not child.inputs and not child.outputs:
+            issues.append(f"Sub-node '{child.name}' has no inputs and no outputs")
+
+    return issues
+
+
 def _semantic_critique(prompt: CritiquePrompt) -> tuple[bool, str]:
     if len(prompt.sub_nodes) < 2:
         return False, "need at least two sub-nodes for deterministic approval"
+
+    # Structural validation before semantic checks
+    structural_issues = _check_structural_issues(prompt)
+    if structural_issues:
+        return False, f"structural issues: {'; '.join(structural_issues)}"
 
     parent_input_names = {io.name for io in prompt.parent_inputs}
     parent_output_names = {io.name for io in prompt.parent_outputs}

@@ -63,8 +63,19 @@ def _suggest_lean_tactic(goal_type: str, hypotheses: str) -> str | None:
         return None
     if goal in {"True", "⊤"}:
         return "trivial"
+    if goal in {"False", "⊥"}:
+        return "contradiction"
     if goal.startswith("Decidable "):
         return "infer_instance"
+    # Conjunction: A ∧ B → split into two subgoals
+    if " ∧ " in goal or " /\\ " in goal:
+        return "constructor"
+    # Implication / function type: A → B — introduce hypothesis
+    if " → " in goal or " -> " in goal:
+        return "intro h"
+    # Disjunction in hypotheses
+    if hypotheses and (" ∨ " in hypotheses or " \\/ " in hypotheses):
+        return "cases h"
     match = _IDENTICAL_EQ_RE.match(goal)
     if match:
         lhs = _normalized(match.group("lhs"))
@@ -103,12 +114,26 @@ def _suggest_coq_tactic(goal_type: str, hypotheses: str) -> str | None:
     return "auto."
 
 
+_DEF_DELEGATABLE_RE = re.compile(
+    r"^(\s*)def\s+\w+\(.*?\).*?:\s*$.*?#\s*delegate:\s*(\S+)",
+    re.MULTILINE | re.DOTALL,
+)
+
+
 def _suggest_python_impl(goal_type: str, hypotheses: str) -> str | None:
     context = "\n".join(part for part in (goal_type, hypotheses) if part).strip()
     if not context:
         return None
     if _DEF_BOOL_RE.search(context):
         return "    return True"
+    # Library function delegation: if a `# delegate: module.function` hint exists
+    delegate_match = _DEF_DELEGATABLE_RE.search(context)
+    if delegate_match:
+        indent = delegate_match.group(1) or "    "
+        delegate_target = delegate_match.group(2)
+        module, _, func = delegate_target.rpartition(".")
+        if module and func:
+            return f"{indent}import {module}\n{indent}return {delegate_target}(*args)"
     return None
 
 

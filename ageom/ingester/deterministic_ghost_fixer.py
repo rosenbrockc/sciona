@@ -68,9 +68,74 @@ def _replacement_return(ret_type: str, params: str) -> str | None:
     return None
 
 
+def _fix_none_return(lines: list[str], start: int, end: int, header_match: re.Match) -> bool:
+    replacement = _replacement_return(header_match.group("ret"), header_match.group("params"))
+    if replacement is None:
+        return False
+    changed = False
+    for idx in range(start + 1, end):
+        stripped = lines[idx].strip()
+        if stripped in {"return None", "return None, state"}:
+            lines[idx] = replacement
+            changed = True
+    return changed
+
+
+def _fix_type_error(lines: list[str], start: int, end: int, header_match: re.Match) -> bool:
+    """Fix TypeError patterns — typically wrong argument types or missing conversions."""
+    params = header_match.group("params")
+    primary = _primary_param(params)
+    if not primary:
+        return False
+    changed = False
+    for idx in range(start + 1, end):
+        stripped = lines[idx].strip()
+        # Replace bare raise TypeError with pass-through
+        if stripped.startswith("raise TypeError"):
+            lines[idx] = f"    return {primary}"
+            changed = True
+    return changed
+
+
+def _fix_key_error(lines: list[str], start: int, end: int, error_message: str) -> bool:
+    """Fix KeyError — replace dict lookups that raise with .get() defaults."""
+    key_match = re.search(r"KeyError:\s*['\"]?(\w+)['\"]?", error_message)
+    if not key_match:
+        return False
+    key = key_match.group(1)
+    changed = False
+    for idx in range(start + 1, end):
+        # Replace dict[key] with dict.get(key, None) for the offending key
+        if f'["{key}"]' in lines[idx] or f"['{key}']" in lines[idx]:
+            lines[idx] = re.sub(
+                rf'\[(["\']){re.escape(key)}\1\]',
+                f'.get("{key}", None)',
+                lines[idx],
+            )
+            changed = True
+    return changed
+
+
+def _fix_attribute_error(lines: list[str], start: int, end: int, error_message: str) -> bool:
+    """Fix AttributeError — guard attribute access with getattr."""
+    attr_match = re.search(r"has no attribute ['\"](\w+)['\"]", error_message)
+    if not attr_match:
+        return False
+    attr = attr_match.group(1)
+    changed = False
+    for idx in range(start + 1, end):
+        pattern = rf"(\w+)\.{re.escape(attr)}\b"
+        if re.search(pattern, lines[idx]):
+            lines[idx] = re.sub(
+                pattern,
+                rf'getattr(\1, "{attr}", None)',
+                lines[idx],
+            )
+            changed = True
+    return changed
+
+
 def _rewrite_stub(function_name: str, error_message: str, witness_source: str) -> str | None:
-    if "none" not in error_message.lower() and "shape" not in error_message.lower():
-        return None
     lines = witness_source.splitlines()
     span = _function_span(lines, function_name)
     if span is None:
@@ -79,18 +144,22 @@ def _rewrite_stub(function_name: str, error_message: str, witness_source: str) -
     header_match = _DEF_RE.match(lines[start].strip())
     if header_match is None:
         return None
-    replacement_return = _replacement_return(
-        header_match.group("ret"),
-        header_match.group("params"),
-    )
-    if replacement_return is None:
-        return None
+
+    error_lower = error_message.lower()
     changed = False
-    for idx in range(start + 1, end):
-        stripped = lines[idx].strip()
-        if stripped in {"return None", "return None, state"}:
-            lines[idx] = replacement_return
-            changed = True
+
+    if "none" in error_lower or "shape" in error_lower:
+        changed = _fix_none_return(lines, start, end, header_match)
+    elif "typeerror" in error_lower:
+        changed = _fix_type_error(lines, start, end, header_match)
+    elif "keyerror" in error_lower:
+        changed = _fix_key_error(lines, start, end, error_message)
+    elif "attributeerror" in error_lower or "has no attribute" in error_lower:
+        changed = _fix_attribute_error(lines, start, end, error_message)
+    else:
+        # Fallback: try None-return fix for any unrecognized error
+        changed = _fix_none_return(lines, start, end, header_match)
+
     if not changed:
         return None
     return "\n".join(lines)

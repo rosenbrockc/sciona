@@ -61,6 +61,17 @@ def _infer_attr_type(attr: str, macro_plan: list[dict[str, Any]]) -> str:
     return "Any"
 
 
+def _attrs_used_by_atom(atom: dict[str, Any], all_attrs: list[str]) -> list[str]:
+    """Return which cross-window attrs are referenced in an atom's IO specs."""
+    atom_io_names: set[str] = set()
+    for io in list(atom.get("inputs", []) or []) + list(atom.get("outputs", []) or []):
+        if isinstance(io, dict):
+            name = str(io.get("name", "") or "").strip()
+            if name:
+                atom_io_names.add(name)
+    return [attr for attr in all_attrs if attr in atom_io_names]
+
+
 def _hoist_from_attrs(
     cross_window_attrs: list[str],
     macro_plan: list[dict[str, Any]],
@@ -78,6 +89,37 @@ def _hoist_from_attrs(
 
     if unknown_count > len(cross_window_attrs) / 2:
         return None
+
+    # Multi-model grouping: if multiple atoms each use distinct subsets,
+    # create per-atom state models instead of one monolithic model.
+    if len(macro_plan) > 1:
+        atom_groups: list[tuple[dict[str, Any], list[str]]] = []
+        for atom in macro_plan:
+            used = _attrs_used_by_atom(atom, cross_window_attrs)
+            if used:
+                atom_groups.append((atom, used))
+
+        # Only split when there are enough attrs to justify multiple models
+        # (≥4 total attrs, each group uses a proper subset)
+        if (
+            len(atom_groups) > 1
+            and len(cross_window_attrs) >= 4
+            and all(len(used) < len(cross_window_attrs) for _, used in atom_groups)
+        ):
+            state_models = []
+            for atom, used_attrs in atom_groups:
+                atom_name = _pascal_case(str(atom.get("name", "") or "Stage"))
+                atom_fields = [f for f in fields if f[0] in used_attrs]
+                state_models.append({
+                    "model_name": f"{atom_name}State",
+                    "fields": atom_fields,
+                    "source_attrs": used_attrs,
+                    "docstring": (
+                        f"Hoisted state for {atom_name} "
+                        f"({len(used_attrs)} persistent attributes)."
+                    ),
+                })
+            return {"state_models": state_models}
 
     state_model = {
         "model_name": _model_name(macro_plan),
