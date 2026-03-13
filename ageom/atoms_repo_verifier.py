@@ -350,13 +350,16 @@ class _UndefinedNameVisitor(ast.NodeVisitor):
         self,
         node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp,
     ) -> None:
-        local_names: set[str] = set()
+        # Push a comprehension scope that grows as each generator adds its
+        # target variable(s).  This mirrors Python semantics: the iter of the
+        # first generator is evaluated in the enclosing scope, but each
+        # target is visible to subsequent ifs, iters, and the final element.
+        self.scope_stack.append(set(self.scope_stack[-1]))
         for generator in node.generators:
             self.visit(generator.iter)
+            self.scope_stack[-1].update(_target_names(generator.target))
             for if_clause in generator.ifs:
                 self.visit(if_clause)
-            local_names.update(_target_names(generator.target))
-        self.scope_stack.append(self.scope_stack[-1] | local_names)
         if isinstance(node, ast.DictComp):
             self.visit(node.key)
             self.visit(node.value)
