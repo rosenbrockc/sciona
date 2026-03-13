@@ -8,6 +8,10 @@ cd "$SCRIPT_DIR"
 
 OUTPUT_DIR="output/e2e_benchmark_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUTPUT_DIR"
+BENCHMARK_PYTHON="${E2E_PYTHON:-$SCRIPT_DIR/.venv/bin/python}"
+if [ ! -x "$BENCHMARK_PYTHON" ]; then
+    BENCHMARK_PYTHON="$(command -v python3)"
+fi
 
 # ---------------------------------------------------------------------------
 # Colors
@@ -39,11 +43,40 @@ export AGEOM_HUNTER_LLM_PROVIDER="$LLM_PROVIDER"
 export AGEOM_HUNTER_LLM_MODEL="$LLM_MODEL"
 export AGEOM_ARCHITECT_LLM_PROVIDER="$LLM_PROVIDER"
 export AGEOM_ARCHITECT_LLM_MODEL="$LLM_MODEL"
+if [[ "$LLM_PROVIDER" == *_cli ]]; then
+    export AGEOM_ALLOW_LEGACY_SUBPROCESS_PROVIDERS="${E2E_ALLOW_LEGACY_SUBPROCESS:-true}"
+fi
+
+PROMPT_OVERRIDE_KEYS=(
+    ARCHITECT_STRATEGY
+    ARCHITECT_DECOMPOSE
+    ARCHITECT_CRITIQUE
+    HUNTER_SCORE
+    HUNTER_REFORMULATE
+    HUNTER_ANALYZE_FAILURE
+    SYNTHESIZER_REPAIR
+    SYNTHESIZER_TACTIC
+    INGESTER_CHUNK
+    INGESTER_HOIST_STATE
+    INGESTER_ABSTRACT
+    INGESTER_FIX_TYPE
+    INGESTER_FIX_GHOST
+    INGESTER_OPAQUE_WITNESS
+    INGESTER_FIX_MESSAGE_CYCLE
+    INGESTER_DECOMPOSE
+    ORCHESTRATOR_REFINE
+)
+for key in "${PROMPT_OVERRIDE_KEYS[@]}"; do
+    export "AGEOM_${key}_LLM_PROVIDER=$LLM_PROVIDER"
+    export "AGEOM_${key}_LLM_MODEL=$LLM_MODEL"
+done
 
 # Force FAISS semantic index — the default retrieval policy degrades to
 # lexical when catalog confidence is < 0.70 (medium band), which prevents
 # the benchmark from exercising the full semantic search pipeline.
 export AGEOM_SEMANTIC_INDEX_BACKEND=faiss
+MODE_TIMEOUT_S="${E2E_MODE_TIMEOUT_S:-240}"
+RAW_TIMEOUT_S="${E2E_RAW_TIMEOUT_S:-120}"
 
 # Ground truth: the essential atoms for ECG heart rate detection.
 # Each entry is a keyword pattern that should appear in at least one matched
@@ -59,7 +92,7 @@ GROUND_TRUTH_PATTERNS=(
 # ---------------------------------------------------------------------------
 elapsed_ms() {
     local start="$1" end="$2"
-    python3 -c "print(int(($end - $start) * 1000))"
+    "$BENCHMARK_PYTHON" -c "print(int(($end - $start) * 1000))"
 }
 
 check_ground_truth() {
@@ -70,7 +103,7 @@ check_ground_truth() {
     local missed_patterns=()
 
     for pattern in "${GROUND_TRUTH_PATTERNS[@]}"; do
-        if python3 -c "
+        if "$BENCHMARK_PYTHON" -c "
 import json, re, sys
 matches = json.load(open('$matches_json'))
 names = []
@@ -103,7 +136,7 @@ sys.exit(0 if found else 1)
 }
 
 # run_pipeline MODE OUTPUT_DIR — runs ageom run, captures latency, tolerates failure
-# Uses python3 -c to invoke ageom.cli.main directly (avoids sandbox issues with
+# Uses the project interpreter to invoke ageom.cli.main directly (avoids sandbox issues with
 # native library loading when using the ageom entry point script).
 run_pipeline() {
     local mode="$1"
@@ -112,20 +145,47 @@ run_pipeline() {
     mkdir -p "$out_dir"
 
     info "Running pipeline ($mode): $GOAL"
-    local start end elapsed rc
-    start=$(python3 -c "import time; print(time.time())")
-    python3 -c "
+    local start end elapsed rc timed_out pid deadline now
+    start=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
+    (
+        "$BENCHMARK_PYTHON" -c "
 import sys; sys.argv = ['ageom', 'run', '$GOAL', '--prover', '$PROVER', '--mode', '$mode', '--llm-provider', '$LLM_PROVIDER', '--llm-model', '$LLM_MODEL', '--output', '$out_dir']
 from ageom.cli import main; main()
-" 2>&1 | tee "$out_dir/stdout.txt"
-    rc=${PIPESTATUS[0]}
-    end=$(python3 -c "import time; print(time.time())")
+" 2>&1
+    ) | tee "$out_dir/stdout.txt" &
+    pid=$!
+    rc=0
+    timed_out=0
+    deadline=$("$BENCHMARK_PYTHON" -c "import time; print(time.time() + float('$MODE_TIMEOUT_S'))")
+    while kill -0 "$pid" 2>/dev/null; do
+        now=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
+        if "$BENCHMARK_PYTHON" -c "import sys; sys.exit(0 if float('$now') < float('$deadline') else 1)"; then
+            sleep 1
+            continue
+        fi
+        timed_out=1
+        warn "$mode exceeded ${MODE_TIMEOUT_S}s; terminating benchmark wrapper"
+        kill "$pid" 2>/dev/null || true
+        sleep 2
+        kill -9 "$pid" 2>/dev/null || true
+        break
+    done
+    if [ "$timed_out" -eq 0 ]; then
+        wait "$pid"
+        rc=$?
+    else
+        wait "$pid" 2>/dev/null || true
+        rc=124
+    fi
+    end=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
     elapsed=$(elapsed_ms "$start" "$end")
 
     # Export latency for caller
     eval "$ms_var=$elapsed"
 
-    if [ "$rc" -ne 0 ]; then
+    if [ "$rc" -eq 124 ] && [ -f "$out_dir/matches.json" ]; then
+        warn "$mode timed out after ${elapsed}ms but produced matches.json"
+    elif [ "$rc" -ne 0 ]; then
         fail "$mode crashed (exit $rc) after ${elapsed}ms — see $out_dir/stdout.txt"
     else
         info "  $mode completed in ${elapsed}ms"
@@ -163,7 +223,7 @@ export RAW_DIR
 mkdir -p "$RAW_DIR"
 
 # Build function list from index (declarations stored in msgpack)
-python3 -c "
+"$BENCHMARK_PYTHON" -c "
 import msgpack
 from pathlib import Path
 
@@ -206,8 +266,9 @@ Return JSON: {"functions": ["function1", "function2", ...]}
 USERPROMPT
 
 RAW_MS=0
-START=$(python3 -c "import time; print(time.time())")
-python3 << 'PYEOF' 2>&1 | tee "$RAW_DIR/stdout.txt"
+START=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
+(
+"$BENCHMARK_PYTHON" << 'PYEOF' 2>&1
 import asyncio, json, re, sys, os
 
 RAW_DIR = os.environ.get("RAW_DIR", "")
@@ -229,6 +290,9 @@ async def run():
         openai_base_url=config.openai_base_url,
         llama_cpp_base_url=config.llama_cpp_base_url,
         llama_cpp_api_key=config.llama_cpp_api_key,
+        allow_legacy_subprocess=getattr(
+            config, "allow_legacy_subprocess_providers", False
+        ),
     )
 
     with open(f"{RAW_DIR}/system_prompt.txt") as f:
@@ -280,9 +344,40 @@ async def run():
 
 asyncio.run(run())
 PYEOF
-END=$(python3 -c "import time; print(time.time())")
+) | tee "$RAW_DIR/stdout.txt" &
+RAW_PID=$!
+RAW_RC=0
+RAW_TIMED_OUT=0
+RAW_DEADLINE=$("$BENCHMARK_PYTHON" -c "import time; print(time.time() + float('$RAW_TIMEOUT_S'))")
+while kill -0 "$RAW_PID" 2>/dev/null; do
+    RAW_NOW=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
+    if "$BENCHMARK_PYTHON" -c "import sys; sys.exit(0 if float('$RAW_NOW') < float('$RAW_DEADLINE') else 1)"; then
+        sleep 1
+        continue
+    fi
+    RAW_TIMED_OUT=1
+    warn "raw LLM exceeded ${RAW_TIMEOUT_S}s; terminating benchmark wrapper"
+    kill "$RAW_PID" 2>/dev/null || true
+    sleep 2
+    kill -9 "$RAW_PID" 2>/dev/null || true
+    break
+done
+if [ "$RAW_TIMED_OUT" -eq 0 ]; then
+    wait "$RAW_PID"
+    RAW_RC=$?
+else
+    wait "$RAW_PID" 2>/dev/null || true
+    RAW_RC=124
+fi
+END=$("$BENCHMARK_PYTHON" -c "import time; print(time.time())")
 RAW_MS=$(elapsed_ms "$START" "$END")
-info "  raw LLM completed in ${RAW_MS}ms"
+if [ "$RAW_RC" -eq 124 ] && [ -f "$RAW_DIR/matches.json" ]; then
+    warn "raw LLM timed out after ${RAW_MS}ms but produced matches.json"
+elif [ "$RAW_RC" -ne 0 ]; then
+    fail "raw LLM crashed (exit $RAW_RC) after ${RAW_MS}ms — see $RAW_DIR/stdout.txt"
+else
+    info "  raw LLM completed in ${RAW_MS}ms"
+fi
 
 # ---------------------------------------------------------------------------
 # 5. Ground truth evaluation
@@ -312,7 +407,7 @@ done
 echo ""
 info "Generating summary..."
 
-python3 -c "
+"$BENCHMARK_PYTHON" -c "
 import json
 from pathlib import Path
 
