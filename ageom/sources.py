@@ -90,7 +90,7 @@ def sync_source(source: AtomSource, base_dir: Path | None = None) -> Path:
     """Fetch / update a git source.  No-op for local-path sources."""
     if source.path:
         base = base_dir or Path.cwd()
-        resolved = (base / source.path).resolve()
+        resolved = (base / Path(source.path).expanduser()).resolve()
         logger.info("Source '%s' is a local path: %s", source.name, resolved)
         return resolved
     return resolve_source(source, base_dir)
