@@ -389,6 +389,50 @@ def _write_csv_adapter(tmp_path: Path) -> Path:
     return adapter
 
 
+def _write_tabular_meta_adapter(tmp_path: Path) -> Path:
+    """Create an adapter with per=False metadata rows pointing at trial folders."""
+    adapter = tmp_path / "adapter.yml"
+    adapter.write_text(textwrap.dedent("""\
+        name: TrialSet
+        groups:
+          sensor:
+            reader:
+              fqn: pandas.read_csv
+            source: "data.csv"
+            time: t
+            properties:
+              t:
+                source: timestamp
+                description: Epoch seconds.
+              value:
+                source: reading
+                description: Sensor reading.
+        meta:
+          source: tracker.csv
+          per: False
+          reader:
+            fqn: pandas.read_csv
+          day:
+            source: session_date
+            ftime: "%Y-%m-%d"
+          serial:
+            source: serial
+          user:
+            source: user
+          folder:
+            source: trial_name
+    """))
+    tracker = tmp_path / "tracker.csv"
+    tracker.write_text(textwrap.dedent("""\
+        user,serial,session_date,trial_name
+        alice,SN001,2024-03-15,trial_01
+    """))
+    trial = tmp_path / "trial_01"
+    trial.mkdir()
+    (trial / "data.csv").write_text("timestamp,reading\n1.0,10\n2.0,20\n")
+    return adapter
+
+
 class TestTemplatedDataSet:
     def test_init_parses_groups(self, tmp_path):
         adapter = _write_csv_adapter(tmp_path)
@@ -622,6 +666,21 @@ class TestCreateTemplatedDatasetCollection:
         COLLECTION_CLASSES.pop(adapter, None)
         cls = create_templated_dataset_collection(str(adapter))
         assert cls.VENDORS == []
+
+    def test_tabular_metadata_rows_are_valid_before_lazy_load(self, tmp_path):
+        adapter = _write_tabular_meta_adapter(tmp_path)
+        METACLASSES.pop(adapter, None)
+        COLLECTION_CLASSES.pop(adapter, None)
+
+        cls = create_templated_dataset_collection(str(adapter))
+        coll = cls.from_folder()
+
+        assert len(coll.valid) == 1
+        assert len(coll.ordered) == 1
+
+        dfs = coll.to_pandas()
+        assert "sensor" in dfs
+        assert list(dfs["sensor"]["sensor_value"]) == [10, 20]
 
 
 # ---------------------------------------------------------------------------

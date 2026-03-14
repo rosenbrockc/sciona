@@ -33,6 +33,37 @@ log = logging.getLogger(__name__)
 IMPORT_CACHE = {}
 
 
+def _sort_token(value) -> tuple[int, float | str]:
+    if isinstance(value, datetime):
+        return (0, value.timestamp())
+    if isinstance(value, date):
+        return (0, float(value.toordinal()))
+    if isinstance(value, (int, float)):
+        return (1, float(value))
+    return (2, str(value))
+
+
+def _metadata_start_value(meta) -> object:
+    datafile = getattr(meta, "datafile", None)
+    datafile_start = getattr(datafile, "start", None)
+    if datafile_start is not None:
+        return datafile_start
+    return meta.time
+
+
+def _metadata_has_valid_start(meta) -> bool:
+    value = _metadata_start_value(meta)
+    if isinstance(value, (datetime, date)):
+        return True
+    if isinstance(value, (int, float)):
+        return value > 0
+    return value is not None
+
+
+def _metadata_sort_key(meta) -> tuple[int, float | str]:
+    return _sort_token(_metadata_start_value(meta))
+
+
 @contextmanager
 def chdir(target):
     """Context manager for executing some code within a different
@@ -843,7 +874,7 @@ class DataSetCollection(object):
     @property
     def valid(self) -> List[UserMetaData]:
         if self._valid is None:
-            self._valid = [f for f in self.files if f.start > 0]
+            self._valid = [f for f in self.files if _metadata_has_valid_start(f)]
         return self._valid
 
     @property
@@ -855,7 +886,7 @@ class DataSetCollection(object):
     @property
     def ordered(self) -> List[UserMetaData]:
         if self._ordered is None:
-            self._ordered = sorted(self.filtered, key=lambda f: f.time)
+            self._ordered = sorted(self.filtered, key=_metadata_sort_key)
         return self._ordered
 
     @property
