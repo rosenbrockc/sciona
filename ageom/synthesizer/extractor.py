@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import ast
+import copy
 from enum import Enum
 from pathlib import Path
+import re
 
 from ageom.config import AgeomConfig
 from ageom.synthesizer.cargo_template import (
@@ -57,6 +60,166 @@ def _prepare_python_package_source(source: str) -> str:
     return prepared
 
 
+def _infer_function_node_ids(source: str) -> dict[str, str]:
+    """Infer function-to-node ids from assembler comments in generated Python."""
+    node_ids: dict[str, str] = {}
+    pending: str | None = None
+    comment_rx = re.compile(r"# (?:Node|Composition): .* \(([^)]+)\)")
+    def_rx = re.compile(r"def ([A-Za-z_][A-Za-z0-9_]*)\(")
+    for line in source.splitlines():
+        stripped = line.strip()
+        comment_match = comment_rx.match(stripped)
+        if comment_match:
+            pending = comment_match.group(1)
+            continue
+        def_match = def_rx.match(stripped)
+        if def_match and pending is not None:
+            node_ids[def_match.group(1)] = pending
+            pending = None
+    return node_ids
+
+
+def _telemetry_helper_source() -> str:
+    return """\
+import json
+import time
+import tracemalloc
+
+_AGEOM_TRACE_PATH = 'trace.jsonl'
+
+
+def _ageom_probe(node_id: str, fn):
+    tracemalloc.start()
+    t0 = time.perf_counter()
+    try:
+        result = fn()
+    finally:
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+        _, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        record = {
+            "node_id": node_id,
+            "execution_time_ms": elapsed_ms,
+            "peak_memory_bytes": peak,
+        }
+        with open(_AGEOM_TRACE_PATH, "a") as handle:
+            handle.write(json.dumps(record) + "\\n")
+    return result
+"""
+
+
+def _build_wrapper_function(
+    original: ast.FunctionDef,
+    inner_name: str,
+    node_id: str,
+) -> ast.FunctionDef:
+    wrapper = copy.deepcopy(original)
+    wrapper.decorator_list = []
+    doc = ast.get_docstring(original)
+    body: list[ast.stmt] = []
+    if doc is not None:
+        body.append(ast.Expr(value=ast.Constant(value=doc)))
+
+    call = ast.Call(func=ast.Name(id=inner_name, ctx=ast.Load()), args=[], keywords=[])
+    for arg in wrapper.args.posonlyargs + wrapper.args.args:
+        call.args.append(ast.Name(id=arg.arg, ctx=ast.Load()))
+    if wrapper.args.vararg is not None:
+        call.args.append(
+            ast.Starred(value=ast.Name(id=wrapper.args.vararg.arg, ctx=ast.Load()), ctx=ast.Load())
+        )
+    for arg in wrapper.args.kwonlyargs:
+        call.keywords.append(ast.keyword(arg=arg.arg, value=ast.Name(id=arg.arg, ctx=ast.Load())))
+    if wrapper.args.kwarg is not None:
+        call.keywords.append(
+            ast.keyword(arg=None, value=ast.Name(id=wrapper.args.kwarg.arg, ctx=ast.Load()))
+        )
+
+    probe_call = ast.Call(
+        func=ast.Name(id="_ageom_probe", ctx=ast.Load()),
+        args=[
+            ast.Constant(value=node_id),
+            ast.Lambda(
+                args=ast.arguments(
+                    posonlyargs=[],
+                    args=[],
+                    kwonlyargs=[],
+                    kw_defaults=[],
+                    defaults=[],
+                ),
+                body=call,
+            ),
+        ],
+        keywords=[],
+    )
+    body.append(ast.Return(value=probe_call))
+    wrapper.body = body
+    return wrapper
+
+
+def _ensure_python_export_telemetry(source: str) -> str:
+    """Ensure exported Python source emits trace.jsonl records for top-level functions."""
+    if "_AGEOM_TRACE_PATH" in source and "def _ageom_probe" in source:
+        return source
+
+    module = ast.parse(source)
+    node_ids = _infer_function_node_ids(source)
+    helper_module = ast.parse(_telemetry_helper_source())
+
+    new_body: list[ast.stmt] = []
+    inserted_helper = False
+    helper_insert_at = 0
+    for idx, stmt in enumerate(module.body):
+        if isinstance(stmt, ast.ImportFrom) and stmt.module == "__future__":
+            helper_insert_at = idx + 1
+        elif isinstance(stmt, (ast.Import, ast.ImportFrom)):
+            helper_insert_at = idx + 1
+        else:
+            break
+
+    for idx, stmt in enumerate(module.body):
+        if not inserted_helper and idx == helper_insert_at:
+            new_body.extend(copy.deepcopy(helper_module.body))
+            inserted_helper = True
+
+        if isinstance(stmt, ast.FunctionDef) and not stmt.name.startswith("_"):
+            inner = copy.deepcopy(stmt)
+            inner_name = f"_ageom_inner_{stmt.name}"
+            inner.name = inner_name
+            wrapper = _build_wrapper_function(
+                stmt,
+                inner_name=inner_name,
+                node_id=node_ids.get(stmt.name, stmt.name),
+            )
+            new_body.append(inner)
+            new_body.append(wrapper)
+        else:
+            new_body.append(stmt)
+
+    if not inserted_helper:
+        new_body = copy.deepcopy(helper_module.body) + new_body
+
+    instrumented = ast.Module(body=new_body, type_ignores=[])
+    ast.fix_missing_locations(instrumented)
+    rendered = ast.unparse(instrumented)
+    if source.endswith("\n"):
+        rendered += "\n"
+    return rendered
+
+
+def _discover_python_entrypoints(source: str) -> tuple[list[str], str | None]:
+    """Return callable entrypoints from exported Python source."""
+    module = ast.parse(source)
+    names = [
+        stmt.name
+        for stmt in module.body
+        if isinstance(stmt, ast.FunctionDef) and not stmt.name.startswith("_")
+    ]
+    compositions = [name for name in names if name.endswith("_composition")]
+    candidates = compositions or names
+    default = candidates[0] if candidates else None
+    return candidates, default
+
+
 class Extractor:
     """Exports verified source into compiled artifacts and FFI bindings."""
 
@@ -87,6 +250,7 @@ class Extractor:
         source_path.write_text(skeleton.source_code)
 
         compiled_artifact: Path | None = None
+        executable_artifact: Path | None = None
         ffi_files: list[Path] = []
 
         if target == ExportTarget.LEAN_LIB:
@@ -116,7 +280,7 @@ class Extractor:
             ffi_files = self._generate_c_header(skeleton, output_dir)
 
         elif target == ExportTarget.PYTHON_PKG:
-            compiled_artifact, build_errors = await self._build_python(
+            compiled_artifact, executable_artifact, build_errors = await self._build_python(
                 skeleton, source_path, output_dir
             )
             errors.extend(build_errors)
@@ -142,6 +306,7 @@ class Extractor:
             output_dir=output_dir,
             source_path=source_path,
             compiled_artifact=compiled_artifact,
+            executable_artifact=executable_artifact,
             ffi_files=ffi_files,
             certificate=cert,
             errors=errors,
@@ -238,12 +403,13 @@ class Extractor:
         skeleton: SkeletonFile,
         source_path: Path,
         output_dir: Path,
-    ) -> tuple[Path | None, list[str]]:
+    ) -> tuple[Path | None, Path | None, list[str]]:
         """Generate Python package and run mypy to validate."""
         from ageom.synthesizer.python_template import (
             generate_init_py,
             generate_pipeline_py,
             generate_pyproject_toml,
+            generate_runner_py,
         )
 
         errors: list[str] = []
@@ -267,13 +433,22 @@ class Extractor:
         (pkg_dir / "__init__.py").write_text(init_content)
 
         # atoms.py — the verified source
-        (pkg_dir / "atoms.py").write_text(
-            _prepare_python_package_source(skeleton.source_code)
-        )
+        instrumented_source = _ensure_python_export_telemetry(skeleton.source_code)
+        prepared_source = _prepare_python_package_source(instrumented_source)
+        (pkg_dir / "atoms.py").write_text(prepared_source)
 
         # pipeline.py
-        pipeline_content = generate_pipeline_py([])
+        entrypoints, default_entrypoint = _discover_python_entrypoints(prepared_source)
+        pipeline_content = generate_pipeline_py(
+            [],
+            entrypoint_names=entrypoints,
+            default_entrypoint=default_entrypoint,
+        )
         (pkg_dir / "pipeline.py").write_text(pipeline_content)
+
+        # runner.py
+        runner_path = output_dir / "runner.py"
+        runner_path.write_text(generate_runner_py(package_name))
 
         # Run mypy --strict on the package
         mypy_bin = getattr(self._config, "python_mypy_path", "mypy")
@@ -310,8 +485,8 @@ class Extractor:
         except FileNotFoundError:
             errors.append(f"mypy not found at '{mypy_bin}' — skipping validation")
 
-        artifact = pkg_dir if pkg_dir.exists() else None
-        return artifact, errors
+        artifact = runner_path if runner_path.exists() else None
+        return artifact, runner_path if runner_path.exists() else None, errors
 
     def _generate_rust_ffi(
         self,

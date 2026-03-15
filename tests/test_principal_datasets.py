@@ -771,7 +771,7 @@ class TestEvaluateAdapterMethod:
         bundle.output_dir = tmp_path
 
         import asyncio
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             sandbox.evaluate_adapter(
                 bundle,
                 str(tmp_path / "nonexistent_adapter.yml"),

@@ -88,6 +88,7 @@ class ExportBundle(BaseModel):
     output_dir: Path
     source_path: Path
     compiled_artifact: Path | None = None
+    executable_artifact: Path | None = None
     ffi_files: list[Path] = Field(default_factory=list)
     certificate: VerificationCertificate | None = None
     errors: list[str] = Field(default_factory=list)

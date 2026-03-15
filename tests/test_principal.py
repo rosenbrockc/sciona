@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -243,6 +244,93 @@ class TestParseMseFromStdout:
 
         stdout = b'log line 1\nlog line 2\n{"mse": 0.123}\n'
         assert _parse_mse_from_stdout(stdout) == pytest.approx(0.123)
+
+
+class TestExecutionSandbox:
+    def test_evaluate_supports_relative_artifact_paths(self, tmp_path: Path, monkeypatch):
+        from ageom.principal.evaluator import ExecutionSandbox
+        from ageom.synthesizer.models import ExportBundle
+
+        artifact = tmp_path / "artifact.py"
+        artifact.write_text(
+            "\n".join(
+                [
+                    "from pathlib import Path",
+                    "import json",
+                    "Path('trace.jsonl').write_text("
+                    "json.dumps({'node_id': 'n1', 'execution_time_ms': 1.5, 'peak_memory_bytes': 10}) + '\\n'"
+                    ")",
+                    "print(json.dumps({'mse': 0.25}))",
+                ]
+            )
+        )
+        dataset = tmp_path / "dataset.json"
+        dataset.write_text("{}")
+
+        monkeypatch.chdir(tmp_path)
+        bundle = ExportBundle(
+            target="python-pkg",
+            output_dir=Path("."),
+            source_path=Path("artifact.py"),
+            compiled_artifact=Path("artifact.py"),
+        )
+
+        result = asyncio.run(
+            ExecutionSandbox(timeout_s=5.0).evaluate(
+                bundle, str(dataset), OptimizationMetric.PRECISION
+            )
+        )
+
+        assert result.global_loss == pytest.approx(0.25)
+        assert "n1" in result.node_telemetry
+
+    def test_evaluate_adapter_prefers_python_runner(self, tmp_path: Path, monkeypatch):
+        from ageom.principal.evaluator import ExecutionSandbox
+        from ageom.synthesizer.models import ExportBundle
+
+        runner = tmp_path / "runner.py"
+        runner.write_text("print('ok')\n")
+        (tmp_path / "ageom.yml").write_text("name: test\n")
+        trace = tmp_path / "trace.jsonl"
+        bundle = ExportBundle(
+            target="python-pkg",
+            output_dir=tmp_path,
+            source_path=runner,
+            compiled_artifact=runner,
+            executable_artifact=runner,
+        )
+
+        class DummyProc:
+            returncode = 0
+
+            async def communicate(self):
+                trace.write_text(
+                    '{"node_id":"leaf","execution_time_ms":1.0,"peak_memory_bytes":2}\n'
+                )
+                return (b'{"mse": 0.5}\n', b"")
+
+        calls: list[list[str]] = []
+
+        async def fake_exec(*cmd, **kwargs):
+            calls.append(list(cmd))
+            return DummyProc()
+
+        monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
+
+        result = asyncio.run(
+            ExecutionSandbox(timeout_s=5.0).evaluate_adapter(
+                bundle,
+                str(tmp_path / "ageom.yml"),
+                OptimizationMetric.PRECISION,
+                varset={"tracker": "full"},
+            )
+        )
+
+        assert result.global_loss == pytest.approx(0.5)
+        assert calls
+        assert "--dataset-root" in calls[0]
+        assert str(tmp_path) in calls[0]
+        assert "--dataset-var" in calls[0]
 
 
 # ===================================================================

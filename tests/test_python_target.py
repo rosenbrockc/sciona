@@ -631,12 +631,18 @@ class TestPythonExtractor:
     def test_generate_pipeline_py(self):
         content = generate_pipeline_py([])
         assert "def run_pipeline" in content
-        assert "raise NotImplementedError" in content
+        assert "No exported entrypoints are available" in content
+        assert "def load_dataset" in content
+        assert "--dataset-root" in content
 
     def test_generate_pipeline_py_with_steps(self):
-        content = generate_pipeline_py(["result = atoms.solve_wrapper(A, b)"])
+        content = generate_pipeline_py(
+            ["result = atoms.solve_wrapper(A, b)"],
+            entrypoint_names=["solve_wrapper"],
+            default_entrypoint="solve_wrapper",
+        )
         assert "result = atoms.solve_wrapper(A, b)" in content
-        assert "raise NotImplementedError" not in content
+        assert "DEFAULT_ENTRYPOINT = \"solve_wrapper\"" in content
 
     def test_generate_main_script(self):
         skeleton = SkeletonFile(
@@ -679,7 +685,7 @@ class TestPythonExtractor:
         mock_proc.returncode = 0
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
-            artifact, errors = await extractor._build_python(
+            artifact, executable, errors = await extractor._build_python(
                 skeleton, source_path, tmp_path
             )
 
@@ -687,6 +693,9 @@ class TestPythonExtractor:
         assert (tmp_path / "src" / "test_pkg" / "__init__.py").exists()
         assert (tmp_path / "src" / "test_pkg" / "atoms.py").exists()
         assert (tmp_path / "src" / "test_pkg" / "pipeline.py").exists()
+        assert (tmp_path / "runner.py").exists()
+        assert artifact == tmp_path / "runner.py"
+        assert executable == tmp_path / "runner.py"
 
 
 # ---------------------------------------------------------------------------

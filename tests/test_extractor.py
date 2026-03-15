@@ -275,6 +275,25 @@ class TestCertificate:
         pipeline = generate_pipeline_py([])
         assert "from typing import Any" in pipeline
         assert "def run_pipeline(**kwargs: Any) -> Any:" in pipeline
+        assert "def main(argv: list[str] | None = None) -> int:" in pipeline
+
+    def test_generate_pipeline_py_supports_dataset_root_cli(self):
+        pipeline = generate_pipeline_py([], entrypoint_names=["direct_goal_match"], default_entrypoint="direct_goal_match")
+        assert "--dataset-root" in pipeline
+        assert "create_templated_dataset_collection" in pipeline
+        assert 'ENTRYPOINTS = ["direct_goal_match"]' in pipeline
+
+    def test_prepare_python_package_source_keeps_instrumented_helper(self):
+        source = (
+            "import json\n"
+            "_AGEOM_TRACE_PATH = 'trace.jsonl'\n"
+            "def _ageom_probe(node_id, fn):\n"
+            "    return fn()\n"
+            "def foo():\n"
+            "    return 1\n"
+        )
+        prepared = _prepare_python_package_source(source)
+        assert "_AGEOM_TRACE_PATH = 'trace.jsonl'" in prepared
 
     def test_save_load_roundtrip(self, tmp_path: Path):
         cert = VerificationCertificate(

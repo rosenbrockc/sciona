@@ -48,12 +48,15 @@ class ExecutionSandbox:
             subprocess failure or timeout the result carries a large
             penalty loss and an empty telemetry map.
         """
-        artifact = bundle.compiled_artifact or bundle.source_path
+        artifact = bundle.executable_artifact or bundle.compiled_artifact or bundle.source_path
+        output_dir = bundle.output_dir.resolve()
+        if not artifact.is_absolute():
+            artifact = artifact.resolve()
         if not artifact.exists():
             logger.error("Artifact not found: %s", artifact)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
-        trace_path = bundle.output_dir / "trace.jsonl"
+        trace_path = output_dir / "trace.jsonl"
         # Remove stale trace from a previous run
         if trace_path.exists():
             trace_path.unlink()
@@ -63,7 +66,7 @@ class ExecutionSandbox:
                 "python",
                 str(artifact),
                 str(dataset_path),
-                cwd=str(bundle.output_dir),
+                cwd=str(output_dir),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -133,6 +136,17 @@ class ExecutionSandbox:
             logger.error("Adapter file not found: %s", adapter)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
+        executable = bundle.executable_artifact or bundle.compiled_artifact
+        if executable is not None and executable.suffix == ".py":
+            return await self._evaluate_python_adapter_runner(
+                bundle,
+                adapter,
+                metric,
+                varset=varset,
+                user=user,
+                serial=serial,
+            )
+
         try:
             coll_cls = create_templated_dataset_collection(
                 str(adapter), varset=varset,
@@ -156,6 +170,75 @@ class ExecutionSandbox:
         manifest_path.write_text(json.dumps(manifest, indent=2))
 
         return await self.evaluate(bundle, str(manifest_path), metric)
+
+    async def _evaluate_python_adapter_runner(
+        self,
+        bundle: ExportBundle,
+        adapter: Path,
+        metric: OptimizationMetric,
+        *,
+        varset: dict | None = None,
+        user: str | None = None,
+        serial: str | None = None,
+    ) -> BenchmarkResult:
+        artifact = bundle.executable_artifact or bundle.compiled_artifact or bundle.source_path
+        output_dir = bundle.output_dir.resolve()
+        if not artifact.is_absolute():
+            artifact = artifact.resolve()
+        if not artifact.exists():
+            logger.error("Artifact not found: %s", artifact)
+            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+
+        trace_path = output_dir / "trace.jsonl"
+        if trace_path.exists():
+            trace_path.unlink()
+
+        cmd = [
+            "python",
+            str(artifact),
+            "--dataset-root",
+            str(adapter.parent),
+            "--trace-path",
+            str(trace_path),
+        ]
+        for key, value in sorted((varset or {}).items()):
+            cmd.extend(["--dataset-var", f"{key}={value}"])
+        if user is not None:
+            cmd.extend(["--user", user])
+        if serial is not None:
+            cmd.extend(["--serial", serial])
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=str(output_dir),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(),
+                timeout=self._timeout_s,
+            )
+        except asyncio.TimeoutError:
+            logger.error("Artifact timed out after %.1fs", self._timeout_s)
+            proc.kill()
+            await proc.wait()
+            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+        except OSError as exc:
+            logger.error("Failed to launch artifact: %s", exc)
+            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+
+        if proc.returncode != 0:
+            logger.error(
+                "Artifact exited with code %d: %s",
+                proc.returncode,
+                (stderr or b"").decode(errors="replace")[:500],
+            )
+            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+
+        telemetry = _parse_trace(trace_path)
+        global_loss = _compute_loss(telemetry, metric, stdout)
+        return BenchmarkResult(global_loss=global_loss, node_telemetry=telemetry)
 
 
 def _parse_trace(trace_path: Path) -> dict[str, NodeTelemetry]:
