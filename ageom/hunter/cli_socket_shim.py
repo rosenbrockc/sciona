@@ -117,16 +117,40 @@ class CLISocketShimClient:
                 },
             )
         except Exception as exc:
-            self._last_error_metadata = {
-                "provider_error_phase": "rpc",
-                "provider_transport": "socket_shim",
-                "provider_cli": self._cli,
-                "provider_model": self._model,
-                "shim_worker_pid": worker.pid,
-                "shim_pool_size": self._pool_size,
-                "provider_error_excerpt": str(exc)[:240],
-            }
-            raise
+            if self._should_retry_transport_error(exc):
+                worker = await self._replace_worker(worker)
+                try:
+                    result = await self._rpc(
+                        worker,
+                        method,
+                        {
+                            "system": system,
+                            "user": user,
+                            "grammar": grammar,
+                        },
+                    )
+                except Exception as retry_exc:
+                    self._last_error_metadata = {
+                        "provider_error_phase": "rpc",
+                        "provider_transport": "socket_shim",
+                        "provider_cli": self._cli,
+                        "provider_model": self._model,
+                        "shim_worker_pid": worker.pid,
+                        "shim_pool_size": self._pool_size,
+                        "provider_error_excerpt": str(retry_exc)[:240],
+                    }
+                    raise
+            else:
+                self._last_error_metadata = {
+                    "provider_error_phase": "rpc",
+                    "provider_transport": "socket_shim",
+                    "provider_cli": self._cli,
+                    "provider_model": self._model,
+                    "shim_worker_pid": worker.pid,
+                    "shim_pool_size": self._pool_size,
+                    "provider_error_excerpt": str(exc)[:240],
+                }
+                raise
         self._last_completion_metadata = {
             "shim_provider": f"{self._cli}_shim",
             "shim_worker_pid": result.get("pid"),
@@ -153,6 +177,36 @@ class CLISocketShimClient:
         worker = min(ordered, key=lambda item: item.pending)
         worker.pending += 1
         return worker
+
+    async def _replace_worker(self, worker: _SocketWorker) -> _SocketWorker:
+        """Replace a failed worker in-place and return the new one."""
+        try:
+            index = self._workers.index(worker)
+        except ValueError:
+            index = len(self._workers)
+        try:
+            await self._shutdown_worker(worker)
+        except Exception:
+            pass
+        replacement = await self._spawn_worker(index)
+        if index < len(self._workers):
+            self._workers[index] = replacement
+        else:
+            self._workers.append(replacement)
+        replacement.pending += 1
+        return replacement
+
+    def _should_retry_transport_error(self, exc: Exception) -> bool:
+        """Return True when a socket transport failure should trigger a retry."""
+        if isinstance(exc, (BrokenPipeError, ConnectionResetError, ConnectionError, OSError)):
+            return True
+        message = str(exc).lower()
+        return (
+            "socket closed unexpectedly" in message
+            or "broken pipe" in message
+            or "connection reset" in message
+            or "transport endpoint is not connected" in message
+        )
 
     async def _spawn_worker(self, index: int) -> _SocketWorker:
         socket_path = self._runtime_dir / f"worker-{index}.sock"

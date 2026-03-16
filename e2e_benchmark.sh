@@ -99,9 +99,9 @@ INCLUDE_SYNTHESIS="${E2E_INCLUDE_SYNTHESIS:-false}"
 SYNTH_TIMEOUT_S="${E2E_SYNTH_TIMEOUT_S:-240}"
 EXPORT_TIMEOUT_S="${E2E_EXPORT_TIMEOUT_S:-120}"
 PROFILE_TIMEOUT_S="${E2E_PROFILE_TIMEOUT_S:-180}"
-PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/adapter.yml}"
+PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/ageom.yml}"
 PROFILE_DATASET_VARS="${E2E_PROFILE_DATASET_VARS:-}"
-if [ -z "$PROFILE_DATASET_VARS" ] && [ -f "$PROFILE_DATASET" ] && rg -q 'tracker_\\$\\(tracker\\)\\.csv' "$PROFILE_DATASET"; then
+if [ -z "$PROFILE_DATASET_VARS" ] && [ -f "$PROFILE_DATASET" ] && rg -Fq '$(tracker)' "$PROFILE_DATASET"; then
     PROFILE_DATASET_VARS="tracker=single"
 fi
 export E2E_PROFILE_DATASET_VARS="$PROFILE_DATASET_VARS"
@@ -137,9 +137,9 @@ if [ -n "$_gt_json" ]; then
 else
     # Fallback: hardcoded ECG values for backwards compatibility
     GROUND_TRUTH_PATTERNS=(
-        "bandpass_filter"
-        "r_peak_detection|hamilton_segment"
-        "heart_rate_computation"
+        "filter_signal_for_detection|bandpass_filter"
+        "detect_peaks_in_signal|r_peak_detection|hamilton_segment"
+        "compute_event_rate|heart_rate_computation"
     )
 fi
 
@@ -500,27 +500,41 @@ async def run():
     config = AgeomConfig()
     provider = os.environ.get("LLM_PROVIDER", "codex_shim")
     model = os.environ.get("LLM_MODEL", "gpt-5.3-codex")
+    raw_provider = provider[:-5] + "_cli" if provider.endswith("_shim") else provider
 
-    llm = create_llm_client(
-        provider=provider,
-        model=model,
-        max_tokens=config.llm_max_tokens,
-        anthropic_api_key=config.anthropic_api_key,
-        openai_api_key=config.openai_api_key,
-        openai_base_url=config.openai_base_url,
-        llama_cpp_base_url=config.llama_cpp_base_url,
-        llama_cpp_api_key=config.llama_cpp_api_key,
-        allow_legacy_subprocess=getattr(
-            config, "allow_legacy_subprocess_providers", False
-        ),
-    )
+    def make_client():
+        return create_llm_client(
+            provider=raw_provider,
+            model=model,
+            max_tokens=config.llm_max_tokens,
+            anthropic_api_key=config.anthropic_api_key,
+            openai_api_key=config.openai_api_key,
+            openai_base_url=config.openai_base_url,
+            llama_cpp_base_url=config.llama_cpp_base_url,
+            llama_cpp_api_key=config.llama_cpp_api_key,
+            allow_legacy_subprocess=True,
+        )
+
+    llm = make_client()
 
     with open(f"{RAW_DIR}/system_prompt.txt") as f:
         system = f.read()
     with open(f"{RAW_DIR}/user_prompt.txt") as f:
         user = f.read()
 
-    response = await llm.complete(system, user)
+    last_exc = None
+    response = ""
+    for attempt in range(2):
+        try:
+            response = await llm.complete(system, user)
+            break
+        except Exception as exc:
+            last_exc = exc
+            if attempt == 1:
+                raise
+            llm = make_client()
+    if not response and last_exc is not None:
+        raise last_exc
     with open(f"{RAW_DIR}/response.txt", "w") as f:
         f.write(response)
 
