@@ -18,6 +18,7 @@ from ageom.architect.models import (
 
 if TYPE_CHECKING:
     from ageom.architect.embedder import SkillIndex
+    from ageom.synthesizer.uncertainty import AtomUncertaintyEstimate
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,9 @@ class CatalogReport:
     source_witness_signature_fallbacks: int = 0
     source_breakdown: dict[str, dict[str, int]] = field(default_factory=dict)
     merge_details: list[tuple[str, str, float]] = field(default_factory=list)
+    uncertainty_estimates: dict[str, "AtomUncertaintyEstimate"] = field(
+        default_factory=dict
+    )
 
 
 @dataclass(frozen=True)

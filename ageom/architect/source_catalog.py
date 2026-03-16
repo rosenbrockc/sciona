@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, get_args, get_origin
 from ageom.architect.catalog import CatalogReport, PrimitiveCatalog
 from ageom.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 from ageom.sources import AtomSource, SourcesConfig, discover_cdgs, import_atoms, load_sources, resolve_source
+from ageom.synthesizer.uncertainty import load_uncertainty_json
 
 if TYPE_CHECKING:
     from ageom.architect.embedder import SkillIndex
@@ -710,6 +711,13 @@ def seed_catalog_from_sources(
                 added += 1
                 _bump_source_breakdown(report, source.name, "added")
             seen_names.add(name)
+
+        # Load uncertainty.json files from this source
+        if report is not None:
+            for uj_path in package_root.rglob("uncertainty.json"):
+                atom_name, est = load_uncertainty_json(uj_path)
+                if atom_name and est.mode != "unknown":
+                    report.uncertainty_estimates[atom_name] = est
     return added
 
 

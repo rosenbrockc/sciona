@@ -26,6 +26,11 @@ from ageom.architect.models import (
     NodeStatus,
 )
 from ageom.synthesizer.toposort import toposort_nodes
+from ageom.synthesizer.uncertainty import (
+    AtomUncertaintyEstimate,
+    HeuristicBackend,
+    UncertaintyBackend,
+)
 from ageom.types import MatchResult
 
 logger = logging.getLogger(__name__)
@@ -82,6 +87,10 @@ class GhostSimReport:
     """Ratio of simulable / total atomic nodes (0.0 - 1.0)."""
     precision_gradients: dict[str, float] = field(default_factory=dict)
     """Per-node error expansion (output interval width - input interval width)."""
+    uncalibrated_nodes: list[str] = field(default_factory=list)
+    """Node IDs whose uncertainty estimate has mode='unknown'."""
+    node_confidence: dict[str, float] = field(default_factory=dict)
+    """Per-node confidence in the uncertainty estimate (0.0-1.0)."""
     cyclic_deadlock: bool = False
     """True if iterative message passing detected an unbroken cycle."""
     deadlock_nodes: list[str] = field(default_factory=list)
@@ -232,29 +241,8 @@ def _build_initial_value(param_name: str, type_desc: str, constraints: str) -> A
 # Interval arithmetic for precision gradient
 # ---------------------------------------------------------------------------
 
-# Known per-atom error expansion factors.  Each value is a multiplier
-# applied to the incoming interval width.  Missing atoms are treated
-# as identity (factor = 1.0).
-_ATOM_ERROR_FACTORS: dict[str, float] = {
-    "fft": 1.5,  # O(n log n) rounding accumulation
-    "ifft": 1.5,
-    "rfft": 1.3,
-    "irfft": 1.3,
-    "stft": 1.6,
-    "istft": 1.6,
-    "butter": 1.1,  # filter design — coefficient quantisation
-    "cheby1": 1.3,
-    "cheby2": 1.3,
-    "ellip": 1.4,
-    "lfilter": 2.0,  # IIR recursive application amplifies error
-    "sosfilt": 1.4,  # SOS form is more stable than TF
-    "firwin": 1.05,
-    "convolve": 1.2,
-    "correlate": 1.2,
-    "resample": 1.3,
-    "hilbert": 1.4,
-    "welch": 1.2,
-}
+# Default uncertainty backend (lazily initialised on first use).
+_DEFAULT_BACKEND: UncertaintyBackend | None = None
 
 
 def _parse_error_bounds(constraints: str) -> ErrorInterval:
@@ -293,31 +281,38 @@ def _default_error_interval(type_desc: str) -> ErrorInterval:
     return ErrorInterval(0.0, 0.0)
 
 
-def _infer_atom_error_factor(atom_name: str) -> float:
-    """Estimate precision-expansion factor from exact or keyword matches."""
-    if atom_name in _ATOM_ERROR_FACTORS:
-        return _ATOM_ERROR_FACTORS[atom_name]
+def _get_default_backend() -> UncertaintyBackend:
+    """Return the default heuristic backend (singleton)."""
+    global _DEFAULT_BACKEND
+    if _DEFAULT_BACKEND is None:
+        _DEFAULT_BACKEND = HeuristicBackend()
+    return _DEFAULT_BACKEND
 
-    lowered = atom_name.lower()
-    if any(token in lowered for token in ("filter", "smooth", "denoise", "bandpass")):
-        return 1.2
-    if any(token in lowered for token in ("detect", "segment", "peak", "extract")):
-        return 1.35
-    if any(token in lowered for token in ("rate", "metric", "measure", "cadence")):
-        return 1.15
-    return 1.0
+
+@dataclass
+class _PrecisionGradientResult:
+    """Internal result from precision gradient computation."""
+
+    gradients: dict[str, float] = field(default_factory=dict)
+    uncalibrated_nodes: list[str] = field(default_factory=list)
+    node_confidence: dict[str, float] = field(default_factory=dict)
 
 
 def _compute_precision_gradients(
     cdg: CDGExport,
     match_map: dict[str, MatchResult],
     sorted_ids: list[str],
-) -> dict[str, float]:
+    *,
+    backend: UncertaintyBackend | None = None,
+) -> _PrecisionGradientResult:
     """Propagate error intervals through the CDG and return per-node expansion.
 
     Works without ageoa — purely based on IOSpec metadata and known atom
-    error factors.  Returns an empty dict when no nodes carry error metadata.
+    error factors.  Returns an empty result when no nodes carry error metadata.
     """
+    if backend is None:
+        backend = _get_default_backend()
+
     node_map: dict[str, AlgorithmicNode] = {n.node_id: n for n in cdg.nodes}
     atomic_leaves = {n.node_id for n in cdg.nodes if n.status == NodeStatus.ATOMIC}
 
@@ -329,7 +324,7 @@ def _compute_precision_gradients(
 
     # Track the output error interval per node
     output_intervals: dict[str, ErrorInterval] = {}
-    gradients: dict[str, float] = {}
+    result = _PrecisionGradientResult()
 
     for nid in sorted_ids:
         if nid not in atomic_leaves:
@@ -358,13 +353,19 @@ def _compute_precision_gradients(
             else:
                 input_interval = _default_error_interval(node.inputs[0].type_desc)
 
-        # Look up error factor for this atom
+        # Look up error factor for this atom via uncertainty backend
         mr = match_map.get(nid)
         if mr and mr.success:
             atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
-            factor = _infer_atom_error_factor(atom_name)
+            est = backend.estimate(atom_name)
+            factor = est.scalar_factor if est.scalar_factor is not None else 1.0
+            result.node_confidence[nid] = est.confidence
+            if est.mode == "unknown":
+                result.uncalibrated_nodes.append(nid)
         else:
             factor = 1.0
+            result.node_confidence[nid] = 0.0
+            result.uncalibrated_nodes.append(nid)
 
         # Compute output interval
         if input_interval.width > 0:
@@ -385,9 +386,9 @@ def _compute_precision_gradients(
         # Precision gradient = output width - input width
         delta = out.width - input_interval.width
         if delta != 0.0 or input_interval.width > 0 or out.width > 0:
-            gradients[nid] = delta
+            result.gradients[nid] = delta
 
-    return gradients
+    return result
 
 
 def _detect_message_passing_cycle(
@@ -523,6 +524,8 @@ def _simulate_message_passing_iterative(
 def run_ghost_simulation(
     cdg: CDGExport,
     match_results: list[MatchResult],
+    *,
+    uncertainty_backend: UncertaintyBackend | None = None,
 ) -> GhostSimReport:
     """Run the ghost witness simulation on a CDG.
 
@@ -534,6 +537,8 @@ def run_ghost_simulation(
     Args:
         cdg: The Conceptual Dependency Graph.
         match_results: Verified match results for atomic leaves.
+        uncertainty_backend: Optional backend for per-atom error estimates.
+            Falls back to ``HeuristicBackend`` when ``None``.
 
     Returns:
         GhostSimReport describing the simulation outcome.
@@ -576,11 +581,15 @@ def run_ghost_simulation(
 
     # Precision gradients — runs independently of ageoa
     try:
-        report.precision_gradients = _compute_precision_gradients(
+        pg_result = _compute_precision_gradients(
             cdg,
             match_map,
             sorted_ids,
+            backend=uncertainty_backend,
         )
+        report.precision_gradients = pg_result.gradients
+        report.uncalibrated_nodes = pg_result.uncalibrated_nodes
+        report.node_confidence = pg_result.node_confidence
     except Exception as exc:
         logger.warning("Precision gradient computation failed: %s", exc)
 

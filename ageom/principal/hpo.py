@@ -69,7 +69,17 @@ class OptunaManager:
 
         for nid, pg in sim_report.precision_gradients.items():
             if math.isinf(pg) or math.isnan(pg):
-                raise TrialPrunedEarly(f"Infinite/NaN error bound at node '{nid}'")
+                conf = sim_report.node_confidence.get(nid, 1.0)
+                if conf > 0.3:
+                    raise TrialPrunedEarly(
+                        f"Infinite/NaN error bound at node '{nid}'"
+                    )
+                logger.warning(
+                    "Infinite/NaN error bound at node '%s' (confidence=%.2f, "
+                    "below 0.3 threshold — not pruning)",
+                    nid,
+                    conf,
+                )
 
     # ------------------------------------------------------------------
     # Importance analysis

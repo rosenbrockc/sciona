@@ -141,3 +141,6 @@ class AlgorithmicPrimitive(BaseModel):
     outputs: list[IOSpec] = Field(default_factory=list)
     type_signature: str = ""  # Formal type for Round 2
     clrs_spec: dict = Field(default_factory=dict)  # Raw CLRS spec if from CLRS-30
+    uncertainty_factor: float | None = None
+    uncertainty_confidence: float = 0.0
+    uncertainty_mode: str = ""

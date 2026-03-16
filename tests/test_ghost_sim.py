@@ -15,11 +15,13 @@ from ageom.architect.models import (
 )
 from ageom.synthesizer.ghost_sim import (
     GhostSimReport,
+    _compute_precision_gradients,
     _extract_atom_name,
     _build_abstract_value,
     _GHOST_AVAILABLE,
     run_ghost_simulation,
 )
+from ageom.synthesizer.uncertainty import HeuristicBackend
 
 from ageom.types import (
     CandidateMatch,
@@ -466,3 +468,173 @@ class TestRunGhostSimulationMixed:
         assert report.node_count == 1
         assert "Custom Op" in report.skipped_nodes
         assert "FFT" in report.trace
+
+
+# ---------------------------------------------------------------------------
+# TestPrecisionGradientRoundTrip — Phase 1 verification
+# ---------------------------------------------------------------------------
+
+
+class TestPrecisionGradientRoundTrip:
+    """Verify that the refactored backend produces identical precision gradients."""
+
+    @pytest.fixture
+    def fft_cdg(self) -> CDGExport:
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="FFT Round Trip",
+                description="Forward FFT then inverse FFT",
+                concept_type=ConceptType.SIGNAL_TRANSFORM,
+                status=NodeStatus.DECOMPOSED,
+                children=["fft_node", "ifft_node"],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="fft_node",
+                name="Forward FFT",
+                description="FFT",
+                concept_type=ConceptType.SIGNAL_TRANSFORM,
+                status=NodeStatus.ATOMIC,
+                inputs=[IOSpec(name="sig", type_desc="np.ndarray", constraints="time domain")],
+                outputs=[IOSpec(name="spectrum", type_desc="np.ndarray", constraints="freq domain")],
+                depth=1,
+            ),
+            AlgorithmicNode(
+                node_id="ifft_node",
+                name="Inverse FFT",
+                description="IFFT",
+                concept_type=ConceptType.SIGNAL_TRANSFORM,
+                status=NodeStatus.ATOMIC,
+                inputs=[IOSpec(name="sig", type_desc="np.ndarray", constraints="freq domain")],
+                outputs=[IOSpec(name="out", type_desc="np.ndarray", constraints="time domain")],
+                depth=1,
+            ),
+        ]
+        edges = [
+            DependencyEdge(
+                source_id="fft_node", target_id="ifft_node",
+                output_name="spectrum", input_name="sig",
+                source_type="np.ndarray", target_type="np.ndarray",
+            ),
+        ]
+        return CDGExport(nodes=nodes, edges=edges, metadata={})
+
+    @pytest.fixture
+    def fft_matches(self) -> dict[str, MatchResult]:
+        return {
+            "fft_node": _make_match("fft_node", "ageoa.numpy.fft.fft"),
+            "ifft_node": _make_match("ifft_node", "ageoa.numpy.fft.ifft"),
+        }
+
+    @pytest.fixture
+    def filter_cdg(self) -> CDGExport:
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Filter Pipeline",
+                description="butter -> lfilter",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.DECOMPOSED,
+                children=["butter_node", "lfilter_node"],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="butter_node",
+                name="Butterworth Design",
+                description="Design filter",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                inputs=[
+                    IOSpec(name="order", type_desc="int"),
+                    IOSpec(name="wn", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="coefficients", type_desc="Filter coefficients")],
+                depth=1,
+            ),
+            AlgorithmicNode(
+                node_id="lfilter_node",
+                name="Apply Filter",
+                description="Apply filter",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                inputs=[
+                    IOSpec(name="coefficients", type_desc="Filter coefficients"),
+                    IOSpec(name="sig", type_desc="np.ndarray", constraints="time domain"),
+                ],
+                outputs=[IOSpec(name="filtered", type_desc="np.ndarray", constraints="time domain")],
+                depth=1,
+            ),
+        ]
+        edges = [
+            DependencyEdge(
+                source_id="butter_node", target_id="lfilter_node",
+                output_name="coefficients", input_name="coefficients",
+                source_type="Filter coefficients", target_type="Filter coefficients",
+            ),
+        ]
+        return CDGExport(nodes=nodes, edges=edges, metadata={})
+
+    @pytest.fixture
+    def filter_matches(self) -> dict[str, MatchResult]:
+        return {
+            "butter_node": _make_match("butter_node", "scipy.signal.butter"),
+            "lfilter_node": _make_match("lfilter_node", "scipy.signal.lfilter"),
+        }
+
+    def test_fft_gradients_match_legacy(self, fft_cdg, fft_matches):
+        """FFT pipeline gradients must match the legacy hardcoded factors."""
+        result = _compute_precision_gradients(
+            fft_cdg, fft_matches, ["fft_node", "ifft_node"],
+        )
+        # FFT: factor 1.5, input width 1.0 -> output width 1.5, delta 0.5
+        assert "fft_node" in result.gradients
+        assert abs(result.gradients["fft_node"] - 0.5) < 1e-10
+        # IFFT: factor 1.5, input width 1.5 -> output width 2.25, delta 0.75
+        assert "ifft_node" in result.gradients
+        assert abs(result.gradients["ifft_node"] - 0.75) < 1e-10
+
+    def test_filter_gradients_match_legacy(self, filter_cdg, filter_matches):
+        """Filter pipeline gradients must match the legacy hardcoded factors."""
+        result = _compute_precision_gradients(
+            filter_cdg, filter_matches, ["butter_node", "lfilter_node"],
+        )
+        # lfilter node has numeric input via its second input (np.ndarray)
+        # butter_node: int/float inputs don't produce numeric intervals
+        # So only lfilter_node should have a non-zero gradient
+        assert "lfilter_node" in result.gradients
+
+    def test_unknown_atom_gets_factor_one(self):
+        """An unknown atom should use factor 1.0 (no expansion)."""
+        nodes = [
+            AlgorithmicNode(
+                node_id="unknown_node",
+                name="Unknown",
+                description="Unknown op",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                inputs=[IOSpec(name="x", type_desc="np.ndarray")],
+                outputs=[IOSpec(name="y", type_desc="np.ndarray")],
+                depth=0,
+            ),
+        ]
+        cdg = CDGExport(nodes=nodes, edges=[], metadata={})
+        matches = {
+            "unknown_node": _make_match("unknown_node", "some.totally.unknown.op"),
+        }
+        result = _compute_precision_gradients(cdg, matches, ["unknown_node"])
+        # factor 1.0 -> output width = input width -> delta = 0.0
+        # But input_interval.width > 0, so it should still be recorded
+        assert "unknown_node" in result.gradients
+        assert result.gradients["unknown_node"] == 0.0
+        assert "unknown_node" in result.uncalibrated_nodes
+        assert result.node_confidence["unknown_node"] == 0.0
+
+    def test_confidence_populated_for_known_atoms(self, fft_cdg, fft_matches):
+        """Known atoms should have non-zero confidence."""
+        result = _compute_precision_gradients(
+            fft_cdg, fft_matches, ["fft_node", "ifft_node"],
+        )
+        assert result.node_confidence["fft_node"] == 0.2  # heuristic confidence
+        assert result.node_confidence["ifft_node"] == 0.2
+        assert result.uncalibrated_nodes == []

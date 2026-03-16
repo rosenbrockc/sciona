@@ -148,8 +148,9 @@ class CreditAssigner:
         scored: dict[str, float] = {}
         for nid in atomic_ids:
             pg = sim_report.precision_gradients.get(nid)
+            conf = sim_report.node_confidence.get(nid, 1.0)
             if pg is not None and pg != 0.0:
-                scored[nid] = abs(pg)
+                scored[nid] = abs(pg) * conf
                 continue
             tel = benchmark.node_telemetry.get(nid)
             if tel is not None and tel.error_expansion > 0:
@@ -159,17 +160,21 @@ class CreditAssigner:
         if total <= 0:
             return []
 
+        uncalibrated = set(sim_report.uncalibrated_nodes)
         for nid, raw in scored.items():
             pct = raw / total * 100.0
+            reason = (
+                f"Node '{node_names.get(nid, nid)}' contributed "
+                f"{pct:.1f}% of total numerical error expansion"
+            )
+            if nid in uncalibrated:
+                reason += " [uncalibrated — uncertainty estimate unavailable]"
             gradients.append(
                 NodeGradient(
                     node_id=nid,
                     gradient_score=pct,
                     metric_type=OptimizationMetric.PRECISION,
-                    bottleneck_reason=(
-                        f"Node '{node_names.get(nid, nid)}' contributed "
-                        f"{pct:.1f}% of total numerical error expansion"
-                    ),
+                    bottleneck_reason=reason,
                 )
             )
 
