@@ -101,10 +101,30 @@ EXPORT_TIMEOUT_S="${E2E_EXPORT_TIMEOUT_S:-120}"
 PROFILE_TIMEOUT_S="${E2E_PROFILE_TIMEOUT_S:-180}"
 PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/adapter.yml}"
 PROFILE_DATASET_VARS="${E2E_PROFILE_DATASET_VARS:-}"
+if [ -z "$PROFILE_DATASET_VARS" ] && [ -f "$PROFILE_DATASET" ] && rg -q 'tracker_\\$\\(tracker\\)\\.csv' "$PROFILE_DATASET"; then
+    PROFILE_DATASET_VARS="tracker=single"
+fi
 export E2E_PROFILE_DATASET_VARS="$PROFILE_DATASET_VARS"
 export MPLCONFIGDIR="${E2E_MPLCONFIGDIR:-/tmp/ageom-mplcfg}"
-export JULIA_DEPOT_PATH="${E2E_JULIA_DEPOT_PATH:-/tmp/ageom-julia-depot}"
+export AGEOM_PYTHON_PATH="${E2E_PROOF_PYTHON:-$BENCHMARK_PYTHON}"
+export PYTHON_JULIACALL_INIT="${E2E_PYTHON_JULIACALL_INIT:-no}"
+DEFAULT_JULIA_DEPOT="/tmp/ageom-julia-depot"
+if [[ "$(printf '%s' "${E2E_USE_HOME_JULIA_DEPOT:-}" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+    DEFAULT_JULIA_DEPOT="$HOME/.julia"
+fi
+export JULIA_DEPOT_PATH="${E2E_JULIA_DEPOT_PATH:-$DEFAULT_JULIA_DEPOT}"
 mkdir -p "$MPLCONFIGDIR" "$JULIA_DEPOT_PATH"
+if [ "$JULIA_DEPOT_PATH" = "/tmp/ageom-julia-depot" ]; then
+    info "Julia depot: $JULIA_DEPOT_PATH (isolated default; set E2E_USE_HOME_JULIA_DEPOT=true or E2E_JULIA_DEPOT_PATH=... to override)"
+else
+    info "Julia depot: $JULIA_DEPOT_PATH (override)"
+fi
+info "Matplotlib config: $MPLCONFIGDIR"
+info "Python proof/runtime: $AGEOM_PYTHON_PATH"
+info "Python juliacall init: $PYTHON_JULIACALL_INIT"
+if [ -n "$PROFILE_DATASET_VARS" ]; then
+    info "Profile dataset vars: $PROFILE_DATASET_VARS"
+fi
 
 # Ground truth: essential atoms that should appear in matched function names.
 if [ -n "$_gt_json" ]; then

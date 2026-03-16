@@ -5,7 +5,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from pathlib import Path
+import sys
 
 from ageom.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
 from ageom.synthesizer.models import ExportBundle
@@ -29,6 +31,11 @@ class ExecutionSandbox:
 
     def __init__(self, *, timeout_s: float = _DEFAULT_TIMEOUT_S) -> None:
         self._timeout_s = timeout_s
+        self._python_executable = (
+            os.environ.get("AGEOM_PYTHON_PATH")
+            or sys.executable
+            or "python"
+        )
 
     async def evaluate(
         self,
@@ -63,7 +70,7 @@ class ExecutionSandbox:
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                "python",
+                self._python_executable,
                 str(artifact),
                 str(dataset_path),
                 cwd=str(output_dir),
@@ -84,12 +91,16 @@ class ExecutionSandbox:
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
         if proc.returncode != 0:
+            telemetry = _parse_trace(trace_path)
             logger.error(
                 "Artifact exited with code %d: %s",
                 proc.returncode,
                 (stderr or b"").decode(errors="replace")[:500],
             )
-            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+            return BenchmarkResult(
+                global_loss=_FAILURE_PENALTY,
+                node_telemetry=telemetry,
+            )
 
         # Parse trace.jsonl
         telemetry = _parse_trace(trace_path)
@@ -194,7 +205,7 @@ class ExecutionSandbox:
             trace_path.unlink()
 
         cmd = [
-            "python",
+            self._python_executable,
             str(artifact),
             "--dataset-root",
             str(adapter.parent),
@@ -229,12 +240,16 @@ class ExecutionSandbox:
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
         if proc.returncode != 0:
+            telemetry = _parse_trace(trace_path)
             logger.error(
                 "Artifact exited with code %d: %s",
                 proc.returncode,
                 (stderr or b"").decode(errors="replace")[:500],
             )
-            return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+            return BenchmarkResult(
+                global_loss=_FAILURE_PENALTY,
+                node_telemetry=telemetry,
+            )
 
         telemetry = _parse_trace(trace_path)
         global_loss = _compute_loss(telemetry, metric, stdout)

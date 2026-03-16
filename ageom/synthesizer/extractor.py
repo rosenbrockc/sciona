@@ -468,6 +468,8 @@ class Extractor:
                 "--disable-error-code",
                 "no-untyped-def",
                 "--disable-error-code",
+                "no-untyped-call",
+                "--disable-error-code",
                 "unused-ignore",
                 "--disable-error-code",
                 "type-arg",

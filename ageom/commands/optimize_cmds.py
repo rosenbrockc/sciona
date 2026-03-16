@@ -182,11 +182,15 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
+    runner_path = artifact_path.parent / "export_python_pkg" / "runner.py"
+    executable_artifact = runner_path if runner_path.exists() else None
+
     bundle = ExportBundle(
         target="python-pkg",
         output_dir=artifact_path.parent,
         source_path=artifact_path,
         compiled_artifact=artifact_path,
+        executable_artifact=executable_artifact,
     )
 
     print(f"Profiling {artifact_path.name} against {dataset_path.name} using metric {metric.value}...")
