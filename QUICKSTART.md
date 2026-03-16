@@ -1,0 +1,72 @@
+# Quickstart
+
+Minimal path to create a new algorithm from a goal and take it through profiling.
+
+## Prerequisites
+
+- Activate the repo virtualenv: `source .venv/bin/activate`
+- Build the search index once:
+
+```bash
+ageom index build --prover python
+```
+
+- For Python synthesis/profile runs, use the same runtime as the benchmark:
+
+```bash
+export PYTHONPATH=$PWD
+export AGEOM_PYTHON_PATH=$PWD/.venv/bin/python
+export PYTHON_JULIACALL_INIT=no
+export JULIA_DEPOT_PATH=/tmp/ageom-julia-depot
+```
+
+## 1. Generate Grounding Artifacts
+
+Pick a goal and output directory:
+
+```bash
+ageom run "Detect heart rate from raw ECG signal" \
+  --mode verified \
+  --prover python \
+  --output output/my_algorithm
+```
+
+This produces at least:
+- `output/my_algorithm/cdg.json`
+- `output/my_algorithm/matches.json`
+
+## 2. Synthesize The Algorithm
+
+```bash
+ageom synthesize output/my_algorithm/cdg.json output/my_algorithm/matches.json \
+  --mode verified \
+  --prover python \
+  --output output/my_algorithm/verified.py
+```
+
+## 3. Export A Runnable Artifact
+
+```bash
+ageom export output/my_algorithm/verified.py \
+  --target python-pkg \
+  --prover python \
+  --output-dir output/my_algorithm/export_python_pkg
+```
+
+The runnable artifact is:
+- `output/my_algorithm/export_python_pkg/runner.py`
+
+## 4. Profile It
+
+Example against the NIGHTCAP adapter dataset:
+
+```bash
+ageom profile \
+  --cdg output/my_algorithm/cdg.json \
+  --artifact output/my_algorithm/verified.py \
+  --dataset "$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/ageom.yml" \
+  --dataset-var tracker=single \
+  --metric precision
+```
+
+Profile prints ranked bottlenecks/gradients for the generated pipeline.

@@ -143,7 +143,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
                 config,
                 backend_override=retrieval_policy.semantic_index_backend_override,
             )
-            if index_mode != "faiss":
+            if index_mode == "lexical_fallback":
                 print(
                     "Warning: FAISS unavailable; using lexical fallback index for Hunter.",
                     file=sys.stderr,
