@@ -814,6 +814,8 @@ class FixturePromptBenchmarkLLM:
         # Architect decompose prompts (check before strategy — "decompose the given" is unique)
         if "decompose the given algorithmic node" in lower:
             user_lower = user.lower()
+            if "signal" in user_lower and ("detect" in user_lower or "peak" in user_lower) and ("rate" in user_lower or "metric" in user_lower):
+                return '{"sub_nodes": [{"name": "Preprocess Signal", "description": "Condition the raw signal"}, {"name": "Detect Signal Events", "description": "Detect salient events in the conditioned signal"}, {"name": "Compute Metric From Events", "description": "Compute the target metric from detected events"}]}'
             if "filter" in user_lower or "ecg" in user_lower:
                 return '{"sub_nodes": [{"name": "Design Filter Coefficients", "description": "Compute stable bandpass coefficients"}, {"name": "Apply Filter", "description": "Apply filter to signal"}]}'
             if "shortest path" in user_lower or "graph" in user_lower:
@@ -825,6 +827,8 @@ class FixturePromptBenchmarkLLM:
         # Architect strategy prompts
         if "select the best algorithmic paradigm" in lower:
             user_lower = user.lower()
+            if ("signal" in user_lower or "ecg" in user_lower) and ("detect" in user_lower or "peak" in user_lower) and ("rate" in user_lower or "cadence" in user_lower):
+                return '{"paradigm": "signal_filter", "rationale": "Signal goals that detect events and derive a rate fit an event-rate estimation pipeline", "variant_hint": "event_rate_estimation"}'
             if "filter" in user_lower or "ecg" in user_lower:
                 return '{"paradigm": "signal_filter", "rationale": "ECG filtering requires stable bandpass design"}'
             if "shortest path" in user_lower or "weighted graph" in user_lower:

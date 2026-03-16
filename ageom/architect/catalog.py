@@ -847,6 +847,84 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
             "derive inspection views",
         ],
     ),
+    (
+        AlgorithmicPrimitive(
+            name="filter_signal_for_detection",
+            source="ageom-builtins",
+            category=ConceptType.SIGNAL_FILTER,
+            description=(
+                "Filter or denoise a raw time-series signal into a cleaned trace "
+                "suitable for downstream event detection."
+            ),
+            inputs=[
+                IOSpec(name="signal", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="conditioned_signal", type_desc="np.ndarray")],
+            type_signature="np.ndarray, float -> np.ndarray",
+        ),
+        [
+            "preprocess signal",
+            "filter signal for detection",
+            "denoise signal for detection",
+            "condition raw signal",
+            "clean raw waveform",
+            "prepare signal for peak detection",
+            "bandpass physiological signal",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="detect_peaks_in_signal",
+            source="ageom-builtins",
+            category=ConceptType.DATA_EXTRACTION,
+            description=(
+                "Detect salient peaks or event locations in a conditioned signal and "
+                "return their sample locations."
+            ),
+            inputs=[
+                IOSpec(name="conditioned_signal", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+            type_signature="np.ndarray, float -> np.ndarray",
+        ),
+        [
+            "detect signal events",
+            "detect peaks in signal",
+            "detect peaks from conditioned signal",
+            "r peak detection",
+            "qrs detection",
+            "event detection from waveform",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_event_rate",
+            source="ageom-builtins",
+            category=ConceptType.ANALYSIS,
+            description=(
+                "Compute a downstream rate or cadence from inter-event intervals in "
+                "an ordered sequence of detected events."
+            ),
+            inputs=[
+                IOSpec(name="events", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+            type_signature="np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
+        ),
+        [
+            "compute metric from events",
+            "compute rate from detected events",
+            "compute event rate",
+            "heart rate computation",
+            "respiration rate computation",
+            "cadence computation",
+            "derive cadence from event indices",
+            "measure interval-derived rate",
+        ],
+    ),
 ]
 
 _LINEAR_ALGEBRA_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [

@@ -33,7 +33,12 @@ from ageom.architect.prompts import (
     SELECT_STRATEGY_SYSTEM,
     SELECT_STRATEGY_USER,
 )
-from ageom.architect.skeletons import SKELETON_TEMPLATES, instantiate_skeleton
+from ageom.architect.skeletons import (
+    SKELETON_TEMPLATES,
+    get_skeleton,
+    infer_boundary_ports,
+    instantiate_skeleton,
+)
 from ageom.architect.state import DecompositionDeps, DecompositionState
 from ageom.llm_router import (
     ARCHITECT_CRITIQUE,
@@ -728,15 +733,18 @@ async def select_strategy(
     skeleton_instantiated = False
 
     # Try to instantiate skeleton
-    skeleton = SKELETON_TEMPLATES.get(paradigm)
+    skeleton = get_skeleton(paradigm, variant=variant_hint or None)
     if skeleton:
         skel_nodes, skel_edges = instantiate_skeleton(
             skeleton, goal, parent_id=root_id, base_depth=0
         )
+        root_inputs, root_outputs = infer_boundary_ports(skel_nodes, skel_edges)
         root = root.model_copy(
             update={
                 "status": NodeStatus.DECOMPOSED,
                 "children": [n.node_id for n in skel_nodes],
+                "inputs": root_inputs,
+                "outputs": root_outputs,
             }
         )
         nodes = [root] + skel_nodes
@@ -1567,6 +1575,8 @@ def route_after_strategy(state: DecompositionState) -> str:
     """
     if state.get("paradigm") == "conjugate_update":
         return "conjugate"
+    if state.get("skeleton_instantiated") and not state.get("current_node_id"):
+        return "advance"
     return "decompose"
 
 

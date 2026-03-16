@@ -27,6 +27,7 @@ def _node(
     outputs: list[IOSpec] | None = None,
     depth: int = 1,
     parallelizable: bool = False,
+    matched_primitive: str | None = None,
 ) -> AlgorithmicNode:
     """Helper to build a template node."""
     return AlgorithmicNode(
@@ -39,6 +40,7 @@ def _node(
         depth=depth,
         status=NodeStatus.PENDING,
         parallelizable=parallelizable,
+        matched_primitive=matched_primitive,
     )
 
 
@@ -58,6 +60,36 @@ def _edge(
         source_type=data_type,
         target_type=data_type,
     )
+
+
+def infer_boundary_ports(
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+) -> tuple[list[IOSpec], list[IOSpec]]:
+    """Infer external graph inputs/outputs from unresolved node ports."""
+    incoming = {(edge.target_id, edge.input_name) for edge in edges}
+    outgoing = {(edge.source_id, edge.output_name) for edge in edges}
+
+    inputs: list[IOSpec] = []
+    outputs: list[IOSpec] = []
+    seen_inputs: set[str] = set()
+    seen_outputs: set[str] = set()
+
+    for node in nodes:
+        for port in node.inputs:
+            key = (node.node_id, port.name)
+            if key in incoming or port.name in seen_inputs:
+                continue
+            inputs.append(port.model_copy())
+            seen_inputs.add(port.name)
+        for port in node.outputs:
+            key = (node.node_id, port.name)
+            if key in outgoing or port.name in seen_outputs:
+                continue
+            outputs.append(port.model_copy())
+            seen_outputs.add(port.name)
+
+    return inputs, outputs
 
 
 def _build_divide_and_conquer() -> SkeletonGraph:
@@ -693,6 +725,75 @@ def _build_signal_filter() -> SkeletonGraph:
     )
 
 
+def _build_signal_detect_measure() -> SkeletonGraph:
+    preprocess = _node(
+        "Filter Signal For Detection",
+        "Filter or denoise the raw signal into a cleaned trace suitable for downstream event detection.",
+        ConceptType.SIGNAL_FILTER,
+        inputs=[
+            IOSpec(name="signal", type_desc="np.ndarray"),
+            IOSpec(name="sampling_rate", type_desc="float"),
+        ],
+        outputs=[IOSpec(name="conditioned_signal", type_desc="np.ndarray")],
+        matched_primitive="filter_signal_for_detection",
+    )
+    detect = _node(
+        "Detect Peaks In Signal",
+        "Detect salient peaks or event locations in the conditioned signal.",
+        ConceptType.DATA_EXTRACTION,
+        inputs=[
+            IOSpec(name="conditioned_signal", type_desc="np.ndarray"),
+            IOSpec(name="sampling_rate", type_desc="float"),
+        ],
+        outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+        matched_primitive="detect_peaks_in_signal",
+    )
+    compute = _node(
+        "Compute Event Rate",
+        "Compute a target rate or cadence from inter-event intervals in the detected event sequence.",
+        ConceptType.ANALYSIS,
+        inputs=[
+            IOSpec(name="events", type_desc="np.ndarray"),
+            IOSpec(name="sampling_rate", type_desc="float"),
+        ],
+        outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+        matched_primitive="compute_event_rate",
+    )
+
+    edges = [
+        _edge(
+            preprocess,
+            detect,
+            "conditioned_signal",
+            "conditioned_signal",
+            "np.ndarray",
+        ),
+        _edge(
+            detect,
+            compute,
+            "events",
+            "events",
+            "np.ndarray",
+        ),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.SIGNAL_FILTER,
+        name="Signal Detect and Measure",
+        description=(
+            "Condition a raw signal, detect salient events, and compute a downstream "
+            "rate or cadence from those events"
+        ),
+        template_nodes=[preprocess, detect, compute],
+        template_edges=edges,
+        variants=[
+            "signal_detect_measure",
+            "feature_detection_metric",
+            "event_rate_estimation",
+        ],
+    )
+
+
 def _build_graph_signal_processing() -> SkeletonGraph:
     build = _node(
         "Build Graph",
@@ -1283,6 +1384,9 @@ NAMED_SKELETONS: dict[str, SkeletonGraph] = {
     "hmc": SKELETON_TEMPLATES[ConceptType.MCMC_KERNEL],
     "advi": SKELETON_TEMPLATES[ConceptType.VI_ELBO],
     "belief_propagation": SKELETON_TEMPLATES[ConceptType.MESSAGE_PASSING],
+    "signal_detect_measure": _build_signal_detect_measure(),
+    "event_rate_estimation": _build_signal_detect_measure(),
+    "bandpass_hr_detection": _build_signal_detect_measure(),
 }
 
 
@@ -1333,6 +1437,7 @@ def instantiate_skeleton(
             concept_type=tpl_node.concept_type,
             inputs=tpl_node.inputs,
             outputs=tpl_node.outputs,
+            matched_primitive=tpl_node.matched_primitive,
             status=NodeStatus.PENDING,
             depth=base_depth + tpl_node.depth,
             parallelizable=tpl_node.parallelizable,

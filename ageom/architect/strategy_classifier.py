@@ -168,6 +168,22 @@ class StrategyClassifier:
         if not goal_tokens:
             return None
 
+        signal_markers = {"signal", "waveform", "timeseries", "time_series", "ecg", "ppg", "eeg", "sensor"}
+        detect_markers = {"detect", "peak", "event", "events", "feature", "features"}
+        rate_markers = {"rate", "cadence", "rhythm"}
+        if (
+            ConceptType.SIGNAL_FILTER in allowed
+            and goal_tokens & signal_markers
+            and goal_tokens & detect_markers
+            and goal_tokens & rate_markers
+        ):
+            return (
+                ConceptType.SIGNAL_FILTER,
+                0.96,
+                "deterministic match from signal + detect + rate cues",
+                "event_rate_estimation",
+            )
+
         scores: dict[ConceptType, float] = {concept: 0.0 for concept in allowed}
         reasons: dict[ConceptType, list[str]] = {concept: [] for concept in allowed}
         variants: dict[ConceptType, str] = {concept: "" for concept in allowed}

@@ -673,34 +673,36 @@ class Assembler:
         # Emit composition for root/decomposed nodes
         for root in root_nodes:
             rname = sanitize_name(root.name)
+            lines.append(f"# Composition: {root.name} ({root.node_id})")
+
+            # Build composition function with appropriate params from root inputs
+            params = []
+            for inp in root.inputs:
+                if inp.type_desc:
+                    params.append(f"{inp.name}: {_python_annotation_expr(inp.type_desc)}")
+                else:
+                    params.append(inp.name)
+            param_str = ", ".join(params) if params else ""
+
+            ret_type = ""
+            if root.outputs:
+                ret_type = _python_annotation_expr(root.outputs[0].type_desc)
+            ret_str = f" -> {ret_type}" if ret_type else ""
+
+            lines.append(f"def {rname}_composition({param_str}){ret_str}:")
             if root.type_signature:
-                lines.append(f"# Composition: {root.name} ({root.node_id})")
-
-                # Build composition function with appropriate params from root inputs
-                params = []
-                for inp in root.inputs:
-                    if inp.type_desc:
-                        params.append(f"{inp.name}: {_python_annotation_expr(inp.type_desc)}")
-                    else:
-                        params.append(inp.name)
-                param_str = ", ".join(params) if params else ""
-
-                ret_type = ""
-                if root.outputs:
-                    ret_type = _python_annotation_expr(root.outputs[0].type_desc)
-                ret_str = f" -> {ret_type}" if ret_type else ""
-
-                lines.append(f"def {rname}_composition({param_str}){ret_str}:")
                 lines.append(f'    """Compose: {root.type_signature}"""')
+            else:
+                lines.append('    """Compose the resolved child pipeline."""')
 
-                composition = self._compose_python(units, glue_edges, root)
-                lines.extend(composition)
-                # Count NotImplementedError stubs
-                for line in composition:
-                    if "NotImplementedError" in line:
-                        sorry_count += 1
-                lines.append("")
-                lines.append("")
+            composition = self._compose_python(units, glue_edges, root)
+            lines.extend(composition)
+            # Count NotImplementedError stubs
+            for line in composition:
+                if "NotImplementedError" in line:
+                    sorry_count += 1
+            lines.append("")
+            lines.append("")
 
         return "\n".join(lines), sorry_count
 

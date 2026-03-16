@@ -45,7 +45,11 @@ def build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "select_strategy",
         route_after_strategy,
-        {"conjugate": "advance_conjugate_node", "decompose": "decompose_node"},
+        {
+            "conjugate": "advance_conjugate_node",
+            "advance": "advance_node",
+            "decompose": "decompose_node",
+        },
     )
     graph.add_edge("advance_conjugate_node", END)
     graph.add_edge("decompose_node", "critique")
