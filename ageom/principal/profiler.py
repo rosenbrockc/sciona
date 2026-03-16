@@ -10,6 +10,7 @@ from ageom.principal.evaluator import ExecutionSandbox
 from ageom.principal.models import NodeGradient, OptimizationMetric
 from ageom.synthesizer.ghost_sim import run_ghost_simulation
 from ageom.synthesizer.models import ExportBundle
+from ageom.types import MatchResult
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ async def profile_algorithm_error(
     metric: OptimizationMetric = OptimizationMetric.PRECISION,
     *,
     dataset_varset: dict[str, str] | None = None,
+    match_results: list[MatchResult] | None = None,
 ) -> list[NodeGradient]:
     """Evaluate an existing CDG against a dataset and rank error contributors.
 
@@ -49,7 +51,7 @@ async def profile_algorithm_error(
     
     # 2. Run the ghost simulation for structural checks and theoretical precision bounds
     # Assuming empty match_results as we just want theoretical bounds for the CDG nodes.
-    ghost_report = run_ghost_simulation(cdg, match_results=[])
+    ghost_report = run_ghost_simulation(cdg, match_results=match_results or [])
     
     # 3. Assign credit / compute gradients
     assigner = CreditAssigner()

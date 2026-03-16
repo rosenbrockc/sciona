@@ -158,6 +158,7 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
     from ageom.principal.models import OptimizationMetric
     from ageom.principal.profiler import profile_algorithm_error
     from ageom.synthesizer.models import ExportBundle
+    from ageom.types import MatchResult
 
     cdg_path = Path(args.cdg)
     if not cdg_path.exists():
@@ -182,8 +183,24 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    runner_path = artifact_path.parent / "export_python_pkg" / "runner.py"
-    executable_artifact = runner_path if runner_path.exists() else None
+    runner_candidates = [
+        artifact_path.parent / "runner.py",
+        artifact_path.parent / "export_python_pkg" / "runner.py",
+    ]
+    executable_artifact = next(
+        (candidate for candidate in runner_candidates if candidate.exists()),
+        None,
+    )
+
+    matches_path = artifact_path.parent / "matches.json"
+    match_results: list[MatchResult] = []
+    if matches_path.exists():
+        try:
+            matches_payload = load_json(matches_path)
+            if isinstance(matches_payload, list):
+                match_results = [MatchResult.from_dict(item) for item in matches_payload]
+        except Exception:
+            match_results = []
 
     bundle = ExportBundle(
         target="python-pkg",
@@ -202,6 +219,7 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
             dataset_path=str(dataset_path),
             metric=metric,
             dataset_varset=dataset_varset or None,
+            match_results=match_results,
         )
 
         if not gradients:

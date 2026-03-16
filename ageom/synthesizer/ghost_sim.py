@@ -273,6 +273,41 @@ def _parse_error_bounds(constraints: str) -> ErrorInterval:
     return ErrorInterval(0.0, 0.0)
 
 
+def _default_error_interval(type_desc: str) -> ErrorInterval:
+    """Return a normalized uncertainty interval for unconstrained numeric inputs."""
+    lowered = type_desc.strip().lower()
+    numeric_markers = (
+        "np.ndarray",
+        "numpy.ndarray",
+        "ndarray",
+        "float",
+        "double",
+        "int",
+        "list[float",
+        "list[int",
+        "tuple[float",
+        "tuple[int",
+    )
+    if any(marker in lowered for marker in numeric_markers):
+        return ErrorInterval(-0.5, 0.5)
+    return ErrorInterval(0.0, 0.0)
+
+
+def _infer_atom_error_factor(atom_name: str) -> float:
+    """Estimate precision-expansion factor from exact or keyword matches."""
+    if atom_name in _ATOM_ERROR_FACTORS:
+        return _ATOM_ERROR_FACTORS[atom_name]
+
+    lowered = atom_name.lower()
+    if any(token in lowered for token in ("filter", "smooth", "denoise", "bandpass")):
+        return 1.2
+    if any(token in lowered for token in ("detect", "segment", "peak", "extract")):
+        return 1.35
+    if any(token in lowered for token in ("rate", "metric", "measure", "cadence")):
+        return 1.15
+    return 1.0
+
+
 def _compute_precision_gradients(
     cdg: CDGExport,
     match_map: dict[str, MatchResult],
@@ -320,12 +355,14 @@ def _compute_precision_gradients(
             parsed = _parse_error_bounds(node.inputs[0].constraints)
             if parsed.width > 0:
                 input_interval = parsed
+            else:
+                input_interval = _default_error_interval(node.inputs[0].type_desc)
 
         # Look up error factor for this atom
         mr = match_map.get(nid)
         if mr and mr.success:
             atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
-            factor = _ATOM_ERROR_FACTORS.get(atom_name, 1.0)
+            factor = _infer_atom_error_factor(atom_name)
         else:
             factor = 1.0
 
