@@ -5,6 +5,7 @@ dist/
 build/
 .pytest_cache/
 data/
+output/
 ageom/static/default_cdg.json
 models/
 *.gguf
