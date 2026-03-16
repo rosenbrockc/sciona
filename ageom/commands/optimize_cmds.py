@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import uuid
 from pathlib import Path
@@ -196,7 +197,8 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
     match_results: list[MatchResult] = []
     if matches_path.exists():
         try:
-            matches_payload = load_json(matches_path)
+            with matches_path.open() as fh:
+                matches_payload = json.load(fh)
             if isinstance(matches_payload, list):
                 match_results = [MatchResult.from_dict(item) for item in matches_payload]
         except Exception:
