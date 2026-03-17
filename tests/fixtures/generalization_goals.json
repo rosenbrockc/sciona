@@ -1,0 +1,86 @@
+[
+  {
+    "id": "graph_shortest_path",
+    "goal": "Given a weighted graph and source vertex, compute single-source shortest path distances using Dijkstra's algorithm",
+    "expected_paradigm": "graph_optimization",
+    "expected_split_pattern": "shortest_path_dijkstra",
+    "expected_query_hints": ["dijkstra shortest path", "weighted graph distances"]
+  },
+  {
+    "id": "graph_mst",
+    "goal": "Find the minimum spanning tree of an undirected weighted graph",
+    "expected_paradigm": "graph_optimization",
+    "expected_split_pattern": null,
+    "expected_query_hints": []
+  },
+  {
+    "id": "string_edit_distance",
+    "goal": "Compute the edit distance between two strings using dynamic programming",
+    "expected_paradigm": "dynamic_programming",
+    "expected_split_pattern": "edit_distance",
+    "expected_query_hints": []
+  },
+  {
+    "id": "string_lcs",
+    "goal": "Find the longest common subsequence of two sequences using dynamic programming",
+    "expected_paradigm": "dynamic_programming",
+    "expected_split_pattern": "lcs",
+    "expected_query_hints": ["longest common subsequence", "dynamic programming lcs"]
+  },
+  {
+    "id": "linalg_cholesky",
+    "goal": "Solve a symmetric positive definite linear system using Cholesky factorization",
+    "expected_paradigm": "algebra",
+    "expected_split_pattern": "cholesky",
+    "expected_query_hints": ["cholesky solve spd"]
+  },
+  {
+    "id": "linalg_svd",
+    "goal": "Compute the singular value decomposition of a matrix and extract the top-k components",
+    "expected_paradigm": "algebra",
+    "expected_split_pattern": "matrix_factorization",
+    "expected_query_hints": []
+  },
+  {
+    "id": "optimization_gradient_descent",
+    "goal": "Minimize a differentiable loss function using gradient descent with adaptive step size",
+    "expected_paradigm": null,
+    "expected_split_pattern": "optimization",
+    "expected_query_hints": []
+  },
+  {
+    "id": "sorting_merge",
+    "goal": "Sort a list of integers using merge sort, a divide-and-conquer sorting algorithm",
+    "expected_paradigm": "divide_and_conquer",
+    "expected_split_pattern": "sorting",
+    "expected_query_hints": []
+  },
+  {
+    "id": "control_kalman",
+    "goal": "Implement a Kalman filter for state estimation in a linear dynamical system",
+    "expected_paradigm": "sequential_filter",
+    "expected_split_pattern": null,
+    "expected_query_hints": []
+  },
+  {
+    "id": "graph_bfs",
+    "goal": "Perform breadth-first search on a graph and return the traversal order",
+    "expected_paradigm": "graph_traversal",
+    "expected_split_pattern": "traversal",
+    "expected_query_hints": []
+  },
+  {
+    "id": "fft_spectral",
+    "goal": "Apply the fast Fourier transform to a time-domain signal and extract the power spectrum",
+    "expected_paradigm": "signal_transform",
+    "expected_split_pattern": "fft",
+    "expected_query_hints": []
+  },
+  {
+    "id": "clustering_kmeans",
+    "goal": "Cluster data points into k groups using the k-means algorithm",
+    "expected_paradigm": null,
+    "expected_split_pattern": "clustering",
+    "expected_query_hints": []
+  }
+]

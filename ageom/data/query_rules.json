@@ -1,0 +1,100 @@
+{
+  "domain_anchors": [
+    "add",
+    "addition",
+    "bandpass",
+    "cholesky",
+    "commutative",
+    "distance",
+    "distances",
+    "dijkstra",
+    "dynamic",
+    "ecg",
+    "filter",
+    "graph",
+    "lcs",
+    "longest",
+    "nat",
+    "path",
+    "positive",
+    "shortest",
+    "solve",
+    "spd",
+    "subsequence",
+    "symmetric",
+    "theorem",
+    "triangular",
+    "weighted"
+  ],
+  "phrase_rules": [
+    {
+      "name": "ecg_bandpass_filter",
+      "conditions": {"all": ["ecg", "bandpass", "filter"]},
+      "queries": [
+        "ecg bandpass filter",
+        "stable ecg filter",
+        "bandpass cardiac signal filter",
+        "iir bandpass filter",
+        "filtered signal bandpass filter"
+      ]
+    },
+    {
+      "name": "shortest_path_dijkstra",
+      "conditions": {
+        "any_of": ["shortest path", "distance"],
+        "require_any": ["graph", "dijkstra", "weighted"]
+      },
+      "queries": [
+        "dijkstra shortest path",
+        "weighted graph distances",
+        "shortest path distance map",
+        "single source shortest path",
+        "relax edges distances"
+      ]
+    },
+    {
+      "name": "spd_cholesky",
+      "conditions": {"any_of": ["spd", "symmetric positive definite"]},
+      "queries": [
+        "cholesky solve spd",
+        "solve symmetric positive definite",
+        "triangular solve cholesky",
+        "positive definite linear solve",
+        "cholesky factor solve"
+      ]
+    },
+    {
+      "name": "longest_common_subsequence",
+      "conditions": {
+        "any_of": ["longest common subsequence"],
+        "or_combo": {
+          "all": ["subsequence", "dynamic"]
+        },
+        "or_token": "lcs"
+      },
+      "queries": [
+        "longest common subsequence",
+        "dynamic programming lcs",
+        "string subsequence recurrence",
+        "lcs dp table",
+        "common subsequence dynamic programming"
+      ]
+    },
+    {
+      "name": "nat_add_comm",
+      "conditions": {
+        "or_conditions": [
+          {"all_substr": ["commutat", "add"]},
+          {"substr": "n + m = m + n"},
+          {"all_substr_and_char": {"substr": "\u2115", "char": "+"}}
+        ]
+      },
+      "queries": [
+        "Nat.add_comm addition commutative",
+        "addition commutative natural numbers",
+        "n + m = m + n theorem",
+        "nat add comm theorem"
+      ]
+    }
+  ]
+}

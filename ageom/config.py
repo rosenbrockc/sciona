@@ -87,6 +87,19 @@ class AgeomConfig(BaseSettings):
     graph_retrieval_max_examples: int = 3
     graph_retrieval_min_children: int = 2
 
+    # Template retriever
+    template_retriever_confidence_threshold: float = 0.6
+    template_retriever_max_candidates: int = 50
+
+    # Generalization data paths (empty = use built-in defaults)
+    phrase_rules_path: str = ""
+    query_rules_path: str = ""
+    split_patterns_path: str = ""
+
+    # Auto-upsert of solved runs
+    auto_upsert_enabled: bool = False
+    auto_upsert_min_coverage: float = 0.5
+
     # Lean 4
     lean_toolchain: str = "leanprover/lean4:v4.14.0"
     mathlib_path: Path = Field(default=Path(""))

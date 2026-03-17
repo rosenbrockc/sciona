@@ -363,3 +363,21 @@ class TestGraphWiring:
         decompose_edges = [e for e in graph_dict.edges if e.source == "decompose_complex_atoms"]
         decompose_targets = {e.target for e in decompose_edges}
         assert "abstract_atoms" in decompose_targets
+
+
+# ---------------------------------------------------------------------------
+# Prompt concept_type list coverage
+# ---------------------------------------------------------------------------
+
+
+def test_all_concept_types_in_prompt():
+    """Every ConceptType value must appear in the ingester prompt."""
+    from ageom.ingester.prompts import SEMANTIC_CHUNK_SYSTEM, DECOMPOSE_ATOM_SYSTEM
+
+    for ct in ConceptType:
+        assert ct.value in SEMANTIC_CHUNK_SYSTEM, (
+            f"ConceptType.{ct.name} ({ct.value}) missing from SEMANTIC_CHUNK_SYSTEM"
+        )
+        assert ct.value in DECOMPOSE_ATOM_SYSTEM, (
+            f"ConceptType.{ct.name} ({ct.value}) missing from DECOMPOSE_ATOM_SYSTEM"
+        )

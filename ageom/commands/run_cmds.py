@@ -206,6 +206,9 @@ async def _run_rapid_direct_match(
 
     service = HunterService(hunter)
     if _matches_signal_event_rate_goal(goal):
+        from ageom.telemetry import log_event as _log_event
+        _log_event("run_cmds", "fast_path", "DETERMINISTIC_FAST_PATH_FIRED", payload={"goal": goal[:100], "path": "signal_event_rate"})
+        _log_event("run", "fast_path", "TEMPLATE_EQUIVALENT", payload={"exemplar": "signal_event_rate"})
         cdg = _build_signal_event_rate_cdg(goal, prover)
         match_results = _build_signal_event_rate_match_results(cdg, prover)
         return OrchestratorResult(
@@ -720,7 +723,68 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         finish_run(telemetry_run_id, status="failed", error=str(exc))
         raise
     else:
-        pass
+        # --- Auto-upsert solved runs into the graph store ---
+        if config.auto_upsert_enabled and result is not None:
+            try:
+                from datetime import datetime, timezone
+
+                from ageom.graph_store import GraphStore as _GraphStore
+                from ageom.result_to_cdg import RunCDGMetadata, orchestrator_result_to_cdg
+                from ageom.telemetry import log_event as _log_event
+
+                _au_metadata = RunCDGMetadata(
+                    run_id=telemetry_run_id,
+                    goal=args.goal,
+                    execution_path=mode_settings.mode,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    verified_leaf_coverage=0.0,
+                )
+                # orchestrator_result_to_cdg already calls sanitize_cdg internally
+                _au_cdg_dict = orchestrator_result_to_cdg(result, _au_metadata)
+
+                if _au_metadata.verified_leaf_coverage >= config.auto_upsert_min_coverage:
+                    _au_store = _GraphStore(
+                        uri=config.memgraph_uri,
+                        user=config.memgraph_user,
+                        password=config.memgraph_password,
+                    )
+                    async with _au_store as _gs:
+                        _au_counts = await _gs.upsert_cdg(
+                            repo=f"run/{telemetry_run_id}",
+                            cdg_dict=_au_cdg_dict,
+                            witness_meta={},
+                            contract_meta={},
+                        )
+                    _log_event(
+                        "run_cmds",
+                        "auto_upsert",
+                        "AUTO_UPSERT_COMPLETED",
+                        payload={
+                            "run_id": telemetry_run_id,
+                            "coverage": _au_metadata.verified_leaf_coverage,
+                            "upsert_counts": _au_counts,
+                        },
+                    )
+                    print(f"  Auto-upsert: coverage={_au_metadata.verified_leaf_coverage:.2f}, upserted {_au_counts}")
+                else:
+                    _log_event(
+                        "run_cmds",
+                        "auto_upsert",
+                        "AUTO_UPSERT_SKIPPED_LOW_COVERAGE",
+                        payload={
+                            "run_id": telemetry_run_id,
+                            "coverage": _au_metadata.verified_leaf_coverage,
+                            "min_coverage": config.auto_upsert_min_coverage,
+                        },
+                    )
+            except Exception as _au_exc:
+                import warnings
+
+                warnings.warn(
+                    f"Auto-upsert failed (non-fatal): {_au_exc}",
+                    RuntimeWarning,
+                    stacklevel=1,
+                )
     finally:
         event_log.configure_live_output(None)
 

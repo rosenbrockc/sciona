@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from ageom.architect.models import ConceptType
 from ageom.architect.skeletons import SKELETON_TEMPLATES
 
 _TOKEN_RE = re.compile(r"[a-z0-9_]+")
+_log = logging.getLogger(__name__)
+
+_DEFAULT_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "phrase_rules.json"
 
 
 @dataclass(frozen=True)
@@ -21,7 +26,16 @@ class _PhraseRule:
     variant_hint: str = ""
 
 
-_PHRASE_RULES: tuple[_PhraseRule, ...] = (
+@dataclass(frozen=True)
+class _ConjunctionRule:
+    name: str
+    sets: dict[str, set[str]]
+    result_concept: ConceptType
+    result_confidence: float
+    result_variant: str
+
+
+_FALLBACK_PHRASE_RULES: tuple[_PhraseRule, ...] = (
     _PhraseRule("longest common subsequence", ConceptType.DYNAMIC_PROGRAMMING, 4.0, "lcs"),
     _PhraseRule("edit distance", ConceptType.DYNAMIC_PROGRAMMING, 4.0, "edit_distance"),
     _PhraseRule("dynamic programming", ConceptType.DYNAMIC_PROGRAMMING, 3.0),
@@ -78,6 +92,69 @@ _PHRASE_RULES: tuple[_PhraseRule, ...] = (
     _PhraseRule("message passing", ConceptType.MESSAGE_PASSING, 3.0, "belief_propagation"),
 )
 
+_FALLBACK_CONJUNCTION_RULES: tuple[_ConjunctionRule, ...] = (
+    _ConjunctionRule(
+        name="signal_event_rate",
+        sets={
+            "signal": {"signal", "waveform", "timeseries", "time_series", "ecg", "ppg", "eeg", "sensor"},
+            "detect": {"detect", "peak", "event", "events", "feature", "features"},
+            "rate": {"rate", "cadence", "rhythm"},
+        },
+        result_concept=ConceptType.SIGNAL_FILTER,
+        result_confidence=0.96,
+        result_variant="event_rate_estimation",
+    ),
+)
+
+
+def _load_phrase_rules(
+    path: str | Path | None = None,
+) -> tuple[tuple[_PhraseRule, ...], tuple[_ConjunctionRule, ...]]:
+    """Load phrase and conjunction rules from a JSON file.
+
+    If *path* is ``None``, uses the default data file shipped with the
+    package.  Falls back to the hard-coded defaults when the file is
+    missing or cannot be parsed.
+    """
+    target = Path(path) if path is not None else _DEFAULT_DATA_PATH
+    try:
+        raw = json.loads(target.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
+        _log.debug("phrase_rules.json not loaded (%s); using in-code defaults", exc)
+        return _FALLBACK_PHRASE_RULES, _FALLBACK_CONJUNCTION_RULES
+
+    phrase_rules: list[_PhraseRule] = []
+    for entry in raw.get("phrase_rules", []):
+        phrase_rules.append(
+            _PhraseRule(
+                phrase=entry["phrase"],
+                concept=ConceptType(entry["concept"]),
+                weight=float(entry["weight"]),
+                variant_hint=entry.get("variant_hint", ""),
+            )
+        )
+
+    conjunction_rules: list[_ConjunctionRule] = []
+    for entry in raw.get("conjunction_rules", []):
+        conjunction_rules.append(
+            _ConjunctionRule(
+                name=entry["name"],
+                sets={k: set(v) for k, v in entry["sets"].items()},
+                result_concept=ConceptType(entry["result_concept"]),
+                result_confidence=float(entry["result_confidence"]),
+                result_variant=entry.get("result_variant", ""),
+            )
+        )
+
+    return (
+        tuple(phrase_rules) if phrase_rules else _FALLBACK_PHRASE_RULES,
+        tuple(conjunction_rules) if conjunction_rules else _FALLBACK_CONJUNCTION_RULES,
+    )
+
+
+# Module-level defaults loaded from the data file (with fallback).
+_PHRASE_RULES, _CONJUNCTION_RULES = _load_phrase_rules()
+
 
 def _tokenize(text: str) -> set[str]:
     return set(_TOKEN_RE.findall(text.lower()))
@@ -107,12 +184,18 @@ class StrategyClassifier:
         *,
         min_confidence: float = 0.55,
         min_margin: float = 0.15,
+        rules_path: str | Path | None = None,
     ) -> None:
         self._fallback = fallback
         self._min_confidence = min_confidence
         self._min_margin = min_margin
         self._last_completion_metadata: dict[str, Any] = {}
         self._last_error_metadata: dict[str, Any] = {}
+        if rules_path is not None:
+            self._phrase_rules, self._conjunction_rules = _load_phrase_rules(rules_path)
+        else:
+            self._phrase_rules = _PHRASE_RULES
+            self._conjunction_rules = _CONJUNCTION_RULES
 
     def get_last_completion_metadata(self) -> dict[str, Any]:
         return dict(self._last_completion_metadata)
@@ -168,27 +251,23 @@ class StrategyClassifier:
         if not goal_tokens:
             return None
 
-        signal_markers = {"signal", "waveform", "timeseries", "time_series", "ecg", "ppg", "eeg", "sensor"}
-        detect_markers = {"detect", "peak", "event", "events", "feature", "features"}
-        rate_markers = {"rate", "cadence", "rhythm"}
-        if (
-            ConceptType.SIGNAL_FILTER in allowed
-            and goal_tokens & signal_markers
-            and goal_tokens & detect_markers
-            and goal_tokens & rate_markers
-        ):
-            return (
-                ConceptType.SIGNAL_FILTER,
-                0.96,
-                "deterministic match from signal + detect + rate cues",
-                "event_rate_estimation",
-            )
+        # Check conjunction rules first.
+        for conj in self._conjunction_rules:
+            if conj.result_concept not in allowed:
+                continue
+            if all(goal_tokens & marker_set for marker_set in conj.sets.values()):
+                return (
+                    conj.result_concept,
+                    conj.result_confidence,
+                    f"deterministic match from {' + '.join(conj.sets)} cues",
+                    conj.result_variant,
+                )
 
         scores: dict[ConceptType, float] = {concept: 0.0 for concept in allowed}
         reasons: dict[ConceptType, list[str]] = {concept: [] for concept in allowed}
         variants: dict[ConceptType, str] = {concept: "" for concept in allowed}
 
-        for rule in _PHRASE_RULES:
+        for rule in self._phrase_rules:
             if rule.concept not in scores or rule.phrase not in goal_lower:
                 continue
             scores[rule.concept] += rule.weight

@@ -3,36 +3,77 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
+from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 _SECTION_RE = re.compile(r"^(Atom|Description|Concept type|Inputs|Outputs|Source methods):\s*(.*)$")
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
-_DOMAIN_PREFIXES = ("ecg", "audio", "financial", "bio", "image", "video")
-_ABSTRACT_NAME_OVERRIDES = {
+
+# --- In-code defaults (used when config file is missing) ---
+_DEFAULT_DOMAIN_PREFIXES = ("ecg", "audio", "financial", "bio", "image", "video")
+_DEFAULT_ABSTRACT_NAME_OVERRIDES: dict[str, str] = {
     "signal_filter": "Signal Conditioner",
     "signal_transform": "Representation Transformer",
     "graph_optimization": "Graph Path Optimizer",
     "dynamic_programming": "State Recurrence Solver",
 }
-_TRANSFORM_TEMPLATES = {
+_DEFAULT_TRANSFORM_TEMPLATES: dict[str, str] = {
     "signal_filter": "Applies a constrained filtering step that attenuates or preserves components of a structured signal while keeping the signal representation stable.",
     "signal_transform": "Maps a structured input into an alternative representation that exposes frequency, basis, or latent structure for downstream computation.",
     "graph_optimization": "Computes an optimized path or score over a connected structure by propagating local costs into a global selection.",
     "dynamic_programming": "Builds an output by reusing intermediate state across overlapping subproblems in a staged recurrence.",
 }
-_APPLICATIONS = {
+_DEFAULT_APPLICATIONS: dict[str, list[str]] = {
     "signal_filter": ["industrial sensing", "medical monitoring", "geophysics"],
     "signal_transform": ["communications", "robotics", "scientific imaging"],
     "graph_optimization": ["transport logistics", "network routing", "supply planning"],
     "dynamic_programming": ["computational biology", "resource planning", "control systems"],
 }
-_PROPERTIES = {
+_DEFAULT_PROPERTIES: dict[str, list[str]] = {
     "signal_filter": ["deterministic", "signal_processing", "shape_preserving_candidate"],
     "signal_transform": ["deterministic", "representation_change"],
     "graph_optimization": ["deterministic", "cost_sensitive"],
     "dynamic_programming": ["deterministic", "stateful_recurrence"],
 }
+
+
+def _load_abstractor_config(
+    path: str = "",
+) -> tuple[tuple[str, ...], dict[str, str], dict[str, str], dict[str, list[str]], dict[str, list[str]]]:
+    """Load abstractor config from JSON, falling back to in-code defaults."""
+    if not path:
+        default = Path(__file__).parent / ".." / "data" / "abstractor_config.json"
+        if default.exists():
+            path = str(default)
+    if path:
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            return (
+                tuple(data.get("domain_prefixes", _DEFAULT_DOMAIN_PREFIXES)),
+                data.get("abstract_name_overrides", _DEFAULT_ABSTRACT_NAME_OVERRIDES),
+                data.get("transform_templates", _DEFAULT_TRANSFORM_TEMPLATES),
+                data.get("applications", _DEFAULT_APPLICATIONS),
+                data.get("properties", _DEFAULT_PROPERTIES),
+            )
+        except Exception:
+            logger.debug("Failed to load abstractor config from %s", path)
+    return (
+        _DEFAULT_DOMAIN_PREFIXES,
+        _DEFAULT_ABSTRACT_NAME_OVERRIDES,
+        _DEFAULT_TRANSFORM_TEMPLATES,
+        _DEFAULT_APPLICATIONS,
+        _DEFAULT_PROPERTIES,
+    )
+
+
+_DOMAIN_PREFIXES, _ABSTRACT_NAME_OVERRIDES, _TRANSFORM_TEMPLATES, _APPLICATIONS, _PROPERTIES = (
+    _load_abstractor_config()
+)
 
 
 def _parse_abstract_prompt(user: str) -> dict[str, Any]:

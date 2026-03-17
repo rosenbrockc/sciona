@@ -6,6 +6,12 @@ JSON output schema.
 
 from __future__ import annotations
 
+from ageom.architect.models import ConceptType
+
+_CONCEPT_TYPE_LIST = ", ".join(
+    ct.value for ct in ConceptType if ct != ConceptType.CUSTOM
+) + ", custom"
+
 # ---------------------------------------------------------------------------
 # Phase 2: Semantic chunking
 # ---------------------------------------------------------------------------
@@ -22,16 +28,7 @@ Core rules:
 2. Private helpers (_foo) are grouped with their caller.
 3. __init__ setup may be its own atom or grouped with the first stage.
 4. Config branches become optional nodes (is_optional=true).
-5. Choose concept_type from: sorting, searching, divide_and_conquer, greedy, \
-   dynamic_programming, graph_traversal, graph_optimization, string_matching, \
-   geometry, arithmetic, number_theory, combinatorics, algebra, analysis, \
-   set_theory, signal_transform, signal_filter, graph_signal_processing, \
-   sampler, log_prob, posterior_update, variational_inference, prior_init, \
-   prior_distribution, likelihood_evaluation, probabilistic_oracle, \
-   oracle_gradient, mcmc_kernel, mcmc_proposal, vi_elbo, sequential_filter, \
-   smc_reweight, message_passing, conjugate_update, \
-   state_init, data_assembly, conditional_routing, data_extraction, \
-   visualization, observability, custom.
+5. Choose concept_type from: """ + _CONCEPT_TYPE_LIST + """.
 
 Orchestration / data-flow type guidance:
 - state_init — initializes, resets, or bootstraps state/containers (no computation).
@@ -149,16 +146,7 @@ Rules:
    Group related lines.
 5. If the function calls internal helpers, each major helper call can be \
    its own sub-atom.
-6. Choose concept_type from: sorting, searching, divide_and_conquer, greedy, \
-   dynamic_programming, graph_traversal, graph_optimization, string_matching, \
-   geometry, arithmetic, number_theory, combinatorics, algebra, analysis, \
-   set_theory, signal_transform, signal_filter, graph_signal_processing, \
-   sampler, log_prob, posterior_update, variational_inference, prior_init, \
-   prior_distribution, likelihood_evaluation, probabilistic_oracle, \
-   oracle_gradient, mcmc_kernel, mcmc_proposal, vi_elbo, sequential_filter, \
-   smc_reweight, message_passing, conjugate_update, \
-   state_init, data_assembly, conditional_routing, data_extraction, \
-   visualization, observability, custom.
+6. Choose concept_type from: """ + _CONCEPT_TYPE_LIST + """.
 
 Return valid JSON only."""
 

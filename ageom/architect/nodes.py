@@ -364,6 +364,65 @@ def _tokenize(text: str) -> set[str]:
     return {tok for tok in re.findall(r"[a-z0-9_]+", text.lower()) if len(tok) >= 3}
 
 
+def _instantiate_template(
+    parent: AlgorithmicNode,
+    example: "ExampleDecomposition",
+    all_nodes: list[AlgorithmicNode],
+) -> tuple[list[AlgorithmicNode], list[DependencyEdge]]:
+    """Instantiate a template from a retrieved example decomposition."""
+    from ageom.architect.graph_retrieval import ExampleDecomposition
+
+    parent_copy = parent.model_copy()
+    parent_copy.status = NodeStatus.DECOMPOSED
+    parent_copy.children = []
+
+    new_nodes: list[AlgorithmicNode] = [parent_copy]
+    new_edges: list[DependencyEdge] = []
+
+    for i, child in enumerate(example.children):
+        child_id = f"{parent.node_id}_t{i}"
+        try:
+            ct = ConceptType(child.concept_type)
+        except ValueError:
+            ct = parent.concept_type
+
+        child_node = AlgorithmicNode(
+            node_id=child_id,
+            parent_id=parent.node_id,
+            name=child.name,
+            description=child.description,
+            concept_type=ct,
+            status=NodeStatus.ATOMIC,
+            depth=parent.depth + 1,
+            type_signature=child.type_signature,
+            matched_primitive=child.matched_primitive or None,
+        )
+        new_nodes.append(child_node)
+        parent_copy.children.append(child_id)
+
+    # Re-create edges with new child IDs
+    child_id_map = {
+        old_child.node_id: f"{parent.node_id}_t{i}"
+        for i, old_child in enumerate(example.children)
+    }
+    for edge in example.edges:
+        new_source = child_id_map.get(edge.source_id)
+        new_target = child_id_map.get(edge.target_id)
+        if new_source and new_target:
+            new_edges.append(
+                DependencyEdge(
+                    source_id=new_source,
+                    target_id=new_target,
+                    output_name=edge.output_name,
+                    input_name=edge.input_name,
+                    source_type="",
+                    target_type="",
+                )
+            )
+
+    return new_nodes, new_edges
+
+
 def _lexical_primitive_fallback(
     node: AlgorithmicNode,
     deps: DecompositionDeps,
@@ -862,6 +921,55 @@ async def decompose_node(
             f"Previous decomposition was rejected: {reason}\n"
             "Please fix the issues and try again."
         )
+
+    # Try template retriever for high-confidence instantiation (skip LLM)
+    template_retriever = getattr(deps, "template_retriever", None)
+    if template_retriever is not None:
+        try:
+            template_matches = await template_retriever.find_templates(
+                node, all_nodes, state["edges"]
+            )
+            if template_matches and template_matches[0].confidence >= 0.8:
+                match = template_matches[0]
+                log_event(
+                    "architect",
+                    "decompose",
+                    "TEMPLATE_USED",
+                    payload={
+                        "node_id": node.node_id,
+                        "template_fqn": match.example.fqn,
+                        "confidence": round(match.confidence, 3),
+                        "source": match.source,
+                    },
+                )
+                # Instantiate from template
+                new_nodes, new_edges = _instantiate_template(
+                    node, match.example, all_nodes
+                )
+                return {
+                    "nodes": new_nodes,
+                    "edges": new_edges,
+                    "history": [
+                        {
+                            "step": "decompose_node",
+                            "node_id": node.node_id,
+                            "template_used": match.example.fqn,
+                            "confidence": round(match.confidence, 3),
+                        }
+                    ],
+                }
+            elif template_matches:
+                log_event(
+                    "architect",
+                    "decompose",
+                    "TEMPLATE_FALLBACK_TO_LLM",
+                    payload={
+                        "node_id": node.node_id,
+                        "best_confidence": round(template_matches[0].confidence, 3),
+                    },
+                )
+        except Exception:
+            logger.debug("template_retriever failed in decompose_node", exc_info=True)
 
     # Retrieve similar decomposition examples from Memgraph
     example_decompositions = ""
@@ -1630,6 +1738,7 @@ async def advance_conjugate_node(
         }
 
     pair_name = conjugate_spec["pair_name"]
+    log_event("architect", "conjugate", "CONJUGATE_FAST_PATH_FIRED", payload={"pair": conjugate_spec["pair_name"]})
 
     # -- Node 1: Data Ingestion (Sufficient Statistics) -------------------
     ingest_id = f"conj_ingest_{uuid.uuid4().hex[:8]}"

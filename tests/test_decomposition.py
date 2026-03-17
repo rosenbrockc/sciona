@@ -1201,7 +1201,9 @@ class TestBlockedDecomposition:
         assert any(node.status == NodeStatus.BLOCKED for node in cdg.nodes)
 
     @pytest.mark.asyncio
-    async def test_heart_rate_goal_fails_explicitly_when_signal_filter_flow_stalls(self):
+    async def test_heart_rate_goal_uses_skeleton_when_variant_matched(self):
+        """When the LLM selects bandpass_hr_detection variant, the skeleton
+        covers the entire goal — no decompose/critique loop needed."""
         from ageom.architect.graph import DecompositionAgent
 
         catalog = PrimitiveCatalog()
@@ -1219,6 +1221,8 @@ class TestBlockedDecomposition:
                         "variant_hint": "bandpass_hr_detection",
                     }
                 )
+            # Critic / decompose should not be called when skeleton
+            # fully covers the goal, but provide fallback responses.
             if "critic" in system_lower or "evaluate" in system_lower:
                 return json.dumps(
                     {
@@ -1260,9 +1264,11 @@ class TestBlockedDecomposition:
 
         cdg = await agent.decompose("Detect heart rate from raw ECG signal")
 
-        assert cdg.metadata["architect_status"] == "blocked"
+        assert cdg.metadata["architect_status"] == "ready"
         assert "Detect heart rate from raw ECG signal" == cdg.metadata["goal"]
-        assert "Typed ECG/filter flow remains incomplete" in cdg.metadata["architect_error"]
+        assert cdg.metadata["paradigm"] == "signal_filter"
+        # Skeleton instantiated all nodes — no pending decompositions needed
+        assert len(cdg.nodes) >= 2  # root + at least one child
 
 
 class TestMaxDepth:

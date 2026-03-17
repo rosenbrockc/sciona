@@ -11,6 +11,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from ageom.architect.handoff import CDGExport, to_pdg_nodes
@@ -119,6 +120,115 @@ def _split_on_connectors(text: str) -> list[dict[str, str]] | None:
     return refined
 
 
+_ALGORITHM_NAMES = re.compile(
+    r"\b(?:dijkstra|bellman[ -]?ford|floyd[ -]?warshall|prim|kruskal"
+    r"|cholesky|householder|givens|gram[ -]?schmidt|lanczos"
+    r"|butterworth|chebyshev|bessel|elliptic"
+    r"|viterbi|baum[ -]?welch|metropolis|gibbs"
+    r"|newton|gauss|euler|runge[ -]?kutta"
+    r"|levenberg[ -]?marquardt|nelder[ -]?mead"
+    r"|cooley[ -]?tukey|bluestein"
+    r"|karatsuba|strassen)\b",
+    re.IGNORECASE,
+)
+
+
+def _generalize_description(description: str, error_summaries: list[str]) -> str:
+    """Strip algorithm-specific names while keeping structural intent."""
+    if not description:
+        return description
+    # Remove named-algorithm references
+    generalized = _ALGORITHM_NAMES.sub("", description)
+    # Collapse extra whitespace
+    generalized = re.sub(r"\s{2,}", " ", generalized).strip()
+    # If stripping removed too much, fall back to original
+    if len(generalized) < 10:
+        return description
+    return generalized
+
+
+def _load_split_patterns(path: str = "") -> list[dict]:
+    """Load split patterns from JSON, falling back to built-in defaults."""
+    if not path:
+        default = Path(__file__).parent / "data" / "split_patterns.json"
+        if default.exists():
+            path = str(default)
+    if path:
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            return data.get("patterns", [])
+        except Exception:
+            logger.debug("Failed to load split patterns from %s", path)
+    return []
+
+
+_SPLIT_PATTERNS: list[dict] | None = None
+
+
+def _get_split_patterns() -> list[dict]:
+    global _SPLIT_PATTERNS
+    if _SPLIT_PATTERNS is None:
+        _SPLIT_PATTERNS = _load_split_patterns()
+    return _SPLIT_PATTERNS
+
+
+def _pattern_matches(conditions: dict, lowered: str) -> bool:
+    """Check if a pattern's conditions match the lowered context string."""
+    # "all" — every term must be present
+    if "all" in conditions:
+        if not all(term in lowered for term in conditions["all"]):
+            return False
+
+    # "any" — at least one term in the list must be present
+    if "any" in conditions:
+        if not any(term in lowered for term in conditions["any"]):
+            # Unless there are "any_combo" alternatives
+            if "any_combo" not in conditions:
+                return False
+
+    # "any_combo" — at least one group must fully match (each group is AND)
+    if "any_combo" in conditions:
+        has_any = "any" in conditions and any(term in lowered for term in conditions["any"])
+        has_combo = any(
+            all(term in lowered for term in group)
+            for group in conditions["any_combo"]
+        )
+        if not has_any and not has_combo:
+            # Also check any_padded (terms tested against " text ")
+            has_padded = "any_padded" in conditions and any(
+                term in f" {lowered} " for term in conditions["any_padded"]
+            )
+            if not has_padded:
+                return False
+
+    # "any_padded" — at least one padded term present (standalone check)
+    if "any_padded" in conditions and "any_combo" not in conditions:
+        if not any(term in f" {lowered} " for term in conditions["any_padded"]):
+            return False
+
+    # "any_phrase" — at least one phrase present
+    if "any_phrase" in conditions:
+        if not any(phrase in lowered for phrase in conditions["any_phrase"]):
+            return False
+
+    # "require_any" — at least one of these must also be present
+    if "require_any" in conditions:
+        if not any(term in lowered for term in conditions["require_any"]):
+            return False
+
+    # "any" with nested lists (e.g., [["ecg", "bandpass"], ["filter", "coeff"]])
+    # = at least one sub-list must have ALL its terms present
+    if "any" in conditions and conditions["any"] and isinstance(conditions["any"][0], list):
+        if not any(
+            all(term in lowered for term in group)
+            for group in conditions["any"]
+        ):
+            return False
+
+    return True
+
+
 def _deterministic_split_subnodes(
     failure: MatchFailureReport,
     original: AlgorithmicNode | None,
@@ -132,257 +242,10 @@ def _deterministic_split_subnodes(
     combined = " ".join(part for part in [statement, description, error_text, candidate_names] if part)
     lowered = combined.lower()
 
-    if all(term in lowered for term in ("ecg", "bandpass", "filter")) or (
-        "filter" in lowered and "coeff" in lowered
-    ):
-        return [
-            {
-                "name": "Design Filter",
-                "description": "Compute stable filter coefficients for the target signal.",
-                "type_signature": "",
-            },
-            {
-                "name": "Apply Filter",
-                "description": "Apply the designed filter to produce the filtered signal.",
-                "type_signature": "",
-            },
-        ]
-
-    if ("shortest path" in lowered or "distance" in lowered) and (
-        "graph" in lowered or "dijkstra" in lowered or "weighted" in lowered
-    ):
-        return [
-            {
-                "name": "Initialize Distances",
-                "description": "Initialize the source distance and default values for remaining nodes.",
-                "type_signature": "",
-            },
-            {
-                "name": "Relax Edges",
-                "description": "Iteratively relax edges to improve shortest-path distance estimates.",
-                "type_signature": "",
-            },
-        ]
-
-    if "spd" in lowered or "symmetric positive definite" in lowered or "cholesky" in lowered:
-        return [
-            {
-                "name": "Cholesky Factor",
-                "description": "Factor the system into a triangular representation.",
-                "type_signature": "",
-            },
-            {
-                "name": "Triangular Solve",
-                "description": "Use the triangular factors to solve for the output vector.",
-                "type_signature": "",
-            },
-        ]
-
-    if "longest common subsequence" in lowered or (
-        "subsequence" in lowered and "dynamic" in lowered
-    ) or " lcs " in f" {lowered} ":
-        return [
-            {
-                "name": "Build DP Table",
-                "description": "Compute the dynamic-programming table for subsequence lengths.",
-                "type_signature": "",
-            },
-            {
-                "name": "Backtrack Subsequence",
-                "description": "Recover the longest common subsequence from the DP table.",
-                "type_signature": "",
-            },
-        ]
-
-    # Matrix factorization / decomposition
-    if any(term in lowered for term in ("matrix factori", "svd", "eigenvalue", "eigen decomp")):
-        return [
-            {
-                "name": "Factorize Matrix",
-                "description": "Compute the factorization of the input matrix.",
-                "type_signature": "",
-            },
-            {
-                "name": "Extract Components",
-                "description": "Extract the desired components from the factorization result.",
-                "type_signature": "",
-            },
-        ]
-
-    # Optimization / minimization
-    if any(term in lowered for term in ("optimi", "minimi", "maximi", "gradient descent", "loss function")):
-        return [
-            {
-                "name": "Initialize Parameters",
-                "description": "Set initial parameter values for the optimization.",
-                "type_signature": "",
-            },
-            {
-                "name": "Iterate Optimization",
-                "description": "Run the iterative optimization loop until convergence.",
-                "type_signature": "",
-            },
-            {
-                "name": "Extract Solution",
-                "description": "Extract the optimal parameters from the converged state.",
-                "type_signature": "",
-            },
-        ]
-
-    # FFT / spectral analysis
-    if any(term in lowered for term in ("fft", "fourier", "spectral", "frequency spectrum")):
-        return [
-            {
-                "name": "Compute Transform",
-                "description": "Apply the forward frequency-domain transform to the signal.",
-                "type_signature": "",
-            },
-            {
-                "name": "Analyze Spectrum",
-                "description": "Extract the relevant spectral features from the transform output.",
-                "type_signature": "",
-            },
-        ]
-
-    # Sorting algorithms
-    if any(term in lowered for term in ("sort", "order", "arrange", "rank element")):
-        return [
-            {
-                "name": "Partition Elements",
-                "description": "Divide elements into sub-groups for ordered processing.",
-                "type_signature": "",
-            },
-            {
-                "name": "Merge Ordered",
-                "description": "Combine partitioned sub-groups into the final sorted order.",
-                "type_signature": "",
-            },
-        ]
-
-    # String matching / edit distance
-    if any(term in lowered for term in ("edit distance", "levenshtein", "string matching", "string align")):
-        return [
-            {
-                "name": "Build Distance Table",
-                "description": "Compute the edit distance table between the two sequences.",
-                "type_signature": "",
-            },
-            {
-                "name": "Trace Alignment",
-                "description": "Recover the optimal alignment or edit operations from the table.",
-                "type_signature": "",
-            },
-        ]
-
-    # Signal processing: detect + compute pattern (e.g. R-peak → heart rate)
-    if ("detect" in lowered or "peak" in lowered) and ("comput" in lowered or "rate" in lowered or "measur" in lowered):
-        return [
-            {
-                "name": "Detect Features",
-                "description": "Identify the key features or events in the input signal.",
-                "type_signature": "",
-            },
-            {
-                "name": "Compute Metric",
-                "description": "Derive the target metric from the detected features.",
-                "type_signature": "",
-            },
-        ]
-
-    # Interpolation / approximation
-    if any(term in lowered for term in ("interpolat", "spline", "approximat", "curve fit")):
-        return [
-            {
-                "name": "Fit Model",
-                "description": "Fit the interpolation or approximation model to the data points.",
-                "type_signature": "",
-            },
-            {
-                "name": "Evaluate Model",
-                "description": "Evaluate the fitted model at the target query points.",
-                "type_signature": "",
-            },
-        ]
-
-    # Clustering
-    if any(term in lowered for term in ("cluster", "k-means", "kmeans", "dbscan", "group similar")):
-        return [
-            {
-                "name": "Assign Clusters",
-                "description": "Assign data points to cluster centroids or groups.",
-                "type_signature": "",
-            },
-            {
-                "name": "Refine Centroids",
-                "description": "Update cluster centroids or boundaries based on assignments.",
-                "type_signature": "",
-            },
-        ]
-
-    # Statistical inference / Bayesian
-    if any(term in lowered for term in ("posterior", "bayesian", "likelihood", "prior", "inference", "sampling")):
-        return [
-            {
-                "name": "Specify Model",
-                "description": "Define the probabilistic model with prior and likelihood.",
-                "type_signature": "",
-            },
-            {
-                "name": "Fit Or Sample",
-                "description": "Perform inference via sampling or optimization.",
-                "type_signature": "",
-            },
-            {
-                "name": "Summarize Results",
-                "description": "Extract posterior summaries or point estimates.",
-                "type_signature": "",
-            },
-        ]
-
-    # Tree / graph traversal
-    if any(term in lowered for term in ("travers", "bfs", "dfs", "breadth first", "depth first", "search tree")):
-        return [
-            {
-                "name": "Initialize Traversal",
-                "description": "Set up the traversal frontier with the starting node(s).",
-                "type_signature": "",
-            },
-            {
-                "name": "Explore Neighbors",
-                "description": "Iteratively visit neighbors and collect results.",
-                "type_signature": "",
-            },
-        ]
-
-    # Convolution / correlation
-    if any(term in lowered for term in ("convolv", "convolution", "correlat", "cross-correlat")):
-        return [
-            {
-                "name": "Prepare Kernel",
-                "description": "Set up the convolution or correlation kernel.",
-                "type_signature": "",
-            },
-            {
-                "name": "Apply Convolution",
-                "description": "Apply the kernel operation across the input signal.",
-                "type_signature": "",
-            },
-        ]
-
-    # Normalization / standardization
-    if any(term in lowered for term in ("normaliz", "standardiz", "scale feature", "feature scal")):
-        return [
-            {
-                "name": "Compute Statistics",
-                "description": "Compute the normalization statistics (mean, std, min, max).",
-                "type_signature": "",
-            },
-            {
-                "name": "Apply Transform",
-                "description": "Apply the normalization transform to the data.",
-                "type_signature": "",
-            },
-        ]
+    for pattern in _get_split_patterns():
+        conditions = pattern.get("conditions", {})
+        if _pattern_matches(conditions, lowered):
+            return pattern["sub_nodes"]
 
     return _split_on_connectors(description or statement)
 
@@ -406,6 +269,7 @@ async def refine_on_failure(
     failure: MatchFailureReport,
     cdg: CDGExport,
     llm: Any,
+    template_retriever: Any | None = None,
 ) -> CDGExport:
     """Refine the CDG based on a match failure.
 
@@ -436,6 +300,59 @@ async def refine_on_failure(
 
     if action == FailureAction.SPLIT:
         original = _find_cdg_node(cdg, node.predicate_id)
+
+        # Layer 1: Try retrieval-based refinement templates
+        if template_retriever is not None and original is not None:
+            try:
+                failure_context_dict = {
+                    "description": original.description or node.informal_desc,
+                    "concept_type": original.concept_type.value if hasattr(original.concept_type, "value") else str(original.concept_type),
+                    "error_summaries": failure.error_summaries[:3],
+                    "statement": node.statement,
+                }
+                retrieval_matches = await template_retriever.find_refinement_templates(
+                    original, failure_context_dict
+                )
+                # Use first match with confidence >= 0.7
+                good_matches = [m for m in retrieval_matches if m.confidence >= 0.7]
+                if good_matches:
+                    best = good_matches[0]
+                    retrieved_sub_nodes = [
+                        {
+                            "name": child.name,
+                            "description": child.description,
+                            "type_signature": getattr(child, "type_signature", ""),
+                        }
+                        for child in best.example.children
+                    ]
+                    if retrieved_sub_nodes:
+                        _apply_split_subnodes(cdg, original, retrieved_sub_nodes)
+                        logger.info(
+                            "Retrieval-based split node %s into %d sub-nodes (confidence=%.2f)",
+                            node.predicate_id,
+                            len(retrieved_sub_nodes),
+                            best.confidence,
+                        )
+                        log_event(
+                            "orchestrator",
+                            "refinement",
+                            "SPLIT_RETRIEVAL",
+                            payload={
+                                "node_id": node.predicate_id,
+                                "confidence": best.confidence,
+                                "source": best.source,
+                                "sub_node_count": len(retrieved_sub_nodes),
+                            },
+                        )
+                        return cdg
+            except Exception as exc:
+                logger.debug(
+                    "Retrieval-based refinement failed for %s: %s",
+                    node.predicate_id,
+                    exc,
+                )
+
+        # Layer 2: Deterministic pattern-based split
         deterministic_sub_nodes = _deterministic_split_subnodes(failure, original)
         if deterministic_sub_nodes and original is not None:
             _apply_split_subnodes(cdg, original, deterministic_sub_nodes)
@@ -444,8 +361,18 @@ async def refine_on_failure(
                 node.predicate_id,
                 len(deterministic_sub_nodes),
             )
+            log_event(
+                "orchestrator",
+                "refinement",
+                "SPLIT_DETERMINISTIC",
+                payload={
+                    "node_id": node.predicate_id,
+                    "sub_node_count": len(deterministic_sub_nodes),
+                },
+            )
             return cdg
 
+        # Layer 3: LLM-based split
         error_context = "\n".join(failure.error_summaries[:3])
         system_prompt = (
             "You are an algorithm decomposition expert. A predicate could not be "
@@ -487,9 +414,18 @@ async def refine_on_failure(
                 _apply_split_subnodes(cdg, original, sub_nodes)
 
                 logger.info(
-                    "Split node %s into %d sub-nodes",
+                    "LLM split node %s into %d sub-nodes",
                     node.predicate_id,
                     len(sub_nodes[:3]),
+                )
+                log_event(
+                    "orchestrator",
+                    "refinement",
+                    "SPLIT_LLM",
+                    payload={
+                        "node_id": node.predicate_id,
+                        "sub_node_count": len(sub_nodes[:3]),
+                    },
                 )
         except Exception as exc:
             logger.warning("Failed to split node %s: %s", node.predicate_id, exc)
@@ -501,11 +437,22 @@ async def refine_on_failure(
                     break
 
     elif action == FailureAction.GENERALIZE:
-        # Broaden the type signature
         for n in cdg.nodes:
             if n.node_id == node.predicate_id:
-                n.critic_notes = "Re-formulated after match failure"
+                n.description = _generalize_description(
+                    n.description, failure.error_summaries
+                )
+                n.type_signature = ""
+                n.matched_primitive = None
+                n.primitive_binding_confidence = 0.0
+                n.critic_notes = "Re-formulated after match failure (GENERALIZE)"
                 break
+        log_event(
+            "orchestrator",
+            "refinement",
+            "GENERALIZE_APPLIED",
+            payload={"node_id": node.predicate_id},
+        )
 
     return cdg
 
@@ -518,6 +465,7 @@ async def run_orchestration(
     prover: Prover = Prover.LEAN4,
     max_rounds: int = 3,
     hunter_concurrency: int = 1,
+    template_retriever: Any | None = None,
 ) -> OrchestratorResult:
     """Run the full Architect -> Hunter feedback loop.
 
@@ -528,6 +476,7 @@ async def run_orchestration(
         prover: Target prover.
         max_rounds: Maximum refinement rounds.
         hunter_concurrency: Maximum concurrent Hunter node matches per round.
+        template_retriever: Optional TemplateRetriever for retrieval-based refinement.
 
     Returns:
         OrchestratorResult with final CDG and match results.
@@ -693,7 +642,7 @@ async def run_orchestration(
         ):
             with telemetry_scope(stage=refine_stage):
                 for i, failure in enumerate(round_failures, start=1):
-                    cdg = await refine_on_failure(failure, cdg, llm)
+                    cdg = await refine_on_failure(failure, cdg, llm, template_retriever=template_retriever)
                     update_stage(
                         stage=refine_stage,
                         completed=i,

@@ -188,6 +188,14 @@ def build_atom_params(
         "n_inputs": len(inputs),
         "n_outputs": len(outputs),
     }
+    # Include verified_leaf_coverage when present
+    vlc = node.get("verified_leaf_coverage")
+    if vlc is not None:
+        props["verified_leaf_coverage"] = float(vlc)
+    # Include matched_primitive when present
+    mp = node.get("matched_primitive")
+    if mp:
+        props["matched_primitive"] = str(mp)
     if witness_meta:
         props["witness_name"] = witness_meta.get("witness_name", "")
         props["witness_input_types"] = witness_meta.get("witness_input_types", [])
@@ -271,6 +279,7 @@ class GraphStore:
             "CREATE INDEX ON :Atom(abstract_type_class)",
             "CREATE INDEX ON :Atom(repo)",
             "CREATE INDEX ON :Atom(topo_hash)",
+            "CREATE INDEX ON :Atom(verified_leaf_coverage)",
         ]
         async with self._driver.session() as session:
             for stmt in constraints + indexes:
@@ -293,14 +302,21 @@ class GraphStore:
             "     collect(DISTINCT {node_id: child.node_id, name: child.name, "
             "       description: child.description, concept_type: child.concept_type, "
             "       status: child.status, n_inputs: child.n_inputs, n_outputs: child.n_outputs, "
-            "       type_signature: child.type_signature}) AS children, "
+            "       type_signature: child.type_signature, "
+            "       abstract_type_class: child.abstract_type_class, "
+            "       matched_primitive: child.matched_primitive, "
+            "       witness_input_types: child.witness_input_types, "
+            "       witness_output_types: child.witness_output_types}) AS children, "
             "     collect(DISTINCT CASE WHEN df IS NOT NULL THEN {source_id: startNode(df).node_id, "
             "       target_id: endNode(df).node_id, "
             "       output_name: df.output_name, input_name: df.input_name} ELSE NULL END) AS raw_edges "
-            "WITH parent, children, [e IN raw_edges WHERE e IS NOT NULL] AS edges "
+            "With parent, children, [e IN raw_edges WHERE e IS NOT NULL] AS edges "
             "RETURN parent.fqn AS fqn, parent.name AS name, parent.description AS description, "
             "       parent.concept_type AS concept_type, parent.repo AS repo, "
-            "       parent.topo_hash AS topo_hash, children, edges "
+            "       parent.topo_hash AS topo_hash, "
+            "       parent.abstract_type_class AS p_abstract_type_class, "
+            "       parent.n_inputs AS p_n_inputs, parent.n_outputs AS p_n_outputs, "
+            "       children, edges "
             "LIMIT $limit"
         )
         async with self._driver.session() as session:
@@ -335,14 +351,21 @@ class GraphStore:
             "     collect(DISTINCT {node_id: child.node_id, name: child.name, "
             "       description: child.description, concept_type: child.concept_type, "
             "       status: child.status, n_inputs: child.n_inputs, n_outputs: child.n_outputs, "
-            "       type_signature: child.type_signature}) AS children, "
+            "       type_signature: child.type_signature, "
+            "       abstract_type_class: child.abstract_type_class, "
+            "       matched_primitive: child.matched_primitive, "
+            "       witness_input_types: child.witness_input_types, "
+            "       witness_output_types: child.witness_output_types}) AS children, "
             "     collect(DISTINCT CASE WHEN df IS NOT NULL THEN {source_id: startNode(df).node_id, "
             "       target_id: endNode(df).node_id, "
             "       output_name: df.output_name, input_name: df.input_name} ELSE NULL END) AS raw_edges "
             "WITH parent, children, [e IN raw_edges WHERE e IS NOT NULL] AS edges "
             "RETURN parent.fqn AS fqn, parent.name AS name, parent.description AS description, "
             "       parent.concept_type AS concept_type, parent.repo AS repo, "
-            "       parent.topo_hash AS topo_hash, children, edges "
+            "       parent.topo_hash AS topo_hash, "
+            "       parent.abstract_type_class AS p_abstract_type_class, "
+            "       parent.n_inputs AS p_n_inputs, parent.n_outputs AS p_n_outputs, "
+            "       children, edges "
             "ORDER BY size(children) DESC "
             "LIMIT $limit"
         )
@@ -387,7 +410,11 @@ class GraphStore:
             "     collect(DISTINCT {node_id: child.node_id, name: child.name, "
             "       description: child.description, concept_type: child.concept_type, "
             "       status: child.status, n_inputs: child.n_inputs, n_outputs: child.n_outputs, "
-            "       type_signature: child.type_signature}) AS children, "
+            "       type_signature: child.type_signature, "
+            "       abstract_type_class: child.abstract_type_class, "
+            "       matched_primitive: child.matched_primitive, "
+            "       witness_input_types: child.witness_input_types, "
+            "       witness_output_types: child.witness_output_types}) AS children, "
             "     collect(DISTINCT CASE WHEN df IS NOT NULL THEN {source_id: startNode(df).node_id, "
             "       target_id: endNode(df).node_id, "
             "       output_name: df.output_name, input_name: df.input_name} ELSE NULL END) AS raw_edges "
@@ -399,6 +426,32 @@ class GraphStore:
         async with self._driver.session() as session:
             result = await session.run(
                 cypher, fqn=fqn, exclude_repo=exclude_repo, limit=limit
+            )
+            return [dict(r) async for r in result]
+
+    async def query_verified_exemplars(
+        self,
+        concept_type: str,
+        min_coverage: float = 0.8,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """Query for verified exemplars with high leaf coverage."""
+        cypher = (
+            "MATCH (p:Atom:Decomposed) "
+            "WHERE p.verified_leaf_coverage >= $min_coverage "
+            "  AND p.concept_type = $concept_type "
+            "RETURN p.fqn AS fqn, p.repo AS repo, "
+            "       p.verified_leaf_coverage AS verified_leaf_coverage, "
+            "       p.topo_hash AS topo_hash "
+            "ORDER BY p.verified_leaf_coverage DESC "
+            "LIMIT $limit"
+        )
+        async with self._driver.session() as session:
+            result = await session.run(
+                cypher,
+                concept_type=concept_type,
+                min_coverage=min_coverage,
+                limit=limit,
             )
             return [dict(r) async for r in result]
 

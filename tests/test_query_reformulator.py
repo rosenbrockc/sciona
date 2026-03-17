@@ -8,6 +8,7 @@ import pytest
 from ageom.hunter.prompts import REFORMULATE_QUERY_SYSTEM, REFORMULATE_QUERY_USER
 from ageom.hunter.query_reformulator import (
     HeuristicQueryReformulator,
+    _DEFAULT_DATA_PATH,
     derive_catalog_hints,
 )
 from ageom.types import Declaration, Prover
@@ -259,4 +260,32 @@ async def test_reformulator_with_expander_produces_queries():
     queries = json.loads(response)
     assert len(queries) >= 3
     assert any("bandpass_filter" in q for q in queries)
+    assert fallback.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_loads_from_data_file():
+    """Verify the default JSON data file loads and behavior is unchanged."""
+    assert _DEFAULT_DATA_PATH.exists(), f"Data file missing: {_DEFAULT_DATA_PATH}"
+
+    # Build a reformulator that explicitly loads from the default data file.
+    fallback = _FallbackLLM('["fallback"]')
+    reformulator = HeuristicQueryReformulator(fallback, rules_path=_DEFAULT_DATA_PATH)
+
+    # ECG case should still produce deterministic phrase-rule queries.
+    system, user = _reformulate_prompt(
+        predicate_id="p_ecg_data",
+        statement="Bandpass raw ECG into cardiac frequency region",
+        informal_desc="stable digital filter design and application",
+        prover="python",
+        queries_tried=["generic query"],
+        compiler_errors="Expected filtered_signal but got response tuple from compute_frequency_response",
+    )
+
+    response = await reformulator.complete(system, user)
+    queries = [str(item).lower() for item in json.loads(response)]
+
+    assert any("ecg" in q for q in queries)
+    assert any("bandpass" in q or "filter" in q for q in queries)
+    assert len(queries) >= 3
     assert fallback.calls == 0

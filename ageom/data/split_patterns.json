@@ -1,0 +1,134 @@
+{
+  "patterns": [
+    {
+      "name": "ecg_bandpass_filter",
+      "conditions": {"any_combo": [["ecg", "bandpass", "filter"], ["filter", "coeff"]]},
+      "sub_nodes": [
+        {"name": "Design Filter", "description": "Compute stable filter coefficients for the target signal.", "type_signature": ""},
+        {"name": "Apply Filter", "description": "Apply the designed filter to produce the filtered signal.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "shortest_path_dijkstra",
+      "conditions": {"any_phrase": ["shortest path", "distance"], "require_any": ["graph", "dijkstra", "weighted"]},
+      "sub_nodes": [
+        {"name": "Initialize Distances", "description": "Initialize the source distance and default values for remaining nodes.", "type_signature": ""},
+        {"name": "Relax Edges", "description": "Iteratively relax edges to improve shortest-path distance estimates.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "cholesky_spd",
+      "conditions": {"any": ["spd", "symmetric positive definite", "cholesky"]},
+      "sub_nodes": [
+        {"name": "Cholesky Factor", "description": "Factor the system into a triangular representation.", "type_signature": ""},
+        {"name": "Triangular Solve", "description": "Use the triangular factors to solve for the output vector.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "lcs_dp",
+      "conditions": {"any_combo": [["longest common subsequence"], ["subsequence", "dynamic"]], "any_padded": [" lcs "]},
+      "sub_nodes": [
+        {"name": "Build DP Table", "description": "Compute the dynamic-programming table for subsequence lengths.", "type_signature": ""},
+        {"name": "Backtrack Subsequence", "description": "Recover the longest common subsequence from the DP table.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "matrix_factorization",
+      "conditions": {"any": ["matrix factori", "svd", "eigenvalue", "eigen decomp"]},
+      "sub_nodes": [
+        {"name": "Factorize Matrix", "description": "Compute the factorization of the input matrix.", "type_signature": ""},
+        {"name": "Extract Components", "description": "Extract the desired components from the factorization result.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "optimization",
+      "conditions": {"any": ["optimi", "minimi", "maximi", "gradient descent", "loss function"]},
+      "sub_nodes": [
+        {"name": "Initialize Parameters", "description": "Set initial parameter values for the optimization.", "type_signature": ""},
+        {"name": "Iterate Optimization", "description": "Run the iterative optimization loop until convergence.", "type_signature": ""},
+        {"name": "Extract Solution", "description": "Extract the optimal parameters from the converged state.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "fft_spectral",
+      "conditions": {"any": ["fft", "fourier", "spectral", "frequency spectrum"]},
+      "sub_nodes": [
+        {"name": "Compute Transform", "description": "Apply the forward frequency-domain transform to the signal.", "type_signature": ""},
+        {"name": "Analyze Spectrum", "description": "Extract the relevant spectral features from the transform output.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "sorting",
+      "conditions": {"any": ["sort", "order", "arrange", "rank element"]},
+      "sub_nodes": [
+        {"name": "Partition Elements", "description": "Divide elements into sub-groups for ordered processing.", "type_signature": ""},
+        {"name": "Merge Ordered", "description": "Combine partitioned sub-groups into the final sorted order.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "edit_distance",
+      "conditions": {"any": ["edit distance", "levenshtein", "string matching", "string align"]},
+      "sub_nodes": [
+        {"name": "Build Distance Table", "description": "Compute the edit distance table between the two sequences.", "type_signature": ""},
+        {"name": "Trace Alignment", "description": "Recover the optimal alignment or edit operations from the table.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "signal_detect_compute",
+      "conditions": {"any": ["detect", "peak"], "require_any": ["comput", "rate", "measur"]},
+      "sub_nodes": [
+        {"name": "Detect Features", "description": "Identify the key features or events in the input signal.", "type_signature": ""},
+        {"name": "Compute Metric", "description": "Derive the target metric from the detected features.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "interpolation",
+      "conditions": {"any": ["interpolat", "spline", "approximat", "curve fit"]},
+      "sub_nodes": [
+        {"name": "Fit Model", "description": "Fit the interpolation or approximation model to the data points.", "type_signature": ""},
+        {"name": "Evaluate Model", "description": "Evaluate the fitted model at the target query points.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "clustering",
+      "conditions": {"any": ["cluster", "k-means", "kmeans", "dbscan", "group similar"]},
+      "sub_nodes": [
+        {"name": "Assign Clusters", "description": "Assign data points to cluster centroids or groups.", "type_signature": ""},
+        {"name": "Refine Centroids", "description": "Update cluster centroids or boundaries based on assignments.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "bayesian_inference",
+      "conditions": {"any": ["posterior", "bayesian", "likelihood", "prior", "inference", "sampling"]},
+      "sub_nodes": [
+        {"name": "Specify Model", "description": "Define the probabilistic model with prior and likelihood.", "type_signature": ""},
+        {"name": "Fit Or Sample", "description": "Perform inference via sampling or optimization.", "type_signature": ""},
+        {"name": "Summarize Results", "description": "Extract posterior summaries or point estimates.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "traversal",
+      "conditions": {"any": ["travers", "bfs", "dfs", "breadth first", "depth first", "search tree"]},
+      "sub_nodes": [
+        {"name": "Initialize Traversal", "description": "Set up the traversal frontier with the starting node(s).", "type_signature": ""},
+        {"name": "Explore Neighbors", "description": "Iteratively visit neighbors and collect results.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "convolution",
+      "conditions": {"any": ["convolv", "convolution", "correlat", "cross-correlat"]},
+      "sub_nodes": [
+        {"name": "Prepare Kernel", "description": "Set up the convolution or correlation kernel.", "type_signature": ""},
+        {"name": "Apply Convolution", "description": "Apply the kernel operation across the input signal.", "type_signature": ""}
+      ]
+    },
+    {
+      "name": "normalization",
+      "conditions": {"any": ["normaliz", "standardiz", "scale feature", "feature scal"]},
+      "sub_nodes": [
+        {"name": "Compute Statistics", "description": "Compute the normalization statistics (mean, std, min, max).", "type_signature": ""},
+        {"name": "Apply Transform", "description": "Apply the normalization transform to the data.", "type_signature": ""}
+      ]
+    }
+  ]
+}

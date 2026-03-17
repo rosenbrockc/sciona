@@ -1,0 +1,27 @@
+{
+  "domain_prefixes": ["ecg", "audio", "financial", "bio", "image", "video"],
+  "abstract_name_overrides": {
+    "signal_filter": "Signal Conditioner",
+    "signal_transform": "Representation Transformer",
+    "graph_optimization": "Graph Path Optimizer",
+    "dynamic_programming": "State Recurrence Solver"
+  },
+  "transform_templates": {
+    "signal_filter": "Applies a constrained filtering step that attenuates or preserves components of a structured signal while keeping the signal representation stable.",
+    "signal_transform": "Maps a structured input into an alternative representation that exposes frequency, basis, or latent structure for downstream computation.",
+    "graph_optimization": "Computes an optimized path or score over a connected structure by propagating local costs into a global selection.",
+    "dynamic_programming": "Builds an output by reusing intermediate state across overlapping subproblems in a staged recurrence."
+  },
+  "applications": {
+    "signal_filter": ["industrial sensing", "medical monitoring", "geophysics"],
+    "signal_transform": ["communications", "robotics", "scientific imaging"],
+    "graph_optimization": ["transport logistics", "network routing", "supply planning"],
+    "dynamic_programming": ["computational biology", "resource planning", "control systems"]
+  },
+  "properties": {
+    "signal_filter": ["deterministic", "signal_processing", "shape_preserving_candidate"],
+    "signal_transform": ["deterministic", "representation_change"],
+    "graph_optimization": ["deterministic", "cost_sensitive"],
+    "dynamic_programming": ["deterministic", "stateful_recurrence"]
+  }
+}

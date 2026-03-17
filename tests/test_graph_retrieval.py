@@ -289,6 +289,46 @@ async def test_score_ordering():
 
 
 # ---------------------------------------------------------------------------
+# Tests: _io_match_factor
+# ---------------------------------------------------------------------------
+
+
+def test_io_match_factor_exact():
+    """Exact IO match → factor 1.0."""
+    node = _make_node(n_inputs=2, n_outputs=1)
+    record = {"p_n_inputs": 2, "p_n_outputs": 1}
+    assert CDGSubgraphRetriever._io_match_factor(node, record) == 1.0
+
+
+def test_io_match_factor_off_by_one():
+    """Off by one on inputs → factor 0.85."""
+    node = _make_node(n_inputs=2, n_outputs=1)
+    record = {"p_n_inputs": 3, "p_n_outputs": 1}
+    assert CDGSubgraphRetriever._io_match_factor(node, record) == pytest.approx(0.85)
+
+
+def test_io_match_factor_off_by_two():
+    """Off by two total → factor 0.7."""
+    node = _make_node(n_inputs=2, n_outputs=1)
+    record = {"p_n_inputs": 3, "p_n_outputs": 2}
+    assert CDGSubgraphRetriever._io_match_factor(node, record) == pytest.approx(0.7)
+
+
+def test_io_match_factor_large_delta_clamps():
+    """Large delta → clamps at 0.3."""
+    node = _make_node(n_inputs=5, n_outputs=3)
+    record = {"p_n_inputs": 0, "p_n_outputs": 0}
+    assert CDGSubgraphRetriever._io_match_factor(node, record) == 0.3
+
+
+def test_io_match_factor_missing_record_keys():
+    """Missing keys in record → falls back to node values (exact match)."""
+    node = _make_node(n_inputs=2, n_outputs=1)
+    record = {}
+    assert CDGSubgraphRetriever._io_match_factor(node, record) == 1.0
+
+
+# ---------------------------------------------------------------------------
 # Tests: format_examples_for_prompt
 # ---------------------------------------------------------------------------
 

@@ -1,0 +1,102 @@
+{
+  "name": "Signal Event Rate Detection",
+  "description": "Deterministic CDG for signal event-rate estimation: condition a raw waveform, detect salient events (peaks), and compute a per-minute rate or cadence from inter-event intervals. Covers ECG/PPG/EEG/sensor signal processing pipelines.",
+  "concept_type": "signal_filter",
+  "variant": "event_rate_estimation",
+  "nodes": [
+    {
+      "node_id": "root",
+      "parent_id": null,
+      "name": "Signal Event Rate Detection",
+      "description": "Detect events in a sampled signal and estimate a per-minute rate.",
+      "concept_type": "signal_filter",
+      "status": "decomposed",
+      "depth": 0,
+      "inputs": [
+        {"name": "signal", "type_desc": "np.ndarray", "constraints": "", "required": true, "default_value_repr": ""},
+        {"name": "sampling_rate", "type_desc": "float", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "outputs": [
+        {"name": "rate", "type_desc": "tuple[np.ndarray, np.ndarray]", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "matched_primitive": null,
+      "type_signature": ""
+    },
+    {
+      "node_id": "filter_signal_for_detection",
+      "parent_id": "root",
+      "name": "Filter Signal For Detection",
+      "description": "Filter or denoise the raw signal into a cleaned trace suitable for downstream event detection.",
+      "concept_type": "signal_filter",
+      "status": "atomic",
+      "depth": 1,
+      "inputs": [
+        {"name": "signal", "type_desc": "np.ndarray", "constraints": "", "required": true, "default_value_repr": ""},
+        {"name": "sampling_rate", "type_desc": "float", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "outputs": [
+        {"name": "conditioned_signal", "type_desc": "np.ndarray", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "matched_primitive": "filter_signal_for_detection",
+      "type_signature": "np.ndarray, float -> np.ndarray"
+    },
+    {
+      "node_id": "detect_peaks_in_signal",
+      "parent_id": "root",
+      "name": "Detect Peaks In Signal",
+      "description": "Detect salient peaks or event locations in the conditioned signal.",
+      "concept_type": "data_extraction",
+      "status": "atomic",
+      "depth": 1,
+      "inputs": [
+        {"name": "conditioned_signal", "type_desc": "np.ndarray", "constraints": "", "required": true, "default_value_repr": ""},
+        {"name": "sampling_rate", "type_desc": "float", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "outputs": [
+        {"name": "events", "type_desc": "np.ndarray", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "matched_primitive": "detect_peaks_in_signal",
+      "type_signature": "np.ndarray, float -> np.ndarray"
+    },
+    {
+      "node_id": "compute_event_rate",
+      "parent_id": "root",
+      "name": "Compute Event Rate",
+      "description": "Compute a target rate or cadence from inter-event intervals in the detected event sequence.",
+      "concept_type": "analysis",
+      "status": "atomic",
+      "depth": 1,
+      "inputs": [
+        {"name": "events", "type_desc": "np.ndarray", "constraints": "", "required": true, "default_value_repr": ""},
+        {"name": "sampling_rate", "type_desc": "float", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "outputs": [
+        {"name": "rate", "type_desc": "tuple[np.ndarray, np.ndarray]", "constraints": "", "required": true, "default_value_repr": ""}
+      ],
+      "matched_primitive": "compute_event_rate",
+      "type_signature": "np.ndarray, float -> tuple[np.ndarray, np.ndarray]"
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "filter_signal_for_detection",
+      "target_id": "detect_peaks_in_signal",
+      "output_name": "conditioned_signal",
+      "input_name": "conditioned_signal",
+      "source_type": "np.ndarray",
+      "target_type": "np.ndarray"
+    },
+    {
+      "source_id": "detect_peaks_in_signal",
+      "target_id": "compute_event_rate",
+      "output_name": "events",
+      "input_name": "events",
+      "source_type": "np.ndarray",
+      "target_type": "np.ndarray"
+    }
+  ],
+  "metadata": {
+    "source": "hardcoded_fast_path",
+    "verified_leaf_coverage": 1.0
+  }
+}

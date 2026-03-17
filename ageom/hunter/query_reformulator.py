@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import pathlib
 import re
 from collections import Counter
 from typing import Any
 
 from ageom.types import Declaration
+
+_log = logging.getLogger(__name__)
 
 _TOKEN_RE = re.compile(r"[a-z0-9_]+")
 _EXACT_COUNT_RE = re.compile(r"generate exactly (\d+)", re.IGNORECASE)
@@ -69,7 +73,7 @@ _STOPWORDS = {
     "using",
     "with",
 }
-_DOMAIN_ANCHORS = {
+_DEFAULT_DOMAIN_ANCHORS = {
     "add",
     "addition",
     "bandpass",
@@ -96,6 +100,157 @@ _DOMAIN_ANCHORS = {
     "triangular",
     "weighted",
 }
+
+# Keep module-level alias for backward compatibility with internal references.
+_DOMAIN_ANCHORS = _DEFAULT_DOMAIN_ANCHORS
+
+_DEFAULT_PHRASE_RULES: list[dict[str, Any]] = [
+    {
+        "name": "ecg_bandpass_filter",
+        "conditions": {"all": ["ecg", "bandpass", "filter"]},
+        "queries": [
+            "ecg bandpass filter",
+            "stable ecg filter",
+            "bandpass cardiac signal filter",
+            "iir bandpass filter",
+            "filtered signal bandpass filter",
+        ],
+    },
+    {
+        "name": "shortest_path_dijkstra",
+        "conditions": {
+            "any_of": ["shortest path", "distance"],
+            "require_any": ["graph", "dijkstra", "weighted"],
+        },
+        "queries": [
+            "dijkstra shortest path",
+            "weighted graph distances",
+            "shortest path distance map",
+            "single source shortest path",
+            "relax edges distances",
+        ],
+    },
+    {
+        "name": "spd_cholesky",
+        "conditions": {"any_of": ["spd", "symmetric positive definite"]},
+        "queries": [
+            "cholesky solve spd",
+            "solve symmetric positive definite",
+            "triangular solve cholesky",
+            "positive definite linear solve",
+            "cholesky factor solve",
+        ],
+    },
+    {
+        "name": "longest_common_subsequence",
+        "conditions": {
+            "any_of": ["longest common subsequence"],
+            "or_combo": {"all": ["subsequence", "dynamic"]},
+            "or_token": "lcs",
+        },
+        "queries": [
+            "longest common subsequence",
+            "dynamic programming lcs",
+            "string subsequence recurrence",
+            "lcs dp table",
+            "common subsequence dynamic programming",
+        ],
+    },
+    {
+        "name": "nat_add_comm",
+        "conditions": {
+            "or_conditions": [
+                {"all_substr": ["commutat", "add"]},
+                {"substr": "n + m = m + n"},
+                {"all_substr_and_char": {"substr": "\u2115", "char": "+"}},
+            ]
+        },
+        "queries": [
+            "Nat.add_comm addition commutative",
+            "addition commutative natural numbers",
+            "n + m = m + n theorem",
+            "nat add comm theorem",
+        ],
+    },
+]
+
+_DEFAULT_DATA_PATH = pathlib.Path(__file__).resolve().parent.parent / "data" / "query_rules.json"
+
+
+def _load_query_rules(
+    path: str | pathlib.Path | None = None,
+) -> tuple[set[str], list[dict[str, Any]]]:
+    """Load domain anchors and phrase rules from a JSON file.
+
+    Falls back to in-code defaults when the file is missing or malformed.
+    """
+    resolved = pathlib.Path(path) if path is not None else _DEFAULT_DATA_PATH
+    try:
+        with open(resolved) as fh:
+            data = json.load(fh)
+        anchors = set(data["domain_anchors"])
+        rules = list(data["phrase_rules"])
+        return anchors, rules
+    except Exception as exc:  # noqa: BLE001
+        _log.debug("Could not load query rules from %s: %s; using defaults", resolved, exc)
+        return set(_DEFAULT_DOMAIN_ANCHORS), list(_DEFAULT_PHRASE_RULES)
+
+
+def _match_phrase_rule(rule: dict[str, Any], text: str) -> bool:
+    """Evaluate a single phrase rule's conditions against *text*."""
+    lower = text.lower()
+    conditions = rule.get("conditions", {})
+
+    # Simple "all" – every term must appear.
+    if "all" in conditions:
+        return all(term in lower for term in conditions["all"])
+
+    # "any_of" + optional "require_any".
+    if "any_of" in conditions:
+        any_match = any(term in lower for term in conditions["any_of"])
+        if not any_match:
+            # Check or_combo / or_token (for LCS-style rules).
+            or_combo = conditions.get("or_combo", {})
+            if or_combo:
+                combo_all = or_combo.get("all", [])
+                if combo_all and all(term in lower for term in combo_all):
+                    any_match = True
+            or_token = conditions.get("or_token")
+            if or_token and f" {or_token} " in f" {lower} ":
+                any_match = True
+        if not any_match:
+            return False
+        require_any = conditions.get("require_any")
+        if require_any:
+            return any(term in lower for term in require_any)
+        return True
+
+    # "or_conditions" – at least one sub-condition must match.
+    if "or_conditions" in conditions:
+        for sub in conditions["or_conditions"]:
+            if "all_substr" in sub:
+                if all(s in lower for s in sub["all_substr"]):
+                    return True
+            if "substr" in sub:
+                if sub["substr"] in lower:
+                    return True
+            if "all_substr_and_char" in sub:
+                spec = sub["all_substr_and_char"]
+                if spec["substr"] in lower and spec["char"] in lower:
+                    return True
+        return False
+
+    # If there's an or_combo / or_token at the top level without any_of, handle it.
+    or_combo = conditions.get("or_combo", {})
+    or_token = conditions.get("or_token")
+    matched = False
+    if or_combo:
+        combo_all = or_combo.get("all", [])
+        if combo_all and all(term in lower for term in combo_all):
+            matched = True
+    if or_token and f" {or_token} " in f" {lower} ":
+        matched = True
+    return matched
 
 
 def _phrase_rules_enabled() -> bool:
@@ -161,57 +316,14 @@ def _parse_prompt(user: str) -> dict[str, Any]:
     return fields
 
 
-def _phrase_rules(text: str) -> list[str]:
+def _phrase_rules(text: str, rules: list[dict[str, Any]] | None = None) -> list[str]:
     if not _phrase_rules_enabled():
         return []
-    lower = text.lower()
-    if all(term in lower for term in ("ecg", "bandpass", "filter")):
-        return [
-            "ecg bandpass filter",
-            "stable ecg filter",
-            "bandpass cardiac signal filter",
-            "iir bandpass filter",
-            "filtered signal bandpass filter",
-        ]
-    if ("shortest path" in lower or "distance" in lower) and (
-        "graph" in lower or "dijkstra" in lower or "weighted" in lower
-    ):
-        return [
-            "dijkstra shortest path",
-            "weighted graph distances",
-            "shortest path distance map",
-            "single source shortest path",
-            "relax edges distances",
-        ]
-    if "spd" in lower or "symmetric positive definite" in lower:
-        return [
-            "cholesky solve spd",
-            "solve symmetric positive definite",
-            "triangular solve cholesky",
-            "positive definite linear solve",
-            "cholesky factor solve",
-        ]
-    if "longest common subsequence" in lower or (
-        "subsequence" in lower and "dynamic" in lower
-    ) or " lcs " in f" {lower} ":
-        return [
-            "longest common subsequence",
-            "dynamic programming lcs",
-            "string subsequence recurrence",
-            "lcs dp table",
-            "common subsequence dynamic programming",
-        ]
-    if (
-        ("commutat" in lower and "add" in lower)
-        or ("n + m = m + n" in lower)
-        or ("ℕ" in lower and "+" in lower)
-    ):
-        return [
-            "Nat.add_comm addition commutative",
-            "addition commutative natural numbers",
-            "n + m = m + n theorem",
-            "nat add comm theorem",
-        ]
+    if rules is None:
+        rules = _DEFAULT_PHRASE_RULES
+    for rule in rules:
+        if _match_phrase_rule(rule, text):
+            return list(rule.get("queries", []))
     return []
 
 
@@ -422,10 +534,12 @@ class HeuristicQueryReformulator:
         *,
         min_queries: int = 3,
         query_expander: Any | None = None,
+        rules_path: str | pathlib.Path | None = None,
     ) -> None:
         self._fallback = fallback
         self._min_queries = min_queries
         self._query_expander = query_expander
+        self._domain_anchors, self._phrase_rules = _load_query_rules(rules_path)
         self._last_completion_metadata: dict[str, Any] = {}
         self._last_error_metadata: dict[str, Any] = {}
 
@@ -470,7 +584,7 @@ class HeuristicQueryReformulator:
         if self._query_expander is not None:
             candidates = self._query_expander.expand(combined)
         elif _phrase_rules_enabled():
-            candidates = _phrase_rules(combined)
+            candidates = _phrase_rules(combined, self._phrase_rules)
         else:
             candidates = []
         candidates.extend(
@@ -481,7 +595,7 @@ class HeuristicQueryReformulator:
                 catalog_hints,
             )
         )
-        if not candidates and not (anchor_tokens & _DOMAIN_ANCHORS) and not catalog_hints:
+        if not candidates and not (anchor_tokens & self._domain_anchors) and not catalog_hints:
             return None
         candidates.extend(_keyword_variants(statement, informal_desc, compiler_errors, prover))
 

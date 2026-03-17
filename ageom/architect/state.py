@@ -16,6 +16,7 @@ from ageom.shared_context import SharedContextMetrics, SharedContextStore
 
 if TYPE_CHECKING:
     from ageom.architect.graph_retrieval import CDGSubgraphRetriever
+    from ageom.architect.template_retriever import TemplateRetriever
 
 
 def _merge_nodes(
@@ -70,6 +71,7 @@ class DecompositionDeps:
     skill_index: SkillIndex
     llm: LLMClient
     graph_retriever: CDGSubgraphRetriever | None = field(default=None)
+    template_retriever: TemplateRetriever | None = field(default=None)
     shared_context: SharedContextStore | None = field(default=None)
     shared_context_metrics: SharedContextMetrics | None = field(default=None)
     context_namespace: str = field(default="")

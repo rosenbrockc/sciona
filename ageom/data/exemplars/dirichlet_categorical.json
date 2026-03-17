@@ -1,0 +1,156 @@
+{
+  "name": "Dirichlet-Categorical Conjugate Update",
+  "description": "Conjugate Bayesian update for a Categorical likelihood with a Dirichlet prior. Count occurrences of each category, then update Dirichlet concentration parameters analytically.",
+  "concept_type": "conjugate_update",
+  "pair_name": "dirichlet_categorical",
+  "nodes": [
+    {
+      "node_id": "conj_ingest_dc",
+      "parent_id": "root",
+      "name": "Data Ingestion (Sufficient Statistics)",
+      "description": "[dirichlet_categorical] Count occurrences of each category from data. Stateless reduction of raw observations to sufficient statistics.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "data",
+          "type_desc": "ndarray",
+          "constraints": "observed data",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sufficient_stats",
+          "type_desc": "tuple",
+          "constraints": "sufficient statistics for conjugate update",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "status": "atomic",
+      "children": [],
+      "depth": 1,
+      "type_signature": "ndarray -> ndarray",
+      "matched_primitive": "conjugate_sufficient_stats_dirichlet_categorical",
+      "primitive_binding_confidence": 0.0,
+      "primitive_binding_source": "",
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "",
+      "critic_notes": "",
+      "decomposition_rationale": ""
+    },
+    {
+      "node_id": "conj_update_dc",
+      "parent_id": "root",
+      "name": "Hyperparameter Update",
+      "description": "[dirichlet_categorical] alpha_post_k = alpha_prior_k + count_k for each category k. Pure function: prior hyperparameters + sufficient stats \u2192 posterior hyperparameters (State Decoupling enforced \u2014 no hidden state).",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "prior_hyperparams",
+          "type_desc": "tuple",
+          "constraints": "prior distribution hyperparameters",
+          "required": true,
+          "default_value_repr": ""
+        },
+        {
+          "name": "sufficient_stats",
+          "type_desc": "tuple",
+          "constraints": "sufficient statistics from data ingestion",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "posterior_hyperparams",
+          "type_desc": "tuple",
+          "constraints": "updated posterior hyperparameters",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "status": "atomic",
+      "children": [],
+      "depth": 1,
+      "type_signature": "ndarray -> ndarray -> ndarray",
+      "matched_primitive": "conjugate_hyperparameter_update_dirichlet_categorical",
+      "primitive_binding_confidence": 0.0,
+      "primitive_binding_source": "",
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "",
+      "critic_notes": "",
+      "decomposition_rationale": ""
+    },
+    {
+      "node_id": "conj_dist_dc",
+      "parent_id": "root",
+      "name": "Distribution Construction",
+      "description": "[dirichlet_categorical] Construct Dirichlet(alpha_post) from posterior hyperparameters. Pure constructor \u2014 no side effects.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "posterior_hyperparams",
+          "type_desc": "tuple",
+          "constraints": "posterior hyperparameters",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "posterior_distribution",
+          "type_desc": "Distribution",
+          "constraints": "Dirichlet(alpha_post)",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "status": "atomic",
+      "children": [],
+      "depth": 1,
+      "type_signature": "ndarray -> DirichletDistribution",
+      "matched_primitive": "conjugate_construct_dirichlet_categorical",
+      "primitive_binding_confidence": 0.0,
+      "primitive_binding_source": "",
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "",
+      "critic_notes": "",
+      "decomposition_rationale": ""
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "conj_ingest_dc",
+      "target_id": "conj_update_dc",
+      "output_name": "sufficient_stats",
+      "input_name": "sufficient_stats",
+      "source_type": "tuple",
+      "target_type": "tuple",
+      "requires_glue": false
+    },
+    {
+      "source_id": "conj_update_dc",
+      "target_id": "conj_dist_dc",
+      "output_name": "posterior_hyperparams",
+      "input_name": "posterior_hyperparams",
+      "source_type": "tuple",
+      "target_type": "tuple",
+      "requires_glue": false
+    }
+  ],
+  "metadata": {
+    "source": "hardcoded_conjugate_path",
+    "verified_leaf_coverage": 1.0
+  }
+}

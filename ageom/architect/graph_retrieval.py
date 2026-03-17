@@ -39,6 +39,10 @@ class ExampleChild:
     n_inputs: int
     n_outputs: int
     type_signature: str
+    abstract_type_class: str = ""
+    matched_primitive: str = ""
+    witness_input_types: list[str] = field(default_factory=list)
+    witness_output_types: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -62,6 +66,9 @@ class ExampleDecomposition:
     retrieval_layer: int
     score: float
     jaccard_score: float = 0.0
+    abstract_type_class: str = ""
+    n_inputs: int = 0
+    n_outputs: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +80,8 @@ def _parse_record(record: dict[str, Any], layer: int, score: float) -> ExampleDe
     """Convert a Cypher result record into an ExampleDecomposition."""
     children = []
     for c in record.get("children", []) or []:
+        wit_in = c.get("witness_input_types") or []
+        wit_out = c.get("witness_output_types") or []
         children.append(
             ExampleChild(
                 node_id=c.get("node_id", ""),
@@ -83,6 +92,10 @@ def _parse_record(record: dict[str, Any], layer: int, score: float) -> ExampleDe
                 n_inputs=int(c.get("n_inputs", 0) or 0),
                 n_outputs=int(c.get("n_outputs", 0) or 0),
                 type_signature=c.get("type_signature", ""),
+                abstract_type_class=c.get("abstract_type_class", ""),
+                matched_primitive=c.get("matched_primitive", ""),
+                witness_input_types=wit_in if isinstance(wit_in, list) else [],
+                witness_output_types=wit_out if isinstance(wit_out, list) else [],
             )
         )
     edges = []
@@ -107,6 +120,9 @@ def _parse_record(record: dict[str, Any], layer: int, score: float) -> ExampleDe
         retrieval_layer=layer,
         score=score,
         jaccard_score=record.get("jaccard_score", 0.0),
+        abstract_type_class=record.get("p_abstract_type_class", ""),
+        n_inputs=int(record.get("p_n_inputs", 0) or 0),
+        n_outputs=int(record.get("p_n_outputs", 0) or 0),
     )
 
 
@@ -246,12 +262,10 @@ class CDGSubgraphRetriever:
     @staticmethod
     def _io_match_factor(node: AlgorithmicNode, record: dict[str, Any]) -> float:
         """Compute IO-match factor: 1.0 for exact, lower for ±1 mismatch."""
-        n_in = len(node.inputs)
-        n_out = len(node.outputs)
-        # Record doesn't directly carry parent n_inputs/n_outputs in the
-        # returned shape, so we check children count as a proxy. Return 1.0
-        # for structural match (already filtered by ±1 in Cypher).
-        return 1.0
+        rec_in = record.get("p_n_inputs", len(node.inputs))
+        rec_out = record.get("p_n_outputs", len(node.outputs))
+        delta = abs(len(node.inputs) - rec_in) + abs(len(node.outputs) - rec_out)
+        return max(0.3, 1.0 - 0.15 * delta)
 
 
 # ---------------------------------------------------------------------------

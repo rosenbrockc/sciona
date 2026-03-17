@@ -1,0 +1,156 @@
+{
+  "name": "Gamma-Poisson Conjugate Update",
+  "description": "Conjugate Bayesian update for a Poisson likelihood with a Gamma prior on the rate parameter. Sum observations and count samples, then update Gamma hyperparameters analytically.",
+  "concept_type": "conjugate_update",
+  "pair_name": "gamma_poisson",
+  "nodes": [
+    {
+      "node_id": "conj_ingest_gp",
+      "parent_id": "root",
+      "name": "Data Ingestion (Sufficient Statistics)",
+      "description": "[gamma_poisson] Sum all observations s and count n from data. Stateless reduction of raw observations to sufficient statistics.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "data",
+          "type_desc": "ndarray",
+          "constraints": "observed data",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sufficient_stats",
+          "type_desc": "tuple",
+          "constraints": "sufficient statistics for conjugate update",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "status": "atomic",
+      "children": [],
+      "depth": 1,
+      "type_signature": "ndarray -> tuple[float, int]",
+      "matched_primitive": "conjugate_sufficient_stats_gamma_poisson",
+      "primitive_binding_confidence": 0.0,
+      "primitive_binding_source": "",
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "",
+      "critic_notes": "",
+      "decomposition_rationale": ""
+    },
+    {
+      "node_id": "conj_update_gp",
+      "parent_id": "root",
+      "name": "Hyperparameter Update",
+      "description": "[gamma_poisson] alpha_post = alpha_prior + s, beta_post = beta_prior + n. Pure function: prior hyperparameters + sufficient stats \u2192 posterior hyperparameters (State Decoupling enforced \u2014 no hidden state).",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "prior_hyperparams",
+          "type_desc": "tuple",
+          "constraints": "prior distribution hyperparameters",
+          "required": true,
+          "default_value_repr": ""
+        },
+        {
+          "name": "sufficient_stats",
+          "type_desc": "tuple",
+          "constraints": "sufficient statistics from data ingestion",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "posterior_hyperparams",
+          "type_desc": "tuple",
+          "constraints": "updated posterior hyperparameters",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "status": "atomic",
+      "children": [],
+      "depth": 1,
+      "type_signature": "tuple[float, float] -> tuple[float, int] -> tuple[float, float]",
+      "matched_primitive": "conjugate_hyperparameter_update_gamma_poisson",
+      "primitive_binding_confidence": 0.0,
+      "primitive_binding_source": "",
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "",
+      "critic_notes": "",
+      "decomposition_rationale": ""
+    },
+    {
+      "node_id": "conj_dist_gp",
+      "parent_id": "root",
+      "name": "Distribution Construction",
+      "description": "[gamma_poisson] Construct Gamma(alpha_post, beta_post) from posterior hyperparameters. Pure constructor \u2014 no side effects.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "posterior_hyperparams",
+          "type_desc": "tuple",
+          "constraints": "posterior hyperparameters",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "posterior_distribution",
+          "type_desc": "Distribution",
+          "constraints": "Gamma(alpha_post, beta_post)",
+          "required": true,
+          "default_value_repr": ""
+        }
+      ],
+      "status": "atomic",
+      "children": [],
+      "depth": 1,
+      "type_signature": "tuple[float, float] -> GammaDistribution",
+      "matched_primitive": "conjugate_construct_gamma_poisson",
+      "primitive_binding_confidence": 0.0,
+      "primitive_binding_source": "",
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "",
+      "critic_notes": "",
+      "decomposition_rationale": ""
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "conj_ingest_gp",
+      "target_id": "conj_update_gp",
+      "output_name": "sufficient_stats",
+      "input_name": "sufficient_stats",
+      "source_type": "tuple",
+      "target_type": "tuple",
+      "requires_glue": false
+    },
+    {
+      "source_id": "conj_update_gp",
+      "target_id": "conj_dist_gp",
+      "output_name": "posterior_hyperparams",
+      "input_name": "posterior_hyperparams",
+      "source_type": "tuple",
+      "target_type": "tuple",
+      "requires_glue": false
+    }
+  ],
+  "metadata": {
+    "source": "hardcoded_conjugate_path",
+    "verified_leaf_coverage": 1.0
+  }
+}
