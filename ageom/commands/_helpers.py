@@ -811,6 +811,20 @@ def _write_shared_context_metrics_file(
     return path
 
 
+async def _shutdown_telemetry_drain(drain: Any, store: Any) -> None:
+    """Gracefully stop Postgres telemetry drain and close the store."""
+    if drain is not None:
+        try:
+            await drain.stop()
+        except Exception:
+            pass
+    if store is not None:
+        try:
+            await store.close()
+        except Exception:
+            pass
+
+
 def _run_async_command(coro: Any) -> None:
     """Run a CLI coroutine and close it if a mocked asyncio.run leaves it pending."""
     try:

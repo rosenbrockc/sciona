@@ -159,10 +159,27 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
     """Run deterministic release-style benchmark validation."""
     from ageom.benchmark_validation import run_benchmark_validation
     from ageom.config import AgeomConfig
-    from ageom.telemetry import configure_dashboard_output, finish_run, merge_run_metadata, start_run
+    from ageom.commands._helpers import _shutdown_telemetry_drain
+    from ageom.telemetry import configure_dashboard_output, configure_postgres_telemetry, finish_run, merge_run_metadata, start_run
 
     config = AgeomConfig()
     configure_dashboard_output(config.telemetry_runs_dir)
+
+    _telem_drain = None
+    _telem_store = None
+    if config.telemetry_backend != "file" and config.postgres_uri:
+        try:
+            from ageom.telemetry_store import PostgresTelemetryStore, TelemetryDrain
+
+            _telem_store = PostgresTelemetryStore(config.postgres_uri)
+            await _telem_store.setup()
+            _telem_drain = TelemetryDrain(_telem_store)
+            configure_postgres_telemetry(_telem_store, _telem_drain)
+            await _telem_drain.start()
+        except Exception:
+            _telem_drain = None
+            _telem_store = None
+
     telemetry_run_id = start_run(
         "benchmark_validation",
         label=getattr(args, "label", ""),
@@ -193,7 +210,9 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
         current = str(summary.get("status", "")) if "summary" in locals() else ""
         if current == "passed":
             finish_run(telemetry_run_id, status="failed", error=str(exc))
+        await _shutdown_telemetry_drain(_telem_drain, _telem_store)
         raise
+    await _shutdown_telemetry_drain(_telem_drain, _telem_store)
     print("Prompt benchmark summary")
     print(summary["prompt_summary"])
     print()

@@ -29,7 +29,36 @@ async def _lifespan(app: FastAPI):
     auth = (config.memgraph_user, config.memgraph_password) if config.memgraph_user else None
     driver = AsyncGraphDatabase.driver(config.memgraph_uri, auth=auth)
     app.state.driver = driver
+
+    # Postgres telemetry drain
+    telem_drain = None
+    telem_store = None
+    if config.telemetry_backend != "file" and config.postgres_uri:
+        try:
+            from ageom.telemetry import configure_postgres_telemetry
+            from ageom.telemetry_store import PostgresTelemetryStore, TelemetryDrain
+
+            telem_store = PostgresTelemetryStore(config.postgres_uri)
+            await telem_store.setup()
+            telem_drain = TelemetryDrain(telem_store)
+            configure_postgres_telemetry(telem_store, telem_drain)
+            await telem_drain.start()
+        except Exception:
+            telem_drain = None
+            telem_store = None
+
     yield
+
+    if telem_drain is not None:
+        try:
+            await telem_drain.stop()
+        except Exception:
+            pass
+    if telem_store is not None:
+        try:
+            await telem_store.close()
+        except Exception:
+            pass
     await driver.close()
 
 
@@ -872,15 +901,20 @@ async def list_dashboard_runs(
 ) -> dict[str, Any]:
     """List telemetry runs with stale/hang annotations."""
     from ageom.config import AgeomConfig
-    from ageom.telemetry import list_runtime_runs, load_persisted_runs
+    from ageom.telemetry import list_runtime_runs, load_persisted_runs, load_runs_from_store
 
     config = AgeomConfig()
+    wanted = state.strip().lower()
+    status_filter = wanted if wanted != "all" else None
+
+    # Try Postgres first, merge with runtime, fall back to file
+    pg_runs = await load_runs_from_store(limit=max(limit * 3, 100), status=status_filter)
+    file_runs = load_persisted_runs(config.telemetry_runs_dir, limit=max(limit * 3, 100)) if pg_runs is None else []
     rows = _merge_runs(
-        load_persisted_runs(config.telemetry_runs_dir, limit=max(limit * 3, 100)),
+        pg_runs or file_runs,
         list_runtime_runs(),
     )
-    wanted = state.strip().lower()
-    if wanted != "all":
+    if wanted != "all" and pg_runs is None:
         rows = [r for r in rows if str(r.get("status", "")).lower() == wanted]
 
     now = time.time()
@@ -897,10 +931,14 @@ async def list_dashboard_runs(
 async def get_dashboard_run(run_id: str) -> dict[str, Any]:
     """Get one telemetry run snapshot."""
     from ageom.config import AgeomConfig
-    from ageom.telemetry import get_persisted_run, get_runtime_run
+    from ageom.telemetry import get_persisted_run, get_runtime_run, load_run_from_store
 
     config = AgeomConfig()
-    row = get_runtime_run(run_id) or get_persisted_run(config.telemetry_runs_dir, run_id)
+    row = get_runtime_run(run_id)
+    if row is None:
+        row = await load_run_from_store(run_id)
+    if row is None:
+        row = get_persisted_run(config.telemetry_runs_dir, run_id)
     if row is None:
         raise HTTPException(status_code=404, detail=f"Run not found: {run_id}")
     return _decorate_dashboard_run(
@@ -935,8 +973,24 @@ async def list_run_events(
     has_error: bool | None = Query(None),
 ) -> dict[str, Any]:
     """List events for a telemetry run with optional filters."""
-    from ageom.telemetry import get_event_log
+    from ageom.telemetry import get_event_log, load_events_from_store
 
+    # Try Postgres first
+    pg_result = await load_events_from_store(
+        run_id,
+        offset=offset,
+        limit=limit,
+        phase=phase,
+        event_type=event_type,
+        prompt_key=prompt_key,
+        round_name=round_name,
+        has_error=has_error,
+    )
+    if pg_result is not None:
+        events, total = pg_result
+        return {"run_id": run_id, "total": total, "offset": offset, "limit": limit, "events": events}
+
+    # Fallback to in-memory
     events = get_event_log().events_for_run(run_id)
     filtered: list[dict[str, Any]] = []
     for ev in events:
@@ -1017,10 +1071,150 @@ async def stream_run_events(run_id: str) -> EventSourceResponse:
     return EventSourceResponse(event_generator())
 
 
+def _compute_coverage_from_dicts(
+    run_id: str, event_dicts: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Build coverage response from event dicts (Postgres or in-memory)."""
+    keys: dict[str, dict[str, Any]] = {}
+    for ev in event_dicts:
+        et = ev.get("event_type", "")
+        if et not in ("PROMPT_DISPATCH_DONE", "PROMPT_DISPATCH_ERROR"):
+            continue
+        pk = ev.get("prompt_key") or "(unknown)"
+        row = keys.get(pk)
+        if row is None:
+            row = {
+                "prompt_key": pk,
+                "total_dispatches": 0,
+                "deterministic_count": 0,
+                "llm_fallback_count": 0,
+                "providers": set(),
+                "error_count": 0,
+                "latency_total_ms": 0.0,
+            }
+            keys[pk] = row
+        row["total_dispatches"] += 1
+        provider = ev.get("provider") or ""
+        if provider:
+            row["providers"].add(provider)
+        payload = ev.get("payload") or {}
+        is_deterministic = (
+            provider == "deterministic"
+            or "_shim" in provider
+            or provider.endswith("_cli")
+            or payload.get("critique_source") == "deterministic"
+            or payload.get("ghost_fix_source") == "deterministic"
+            or payload.get("state_hoist_source") == "deterministic"
+            or payload.get("tactic_source") == "deterministic"
+        )
+        if is_deterministic:
+            row["deterministic_count"] += 1
+        else:
+            row["llm_fallback_count"] += 1
+        if et == "PROMPT_DISPATCH_ERROR":
+            row["error_count"] += 1
+        dur = ev.get("duration_ms")
+        if dur and dur > 0:
+            row["latency_total_ms"] += dur
+
+    prompt_keys = []
+    total_dispatches = 0
+    total_deterministic = 0
+    for row in sorted(keys.values(), key=lambda r: r["total_dispatches"], reverse=True):
+        total = row["total_dispatches"]
+        det = row["deterministic_count"]
+        total_dispatches += total
+        total_deterministic += det
+        prompt_keys.append({
+            "prompt_key": row["prompt_key"],
+            "total_dispatches": total,
+            "deterministic_count": det,
+            "llm_fallback_count": row["llm_fallback_count"],
+            "deterministic_pct": round(det / total * 100, 1) if total else 0.0,
+            "providers": sorted(row["providers"]),
+            "avg_latency_ms": round(row["latency_total_ms"] / total, 1) if total else 0.0,
+            "error_count": row["error_count"],
+        })
+
+    return {
+        "run_id": run_id,
+        "prompt_keys": prompt_keys,
+        "overall_deterministic_pct": round(
+            total_deterministic / total_dispatches * 100, 1
+        )
+        if total_dispatches
+        else 0.0,
+        "total_dispatches": total_dispatches,
+    }
+
+
+def _compute_errors_from_dicts(
+    run_id: str, event_dicts: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Build error drilldown response from event dicts (Postgres or in-memory)."""
+    dispatch_groups: dict[str, list[dict[str, Any]]] = {}
+    errors: list[dict[str, Any]] = []
+
+    for ev in event_dicts:
+        et = ev.get("event_type", "")
+        if et in ("PROMPT_DISPATCH_DONE", "PROMPT_DISPATCH_ERROR"):
+            group_key = f"{ev.get('prompt_key', '')}:{ev.get('node_id', '')}"
+            dispatch_groups.setdefault(group_key, []).append(ev)
+
+    for ev in event_dicts:
+        et = ev.get("event_type", "")
+        payload = ev.get("payload") or {}
+        is_error = "ERROR" in et or "FAIL" in et or "error" in payload
+        if not is_error:
+            continue
+        error_msg = payload.get("error", "") or payload.get("message", "") or et
+        group_key = f"{ev.get('prompt_key', '')}:{ev.get('node_id', '')}"
+        group = dispatch_groups.get(group_key, [])
+        retry_history = []
+        ts = ev.get("timestamp", 0)
+        for attempt_idx, attempt in enumerate(group):
+            if attempt.get("timestamp", 0) > ts:
+                break
+            if attempt.get("event_type") == "PROMPT_DISPATCH_ERROR":
+                retry_history.append({
+                    "attempt": attempt_idx + 1,
+                    "timestamp": attempt["timestamp"],
+                    "error": (attempt.get("payload") or {}).get("error", ""),
+                })
+        errors.append({
+            "timestamp": ts,
+            "event_type": et,
+            "node_id": ev.get("node_id", ""),
+            "prompt_key": ev.get("prompt_key", ""),
+            "provider": ev.get("provider", ""),
+            "model": ev.get("model", ""),
+            "stage": ev.get("stage", ""),
+            "error_message": str(error_msg),
+            "dispatch_id": ev.get("dispatch_id", ""),
+            "retry_count": len(retry_history),
+            "retry_history": retry_history,
+        })
+
+    errors.sort(key=lambda e: e["timestamp"])
+    return {"run_id": run_id, "error_count": len(errors), "errors": errors}
+
+
 @app.get("/api/dashboard/runs/{run_id}/coverage")
 async def run_prompt_coverage(run_id: str) -> dict[str, Any]:
     """Deterministic vs LLM fallback coverage per prompt key."""
     from ageom.telemetry import get_event_log
+    from ageom.telemetry import _pg_store as _store_ref
+
+    # Try Postgres first for coverage events
+    pg_event_dicts: list[dict[str, Any]] | None = None
+    if _store_ref is not None:
+        try:
+            pg_event_dicts = await _store_ref.list_events_for_coverage(run_id)
+        except Exception:
+            pass
+
+    if pg_event_dicts is not None:
+        return _compute_coverage_from_dicts(run_id, pg_event_dicts)
 
     events = get_event_log().events_for_run(run_id)
     keys: dict[str, dict[str, Any]] = {}
@@ -1097,6 +1291,16 @@ async def run_prompt_coverage(run_id: str) -> dict[str, Any]:
 async def run_error_drilldown(run_id: str) -> dict[str, Any]:
     """Structured error list with retry grouping."""
     from ageom.telemetry import get_event_log
+    from ageom.telemetry import _pg_store as _store_ref
+
+    # Try Postgres first
+    if _store_ref is not None:
+        try:
+            pg_events = await _store_ref.list_events_for_errors(run_id)
+            if pg_events is not None:
+                return _compute_errors_from_dicts(run_id, pg_events)
+        except Exception:
+            pass
 
     events = get_event_log().events_for_run(run_id)
 

@@ -9,19 +9,33 @@ from datetime import datetime, timezone
 
 def _cmd_telemetry_list(args: argparse.Namespace) -> None:
     """List recent telemetry runs with status, label, and timing."""
+    import asyncio
+
     from ageom.config import AgeomConfig
-    from ageom.telemetry import list_runtime_runs, load_persisted_runs
+    from ageom.telemetry import list_runtime_runs, load_persisted_runs, load_runs_from_store
 
     config = AgeomConfig()
     limit = getattr(args, "limit", 20)
     state_filter = getattr(args, "state", "all").strip().lower()
 
-    persisted = load_persisted_runs(config.telemetry_runs_dir, limit=max(limit * 3, 100))
+    # Try Postgres first
+    pg_runs = None
+    try:
+        pg_runs = asyncio.run(
+            load_runs_from_store(
+                limit=max(limit * 3, 100),
+                status=state_filter if state_filter != "all" else None,
+            )
+        )
+    except Exception:
+        pass
+
+    persisted = load_persisted_runs(config.telemetry_runs_dir, limit=max(limit * 3, 100)) if pg_runs is None else []
     runtime = list_runtime_runs()
 
     # Merge (runtime wins for same run_id)
     merged: dict[str, dict] = {}
-    for row in persisted + runtime:
+    for row in (pg_runs or persisted) + runtime:
         run_id = str(row.get("run_id", "")).strip()
         if not run_id:
             continue
@@ -77,15 +91,23 @@ def _cmd_telemetry_list(args: argparse.Namespace) -> None:
 
 def _cmd_telemetry_show(args: argparse.Namespace) -> None:
     """Show details for a specific telemetry run."""
+    import asyncio
     import json
 
     from ageom.config import AgeomConfig
-    from ageom.telemetry import get_persisted_run, get_runtime_run
+    from ageom.telemetry import get_persisted_run, get_runtime_run, load_run_from_store
 
     config = AgeomConfig()
     run_id = args.run_id.strip()
 
-    run = get_runtime_run(run_id) or get_persisted_run(config.telemetry_runs_dir, run_id)
+    run = get_runtime_run(run_id)
+    if run is None:
+        try:
+            run = asyncio.run(load_run_from_store(run_id))
+        except Exception:
+            pass
+    if run is None:
+        run = get_persisted_run(config.telemetry_runs_dir, run_id)
     if run is None:
         print(f"Run not found: {run_id}", file=sys.stderr)
         sys.exit(1)

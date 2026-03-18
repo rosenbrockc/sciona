@@ -70,6 +70,9 @@ class EventLog:
                 with self._live_path.open("a", encoding="utf-8") as fh:
                     fh.write(payload)
                     fh.write("\n")
+        # Enqueue to Postgres drain if configured
+        if _drain is not None:
+            _drain.enqueue_event(asdict(event))
         # Notify subscribers (outside main lock to avoid contention)
         event_dict = asdict(event)
         with self._sub_lock:
@@ -500,14 +503,17 @@ class TelemetryRegistry:
             self._runs.pop(rid, None)
 
     def _persist_locked(self, run_id: str) -> None:
-        if self._persist_dir is None:
-            return
         run = self._runs.get(run_id)
         if run is None:
             return
+        run_dict = _run_to_dict(run)
+        if _drain is not None:
+            _drain.enqueue_run_snapshot(run_dict)
+        if self._persist_dir is None:
+            return
         target = self._persist_dir / f"run_{run_id}.json"
         tmp = self._persist_dir / f".run_{run_id}.tmp"
-        tmp.write_text(json.dumps(_run_to_dict(run), indent=2))
+        tmp.write_text(json.dumps(run_dict, indent=2))
         tmp.replace(target)
 
 
@@ -529,6 +535,10 @@ def _deep_merge_dict(target: dict[str, Any], payload: dict[str, Any]) -> None:
 
 
 _registry = TelemetryRegistry()
+
+# Postgres drain (set via configure_postgres_telemetry)
+_drain: Any = None  # TelemetryDrain | None
+_pg_store: Any = None  # PostgresTelemetryStore | None
 
 
 def get_event_log() -> EventLog:
@@ -861,7 +871,68 @@ def get_persisted_run(path: str | Path, run_id: str) -> dict[str, Any] | None:
     return None
 
 
+def configure_postgres_telemetry(store: Any, drain: Any) -> None:
+    """Wire a PostgresTelemetryStore + TelemetryDrain into the global telemetry."""
+    global _drain, _pg_store
+    _drain = drain
+    _pg_store = store
+
+
+async def load_runs_from_store(
+    *, limit: int = 50, status: str | None = None
+) -> list[dict[str, Any]] | None:
+    """Try loading runs from the Postgres store. Returns None if unavailable."""
+    if _pg_store is None:
+        return None
+    try:
+        return await _pg_store.list_runs(limit=limit, status=status)
+    except Exception:
+        return None
+
+
+async def load_run_from_store(run_id: str) -> dict[str, Any] | None:
+    """Try loading one run from the Postgres store. Returns None if unavailable."""
+    if _pg_store is None:
+        return None
+    try:
+        return await _pg_store.get_run(run_id)
+    except Exception:
+        return None
+
+
+async def load_events_from_store(
+    run_id: str,
+    *,
+    offset: int = 0,
+    limit: int = 200,
+    phase: str | None = None,
+    event_type: str | None = None,
+    prompt_key: str | None = None,
+    round_name: str | None = None,
+    has_error: bool | None = None,
+) -> tuple[list[dict[str, Any]], int] | None:
+    """Try loading events from the Postgres store. Returns None if unavailable."""
+    if _pg_store is None:
+        return None
+    try:
+        return await _pg_store.list_events(
+            run_id,
+            offset=offset,
+            limit=limit,
+            phase=phase,
+            event_type=event_type,
+            prompt_key=prompt_key,
+            round_name=round_name,
+            has_error=has_error,
+        )
+    except Exception:
+        return None
+
+
 def reset_telemetry_runtime() -> None:
     """Reset run registry and event log (for tests/CLI process boundaries)."""
+    global _drain, _pg_store
     _registry.reset()
     _global_log.clear()
+    _drain = None
+    _pg_store = None

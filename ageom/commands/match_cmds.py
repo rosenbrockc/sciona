@@ -23,6 +23,7 @@ from ageom.commands._helpers import (
     _resolve_retrieval_policy,
     _routing_metadata_summary,
     _shared_context_metadata,
+    _shutdown_telemetry_drain,
     _summarize_prompt_routing,
     _warm_llm_if_supported,
 )
@@ -35,6 +36,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     from ageom.judge.checker import VerificationOracleImpl
     from ageom.telemetry import (
         configure_dashboard_output,
+        configure_postgres_telemetry,
         finish_run,
         merge_run_metadata,
         start_run,
@@ -48,6 +50,21 @@ async def _cmd_match(args: argparse.Namespace) -> None:
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     _print_mode_summary("match", mode_settings)
     configure_dashboard_output(config.telemetry_runs_dir)
+
+    _telem_drain = None
+    _telem_store = None
+    if config.telemetry_backend != "file" and config.postgres_uri:
+        try:
+            from ageom.telemetry_store import PostgresTelemetryStore, TelemetryDrain
+
+            _telem_store = PostgresTelemetryStore(config.postgres_uri)
+            await _telem_store.setup()
+            _telem_drain = TelemetryDrain(_telem_store)
+            configure_postgres_telemetry(_telem_store, _telem_drain)
+            await _telem_drain.start()
+        except Exception:
+            _telem_drain = None
+            _telem_store = None
 
     # Build PDG nodes
     nodes: list[PDGNode] = []
@@ -252,6 +269,8 @@ async def _cmd_match(args: argparse.Namespace) -> None:
                 if callable(close_env):
                     await close_env()
         finish_run(telemetry_run_id, status="completed")
+        await _shutdown_telemetry_drain(_telem_drain, _telem_store)
     except Exception as exc:
         finish_run(telemetry_run_id, status="failed", error=str(exc))
+        await _shutdown_telemetry_drain(_telem_drain, _telem_store)
         raise

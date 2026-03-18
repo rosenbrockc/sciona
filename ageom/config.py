@@ -73,6 +73,7 @@ class AgeomConfig(BaseSettings):
     shared_context_include_provenance: bool = True
     telemetry_runs_dir: Path = Field(default=Path("output/telemetry_runs"))
     telemetry_stale_seconds: int = 120
+    telemetry_backend: str = "auto"  # "auto" | "postgres" | "file"
     execution_mode: str = "verified"  # "rapid" | "structured" | "single_agent" | "verified"
     use_monadic_rewriter: bool = False  # Feature gate for formal DPO graph rewriting
 

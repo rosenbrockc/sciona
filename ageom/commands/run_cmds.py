@@ -24,6 +24,7 @@ from ageom.commands._helpers import (
     _resolve_retrieval_policy,
     _routing_metadata_summary,
     _shared_context_metadata,
+    _shutdown_telemetry_drain,
     _summarize_prompt_routing,
     _warm_llm_if_supported,
     _write_shared_context_metrics_file,
@@ -288,6 +289,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     )
     from ageom.telemetry import (
         configure_dashboard_output,
+        configure_postgres_telemetry,
         finish_run,
         get_event_log,
         merge_run_metadata,
@@ -306,6 +308,23 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     _print_mode_summary("run", mode_settings)
 
     configure_dashboard_output(config.telemetry_runs_dir)
+
+    # Postgres telemetry drain
+    _telem_drain = None
+    _telem_store = None
+    if config.telemetry_backend != "file" and config.postgres_uri:
+        try:
+            from ageom.telemetry_store import PostgresTelemetryStore, TelemetryDrain
+
+            _telem_store = PostgresTelemetryStore(config.postgres_uri)
+            await _telem_store.setup()
+            _telem_drain = TelemetryDrain(_telem_store)
+            configure_postgres_telemetry(_telem_store, _telem_drain)
+            await _telem_drain.start()
+        except Exception:
+            _telem_drain = None
+            _telem_store = None
+
     event_log = get_event_log()
     event_log.configure_live_output(None)
     event_log.clear()
@@ -721,6 +740,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     await env.close()
     except Exception as exc:
         finish_run(telemetry_run_id, status="failed", error=str(exc))
+        await _shutdown_telemetry_drain(_telem_drain, _telem_store)
         raise
     else:
         # --- Auto-upsert solved runs into the graph store ---
@@ -959,3 +979,6 @@ async def _cmd_run(args: argparse.Namespace) -> None:
             print(f"  Trace: {output_dir / 'trace.jsonl'} ({len(event_log)} events)")
 
     finish_run(telemetry_run_id, status="completed")
+
+    # Shut down Postgres telemetry drain
+    await _shutdown_telemetry_drain(_telem_drain, _telem_store)

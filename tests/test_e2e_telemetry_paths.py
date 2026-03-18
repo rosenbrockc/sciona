@@ -371,3 +371,39 @@ async def test_orchestration_max_rounds_emits_event():
     done = _events_of_type("ORCHESTRATION_DONE")
     assert len(done) == 1
     assert len(done[0].payload["ungroundable"]) >= 1
+
+
+# ---------------------------------------------------------------------------
+# 9. Events reach drain during orchestration
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_events_reach_drain_during_orchestration():
+    """Mock drain, run orchestration, assert enqueue_event called."""
+    from unittest.mock import MagicMock
+
+    from ageom.telemetry import configure_postgres_telemetry
+
+    mock_drain = MagicMock()
+    mock_drain.enqueue_event = MagicMock()
+    mock_drain.enqueue_run_snapshot = MagicMock()
+    mock_store = MagicMock()
+
+    configure_postgres_telemetry(mock_store, mock_drain)
+
+    cdg = _make_cdg("a")
+    hunter = AsyncMock()
+    hunter.find_match = AsyncMock(
+        side_effect=lambda pdg_node: _make_match_result(pdg_node.predicate_id, True)
+    )
+    llm = AsyncMock()
+
+    await run_orchestration(cdg, hunter_agent=hunter, llm=llm, max_rounds=2)
+
+    assert mock_drain.enqueue_event.call_count > 0
+    event_types = [
+        call.args[0]["event_type"] for call in mock_drain.enqueue_event.call_args_list
+    ]
+    assert "ROUND_START" in event_types
+    assert "ORCHESTRATION_DONE" in event_types
