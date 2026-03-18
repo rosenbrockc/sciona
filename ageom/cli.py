@@ -83,6 +83,7 @@ from ageom.commands.telemetry_cmds import (  # noqa: F401
 )
 from ageom.commands.upsert_cmds import _cmd_upsert_cdg  # noqa: F401
 from ageom.commands.visualize_cmds import _cmd_visualize  # noqa: F401
+from ageom.principal.metric_selection import SUPPORTED_OBJECTIVES
 
 
 def main() -> None:
@@ -433,9 +434,9 @@ def main() -> None:
     )
     optimize_parser.add_argument(
         "--metric",
-        choices=["latency", "memory", "precision", "flop_count"],
+        choices=list(SUPPORTED_OBJECTIVES),
         default="latency",
-        help="Optimisation metric (default: latency)",
+        help="Optimisation objective (default: latency)",
     )
     optimize_parser.add_argument(
         "--trials",
@@ -508,9 +509,9 @@ def main() -> None:
     )
     profile_parser.add_argument(
         "--metric",
-        choices=["latency", "memory", "precision", "flop_count"],
+        choices=list(SUPPORTED_OBJECTIVES),
         default="precision",
-        help="Optimization metric to profile (default: precision)",
+        help="Optimization objective to profile (default: precision)",
     )
 
     # --- prompt-benchmark ---

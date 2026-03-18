@@ -24,6 +24,7 @@ from ageom.principal.models import (
     NodeGradient,
     OptimizationMetric,
 )
+from ageom.principal.structure_objective import benchmark_from_ghost_report
 from ageom.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from ageom.synthesizer.models import ExportBundle
 
@@ -126,21 +127,24 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     if state.export_bundle is None:
         return {"error": "No export bundle to evaluate", "done": True}
 
-    sandbox = deps.sandbox
-    if state.dataset_path.endswith((".yml", ".yaml")):
-        benchmark = await sandbox.evaluate_adapter(
-            state.export_bundle,
-            state.dataset_path,
-            state.metric,
-            evaluation_spec=deps.evaluation_spec,
-        )
+    if state.metric == OptimizationMetric.STRUCTURE:
+        benchmark = benchmark_from_ghost_report(state.ghost_report)
     else:
-        benchmark = await sandbox.evaluate(
-            state.export_bundle,
-            state.dataset_path,
-            state.metric,
-            evaluation_spec=deps.evaluation_spec,
-        )
+        sandbox = deps.sandbox
+        if state.dataset_path.endswith((".yml", ".yaml")):
+            benchmark = await sandbox.evaluate_adapter(
+                state.export_bundle,
+                state.dataset_path,
+                state.metric,
+                evaluation_spec=deps.evaluation_spec,
+            )
+        else:
+            benchmark = await sandbox.evaluate(
+                state.export_bundle,
+                state.dataset_path,
+                state.metric,
+                evaluation_spec=deps.evaluation_spec,
+            )
     state.benchmark = benchmark
 
     # Track best

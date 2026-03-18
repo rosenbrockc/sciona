@@ -14,6 +14,7 @@ class OptimizationMetric(str, Enum):
     MEMORY = "memory"
     PRECISION = "precision"
     FLOP_COUNT = "flop_count"
+    STRUCTURE = "structure"
 
 
 class NodeTelemetry(BaseModel, frozen=True):

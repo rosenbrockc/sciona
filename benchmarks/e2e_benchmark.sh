@@ -44,12 +44,14 @@ if [ -n "$GOAL_CONFIG" ] && [ -f "$GOAL_CONFIG" ]; then
     PROVER=$("$BENCHMARK_PYTHON" -c "import yaml, sys; print(yaml.safe_load(open('$_goal_config')).get('prover', 'python'))")
     _gt_json=$("$BENCHMARK_PYTHON" -c "import yaml, json, sys; print(json.dumps(yaml.safe_load(open('$_goal_config')).get('ground_truth_patterns', [])))")
     EVAL_SPEC_PATH=$("$BENCHMARK_PYTHON" -c "import os, yaml; data=yaml.safe_load(open('$_goal_config')) or {}; p=data.get('evaluation_spec_file') or ''; print(os.path.abspath(os.path.join(os.path.dirname('$_goal_config'), p)) if p else '')")
+    PROFILE_METRIC=${E2E_PROFILE_METRIC:-$("$BENCHMARK_PYTHON" -c "import yaml; data=yaml.safe_load(open('$_goal_config')) or {}; print(data.get('optimization_metric') or 'precision')")}
     info "Loaded goal config from $_goal_config"
 else
     GOAL="Detect heart rate from raw ECG signal"
     PROVER="python"
     _gt_json=""
     EVAL_SPEC_PATH=""
+    PROFILE_METRIC="${E2E_PROFILE_METRIC:-precision}"
 fi
 export LLM_PROVIDER="${E2E_LLM_PROVIDER:-codex_shim}"
 export LLM_MODEL="${E2E_LLM_MODEL:-gpt-5.3-codex}"
@@ -137,6 +139,7 @@ fi
 if [ -n "$EVAL_SPEC_PATH" ]; then
     info "Profile evaluation spec: $EVAL_SPEC_PATH"
 fi
+info "Profile objective: $PROFILE_METRIC"
 
 # Ground truth: essential atoms that should appear in matched function names.
 if [ -n "$_gt_json" ]; then
@@ -376,7 +379,7 @@ from ageom.cli import main; main()
             profile_rc \
             "$BENCHMARK_PYTHON" -c "
 import os, sys
-argv = ['ageom', 'profile', '--cdg', '$mode_dir/cdg.json', '--artifact', '$synth_out', '--dataset', '$PROFILE_DATASET', '--metric', 'precision']
+argv = ['ageom', 'profile', '--cdg', '$mode_dir/cdg.json', '--artifact', '$synth_out', '--dataset', '$PROFILE_DATASET', '--metric', '$PROFILE_METRIC']
 for item in filter(None, os.environ.get('E2E_PROFILE_DATASET_VARS', '').split(',')):
     argv.extend(['--dataset-var', item])
 if '$EVAL_SPEC_PATH':

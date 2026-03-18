@@ -8,6 +8,7 @@ from ageom.architect.handoff import CDGExport
 from ageom.principal.backprop import CreditAssigner
 from ageom.principal.evaluator import ExecutionSandbox
 from ageom.principal.models import NodeGradient, OptimizationMetric
+from ageom.principal.structure_objective import benchmark_from_ghost_report
 from ageom.synthesizer.ghost_sim import run_ghost_simulation
 from ageom.synthesizer.models import ExportBundle
 from ageom.types import MatchResult
@@ -38,30 +39,29 @@ async def profile_algorithm_error(
     """
     logger.info("Profiling artifact %s against dataset %s", bundle.compiled_artifact or bundle.source_path, dataset_path)
     
-    # 1. Execute the compiled artifact against the dataset to gather empirical telemetry
-    sandbox = ExecutionSandbox()
-    if dataset_path.endswith((".yml", ".yaml")):
-        benchmark = await sandbox.evaluate_adapter(
-            bundle,
-            dataset_path,
-            metric,
-            varset=dataset_varset,
-            evaluation_spec=evaluation_spec,
-        )
-    else:
-        benchmark = await sandbox.evaluate(
-            bundle,
-            dataset_path,
-            metric,
-            evaluation_spec=evaluation_spec,
-        )
-    
-    # 2. Run the ghost simulation for structural checks and theoretical precision bounds
-    # Assuming empty match_results as we just want theoretical bounds for the CDG nodes.
     ghost_report = run_ghost_simulation(cdg, match_results=match_results or [])
-    
-    # 3. Assign credit / compute gradients
+
+    if metric == OptimizationMetric.STRUCTURE:
+        benchmark = benchmark_from_ghost_report(ghost_report)
+    else:
+        sandbox = ExecutionSandbox()
+        if dataset_path.endswith((".yml", ".yaml")):
+            benchmark = await sandbox.evaluate_adapter(
+                bundle,
+                dataset_path,
+                metric,
+                varset=dataset_varset,
+                evaluation_spec=evaluation_spec,
+            )
+        else:
+            benchmark = await sandbox.evaluate(
+                bundle,
+                dataset_path,
+                metric,
+                evaluation_spec=evaluation_spec,
+            )
+
     assigner = CreditAssigner()
     gradients = assigner.compute_gradients(cdg, benchmark, ghost_report, metric)
-    
+
     return gradients

@@ -49,7 +49,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         PrincipalDeps,
         build_principal_graph,
     )
-    from ageom.principal.models import OptimizationMetric
+    from ageom.principal.metric_selection import resolve_optimization_objective
 
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
@@ -90,8 +90,14 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    metric = OptimizationMetric(args.metric)
-    evaluation_spec = getattr(args, "eval_spec", None)
+    try:
+        metric, evaluation_spec, objective_label = resolve_optimization_objective(
+            args.metric,
+            getattr(args, "eval_spec", None),
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
     postgres_uri = "" if args.no_persist else config.postgres_uri
     architect_run_id = uuid.uuid4().hex
     architect_shared_context, architect_shared_metrics = await _create_shared_context(
@@ -101,7 +107,8 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     print("Principal optimisation loop")
     print(f"  Goal: {args.goal}")
-    print(f"  Metric: {metric.value}")
+    print(f"  Objective: {objective_label}")
+    print(f"  Internal metric: {metric.value}")
     print(f"  Trials: {args.trials}")
     print(f"  Benchmark: {args.benchmark}")
     print()
@@ -161,7 +168,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 async def _cmd_profile(args: argparse.Namespace) -> None:
     """Evaluate an existing CDG against a dataset and rank error contributors."""
     from ageom.architect.handoff import load_json
-    from ageom.principal.models import OptimizationMetric
+    from ageom.principal.metric_selection import resolve_optimization_objective
     from ageom.principal.profiler import profile_algorithm_error
     from ageom.synthesizer.models import ExportBundle
     from ageom.types import MatchResult
@@ -182,13 +189,19 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     cdg = load_json(cdg_path)
-    metric = OptimizationMetric(args.metric)
     try:
         dataset_varset = _parse_dataset_vars(getattr(args, "dataset_var", None))
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
-    evaluation_spec = getattr(args, "eval_spec", None)
+    try:
+        metric, evaluation_spec, objective_label = resolve_optimization_objective(
+            args.metric,
+            getattr(args, "eval_spec", None),
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     runner_candidates = [
         artifact_path.parent / "runner.py",
@@ -218,7 +231,9 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
         executable_artifact=executable_artifact,
     )
 
-    print(f"Profiling {artifact_path.name} against {dataset_path.name} using metric {metric.value}...")
+    print(
+        f"Profiling {artifact_path.name} against {dataset_path.name} using objective {objective_label}..."
+    )
 
     try:
         gradients = await profile_algorithm_error(

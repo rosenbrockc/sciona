@@ -50,6 +50,12 @@ class CreditAssigner:
                 node_names,
                 benchmark,
             )
+        if target == OptimizationMetric.STRUCTURE:
+            return self._gradient_structure(
+                atomic_ids,
+                node_names,
+                sim_report,
+            )
         # PRECISION
         return self._gradient_precision(
             atomic_ids,
@@ -175,6 +181,61 @@ class CreditAssigner:
                     gradient_score=pct,
                     metric_type=OptimizationMetric.PRECISION,
                     bottleneck_reason=reason,
+                )
+            )
+
+        gradients.sort(key=lambda g: g.gradient_score, reverse=True)
+        return gradients
+
+    @staticmethod
+    def _gradient_structure(
+        atomic_ids: set[str],
+        node_names: dict[str, str],
+        sim_report: GhostSimReport,
+    ) -> list[NodeGradient]:
+        if not sim_report.ran:
+            return []
+
+        name_to_id = {
+            name: nid for nid, name in node_names.items() if nid in atomic_ids
+        }
+        scored: dict[str, float] = {}
+        reasons: dict[str, str] = {}
+
+        def add(name: str, weight: float, reason: str) -> None:
+            nid = name_to_id.get(name)
+            if nid is None:
+                return
+            scored[nid] = scored.get(nid, 0.0) + weight
+            reasons.setdefault(nid, reason)
+
+        for name in sim_report.skipped_nodes:
+            add(name, 1.0, "lacks a registered ghost witness for structural simulation")
+        for name in sim_report.deadlock_nodes:
+            add(name, 2.0, "participates in a cyclic structural deadlock")
+        if sim_report.error_node:
+            add(
+                name=sim_report.error_node,
+                weight=3.0,
+                reason="caused the ghost simulation to fail",
+            )
+
+        total = sum(scored.values())
+        if total <= 0:
+            return []
+
+        gradients: list[NodeGradient] = []
+        for nid, raw in scored.items():
+            pct = raw / total * 100.0
+            gradients.append(
+                NodeGradient(
+                    node_id=nid,
+                    gradient_score=pct,
+                    metric_type=OptimizationMetric.STRUCTURE,
+                    bottleneck_reason=(
+                        f"Node '{node_names.get(nid, nid)}' contributed {pct:.1f}% "
+                        f"of structural risk because it {reasons.get(nid, 'needs structural refinement')}"
+                    ),
                 )
             )
 

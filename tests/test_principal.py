@@ -77,6 +77,7 @@ class TestOptimizationMetric:
         assert OptimizationMetric.MEMORY.value == "memory"
         assert OptimizationMetric.PRECISION.value == "precision"
         assert OptimizationMetric.FLOP_COUNT.value == "flop_count"
+        assert OptimizationMetric.STRUCTURE.value == "structure"
 
     def test_str_enum(self):
         assert isinstance(OptimizationMetric.LATENCY, str)
@@ -264,6 +265,41 @@ class TestParsePrecisionLossFromStdout:
 
         assert _parse_precision_loss_from_stdout(b'{"rmse": 1.2}') == pytest.approx(1.2)
         assert _parse_precision_loss_from_stdout(b'{"mse": 0.5, "loss": 2.5}') == pytest.approx(2.5)
+
+
+class TestMetricSelection:
+    def test_uncertainty_alias_maps_to_precision(self):
+        from ageom.principal.metric_selection import resolve_optimization_objective
+
+        metric, eval_spec, label = resolve_optimization_objective("uncertainty")
+        assert metric == OptimizationMetric.PRECISION
+        assert eval_spec is None
+        assert label == "uncertainty"
+
+    def test_rmse_alias_overrides_eval_spec_loss(self):
+        from ageom.principal.metric_selection import resolve_optimization_objective
+
+        metric, eval_spec, label = resolve_optimization_objective(
+            "rmse",
+            {"loss": "mse", "prediction": {"value_output": 0}, "reference": {"value_source": "x"}},
+        )
+        assert metric == OptimizationMetric.PRECISION
+        assert eval_spec["loss"] == "rmse"
+        assert label == "rmse"
+
+    def test_rmse_requires_eval_spec(self):
+        from ageom.principal.metric_selection import resolve_optimization_objective
+
+        with pytest.raises(ValueError, match="requires an evaluation spec"):
+            resolve_optimization_objective("rmse")
+
+    def test_structure_maps_to_structure_metric(self):
+        from ageom.principal.metric_selection import resolve_optimization_objective
+
+        metric, eval_spec, label = resolve_optimization_objective("structure")
+        assert metric == OptimizationMetric.STRUCTURE
+        assert eval_spec is None
+        assert label == "structure"
 
 
 class TestExecutionSandbox:
@@ -479,6 +515,25 @@ class TestCreditAssigner:
         )
         assert grads[0].node_id == "b"
         assert grads[0].gradient_score == pytest.approx(75.0)
+
+    def test_structure_gradients_follow_ghost_risk(self):
+        bench = BenchmarkResult(global_loss=0.0)
+        sim = GhostSimReport(
+            ran=True,
+            passed=False,
+            skipped_nodes=["NodeB"],
+            error_node="NodeA",
+        )
+
+        grads = self.assigner.compute_gradients(
+            self.cdg,
+            bench,
+            sim,
+            OptimizationMetric.STRUCTURE,
+        )
+        assert grads[0].node_id == "a"
+        assert grads[0].metric_type == OptimizationMetric.STRUCTURE
+        assert "structural risk" in grads[0].bottleneck_reason
 
     def test_empty_telemetry_returns_empty(self):
         bench = BenchmarkResult(global_loss=0.0)
