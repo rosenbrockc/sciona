@@ -30,7 +30,11 @@ class ExportTarget(str, Enum):
     PYTHON_PKG = "python-pkg"
 
 
-def _prepare_python_package_source(source: str) -> str:
+def _prepare_python_package_source(
+    source: str,
+    *,
+    required_modules: list[str] | None = None,
+) -> str:
     """Tweak exported Python source for package-level mypy validation."""
     lines = source.splitlines()
     if not lines:
@@ -39,6 +43,12 @@ def _prepare_python_package_source(source: str) -> str:
     result: list[str] = []
     inserted_np_alias = False
     needs_np_alias = "np." in source and "import numpy as np" not in source
+    required_imports = [
+        f"import {module}"
+        for module in required_modules or []
+        if module and f"import {module}" not in source and f"from {module} import" not in source
+    ]
+    pending_imports = required_imports.copy()
 
     for line in lines:
         if needs_np_alias and line == "import numpy":
@@ -53,11 +63,47 @@ def _prepare_python_package_source(source: str) -> str:
                 continue
             result.insert(idx, "import numpy as np")
             break
+    if pending_imports:
+        insert_idx = 0
+        for idx, line in enumerate(result):
+            if line.startswith("from __future__ import") or line.startswith("import ") or line.startswith("from "):
+                insert_idx = idx + 1
+                continue
+            break
+        for item in pending_imports:
+            result.insert(insert_idx, item)
+            insert_idx += 1
 
     prepared = "\n".join(result)
     if source.endswith("\n"):
         prepared += "\n"
     return prepared
+
+
+def _collect_dotted_call_modules(source: str) -> list[str]:
+    """Infer dotted module imports needed for qualified function calls."""
+    try:
+        module = ast.parse(source)
+    except SyntaxError:
+        return []
+
+    modules: set[str] = set()
+    for node in ast.walk(module):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        parts: list[str] = []
+        while isinstance(func, ast.Attribute):
+            parts.append(func.attr)
+            func = func.value
+        if not isinstance(func, ast.Name):
+            continue
+        parts.append(func.id)
+        qualname = ".".join(reversed(parts))
+        if qualname.count(".") < 2:
+            continue
+        modules.add(qualname.rsplit(".", 1)[0])
+    return sorted(modules)
 
 
 def _infer_function_node_ids(source: str) -> dict[str, str]:
@@ -434,7 +480,22 @@ class Extractor:
 
         # atoms.py — the verified source
         instrumented_source = _ensure_python_export_telemetry(skeleton.source_code)
-        prepared_source = _prepare_python_package_source(instrumented_source)
+        required_modules = sorted(
+            {
+                unit.declaration_name.rsplit(".", 1)[0]
+                for unit in skeleton.units
+                if "." in unit.declaration_name
+            }
+        )
+        required_modules.extend(
+            module
+            for module in _collect_dotted_call_modules(instrumented_source)
+            if module not in required_modules
+        )
+        prepared_source = _prepare_python_package_source(
+            instrumented_source,
+            required_modules=required_modules,
+        )
         (pkg_dir / "atoms.py").write_text(prepared_source)
 
         # pipeline.py

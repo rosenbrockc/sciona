@@ -48,17 +48,17 @@ def _matches_signal_event_rate_goal(goal: str) -> bool:
 
 _SIGNAL_EVENT_RATE_DECLARATIONS = {
     "filter_signal_for_detection": (
-        "ageom_runtime_signal_event_rate.filter_signal_for_detection",
+        "ageom.runtime_signal_event_rate.filter_signal_for_detection",
         "np.ndarray, float -> np.ndarray",
         "Condition a sampled waveform for downstream peak/event detection.",
     ),
     "detect_peaks_in_signal": (
-        "ageom_runtime_signal_event_rate.detect_peaks_in_signal",
+        "ageom.runtime_signal_event_rate.detect_peaks_in_signal",
         "np.ndarray, float -> np.ndarray",
         "Detect salient events in a conditioned waveform using robust thresholds.",
     ),
     "compute_event_rate": (
-        "ageom_runtime_signal_event_rate.compute_event_rate",
+        "ageom.runtime_signal_event_rate.compute_event_rate",
         "np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
         "Convert ordered event indices into midpoint indices and per-minute rate.",
     ),
@@ -96,7 +96,7 @@ def _build_signal_event_rate_match_results(cdg: Any, prover: "Prover"):
             type_signature=type_signature,
             docstring=docstring,
             conceptual_summary=node.description,
-            source_lib="ageom_runtime_signal_event_rate",
+            source_lib="ageom.runtime_signal_event_rate",
             prover=prover,
         )
         candidate = CandidateMatch(

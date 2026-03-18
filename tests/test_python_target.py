@@ -430,6 +430,7 @@ class TestContractGenerator:
         assert wrapper.preconditions[0].kind == "require"
         assert "A.ndim == 2" in wrapper.preconditions[0].lambda_expr
         assert wrapper.return_type == "ndarray"
+        assert "import scipy.linalg" in wrapper.imports
 
     def test_render_wrapper(self):
         wrapper = SafeAtomWrapper(
@@ -643,6 +644,8 @@ class TestPythonExtractor:
         )
         assert "result = atoms.solve_wrapper(A, b)" in content
         assert "DEFAULT_ENTRYPOINT = \"solve_wrapper\"" in content
+        assert "template, selected_groups = _reduce_adapter_template(template, entrypoint)" in content
+        assert "flat.setdefault(group_alias, value)" in content
 
     def test_generate_main_script(self):
         skeleton = SkeletonFile(
@@ -659,7 +662,7 @@ class TestPythonExtractor:
         )
         content = generate_main_script(skeleton, ["def solve_wrapper(): pass"], [])
         assert "import icontract" in content
-        assert "import scipy" in content
+        assert "import scipy.linalg" in content
         assert "def solve_wrapper(): pass" in content
 
     @pytest.mark.asyncio

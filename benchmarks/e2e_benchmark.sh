@@ -4,11 +4,18 @@
 set -uo pipefail  # no -e: individual runs may fail without aborting the whole benchmark
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CALL_DIR="$(pwd)"
+cd "$REPO_ROOT"
+
+GOAL_CONFIG="${1:-}"
+if [ -n "$GOAL_CONFIG" ] && [ ! -f "$GOAL_CONFIG" ] && [ -f "$CALL_DIR/$GOAL_CONFIG" ]; then
+    GOAL_CONFIG="$CALL_DIR/$GOAL_CONFIG"
+fi
 
 OUTPUT_DIR="output/e2e_benchmark_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUTPUT_DIR"
-BENCHMARK_PYTHON="${E2E_PYTHON:-$SCRIPT_DIR/.venv/bin/python}"
+BENCHMARK_PYTHON="${E2E_PYTHON:-$REPO_ROOT/.venv/bin/python}"
 if [ ! -x "$BENCHMARK_PYTHON" ]; then
     BENCHMARK_PYTHON="$(command -v python3)"
 fi
@@ -31,8 +38,8 @@ fail()  { echo -e "${RED}[FAIL]${NC} $*"; }
 # Configuration
 # ---------------------------------------------------------------------------
 # Optional: pass a YAML goal config as $1 (e.g. e2e_goals/ecg_heart_rate.yml)
-if [ -n "${1:-}" ] && [ -f "$1" ]; then
-    _goal_config="$1"
+if [ -n "$GOAL_CONFIG" ] && [ -f "$GOAL_CONFIG" ]; then
+    _goal_config="$GOAL_CONFIG"
     GOAL=$("$BENCHMARK_PYTHON" -c "import yaml, sys; print(yaml.safe_load(open('$_goal_config'))['goal'])")
     PROVER=$("$BENCHMARK_PYTHON" -c "import yaml, sys; print(yaml.safe_load(open('$_goal_config')).get('prover', 'python'))")
     _gt_json=$("$BENCHMARK_PYTHON" -c "import yaml, json, sys; print(json.dumps(yaml.safe_load(open('$_goal_config')).get('ground_truth_patterns', [])))")
@@ -53,7 +60,7 @@ export AGEOM_HUNTER_LLM_PROVIDER="$LLM_PROVIDER"
 export AGEOM_HUNTER_LLM_MODEL="$LLM_MODEL"
 export AGEOM_ARCHITECT_LLM_PROVIDER="$LLM_PROVIDER"
 export AGEOM_ARCHITECT_LLM_MODEL="$LLM_MODEL"
-export PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 if [[ "$LLM_PROVIDER" == *_cli ]]; then
     export AGEOM_ALLOW_LEGACY_SUBPROCESS_PROVIDERS="${E2E_ALLOW_LEGACY_SUBPROCESS:-true}"
 fi

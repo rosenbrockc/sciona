@@ -3,6 +3,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BOLD='\033[1m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -12,7 +13,7 @@ info()  { echo -e "${BOLD}[all]${NC} $*"; }
 ok()    { echo -e "${GREEN}[pass]${NC} $*"; }
 fail()  { echo -e "${RED}[FAIL]${NC} $*"; }
 
-GOALS_DIR="$SCRIPT_DIR/e2e_goals"
+GOALS_DIR="$REPO_ROOT/e2e_goals"
 if [ ! -d "$GOALS_DIR" ] || [ -z "$(ls "$GOALS_DIR"/*.yml 2>/dev/null)" ]; then
     echo "No YAML goal configs found in $GOALS_DIR/"
     exit 1

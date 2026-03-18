@@ -18,7 +18,10 @@ from ageom.synthesizer.certificate import (
     save_certificate,
     verify_certificate,
 )
-from ageom.synthesizer.extractor import _prepare_python_package_source
+from ageom.synthesizer.extractor import (
+    _collect_dotted_call_modules,
+    _prepare_python_package_source,
+)
 from ageom.synthesizer.lakefile_template import generate_lakefile
 from ageom.synthesizer.models import (
     AssemblyUnit,
@@ -271,6 +274,27 @@ class TestCertificate:
         prepared = _prepare_python_package_source(source)
         assert "import numpy as np" in prepared
 
+    def test_prepare_python_package_source_imports_required_modules(self):
+        source = (
+            "from __future__ import annotations\n"
+            "import ageom\n"
+            "def foo(x):\n"
+            "    return ageom.runtime_signal_event_rate.filter_signal_for_detection(x, 128.0)\n"
+        )
+        prepared = _prepare_python_package_source(
+            source,
+            required_modules=["ageom.runtime_signal_event_rate"],
+        )
+        assert "import ageom.runtime_signal_event_rate" in prepared
+
+    def test_collect_dotted_call_modules_from_qualified_calls(self):
+        source = (
+            "import ageom\n"
+            "def foo(x, fs):\n"
+            "    return ageom.runtime_signal_event_rate.filter_signal_for_detection(x, fs)\n"
+        )
+        assert _collect_dotted_call_modules(source) == ["ageom.runtime_signal_event_rate"]
+
     def test_generate_pipeline_py_is_typed(self):
         pipeline = generate_pipeline_py([])
         assert "from typing import Any" in pipeline
@@ -282,6 +306,8 @@ class TestCertificate:
         assert "--dataset-root" in pipeline
         assert "create_templated_dataset_collection" in pipeline
         assert 'ENTRYPOINTS = ["direct_goal_match"]' in pipeline
+        assert "read_dataset_template" in pipeline
+        assert "_reduce_adapter_template" in pipeline
 
     def test_prepare_python_package_source_keeps_instrumented_helper(self):
         source = (

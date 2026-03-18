@@ -65,8 +65,7 @@ class ContractGenerator:
         imports = ["import icontract"]
         module = declaration.source_lib
         if module:
-            top_level = module.split(".")[0]
-            imports.append(f"import {top_level}")
+            imports.append(f"import {module}")
 
         # Build body
         body = f"return {declaration.name}({', '.join(name for name, _ in parameters)})"
