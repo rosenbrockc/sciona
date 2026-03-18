@@ -18,6 +18,30 @@ If you also need all optional features:
 pip install -e ".[all]"
 ```
 
+## 1b. PostgreSQL (optional)
+
+PostgreSQL is used for Architect checkpoint persistence, shared context, and pipeline telemetry. The repo includes a `docker-compose.yml`:
+
+```bash
+docker compose up -d postgres
+```
+
+This starts PostgreSQL on port 5433 with database `ageom_architect`, user `ageom`, password `ageom_dev`. Add to your `.env`:
+
+```bash
+AGEOM_POSTGRES_URI=postgresql://ageom:ageom_dev@localhost:5433/ageom_architect
+```
+
+Tables are created automatically on first use. Telemetry backend selection:
+
+| `AGEOM_TELEMETRY_BACKEND` | Behavior |
+|---------------------------|----------|
+| `auto` (default) | Use Postgres when `AGEOM_POSTGRES_URI` is set, otherwise file-only |
+| `postgres` | Require Postgres (falls back silently on connection failure) |
+| `file` | File-based persistence only, even when Postgres URI is configured |
+
+You can omit PostgreSQL entirely -- all features fall back to in-memory or file-based storage.
+
 ## 2. Supported Local LLM Backend
 
 Local LLM support is implemented through an OpenAI-compatible HTTP endpoint.

@@ -418,6 +418,58 @@ Interval arithmetic in `ghost_sim.py` computes per-node error expansion (output 
 
 The `Assembler` supports a `with_telemetry=True` flag that wraps each atomic call in a `_ageom_probe()` helper emitting `trace.jsonl` records with `node_id`, `execution_time_ms`, `peak_memory_bytes`, and `error_expansion`. The `ExecutionSandbox` parses these traces after subprocess execution.
 
+## Telemetry and Dashboard
+
+### Pipeline telemetry (`ageom/telemetry.py`)
+
+All commands emit structured pipeline events (``PipelineEvent``) and maintain per-run snapshots (``RunSnapshot``) tracking stage progress, prompt dispatch counters, and metadata. The module keeps:
+
+- **EventLog** -- append-only structured events with JSONL export and live SSE subscribers.
+- **TelemetryRegistry** -- tracks active/past runs, prompt dispatch state, and stage heartbeats. Snapshots are persisted as `run_{id}.json` files for cross-process dashboard reads.
+
+Key public APIs: `log_event()`, `start_run()`, `finish_run()`, `update_stage()`, `start_prompt_dispatch()`, `finish_prompt_dispatch()`, `telemetry_scope()`, `telemetry_stage()`.
+
+### Postgres telemetry persistence (`ageom/telemetry_store.py`)
+
+When `AGEOM_POSTGRES_URI` is set and `AGEOM_TELEMETRY_BACKEND` is not `file`, telemetry is durably persisted to PostgreSQL alongside the existing Architect checkpoints and shared context data. The in-memory hot path for live SSE streaming is preserved; Postgres is the durable store for cross-run queries.
+
+| Component | Role |
+|-----------|------|
+| `PostgresTelemetryStore` | Async Postgres persistence with `psycopg_pool.AsyncConnectionPool` (min 1, max 4 connections). Creates `pipeline_runs` and `pipeline_events` tables with indexes. Provides `upsert_run()`, `insert_events()`, `list_runs()`, `list_events()` with server-side filtering and pagination |
+| `TelemetryDrain` | Bridges sync producers to async Postgres writes. Buffers events in a bounded deque (max 10,000) and run snapshots with last-writer-wins semantics. A background asyncio task flushes every 500ms. Write failures are silently caught to never block the pipeline |
+
+**Table schemas:**
+
+- `pipeline_runs` -- one row per run, upserted on every snapshot update. Fields mirror `RunSnapshot`: status, stage progress, prompt counters, metadata (JSONB). Indexed on `(status, started_at DESC)`.
+- `pipeline_events` -- append-only event log. Fields mirror `PipelineEvent`: timestamp, round, phase, event_type, payload (JSONB), duration_ms, prompt_key, provider, model. Indexed on `(run_id, event_type)` and `(event_type, timestamp)`.
+
+**Wiring:** Each async command entry point (`run_cmds`, `decompose_cmds`, `match_cmds`, `benchmark_cmds`) and the FastAPI lifespan create the store, start the drain, and shut both down on exit. The drain hooks are injected into `EventLog.append()` and `TelemetryRegistry._persist_locked()` via module-level globals set by `configure_postgres_telemetry()`.
+
+### Dashboard endpoints
+
+The visualizer API (`ageom/visualizer_api.py`) exposes a telemetry dashboard at `/api/dashboard/`:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/dashboard/runs` | List runs with stale/hang annotations. Params: `limit`, `state` (all\|running\|completed\|failed) |
+| `GET /api/dashboard/runs/{run_id}` | Single run snapshot with derived summaries |
+| `GET /api/dashboard/latest` | Most recently updated run |
+| `GET /api/dashboard/runs/{run_id}/events` | Paginated events with server-side filters: `phase`, `event_type`, `prompt_key`, `round`, `has_error` |
+| `GET /api/dashboard/runs/{run_id}/stream` | SSE endpoint for live event streaming (in-memory only, not affected by Postgres) |
+| `GET /api/dashboard/runs/{run_id}/coverage` | Deterministic vs LLM fallback coverage per prompt key |
+| `GET /api/dashboard/runs/{run_id}/errors` | Structured error list with retry grouping |
+
+All query endpoints try Postgres first and fall back to in-memory/file when unavailable. The SSE streaming endpoint always uses the in-memory event log for minimal latency.
+
+### CLI telemetry commands
+
+```
+ageom telemetry list [--limit N] [--state STATE]   # List recent runs
+ageom telemetry show <run_id>                       # Show run details as JSON
+```
+
+Both commands try Postgres first (via `asyncio.run()`) and fall back to file-based persistence.
+
 ## Configuration
 
 `AgeomConfig` (pydantic-settings) reads from `.env` with prefix `AGEOM_`:
@@ -440,7 +492,10 @@ The `Assembler` supports a `with_telemetry=True` flag that wraps each atomic cal
 | `AGEOM_HUNTER_MAX_ITERATIONS` | `5` | Max search-verify-refine loops |
 | `AGEOM_HUNTER_TOP_K_VERIFY` | `3` | Candidates sent to Oracle per iteration |
 | `AGEOM_HUNTER_SEARCH_K` | `20` | Candidates retrieved per search |
-| `AGEOM_POSTGRES_URI` | *(empty)* | PostgreSQL URI for checkpoint persistence (omit for in-memory) |
+| `AGEOM_POSTGRES_URI` | *(empty)* | PostgreSQL URI for checkpoint, shared context, and telemetry persistence |
+| `AGEOM_TELEMETRY_BACKEND` | `auto` | Telemetry storage backend: `auto` (use Postgres when URI is set), `postgres`, or `file` |
+| `AGEOM_TELEMETRY_RUNS_DIR` | `output/telemetry_runs` | Directory for file-based run snapshot persistence |
+| `AGEOM_TELEMETRY_STALE_SECONDS` | `120` | Seconds before a running stage is flagged as stale in the dashboard |
 | `AGEOM_ARCHITECT_MAX_DEPTH` | `8` | Max CDG decomposition depth |
 | `AGEOM_ARCHITECT_LLM_PROVIDER` | *(empty)* | Optional Round 1 provider override (falls back to `AGEOM_LLM_PROVIDER`) |
 | `AGEOM_ARCHITECT_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Architect |
@@ -565,11 +620,11 @@ If step 4 fails for all candidates, `ReformulateQuery` asks the LLM to analyze t
 ```
 ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
          |
-    +----+----+----------+-----------+
-    |         |          |           |
- indexer/   judge/    architect/  ingester/    (faiss, transformers, lean-interact,
-    |         |          |           |          coqpyt, langgraph, psycopg,
-    +----+----+          |           |          tree-sitter, tree-sitter-language-pack)
+    +----+----+----------+-----------+------------------+
+    |         |          |           |                  |
+ indexer/   judge/    architect/  ingester/    telemetry.py + telemetry_store.py
+    |         |          |           |          (psycopg_pool, asyncio drain)
+    +----+----+          |           |
          |               |           |
       hunter/            |           |         (pydantic-graph, anthropic, openai)
          |               |           |

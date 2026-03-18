@@ -100,10 +100,25 @@ AGEOM_HUNTER_USE_GBNF=true
 AGEOM_HUNTER_MAX_ITERATIONS=5
 
 # PostgreSQL persistence (optional -- omit for in-memory only)
-AGEOM_POSTGRES_URI=postgresql://localhost:5432/ageom_architect
+# Used by Architect checkpoints, shared context, and telemetry
+AGEOM_POSTGRES_URI=postgresql://ageom:ageom_dev@localhost:5433/ageom_architect
+
+# Telemetry storage: "auto" (Postgres when URI set), "postgres", or "file"
+AGEOM_TELEMETRY_BACKEND=auto
 ```
 
 CLI flags override `.env` when provided. See `ageom/config.py` for all options.
+
+### PostgreSQL setup (optional)
+
+PostgreSQL is used for Architect checkpoint persistence, shared context, and pipeline telemetry. The included `docker-compose.yml` provides a ready-to-use instance:
+
+```bash
+docker compose up -d postgres
+# Default URI: postgresql://ageom:ageom_dev@localhost:5433/ageom_architect
+```
+
+Tables are created automatically on first use. Set `AGEOM_TELEMETRY_BACKEND=file` to disable Postgres telemetry even when a URI is configured.
 
 ## Usage
 
@@ -189,6 +204,9 @@ ageom/
   types.py          Shared domain types (Declaration, PDGNode, MatchResult, ...)
   protocols.py      Protocol interfaces (SemanticIndex, ProofEnvironment, ...)
   config.py         AgeomConfig (pydantic-settings, reads .env)
+  telemetry.py      Pipeline events, run snapshots, live SSE subscribers
+  telemetry_store.py  PostgresTelemetryStore + TelemetryDrain (async Postgres persistence)
+  visualizer_api.py FastAPI server (CDG visualizer + telemetry dashboard)
   cli.py            CLI entrypoint (decompose, history, match, index, assemble, optimize)
   architect/        Round 1 -- Conceptual Dependency Agent
     models.py         CDG node/edge Pydantic models, ConceptType enum (incl. DSP types)

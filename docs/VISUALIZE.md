@@ -170,6 +170,8 @@ Drag a `.json` file anywhere onto the page to load it. Works in all modes includ
 
 *Available in `--api` mode.*
 
+### CDG endpoints
+
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/cdgs` | List all CDGs with node counts, concept types, statuses. Supports `?q=`, `?concept_type=`, `?status=` query params |
@@ -189,6 +191,39 @@ curl "http://localhost:8080/api/cdg?repo=hpy-atoms/spo2_perfusion"
 curl -X POST http://localhost:8080/api/isomorphisms \
   -H "Content-Type: application/json" \
   -d '{"repo": "hpy-atoms/spo2_perfusion", "node_id": "HPYSpO2Perfusion_root"}'
+```
+
+### Telemetry dashboard endpoints
+
+The visualizer also serves a pipeline telemetry dashboard. All query endpoints try Postgres first when `AGEOM_POSTGRES_URI` is configured, falling back to in-memory/file-based storage.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/dashboard/runs` | List telemetry runs with stale/hang annotations. Params: `?limit=50`, `?state=all\|running\|completed\|failed` |
+| `GET` | `/api/dashboard/runs/{run_id}` | Single run snapshot with derived summaries (LLM routing, shared context metrics, hang detection) |
+| `GET` | `/api/dashboard/latest` | Most recently updated run |
+| `GET` | `/api/dashboard/runs/{run_id}/events` | Paginated events with server-side filters: `?phase=`, `?event_type=`, `?prompt_key=`, `?round=`, `?has_error=`, `?offset=`, `?limit=` |
+| `GET` | `/api/dashboard/runs/{run_id}/stream` | SSE endpoint for live event streaming (always in-memory, not affected by Postgres) |
+| `GET` | `/api/dashboard/runs/{run_id}/coverage` | Deterministic vs LLM fallback coverage per prompt key |
+| `GET` | `/api/dashboard/runs/{run_id}/errors` | Structured error list with retry grouping and retry history |
+
+Example:
+
+```bash
+# List recent runs
+curl http://localhost:8080/api/dashboard/runs?limit=10
+
+# Get a specific run
+curl http://localhost:8080/api/dashboard/runs/abc123
+
+# List events for a run, filtered to errors only
+curl "http://localhost:8080/api/dashboard/runs/abc123/events?has_error=true&limit=50"
+
+# Stream live events (SSE)
+curl -N http://localhost:8080/api/dashboard/runs/abc123/stream
+
+# Prompt coverage analysis
+curl http://localhost:8080/api/dashboard/runs/abc123/coverage
 ```
 
 ## CDG JSON format
