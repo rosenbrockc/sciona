@@ -24,6 +24,10 @@ from ageom.principal.models import (
     NodeGradient,
     OptimizationMetric,
 )
+from ageom.principal.reference_attribution import (
+    compute_reference_loss_gradients,
+    is_reference_loss_objective,
+)
 from ageom.principal.structure_objective import benchmark_from_ghost_report
 from ageom.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from ageom.synthesizer.models import ExportBundle
@@ -174,8 +178,30 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
 
 async def compute_gradients(state: PrincipalState, config: RunnableConfig) -> dict:
     """Call CreditAssigner to find the top bottleneck node."""
+    deps: PrincipalDeps = config["configurable"]["deps"]
     if state.cdg is None or state.benchmark is None:
         return {"done": True, "error": "Missing CDG or benchmark"}
+
+    if (
+        state.export_bundle is not None
+        and is_reference_loss_objective(state.metric, deps.evaluation_spec)[0] is not None
+    ):
+        gradients = await compute_reference_loss_gradients(
+            state.cdg,
+            state.export_bundle,
+            state.dataset_path,
+            deps.evaluation_spec,
+        )
+        if gradients:
+            top = gradients[0]
+            state.top_gradient = top
+            state.bottleneck_node_id = top.node_id
+            state.bottleneck_reason = top.bottleneck_reason
+            return {
+                "top_gradient": top,
+                "bottleneck_node_id": top.node_id,
+                "bottleneck_reason": top.bottleneck_reason,
+            }
 
     assigner = CreditAssigner()
     gradients = assigner.compute_gradients(

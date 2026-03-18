@@ -8,6 +8,10 @@ from ageom.architect.handoff import CDGExport
 from ageom.principal.backprop import CreditAssigner
 from ageom.principal.evaluator import ExecutionSandbox
 from ageom.principal.models import NodeGradient, OptimizationMetric
+from ageom.principal.reference_attribution import (
+    compute_reference_loss_gradients,
+    is_reference_loss_objective,
+)
 from ageom.principal.structure_objective import benchmark_from_ghost_report
 from ageom.synthesizer.ghost_sim import run_ghost_simulation
 from ageom.synthesizer.models import ExportBundle
@@ -44,6 +48,16 @@ async def profile_algorithm_error(
     if metric == OptimizationMetric.STRUCTURE:
         benchmark = benchmark_from_ghost_report(ghost_report)
     else:
+        if is_reference_loss_objective(metric, evaluation_spec)[0] is not None:
+            gradients = await compute_reference_loss_gradients(
+                cdg,
+                bundle,
+                dataset_path,
+                evaluation_spec,
+                dataset_varset=dataset_varset,
+            )
+            if gradients:
+                return gradients
         sandbox = ExecutionSandbox()
         if dataset_path.endswith((".yml", ".yaml")):
             benchmark = await sandbox.evaluate_adapter(
