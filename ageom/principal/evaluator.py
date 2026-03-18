@@ -8,6 +8,7 @@ import logging
 import os
 from pathlib import Path
 import sys
+from typing import Any
 
 from ageom.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
 from ageom.synthesizer.models import ExportBundle
@@ -42,6 +43,8 @@ class ExecutionSandbox:
         bundle: ExportBundle,
         dataset_path: str,
         metric: OptimizationMetric,
+        *,
+        evaluation_spec: dict[str, Any] | str | None = None,
     ) -> BenchmarkResult:
         """Execute *bundle* against *dataset_path* and return telemetry.
 
@@ -69,10 +72,12 @@ class ExecutionSandbox:
             trace_path.unlink()
 
         try:
+            cmd = [self._python_executable, str(artifact), str(dataset_path)]
+            eval_spec_arg = _materialize_evaluation_spec_arg(output_dir, evaluation_spec)
+            if eval_spec_arg is not None:
+                cmd.extend(["--eval-spec", eval_spec_arg])
             proc = await asyncio.create_subprocess_exec(
-                self._python_executable,
-                str(artifact),
-                str(dataset_path),
+                *cmd,
                 cwd=str(output_dir),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -122,6 +127,7 @@ class ExecutionSandbox:
         user: str | None = None,
         serial: str | None = None,
         varset: dict | None = None,
+        evaluation_spec: dict[str, Any] | str | None = None,
     ) -> BenchmarkResult:
         """Execute *bundle* against a templated adapter dataset.
 
@@ -156,6 +162,7 @@ class ExecutionSandbox:
                 varset=varset,
                 user=user,
                 serial=serial,
+                evaluation_spec=evaluation_spec,
             )
 
         try:
@@ -180,7 +187,12 @@ class ExecutionSandbox:
         manifest_path = out_dir / "dataset_manifest.json"
         manifest_path.write_text(json.dumps(manifest, indent=2))
 
-        return await self.evaluate(bundle, str(manifest_path), metric)
+        return await self.evaluate(
+            bundle,
+            str(manifest_path),
+            metric,
+            evaluation_spec=evaluation_spec,
+        )
 
     async def _evaluate_python_adapter_runner(
         self,
@@ -191,6 +203,7 @@ class ExecutionSandbox:
         varset: dict | None = None,
         user: str | None = None,
         serial: str | None = None,
+        evaluation_spec: dict[str, Any] | str | None = None,
     ) -> BenchmarkResult:
         artifact = bundle.executable_artifact or bundle.compiled_artifact or bundle.source_path
         output_dir = bundle.output_dir.resolve()
@@ -218,6 +231,9 @@ class ExecutionSandbox:
             cmd.extend(["--user", user])
         if serial is not None:
             cmd.extend(["--serial", serial])
+        eval_spec_arg = _materialize_evaluation_spec_arg(output_dir, evaluation_spec)
+        if eval_spec_arg is not None:
+            cmd.extend(["--eval-spec", eval_spec_arg])
 
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -309,17 +325,18 @@ def _compute_loss(
         return float(max(t.peak_memory_bytes for t in telemetry.values()))
 
     if metric == OptimizationMetric.PRECISION:
-        return _parse_mse_from_stdout(stdout)
+        return _parse_precision_loss_from_stdout(stdout)
 
     # FLOP_COUNT — proxy via latency until HW counters land
     return sum(t.execution_time_ms for t in telemetry.values())
 
 
-def _parse_mse_from_stdout(stdout: bytes | None) -> float:
-    """Extract MSE from artifact stdout.
+def _parse_precision_loss_from_stdout(stdout: bytes | None) -> float:
+    """Extract precision loss from artifact stdout.
 
     Expects the last non-empty line to be a JSON object containing
-    ``{"mse": <float>}``.  Returns ``_FAILURE_PENALTY`` on parse failure.
+    a scalar loss field. Prefers ``loss``, then ``rmse``, then ``mse``.
+    Returns ``_FAILURE_PENALTY`` on parse failure.
     """
     if not stdout:
         return _FAILURE_PENALTY
@@ -330,8 +347,32 @@ def _parse_mse_from_stdout(stdout: bytes | None) -> float:
             continue
         try:
             data = json.loads(line)
-            if isinstance(data, dict) and "mse" in data:
-                return float(data["mse"])
+            if isinstance(data, dict):
+                for key in ("loss", "rmse", "mse"):
+                    if key in data:
+                        return float(data[key])
         except (json.JSONDecodeError, ValueError, TypeError):
             continue
     return _FAILURE_PENALTY
+
+
+def _materialize_evaluation_spec_arg(
+    output_dir: Path,
+    evaluation_spec: dict[str, Any] | str | None,
+) -> str | None:
+    if evaluation_spec is None:
+        return None
+    if isinstance(evaluation_spec, dict):
+        target = output_dir / "evaluation_spec.json"
+        target.write_text(json.dumps(evaluation_spec, indent=2) + "\n")
+        return str(target)
+    candidate = Path(evaluation_spec).expanduser()
+    if candidate.exists():
+        return str(candidate.resolve())
+    try:
+        payload = json.loads(evaluation_spec)
+    except json.JSONDecodeError:
+        return str(candidate)
+    target = output_dir / "evaluation_spec.json"
+    target.write_text(json.dumps(payload, indent=2) + "\n")
+    return str(target)

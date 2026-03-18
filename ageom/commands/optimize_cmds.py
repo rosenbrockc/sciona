@@ -91,6 +91,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     metric = OptimizationMetric(args.metric)
+    evaluation_spec = getattr(args, "eval_spec", None)
     postgres_uri = "" if args.no_persist else config.postgres_uri
     architect_run_id = uuid.uuid4().hex
     architect_shared_context, architect_shared_metrics = await _create_shared_context(
@@ -119,7 +120,11 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         )
 
         sandbox = ExecutionSandbox(timeout_s=args.timeout)
-        deps = PrincipalDeps(architect=architect, sandbox=sandbox)
+        deps = PrincipalDeps(
+            architect=architect,
+            sandbox=sandbox,
+            evaluation_spec=evaluation_spec,
+        )
 
         graph = build_principal_graph().compile()
 
@@ -183,6 +188,7 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
+    evaluation_spec = getattr(args, "eval_spec", None)
 
     runner_candidates = [
         artifact_path.parent / "runner.py",
@@ -222,6 +228,7 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
             metric=metric,
             dataset_varset=dataset_varset or None,
             match_results=match_results,
+            evaluation_spec=evaluation_spec,
         )
 
         if not gradients:

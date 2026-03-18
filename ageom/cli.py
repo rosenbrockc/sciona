@@ -426,6 +426,12 @@ def main() -> None:
         help="Path to benchmark dataset (CSV or JSON)",
     )
     optimize_parser.add_argument(
+        "--eval-spec",
+        type=str,
+        default=None,
+        help="Path to a JSON evaluation spec, or inline JSON, for reference-based loss computation",
+    )
+    optimize_parser.add_argument(
         "--metric",
         choices=["latency", "memory", "precision", "flop_count"],
         default="latency",
@@ -493,6 +499,12 @@ def main() -> None:
         action="append",
         default=[],
         help="Adapter variable substitution in KEY=VALUE form; repeat as needed",
+    )
+    profile_parser.add_argument(
+        "--eval-spec",
+        type=str,
+        default=None,
+        help="Path to a JSON evaluation spec, or inline JSON, for reference-based loss computation",
     )
     profile_parser.add_argument(
         "--metric",

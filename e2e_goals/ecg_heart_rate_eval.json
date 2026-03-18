@@ -1,0 +1,13 @@
+{
+  "loss": "rmse",
+  "prediction": {
+    "value_output": 1,
+    "time_output": 0,
+    "time_kind": "index",
+    "time_source": "h10_ecg_t"
+  },
+  "reference": {
+    "value_source": "h10_hr_value",
+    "time_source": "h10_hr_t"
+  }
+}

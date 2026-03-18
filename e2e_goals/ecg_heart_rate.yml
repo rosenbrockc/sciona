@@ -1,5 +1,6 @@
 goal: "Detect heart rate from raw ECG signal"
 prover: python
+evaluation_spec_file: ecg_heart_rate_eval.json
 ground_truth_patterns:
   - "filter_signal_for_detection|bandpass_filter"
   - "detect_peaks_in_signal|r_peak_detection|hamilton_segment"

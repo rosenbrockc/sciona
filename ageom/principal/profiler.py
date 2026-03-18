@@ -23,6 +23,7 @@ async def profile_algorithm_error(
     *,
     dataset_varset: dict[str, str] | None = None,
     match_results: list[MatchResult] | None = None,
+    evaluation_spec: dict | str | None = None,
 ) -> list[NodeGradient]:
     """Evaluate an existing CDG against a dataset and rank error contributors.
 
@@ -45,9 +46,15 @@ async def profile_algorithm_error(
             dataset_path,
             metric,
             varset=dataset_varset,
+            evaluation_spec=evaluation_spec,
         )
     else:
-        benchmark = await sandbox.evaluate(bundle, dataset_path, metric)
+        benchmark = await sandbox.evaluate(
+            bundle,
+            dataset_path,
+            metric,
+            evaluation_spec=evaluation_spec,
+        )
     
     # 2. Run the ghost simulation for structural checks and theoretical precision bounds
     # Assuming empty match_results as we just want theoretical bounds for the CDG nodes.

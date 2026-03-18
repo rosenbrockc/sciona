@@ -635,6 +635,8 @@ class TestPythonExtractor:
         assert "No exported entrypoints are available" in content
         assert "def load_dataset" in content
         assert "--dataset-root" in content
+        assert "--eval-spec" in content
+        assert "compute_evaluation_payload" in content
 
     def test_generate_pipeline_py_with_steps(self):
         content = generate_pipeline_py(
@@ -644,7 +646,7 @@ class TestPythonExtractor:
         )
         assert "result = atoms.solve_wrapper(A, b)" in content
         assert "DEFAULT_ENTRYPOINT = \"solve_wrapper\"" in content
-        assert "template, selected_groups = _reduce_adapter_template(template, entrypoint)" in content
+        assert "template, selected_groups = _reduce_adapter_template(template, entrypoint, eval_spec)" in content
         assert "flat.setdefault(group_alias, value)" in content
 
     def test_generate_main_script(self):

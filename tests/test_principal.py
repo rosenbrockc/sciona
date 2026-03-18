@@ -206,6 +206,14 @@ class TestComputeLoss:
         loss = _compute_loss(tel, OptimizationMetric.PRECISION, stdout)
         assert loss == pytest.approx(0.042)
 
+    def test_precision_prefers_explicit_loss(self):
+        from ageom.principal.evaluator import _compute_loss
+
+        tel = {"a": _make_telemetry("a", 1.0, 100, 0.0)}
+        stdout = b'{"mse": 0.04, "rmse": 0.2, "loss": 0.3}\n'
+        loss = _compute_loss(tel, OptimizationMetric.PRECISION, stdout)
+        assert loss == pytest.approx(0.3)
+
     def test_flop_count_proxied_by_latency(self):
         from ageom.principal.evaluator import _compute_loss
 
@@ -223,27 +231,39 @@ class TestComputeLoss:
         assert loss == _FAILURE_PENALTY
 
 
-class TestParseMseFromStdout:
+class TestParsePrecisionLossFromStdout:
     def test_valid(self):
-        from ageom.principal.evaluator import _parse_mse_from_stdout
+        from ageom.principal.evaluator import _parse_precision_loss_from_stdout
 
-        assert _parse_mse_from_stdout(b'{"mse": 0.5}') == pytest.approx(0.5)
+        assert _parse_precision_loss_from_stdout(b'{"mse": 0.5}') == pytest.approx(0.5)
 
     def test_none_stdout(self):
-        from ageom.principal.evaluator import _parse_mse_from_stdout, _FAILURE_PENALTY
+        from ageom.principal.evaluator import (
+            _FAILURE_PENALTY,
+            _parse_precision_loss_from_stdout,
+        )
 
-        assert _parse_mse_from_stdout(None) == _FAILURE_PENALTY
+        assert _parse_precision_loss_from_stdout(None) == _FAILURE_PENALTY
 
     def test_no_mse_key(self):
-        from ageom.principal.evaluator import _parse_mse_from_stdout, _FAILURE_PENALTY
+        from ageom.principal.evaluator import (
+            _FAILURE_PENALTY,
+            _parse_precision_loss_from_stdout,
+        )
 
-        assert _parse_mse_from_stdout(b'{"foo": 1}') == _FAILURE_PENALTY
+        assert _parse_precision_loss_from_stdout(b'{"foo": 1}') == _FAILURE_PENALTY
 
     def test_last_valid_line(self):
-        from ageom.principal.evaluator import _parse_mse_from_stdout
+        from ageom.principal.evaluator import _parse_precision_loss_from_stdout
 
         stdout = b'log line 1\nlog line 2\n{"mse": 0.123}\n'
-        assert _parse_mse_from_stdout(stdout) == pytest.approx(0.123)
+        assert _parse_precision_loss_from_stdout(stdout) == pytest.approx(0.123)
+
+    def test_prefers_loss_then_rmse(self):
+        from ageom.principal.evaluator import _parse_precision_loss_from_stdout
+
+        assert _parse_precision_loss_from_stdout(b'{"rmse": 1.2}') == pytest.approx(1.2)
+        assert _parse_precision_loss_from_stdout(b'{"mse": 0.5, "loss": 2.5}') == pytest.approx(2.5)
 
 
 class TestExecutionSandbox:
@@ -331,6 +351,51 @@ class TestExecutionSandbox:
         assert "--dataset-root" in calls[0]
         assert str(tmp_path) in calls[0]
         assert "--dataset-var" in calls[0]
+
+    def test_evaluate_adapter_forwards_eval_spec(self, tmp_path: Path, monkeypatch):
+        from ageom.principal.evaluator import ExecutionSandbox
+        from ageom.synthesizer.models import ExportBundle
+
+        runner = tmp_path / "runner.py"
+        runner.write_text("print('ok')\n")
+        (tmp_path / "ageom.yml").write_text("name: test\n")
+        trace = tmp_path / "trace.jsonl"
+        bundle = ExportBundle(
+            target="python-pkg",
+            output_dir=tmp_path,
+            source_path=runner,
+            compiled_artifact=runner,
+            executable_artifact=runner,
+        )
+
+        class DummyProc:
+            returncode = 0
+
+            async def communicate(self):
+                trace.write_text(
+                    '{"node_id":"leaf","execution_time_ms":1.0,"peak_memory_bytes":2}\n'
+                )
+                return (b'{"loss": 1.5}\n', b"")
+
+        calls: list[list[str]] = []
+
+        async def fake_exec(*cmd, **kwargs):
+            calls.append(list(cmd))
+            return DummyProc()
+
+        monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
+
+        result = asyncio.run(
+            ExecutionSandbox(timeout_s=5.0).evaluate_adapter(
+                bundle,
+                str(tmp_path / "ageom.yml"),
+                OptimizationMetric.PRECISION,
+                evaluation_spec='{"loss":"rmse"}',
+            )
+        )
+
+        assert result.global_loss == pytest.approx(1.5)
+        assert "--eval-spec" in calls[0]
 
 
 # ===================================================================

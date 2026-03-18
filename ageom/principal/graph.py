@@ -132,12 +132,14 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
             state.export_bundle,
             state.dataset_path,
             state.metric,
+            evaluation_spec=deps.evaluation_spec,
         )
     else:
         benchmark = await sandbox.evaluate(
             state.export_bundle,
             state.dataset_path,
             state.metric,
+            evaluation_spec=deps.evaluation_spec,
         )
     state.benchmark = benchmark
 
@@ -315,6 +317,7 @@ class PrincipalDeps:
     sandbox: ExecutionSandbox
     match_results_fn: Any = None  # Callable[[CDGExport], list[MatchResult]]
     synthesize_fn: Any = None  # Callable[[CDGExport, list], Awaitable[ExportBundle]]
+    evaluation_spec: Any = None
 
 
 # ---------------------------------------------------------------------------
