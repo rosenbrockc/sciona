@@ -7,6 +7,7 @@ using the Architect's checkpointer for O(1) time-travel coordinate descent.
 from __future__ import annotations
 
 import logging
+import inspect
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -28,7 +29,9 @@ from ageom.principal.reference_attribution import (
     compute_reference_loss_gradients,
     is_reference_loss_objective,
 )
+from ageom.principal.structure_summary import summarize_trial_structure
 from ageom.principal.structure_objective import benchmark_from_ghost_report
+from ageom.principal.variant_mutation import maybe_apply_bottleneck_variant
 from ageom.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from ageom.synthesizer.models import ExportBundle
 
@@ -57,6 +60,7 @@ class PrincipalState:
     export_bundle: ExportBundle | None = None
     ghost_report: GhostSimReport = field(default_factory=GhostSimReport)
     benchmark: BenchmarkResult | None = None
+    match_results: list[Any] = field(default_factory=list)
 
     # Gradient
     top_gradient: NodeGradient | None = None
@@ -105,6 +109,9 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
 
     # Ghost simulation for early pruning and precision gradients
     match_results = deps.match_results_fn(state.cdg) if deps.match_results_fn else []
+    if inspect.isawaitable(match_results):
+        match_results = await match_results
+    state.match_results = list(match_results)
     ghost_report = run_ghost_simulation(state.cdg, match_results)
     state.ghost_report = ghost_report
 
@@ -121,7 +128,12 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
         bundle = await deps.synthesize_fn(state.cdg, match_results)
         state.export_bundle = bundle
 
-    return {"ghost_report": ghost_report, "export_bundle": state.export_bundle, "current_trial": state.current_trial}
+    return {
+        "ghost_report": ghost_report,
+        "export_bundle": state.export_bundle,
+        "current_trial": state.current_trial,
+        "match_results": state.match_results,
+    }
 
 
 async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
@@ -140,6 +152,7 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
                 state.export_bundle,
                 state.dataset_path,
                 state.metric,
+                varset=deps.dataset_varset,
                 evaluation_spec=deps.evaluation_spec,
             )
         else:
@@ -160,11 +173,41 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
             benchmark.global_loss,
         )
 
+    structure = (
+        summarize_trial_structure(
+            state.cdg,
+            ghost_report=state.ghost_report,
+            match_results=state.match_results,
+        )
+        if state.cdg is not None
+        else {}
+    )
+    previous_structure = (
+        state.trial_history[-1].get("structure", {}) if state.trial_history else {}
+    )
+    if structure:
+        structure["topology_changed"] = (
+            bool(previous_structure)
+            and structure.get("topo_hash") != previous_structure.get("topo_hash")
+        )
+        structure["primitive_assignment_changed"] = (
+            bool(previous_structure)
+            and structure.get("primitive_signature")
+            != previous_structure.get("primitive_signature")
+        )
+        structure["node_count_delta"] = int(structure.get("node_count", 0)) - int(
+            previous_structure.get("node_count", 0) or 0
+        )
+        structure["edge_count_delta"] = int(structure.get("edge_count", 0)) - int(
+            previous_structure.get("edge_count", 0) or 0
+        )
+
     state.trial_history.append(
         {
             "trial": state.current_trial,
             "loss": benchmark.global_loss,
             "thread_id": state.thread_id,
+            "structure": structure,
         }
     )
 
@@ -191,6 +234,7 @@ async def compute_gradients(state: PrincipalState, config: RunnableConfig) -> di
             state.export_bundle,
             state.dataset_path,
             deps.evaluation_spec,
+            dataset_varset=deps.dataset_varset,
         )
         if gradients:
             top = gradients[0]
@@ -241,6 +285,30 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
         return {"done": True}
 
     architect = deps.architect
+    bottleneck_name = next(
+        (node.name for node in state.cdg.nodes if node.node_id == state.bottleneck_node_id),
+        None,
+    )
+    mutation = maybe_apply_bottleneck_variant(
+        state.cdg,
+        bottleneck_name=bottleneck_name,
+    )
+    if mutation.applied:
+        state.cdg = mutation.cdg
+        logger.info(
+            "Applied variant family '%s' in place for '%s' -> %s",
+            mutation.family or "unknown",
+            bottleneck_name or state.bottleneck_node_id,
+            mutation.variant_name or "variant",
+        )
+        return {"cdg": mutation.cdg}
+    if mutation.family is not None and not mutation.allow_redecompose:
+        logger.info(
+            "Variant family '%s' has no further safe mutations for '%s'; ending loop.",
+            mutation.family,
+            bottleneck_name or state.bottleneck_node_id,
+        )
+        return {"done": True}
 
     # Find the checkpoint just before the bottleneck node was decomposed
     history = await architect.get_state_history(state.thread_id)
@@ -266,29 +334,17 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
     new_thread_id = await architect.fork(state.thread_id, target_cp)
     state.thread_id = new_thread_id
 
-    # Inject the bottleneck constraint into the forked state
     constraint = (
         f"The previous decomposition caused a bottleneck: "
         f"{state.bottleneck_reason}. Re-decompose more efficiently."
     )
-    fork_config = {"configurable": {"thread_id": new_thread_id}}
-    current = await architect._graph.aget_state(fork_config)
-    updated_values = dict(current.values)
-
-    # Append constraint to the goal so the LLM sees it
-    original_goal = updated_values.get("goal", state.goal)
-    constrained_goal = f"{original_goal}\n\nCONSTRAINT: {constraint}"
-    updated_values["goal"] = constrained_goal
-
-    # Reset decomposition progress to re-run from the fork point
-    updated_values["done"] = False
-    updated_values["error"] = ""
-
-    await architect._graph.aupdate_state(fork_config, updated_values)
-
-    # Re-run decomposition on the forked thread with the constrained goal
+    constrained_goal = f"{state.goal}\n\nCONSTRAINT: {constraint}"
     cdg = await architect.decompose(constrained_goal, thread_id=new_thread_id)
-    state.cdg = cdg
+    mutation = maybe_apply_bottleneck_variant(
+        cdg,
+        bottleneck_name=bottleneck_name,
+    )
+    state.cdg = mutation.cdg
 
     logger.info(
         "Time-travel: forked at checkpoint %s -> thread %s",
@@ -296,7 +352,7 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
         new_thread_id,
     )
 
-    return {"cdg": cdg, "thread_id": new_thread_id}
+    return {"cdg": mutation.cdg, "thread_id": new_thread_id}
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +404,7 @@ class PrincipalDeps:
     match_results_fn: Any = None  # Callable[[CDGExport], list[MatchResult]]
     synthesize_fn: Any = None  # Callable[[CDGExport, list], Awaitable[ExportBundle]]
     evaluation_spec: Any = None
+    dataset_varset: dict[str, str] | None = None
 
 
 # ---------------------------------------------------------------------------

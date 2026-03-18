@@ -6,8 +6,11 @@ import logging
 import math
 from typing import Any
 
-import optuna
-from optuna.importance import get_param_importances
+try:
+    import optuna
+    from optuna.importance import get_param_importances
+except ImportError:  # pragma: no cover - exercised in runtime envs without optuna
+    optuna = None
 
 from ageom.principal.models import BenchmarkResult
 from ageom.synthesizer.ghost_sim import GhostSimReport
@@ -15,7 +18,7 @@ from ageom.synthesizer.ghost_sim import GhostSimReport
 logger = logging.getLogger(__name__)
 
 
-class TrialPrunedEarly(optuna.exceptions.TrialPruned):
+class TrialPrunedEarly(Exception):
     """Raised when a ghost-sim pre-check indicates the trial is hopeless."""
 
 
@@ -36,19 +39,22 @@ class OptunaManager:
         *,
         direction: str = "minimize",
         storage: str | None = None,
-        sampler: optuna.samplers.BaseSampler | None = None,
-        pruner: optuna.pruners.BasePruner | None = None,
+        sampler: Any | None = None,
+        pruner: Any | None = None,
     ) -> None:
-        self._study = optuna.create_study(
-            study_name=study_name,
-            direction=direction,
-            storage=storage,
-            sampler=sampler,
-            pruner=pruner,
-        )
+        if optuna is None:
+            self._study = _FallbackStudy(study_name=study_name)
+        else:
+            self._study = optuna.create_study(
+                study_name=study_name,
+                direction=direction,
+                storage=storage,
+                sampler=sampler,
+                pruner=pruner,
+            )
 
     @property
-    def study(self) -> optuna.Study:
+    def study(self) -> Any:
         """Access the underlying Optuna study."""
         return self._study
 
@@ -100,6 +106,9 @@ class OptunaManager:
             Mapping of parameter name to importance score (0-1).
             Empty dict when fewer than 2 completed trials exist.
         """
+        if optuna is None:
+            return {}
+
         completed = [
             t for t in self._study.trials if t.state == optuna.trial.TrialState.COMPLETE
         ]
@@ -122,10 +131,18 @@ class OptunaManager:
 
     def report_trial(
         self,
-        trial: optuna.Trial,
+        trial: Any,
         benchmark: BenchmarkResult,
     ) -> None:
         """Report intermediate benchmark loss to the Optuna pruner."""
+        if optuna is None:
+            return
         trial.report(benchmark.global_loss, step=0)
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
+
+
+class _FallbackStudy:
+    def __init__(self, *, study_name: str) -> None:
+        self.study_name = study_name
+        self.trials: list[Any] = []

@@ -29,6 +29,7 @@ from ageom.commands._helpers import (
     _warm_llm_if_supported,
     _write_shared_context_metrics_file,
 )
+from ageom.signal_event_rate_registry import SIGNAL_EVENT_RATE_DECLARATIONS
 
 if TYPE_CHECKING:
     from ageom.types import Prover
@@ -46,30 +47,11 @@ def _matches_signal_event_rate_goal(goal: str) -> bool:
     )
 
 
-_SIGNAL_EVENT_RATE_DECLARATIONS = {
-    "filter_signal_for_detection": (
-        "ageom.runtime_signal_event_rate.filter_signal_for_detection",
-        "np.ndarray, float -> np.ndarray",
-        "Condition a sampled waveform for downstream peak/event detection.",
-    ),
-    "detect_peaks_in_signal": (
-        "ageom.runtime_signal_event_rate.detect_peaks_in_signal",
-        "np.ndarray, float -> np.ndarray",
-        "Detect salient events in a conditioned waveform using robust thresholds.",
-    ),
-    "compute_event_rate": (
-        "ageom.runtime_signal_event_rate.compute_event_rate",
-        "np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
-        "Convert ordered event indices into midpoint indices and per-minute rate.",
-    ),
-}
-
-
 def _is_signal_event_rate_scaffold(cdg: Any) -> bool:
     atomic_nodes = [node for node in getattr(cdg, "nodes", []) if getattr(node, "status", None).value == "atomic"]
     if not atomic_nodes:
         return False
-    return all(node.matched_primitive in _SIGNAL_EVENT_RATE_DECLARATIONS for node in atomic_nodes)
+    return all(node.matched_primitive in SIGNAL_EVENT_RATE_DECLARATIONS for node in atomic_nodes)
 
 
 def _build_signal_event_rate_match_results(cdg: Any, prover: "Prover"):
@@ -87,7 +69,7 @@ def _build_signal_event_rate_match_results(cdg: Any, prover: "Prover"):
         if getattr(node, "status", None).value != "atomic":
             continue
         primitive_name = str(node.matched_primitive or "").strip()
-        decl_info = _SIGNAL_EVENT_RATE_DECLARATIONS.get(primitive_name)
+        decl_info = SIGNAL_EVENT_RATE_DECLARATIONS.get(primitive_name)
         if decl_info is None:
             continue
         declaration_name, type_signature, docstring = decl_info

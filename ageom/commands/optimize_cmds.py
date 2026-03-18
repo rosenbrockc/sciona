@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import json
 import sys
 import uuid
@@ -10,9 +11,11 @@ from pathlib import Path
 from typing import Any
 
 from ageom.commands._helpers import (
+    _create_proof_env,
     _create_llm_router,
     _create_shared_context,
     _load_architect_catalog,
+    _load_semantic_index,
     _load_skill_index_or_empty,
     _print_mode_summary,
     _print_prompt_routing_summary,
@@ -38,21 +41,111 @@ def _parse_dataset_vars(entries: list[str] | None) -> dict[str, str]:
     return result
 
 
+async def _match_results_for_optimize(
+    cdg: Any,
+    *,
+    mode: str,
+    prover: Any,
+    hunter: Any,
+    llm: Any,
+) -> list[Any]:
+    from ageom.commands.run_cmds import _is_signal_event_rate_scaffold, _run_structured_single_pass
+    from ageom.orchestrator import run_orchestration
+
+    if mode in {"structured", "verified", "rapid"}:
+        if mode != "verified" or _is_signal_event_rate_scaffold(cdg):
+            result = await _run_structured_single_pass(cdg, prover=prover, hunter=hunter)
+        else:
+            result = await run_orchestration(
+                cdg,
+                hunter_agent=hunter,
+                llm=llm,
+                prover=prover,
+                max_rounds=3,
+            )
+        return list(result.match_results)
+    raise ValueError(f"unsupported optimize mode {mode!r}")
+
+
+async def _synthesize_export_bundle_for_optimize(
+    cdg: Any,
+    match_results: list[Any],
+    *,
+    prover: Any,
+    config: Any,
+    output_root: Path,
+    trial_index: int,
+) -> Any:
+    from ageom.services import (
+        SynthesizerAssembleRequest,
+        SynthesizerCompileRequest,
+        SynthesizerService,
+    )
+    from ageom.synthesizer.extractor import ExportTarget, Extractor
+    from ageom.synthesizer.models import SkeletonFile, SynthesisResult
+
+    service = SynthesizerService(prover=prover)
+    skeleton = service.assemble(
+        SynthesizerAssembleRequest(cdg=cdg, match_results=match_results)
+    ).skeleton
+
+    env = _create_proof_env(prover, config)
+    try:
+        compile_result = await service.compile(
+            SynthesizerCompileRequest(skeleton=skeleton, env=env)
+        )
+    finally:
+        await env.close()
+
+    if not compile_result.result.compiled_ok:
+        raise RuntimeError("optimize synthesis compile failed")
+
+    trial_dir = output_root / f"trial_{trial_index:03d}"
+    trial_dir.mkdir(parents=True, exist_ok=True)
+    source_path = trial_dir / "verified.py"
+    source_path.write_text(compile_result.result.skeleton.source_code)
+    export_skeleton = SkeletonFile(
+        prover=compile_result.result.skeleton.prover,
+        source_code=source_path.read_text(),
+    )
+    synthesis_result = SynthesisResult(
+        skeleton=export_skeleton,
+        compiled_ok=True,
+        sorry_remaining=compile_result.result.skeleton.sorry_count,
+        patches_applied=0,
+        iterations_used=0,
+    )
+    extractor = Extractor(config)
+    bundle = await extractor.extract(
+        synthesis_result,
+        ExportTarget("python-pkg"),
+        trial_dir / "export_python_pkg",
+    )
+    bundle.source_path = source_path
+    bundle.output_dir = trial_dir
+    if bundle.executable_artifact is None:
+        bundle.executable_artifact = trial_dir / "export_python_pkg" / "runner.py"
+    return bundle
+
+
 async def _cmd_optimize(args: argparse.Namespace) -> None:
     """Run the Principal NAS/AutoML optimisation loop."""
-    from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
     from ageom.architect.checkpointer import create_checkpointer
     from ageom.architect.graph import DecompositionAgent
     from ageom.config import AgeomConfig, resolve_execution_mode
+    from ageom.hunter.graph import HunterAgent
+    from ageom.judge.checker import VerificationOracleImpl
     from ageom.principal.evaluator import ExecutionSandbox
     from ageom.principal.graph import (
         PrincipalDeps,
         build_principal_graph,
     )
     from ageom.principal.metric_selection import resolve_optimization_objective
+    from ageom.types import Prover
 
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
+    prover = Prover(args.prover)
     _print_mode_summary("optimize", mode_settings)
 
     catalog, _catalog_alignment = _load_architect_catalog(args, config)
@@ -104,6 +197,8 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         config,
         enabled=mode_settings.architect_shared_context_enabled,
     )
+    output_root = Path("output") / f"principal_optimize_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    output_root.mkdir(parents=True, exist_ok=True)
 
     print("Principal optimisation loop")
     print(f"  Goal: {args.goal}")
@@ -111,6 +206,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     print(f"  Internal metric: {metric.value}")
     print(f"  Trials: {args.trials}")
     print(f"  Benchmark: {args.benchmark}")
+    print(f"  Output: {output_root}")
     print()
 
     async with create_checkpointer(postgres_uri) as checkpointer:
@@ -126,13 +222,84 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             architect_critique_llm_enabled=config.architect_critique_llm_enabled,
         )
 
+        index, _index_mode = _load_semantic_index(
+            config.index_dir,
+            config,
+            backend_override=retrieval_policy.semantic_index_backend_override,
+        )
+        env = _create_proof_env(prover, config)
+        if prover == Prover.LEAN4:
+            oracle = VerificationOracleImpl(lean_env=env)
+        elif prover == Prover.PYTHON:
+            oracle = VerificationOracleImpl(python_env=env)
+        else:
+            oracle = VerificationOracleImpl(coq_env=env)
+
+        from ageom.llm_router import (
+            HUNTER_ANALYZE_FAILURE,
+            HUNTER_REFORMULATE,
+            HUNTER_SCORE,
+        )
+
+        hunter_prompt_keys = [
+            HUNTER_SCORE,
+            HUNTER_REFORMULATE,
+            HUNTER_ANALYZE_FAILURE,
+        ]
+        _print_prompt_routing_summary(
+            config, "hunter", hunter_prompt_keys, getattr(args, "mode", None)
+        )
+        embedder = getattr(index, "_embedder", None)
+        hunter_llm = _create_llm_router(
+            args,
+            config,
+            "hunter",
+            hunter_prompt_keys,
+            embedder=embedder,
+        )
+        await _warm_llm_if_supported(hunter_llm, "hunter")
+        hunter = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=hunter_llm,
+            max_iterations=config.hunter_max_iterations,
+            top_k_verify=config.hunter_top_k_verify,
+            search_k=config.hunter_search_k,
+            mode=retrieval_policy.hunter_mode,
+            use_gbnf=mode_settings.hunter_use_gbnf,
+            query_batch_size=config.hunter_query_batch_size,
+            top_k_per_query=config.hunter_top_k_per_query,
+            max_candidates_total=config.hunter_max_candidates_total,
+        )
+
+        trial_counter = {"value": 0}
+
+        async def _trial_synthesizer(cdg: Any, match_results: list[Any]) -> Any:
+            trial_counter["value"] += 1
+            return await _synthesize_export_bundle_for_optimize(
+                cdg,
+                match_results,
+                prover=prover,
+                config=config,
+                output_root=output_root,
+                trial_index=trial_counter["value"],
+            )
+
         sandbox = ExecutionSandbox(timeout_s=args.timeout)
         deps = PrincipalDeps(
             architect=architect,
             sandbox=sandbox,
+            match_results_fn=lambda cdg: _match_results_for_optimize(
+                cdg,
+                mode=mode_settings.mode,
+                prover=prover,
+                hunter=hunter,
+                llm=llm,
+            ),
+            synthesize_fn=_trial_synthesizer,
             evaluation_spec=evaluation_spec,
+            dataset_varset=_parse_dataset_vars(getattr(args, "dataset_var", None)),
         )
-
         graph = build_principal_graph().compile()
 
         initial_state = {
@@ -144,7 +311,10 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
         config_dict = {"configurable": {"deps": deps}}
 
-        final_state = await graph.ainvoke(initial_state, config=config_dict)
+        try:
+            final_state = await graph.ainvoke(initial_state, config=config_dict)
+        finally:
+            await env.close()
 
     # Report
     print("\nOptimisation complete:")
@@ -154,7 +324,16 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     if history:
         print("  Trial history:")
         for entry in history:
-            print(f"    Trial {entry['trial']}: loss={entry['loss']:.6f}")
+            structure = entry.get("structure", {})
+            print(
+                f"    Trial {entry['trial']}: loss={entry['loss']:.6f} "
+                f"nodes={structure.get('node_count', 0)} "
+                f"edges={structure.get('edge_count', 0)} "
+                f"primitive_sig={structure.get('primitive_signature', '')}"
+            )
+    (output_root / "trial_history.json").write_text(
+        json.dumps(history, indent=2) + "\n"
+    )
     _print_shared_context_metrics("architect", architect_shared_metrics)
     metrics_out_dir = Path("output")
     metrics_path = _write_shared_context_metrics_file(

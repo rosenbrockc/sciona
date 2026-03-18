@@ -125,3 +125,21 @@ def compute_event_rate(
     midpoints = left + (intervals // 2).astype(np.int64)
     event_rate = 60.0 * rate / intervals
     return midpoints.astype(np.int64), event_rate.astype(np.float64)
+
+
+def compute_event_rate_smoothed(
+    events: np.ndarray,
+    sampling_rate: float | int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Convert event indices into a smoothed per-minute rate estimate."""
+    midpoints, event_rate = compute_event_rate(events, sampling_rate)
+    if event_rate.size == 0:
+        return midpoints, event_rate
+
+    if event_rate.size < 5:
+        window = max(1, event_rate.size)
+    else:
+        window = 5
+    kernel = np.ones(window, dtype=np.float64) / float(window)
+    smoothed = np.convolve(event_rate, kernel, mode="same")
+    return midpoints, smoothed.astype(np.float64)

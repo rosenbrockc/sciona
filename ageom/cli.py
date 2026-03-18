@@ -427,6 +427,12 @@ def main() -> None:
         help="Path to benchmark dataset (CSV or JSON)",
     )
     optimize_parser.add_argument(
+        "--dataset-var",
+        action="append",
+        default=[],
+        help="Adapter variable substitution in KEY=VALUE form; repeat as needed",
+    )
+    optimize_parser.add_argument(
         "--eval-spec",
         type=str,
         default=None,
