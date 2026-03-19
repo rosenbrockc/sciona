@@ -135,6 +135,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     from ageom.config import AgeomConfig, resolve_execution_mode
     from ageom.hunter.graph import HunterAgent
     from ageom.judge.checker import VerificationOracleImpl
+    from ageom.principal.atom_ledger import AtomLedger
     from ageom.principal.evaluator import ExecutionSandbox
     from ageom.principal.graph import (
         PrincipalDeps,
@@ -286,6 +287,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             )
 
         sandbox = ExecutionSandbox(timeout_s=args.timeout)
+        atom_ledger = AtomLedger()
         deps = PrincipalDeps(
             architect=architect,
             sandbox=sandbox,
@@ -299,6 +301,8 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             synthesize_fn=_trial_synthesizer,
             evaluation_spec=evaluation_spec,
             dataset_varset=_parse_dataset_vars(getattr(args, "dataset_var", None)),
+            atom_ledger=atom_ledger,
+            catalog=catalog,
         )
         graph = build_principal_graph().compile()
 

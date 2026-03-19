@@ -64,10 +64,44 @@ If a family returns `applied=False` with `allow_redecompose=False`, Principal st
 4. Run synthesize/export/profile on a representative task.
 5. Only keep the family if it improves at least one real objective without breaking compile/export.
 
-## Current Example
+## Current Families
 
-The existing `signal_event_rate` family swaps:
+### `signal_event_rate` (curated)
+
+Swaps between interchangeable rate estimators:
 - `compute_event_rate`
 - `compute_event_rate_smoothed`
 
-That family is reusable for signal-to-event-to-rate pipelines and is not specific to ECG, even though ECG HR is the current benchmark using it.
+Reusable for signal-to-event-to-rate pipelines. Not specific to ECG, even though ECG HR is the current benchmark using it.
+
+### `ledger_bandit` (universal fallback)
+
+Uses a UCB1 multi-armed bandit over an in-memory **Atom Performance Ledger** to select atom variants. Unlike curated families, this family works for any domain and does not require a hardcoded alternatives registry.
+
+How it works:
+1. After each trial's `compute_gradients` step, the Principal records every atomic node's `(slot_signature, atom_name, gradient_score)` into the ledger.
+2. The **slot signature** groups structurally equivalent CDG positions by `(parent_name, concept_type, input_types, output_types)` — independent of node ID.
+3. When a bottleneck node is identified, the ledger ranks all same-category primitives using **UCB1**: atoms with lower historical gradient scores (better performance) rank higher, while untried atoms get an exploration bonus.
+4. If the top-ranked atom differs from the current assignment, the family swaps it in-place.
+
+The ledger bandit fires only after curated families have been tried. It always returns `allow_redecompose=True`, so the Principal can still fall through to time-travel re-decomposition if the bandit has no useful suggestion.
+
+Key files:
+- `ageom/principal/atom_ledger.py` — `AtomLedger`, `SlotSignature`, `compute_slot_signature`
+- `ageom/principal/variant_mutation.py` — `LedgerVariantFamily`
+
+## Future Work
+
+The following enhancements build on the ledger infrastructure but are not yet implemented.
+
+1. **Thompson Sampling** — Replace UCB1 with Beta-posterior sampling for stochastic exploration. Same ledger, swap the ranking formula only.
+
+2. **Contextual Bandit (LinUCB)** — Use slot features (CDG depth, fan-in/fan-out, data dimensionality) as context in a linear bandit model. Requires a small numpy/sklearn dependency for ridge regression.
+
+3. **Atom Affinity Matrix** — Track which atom *pairs* co-occur in successful trials. Score candidate atoms partly on how well they pair with neighboring atoms already in the CDG.
+
+4. **Cross-Goal Transfer** — Share ledger observations across semantically similar goals using goal embeddings. Requires embedding similarity computation.
+
+5. **Persistent Ledger (Postgres)** — Store observations in a dedicated `atom_observations` table for cross-session learning. Uses existing `PostgresTelemetryStore` infrastructure.
+
+6. **Deep Integration into `_suggest_primitive_for_spec`** — Thread the ledger into the Architect's deterministic decomposer to re-rank borderline candidates (token-overlap score 2.0–3.0) during initial decomposition, not just during time-travel updates.

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import NodeStatus
@@ -11,6 +12,12 @@ from ageom.signal_event_rate_registry import (
     SIGNAL_EVENT_RATE_DECLARATIONS,
     next_signal_event_rate_variant,
 )
+
+if TYPE_CHECKING:
+    from ageom.architect.catalog import PrimitiveCatalog
+    from ageom.principal.atom_ledger import AtomLedger
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -104,16 +111,100 @@ VARIANT_FAMILIES: tuple[VariantFamily, ...] = (
 )
 
 
+class LedgerVariantFamily:
+    """Universal fallback that uses UCB1 bandit rankings to select atom variants."""
+
+    name = "ledger_bandit"
+
+    def __init__(self, ledger: AtomLedger, catalog: PrimitiveCatalog) -> None:
+        self._ledger = ledger
+        self._catalog = catalog
+
+    def matches(self, cdg: CDGExport) -> bool:
+        return True
+
+    def mutate(
+        self,
+        cdg: CDGExport,
+        *,
+        bottleneck_name: str | None,
+    ) -> VariantMutationResult:
+        from ageom.principal.atom_ledger import compute_slot_signature
+
+        if not bottleneck_name:
+            return VariantMutationResult(cdg=cdg, applied=False)
+
+        node_map = {n.node_id: n for n in cdg.nodes}
+        target = None
+        for node in cdg.nodes:
+            if node.status == NodeStatus.ATOMIC and node.name == bottleneck_name:
+                target = node
+                break
+
+        if target is None or not target.matched_primitive:
+            return VariantMutationResult(cdg=cdg, applied=False)
+
+        parent = node_map.get(target.parent_id) if target.parent_id else None
+        slot = compute_slot_signature(target, parent)
+
+        candidates = [
+            p.name for p in self._catalog.search_by_category(target.concept_type)
+        ]
+        if not candidates:
+            return VariantMutationResult(cdg=cdg, applied=False)
+        if target.matched_primitive not in candidates:
+            candidates.append(target.matched_primitive)
+
+        ranked = self._ledger.rank_candidates(slot, candidates)
+        if not ranked:
+            return VariantMutationResult(cdg=cdg, applied=False)
+
+        best_name, _best_score = ranked[0]
+        if best_name == target.matched_primitive:
+            return VariantMutationResult(
+                cdg=cdg, applied=False, family=self.name, allow_redecompose=True
+            )
+
+        updated_nodes = []
+        for node in cdg.nodes:
+            if node.node_id == target.node_id:
+                updated_nodes.append(
+                    node.model_copy(update={"matched_primitive": best_name})
+                )
+            else:
+                updated_nodes.append(node)
+
+        logger.info(
+            "Ledger bandit: swapping '%s' -> '%s' for '%s'",
+            target.matched_primitive,
+            best_name,
+            bottleneck_name,
+        )
+        return VariantMutationResult(
+            cdg=cdg.model_copy(update={"nodes": updated_nodes}),
+            applied=True,
+            family=self.name,
+            variant_name=best_name,
+            allow_redecompose=True,
+        )
+
+
 def maybe_apply_bottleneck_variant(
     cdg: CDGExport,
     *,
     bottleneck_name: str | None,
+    atom_ledger: AtomLedger | None = None,
+    catalog: PrimitiveCatalog | None = None,
 ) -> VariantMutationResult:
     """Apply the first matching family-specific mutation for the bottleneck node."""
     if not bottleneck_name:
         return VariantMutationResult(cdg=cdg, applied=False)
 
-    for family in VARIANT_FAMILIES:
+    families: list[VariantFamily] = list(VARIANT_FAMILIES)
+    if atom_ledger is not None and catalog is not None:
+        families.append(LedgerVariantFamily(atom_ledger, catalog))
+
+    for family in families:
         if not family.matches(cdg):
             continue
         result = family.mutate(cdg, bottleneck_name=bottleneck_name)

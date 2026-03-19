@@ -15,8 +15,11 @@ from typing import Any
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 
+from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.graph import DecompositionAgent
 from ageom.architect.handoff import CDGExport
+from ageom.architect.models import NodeStatus
+from ageom.principal.atom_ledger import AtomLedger, compute_slot_signature
 from ageom.principal.backprop import CreditAssigner
 from ageom.principal.evaluator import ExecutionSandbox
 from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
@@ -219,6 +222,25 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     }
 
 
+def _record_gradients_to_ledger(
+    ledger: AtomLedger,
+    cdg: CDGExport,
+    gradients: list[NodeGradient],
+    trial: int,
+) -> None:
+    """Record all gradient observations to the atom ledger."""
+    node_map = {n.node_id: n for n in cdg.nodes}
+    for grad in gradients:
+        node = node_map.get(grad.node_id)
+        if node is None or node.status != NodeStatus.ATOMIC:
+            continue
+        if not node.matched_primitive:
+            continue
+        parent = node_map.get(node.parent_id) if node.parent_id else None
+        slot = compute_slot_signature(node, parent)
+        ledger.record(slot, node.matched_primitive, grad.gradient_score, trial)
+
+
 async def compute_gradients(state: PrincipalState, config: RunnableConfig) -> dict:
     """Call CreditAssigner to find the top bottleneck node."""
     deps: PrincipalDeps = config["configurable"]["deps"]
@@ -237,6 +259,10 @@ async def compute_gradients(state: PrincipalState, config: RunnableConfig) -> di
             dataset_varset=deps.dataset_varset,
         )
         if gradients:
+            if deps.atom_ledger is not None and state.cdg is not None:
+                _record_gradients_to_ledger(
+                    deps.atom_ledger, state.cdg, gradients, state.current_trial
+                )
             top = gradients[0]
             state.top_gradient = top
             state.bottleneck_node_id = top.node_id
@@ -258,6 +284,11 @@ async def compute_gradients(state: PrincipalState, config: RunnableConfig) -> di
     if not gradients:
         logger.info("No gradients computed; ending optimisation loop.")
         return {"done": True}
+
+    if deps.atom_ledger is not None and state.cdg is not None:
+        _record_gradients_to_ledger(
+            deps.atom_ledger, state.cdg, gradients, state.current_trial
+        )
 
     top = gradients[0]
     state.top_gradient = top
@@ -292,6 +323,8 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
     mutation = maybe_apply_bottleneck_variant(
         state.cdg,
         bottleneck_name=bottleneck_name,
+        atom_ledger=deps.atom_ledger,
+        catalog=deps.catalog,
     )
     if mutation.applied:
         state.cdg = mutation.cdg
@@ -338,11 +371,40 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
         f"The previous decomposition caused a bottleneck: "
         f"{state.bottleneck_reason}. Re-decompose more efficiently."
     )
+
+    # Append bandit ranking hints for the bottleneck slot
+    if deps.atom_ledger is not None and deps.catalog is not None and state.cdg is not None:
+        bottleneck_node = next(
+            (n for n in state.cdg.nodes if n.node_id == state.bottleneck_node_id),
+            None,
+        )
+        if bottleneck_node is not None and bottleneck_node.matched_primitive:
+            node_map = {n.node_id: n for n in state.cdg.nodes}
+            parent = node_map.get(bottleneck_node.parent_id) if bottleneck_node.parent_id else None
+            slot = compute_slot_signature(bottleneck_node, parent)
+            same_category = [
+                p.name for p in deps.catalog.search_by_category(bottleneck_node.concept_type)
+            ]
+            if len(same_category) > 1:
+                ranked = deps.atom_ledger.rank_candidates(slot, same_category)
+                top_3 = [
+                    (name, f"{score:.2f}")
+                    for name, score in ranked[:3]
+                    if score != float("inf")
+                ]
+                if top_3:
+                    constraint += (
+                        f"\nATOM RANKINGS for '{bottleneck_name}': "
+                        f"prefer {top_3}"
+                    )
+
     constrained_goal = f"{state.goal}\n\nCONSTRAINT: {constraint}"
     cdg = await architect.decompose(constrained_goal, thread_id=new_thread_id)
     mutation = maybe_apply_bottleneck_variant(
         cdg,
         bottleneck_name=bottleneck_name,
+        atom_ledger=deps.atom_ledger,
+        catalog=deps.catalog,
     )
     state.cdg = mutation.cdg
 
@@ -405,6 +467,8 @@ class PrincipalDeps:
     synthesize_fn: Any = None  # Callable[[CDGExport, list], Awaitable[ExportBundle]]
     evaluation_spec: Any = None
     dataset_varset: dict[str, str] | None = None
+    atom_ledger: AtomLedger | None = None
+    catalog: PrimitiveCatalog | None = None
 
 
 # ---------------------------------------------------------------------------
