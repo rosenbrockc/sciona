@@ -5,10 +5,13 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import json
+import logging
 import sys
 import uuid
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from ageom.commands._helpers import (
     _create_proof_env,
@@ -543,6 +546,15 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     (output_root / "trial_history.json").write_text(
         json.dumps(history, indent=2) + "\n"
     )
+    # Write Dead-End Flare for bounty system
+    try:
+        from ageom.principal.flare import generate_flare, write_flare_config
+
+        flare = generate_flare(final_state)
+        flare_path = write_flare_config(flare, output_root / "flare.yml")
+        print(f"  Flare saved to {flare_path}. Run `ageom bounty generate` to post.")
+    except Exception as flare_exc:
+        logger.warning("Failed to write flare: %s", flare_exc)
     _print_shared_context_metrics("architect", architect_shared_metrics)
     metrics_out_dir = Path("output")
     metrics_path = _write_shared_context_metrics_file(

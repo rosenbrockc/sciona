@@ -77,6 +77,11 @@ from ageom.commands.synthesize_cmds import (  # noqa: F401
     _cmd_export,
     _cmd_synthesize,
 )
+from ageom.commands.bounty_cmds import _cmd_bounty_generate  # noqa: F401
+from ageom.commands.receipt_cmds import (  # noqa: F401
+    _cmd_receipt_sign,
+    _cmd_receipt_verify,
+)
 from ageom.commands.telemetry_cmds import (  # noqa: F401
     _cmd_telemetry_list,
     _cmd_telemetry_show,
@@ -777,6 +782,84 @@ def main() -> None:
         help="Memgraph bolt URI override (default: from config)",
     )
 
+    # --- bounty ---
+    bounty_parser = subparsers.add_parser(
+        "bounty", help="Dead-End Flare and bounty management"
+    )
+    bounty_sub = bounty_parser.add_subparsers(dest="bounty_command")
+
+    bounty_generate_parser = bounty_sub.add_parser(
+        "generate", help="Generate Dead-End Flare from a completed optimization run"
+    )
+    bounty_generate_parser.add_argument(
+        "--run-dir",
+        type=str,
+        required=True,
+        help="Path to the optimization run output directory",
+    )
+    bounty_generate_parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Output path for flare YAML (default: <run-dir>/flare.yml)",
+    )
+    bounty_generate_parser.add_argument(
+        "--domain-tags",
+        nargs="*",
+        default=[],
+        help="Domain tags for the flare (e.g. crystallography signal-processing)",
+    )
+
+    # --- receipt ---
+    receipt_parser = subparsers.add_parser(
+        "receipt", help="Execution receipt signing and verification"
+    )
+    receipt_sub = receipt_parser.add_subparsers(dest="receipt_command")
+
+    receipt_sign_parser = receipt_sub.add_parser(
+        "sign", help="Sign an execution receipt"
+    )
+    receipt_sign_parser.add_argument(
+        "--cdg", type=str, required=True, help="Path to CDG file"
+    )
+    receipt_sign_parser.add_argument(
+        "--split", type=str, required=True, help="Path to split file"
+    )
+    receipt_sign_parser.add_argument(
+        "--output", type=str, required=True, help="Path to output file"
+    )
+    receipt_sign_parser.add_argument(
+        "--key", type=str, required=True, help="Path to SSH private key"
+    )
+    receipt_sign_parser.add_argument(
+        "--bounty-id", type=str, required=True, help="Bounty ID"
+    )
+    receipt_sign_parser.add_argument(
+        "--metric-name", type=str, default="loss", help="Metric name (default: loss)"
+    )
+    receipt_sign_parser.add_argument(
+        "--metric-value", type=str, default=None, help="Metric value"
+    )
+    receipt_sign_parser.add_argument(
+        "--receipt-output",
+        type=str,
+        default=None,
+        help="Output path for the signed receipt JSON (default: receipt.json)",
+    )
+
+    receipt_verify_parser = receipt_sub.add_parser(
+        "verify", help="Verify a signed execution receipt"
+    )
+    receipt_verify_parser.add_argument(
+        "--receipt", type=str, required=True, help="Path to signed receipt JSON"
+    )
+    receipt_verify_parser.add_argument(
+        "--allowed-signers",
+        type=str,
+        required=True,
+        help="Path to allowed_signers file",
+    )
+
     # --- telemetry ---
     telemetry_parser = subparsers.add_parser(
         "telemetry", help="Inspect telemetry runs"
@@ -861,6 +944,28 @@ def main() -> None:
         _cmd_catalog_gaps(args)
     elif args.command == "upsert-cdg":
         _run_async_command(_cmd_upsert_cdg(args))
+    elif args.command == "bounty":
+        bounty_cmd = getattr(args, "bounty_command", None)
+        if bounty_cmd == "generate":
+            _cmd_bounty_generate(args)
+        else:
+            print(
+                "Error: provide a bounty subcommand (generate)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+    elif args.command == "receipt":
+        receipt_cmd = getattr(args, "receipt_command", None)
+        if receipt_cmd == "sign":
+            _cmd_receipt_sign(args)
+        elif receipt_cmd == "verify":
+            _cmd_receipt_verify(args)
+        else:
+            print(
+                "Error: provide a receipt subcommand (sign, verify)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     elif args.command == "telemetry":
         telemetry_cmd = getattr(args, "telemetry_command", None)
         if telemetry_cmd == "list":

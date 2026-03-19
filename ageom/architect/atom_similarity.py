@@ -61,7 +61,7 @@ class _AlphaRenamer(ast.NodeTransformer):
 
 
 def fingerprint_function(source: str) -> str:
-    """Return a deterministic SHA-256 hex digest (16 chars) of *source*'s normalised AST.
+    """Return a deterministic SHA-256 hex digest (64 chars) of *source*'s normalised AST.
 
     The AST is alpha-renamed (locals → ``v0``, ``v1``, …), docstrings are
     stripped, and positional metadata is removed.  Two functions that differ
@@ -70,7 +70,7 @@ def fingerprint_function(source: str) -> str:
     tree = ast.parse(source)
     tree = ast.fix_missing_locations(_AlphaRenamer().visit(tree))
     canonical = ast.dump(tree, annotate_fields=True, include_attributes=False)
-    return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 # ---------------------------------------------------------------------------

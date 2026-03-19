@@ -288,6 +288,17 @@ class GraphStore:
                 except Exception:
                     pass  # Memgraph has no IF NOT EXISTS; ignore duplicates
 
+    async def ensure_provenance_constraints(self) -> None:
+        """Create provenance-specific uniqueness constraints and indexes."""
+        from ageom.provenance.schema import PROVENANCE_CONSTRAINTS, PROVENANCE_INDEXES
+
+        async with self._driver.session() as session:
+            for stmt in PROVENANCE_CONSTRAINTS + PROVENANCE_INDEXES:
+                try:
+                    await session.run(stmt)
+                except Exception:
+                    pass  # Memgraph has no IF NOT EXISTS; ignore duplicates
+
     async def query_by_topo_hash(
         self, topo_hash: str, exclude_repo: str, limit: int = 5
     ) -> list[dict[str, Any]]:

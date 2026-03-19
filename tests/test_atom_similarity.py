@@ -65,10 +65,10 @@ class TestFingerprint:
         """)
         assert fingerprint_function(with_doc) == fingerprint_function(without_doc)
 
-    def test_returns_16_hex_chars(self):
+    def test_returns_full_sha256(self):
         src = "x = 1"
         fp = fingerprint_function(src)
-        assert len(fp) == 16
+        assert len(fp) == 64
         int(fp, 16)  # raises if not valid hex
 
     def test_build_fingerprint_index(self):
@@ -78,9 +78,9 @@ class TestFingerprint:
         }
         index = build_fingerprint_index(sources)
         assert len(index) == 2
-        # Both keys should be 16-char hex strings.
+        # Both keys should be full SHA-256 hex strings (64 chars).
         for fp in index:
-            assert len(fp) == 16
+            assert len(fp) == 64
 
     def test_build_index_skips_bad_syntax(self):
         sources = {"bad": "def (broken syntax"}
