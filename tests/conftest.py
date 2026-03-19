@@ -6,6 +6,10 @@ import os
 # Prevent FAISS/OpenMP segfaults when other tests leave thread-pool workers alive
 # (e.g. langgraph's concurrent.futures threads in test_e2e_principal_hodges).
 os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+# Force file-only telemetry backend during tests to avoid 30s pool retry
+# timeouts when Postgres is configured in .env but not running.
+os.environ.setdefault("AGEOM_TELEMETRY_BACKEND", "file")
 import shlex
 import signal
 import socket

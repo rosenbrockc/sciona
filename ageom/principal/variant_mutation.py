@@ -196,7 +196,13 @@ def maybe_apply_bottleneck_variant(
     atom_ledger: AtomLedger | None = None,
     catalog: PrimitiveCatalog | None = None,
 ) -> VariantMutationResult:
-    """Apply the first matching family-specific mutation for the bottleneck node."""
+    """Apply the first matching family-specific mutation for the bottleneck node.
+
+    Families are tried in order.  A successful mutation (``applied=True``)
+    short-circuits immediately.  An exhausted family (``applied=False``)
+    is recorded but does **not** block later families — this lets the
+    ledger bandit try after a curated family runs out of variants.
+    """
     if not bottleneck_name:
         return VariantMutationResult(cdg=cdg, applied=False)
 
@@ -204,10 +210,20 @@ def maybe_apply_bottleneck_variant(
     if atom_ledger is not None and catalog is not None:
         families.append(LedgerVariantFamily(atom_ledger, catalog))
 
+    last_exhausted: VariantMutationResult | None = None
     for family in families:
         if not family.matches(cdg):
             continue
         result = family.mutate(cdg, bottleneck_name=bottleneck_name)
-        if result.applied or result.family is not None:
+        if result.applied:
             return result
+        # Family matched but had nothing to apply — remember it but keep
+        # trying remaining families.  Later families override earlier ones
+        # so that e.g. the ledger's allow_redecompose=True supersedes a
+        # curated family's allow_redecompose=False.
+        if result.family is not None:
+            last_exhausted = result
+
+    if last_exhausted is not None:
+        return last_exhausted
     return VariantMutationResult(cdg=cdg, applied=False)

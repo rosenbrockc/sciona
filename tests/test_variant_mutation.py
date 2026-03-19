@@ -261,6 +261,83 @@ def test_curated_family_takes_priority_over_ledger() -> None:
     assert result.family == "signal_event_rate"
 
 
+def test_ledger_fires_after_curated_family_exhausted() -> None:
+    """When the curated family has no variant left, the ledger should still get a turn."""
+    ledger = AtomLedger()
+    # Catalog returns two alternatives in the same category
+    catalog = _mock_catalog_with(
+        "compute_event_rate_smoothed", "compute_event_rate_windowed",
+        concept_type=ConceptType.SIGNAL_FILTER,
+    )
+
+    # Scaffold where the curated variant was already applied (smoothed).
+    # The curated family has no further variant for smoothed, so it will
+    # return applied=False, allow_redecompose=False.
+    cdg = CDGExport(
+        nodes=[
+            _atomic_node("n1", "Filter Signal For Detection", matched_primitive="filter_signal_for_detection"),
+            _atomic_node("n2", "Detect Peaks In Signal", matched_primitive="detect_peaks_in_signal"),
+            _atomic_node("n3", "Compute Event Rate", matched_primitive="compute_event_rate_smoothed"),
+        ],
+        edges=[],
+    )
+
+    # Record ledger observations: smoothed is bad, windowed is good
+    node = cdg.nodes[2]
+    slot = compute_slot_signature(node, None)
+    for t in range(5):
+        ledger.record(slot, "compute_event_rate_smoothed", 75.0, trial=t)
+        ledger.record(slot, "compute_event_rate_windowed", 15.0, trial=t)
+
+    result = maybe_apply_bottleneck_variant(
+        cdg,
+        bottleneck_name="Compute Event Rate",
+        atom_ledger=ledger,
+        catalog=catalog,
+    )
+
+    # Ledger fires because curated family was exhausted
+    assert result.applied is True
+    assert result.family == "ledger_bandit"
+    assert result.variant_name == "compute_event_rate_windowed"
+
+
+def test_exhausted_curated_allows_redecompose_with_ledger() -> None:
+    """When curated is exhausted and ledger has no better atom, allow_redecompose should be True."""
+    ledger = AtomLedger()
+    catalog = _mock_catalog_with(
+        "compute_event_rate_smoothed",
+        concept_type=ConceptType.SIGNAL_FILTER,
+    )
+
+    cdg = CDGExport(
+        nodes=[
+            _atomic_node("n1", "Filter Signal For Detection", matched_primitive="filter_signal_for_detection"),
+            _atomic_node("n2", "Detect Peaks In Signal", matched_primitive="detect_peaks_in_signal"),
+            _atomic_node("n3", "Compute Event Rate", matched_primitive="compute_event_rate_smoothed"),
+        ],
+        edges=[],
+    )
+
+    # Ledger says current atom is already best (only candidate)
+    node = cdg.nodes[2]
+    slot = compute_slot_signature(node, None)
+    ledger.record(slot, "compute_event_rate_smoothed", 30.0, trial=1)
+
+    result = maybe_apply_bottleneck_variant(
+        cdg,
+        bottleneck_name="Compute Event Rate",
+        atom_ledger=ledger,
+        catalog=catalog,
+    )
+
+    # Not applied, but the ledger's allow_redecompose=True overrides
+    # the curated family's allow_redecompose=False
+    assert result.applied is False
+    assert result.family == "ledger_bandit"
+    assert result.allow_redecompose is True
+
+
 def test_backward_compatible_without_ledger() -> None:
     cdg = CDGExport(
         nodes=[_generic_node("n1", "Step", matched_primitive="some_atom")],
