@@ -4,11 +4,95 @@ from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 from pathlib import Path
 
 from ageom.architect.models import PrimitiveParamSpec
 
 logger = logging.getLogger(__name__)
+
+
+def _infer_kind(value: object, has_choices: bool) -> str:
+    """Infer PrimitiveParamSpec.kind from a Python value."""
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, int):
+        return "int"
+    if isinstance(value, float):
+        return "float"
+    if has_choices or isinstance(value, str):
+        return "categorical"
+    return "float"
+
+
+def _decode_json_text(text: str | None) -> object:
+    """Decode a JSON-encoded TEXT column, returning None for SQL NULL or ``"null"``."""
+    if text is None:
+        return None
+    return json.loads(text)
+
+
+def load_hyperparams_manifest_sqlite(
+    db_path: Path,
+) -> dict[str, list[PrimitiveParamSpec]]:
+    """Load tunables from the ageo-atoms manifest.sqlite.
+
+    Queries only approved atoms with approved hyperparams.
+    """
+    db_path = Path(db_path)
+    if not db_path.exists():
+        logger.warning("Hyperparams SQLite manifest not found: %s", db_path)
+        return {}
+
+    con = sqlite3.connect(str(db_path))
+    con.row_factory = sqlite3.Row
+    try:
+        rows = con.execute(
+            """
+            SELECT a.fqdn, h.name, h.default_value, h.min_value, h.max_value,
+                   h.step_value, h.log_scale, h.choices_json, h.constraints_json,
+                   h.semantic_role
+            FROM atoms a
+            JOIN hyperparams h ON a.atom_id = h.atom_id
+            WHERE a.status = 'approved'
+              AND h.status = 'approved'
+            """
+        ).fetchall()
+    finally:
+        con.close()
+
+    result: dict[str, list[PrimitiveParamSpec]] = {}
+    for row in rows:
+        fqdn = row["fqdn"]
+        default = _decode_json_text(row["default_value"])
+        choices_raw = _decode_json_text(row["choices_json"])
+        choices = list(choices_raw) if isinstance(choices_raw, list) else None
+        constraints_raw = _decode_json_text(row["constraints_json"])
+        constraints = str(constraints_raw) if constraints_raw else ""
+
+        kind = _infer_kind(default, choices is not None and len(choices) > 0)
+
+        try:
+            spec = PrimitiveParamSpec(
+                name=row["name"],
+                kind=kind,
+                default=default if default is not None else 0,
+                min_value=_decode_json_text(row["min_value"]),
+                max_value=_decode_json_text(row["max_value"]),
+                step=_decode_json_text(row["step_value"]),
+                log_scale=bool(row["log_scale"]),
+                choices=choices,
+                constraints=constraints,
+                semantic_role=row["semantic_role"] or "",
+                safe_to_optimize=True,
+            )
+        except Exception:
+            logger.warning("Skipping invalid param %s on atom %s", row["name"], fqdn)
+            continue
+
+        result.setdefault(fqdn, []).append(spec)
+
+    return result
 
 
 def load_hyperparams_manifest(
@@ -17,6 +101,7 @@ def load_hyperparams_manifest(
     """Load ageo-atoms manifest.json and return atom_name -> tunable_params mapping.
 
     Only returns params from atoms with status="approved" and safe_to_optimize=True.
+    Falls back to this when SQLite manifest is unavailable.
     """
     path = Path(manifest_path)
     if not path.exists():
@@ -24,19 +109,23 @@ def load_hyperparams_manifest(
         return {}
 
     raw = json.loads(path.read_text())
-    atoms: list[dict] = raw.get("atoms", [])
+    atoms: list[dict] = raw.get("reviewed_atoms", [])
     result: dict[str, list[PrimitiveParamSpec]] = {}
 
     for atom in atoms:
         status = atom.get("status", "")
         if status != "approved":
             continue
-        atom_name = atom.get("name", "")
+        atom_name = atom.get("atom", "")
         if not atom_name:
             continue
 
         params: list[PrimitiveParamSpec] = []
         for p in atom.get("tunable_params", []):
+            # Infer kind if not explicitly provided
+            if "kind" not in p and "default" in p:
+                has_choices = bool(p.get("choices"))
+                p = {**p, "kind": _infer_kind(p["default"], has_choices)}
             try:
                 spec = PrimitiveParamSpec(**p)
             except Exception:
@@ -53,6 +142,16 @@ def load_hyperparams_manifest(
             result[atom_name] = params
 
     return result
+
+
+def load_manifest(manifest_path: Path) -> dict[str, list[PrimitiveParamSpec]]:
+    """Load tunables from manifest. Prefers .sqlite, falls back to .json."""
+    sqlite_path = Path(manifest_path).with_suffix(".sqlite")
+    if sqlite_path.exists():
+        return load_hyperparams_manifest_sqlite(sqlite_path)
+    if Path(manifest_path).exists():
+        return load_hyperparams_manifest(manifest_path)
+    return {}
 
 
 def get_runtime_signal_event_rate_params() -> dict[str, list[PrimitiveParamSpec]]:
