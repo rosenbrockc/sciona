@@ -32,6 +32,23 @@ def _decode_json_text(text: str | None) -> object:
     return json.loads(text)
 
 
+def _normalize_manifest_param(raw: dict[str, object]) -> dict[str, object]:
+    """Translate ageo-atoms JSON manifest keys into ``PrimitiveParamSpec`` keys."""
+    data = dict(raw)
+    if "min_value" not in data and "min" in data:
+        data["min_value"] = data.pop("min")
+    if "max_value" not in data and "max" in data:
+        data["max_value"] = data.pop("max")
+    constraints = data.get("constraints")
+    if isinstance(constraints, dict):
+        data["constraints"] = json.dumps(constraints, sort_keys=True)
+    elif constraints is None:
+        data["constraints"] = ""
+    else:
+        data["constraints"] = str(constraints)
+    return data
+
+
 def load_hyperparams_manifest_sqlite(
     db_path: Path,
 ) -> dict[str, list[PrimitiveParamSpec]]:
@@ -44,7 +61,7 @@ def load_hyperparams_manifest_sqlite(
         logger.warning("Hyperparams SQLite manifest not found: %s", db_path)
         return {}
 
-    con = sqlite3.connect(str(db_path))
+    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     try:
         rows = con.execute(
@@ -122,6 +139,7 @@ def load_hyperparams_manifest(
 
         params: list[PrimitiveParamSpec] = []
         for p in atom.get("tunable_params", []):
+            p = _normalize_manifest_param(p)
             # Infer kind if not explicitly provided
             if "kind" not in p and "default" in p:
                 has_choices = bool(p.get("choices"))
@@ -148,7 +166,13 @@ def load_manifest(manifest_path: Path) -> dict[str, list[PrimitiveParamSpec]]:
     """Load tunables from manifest. Prefers .sqlite, falls back to .json."""
     sqlite_path = Path(manifest_path).with_suffix(".sqlite")
     if sqlite_path.exists():
-        return load_hyperparams_manifest_sqlite(sqlite_path)
+        try:
+            return load_hyperparams_manifest_sqlite(sqlite_path)
+        except sqlite3.Error as exc:
+            logger.warning(
+                "Falling back to JSON manifest after SQLite load failure: %s",
+                exc,
+            )
     if Path(manifest_path).exists():
         return load_hyperparams_manifest(manifest_path)
     return {}

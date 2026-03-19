@@ -9,10 +9,15 @@ from pathlib import Path
 import pytest
 
 from ageom.architect.handoff import CDGExport
+from ageom.architect.catalog import PrimitiveCatalog
 from ageom.architect.models import (
+    AlgorithmicPrimitive,
     AlgorithmicNode,
     ConceptType,
+    IOSpec,
     NodeStatus,
+    ParamStatus,
+    PrimitiveParamSpec,
 )
 from ageom.principal.models import (
     BenchmarkResult,
@@ -107,6 +112,72 @@ class TestBenchmarkResult:
         tel = {"a": _make_telemetry("a", 1.0, 100, 0.0)}
         br = BenchmarkResult(global_loss=1.0, node_telemetry=tel)
         assert "a" in br.node_telemetry
+
+
+class TestOptunaHyperparams:
+    def test_suggest_node_params_returns_assignments(self):
+        from ageom.principal.hpo import OptunaManager
+
+        catalog = PrimitiveCatalog()
+        catalog.add(
+            AlgorithmicPrimitive(
+                name="compute_event_rate_smoothed",
+                source="test",
+                category=ConceptType.ANALYSIS,
+                description="Smoothed event-rate estimator",
+                inputs=[
+                    IOSpec(name="events", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+                tunable_params=[
+                    PrimitiveParamSpec(
+                        name="smoothing_window",
+                        kind="int",
+                        default=5,
+                        min_value=1,
+                        max_value=15,
+                        step=2,
+                    )
+                ],
+                param_status=ParamStatus.APPROVED,
+            )
+        )
+        cdg = CDGExport(
+            nodes=[
+                AlgorithmicNode(
+                    node_id="n1",
+                    name="Compute Event Rate",
+                    description="Rate from event indices",
+                    concept_type=ConceptType.ANALYSIS,
+                    status=NodeStatus.ATOMIC,
+                    matched_primitive="compute_event_rate_smoothed",
+                )
+            ],
+            edges=[],
+        )
+
+        manager = OptunaManager(study_name="test-principal")
+        suggested = manager.suggest_node_params(
+            signature="sigA",
+            cdg=cdg,
+            catalog=catalog,
+        )
+        assert set(suggested.assignments) == {"n1"}
+        assert "smoothing_window" in suggested.assignments["n1"]
+        assert suggested.assignments["n1"]["smoothing_window"] == 5
+        manager.complete_trial(
+            signature=suggested.signature,
+            trial_number=suggested.trial_number,
+            loss=1.23,
+        )
+
+        second = manager.suggest_node_params(
+            signature="sigA",
+            cdg=cdg,
+            catalog=catalog,
+        )
+        assert second.assignments["n1"]["smoothing_window"] in {1, 3, 5, 7, 9, 11, 13, 15}
 
 
 class TestNodeGradient:
@@ -736,7 +807,7 @@ class TestRouteAfterUpdate:
         from ageom.principal.graph import PrincipalState, route_after_update
 
         state = PrincipalState(current_trial=5, max_trials=10)
-        assert route_after_update(state) == "forward"
+        assert route_after_update(state) == "suggest_params"
 
 
 class TestRouteAfterForward:

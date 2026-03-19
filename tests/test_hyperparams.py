@@ -7,7 +7,7 @@ import sqlite3
 
 import pytest
 
-from ageom.architect.catalog import PrimitiveCatalog
+from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
 from ageom.architect.hyperparams import (
     get_runtime_signal_event_rate_params,
     load_hyperparams_manifest,
@@ -388,3 +388,14 @@ class TestCatalogAttachesTunables:
         ]}
         count = catalog.attach_tunables(tunables)
         assert count == 0
+
+    def test_builtin_catalog_receives_smoothed_runtime_tunables(self):
+        catalog = PrimitiveCatalog()
+        seed_builtin_primitives(catalog)
+        count = catalog.attach_tunables(get_runtime_signal_event_rate_params())
+        assert count >= 3
+
+        smooth = catalog.get("compute_event_rate_smoothed")
+        assert smooth is not None
+        assert smooth.param_status == ParamStatus.APPROVED
+        assert [spec.name for spec in smooth.tunable_params] == ["smoothing_window"]

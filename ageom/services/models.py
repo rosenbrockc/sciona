@@ -130,6 +130,7 @@ class SynthesizerAssembleRequest:
 
     cdg: Any
     match_results: list[MatchResult]
+    tunable_params_by_primitive: dict[str, list[str]] | None = None
 
 
 @dataclass(frozen=True)

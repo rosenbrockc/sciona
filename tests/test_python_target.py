@@ -395,6 +395,16 @@ class TestPythonAssembler:
         assert "lu_solve_result" in skeleton.source_code
         assert "return lu_solve_result" in skeleton.source_code
 
+    def test_assembler_marks_tunable_units(self, python_cdg, python_match_results):
+        assembler = Assembler(Prover.PYTHON)
+        skeleton = assembler.assemble(
+            python_cdg,
+            python_match_results,
+            tunable_params_by_primitive={"scipy.linalg.solve": ["assume_a", "lower"]},
+        )
+
+        assert skeleton.units[0].tunable_param_names == ["assume_a", "lower"]
+
 
 # ---------------------------------------------------------------------------
 # TestContractGenerator
@@ -636,6 +646,7 @@ class TestPythonExtractor:
         assert "def load_dataset" in content
         assert "--dataset-root" in content
         assert "--eval-spec" in content
+        assert "--params" in content
         assert "compute_evaluation_payload" in content
 
     def test_generate_pipeline_py_with_steps(self):

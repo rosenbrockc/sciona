@@ -631,8 +631,12 @@ def _load_architect_catalog(
 ):
     """Load the architect primitive catalog from built-ins, JSON catalogs, and source registries."""
     from ageom.architect.catalog import CatalogReport, PrimitiveCatalog, seed_builtin_primitives
+    from ageom.architect.hyperparams import (
+        get_runtime_signal_event_rate_params,
+        load_manifest,
+    )
     from ageom.architect.source_catalog import seed_catalog_from_sources
-    from ageom.sources import load_sources
+    from ageom.sources import load_sources, resolve_source
 
     catalog = PrimitiveCatalog()
     seed_builtin_primitives(catalog)
@@ -689,6 +693,27 @@ def _load_architect_catalog(
     except Exception as exc:
         print(
             f"Warning: failed to derive primitives from configured sources: {exc}",
+            file=sys.stderr,
+        )
+
+    tunables_map: dict[str, list[Any]] = {}
+    try:
+        sources_cfg = load_sources(config.sources_file)
+        for source in sources_cfg.sources:
+            if source.package != "ageoa":
+                continue
+            source_root = resolve_source(source, Path.cwd())
+            manifest_path = source_root / "data" / "hyperparams" / "manifest.json"
+            if manifest_path.exists():
+                tunables_map.update(load_manifest(manifest_path))
+                break
+        tunables_map.update(get_runtime_signal_event_rate_params())
+        attached = catalog.attach_tunables(tunables_map)
+        if attached:
+            print(f"Catalog tunables: attached to {attached} primitives")
+    except Exception as exc:
+        print(
+            f"Warning: failed to attach primitive tunables: {exc}",
             file=sys.stderr,
         )
 

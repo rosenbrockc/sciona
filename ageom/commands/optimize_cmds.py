@@ -73,6 +73,7 @@ async def _synthesize_export_bundle_for_optimize(
     *,
     prover: Any,
     config: Any,
+    catalog: Any | None,
     output_root: Path,
     trial_index: int,
 ) -> Any:
@@ -85,8 +86,24 @@ async def _synthesize_export_bundle_for_optimize(
     from ageom.synthesizer.models import SkeletonFile, SynthesisResult
 
     service = SynthesizerService(prover=prover)
+    tunable_params_by_primitive: dict[str, list[str]] = {}
+    if catalog is not None:
+        for node in cdg.nodes:
+            primitive_name = str(getattr(node, "matched_primitive", "") or "").strip()
+            if not primitive_name:
+                continue
+            prim = catalog.get(primitive_name)
+            if prim is None or not prim.tunable_params:
+                continue
+            tunable_params_by_primitive[primitive_name] = [
+                spec.name for spec in prim.tunable_params
+            ]
     skeleton = service.assemble(
-        SynthesizerAssembleRequest(cdg=cdg, match_results=match_results)
+        SynthesizerAssembleRequest(
+            cdg=cdg,
+            match_results=match_results,
+            tunable_params_by_primitive=tunable_params_by_primitive,
+        )
     ).skeleton
 
     env = _create_proof_env(prover, config)
@@ -141,6 +158,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         PrincipalDeps,
         build_principal_graph,
     )
+    from ageom.principal.hpo import OptunaManager
     from ageom.principal.metric_selection import resolve_optimization_objective
     from ageom.types import Prover
 
@@ -204,7 +222,10 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     print("Principal optimisation loop")
     print(f"  Goal: {args.goal}")
     print(f"  Objective: {objective_label}")
-    print(f"  Internal metric: {metric.value}")
+    if objective_label != metric.value:
+        print(f"  Execution metric: {metric.value} (reference loss: {objective_label})")
+    else:
+        print(f"  Execution metric: {metric.value}")
     print(f"  Trials: {args.trials}")
     print(f"  Benchmark: {args.benchmark}")
     print(f"  Output: {output_root}")
@@ -282,12 +303,14 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                 match_results,
                 prover=prover,
                 config=config,
+                catalog=catalog,
                 output_root=output_root,
                 trial_index=trial_counter["value"],
             )
 
         sandbox = ExecutionSandbox(timeout_s=args.timeout)
         atom_ledger = AtomLedger()
+        hpo_manager = OptunaManager(study_name="principal")
         deps = PrincipalDeps(
             architect=architect,
             sandbox=sandbox,
@@ -303,6 +326,8 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             dataset_varset=_parse_dataset_vars(getattr(args, "dataset_var", None)),
             atom_ledger=atom_ledger,
             catalog=catalog,
+            hpo_manager=hpo_manager,
+            param_trials_per_structure=2,
         )
         graph = build_principal_graph().compile()
 

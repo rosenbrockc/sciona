@@ -948,6 +948,30 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
             "measure interval-derived rate",
         ],
     ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_event_rate_smoothed",
+            source="ageom-builtins",
+            category=ConceptType.ANALYSIS,
+            description=(
+                "Compute a downstream rate or cadence from inter-event intervals and "
+                "apply lightweight smoothing to reduce local jitter in the estimate."
+            ),
+            inputs=[
+                IOSpec(name="events", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+            type_signature="np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
+        ),
+        [
+            "compute smoothed rate from detected events",
+            "compute smoothed event rate",
+            "smoothed heart rate computation",
+            "smooth interval-derived rate",
+            "stabilize cadence estimate",
+        ],
+    ),
 ]
 
 _LINEAR_ALGEBRA_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [

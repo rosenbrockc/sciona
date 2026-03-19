@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 from ageom.architect.handoff import CDGExport
-from ageom.architect.models import NodeStatus
+from ageom.architect.models import AlgorithmicNode, AlgorithmicPrimitive, NodeStatus
 from ageom.signal_event_rate_registry import (
     SIGNAL_EVENT_RATE_DECLARATIONS,
     next_signal_event_rate_variant,
@@ -148,7 +148,9 @@ class LedgerVariantFamily:
         slot = compute_slot_signature(target, parent)
 
         candidates = [
-            p.name for p in self._catalog.search_by_category(target.concept_type)
+            p.name
+            for p in self._catalog.search_by_category(target.concept_type)
+            if _is_primitive_structurally_compatible(target, p)
         ]
         if not candidates:
             return VariantMutationResult(cdg=cdg, applied=False)
@@ -217,6 +219,8 @@ def maybe_apply_bottleneck_variant(
         result = family.mutate(cdg, bottleneck_name=bottleneck_name)
         if result.applied:
             return result
+        if result.family is not None and not result.allow_redecompose:
+            return result
         # Family matched but had nothing to apply — remember it but keep
         # trying remaining families.  Later families override earlier ones
         # so that e.g. the ledger's allow_redecompose=True supersedes a
@@ -227,3 +231,26 @@ def maybe_apply_bottleneck_variant(
     if last_exhausted is not None:
         return last_exhausted
     return VariantMutationResult(cdg=cdg, applied=False)
+
+
+def _normalize_type_desc(value: str) -> str:
+    return " ".join(str(value).strip().lower().split())
+
+
+def _is_primitive_structurally_compatible(
+    node: AlgorithmicNode,
+    primitive: AlgorithmicPrimitive,
+) -> bool:
+    """Return whether a primitive is safe to slot into a node without rewiring."""
+    if primitive.category != node.concept_type:
+        return False
+    if len(node.inputs) != len(primitive.inputs):
+        return False
+    if len(node.outputs) != len(primitive.outputs):
+        return False
+
+    node_input_types = [_normalize_type_desc(port.type_desc) for port in node.inputs]
+    prim_input_types = [_normalize_type_desc(port.type_desc) for port in primitive.inputs]
+    node_output_types = [_normalize_type_desc(port.type_desc) for port in node.outputs]
+    prim_output_types = [_normalize_type_desc(port.type_desc) for port in primitive.outputs]
+    return node_input_types == prim_input_types and node_output_types == prim_output_types

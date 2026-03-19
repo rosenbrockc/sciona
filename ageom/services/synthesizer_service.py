@@ -36,7 +36,11 @@ class SynthesizerService:
         request: SynthesizerAssembleRequest,
     ) -> SynthesizerAssembleResult:
         assembler = Assembler(self._prover)
-        skeleton = assembler.assemble(request.cdg, request.match_results)
+        skeleton = assembler.assemble(
+            request.cdg,
+            request.match_results,
+            tunable_params_by_primitive=request.tunable_params_by_primitive,
+        )
         return SynthesizerAssembleResult(skeleton=skeleton)
 
     async def compile(

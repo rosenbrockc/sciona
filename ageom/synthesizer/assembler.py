@@ -247,6 +247,7 @@ class Assembler:
         match_results: list[MatchResult],
         *,
         with_telemetry: bool | None = None,
+        tunable_params_by_primitive: dict[str, list[str]] | None = None,
     ) -> SkeletonFile:
         """Build a SkeletonFile from a CDG and its match results."""
         # Index match results by predicate_id (= node_id)
@@ -277,6 +278,7 @@ class Assembler:
             mr = match_map[leaf.node_id]
             assert mr.verified_match is not None
             decl = mr.verified_match.candidate.declaration
+            primitive_name = str(leaf.matched_primitive or "").strip()
             units.append(
                 AssemblyUnit(
                     node_id=leaf.node_id,
@@ -287,6 +289,9 @@ class Assembler:
                     inputs=leaf.inputs,
                     outputs=leaf.outputs,
                     requires_glue=leaf.node_id in glue_node_ids,
+                    tunable_param_names=list(
+                        (tunable_params_by_primitive or {}).get(primitive_name, [])
+                    ),
                 )
             )
 

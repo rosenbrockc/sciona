@@ -22,7 +22,7 @@ from ageom.architect.models import NodeStatus
 from ageom.principal.atom_ledger import AtomLedger, compute_slot_signature
 from ageom.principal.backprop import CreditAssigner
 from ageom.principal.evaluator import ExecutionSandbox
-from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
+from ageom.principal.hpo import OptunaManager, SuggestedParams, TrialPrunedEarly
 from ageom.principal.models import (
     BenchmarkResult,
     NodeGradient,
@@ -73,6 +73,10 @@ class PrincipalState:
     # Hyperparameter assignments (node_id -> {param_name: value})
     node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
     best_node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
+    param_signature: str = ""
+    hpo_trial_number: int | None = None
+    pending_param_search: bool = False
+    param_trials_remaining: int = 0
 
     # Bookkeeping
     done: bool = False
@@ -97,8 +101,66 @@ async def seed_population(state: PrincipalState, config: RunnableConfig) -> dict
 
     cdg = await deps.architect.decompose(state.goal, thread_id=thread_id)
     state.cdg = cdg
+    has_tunables = _structure_has_tunables(cdg, deps.catalog)
+    state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
+    state.param_trials_remaining = (
+        deps.param_trials_per_structure if has_tunables else 0
+    )
 
-    return {"cdg": cdg, "thread_id": thread_id, "current_trial": state.current_trial}
+    return {
+        "cdg": cdg,
+        "thread_id": thread_id,
+        "current_trial": state.current_trial,
+        "pending_param_search": state.pending_param_search,
+        "param_trials_remaining": state.param_trials_remaining,
+    }
+
+
+def _param_signature(cdg: CDGExport) -> str:
+    """Return the scoped study signature for the current structure + primitives."""
+    summary = summarize_trial_structure(cdg)
+    return f"{summary.get('topo_hash', '')}:{summary.get('primitive_signature', '')}"
+
+
+def _structure_has_tunables(cdg: CDGExport, catalog: PrimitiveCatalog | None) -> bool:
+    """Return whether any atomic node in *cdg* exposes approved tunables."""
+    if catalog is None:
+        return False
+    for node in cdg.nodes:
+        if node.status != NodeStatus.ATOMIC:
+            continue
+        primitive_name = str(node.matched_primitive or "").strip()
+        if not primitive_name:
+            continue
+        primitive = catalog.get(primitive_name)
+        if primitive is not None and primitive.tunable_params:
+            return True
+    return False
+
+
+async def suggest_params(state: PrincipalState, config: RunnableConfig) -> dict:
+    """Sample node-level hyperparameters for the current CDG signature."""
+    deps: PrincipalDeps = config["configurable"]["deps"]
+    if state.cdg is None or deps.catalog is None or deps.hpo_manager is None:
+        state.node_params = {}
+        state.param_signature = ""
+        state.hpo_trial_number = None
+        return {"node_params": {}, "param_signature": "", "hpo_trial_number": None}
+
+    signature = _param_signature(state.cdg)
+    suggested = deps.hpo_manager.suggest_node_params(
+        signature=signature,
+        cdg=state.cdg,
+        catalog=deps.catalog,
+    )
+    state.node_params = suggested.assignments
+    state.param_signature = suggested.signature
+    state.hpo_trial_number = suggested.trial_number
+    return {
+        "node_params": suggested.assignments,
+        "param_signature": suggested.signature,
+        "hpo_trial_number": suggested.trial_number,
+    }
 
 
 async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict:
@@ -126,6 +188,11 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
     try:
         OptunaManager.check_early_prune(ghost_report)
     except TrialPrunedEarly as exc:
+        if deps.hpo_manager is not None:
+            deps.hpo_manager.prune_trial(
+                signature=state.param_signature,
+                trial_number=state.hpo_trial_number,
+            )
         logger.warning("Trial %d pruned early: %s", state.current_trial, exc)
         return {"error": str(exc), "done": False}
 
@@ -142,6 +209,7 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
         "export_bundle": state.export_bundle,
         "current_trial": state.current_trial,
         "match_results": state.match_results,
+        "error": "",
     }
 
 
@@ -172,6 +240,13 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
                 evaluation_spec=deps.evaluation_spec,
             )
     state.benchmark = benchmark
+
+    if deps.hpo_manager is not None:
+        deps.hpo_manager.complete_trial(
+            signature=state.param_signature,
+            trial_number=state.hpo_trial_number,
+            loss=benchmark.global_loss,
+        )
 
     # Track best
     if benchmark.global_loss < state.best_loss:
@@ -225,11 +300,19 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     if benchmark.global_loss <= state.best_loss:
         state.best_node_params = dict(state.node_params)
 
+    if state.pending_param_search and state.param_trials_remaining > 0:
+        state.param_trials_remaining -= 1
+        if state.param_trials_remaining <= 0:
+            state.pending_param_search = False
+
     return {
         "benchmark": benchmark,
         "best_loss": state.best_loss,
+        "best_node_params": state.best_node_params,
         "trial_history": state.trial_history,
         "current_trial": state.current_trial,
+        "pending_param_search": state.pending_param_search,
+        "param_trials_remaining": state.param_trials_remaining,
     }
 
 
@@ -339,13 +422,20 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
     )
     if mutation.applied:
         state.cdg = mutation.cdg
+        has_tunables = _structure_has_tunables(mutation.cdg, deps.catalog)
+        state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
+        state.param_trials_remaining = deps.param_trials_per_structure if has_tunables else 0
         logger.info(
             "Applied variant family '%s' in place for '%s' -> %s",
             mutation.family or "unknown",
             bottleneck_name or state.bottleneck_node_id,
             mutation.variant_name or "variant",
         )
-        return {"cdg": mutation.cdg}
+        return {
+            "cdg": mutation.cdg,
+            "pending_param_search": state.pending_param_search,
+            "param_trials_remaining": state.param_trials_remaining,
+        }
     if mutation.family is not None and not mutation.allow_redecompose:
         logger.info(
             "Variant family '%s' has no further safe mutations for '%s'; ending loop.",
@@ -418,6 +508,9 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
         catalog=deps.catalog,
     )
     state.cdg = mutation.cdg
+    has_tunables = _structure_has_tunables(mutation.cdg, deps.catalog)
+    state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
+    state.param_trials_remaining = deps.param_trials_per_structure if has_tunables else 0
 
     logger.info(
         "Time-travel: forked at checkpoint %s -> thread %s",
@@ -425,7 +518,12 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
         new_thread_id,
     )
 
-    return {"cdg": mutation.cdg, "thread_id": new_thread_id}
+    return {
+        "cdg": mutation.cdg,
+        "thread_id": new_thread_id,
+        "pending_param_search": state.pending_param_search,
+        "param_trials_remaining": state.param_trials_remaining,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -441,6 +539,8 @@ def route_after_gradients(state: PrincipalState) -> str:
         return "end"
     if state.error and "pruned" not in state.error.lower():
         return "end"
+    if state.pending_param_search and state.param_trials_remaining > 0:
+        return "suggest_params"
     return "time_travel"
 
 
@@ -450,7 +550,7 @@ def route_after_update(state: PrincipalState) -> str:
         return "end"
     if len(state.trial_history) >= state.max_trials:
         return "end"
-    return "forward"
+    return "suggest_params"
 
 
 def route_after_forward(state: PrincipalState) -> str:
@@ -480,6 +580,8 @@ class PrincipalDeps:
     dataset_varset: dict[str, str] | None = None
     atom_ledger: AtomLedger | None = None
     catalog: PrimitiveCatalog | None = None
+    hpo_manager: OptunaManager | None = None
+    param_trials_per_structure: int = 1
 
 
 # ---------------------------------------------------------------------------
@@ -492,13 +594,15 @@ def build_principal_graph() -> StateGraph:
     graph = StateGraph(PrincipalState)
 
     graph.add_node("seed", seed_population)
+    graph.add_node("suggest_params", suggest_params)
     graph.add_node("forward", execute_forward)
     graph.add_node("evaluate", evaluate_run)
     graph.add_node("gradients", compute_gradients)
     graph.add_node("time_travel", time_travel_update)
 
     graph.set_entry_point("seed")
-    graph.add_edge("seed", "forward")
+    graph.add_edge("seed", "suggest_params")
+    graph.add_edge("suggest_params", "forward")
     graph.add_conditional_edges(
         "forward",
         route_after_forward,
@@ -508,12 +612,12 @@ def build_principal_graph() -> StateGraph:
     graph.add_conditional_edges(
         "gradients",
         route_after_gradients,
-        {"time_travel": "time_travel", "end": END},
+        {"suggest_params": "suggest_params", "time_travel": "time_travel", "end": END},
     )
     graph.add_conditional_edges(
         "time_travel",
         route_after_update,
-        {"forward": "forward", "end": END},
+        {"suggest_params": "suggest_params", "end": END},
     )
 
     return graph

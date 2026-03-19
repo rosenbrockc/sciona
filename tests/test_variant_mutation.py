@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 from ageom.architect.handoff import CDGExport
 from ageom.architect.models import AlgorithmicNode, AlgorithmicPrimitive, ConceptType, IOSpec, NodeStatus
 from ageom.principal.atom_ledger import AtomLedger, compute_slot_signature
@@ -164,21 +162,37 @@ def _generic_node(
     )
 
 
-def _mock_catalog_with(*primitive_names: str, concept_type: ConceptType = ConceptType.CUSTOM) -> MagicMock:
-    catalog = MagicMock()
+def _mock_catalog_with(
+    *primitive_specs: tuple[str, list[IOSpec], list[IOSpec]],
+    concept_type: ConceptType = ConceptType.CUSTOM,
+) -> PrimitiveCatalog:
+    from ageom.architect.catalog import PrimitiveCatalog
+
+    catalog = PrimitiveCatalog()
     prims = []
-    for name in primitive_names:
-        prim = MagicMock()
-        prim.name = name
-        prim.category = concept_type
+    for name, inputs, outputs in primitive_specs:
+        prim = AlgorithmicPrimitive(
+            name=name,
+            source="test",
+            category=concept_type,
+            description=name,
+            inputs=inputs,
+            outputs=outputs,
+            type_signature="test",
+        )
         prims.append(prim)
-    catalog.search_by_category.return_value = prims
+        catalog.add(prim)
     return catalog
 
 
 def test_ledger_variant_family_swaps_atom() -> None:
     ledger = AtomLedger()
-    catalog = _mock_catalog_with("atom_a", "atom_b")
+    ports_in = [IOSpec(name="x", type_desc="np.ndarray")]
+    ports_out = [IOSpec(name="y", type_desc="np.ndarray")]
+    catalog = _mock_catalog_with(
+        ("atom_a", ports_in, ports_out),
+        ("atom_b", ports_in, ports_out),
+    )
 
     cdg = CDGExport(
         nodes=[_generic_node("n1", "Step", matched_primitive="atom_a")],
@@ -207,7 +221,12 @@ def test_ledger_variant_family_swaps_atom() -> None:
 
 def test_ledger_variant_family_noop_when_current_is_best() -> None:
     ledger = AtomLedger()
-    catalog = _mock_catalog_with("atom_a", "atom_b")
+    ports_in = [IOSpec(name="x", type_desc="np.ndarray")]
+    ports_out = [IOSpec(name="y", type_desc="np.ndarray")]
+    catalog = _mock_catalog_with(
+        ("atom_a", ports_in, ports_out),
+        ("atom_b", ports_in, ports_out),
+    )
 
     cdg = CDGExport(
         nodes=[_generic_node("n1", "Step", matched_primitive="atom_a")],
@@ -235,7 +254,8 @@ def test_ledger_variant_family_noop_when_current_is_best() -> None:
 def test_curated_family_takes_priority_over_ledger() -> None:
     ledger = AtomLedger()
     catalog = _mock_catalog_with(
-        "compute_event_rate", "compute_event_rate_smoothed",
+        ("compute_event_rate", [IOSpec(name="x", type_desc="np.ndarray")], [IOSpec(name="y", type_desc="np.ndarray")]),
+        ("compute_event_rate_smoothed", [IOSpec(name="x", type_desc="np.ndarray")], [IOSpec(name="y", type_desc="np.ndarray")]),
         concept_type=ConceptType.SIGNAL_FILTER,
     )
 
@@ -261,12 +281,20 @@ def test_curated_family_takes_priority_over_ledger() -> None:
     assert result.family == "signal_event_rate"
 
 
-def test_ledger_fires_after_curated_family_exhausted() -> None:
-    """When the curated family has no variant left, the ledger should still get a turn."""
+def test_exhausted_curated_family_blocks_unsafe_ledger_fallback() -> None:
+    """When a family explicitly disallows fallback, Principal should stop there."""
     ledger = AtomLedger()
-    # Catalog returns two alternatives in the same category
     catalog = _mock_catalog_with(
-        "compute_event_rate_smoothed", "compute_event_rate_windowed",
+        (
+            "compute_event_rate_smoothed",
+            [IOSpec(name="events", type_desc="np.ndarray"), IOSpec(name="sampling_rate", type_desc="float")],
+            [IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+        ),
+        (
+            "compute_event_rate_windowed",
+            [IOSpec(name="events", type_desc="np.ndarray"), IOSpec(name="sampling_rate", type_desc="float")],
+            [IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+        ),
         concept_type=ConceptType.SIGNAL_FILTER,
     )
 
@@ -296,46 +324,69 @@ def test_ledger_fires_after_curated_family_exhausted() -> None:
         catalog=catalog,
     )
 
-    # Ledger fires because curated family was exhausted
-    assert result.applied is True
-    assert result.family == "ledger_bandit"
-    assert result.variant_name == "compute_event_rate_windowed"
+    assert result.applied is False
+    assert result.family == "signal_event_rate"
+    assert result.variant_name is None
+    assert result.allow_redecompose is False
 
 
-def test_exhausted_curated_allows_redecompose_with_ledger() -> None:
-    """When curated is exhausted and ledger has no better atom, allow_redecompose should be True."""
+def test_ledger_allows_redecompose_when_no_family_matches() -> None:
+    """When no curated family owns the graph, the ledger remains the fallback."""
     ledger = AtomLedger()
     catalog = _mock_catalog_with(
-        "compute_event_rate_smoothed",
-        concept_type=ConceptType.SIGNAL_FILTER,
+        ("atom_a", [IOSpec(name="x", type_desc="np.ndarray")], [IOSpec(name="y", type_desc="np.ndarray")]),
+        ("atom_b", [IOSpec(name="x", type_desc="np.ndarray")], [IOSpec(name="y", type_desc="np.ndarray")]),
     )
 
     cdg = CDGExport(
         nodes=[
-            _atomic_node("n1", "Filter Signal For Detection", matched_primitive="filter_signal_for_detection"),
-            _atomic_node("n2", "Detect Peaks In Signal", matched_primitive="detect_peaks_in_signal"),
-            _atomic_node("n3", "Compute Event Rate", matched_primitive="compute_event_rate_smoothed"),
+            _generic_node("n1", "Step", matched_primitive="atom_a"),
         ],
         edges=[],
     )
 
-    # Ledger says current atom is already best (only candidate)
-    node = cdg.nodes[2]
+    node = cdg.nodes[0]
     slot = compute_slot_signature(node, None)
-    ledger.record(slot, "compute_event_rate_smoothed", 30.0, trial=1)
+    ledger.record(slot, "atom_a", 10.0, trial=1)
+    ledger.record(slot, "atom_b", 80.0, trial=1)
 
     result = maybe_apply_bottleneck_variant(
         cdg,
-        bottleneck_name="Compute Event Rate",
+        bottleneck_name="Step",
         atom_ledger=ledger,
         catalog=catalog,
     )
 
-    # Not applied, but the ledger's allow_redecompose=True overrides
-    # the curated family's allow_redecompose=False
     assert result.applied is False
     assert result.family == "ledger_bandit"
     assert result.allow_redecompose is True
+
+
+def test_ledger_filters_out_structurally_incompatible_candidates() -> None:
+    ledger = AtomLedger()
+    catalog = _mock_catalog_with(
+        ("atom_a", [IOSpec(name="x", type_desc="np.ndarray")], [IOSpec(name="y", type_desc="np.ndarray")]),
+        ("atom_bad", [IOSpec(name="signal", type_desc="np.ndarray"), IOSpec(name="rate", type_desc="float")], [IOSpec(name="y", type_desc="np.ndarray")]),
+    )
+    cdg = CDGExport(
+        nodes=[_generic_node("n1", "Step", matched_primitive="atom_a")],
+        edges=[],
+    )
+
+    node = cdg.nodes[0]
+    slot = compute_slot_signature(node, None)
+    ledger.record(slot, "atom_a", 10.0, trial=1)
+    ledger.record(slot, "atom_bad", 0.0, trial=1)
+
+    result = maybe_apply_bottleneck_variant(
+        cdg,
+        bottleneck_name="Step",
+        atom_ledger=ledger,
+        catalog=catalog,
+    )
+
+    assert result.applied is False
+    assert result.family == "ledger_bandit"
 
 
 def test_backward_compatible_without_ledger() -> None:
