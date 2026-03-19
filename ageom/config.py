@@ -225,6 +225,9 @@ class AgeomConfig(BaseSettings):
     lean_lake_path: str = "lake"  # path to lake binary
     optimize_by_default: bool = False
 
+    # Ecosystem / benchmark priors
+    benchmark_prior_strength: int = 2
+
 
 def prompt_override_matches_code_default(config: AgeomConfig, prompt_key: str) -> bool:
     """Return True when a per-prompt provider/model pair matches code defaults."""

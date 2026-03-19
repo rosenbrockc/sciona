@@ -68,12 +68,14 @@ def create_app() -> FastAPI:
     from ageom.api.routers.catalog import router as catalog_router
     from ageom.api.routers.registry import router as registry_router
     from ageom.api.routers.verification import router as verification_router
+    from ageom.api.routers.dashboard import router as dashboard_router
 
     application.include_router(auth_router, tags=["auth"])
     application.include_router(registry_router, prefix="/atoms", tags=["registry"])
     application.include_router(bounty_router, prefix="/bounties", tags=["bounties"])
     application.include_router(catalog_router, prefix="/catalog", tags=["catalog"])
     application.include_router(verification_router, tags=["verification"])
+    application.include_router(dashboard_router, tags=["dashboard"])
 
     return application
 

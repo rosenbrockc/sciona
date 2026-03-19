@@ -64,26 +64,68 @@ class AtomLedger:
         slot: SlotSignature,
         candidate_names: list[str],
         exploration_weight: float = 1.414,
+        benchmark_priors: dict[str, float] | None = None,
+        atom_statuses: dict[str, str] | None = None,
+        prior_strength: int = 2,
     ) -> list[tuple[str, float]]:
-        """Return candidates sorted by UCB1 score (descending). Untried atoms get inf."""
+        """Return candidates sorted by UCB1 score (descending). Untried atoms get inf.
+
+        Parameters
+        ----------
+        benchmark_priors
+            Optional mapping of atom name to [0, 1] benchmark prior reward.
+        atom_statuses
+            Optional mapping of atom name to status (e.g., ``"superseded"``).
+        prior_strength
+            Number of virtual observations for benchmark prior (default 2).
+        """
         if not candidate_names:
             return []
 
+        priors = benchmark_priors or {}
+        statuses = atom_statuses or {}
         slot_data = self._observations.get(slot.key, {})
         total_plays = sum(len(obs) for obs in slot_data.values())
 
         scored: list[tuple[str, float]] = []
         for name in candidate_names:
             obs_list = slot_data.get(name)
+            prior = priors.get(name)
+
             if not obs_list:
-                scored.append((name, float("inf")))
+                # Untried atom: use benchmark prior for ordering if available
+                if prior is not None:
+                    # Large finite score so priors create a total order
+                    score = 1e6 + prior
+                else:
+                    score = float("inf")
+                # Apply supersession penalty
+                if statuses.get(name) == "superseded":
+                    if math.isinf(score):
+                        score = 1e6 - 1.0
+                    else:
+                        score = score * 0.5
+                scored.append((name, score))
                 continue
+
             n_plays = len(obs_list)
             mean_reward = sum(
                 1.0 - min(1.0, max(0.0, obs.gradient_score / 100.0))
                 for obs in obs_list
             ) / n_plays
+
+            # Mix in benchmark prior if available
+            if prior is not None:
+                mean_reward = (
+                    prior_strength * prior + n_plays * mean_reward
+                ) / (prior_strength + n_plays)
+
             ucb = self._ucb1(mean_reward, n_plays, total_plays, exploration_weight)
+
+            # Apply supersession penalty
+            if statuses.get(name) == "superseded":
+                ucb *= 0.5
+
             scored.append((name, ucb))
 
         scored.sort(key=lambda x: -x[1])
