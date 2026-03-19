@@ -77,6 +77,16 @@ class AgeomConfig(BaseSettings):
     execution_mode: str = "verified"  # "rapid" | "structured" | "single_agent" | "verified"
     use_monadic_rewriter: bool = False  # Feature gate for formal DPO graph rewriting
 
+    # Platform API
+    api_url: str = "https://api.ageom.dev"
+    s3_bucket: str = "ageom-platform"
+    jwt_kms_key_id: str = ""
+    jwt_private_key_path: str = ""
+    jwt_public_key_path: str = ""
+    github_oauth_client_id: str = ""
+    github_oauth_client_secret: str = ""
+    stripe_secret_key: str = ""
+
     # Memgraph graph store
     memgraph_uri: str = "bolt://localhost:7687"
     memgraph_user: str = ""

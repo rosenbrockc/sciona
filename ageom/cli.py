@@ -77,7 +77,10 @@ from ageom.commands.synthesize_cmds import (  # noqa: F401
     _cmd_export,
     _cmd_synthesize,
 )
+from ageom.commands.atom_cmds import _cmd_atom_publish  # noqa: F401
 from ageom.commands.bounty_cmds import _cmd_bounty_generate  # noqa: F401
+from ageom.commands.catalog_cmds import _cmd_catalog_sync  # noqa: F401
+from ageom.commands.login_cmds import _cmd_login  # noqa: F401
 from ageom.commands.receipt_cmds import (  # noqa: F401
     _cmd_receipt_sign,
     _cmd_receipt_verify,
@@ -782,6 +785,46 @@ def main() -> None:
         help="Memgraph bolt URI override (default: from config)",
     )
 
+    # --- login ---
+    login_parser = subparsers.add_parser(
+        "login", help="Authenticate with the AGEOM platform via GitHub"
+    )
+    login_parser.add_argument(
+        "--api-url", type=str, default=None, help="Platform API URL override"
+    )
+
+    # --- catalog ---
+    catalog_parser = subparsers.add_parser(
+        "catalog", help="Manage the global atom catalog"
+    )
+    catalog_sub = catalog_parser.add_subparsers(dest="catalog_command")
+
+    catalog_sync_parser = catalog_sub.add_parser(
+        "sync", help="Download latest manifest.sqlite from the platform"
+    )
+    catalog_sync_parser.add_argument(
+        "--api-url", type=str, default=None, help="Platform API URL override"
+    )
+    catalog_sync_parser.add_argument(
+        "--output", type=str, default=None, help="Output path for manifest.sqlite"
+    )
+
+    # --- atom ---
+    atom_parser = subparsers.add_parser(
+        "atom", help="Manage atoms in the global registry"
+    )
+    atom_sub = atom_parser.add_subparsers(dest="atom_command")
+
+    atom_publish_parser = atom_sub.add_parser(
+        "publish", help="Publish an atom to the global registry"
+    )
+    atom_publish_parser.add_argument(
+        "path", type=str, help="Path to atom source directory"
+    )
+    atom_publish_parser.add_argument(
+        "--semver", type=str, required=True, help="Semver label (e.g. 1.0.0)"
+    )
+
     # --- bounty ---
     bounty_parser = subparsers.add_parser(
         "bounty", help="Dead-End Flare and bounty management"
@@ -808,6 +851,23 @@ def main() -> None:
         nargs="*",
         default=[],
         help="Domain tags for the flare (e.g. crystallography signal-processing)",
+    )
+
+    bounty_list_parser = bounty_sub.add_parser(
+        "list", help="List open bounties"
+    )
+    bounty_list_parser.add_argument(
+        "--domain", type=str, default=None, help="Filter by domain tag"
+    )
+    bounty_list_parser.add_argument(
+        "--limit", type=int, default=20, help="Max results"
+    )
+
+    bounty_fund_parser = bounty_sub.add_parser(
+        "fund", help="Fund a draft bounty"
+    )
+    bounty_fund_parser.add_argument(
+        "bounty_id", type=str, help="Bounty ID to fund"
     )
 
     # --- receipt ---
@@ -944,13 +1004,35 @@ def main() -> None:
         _cmd_catalog_gaps(args)
     elif args.command == "upsert-cdg":
         _run_async_command(_cmd_upsert_cdg(args))
+    elif args.command == "login":
+        _run_async_command(_cmd_login(args))
+    elif args.command == "catalog":
+        catalog_cmd = getattr(args, "catalog_command", None)
+        if catalog_cmd == "sync":
+            _run_async_command(_cmd_catalog_sync(args))
+        else:
+            print(
+                "Error: provide a catalog subcommand (sync)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+    elif args.command == "atom":
+        atom_cmd = getattr(args, "atom_command", None)
+        if atom_cmd == "publish":
+            _run_async_command(_cmd_atom_publish(args))
+        else:
+            print(
+                "Error: provide an atom subcommand (publish)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     elif args.command == "bounty":
         bounty_cmd = getattr(args, "bounty_command", None)
         if bounty_cmd == "generate":
             _cmd_bounty_generate(args)
         else:
             print(
-                "Error: provide a bounty subcommand (generate)",
+                "Error: provide a bounty subcommand (generate, list, fund)",
                 file=sys.stderr,
             )
             sys.exit(1)
