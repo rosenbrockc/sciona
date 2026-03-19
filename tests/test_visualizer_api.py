@@ -803,6 +803,108 @@ class TestDashboardAPI:
             "hunter",
         ]
 
+    def test_dashboard_run_includes_optimize_summary(
+        self, client, monkeypatch, tmp_path
+    ):
+        from ageom.telemetry import reset_telemetry_runtime
+
+        reset_telemetry_runtime()
+        now = time.time()
+        payload = {
+            "run_id": "opt123",
+            "pipeline": "optimization",
+            "status": "completed",
+            "started_at": now - 18.0,
+            "last_update_at": now - 1.0,
+            "ended_at": now - 1.0,
+            "stages": {},
+            "prompt_by_key": {},
+            "inflight_prompts": {},
+            "prompt_dispatches": 0,
+            "prompt_successes": 0,
+            "prompt_failures": 0,
+            "prompt_inflight": 0,
+            "events_count": 3,
+            "metadata": {
+                "command": "optimize",
+                "optimize": {
+                    "objective": "rmse",
+                    "execution_metric": "precision",
+                    "benchmark_path": "datasets/nightcap/ageom.yml",
+                    "max_trials": 6,
+                    "trials_run": 4,
+                    "best_loss": 8.55304557280547,
+                    "best_trial": 3,
+                    "parameterized_trials": 4,
+                    "primitive_change_trials": 1,
+                    "topology_change_trials": 0,
+                    "unique_primitive_signatures": 2,
+                    "unique_topologies": 1,
+                    "trial_history_path": "output/principal_optimize_20260319_140027/trial_history.json",
+                    "best_structure": {
+                        "node_count": 4,
+                        "edge_count": 2,
+                        "topo_hash": "05c468d81ba2b726",
+                        "primitive_signature": "c3fe45feb08a06c7",
+                    },
+                    "best_parameter_assignments": {
+                        "n_filter": {"filter_order": 4},
+                        "n_rate": {"smoothing_window": 5},
+                    },
+                    "trial_rows": [
+                        {
+                            "trial": 1,
+                            "loss": 10.524294403000809,
+                            "node_count": 4,
+                            "edge_count": 2,
+                            "primitive_signature": "sig_a",
+                            "has_parameters": True,
+                            "parameter_node_count": 2,
+                            "topology_changed": False,
+                            "primitive_assignment_changed": False,
+                        },
+                        {
+                            "trial": 3,
+                            "loss": 8.55304557280547,
+                            "node_count": 4,
+                            "edge_count": 2,
+                            "primitive_signature": "sig_b",
+                            "has_parameters": True,
+                            "parameter_node_count": 3,
+                            "topology_changed": False,
+                            "primitive_assignment_changed": True,
+                        },
+                    ],
+                }
+            },
+        }
+        (tmp_path / "run_opt123.json").write_text(json.dumps(payload))
+        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+        resp = client.get("/api/dashboard/runs/opt123")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["optimize_summary"]["objective"] == "rmse"
+        assert data["optimize_summary"]["execution_metric"] == "precision"
+        assert data["optimize_summary"]["best_loss"] == 8.55304557280547
+        assert data["optimize_summary"]["best_trial"] == 3
+        assert data["optimize_summary"]["parameterized_trials"] == 4
+        assert data["optimize_summary"]["primitive_change_trials"] == 1
+        assert data["optimize_summary"]["unique_primitive_signatures"] == 2
+        assert (
+            data["optimize_summary"]["best_structure"]["primitive_signature"]
+            == "c3fe45feb08a06c7"
+        )
+        assert (
+            data["optimize_summary"]["best_parameter_assignments"]["n_rate"][
+                "smoothing_window"
+            ]
+            == 5
+        )
+        assert data["optimize_summary"]["trial_rows"][1][
+            "primitive_assignment_changed"
+        ] is True
+
     def test_dashboard_run_includes_single_agent_summary(
         self, client, monkeypatch, tmp_path
     ):

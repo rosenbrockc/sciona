@@ -835,6 +835,69 @@ def _build_shared_context_summary(shared_context: dict[str, Any]) -> dict[str, A
     }
 
 
+def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
+    """Build the optimize_summary section."""
+    trial_rows = optimize.get("trial_rows", [])
+    if not isinstance(trial_rows, list):
+        trial_rows = []
+    rows: list[dict[str, Any]] = []
+    for row in trial_rows:
+        if not isinstance(row, dict):
+            continue
+        rows.append(
+            {
+                "trial": int(row.get("trial", 0) or 0),
+                "loss": float(row.get("loss", 0.0) or 0.0),
+                "node_count": int(row.get("node_count", 0) or 0),
+                "edge_count": int(row.get("edge_count", 0) or 0),
+                "primitive_signature": str(row.get("primitive_signature", "") or ""),
+                "has_parameters": bool(row.get("has_parameters")),
+                "parameter_node_count": int(row.get("parameter_node_count", 0) or 0),
+                "topology_changed": bool(row.get("topology_changed")),
+                "primitive_assignment_changed": bool(
+                    row.get("primitive_assignment_changed")
+                ),
+            }
+        )
+    best_structure = optimize.get("best_structure", {})
+    if not isinstance(best_structure, dict):
+        best_structure = {}
+    best_params = optimize.get("best_parameter_assignments", {})
+    if not isinstance(best_params, dict):
+        best_params = {}
+    return {
+        "objective": str(optimize.get("objective", "") or ""),
+        "execution_metric": str(optimize.get("execution_metric", "") or ""),
+        "benchmark_path": str(optimize.get("benchmark_path", "") or ""),
+        "max_trials": int(optimize.get("max_trials", 0) or 0),
+        "trials_run": int(optimize.get("trials_run", len(rows)) or 0),
+        "best_loss": (
+            float(optimize.get("best_loss"))
+            if optimize.get("best_loss") is not None
+            else None
+        ),
+        "best_trial": int(optimize.get("best_trial", 0) or 0),
+        "parameterized_trials": int(optimize.get("parameterized_trials", 0) or 0),
+        "primitive_change_trials": int(optimize.get("primitive_change_trials", 0) or 0),
+        "topology_change_trials": int(optimize.get("topology_change_trials", 0) or 0),
+        "unique_primitive_signatures": int(
+            optimize.get("unique_primitive_signatures", 0) or 0
+        ),
+        "unique_topologies": int(optimize.get("unique_topologies", 0) or 0),
+        "best_structure": {
+            "node_count": int(best_structure.get("node_count", 0) or 0),
+            "edge_count": int(best_structure.get("edge_count", 0) or 0),
+            "topo_hash": str(best_structure.get("topo_hash", "") or ""),
+            "primitive_signature": str(
+                best_structure.get("primitive_signature", "") or ""
+            ),
+        },
+        "best_parameter_assignments": best_params,
+        "trial_history_path": str(optimize.get("trial_history_path", "") or ""),
+        "trial_rows": rows,
+    }
+
+
 def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     """Derive dashboard-friendly summaries from run metadata."""
     metadata = run.get("metadata", {}) if isinstance(run.get("metadata"), dict) else {}
@@ -842,6 +905,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     benchmark = metadata.get("benchmark_validation", {})
     release_validation = metadata.get("release_validation", {})
     shared_context = metadata.get("shared_context", {})
+    optimize = metadata.get("optimize", {})
     single_agent = metadata.get("single_agent", {})
     catalog_alignment = metadata.get("catalog_alignment", {})
     architect_metrics = metadata.get("architect_metrics", {})
@@ -854,6 +918,8 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
         release_validation = {}
     if not isinstance(shared_context, dict):
         shared_context = {}
+    if not isinstance(optimize, dict):
+        optimize = {}
     if not isinstance(single_agent, dict):
         single_agent = {}
     if not isinstance(catalog_alignment, dict):
@@ -877,6 +943,7 @@ def _extract_dashboard_summaries(run: dict[str, Any]) -> dict[str, Any]:
     out["benchmark_summary"] = _build_benchmark_summary(benchmark, release_validation)
     out["catalog_validation_summary"] = _build_catalog_validation_summary(release_validation)
     out["shared_context_summary"] = _build_shared_context_summary(shared_context)
+    out["optimize_summary"] = _build_optimize_summary(optimize)
     return out
 
 

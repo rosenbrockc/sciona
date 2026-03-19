@@ -735,6 +735,7 @@
           const topSources = (catalog.top_sources || []).map((row) => `${row.source}=${Number(row.added || 0)}`).join(" ");
           const topMerges = (catalog.top_merges || []).map((row) => `${row.candidate}->${row.incumbent}`).join(" ");
           const shared = r.shared_context_summary || {};
+          const optimize = r.optimize_summary || {};
           const unresolved = Number(architect.unresolved_leaf_count || 0);
           const blocked = Number(architect.blocked_count || 0);
           const retrievalBand = retrieval.confidence_band || "--";
@@ -778,6 +779,9 @@
           const validationLine = (benchmark.prompt_results || benchmark.flow_results)
             ? `<div class="run-meta">bench=${benchmarkStatus} prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)} runtime_providers=${Number(benchmarkRuntime.provider_count || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
+          const optimizeLine = optimize.trials_run
+            ? `<div class="run-meta">optimize objective=${optimize.objective || "--"} best=${Number(optimize.best_loss || 0).toFixed(6)} trials=${Number(optimize.trials_run || 0)}/${Number(optimize.max_trials || 0)} params=${Number(optimize.parameterized_trials || 0)} variants=${Number(optimize.primitive_change_trials || 0)}</div>`
+            : "";
           div.innerHTML = [
             '<div class="run-line">',
             `<span class="run-id">${(r.run_id || "").slice(0, 12)}</span>`,
@@ -796,6 +800,7 @@
             (topSources ? `<div class="run-meta">catalog_sources ${topSources}</div>` : ""),
             (topMerges ? `<div class="run-meta">catalog_merges ${topMerges}</div>` : ""),
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
+            optimizeLine,
             (flowPromptCallSummary ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>` : ""),
             (flowPlannerToolSummary ? `<div class="run-meta">flow_tools ${flowPlannerToolSummary}</div>` : ""),
             (flowPlannerEscalationSummary ? `<div class="run-meta">flow_escalations ${flowPlannerEscalationSummary}</div>` : ""),
@@ -855,6 +860,7 @@
         const topSources = (catalog.top_sources || []).map((row) => `${row.source}=${Number(row.added || 0)}`).join(", ");
         const topMerges = (catalog.top_merges || []).map((row) => `${row.candidate}->${row.incumbent}@${Number(row.similarity || 0).toFixed(2)}`).join(", ");
         const shared = run.shared_context_summary || {};
+        const optimize = run.optimize_summary || {};
         const metrics = [
           ["pipeline", run.pipeline || "--"],
           ["label", run.label || "--"],
@@ -914,6 +920,15 @@
           ["template writes", String(Number(shared.total_template_puts || 0))],
           ["failure reuse", `${Number(shared.total_failure_hits || 0)}/${Number(shared.total_failure_searches || 0)}`],
           ["failure writes", String(Number(shared.total_failure_puts || 0))],
+          ["opt objective", optimize.objective || "--"],
+          ["opt metric", optimize.execution_metric || "--"],
+          ["opt best loss", optimize.best_loss != null ? Number(optimize.best_loss).toFixed(6) : "--"],
+          ["opt trials", optimize.trials_run ? `${Number(optimize.trials_run || 0)}/${Number(optimize.max_trials || 0)}` : "--"],
+          ["opt param trials", String(Number(optimize.parameterized_trials || 0))],
+          ["opt variant trials", String(Number(optimize.primitive_change_trials || 0))],
+          ["opt topologies", `${Number(optimize.unique_topologies || 0)} / ${Number(optimize.unique_primitive_signatures || 0)}`],
+          ["opt best trial", optimize.best_trial ? String(Number(optimize.best_trial || 0)) : "--"],
+          ["opt history", optimize.trial_history_path || "--"],
           ["single-agent", singleAgent.termination_reason || "--"],
           ["single-agent verify", singleAgent.verification_status || "--"],
           ["single-agent budget", `${Number(singleAgent.steps_used || 0)}/${Number(singleAgent.step_budget || 0)}`],
@@ -1012,6 +1027,7 @@
           `single_agent_summary: ${JSON.stringify(run.single_agent_summary || {}, null, 2)}\n` +
           `catalog_alignment_summary: ${JSON.stringify(run.catalog_alignment_summary || {}, null, 2)}\n` +
           `shared_context_summary: ${JSON.stringify(run.shared_context_summary || {}, null, 2)}\n` +
+          `optimize_summary: ${JSON.stringify(run.optimize_summary || {}, null, 2)}\n` +
           `benchmark_summary: ${JSON.stringify(run.benchmark_summary || {}, null, 2)}\n` +
           `\nmetadata:\n${metadata}` +
           (stale ? `\n\nstale_stages:\n${stale}` : "");

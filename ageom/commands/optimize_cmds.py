@@ -15,13 +15,17 @@ from ageom.commands._helpers import (
     _create_llm_router,
     _create_shared_context,
     _load_architect_catalog,
+    _mode_feature_summary,
     _load_semantic_index,
     _load_skill_index_or_empty,
     _print_mode_summary,
     _print_prompt_routing_summary,
     _print_retrieval_policy,
+    _routing_metadata_summary,
     _print_shared_context_metrics,
     _resolve_retrieval_policy,
+    _shared_context_metadata,
+    _shutdown_telemetry_drain,
     _warm_llm_if_supported,
     _write_shared_context_metrics_file,
 )
@@ -39,6 +43,97 @@ def _parse_dataset_vars(entries: list[str] | None) -> dict[str, str]:
             )
         result[key] = value
     return result
+
+
+def _summarize_optimize_history(
+    history: list[dict[str, Any]],
+    *,
+    objective: str,
+    execution_metric: str,
+    benchmark_path: str,
+    max_trials: int,
+    output_root: Path,
+) -> dict[str, Any]:
+    """Build dashboard-friendly metadata for a Principal optimisation run."""
+    trial_rows: list[dict[str, Any]] = []
+    best_entry: dict[str, Any] | None = None
+    parameterized_trials = 0
+    primitive_change_trials = 0
+    topology_change_trials = 0
+    primitive_signatures: set[str] = set()
+    topology_signatures: set[str] = set()
+
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        structure = entry.get("structure", {}) if isinstance(entry.get("structure"), dict) else {}
+        params = (
+            entry.get("parameter_assignments", {})
+            if isinstance(entry.get("parameter_assignments"), dict)
+            else {}
+        )
+        primitive_signature = str(structure.get("primitive_signature", "") or "")
+        topo_hash = str(structure.get("topo_hash", "") or "")
+        if primitive_signature:
+            primitive_signatures.add(primitive_signature)
+        if topo_hash:
+            topology_signatures.add(topo_hash)
+        if params:
+            parameterized_trials += 1
+        if bool(structure.get("primitive_assignment_changed")):
+            primitive_change_trials += 1
+        if bool(structure.get("topology_changed")):
+            topology_change_trials += 1
+        row = {
+            "trial": int(entry.get("trial", 0) or 0),
+            "loss": float(entry.get("loss", 0.0) or 0.0),
+            "node_count": int(structure.get("node_count", 0) or 0),
+            "edge_count": int(structure.get("edge_count", 0) or 0),
+            "topo_hash": topo_hash,
+            "primitive_signature": primitive_signature,
+            "parameter_node_count": len(params),
+            "has_parameters": bool(params),
+            "topology_changed": bool(structure.get("topology_changed")),
+            "primitive_assignment_changed": bool(
+                structure.get("primitive_assignment_changed")
+            ),
+        }
+        trial_rows.append(row)
+        if best_entry is None or row["loss"] < float(best_entry.get("loss", float("inf"))):
+            best_entry = entry
+
+    best_params = {}
+    best_structure = {}
+    if isinstance(best_entry, dict):
+        best_params = (
+            best_entry.get("parameter_assignments", {})
+            if isinstance(best_entry.get("parameter_assignments"), dict)
+            else {}
+        )
+        best_structure = (
+            best_entry.get("structure", {})
+            if isinstance(best_entry.get("structure"), dict)
+            else {}
+        )
+
+    return {
+        "objective": objective,
+        "execution_metric": execution_metric,
+        "benchmark_path": benchmark_path,
+        "max_trials": int(max_trials),
+        "trials_run": len(trial_rows),
+        "best_loss": float(best_entry.get("loss", float("inf"))) if isinstance(best_entry, dict) else None,
+        "best_trial": int(best_entry.get("trial", 0) or 0) if isinstance(best_entry, dict) else 0,
+        "parameterized_trials": parameterized_trials,
+        "primitive_change_trials": primitive_change_trials,
+        "topology_change_trials": topology_change_trials,
+        "unique_primitive_signatures": len(primitive_signatures),
+        "unique_topologies": len(topology_signatures),
+        "best_parameter_assignments": best_params,
+        "best_structure": best_structure,
+        "trial_history_path": str(output_root / "trial_history.json"),
+        "trial_rows": trial_rows,
+    }
 
 
 async def _match_results_for_optimize(
@@ -160,6 +255,15 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     )
     from ageom.principal.hpo import OptunaManager
     from ageom.principal.metric_selection import resolve_optimization_objective
+    from ageom.telemetry import (
+        configure_dashboard_output,
+        configure_postgres_telemetry,
+        finish_run,
+        merge_run_metadata,
+        start_run,
+        telemetry_scope,
+        update_stage,
+    )
     from ageom.types import Prover
 
     config = AgeomConfig()
@@ -193,8 +297,10 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
             ARCHITECT_DECOMPOSE,
             ARCHITECT_CRITIQUE,
         ]
-        _print_prompt_routing_summary(
-            config, "architect", prompt_keys, getattr(args, "mode", None)
+        architect_routing = _routing_metadata_summary(
+            _print_prompt_routing_summary(
+                config, "architect", prompt_keys, getattr(args, "mode", None)
+            )
         )
         llm = _create_llm_router(args, config, "architect", prompt_keys)
         await _warm_llm_if_supported(llm, "architect")
@@ -210,6 +316,21 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
+    configure_dashboard_output(config.telemetry_runs_dir)
+    _telem_drain = None
+    _telem_store = None
+    if config.telemetry_backend != "file" and config.postgres_uri:
+        try:
+            from ageom.telemetry_store import PostgresTelemetryStore, TelemetryDrain
+
+            _telem_store = PostgresTelemetryStore(config.postgres_uri)
+            await _telem_store.setup()
+            _telem_drain = TelemetryDrain(_telem_store)
+            configure_postgres_telemetry(_telem_store, _telem_drain)
+            await _telem_drain.start()
+        except Exception:
+            _telem_drain = None
+            _telem_store = None
     postgres_uri = "" if args.no_persist else config.postgres_uri
     architect_run_id = uuid.uuid4().hex
     architect_shared_context, architect_shared_metrics = await _create_shared_context(
@@ -218,6 +339,33 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     )
     output_root = Path("output") / f"principal_optimize_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     output_root.mkdir(parents=True, exist_ok=True)
+    telemetry_run_id = start_run(
+        "optimization",
+        label=getattr(args, "label", ""),
+        metadata={
+            "command": "optimize",
+            "goal": args.goal,
+            "prover": prover.value,
+            "execution_mode": mode_settings.mode,
+            "execution_path": "principal_optimize",
+            "mode_features": _mode_feature_summary(mode_settings),
+            "objective": objective_label,
+            "execution_metric": metric.value,
+            "benchmark_path": str(args.benchmark),
+            "output_dir": str(output_root),
+            "max_trials": int(args.trials),
+            "catalog_alignment": _catalog_alignment,
+            "retrieval_policy": {
+                "catalog_confidence": retrieval_policy.catalog_confidence,
+                "confidence_band": retrieval_policy.confidence_band,
+                "skill_index": retrieval_policy.skill_index_enabled,
+                "graph_retrieval": retrieval_policy.graph_retrieval_enabled,
+                "semantic_backend": retrieval_policy.semantic_index_backend_override
+                or "default",
+                "hunter_mode": retrieval_policy.hunter_mode,
+            },
+        },
+    )
 
     print("Principal optimisation loop")
     print(f"  Goal: {args.goal}")
@@ -231,119 +379,151 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     print(f"  Output: {output_root}")
     print()
 
-    async with create_checkpointer(postgres_uri) as checkpointer:
-        architect = DecompositionAgent(
-            catalog=catalog,
-            skill_index=skill_index,
-            llm=llm,
-            checkpointer=checkpointer,
-            shared_context=architect_shared_context,
-            shared_context_metrics=architect_shared_metrics,
-            context_namespace=f"architect/{architect_run_id}",
-            context_budget_chars=config.architect_shared_context_budget_chars,
-            architect_critique_llm_enabled=config.architect_critique_llm_enabled,
-        )
-
-        index, _index_mode = _load_semantic_index(
-            config.index_dir,
-            config,
-            backend_override=retrieval_policy.semantic_index_backend_override,
-        )
-        env = _create_proof_env(prover, config)
-        if prover == Prover.LEAN4:
-            oracle = VerificationOracleImpl(lean_env=env)
-        elif prover == Prover.PYTHON:
-            oracle = VerificationOracleImpl(python_env=env)
-        else:
-            oracle = VerificationOracleImpl(coq_env=env)
-
-        from ageom.llm_router import (
-            HUNTER_ANALYZE_FAILURE,
-            HUNTER_REFORMULATE,
-            HUNTER_SCORE,
-        )
-
-        hunter_prompt_keys = [
-            HUNTER_SCORE,
-            HUNTER_REFORMULATE,
-            HUNTER_ANALYZE_FAILURE,
-        ]
-        _print_prompt_routing_summary(
-            config, "hunter", hunter_prompt_keys, getattr(args, "mode", None)
-        )
-        embedder = getattr(index, "_embedder", None)
-        hunter_llm = _create_llm_router(
-            args,
-            config,
-            "hunter",
-            hunter_prompt_keys,
-            embedder=embedder,
-        )
-        await _warm_llm_if_supported(hunter_llm, "hunter")
-        hunter = HunterAgent(
-            index=index,
-            oracle=oracle,
-            llm=hunter_llm,
-            max_iterations=config.hunter_max_iterations,
-            top_k_verify=config.hunter_top_k_verify,
-            search_k=config.hunter_search_k,
-            mode=retrieval_policy.hunter_mode,
-            use_gbnf=mode_settings.hunter_use_gbnf,
-            query_batch_size=config.hunter_query_batch_size,
-            top_k_per_query=config.hunter_top_k_per_query,
-            max_candidates_total=config.hunter_max_candidates_total,
-        )
-
-        trial_counter = {"value": 0}
-
-        async def _trial_synthesizer(cdg: Any, match_results: list[Any]) -> Any:
-            trial_counter["value"] += 1
-            return await _synthesize_export_bundle_for_optimize(
-                cdg,
-                match_results,
-                prover=prover,
-                config=config,
-                catalog=catalog,
-                output_root=output_root,
-                trial_index=trial_counter["value"],
+    final_state: dict[str, Any] | None = None
+    try:
+        with telemetry_scope(run_id=telemetry_run_id):
+            update_stage(
+                stage="setup",
+                status="running",
+                message="loading optimize dependencies",
             )
+            async with create_checkpointer(postgres_uri) as checkpointer:
+                architect = DecompositionAgent(
+                    catalog=catalog,
+                    skill_index=skill_index,
+                    llm=llm,
+                    checkpointer=checkpointer,
+                    shared_context=architect_shared_context,
+                    shared_context_metrics=architect_shared_metrics,
+                    context_namespace=f"architect/{architect_run_id}",
+                    context_budget_chars=config.architect_shared_context_budget_chars,
+                    architect_critique_llm_enabled=config.architect_critique_llm_enabled,
+                )
 
-        sandbox = ExecutionSandbox(timeout_s=args.timeout)
-        atom_ledger = AtomLedger()
-        hpo_manager = OptunaManager(study_name="principal")
-        deps = PrincipalDeps(
-            architect=architect,
-            sandbox=sandbox,
-            match_results_fn=lambda cdg: _match_results_for_optimize(
-                cdg,
-                mode=mode_settings.mode,
-                prover=prover,
-                hunter=hunter,
-                llm=llm,
-            ),
-            synthesize_fn=_trial_synthesizer,
-            evaluation_spec=evaluation_spec,
-            dataset_varset=_parse_dataset_vars(getattr(args, "dataset_var", None)),
-            atom_ledger=atom_ledger,
-            catalog=catalog,
-            hpo_manager=hpo_manager,
-            param_trials_per_structure=2,
-        )
-        graph = build_principal_graph().compile()
+                index, _index_mode = _load_semantic_index(
+                    config.index_dir,
+                    config,
+                    backend_override=retrieval_policy.semantic_index_backend_override,
+                )
+                env = _create_proof_env(prover, config)
+                if prover == Prover.LEAN4:
+                    oracle = VerificationOracleImpl(lean_env=env)
+                elif prover == Prover.PYTHON:
+                    oracle = VerificationOracleImpl(python_env=env)
+                else:
+                    oracle = VerificationOracleImpl(coq_env=env)
 
-        initial_state = {
-            "goal": args.goal,
-            "metric": metric,
-            "dataset_path": args.benchmark,
-            "max_trials": args.trials,
-        }
+                from ageom.llm_router import (
+                    HUNTER_ANALYZE_FAILURE,
+                    HUNTER_REFORMULATE,
+                    HUNTER_SCORE,
+                )
 
-        config_dict = {"configurable": {"deps": deps}}
+                hunter_prompt_keys = [
+                    HUNTER_SCORE,
+                    HUNTER_REFORMULATE,
+                    HUNTER_ANALYZE_FAILURE,
+                ]
+                hunter_routing = _routing_metadata_summary(
+                    _print_prompt_routing_summary(
+                        config, "hunter", hunter_prompt_keys, getattr(args, "mode", None)
+                    )
+                )
+                merge_run_metadata(
+                    {
+                        "llm_routing": {
+                            "architect": architect_routing,
+                            "hunter": hunter_routing,
+                        }
+                    },
+                    run_id=telemetry_run_id,
+                )
+                embedder = getattr(index, "_embedder", None)
+                hunter_llm = _create_llm_router(
+                    args,
+                    config,
+                    "hunter",
+                    hunter_prompt_keys,
+                    embedder=embedder,
+                )
+                await _warm_llm_if_supported(hunter_llm, "hunter")
+                hunter = HunterAgent(
+                    index=index,
+                    oracle=oracle,
+                    llm=hunter_llm,
+                    max_iterations=config.hunter_max_iterations,
+                    top_k_verify=config.hunter_top_k_verify,
+                    search_k=config.hunter_search_k,
+                    mode=retrieval_policy.hunter_mode,
+                    use_gbnf=mode_settings.hunter_use_gbnf,
+                    query_batch_size=config.hunter_query_batch_size,
+                    top_k_per_query=config.hunter_top_k_per_query,
+                    max_candidates_total=config.hunter_max_candidates_total,
+                )
 
-        try:
-            final_state = await graph.ainvoke(initial_state, config=config_dict)
-        finally:
-            await env.close()
+                trial_counter = {"value": 0}
+
+                async def _trial_synthesizer(cdg: Any, match_results: list[Any]) -> Any:
+                    trial_counter["value"] += 1
+                    return await _synthesize_export_bundle_for_optimize(
+                        cdg,
+                        match_results,
+                        prover=prover,
+                        config=config,
+                        catalog=catalog,
+                        output_root=output_root,
+                        trial_index=trial_counter["value"],
+                    )
+
+                sandbox = ExecutionSandbox(timeout_s=args.timeout)
+                atom_ledger = AtomLedger()
+                hpo_manager = OptunaManager(study_name="principal")
+                deps = PrincipalDeps(
+                    architect=architect,
+                    sandbox=sandbox,
+                    match_results_fn=lambda cdg: _match_results_for_optimize(
+                        cdg,
+                        mode=mode_settings.mode,
+                        prover=prover,
+                        hunter=hunter,
+                        llm=llm,
+                    ),
+                    synthesize_fn=_trial_synthesizer,
+                    evaluation_spec=evaluation_spec,
+                    dataset_varset=_parse_dataset_vars(getattr(args, "dataset_var", None)),
+                    atom_ledger=atom_ledger,
+                    catalog=catalog,
+                    hpo_manager=hpo_manager,
+                    param_trials_per_structure=2,
+                )
+                graph = build_principal_graph().compile()
+
+                initial_state = {
+                    "goal": args.goal,
+                    "metric": metric,
+                    "dataset_path": args.benchmark,
+                    "max_trials": args.trials,
+                }
+
+                config_dict = {"configurable": {"deps": deps}}
+                update_stage(
+                    stage="principal_optimize",
+                    status="running",
+                    message="running structural and hyperparameter search",
+                )
+                try:
+                    final_state = await graph.ainvoke(initial_state, config=config_dict)
+                finally:
+                    await env.close()
+            update_stage(
+                stage="principal_optimize",
+                status="completed",
+                message="optimization complete",
+            )
+    except Exception as exc:
+        finish_run(telemetry_run_id, status="failed", error=str(exc))
+        await _shutdown_telemetry_drain(_telem_drain, _telem_store)
+        raise
 
     # Report
     print("\nOptimisation complete:")
@@ -371,6 +551,25 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     )
     if metrics_path is not None:
         print(f"  Shared context metrics: {metrics_path}")
+    merge_run_metadata(
+        {
+            "shared_context": _shared_context_metadata(
+                {"architect": architect_shared_metrics},
+                metrics_path=metrics_path,
+            ),
+            "optimize": _summarize_optimize_history(
+                history,
+                objective=objective_label,
+                execution_metric=metric.value,
+                benchmark_path=str(args.benchmark),
+                max_trials=int(args.trials),
+                output_root=output_root,
+            ),
+        },
+        run_id=telemetry_run_id,
+    )
+    finish_run(telemetry_run_id, status="completed")
+    await _shutdown_telemetry_drain(_telem_drain, _telem_store)
 
 
 async def _cmd_profile(args: argparse.Namespace) -> None:
