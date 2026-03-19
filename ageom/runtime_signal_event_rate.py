@@ -41,6 +41,11 @@ def _robust_scale(values: np.ndarray) -> float:
 def filter_signal_for_detection(
     signal: np.ndarray,
     sampling_rate: float | int,
+    *,
+    filter_order: int = 4,
+    clipping_scale: float = 8.0,
+    low_cutoff_hz: float = 3.0,
+    high_cutoff_hz: float = 25.0,
 ) -> np.ndarray:
     """Condition a sampled waveform for downstream peak/event detection."""
     rate = _coerce_sampling_rate(sampling_rate)
@@ -50,16 +55,16 @@ def filter_signal_for_detection(
 
     centered = values - float(np.median(values))
     scale = _robust_scale(centered)
-    clipped = np.clip(centered, -8.0 * scale, 8.0 * scale)
+    clipped = np.clip(centered, -clipping_scale * scale, clipping_scale * scale)
 
     nyquist = rate / 2.0
-    high = min(25.0, 0.45 * rate)
-    low = min(3.0, high / 3.0)
+    high = min(high_cutoff_hz, 0.45 * rate)
+    low = min(low_cutoff_hz, high / 3.0)
     if low <= 0 or high <= low or high >= nyquist:
         return clipped
 
     sos = butter(
-        4,
+        filter_order,
         [low / nyquist, high / nyquist],
         btype="bandpass",
         output="sos",
@@ -83,6 +88,9 @@ def _pick_peak_orientation(
 def detect_peaks_in_signal(
     conditioned_signal: np.ndarray,
     sampling_rate: float | int,
+    *,
+    prominence_scale: float = 1.5,
+    refractory_scale: float = 0.45,
 ) -> np.ndarray:
     """Detect salient peaks in a conditioned waveform using robust thresholds."""
     rate = _coerce_sampling_rate(sampling_rate)
@@ -91,8 +99,8 @@ def detect_peaks_in_signal(
         return np.empty(0, dtype=np.int64)
 
     scale = _robust_scale(values)
-    prominence = max(1.5 * scale, 1e-6)
-    distance = max(1, int(round(0.45 * rate)))
+    prominence = max(prominence_scale * scale, 1e-6)
+    distance = max(1, int(round(refractory_scale * rate)))
     peaks = _pick_peak_orientation(
         values,
         distance=distance,
@@ -130,16 +138,18 @@ def compute_event_rate(
 def compute_event_rate_smoothed(
     events: np.ndarray,
     sampling_rate: float | int,
+    *,
+    smoothing_window: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convert event indices into a smoothed per-minute rate estimate."""
     midpoints, event_rate = compute_event_rate(events, sampling_rate)
     if event_rate.size == 0:
         return midpoints, event_rate
 
-    if event_rate.size < 5:
+    if event_rate.size < smoothing_window:
         window = max(1, event_rate.size)
     else:
-        window = 5
+        window = smoothing_window
     kernel = np.ones(window, dtype=np.float64) / float(window)
     smoothed = np.convolve(event_rate, kernel, mode="same")
     return midpoints, smoothed.astype(np.float64)

@@ -441,6 +441,25 @@ class PrimitiveCatalog:
             score -= abs(node_out - prim_out) * 0.1
         return score
 
+    def attach_tunables(
+        self, tunables_map: dict[str, list["PrimitiveParamSpec"]]
+    ) -> int:
+        """Attach tunable parameter specs to matching primitives.
+
+        Returns the number of primitives that received tunables.
+        """
+        from ageom.architect.models import ParamStatus, PrimitiveParamSpec  # noqa: F811
+
+        count = 0
+        for prim_name, params in tunables_map.items():
+            prim = self.get(prim_name)
+            if prim is None:
+                continue
+            prim.tunable_params = list(params)
+            prim.param_status = ParamStatus.APPROVED
+            count += 1
+        return count
+
     def save(self, path: str | Path) -> None:
         """Persist the catalog to a JSON file."""
         path = Path(path)

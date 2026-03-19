@@ -76,6 +76,10 @@ class ExecutionSandbox:
             eval_spec_arg = _materialize_evaluation_spec_arg(output_dir, evaluation_spec)
             if eval_spec_arg is not None:
                 cmd.extend(["--eval-spec", eval_spec_arg])
+            if bundle.parameter_assignments:
+                params_path = output_dir / "params.json"
+                params_path.write_text(json.dumps(bundle.parameter_assignments, indent=2))
+                cmd.extend(["--params", str(params_path)])
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 cwd=str(output_dir),
@@ -234,6 +238,10 @@ class ExecutionSandbox:
         eval_spec_arg = _materialize_evaluation_spec_arg(output_dir, evaluation_spec)
         if eval_spec_arg is not None:
             cmd.extend(["--eval-spec", eval_spec_arg])
+        if bundle.parameter_assignments:
+            params_path = output_dir / "params.json"
+            params_path.write_text(json.dumps(bundle.parameter_assignments, indent=2))
+            cmd.extend(["--params", str(params_path)])
 
         try:
             proc = await asyncio.create_subprocess_exec(

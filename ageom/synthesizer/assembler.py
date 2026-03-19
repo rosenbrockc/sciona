@@ -16,6 +16,19 @@ from ageom.types import MatchResult, Prover
 # Telemetry helper emitted into instrumented Python skeletons
 # ---------------------------------------------------------------------------
 
+_PYTHON_PARAMS_HARNESS: list[str] = [
+    "# --- Parameter override harness ---",
+    "import argparse as _ageom_argparse",
+    "_AGEOM_PARAMS = {}",
+    "_ageom_parser = _ageom_argparse.ArgumentParser(add_help=False)",
+    "_ageom_parser.add_argument('--params', default=None)",
+    "_ageom_known, _ = _ageom_parser.parse_known_args()",
+    "if _ageom_known.params:",
+    "    import json as _ageom_json",
+    "    from pathlib import Path as _ageom_Path",
+    "    _AGEOM_PARAMS = _ageom_json.loads(_ageom_Path(_ageom_known.params).read_text())",
+]
+
 _PYTHON_TELEMETRY_HELPER: list[str] = [
     "",
     "_AGEOM_TRACE_PATH = 'trace.jsonl'",
@@ -631,6 +644,12 @@ class Assembler:
             lines.extend(_PYTHON_TELEMETRY_HELPER)
             lines.append("")
 
+        # Params harness (only if any unit has tunables)
+        has_tunables = any(unit.tunable_param_names for unit in units)
+        if has_tunables:
+            lines.extend(_PYTHON_PARAMS_HARNESS)
+            lines.append("")
+
         lines.append("")
 
         # Emit atomic leaf definitions
@@ -657,16 +676,19 @@ class Assembler:
             if unit.type_signature:
                 lines.append(f'    """Type: {unit.type_signature}"""')
 
-            if telemetry:
-                arg_str = ", ".join(inp.name for inp in unit.inputs)
+            arg_str = ", ".join(inp.name for inp in unit.inputs)
+            if unit.tunable_param_names:
+                params_expr = f"**_AGEOM_PARAMS.get({unit.node_id!r}, {{}})"
+                call_expr = f"{unit.declaration_name}({arg_str}, {params_expr})"
+            else:
                 call_expr = f"{unit.declaration_name}({arg_str})"
+
+            if telemetry:
                 lines.append(
                     f"    return _ageom_probe({unit.node_id!r}, lambda: {call_expr})"
                 )
             else:
-                lines.append(
-                    f"    return {unit.declaration_name}({', '.join(inp.name for inp in unit.inputs)})"
-                )
+                lines.append(f"    return {call_expr}")
             lines.append("")
             lines.append("")
 

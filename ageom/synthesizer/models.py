@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -21,6 +22,7 @@ class AssemblyUnit(BaseModel):
     inputs: list[IOSpec] = Field(default_factory=list)
     outputs: list[IOSpec] = Field(default_factory=list)
     requires_glue: bool = False
+    tunable_param_names: list[str] = Field(default_factory=list)
 
 
 class GlueEdge(BaseModel):
@@ -92,3 +94,4 @@ class ExportBundle(BaseModel):
     ffi_files: list[Path] = Field(default_factory=list)
     certificate: VerificationCertificate | None = None
     errors: list[str] = Field(default_factory=list)
+    parameter_assignments: dict[str, dict[str, Any]] = Field(default_factory=dict)

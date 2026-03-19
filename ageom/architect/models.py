@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ConceptType(str, Enum):
@@ -130,6 +131,48 @@ class SkeletonGraph(BaseModel):
     )  # e.g., ["merge_sort", "quicksort"]
 
 
+class ParamStatus(str, Enum):
+    """Audit status of a primitive's tunable parameters."""
+
+    APPROVED = "approved"
+    FIXED = "fixed"
+    BLOCKED = "blocked"
+    DEPRECATED = "deprecated"
+
+
+class PrimitiveParamSpec(BaseModel):
+    """Schema for a single tunable parameter on a primitive."""
+
+    name: str
+    kind: Literal["int", "float", "categorical", "bool"]
+    default: float | int | str | bool
+    min_value: float | int | None = None
+    max_value: float | int | None = None
+    step: float | int | None = None
+    log_scale: bool = False
+    choices: list[str | int | float] | None = None
+    constraints: str = ""
+    semantic_role: str = ""
+    safe_to_optimize: bool = True
+
+    # Provenance
+    range_source: str = ""
+    source_reference: str = ""
+    source_confidence: str = ""
+
+    @model_validator(mode="after")
+    def _validate_range(self) -> "PrimitiveParamSpec":
+        if (
+            self.min_value is not None
+            and self.max_value is not None
+            and self.min_value > self.max_value
+        ):
+            raise ValueError(
+                f"min_value ({self.min_value}) must be <= max_value ({self.max_value})"
+            )
+        return self
+
+
 class AlgorithmicPrimitive(BaseModel):
     """A known atomic operation from CLRS or a library."""
 
@@ -144,3 +187,5 @@ class AlgorithmicPrimitive(BaseModel):
     uncertainty_factor: float | None = None
     uncertainty_confidence: float = 0.0
     uncertainty_mode: str = ""
+    tunable_params: list[PrimitiveParamSpec] = Field(default_factory=list)
+    param_status: ParamStatus = ParamStatus.FIXED

@@ -70,6 +70,10 @@ class PrincipalState:
     bottleneck_node_id: str = ""
     bottleneck_reason: str = ""
 
+    # Hyperparameter assignments (node_id -> {param_name: value})
+    node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
+    best_node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
+
     # Bookkeeping
     done: bool = False
     error: str = ""
@@ -129,6 +133,8 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
     # that returns an ExportBundle (keeps the graph deterministic).
     if deps.synthesize_fn is not None:
         bundle = await deps.synthesize_fn(state.cdg, match_results)
+        if state.node_params:
+            bundle.parameter_assignments = dict(state.node_params)
         state.export_bundle = bundle
 
     return {
@@ -211,8 +217,13 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
             "loss": benchmark.global_loss,
             "thread_id": state.thread_id,
             "structure": structure,
+            "parameter_assignments": dict(state.node_params),
         }
     )
+
+    # Track best params
+    if benchmark.global_loss <= state.best_loss:
+        state.best_node_params = dict(state.node_params)
 
     return {
         "benchmark": benchmark,

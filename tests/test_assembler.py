@@ -618,3 +618,98 @@ class TestCLIParserAcceptsAssemble:
                 with patch("asyncio.run") as mock_run:
                     main()
                     mock_run.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# TestParamsHarness (Phase 2)
+# ---------------------------------------------------------------------------
+
+
+class TestParamsHarness:
+    """Test that the assembler emits a --params harness when units have tunables."""
+
+    def _make_python_match(self, node_id, decl_name, type_sig):
+        decl = Declaration(
+            name=decl_name,
+            type_signature=type_sig,
+            prover=Prover.PYTHON,
+        )
+        candidate = CandidateMatch(
+            declaration=decl, score=0.95, retrieval_method="embedding"
+        )
+        vr = VerificationResult(
+            candidate=candidate, verified=True, proof_term=f"@{decl_name}"
+        )
+        return MatchResult(
+            pdg_node=PDGNode(predicate_id=node_id, statement=type_sig),
+            verified_match=vr,
+            all_candidates=[candidate],
+            all_verifications=[vr],
+        )
+
+    def _make_tunable_cdg(self):
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Pipeline",
+                description="Signal pipeline",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.DECOMPOSED,
+                children=["filter_step"],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="filter_step",
+                parent_id="root",
+                name="Bandpass Filter",
+                description="Apply bandpass filter",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="bandpass_filter",
+                inputs=[
+                    IOSpec(name="signal", type_desc="np.ndarray"),
+                    IOSpec(name="rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+                depth=1,
+            ),
+        ]
+        return CDGExport(nodes=nodes, edges=[], metadata={"goal": "filter"})
+
+    def test_emits_params_harness_with_tunables(self):
+        cdg = self._make_tunable_cdg()
+        matches = [self._make_python_match(
+            "filter_step", "my_module.bandpass_filter", "(signal, rate) -> ndarray"
+        )]
+        # Manually set tunable_param_names on the assembled skeleton
+        assembler = Assembler(Prover.PYTHON)
+        skeleton = assembler.assemble(cdg, matches)
+
+        # No tunables by default → no harness
+        assert "_AGEOM_PARAMS" not in skeleton.source_code
+
+        # Now assemble with tunables
+        # We need to inject tunable_param_names into the unit
+        # Reassemble with a patched unit list
+        for unit in skeleton.units:
+            if unit.node_id == "filter_step":
+                unit.tunable_param_names = ["filter_order", "low_cutoff_hz"]
+
+        # Re-emit with tunables set
+        source, _ = assembler._emit_python(
+            skeleton.units, skeleton.glue_edges,
+            [n for n in cdg.nodes if n.status == NodeStatus.DECOMPOSED],
+            skeleton.metadata,
+        )
+        assert "_AGEOM_PARAMS" in source
+        assert "--params" in source
+        assert "_AGEOM_PARAMS.get('filter_step'" in source
+
+    def test_no_harness_without_tunables(self):
+        cdg = self._make_tunable_cdg()
+        matches = [self._make_python_match(
+            "filter_step", "my_module.bandpass_filter", "(signal, rate) -> ndarray"
+        )]
+        assembler = Assembler(Prover.PYTHON)
+        skeleton = assembler.assemble(cdg, matches)
+        assert "_AGEOM_PARAMS" not in skeleton.source_code
