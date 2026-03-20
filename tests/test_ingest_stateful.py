@@ -18,15 +18,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import ConceptType, DependencyEdge, IOSpec
-from ageom.ingester.chunker import _compute_state_edges
-from ageom.ingester.emitter import (
+from sciona.architect.models import ConceptType, DependencyEdge, IOSpec
+from sciona.ingester.chunker import _compute_state_edges
+from sciona.ingester.emitter import (
     generate_ghost_witnesses,
     generate_stateful_wrappers,
 )
-from ageom.ingester.extractor import _compute_cross_window_attrs, extract_data_flow
-from ageom.ingester.graph import IngesterAgent
-from ageom.ingester.models import (
+from sciona.ingester.extractor import _compute_cross_window_attrs, extract_data_flow
+from sciona.ingester.graph import IngesterAgent
+from sciona.ingester.models import (
     MacroAtomSpec,
     ProposedMacroPlan,
     StateModelSpec,

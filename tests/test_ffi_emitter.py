@@ -1,15 +1,15 @@
-"""Tests for FFI binding generation (ageom.ingester.ffi_emitter)."""
+"""Tests for FFI binding generation (sciona.ingester.ffi_emitter)."""
 
 from __future__ import annotations
 
 
-from ageom.architect.models import IOSpec
-from ageom.ingester.ffi_emitter import (
+from sciona.architect.models import IOSpec
+from sciona.ingester.ffi_emitter import (
     generate_ffi_bindings,
     generate_ffi_imports,
     generate_ffi_stub,
 )
-from ageom.ingester.models import MacroAtomSpec
+from sciona.ingester.models import MacroAtomSpec
 
 # ---------------------------------------------------------------------------
 # Helpers

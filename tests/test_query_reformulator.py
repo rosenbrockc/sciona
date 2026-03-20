@@ -5,13 +5,13 @@ import os
 
 import pytest
 
-from ageom.hunter.prompts import REFORMULATE_QUERY_SYSTEM, REFORMULATE_QUERY_USER
-from ageom.hunter.query_reformulator import (
+from sciona.hunter.prompts import REFORMULATE_QUERY_SYSTEM, REFORMULATE_QUERY_USER
+from sciona.hunter.query_reformulator import (
     HeuristicQueryReformulator,
     _DEFAULT_DATA_PATH,
     derive_catalog_hints,
 )
-from ageom.types import Declaration, Prover
+from sciona.types import Declaration, Prover
 
 
 class _FallbackLLM:
@@ -211,8 +211,8 @@ async def test_query_reformulator_uses_catalog_hints_for_generic_prompt():
 
 @pytest.mark.asyncio
 async def test_disable_phrase_rules_env_var_skips_hardcoded_phrases(monkeypatch):
-    """With AGEOM_DISABLE_PHRASE_RULES=1, the ECG case must NOT produce hardcoded phrases."""
-    monkeypatch.setenv("AGEOM_DISABLE_PHRASE_RULES", "1")
+    """With SCIONA_DISABLE_PHRASE_RULES=1, the ECG case must NOT produce hardcoded phrases."""
+    monkeypatch.setenv("SCIONA_DISABLE_PHRASE_RULES", "1")
     fallback = _FallbackLLM('["fallback query"]')
     reformulator = HeuristicQueryReformulator(fallback)
     system, user = _reformulate_prompt(

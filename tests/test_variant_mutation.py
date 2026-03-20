@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, AlgorithmicPrimitive, ConceptType, IOSpec, NodeStatus
-from ageom.principal.atom_ledger import AtomLedger, compute_slot_signature
-from ageom.principal.variant_mutation import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, AlgorithmicPrimitive, ConceptType, IOSpec, NodeStatus
+from sciona.principal.atom_ledger import AtomLedger, compute_slot_signature
+from sciona.principal.variant_mutation import (
     LedgerVariantFamily,
     SignalEventRateVariantFamily,
     maybe_apply_bottleneck_variant,
@@ -166,7 +166,7 @@ def _mock_catalog_with(
     *primitive_specs: tuple[str, list[IOSpec], list[IOSpec]],
     concept_type: ConceptType = ConceptType.CUSTOM,
 ) -> PrimitiveCatalog:
-    from ageom.architect.catalog import PrimitiveCatalog
+    from sciona.architect.catalog import PrimitiveCatalog
 
     catalog = PrimitiveCatalog()
     prims = []

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ageom.principal.flare import (
+from sciona.principal.flare import (
     BestStructure,
     FlarePayload,
     generate_flare,

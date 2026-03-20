@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# e2e_benchmark.sh — Compare the full ageo-matcher pipeline against a raw LLM
+# e2e_benchmark.sh — Compare the full sciona pipeline against a raw LLM
 # on real-world goals. Measures: leaf coverage, match quality, latency.
 set -uo pipefail  # no -e: individual runs may fail without aborting the whole benchmark
 
@@ -58,15 +58,15 @@ export LLM_MODEL="${E2E_LLM_MODEL:-gpt-5.3-codex}"
 
 # Force all LLM routing through the chosen provider to avoid stale shim
 # sockets from other providers (e.g. claude_shim set in .env).
-export AGEOM_LLM_PROVIDER="$LLM_PROVIDER"
-export AGEOM_LLM_MODEL="$LLM_MODEL"
-export AGEOM_HUNTER_LLM_PROVIDER="$LLM_PROVIDER"
-export AGEOM_HUNTER_LLM_MODEL="$LLM_MODEL"
-export AGEOM_ARCHITECT_LLM_PROVIDER="$LLM_PROVIDER"
-export AGEOM_ARCHITECT_LLM_MODEL="$LLM_MODEL"
+export SCIONA_LLM_PROVIDER="$LLM_PROVIDER"
+export SCIONA_LLM_MODEL="$LLM_MODEL"
+export SCIONA_HUNTER_LLM_PROVIDER="$LLM_PROVIDER"
+export SCIONA_HUNTER_LLM_MODEL="$LLM_MODEL"
+export SCIONA_ARCHITECT_LLM_PROVIDER="$LLM_PROVIDER"
+export SCIONA_ARCHITECT_LLM_MODEL="$LLM_MODEL"
 export PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 if [[ "$LLM_PROVIDER" == *_cli ]]; then
-    export AGEOM_ALLOW_LEGACY_SUBPROCESS_PROVIDERS="${E2E_ALLOW_LEGACY_SUBPROCESS:-true}"
+    export SCIONA_ALLOW_LEGACY_SUBPROCESS_PROVIDERS="${E2E_ALLOW_LEGACY_SUBPROCESS:-true}"
 fi
 
 PROMPT_OVERRIDE_KEYS=(
@@ -89,49 +89,49 @@ PROMPT_OVERRIDE_KEYS=(
     ORCHESTRATOR_REFINE
 )
 for key in "${PROMPT_OVERRIDE_KEYS[@]}"; do
-    export "AGEOM_${key}_LLM_PROVIDER=$LLM_PROVIDER"
-    export "AGEOM_${key}_LLM_MODEL=$LLM_MODEL"
+    export "SCIONA_${key}_LLM_PROVIDER=$LLM_PROVIDER"
+    export "SCIONA_${key}_LLM_MODEL=$LLM_MODEL"
 done
 
 # When E2E_GENERIC_ONLY=true, disable phrase rules so the benchmark exercises
 # the generic keyword/embedding path only.
 if [[ "$(printf '%s' "${E2E_GENERIC_ONLY:-}" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
-    export AGEOM_DISABLE_PHRASE_RULES=1
-    info "Generic-only mode: AGEOM_DISABLE_PHRASE_RULES=1"
+    export SCIONA_DISABLE_PHRASE_RULES=1
+    info "Generic-only mode: SCIONA_DISABLE_PHRASE_RULES=1"
 fi
 
 # Force FAISS semantic index — the default retrieval policy degrades to
 # lexical when catalog confidence is < 0.70 (medium band), which prevents
 # the benchmark from exercising the full semantic search pipeline.
-export AGEOM_SEMANTIC_INDEX_BACKEND=faiss
+export SCIONA_SEMANTIC_INDEX_BACKEND=faiss
 MODE_TIMEOUT_S="${E2E_MODE_TIMEOUT_S:-240}"
 RAW_TIMEOUT_S="${E2E_RAW_TIMEOUT_S:-120}"
 INCLUDE_SYNTHESIS="${E2E_INCLUDE_SYNTHESIS:-false}"
 SYNTH_TIMEOUT_S="${E2E_SYNTH_TIMEOUT_S:-240}"
 EXPORT_TIMEOUT_S="${E2E_EXPORT_TIMEOUT_S:-120}"
 PROFILE_TIMEOUT_S="${E2E_PROFILE_TIMEOUT_S:-180}"
-PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/ageom.yml}"
+PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/sciona.yml}"
 PROFILE_DATASET_VARS="${E2E_PROFILE_DATASET_VARS:-}"
 if [ -z "$PROFILE_DATASET_VARS" ] && [ -f "$PROFILE_DATASET" ] && rg -Fq '$(tracker)' "$PROFILE_DATASET"; then
     PROFILE_DATASET_VARS="tracker=single"
 fi
 export E2E_PROFILE_DATASET_VARS="$PROFILE_DATASET_VARS"
-export MPLCONFIGDIR="${E2E_MPLCONFIGDIR:-/tmp/ageom-mplcfg}"
-export AGEOM_PYTHON_PATH="${E2E_PROOF_PYTHON:-$BENCHMARK_PYTHON}"
+export MPLCONFIGDIR="${E2E_MPLCONFIGDIR:-/tmp/sciona-mplcfg}"
+export SCIONA_PYTHON_PATH="${E2E_PROOF_PYTHON:-$BENCHMARK_PYTHON}"
 export PYTHON_JULIACALL_INIT="${E2E_PYTHON_JULIACALL_INIT:-no}"
-DEFAULT_JULIA_DEPOT="/tmp/ageom-julia-depot"
+DEFAULT_JULIA_DEPOT="/tmp/sciona-julia-depot"
 if [[ "$(printf '%s' "${E2E_USE_HOME_JULIA_DEPOT:-}" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
     DEFAULT_JULIA_DEPOT="$HOME/.julia"
 fi
 export JULIA_DEPOT_PATH="${E2E_JULIA_DEPOT_PATH:-$DEFAULT_JULIA_DEPOT}"
 mkdir -p "$MPLCONFIGDIR" "$JULIA_DEPOT_PATH"
-if [ "$JULIA_DEPOT_PATH" = "/tmp/ageom-julia-depot" ]; then
+if [ "$JULIA_DEPOT_PATH" = "/tmp/sciona-julia-depot" ]; then
     info "Julia depot: $JULIA_DEPOT_PATH (isolated default; set E2E_USE_HOME_JULIA_DEPOT=true or E2E_JULIA_DEPOT_PATH=... to override)"
 else
     info "Julia depot: $JULIA_DEPOT_PATH (override)"
 fi
 info "Matplotlib config: $MPLCONFIGDIR"
-info "Python proof/runtime: $AGEOM_PYTHON_PATH"
+info "Python proof/runtime: $SCIONA_PYTHON_PATH"
 info "Python juliacall init: $PYTHON_JULIACALL_INIT"
 if [ -n "$PROFILE_DATASET_VARS" ]; then
     info "Profile dataset vars: $PROFILE_DATASET_VARS"
@@ -250,9 +250,9 @@ sys.exit(0 if found else 1)
     echo "$hit" > "$OUTPUT_DIR/${label}_hits.txt"
 }
 
-# run_pipeline MODE OUTPUT_DIR — runs ageom run, captures latency, tolerates failure
-# Uses the project interpreter to invoke ageom.cli.main directly (avoids sandbox issues with
-# native library loading when using the ageom entry point script).
+# run_pipeline MODE OUTPUT_DIR — runs sciona run, captures latency, tolerates failure
+# Uses the project interpreter to invoke sciona.cli.main directly (avoids sandbox issues with
+# native library loading when using the sciona entry point script).
 run_pipeline() {
     local mode="$1"
     local out_dir="$2"
@@ -268,8 +268,8 @@ run_pipeline() {
         elapsed \
         rc \
         "$BENCHMARK_PYTHON" -c "
-import sys; sys.argv = ['ageom', 'run', '$GOAL', '--prover', '$PROVER', '--mode', '$mode', '--llm-provider', '$LLM_PROVIDER', '--llm-model', '$LLM_MODEL', '--output', '$out_dir']
-from ageom.cli import main; main()
+import sys; sys.argv = ['sciona', 'run', '$GOAL', '--prover', '$PROVER', '--mode', '$mode', '--llm-provider', '$LLM_PROVIDER', '--llm-model', '$LLM_MODEL', '--output', '$out_dir']
+from sciona.cli import main; main()
 "
 
     # Export latency for caller
@@ -327,8 +327,8 @@ EOF
         synth_ms \
         synth_rc \
         "$BENCHMARK_PYTHON" -c "
-import sys; sys.argv = ['ageom', 'synthesize', '$mode_dir/cdg.json', '$mode_dir/matches.json', '--prover', '$PROVER', '--mode', '$mode', '--llm-provider', '$LLM_PROVIDER', '--llm-model', '$LLM_MODEL', '--output', '$synth_out']
-from ageom.cli import main; main()
+import sys; sys.argv = ['sciona', 'synthesize', '$mode_dir/cdg.json', '$mode_dir/matches.json', '--prover', '$PROVER', '--mode', '$mode', '--llm-provider', '$LLM_PROVIDER', '--llm-model', '$LLM_MODEL', '--output', '$synth_out']
+from sciona.cli import main; main()
 "
     if [ -f "$synth_out" ]; then
         synth_exists=true
@@ -353,8 +353,8 @@ from ageom.cli import main; main()
             export_ms \
             export_rc \
             "$BENCHMARK_PYTHON" -c "
-import sys; sys.argv = ['ageom', 'export', '$synth_out', '--target', 'python-pkg', '--prover', '$PROVER', '--output-dir', '$export_dir']
-from ageom.cli import main; main()
+import sys; sys.argv = ['sciona', 'export', '$synth_out', '--target', 'python-pkg', '--prover', '$PROVER', '--output-dir', '$export_dir']
+from sciona.cli import main; main()
 "
         if [ -d "$export_dir" ]; then
             export_exists=true
@@ -379,13 +379,13 @@ from ageom.cli import main; main()
             profile_rc \
             "$BENCHMARK_PYTHON" -c "
 import os, sys
-argv = ['ageom', 'profile', '--cdg', '$mode_dir/cdg.json', '--artifact', '$synth_out', '--dataset', '$PROFILE_DATASET', '--metric', '$PROFILE_METRIC']
+argv = ['sciona', 'profile', '--cdg', '$mode_dir/cdg.json', '--artifact', '$synth_out', '--dataset', '$PROFILE_DATASET', '--metric', '$PROFILE_METRIC']
 for item in filter(None, os.environ.get('E2E_PROFILE_DATASET_VARS', '').split(',')):
     argv.extend(['--dataset-var', item])
 if '$EVAL_SPEC_PATH':
     argv.extend(['--eval-spec', '$EVAL_SPEC_PATH'])
 sys.argv = argv
-from ageom.cli import main; main()
+from sciona.cli import main; main()
 "
         if [ -f "$profile_log" ] && rg -q "=== Profiling Results ===" "$profile_log"; then
             profile_has_gradients=true
@@ -463,7 +463,7 @@ from pathlib import Path
 
 msgpack_path = Path('data/index/declarations.msgpack')
 if not msgpack_path.exists():
-    print('ERROR: index declarations.msgpack not found — run ageom index build first')
+    print('ERROR: index declarations.msgpack not found — run sciona index build first')
     exit(1)
 
 with open(msgpack_path, 'rb') as f:
@@ -511,8 +511,8 @@ RAW_DIR = os.environ.get("RAW_DIR", "")
 
 
 async def run():
-    from ageom.config import AgeomConfig
-    from ageom.hunter.llm import create_llm_client
+    from sciona.config import AgeomConfig
+    from sciona.hunter.llm import create_llm_client
 
     config = AgeomConfig()
     provider = os.environ.get("LLM_PROVIDER", "codex_shim")

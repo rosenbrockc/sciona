@@ -8,31 +8,31 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.synthesizer.assembler import Assembler
-from ageom.synthesizer.classifier import (
+from sciona.synthesizer.assembler import Assembler
+from sciona.synthesizer.classifier import (
     ErrorCategory,
     classify_error,
     suggest_deterministic_fix,
 )
-from ageom.synthesizer.contracts import ContractGenerator, ContractSpec, SafeAtomWrapper
-from ageom.synthesizer.extractor import ExportTarget
-from ageom.synthesizer.models import AssemblyUnit, SkeletonFile
-from ageom.synthesizer.patcher import find_sorry_locations
-from ageom.synthesizer.python_template import (
+from sciona.synthesizer.contracts import ContractGenerator, ContractSpec, SafeAtomWrapper
+from sciona.synthesizer.extractor import ExportTarget
+from sciona.synthesizer.models import AssemblyUnit, SkeletonFile
+from sciona.synthesizer.patcher import find_sorry_locations
+from sciona.synthesizer.python_template import (
     generate_init_py,
     generate_main_script,
     generate_pipeline_py,
     generate_pyproject_toml,
 )
-from ageom.types import (
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,
@@ -146,7 +146,7 @@ class TestProverEnum:
 
 class TestPythonDeclarationSource:
     def test_ast_extract_function(self):
-        from ageom.indexer.python_source import PythonDeclarationSource
+        from sciona.indexer.python_source import PythonDeclarationSource
 
         source = PythonDeclarationSource()
         code = textwrap.dedent("""\
@@ -167,7 +167,7 @@ class TestPythonDeclarationSource:
         assert info.docstring == "Solve Ax = b."
 
     def test_private_functions_skipped(self):
-        from ageom.indexer.python_source import PythonDeclarationSource
+        from sciona.indexer.python_source import PythonDeclarationSource
 
         source = PythonDeclarationSource()
         code = textwrap.dedent("""\
@@ -182,7 +182,7 @@ class TestPythonDeclarationSource:
         assert info is None
 
     def test_type_signature_normalization(self):
-        from ageom.indexer.python_source import (
+        from sciona.indexer.python_source import (
             PythonDeclarationSource,
             PythonFunctionInfo,
         )
@@ -200,7 +200,7 @@ class TestPythonDeclarationSource:
         assert sig == "(a: ndarray, b: ndarray) -> ndarray"
 
     def test_extract_icontract_decorators(self):
-        from ageom.indexer.python_source import PythonDeclarationSource
+        from sciona.indexer.python_source import PythonDeclarationSource
 
         source = PythonDeclarationSource()
         code = textwrap.dedent("""\
@@ -221,7 +221,7 @@ class TestPythonDeclarationSource:
 
     def test_get_declarations_from_module_json(self):
         """Test extraction from a real stdlib module (json)."""
-        from ageom.indexer.python_source import PythonDeclarationSource
+        from sciona.indexer.python_source import PythonDeclarationSource
 
         source = PythonDeclarationSource()
         decls = source.get_declarations_from_module("json")
@@ -238,13 +238,13 @@ class TestPythonDeclarationSource:
 
 class TestPythonEnvironment:
     def test_prover_name(self):
-        from ageom.judge.python_env import PythonEnvironment
+        from sciona.judge.python_env import PythonEnvironment
 
         env = PythonEnvironment()
         assert env.prover_name == "python"
 
     def test_parse_mypy_output_clean(self):
-        from ageom.judge.python_env import _parse_mypy_output
+        from sciona.judge.python_env import _parse_mypy_output
 
         raw = "Success: no issues found in 1 source file\n"
         fb = _parse_mypy_output(raw)
@@ -252,7 +252,7 @@ class TestPythonEnvironment:
         assert len(fb.errors) == 0
 
     def test_parse_mypy_output_errors(self):
-        from ageom.judge.python_env import _parse_mypy_output
+        from sciona.judge.python_env import _parse_mypy_output
 
         raw = textwrap.dedent("""\
             _check.py:1: error: Incompatible types in assignment [assignment]
@@ -266,7 +266,7 @@ class TestPythonEnvironment:
         assert len(fb.warnings) == 1
 
     def test_parse_mypy_output_multiple_errors(self):
-        from ageom.judge.python_env import _parse_mypy_output
+        from sciona.judge.python_env import _parse_mypy_output
 
         raw = textwrap.dedent("""\
             _check.py:1: error: No module named 'foo'
@@ -278,7 +278,7 @@ class TestPythonEnvironment:
 
     @pytest.mark.asyncio
     async def test_run_with_mocked_subprocess(self):
-        from ageom.judge.python_env import PythonEnvironment
+        from sciona.judge.python_env import PythonEnvironment
 
         env = PythonEnvironment()
 
@@ -297,7 +297,7 @@ class TestPythonEnvironment:
 
     @pytest.mark.asyncio
     async def test_check_term_with_mocked_subprocess(self):
-        from ageom.judge.python_env import PythonEnvironment
+        from sciona.judge.python_env import PythonEnvironment
 
         env = PythonEnvironment()
 
@@ -316,7 +316,7 @@ class TestPythonEnvironment:
 
     @pytest.mark.asyncio
     async def test_mypy_not_found(self):
-        from ageom.judge.python_env import PythonEnvironment
+        from sciona.judge.python_env import PythonEnvironment
 
         env = PythonEnvironment(mypy_path="/nonexistent/mypy")
 
@@ -332,7 +332,7 @@ class TestPythonEnvironment:
 
     @pytest.mark.asyncio
     async def test_check_proof_executes_file_not_mypy(self):
-        from ageom.judge.python_env import PythonEnvironment
+        from sciona.judge.python_env import PythonEnvironment
 
         env = PythonEnvironment()
 
@@ -681,8 +681,8 @@ class TestPythonExtractor:
     @pytest.mark.asyncio
     async def test_build_python_creates_package_structure(self, tmp_path):
         """Test that _build_python creates the expected directory structure."""
-        from ageom.config import AgeomConfig
-        from ageom.synthesizer.extractor import Extractor
+        from sciona.config import AgeomConfig
+        from sciona.synthesizer.extractor import Extractor
 
         config = AgeomConfig()
         extractor = Extractor(config)
@@ -724,12 +724,12 @@ class TestCLIAcceptsPython:
         """Parse CLI args without executing commands."""
         from unittest.mock import patch as _patch
 
-        from ageom.cli import main
+        from sciona.cli import main
 
         # We patch asyncio.run and the command functions to capture args
-        with _patch("sys.argv", ["ageom"] + argv):
+        with _patch("sys.argv", ["sciona"] + argv):
             with _patch("asyncio.run"):
-                with _patch("ageom.cli._cmd_index_build"):
+                with _patch("sciona.cli._cmd_index_build"):
                     try:
                         main()
                     except SystemExit:
@@ -778,7 +778,7 @@ class TestCLIAcceptsPython:
 
 class TestPythonPrompts:
     def test_analyze_error_system_python_exists(self):
-        from ageom.synthesizer.prompts import ANALYZE_ERROR_SYSTEM_PYTHON
+        from sciona.synthesizer.prompts import ANALYZE_ERROR_SYSTEM_PYTHON
 
         assert "Python" in ANALYZE_ERROR_SYSTEM_PYTHON
         assert "type annotations" in ANALYZE_ERROR_SYSTEM_PYTHON
@@ -786,7 +786,7 @@ class TestPythonPrompts:
         assert "JSON" in ANALYZE_ERROR_SYSTEM_PYTHON
 
     def test_generate_implementation_system_python_exists(self):
-        from ageom.synthesizer.prompts import GENERATE_IMPLEMENTATION_SYSTEM_PYTHON
+        from sciona.synthesizer.prompts import GENERATE_IMPLEMENTATION_SYSTEM_PYTHON
 
         assert "Python" in GENERATE_IMPLEMENTATION_SYSTEM_PYTHON
         assert "NotImplementedError" in GENERATE_IMPLEMENTATION_SYSTEM_PYTHON
@@ -800,14 +800,14 @@ class TestPythonPrompts:
 
 class TestCheckerWithPython:
     def test_python_env_parameter(self):
-        from ageom.judge.checker import VerificationOracleImpl
+        from sciona.judge.checker import VerificationOracleImpl
 
         oracle = VerificationOracleImpl(python_env=MagicMock())
         env = oracle._get_env(Prover.PYTHON)
         assert env is not None
 
     def test_python_env_not_configured_raises(self):
-        from ageom.judge.checker import VerificationOracleImpl
+        from sciona.judge.checker import VerificationOracleImpl
 
         oracle = VerificationOracleImpl()
         with pytest.raises(RuntimeError, match="PythonEnvironment not configured"):
@@ -821,7 +821,7 @@ class TestCheckerWithPython:
 
 class TestPythonConfig:
     def test_config_has_python_fields(self):
-        from ageom.config import AgeomConfig
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig()
         assert hasattr(config, "python_path")
@@ -840,7 +840,7 @@ class TestPythonConfig:
 class TestRepairPythonPromptSelection:
     def test_repair_imports_python_prompts(self):
         """Verify repair.py imports the Python-specific prompts."""
-        import ageom.synthesizer.repair as repair_mod
+        import sciona.synthesizer.repair as repair_mod
 
         assert hasattr(repair_mod, "ANALYZE_ERROR_SYSTEM_PYTHON")
         assert hasattr(repair_mod, "GENERATE_IMPLEMENTATION_SYSTEM_PYTHON")

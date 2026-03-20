@@ -8,7 +8,7 @@ algorithmic operations the architect should recognize during CDG decomposition.
 
 ## Where to add
 
-File: `ageom/architect/catalog.py`
+File: `sciona/architect/catalog.py`
 
 Follow the pattern of `_BAYESIAN_PRIMITIVES` and `_SIGNAL_FILTER_PRIMITIVES`.
 
@@ -19,7 +19,7 @@ _MY_DOMAIN_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
     (
         AlgorithmicPrimitive(
             name="my_primitive_name",          # snake_case, verb-first
-            source="ageom-builtins",
+            source="sciona-builtins",
             category=ConceptType.SOME_CATEGORY,
             description="One-sentence description, present tense, no subject.",
             inputs=[IOSpec(name="x", type_desc="ndarray", constraints="...")],
@@ -46,8 +46,8 @@ for prim, aliases in _MY_DOMAIN_PRIMITIVES:
 ```python
 class AlgorithmicPrimitive(BaseModel):
     name: str                  # unique snake_case, verb-first
-    source: str                # "ageom-builtins" for built-ins
-    category: ConceptType      # enum from ageom/architect/models.py
+    source: str                # "sciona-builtins" for built-ins
+    category: ConceptType      # enum from sciona/architect/models.py
     description: str           # one sentence, present tense, no subject
     inputs: list[IOSpec]       # at least one
     outputs: list[IOSpec]      # at least one
@@ -59,7 +59,7 @@ class AlgorithmicPrimitive(BaseModel):
 
 ## Categories
 
-See `ConceptType` enum in `ageom/architect/models.py`.  Key values:
+See `ConceptType` enum in `sciona/architect/models.py`.  Key values:
 `SORTING`, `SEARCHING`, `GRAPH_TRAVERSAL`, `GRAPH_OPTIMIZATION`,
 `SIGNAL_FILTER`, `SIGNAL_TRANSFORM`, `SAMPLER`, `MCMC_KERNEL`,
 `CONJUGATE_UPDATE`, `MESSAGE_PASSING`, `DYNAMIC_PROGRAMMING`,
@@ -78,7 +78,7 @@ Matched case-insensitively with spaces normalized to underscores.
 ## Keyword inference
 
 If your domain has distinctive keywords, add them to `_KEYWORD_TYPES` in
-`ageom/architect/source_catalog.py` so AST-fallback inference works for
+`sciona/architect/source_catalog.py` so AST-fallback inference works for
 source-registry atoms in the same domain.
 
 ## Before adding

@@ -4,8 +4,8 @@ import statistics
 
 import pytest
 
-from ageom.hunter.graph import HunterAgent
-from ageom.hunter.llm import LlamaCppLLMClient
+from sciona.hunter.graph import HunterAgent
+from sciona.hunter.llm import LlamaCppLLMClient
 from tests.helpers.match_regression import (
     FixtureOracle,
     StaticSemanticIndex,

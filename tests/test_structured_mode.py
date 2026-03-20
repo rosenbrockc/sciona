@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-from ageom.cli import _run_structured_single_pass
-from ageom.types import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+from sciona.cli import _run_structured_single_pass
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

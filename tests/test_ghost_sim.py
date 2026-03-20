@@ -5,15 +5,15 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.synthesizer.ghost_sim import (
+from sciona.synthesizer.ghost_sim import (
     GhostSimReport,
     _compute_precision_gradients,
     _extract_atom_name,
@@ -21,9 +21,9 @@ from ageom.synthesizer.ghost_sim import (
     _GHOST_AVAILABLE,
     run_ghost_simulation,
 )
-from ageom.synthesizer.uncertainty import HeuristicBackend
+from sciona.synthesizer.uncertainty import HeuristicBackend
 
-from ageom.types import (
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

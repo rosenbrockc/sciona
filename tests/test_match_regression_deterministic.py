@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.hunter.graph import HunterAgent
+from sciona.hunter.graph import HunterAgent
 from tests.helpers.match_regression import (
     DeterministicHunterLLM,
     FixtureOracle,

@@ -1,7 +1,7 @@
-# Formalist Architect Memory - ageo-matcher
+# Formalist Architect Memory - sciona
 
 ## Project Overview
-- **ageo-matcher (ageom)**: Config-driven agentic pipeline for grounding high-level algorithm goals into verified library functions (Lean 4/Mathlib, Coq/Rocq, Python)
+- **sciona (sciona)**: Config-driven agentic pipeline for grounding high-level algorithm goals into verified library functions (Lean 4/Mathlib, Coq/Rocq, Python)
 - **ageo-atoms (ageoa)**: Companion package with icontract-decorated atom wrappers and ghost witness simulation system
 - **Test suite**: ~1200+ tests, well-maintained
 
@@ -43,10 +43,14 @@
 - SkillIndex: FAISS over primitive descriptions for semantic matching
 
 ## Key Files
-- `/Users/conrad/personal/ageo-matcher/ARCH.md` - full architecture doc
-- `/Users/conrad/personal/ageo-matcher/ROADMAP.md` - strategic direction
-- `/Users/conrad/personal/ageo-matcher/ROADMAP_DONE.md` - completed items
-- `/Users/conrad/personal/ageo-matcher/PLAN-catalog-enrichment.md` - next catalog work
-- `/Users/conrad/personal/ageo-matcher/ageom/config.py` - AgeomConfig + ExecutionModeSettings
-- `/Users/conrad/personal/ageo-matcher/ageom/benchmark_validation.py` - release validation
-- `/Users/conrad/personal/ageo-matcher/ageom/flow_benchmark.py` - flow benchmark harness
+- `/Users/conrad/personal/sciona/ARCH.md` - full architecture doc
+- `/Users/conrad/personal/sciona/ROADMAP.md` - strategic direction
+- `/Users/conrad/personal/sciona/ROADMAP_DONE.md` - completed items
+- `/Users/conrad/personal/sciona/PLAN-catalog-enrichment.md` - next catalog work
+- `/Users/conrad/personal/sciona/sciona/config.py` - AgeomConfig + ExecutionModeSettings
+- `/Users/conrad/personal/sciona/sciona/benchmark_validation.py` - release validation
+- `/Users/conrad/personal/sciona/sciona/flow_benchmark.py` - flow benchmark harness
+
+## Algorithmic Commons Foundation
+- See [project_algorithmic_commons.md](project_algorithmic_commons.md) for formal analysis of the 6-component marketplace architecture
+- Key risk: AST fingerprint 64-bit truncation insufficient at registry scale; Shapley tractable via DAG closed-form; gradient scores leak in Dead-End Flare

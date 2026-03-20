@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import time
 
-from ageom.ingester.monitor import (
+from sciona.ingester.monitor import (
     COMPLETED_FILE,
     FAILED_FILE,
     PARTIAL_DIR,

@@ -24,7 +24,7 @@ def client(mock_driver):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
-    from ageom.visualizer_api import app
+    from sciona.visualizer_api import app
 
     # Replace lifespan to avoid real Neo4j connection
     @asynccontextmanager
@@ -262,7 +262,7 @@ class TestStaticFiles:
 
 class TestDashboardAPI:
     def test_list_runs_and_latest(self, client, monkeypatch, tmp_path):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -283,7 +283,7 @@ class TestDashboardAPI:
             "metadata": {"goal": "test"},
         }
         (tmp_path / "run_abc123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs")
         assert resp.status_code == 200
@@ -298,7 +298,7 @@ class TestDashboardAPI:
     def test_dashboard_run_includes_routing_and_retrieval_summaries(
         self, client, monkeypatch, tmp_path
     ):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -388,7 +388,7 @@ class TestDashboardAPI:
             },
         }
         (tmp_path / "run_route123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs/route123")
         assert resp.status_code == 200
@@ -444,7 +444,7 @@ class TestDashboardAPI:
     def test_dashboard_run_includes_benchmark_and_release_validation_summaries(
         self, client, monkeypatch, tmp_path
     ):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -640,7 +640,7 @@ class TestDashboardAPI:
             },
         }
         (tmp_path / "run_bench123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs/bench123")
         assert resp.status_code == 200
@@ -719,7 +719,7 @@ class TestDashboardAPI:
     def test_dashboard_run_includes_shared_context_summary(
         self, client, monkeypatch, tmp_path
     ):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -779,7 +779,7 @@ class TestDashboardAPI:
             },
         }
         (tmp_path / "run_shared123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs/shared123")
         assert resp.status_code == 200
@@ -806,7 +806,7 @@ class TestDashboardAPI:
     def test_dashboard_run_includes_optimize_summary(
         self, client, monkeypatch, tmp_path
     ):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -830,7 +830,7 @@ class TestDashboardAPI:
                 "optimize": {
                     "objective": "rmse",
                     "execution_metric": "precision",
-                    "benchmark_path": "datasets/nightcap/ageom.yml",
+                    "benchmark_path": "datasets/nightcap/sciona.yml",
                     "max_trials": 6,
                     "trials_run": 4,
                     "best_loss": 8.55304557280547,
@@ -879,7 +879,7 @@ class TestDashboardAPI:
             },
         }
         (tmp_path / "run_opt123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs/opt123")
         assert resp.status_code == 200
@@ -908,7 +908,7 @@ class TestDashboardAPI:
     def test_dashboard_run_includes_single_agent_summary(
         self, client, monkeypatch, tmp_path
     ):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -972,7 +972,7 @@ class TestDashboardAPI:
             },
         }
         (tmp_path / "run_singleagent123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs/singleagent123")
         assert resp.status_code == 200
@@ -995,7 +995,7 @@ class TestDashboardAPI:
     def test_dashboard_run_includes_architect_summary(
         self, client, monkeypatch, tmp_path
     ):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -1039,7 +1039,7 @@ class TestDashboardAPI:
             },
         }
         (tmp_path / "run_architect123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs/architect123")
         assert resp.status_code == 200
@@ -1059,7 +1059,7 @@ class TestDashboardAPI:
     def test_dashboard_run_includes_hunter_summary(
         self, client, monkeypatch, tmp_path
     ):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -1105,7 +1105,7 @@ class TestDashboardAPI:
             },
         }
         (tmp_path / "run_hunter123.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
         resp = client.get("/api/dashboard/runs/hunter123")
         assert resp.status_code == 200
@@ -1119,7 +1119,7 @@ class TestDashboardAPI:
         assert data["hunter_summary"]["last_verified_candidate"] == "Nat.add_comm"
 
     def test_run_hang_annotation(self, client, monkeypatch, tmp_path):
-        from ageom.telemetry import reset_telemetry_runtime
+        from sciona.telemetry import reset_telemetry_runtime
 
         reset_telemetry_runtime()
         now = time.time()
@@ -1151,8 +1151,8 @@ class TestDashboardAPI:
             "metadata": {},
         }
         (tmp_path / "run_hung-run.json").write_text(json.dumps(payload))
-        monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
-        monkeypatch.setenv("AGEOM_TELEMETRY_STALE_SECONDS", "5")
+        monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
+        monkeypatch.setenv("SCIONA_TELEMETRY_STALE_SECONDS", "5")
 
         resp = client.get("/api/dashboard/runs/hung-run")
         assert resp.status_code == 200

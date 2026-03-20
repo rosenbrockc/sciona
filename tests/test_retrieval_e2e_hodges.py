@@ -29,24 +29,24 @@ if importlib.util.find_spec("neo4j") is None:
 if importlib.util.find_spec("langgraph") is None:
     pytest.skip("requires langgraph", allow_module_level=True)
 
-from ageom.architect.catalog import PrimitiveCatalog
-from ageom.architect.graph_retrieval import (
+from sciona.architect.catalog import PrimitiveCatalog
+from sciona.architect.graph_retrieval import (
     CDGSubgraphRetriever,
     ExampleDecomposition,
     format_examples_for_prompt,
     make_retriever,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.architect.nodes import decompose_node
-from ageom.architect.state import DecompositionDeps
-from ageom.config import AgeomConfig
-from ageom.graph_store import GraphStore, _topo_hash
+from sciona.architect.nodes import decompose_node
+from sciona.architect.state import DecompositionDeps
+from sciona.config import AgeomConfig
+from sciona.graph_store import GraphStore, _topo_hash
 
 
 # ---------------------------------------------------------------------------

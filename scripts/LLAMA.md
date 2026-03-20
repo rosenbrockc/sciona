@@ -6,7 +6,7 @@ This file documents what was done to get local llama serving and smoke tests pas
 
 1. Verified model and env wiring:
    - Model exists at `models/llama/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf`.
-   - `.env` points to `AGEOM_LLAMA_CPP_BASE_URL=http://127.0.0.1:18080/v1`.
+   - `.env` points to `SCIONA_LLAMA_CPP_BASE_URL=http://127.0.0.1:18080/v1`.
 
 2. Ran the smoke test:
    - `python3 scripts/test_llama_server.py`

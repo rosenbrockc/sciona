@@ -6,13 +6,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.deterministic_decompose import (
+from sciona.architect.deterministic_decompose import (
     DeterministicDecomposer,
     _parse_decompose_prompt,
 )
-from ageom.architect.prompts import DECOMPOSE_NODE_SYSTEM, DECOMPOSE_NODE_USER
-from ageom.commands._helpers import _create_llm_router
-from ageom.llm_router import ARCHITECT_DECOMPOSE, LLMRouter
+from sciona.architect.prompts import DECOMPOSE_NODE_SYSTEM, DECOMPOSE_NODE_USER
+from sciona.commands._helpers import _create_llm_router
+from sciona.llm_router import ARCHITECT_DECOMPOSE, LLMRouter
 
 
 def _prompt(
@@ -165,7 +165,7 @@ def test_create_llm_router_wraps_architect_decompose_deterministically(monkeypat
         client.model = model
         return client
 
-    monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+    monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
     args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None, mode="verified")
     config = SimpleNamespace(

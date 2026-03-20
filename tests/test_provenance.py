@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.provenance.models import Bounty, CDGSubmission, Originator
-from ageom.provenance.schema import (
+from sciona.provenance.models import Bounty, CDGSubmission, Originator
+from sciona.provenance.schema import (
     PROVENANCE_CONSTRAINTS,
     PROVENANCE_INDEXES,
     build_authored_by_params,

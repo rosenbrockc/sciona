@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from ageom.cli import _mode_feature_summary
-from ageom.config import AgeomConfig, effective_round_provider_model, resolve_execution_mode
+from sciona.cli import _mode_feature_summary
+from sciona.config import AgeomConfig, effective_round_provider_model, resolve_execution_mode
 
 
 def test_verified_mode_preserves_existing_feature_flags(monkeypatch):
-    monkeypatch.setenv("AGEOM_EXECUTION_MODE", "verified")
-    monkeypatch.setenv("AGEOM_GRAPH_RETRIEVAL_ENABLED", "true")
-    monkeypatch.setenv("AGEOM_ARCHITECT_SHARED_CONTEXT_ENABLED", "true")
-    monkeypatch.setenv("AGEOM_HUNTER_SHARED_CONTEXT_ENABLED", "true")
-    monkeypatch.setenv("AGEOM_HUNTER_MODE", "speculative_local")
-    monkeypatch.setenv("AGEOM_HUNTER_USE_GBNF", "true")
+    monkeypatch.setenv("SCIONA_EXECUTION_MODE", "verified")
+    monkeypatch.setenv("SCIONA_GRAPH_RETRIEVAL_ENABLED", "true")
+    monkeypatch.setenv("SCIONA_ARCHITECT_SHARED_CONTEXT_ENABLED", "true")
+    monkeypatch.setenv("SCIONA_HUNTER_SHARED_CONTEXT_ENABLED", "true")
+    monkeypatch.setenv("SCIONA_HUNTER_MODE", "speculative_local")
+    monkeypatch.setenv("SCIONA_HUNTER_USE_GBNF", "true")
 
     config = AgeomConfig()
     mode = resolve_execution_mode(config)
@@ -26,12 +26,12 @@ def test_verified_mode_preserves_existing_feature_flags(monkeypatch):
 
 
 def test_structured_mode_disables_heavier_optional_features(monkeypatch):
-    monkeypatch.setenv("AGEOM_EXECUTION_MODE", "structured")
-    monkeypatch.setenv("AGEOM_GRAPH_RETRIEVAL_ENABLED", "true")
-    monkeypatch.setenv("AGEOM_ARCHITECT_SHARED_CONTEXT_ENABLED", "true")
-    monkeypatch.setenv("AGEOM_HUNTER_SHARED_CONTEXT_ENABLED", "true")
-    monkeypatch.setenv("AGEOM_HUNTER_MODE", "speculative_local")
-    monkeypatch.setenv("AGEOM_HUNTER_USE_GBNF", "true")
+    monkeypatch.setenv("SCIONA_EXECUTION_MODE", "structured")
+    monkeypatch.setenv("SCIONA_GRAPH_RETRIEVAL_ENABLED", "true")
+    monkeypatch.setenv("SCIONA_ARCHITECT_SHARED_CONTEXT_ENABLED", "true")
+    monkeypatch.setenv("SCIONA_HUNTER_SHARED_CONTEXT_ENABLED", "true")
+    monkeypatch.setenv("SCIONA_HUNTER_MODE", "speculative_local")
+    monkeypatch.setenv("SCIONA_HUNTER_USE_GBNF", "true")
 
     config = AgeomConfig()
     mode = resolve_execution_mode(config)
@@ -49,9 +49,9 @@ def test_structured_mode_disables_heavier_optional_features(monkeypatch):
 
 
 def test_rapid_mode_uses_lexical_and_disables_shared_features(monkeypatch):
-    monkeypatch.setenv("AGEOM_EXECUTION_MODE", "rapid")
-    monkeypatch.setenv("AGEOM_HUNTER_USE_GBNF", "true")
-    monkeypatch.setenv("AGEOM_HUNTER_MODE", "speculative_local")
+    monkeypatch.setenv("SCIONA_EXECUTION_MODE", "rapid")
+    monkeypatch.setenv("SCIONA_HUNTER_USE_GBNF", "true")
+    monkeypatch.setenv("SCIONA_HUNTER_MODE", "speculative_local")
 
     config = AgeomConfig()
     mode = resolve_execution_mode(config)
@@ -69,7 +69,7 @@ def test_rapid_mode_uses_lexical_and_disables_shared_features(monkeypatch):
 
 
 def test_mode_feature_summary_renders_expected_flags(monkeypatch):
-    monkeypatch.setenv("AGEOM_EXECUTION_MODE", "rapid")
+    monkeypatch.setenv("SCIONA_EXECUTION_MODE", "rapid")
     config = AgeomConfig()
     mode = resolve_execution_mode(config)
 

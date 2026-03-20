@@ -7,15 +7,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import ConceptType, IOSpec, NodeStatus
-from ageom.ingester.chunker import (
+from sciona.architect.models import ConceptType, IOSpec, NodeStatus
+from sciona.ingester.chunker import (
     ChunkerDeps,
     ChunkerState,
     decompose_complex_atoms,
     is_atom_complex,
 )
-from ageom.ingester.emitter import build_cdg_export
-from ageom.ingester.models import (
+from sciona.ingester.emitter import build_cdg_export
+from sciona.ingester.models import (
     MacroAtomSpec,
     MethodFact,
     ProposedMacroPlan,

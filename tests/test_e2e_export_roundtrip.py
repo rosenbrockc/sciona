@@ -9,30 +9,30 @@ from pathlib import Path
 
 import pytest
 
-from ageom.architect.handoff import CDGExport, save_json, load_json
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport, save_json, load_json
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.orchestrator import OrchestratorResult
-from ageom.result_to_cdg import RunCDGMetadata, orchestrator_result_to_cdg
-from ageom.types import (
+from sciona.orchestrator import OrchestratorResult
+from sciona.result_to_cdg import RunCDGMetadata, orchestrator_result_to_cdg
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,
     PDGNode,
     VerificationResult,
 )
-from ageom.upsert_cdg import sanitize_cdg
+from sciona.upsert_cdg import sanitize_cdg
 
 # ---------------------------------------------------------------------------
 # Helpers (reuse patterns from test_result_to_cdg)
 # ---------------------------------------------------------------------------
 
-EXEMPLAR_DIR = Path(__file__).resolve().parent.parent / "ageom" / "data" / "exemplars"
+EXEMPLAR_DIR = Path(__file__).resolve().parent.parent / "sciona" / "data" / "exemplars"
 
 
 def _make_atomic_node(node_id: str, name: str, parent_id: str = "root") -> AlgorithmicNode:

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from ageom.synthesizer.uncertainty import (
+from sciona.synthesizer.uncertainty import (
     AnalyticBackend,
     AtomUncertaintyEstimate,
     CatalogBackend,

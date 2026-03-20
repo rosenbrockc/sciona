@@ -1,4 +1,4 @@
-"""Tests for ageom.hunter.llm provider clients and factory."""
+"""Tests for sciona.hunter.llm provider clients and factory."""
 
 from __future__ import annotations
 
@@ -9,14 +9,14 @@ import shutil
 
 import pytest
 
-from ageom.hunter.llm import (
+from sciona.hunter.llm import (
     ClaudeLLMClient,
     CodexLLMClient,
     LlamaCppLLMClient,
     SubprocessCLIClient,
     create_llm_client,
 )
-from ageom.hunter.gemini_shim import _stage_gemini_home
+from sciona.hunter.gemini_shim import _stage_gemini_home
 
 
 class _FakeAnthropicMessages:
@@ -60,7 +60,7 @@ class TestCreateLLMClient:
             )
 
     def test_anthropic_requires_api_key(self):
-        with pytest.raises(ValueError, match="AGEOM_ANTHROPIC_API_KEY not set"):
+        with pytest.raises(ValueError, match="SCIONA_ANTHROPIC_API_KEY not set"):
             create_llm_client(
                 provider="anthropic",
                 model="claude-sonnet-4-5-20250929",
@@ -68,7 +68,7 @@ class TestCreateLLMClient:
             )
 
     def test_codex_requires_api_key(self):
-        with pytest.raises(ValueError, match="AGEOM_OPENAI_API_KEY not set"):
+        with pytest.raises(ValueError, match="SCIONA_OPENAI_API_KEY not set"):
             create_llm_client(
                 provider="codex",
                 model="codex-mini-latest",
@@ -186,8 +186,8 @@ class TestConcreteClients:
         if shutil.which("node") is None:
             pytest.skip("node is required for gemini_shim test")
 
-        monkeypatch.setenv("AGEOM_GEMINI_DAEMON_FAKE", "1")
-        monkeypatch.setenv("AGEOM_GEMINI_SHIM_POOL_SIZE", "1")
+        monkeypatch.setenv("SCIONA_GEMINI_DAEMON_FAKE", "1")
+        monkeypatch.setenv("SCIONA_GEMINI_SHIM_POOL_SIZE", "1")
 
         client = create_llm_client(
             provider="gemini_shim",
@@ -219,8 +219,8 @@ class TestConcreteClients:
 
     @pytest.mark.asyncio
     async def test_claude_shim_reuses_live_worker(self, monkeypatch):
-        monkeypatch.setenv("AGEOM_CLI_SHIM_DAEMON_FAKE", "1")
-        monkeypatch.setenv("AGEOM_CLI_SHIM_POOL_SIZE", "1")
+        monkeypatch.setenv("SCIONA_CLI_SHIM_DAEMON_FAKE", "1")
+        monkeypatch.setenv("SCIONA_CLI_SHIM_POOL_SIZE", "1")
 
         client = create_llm_client(
             provider="claude_shim",
@@ -245,8 +245,8 @@ class TestConcreteClients:
 
     @pytest.mark.asyncio
     async def test_codex_shim_reuses_live_worker(self, monkeypatch):
-        monkeypatch.setenv("AGEOM_CLI_SHIM_DAEMON_FAKE", "1")
-        monkeypatch.setenv("AGEOM_CLI_SHIM_POOL_SIZE", "1")
+        monkeypatch.setenv("SCIONA_CLI_SHIM_DAEMON_FAKE", "1")
+        monkeypatch.setenv("SCIONA_CLI_SHIM_POOL_SIZE", "1")
 
         client = create_llm_client(
             provider="codex_shim",
@@ -281,7 +281,7 @@ class TestConcreteClients:
             return _FakeProcess()
 
         monkeypatch.setattr(
-            "ageom.hunter.llm.asyncio.create_subprocess_exec",
+            "sciona.hunter.llm.asyncio.create_subprocess_exec",
             _fake_create_subprocess_exec,
         )
 

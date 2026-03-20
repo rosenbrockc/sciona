@@ -7,8 +7,8 @@ from fractions import Fraction
 
 import pytest
 
-from ageom.clearinghouse.models import PayoutPlan, WinningCDG
-from ageom.clearinghouse.settlement import (
+from sciona.clearinghouse.models import PayoutPlan, WinningCDG
+from sciona.clearinghouse.settlement import (
     ARCHITECT_SHARE,
     ORIGINATOR_SHARE,
     PLATFORM_SHARE,

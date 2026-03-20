@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from ageom.ecosystem.models import DisciplineRepo
-from ageom.ecosystem.webhook_sync import (
+from sciona.ecosystem.models import DisciplineRepo
+from sciona.ecosystem.webhook_sync import (
     diff_atoms,
     parse_manifest_sqlite,
     should_sync,

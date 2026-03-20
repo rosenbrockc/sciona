@@ -18,10 +18,10 @@ import pytest
 if importlib.util.find_spec("langgraph") is None:
     pytest.skip("requires langgraph", allow_module_level=True)
 
-from ageom.architect.catalog import PrimitiveCatalog
-from ageom.architect.graph import DecompositionAgent
-from ageom.architect.handoff import CDGExport, to_pdg_nodes, validate_handoff
-from ageom.architect.models import (
+from sciona.architect.catalog import PrimitiveCatalog
+from sciona.architect.graph import DecompositionAgent
+from sciona.architect.handoff import CDGExport, to_pdg_nodes, validate_handoff
+from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
     ConceptType,
@@ -29,8 +29,8 @@ from ageom.architect.models import (
     IOSpec,
     NodeStatus,
 )
-from ageom.synthesizer.assembler import Assembler
-from ageom.types import (
+from sciona.synthesizer.assembler import Assembler
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

@@ -6,7 +6,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-from ageom.atoms_repo_verifier import verify_atoms_repo
+from sciona.atoms_repo_verifier import verify_atoms_repo
 
 
 def _write(path: Path, content: str) -> None:

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from ageom.benchmark_validation import (
+from sciona.benchmark_validation import (
     _format_single_agent_comparison_summary,
     benchmark_failure_summary,
     benchmark_warning_summary,
@@ -16,8 +16,8 @@ from ageom.benchmark_validation import (
     single_agent_comparison_summary,
     runtime_complexity_summary,
 )
-from ageom.config import AgeomConfig
-from ageom.flow_benchmark import (
+from sciona.config import AgeomConfig
+from sciona.flow_benchmark import (
     default_flow_benchmark_cases,
     run_flow_benchmark,
     save_flow_benchmark_report,

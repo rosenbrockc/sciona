@@ -12,9 +12,9 @@ services:
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_DB: ageom_architect
-      POSTGRES_USER: ageom
-      POSTGRES_PASSWORD: ageom_dev
+      POSTGRES_DB: sciona_architect
+      POSTGRES_USER: sciona
+      POSTGRES_PASSWORD: sciona_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -25,9 +25,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      AGEOM_MEMGRAPH_URI: bolt://memgraph:7687
-      AGEOM_MEMGRAPH_USER: ""
-      AGEOM_MEMGRAPH_PASSWORD: ""
+      SCIONA_MEMGRAPH_URI: bolt://memgraph:7687
+      SCIONA_MEMGRAPH_USER: ""
+      SCIONA_MEMGRAPH_PASSWORD: ""
     depends_on:
       - memgraph
 

@@ -1,4 +1,4 @@
-"""Tests for the ageom.principal module."""
+"""Tests for the sciona.principal module."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.catalog import PrimitiveCatalog
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.catalog import PrimitiveCatalog
+from sciona.architect.models import (
     AlgorithmicPrimitive,
     AlgorithmicNode,
     ConceptType,
@@ -19,13 +19,13 @@ from ageom.architect.models import (
     ParamStatus,
     PrimitiveParamSpec,
 )
-from ageom.principal.models import (
+from sciona.principal.models import (
     BenchmarkResult,
     NodeGradient,
     NodeTelemetry,
     OptimizationMetric,
 )
-from ageom.synthesizer.ghost_sim import GhostSimReport
+from sciona.synthesizer.ghost_sim import GhostSimReport
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -72,7 +72,7 @@ def _make_benchmark(*node_specs: tuple[str, float, int, float]) -> BenchmarkResu
 
 
 # ===================================================================
-# Tests for ageom.principal.models
+# Tests for sciona.principal.models
 # ===================================================================
 
 
@@ -116,7 +116,7 @@ class TestBenchmarkResult:
 
 class TestOptunaHyperparams:
     def test_suggest_node_params_returns_assignments(self):
-        from ageom.principal.hpo import OptunaManager
+        from sciona.principal.hpo import OptunaManager
 
         catalog = PrimitiveCatalog()
         catalog.add(
@@ -193,13 +193,13 @@ class TestNodeGradient:
 
 
 # ===================================================================
-# Tests for ageom.principal.evaluator
+# Tests for sciona.principal.evaluator
 # ===================================================================
 
 
 class TestParseTrace:
     def test_valid_trace(self, tmp_path: Path):
-        from ageom.principal.evaluator import _parse_trace
+        from sciona.principal.evaluator import _parse_trace
 
         trace = tmp_path / "trace.jsonl"
         records = [
@@ -224,13 +224,13 @@ class TestParseTrace:
         assert result["b"].peak_memory_bytes == 200
 
     def test_missing_file(self, tmp_path: Path):
-        from ageom.principal.evaluator import _parse_trace
+        from sciona.principal.evaluator import _parse_trace
 
         result = _parse_trace(tmp_path / "nope.jsonl")
         assert result == {}
 
     def test_malformed_line(self, tmp_path: Path):
-        from ageom.principal.evaluator import _parse_trace
+        from sciona.principal.evaluator import _parse_trace
 
         trace = tmp_path / "trace.jsonl"
         trace.write_text('not json\n{"node_id": "a", "execution_time_ms": 1}\n')
@@ -240,7 +240,7 @@ class TestParseTrace:
         assert "a" in result
 
     def test_missing_node_id(self, tmp_path: Path):
-        from ageom.principal.evaluator import _parse_trace
+        from sciona.principal.evaluator import _parse_trace
 
         trace = tmp_path / "trace.jsonl"
         trace.write_text('{"execution_time_ms": 1}\n')
@@ -251,7 +251,7 @@ class TestParseTrace:
 
 class TestComputeLoss:
     def test_latency(self):
-        from ageom.principal.evaluator import _compute_loss
+        from sciona.principal.evaluator import _compute_loss
 
         tel = {
             "a": _make_telemetry("a", 10.0, 100, 0.0),
@@ -261,7 +261,7 @@ class TestComputeLoss:
         assert loss == 30.0
 
     def test_memory(self):
-        from ageom.principal.evaluator import _compute_loss
+        from sciona.principal.evaluator import _compute_loss
 
         tel = {
             "a": _make_telemetry("a", 10.0, 100, 0.0),
@@ -271,7 +271,7 @@ class TestComputeLoss:
         assert loss == 500.0
 
     def test_precision_from_stdout(self):
-        from ageom.principal.evaluator import _compute_loss
+        from sciona.principal.evaluator import _compute_loss
 
         tel = {"a": _make_telemetry("a", 1.0, 100, 0.0)}
         stdout = b'some output\n{"mse": 0.042}\n'
@@ -279,7 +279,7 @@ class TestComputeLoss:
         assert loss == pytest.approx(0.042)
 
     def test_precision_prefers_explicit_loss(self):
-        from ageom.principal.evaluator import _compute_loss
+        from sciona.principal.evaluator import _compute_loss
 
         tel = {"a": _make_telemetry("a", 1.0, 100, 0.0)}
         stdout = b'{"mse": 0.04, "rmse": 0.2, "loss": 0.3}\n'
@@ -287,7 +287,7 @@ class TestComputeLoss:
         assert loss == pytest.approx(0.3)
 
     def test_flop_count_proxied_by_latency(self):
-        from ageom.principal.evaluator import _compute_loss
+        from sciona.principal.evaluator import _compute_loss
 
         tel = {
             "a": _make_telemetry("a", 5.0, 0, 0.0),
@@ -297,7 +297,7 @@ class TestComputeLoss:
         assert loss == 12.0
 
     def test_empty_telemetry_penalty(self):
-        from ageom.principal.evaluator import _compute_loss, _FAILURE_PENALTY
+        from sciona.principal.evaluator import _compute_loss, _FAILURE_PENALTY
 
         loss = _compute_loss({}, OptimizationMetric.LATENCY, None)
         assert loss == _FAILURE_PENALTY
@@ -305,12 +305,12 @@ class TestComputeLoss:
 
 class TestParsePrecisionLossFromStdout:
     def test_valid(self):
-        from ageom.principal.evaluator import _parse_precision_loss_from_stdout
+        from sciona.principal.evaluator import _parse_precision_loss_from_stdout
 
         assert _parse_precision_loss_from_stdout(b'{"mse": 0.5}') == pytest.approx(0.5)
 
     def test_none_stdout(self):
-        from ageom.principal.evaluator import (
+        from sciona.principal.evaluator import (
             _FAILURE_PENALTY,
             _parse_precision_loss_from_stdout,
         )
@@ -318,7 +318,7 @@ class TestParsePrecisionLossFromStdout:
         assert _parse_precision_loss_from_stdout(None) == _FAILURE_PENALTY
 
     def test_no_mse_key(self):
-        from ageom.principal.evaluator import (
+        from sciona.principal.evaluator import (
             _FAILURE_PENALTY,
             _parse_precision_loss_from_stdout,
         )
@@ -326,13 +326,13 @@ class TestParsePrecisionLossFromStdout:
         assert _parse_precision_loss_from_stdout(b'{"foo": 1}') == _FAILURE_PENALTY
 
     def test_last_valid_line(self):
-        from ageom.principal.evaluator import _parse_precision_loss_from_stdout
+        from sciona.principal.evaluator import _parse_precision_loss_from_stdout
 
         stdout = b'log line 1\nlog line 2\n{"mse": 0.123}\n'
         assert _parse_precision_loss_from_stdout(stdout) == pytest.approx(0.123)
 
     def test_prefers_loss_then_rmse(self):
-        from ageom.principal.evaluator import _parse_precision_loss_from_stdout
+        from sciona.principal.evaluator import _parse_precision_loss_from_stdout
 
         assert _parse_precision_loss_from_stdout(b'{"rmse": 1.2}') == pytest.approx(1.2)
         assert _parse_precision_loss_from_stdout(b'{"mse": 0.5, "loss": 2.5}') == pytest.approx(2.5)
@@ -340,7 +340,7 @@ class TestParsePrecisionLossFromStdout:
 
 class TestMetricSelection:
     def test_uncertainty_alias_maps_to_precision(self):
-        from ageom.principal.metric_selection import resolve_optimization_objective
+        from sciona.principal.metric_selection import resolve_optimization_objective
 
         metric, eval_spec, label = resolve_optimization_objective("uncertainty")
         assert metric == OptimizationMetric.PRECISION
@@ -348,7 +348,7 @@ class TestMetricSelection:
         assert label == "uncertainty"
 
     def test_rmse_alias_overrides_eval_spec_loss(self):
-        from ageom.principal.metric_selection import resolve_optimization_objective
+        from sciona.principal.metric_selection import resolve_optimization_objective
 
         metric, eval_spec, label = resolve_optimization_objective(
             "rmse",
@@ -359,13 +359,13 @@ class TestMetricSelection:
         assert label == "rmse"
 
     def test_rmse_requires_eval_spec(self):
-        from ageom.principal.metric_selection import resolve_optimization_objective
+        from sciona.principal.metric_selection import resolve_optimization_objective
 
         with pytest.raises(ValueError, match="requires an evaluation spec"):
             resolve_optimization_objective("rmse")
 
     def test_structure_maps_to_structure_metric(self):
-        from ageom.principal.metric_selection import resolve_optimization_objective
+        from sciona.principal.metric_selection import resolve_optimization_objective
 
         metric, eval_spec, label = resolve_optimization_objective("structure")
         assert metric == OptimizationMetric.STRUCTURE
@@ -375,8 +375,8 @@ class TestMetricSelection:
 
 class TestExecutionSandbox:
     def test_evaluate_supports_relative_artifact_paths(self, tmp_path: Path, monkeypatch):
-        from ageom.principal.evaluator import ExecutionSandbox
-        from ageom.synthesizer.models import ExportBundle
+        from sciona.principal.evaluator import ExecutionSandbox
+        from sciona.synthesizer.models import ExportBundle
 
         artifact = tmp_path / "artifact.py"
         artifact.write_text(
@@ -412,12 +412,12 @@ class TestExecutionSandbox:
         assert "n1" in result.node_telemetry
 
     def test_evaluate_adapter_prefers_python_runner(self, tmp_path: Path, monkeypatch):
-        from ageom.principal.evaluator import ExecutionSandbox
-        from ageom.synthesizer.models import ExportBundle
+        from sciona.principal.evaluator import ExecutionSandbox
+        from sciona.synthesizer.models import ExportBundle
 
         runner = tmp_path / "runner.py"
         runner.write_text("print('ok')\n")
-        (tmp_path / "ageom.yml").write_text("name: test\n")
+        (tmp_path / "sciona.yml").write_text("name: test\n")
         trace = tmp_path / "trace.jsonl"
         bundle = ExportBundle(
             target="python-pkg",
@@ -447,7 +447,7 @@ class TestExecutionSandbox:
         result = asyncio.run(
             ExecutionSandbox(timeout_s=5.0).evaluate_adapter(
                 bundle,
-                str(tmp_path / "ageom.yml"),
+                str(tmp_path / "sciona.yml"),
                 OptimizationMetric.PRECISION,
                 varset={"tracker": "full"},
             )
@@ -460,12 +460,12 @@ class TestExecutionSandbox:
         assert "--dataset-var" in calls[0]
 
     def test_evaluate_adapter_forwards_eval_spec(self, tmp_path: Path, monkeypatch):
-        from ageom.principal.evaluator import ExecutionSandbox
-        from ageom.synthesizer.models import ExportBundle
+        from sciona.principal.evaluator import ExecutionSandbox
+        from sciona.synthesizer.models import ExportBundle
 
         runner = tmp_path / "runner.py"
         runner.write_text("print('ok')\n")
-        (tmp_path / "ageom.yml").write_text("name: test\n")
+        (tmp_path / "sciona.yml").write_text("name: test\n")
         trace = tmp_path / "trace.jsonl"
         bundle = ExportBundle(
             target="python-pkg",
@@ -495,7 +495,7 @@ class TestExecutionSandbox:
         result = asyncio.run(
             ExecutionSandbox(timeout_s=5.0).evaluate_adapter(
                 bundle,
-                str(tmp_path / "ageom.yml"),
+                str(tmp_path / "sciona.yml"),
                 OptimizationMetric.PRECISION,
                 evaluation_spec='{"loss":"rmse"}',
             )
@@ -506,13 +506,13 @@ class TestExecutionSandbox:
 
 
 # ===================================================================
-# Tests for ageom.principal.backprop
+# Tests for sciona.principal.backprop
 # ===================================================================
 
 
 class TestCreditAssigner:
     def setup_method(self):
-        from ageom.principal.backprop import CreditAssigner
+        from sciona.principal.backprop import CreditAssigner
 
         self.assigner = CreditAssigner()
         self.cdg = _make_cdg(("a", "NodeA"), ("b", "NodeB"))
@@ -665,41 +665,41 @@ class TestCreditAssigner:
 
 
 # ===================================================================
-# Tests for ageom.principal.hpo
+# Tests for sciona.principal.hpo
 # ===================================================================
 
 
 class TestOptunaManager:
     def test_creation(self):
-        from ageom.principal.hpo import OptunaManager
+        from sciona.principal.hpo import OptunaManager
 
         mgr = OptunaManager(study_name="test")
         assert mgr.study is not None
         assert mgr.study.study_name == "test"
 
     def test_check_early_prune_clean(self):
-        from ageom.principal.hpo import OptunaManager
+        from sciona.principal.hpo import OptunaManager
 
         report = GhostSimReport(ran=True, passed=True, precision_gradients={"a": 1.0})
         # Should not raise
         OptunaManager.check_early_prune(report)
 
     def test_check_early_prune_not_ran(self):
-        from ageom.principal.hpo import OptunaManager
+        from sciona.principal.hpo import OptunaManager
 
         report = GhostSimReport(ran=False, passed=False)
         # ran=False means we don't prune based on failure
         OptunaManager.check_early_prune(report)
 
     def test_check_early_prune_failed_sim(self):
-        from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
+        from sciona.principal.hpo import OptunaManager, TrialPrunedEarly
 
         report = GhostSimReport(ran=True, passed=False, error="mismatch")
         with pytest.raises(TrialPrunedEarly, match="mismatch"):
             OptunaManager.check_early_prune(report)
 
     def test_check_early_prune_inf_gradient(self):
-        from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
+        from sciona.principal.hpo import OptunaManager, TrialPrunedEarly
 
         report = GhostSimReport(
             ran=True,
@@ -710,7 +710,7 @@ class TestOptunaManager:
             OptunaManager.check_early_prune(report)
 
     def test_check_early_prune_nan_gradient(self):
-        from ageom.principal.hpo import OptunaManager, TrialPrunedEarly
+        from sciona.principal.hpo import OptunaManager, TrialPrunedEarly
 
         report = GhostSimReport(
             ran=True,
@@ -721,7 +721,7 @@ class TestOptunaManager:
             OptunaManager.check_early_prune(report)
 
     def test_param_importances_too_few_trials(self):
-        from ageom.principal.hpo import OptunaManager
+        from sciona.principal.hpo import OptunaManager
 
         mgr = OptunaManager(study_name="test_importance")
         result = mgr.param_importances()
@@ -729,13 +729,13 @@ class TestOptunaManager:
 
 
 # ===================================================================
-# Tests for ageom.principal.graph (routing + state + build)
+# Tests for sciona.principal.graph (routing + state + build)
 # ===================================================================
 
 
 class TestPrincipalState:
     def test_defaults(self):
-        from ageom.principal.graph import PrincipalState
+        from sciona.principal.graph import PrincipalState
 
         state = PrincipalState()
         assert state.goal == ""
@@ -752,13 +752,13 @@ class TestPrincipalState:
 
 class TestRouteAfterGradients:
     def test_done(self):
-        from ageom.principal.graph import PrincipalState, route_after_gradients
+        from sciona.principal.graph import PrincipalState, route_after_gradients
 
         state = PrincipalState(done=True)
         assert route_after_gradients(state) == "end"
 
     def test_max_trials_reached(self):
-        from ageom.principal.graph import PrincipalState, route_after_gradients
+        from sciona.principal.graph import PrincipalState, route_after_gradients
 
         state = PrincipalState(
             current_trial=50,
@@ -768,19 +768,19 @@ class TestRouteAfterGradients:
         assert route_after_gradients(state) == "end"
 
     def test_non_pruned_error(self):
-        from ageom.principal.graph import PrincipalState, route_after_gradients
+        from sciona.principal.graph import PrincipalState, route_after_gradients
 
         state = PrincipalState(error="fatal crash")
         assert route_after_gradients(state) == "end"
 
     def test_pruned_error_continues(self):
-        from ageom.principal.graph import PrincipalState, route_after_gradients
+        from sciona.principal.graph import PrincipalState, route_after_gradients
 
         state = PrincipalState(error="Trial pruned early")
         assert route_after_gradients(state) == "time_travel"
 
     def test_normal_continues(self):
-        from ageom.principal.graph import PrincipalState, route_after_gradients
+        from sciona.principal.graph import PrincipalState, route_after_gradients
 
         state = PrincipalState()
         assert route_after_gradients(state) == "time_travel"
@@ -788,13 +788,13 @@ class TestRouteAfterGradients:
 
 class TestRouteAfterUpdate:
     def test_done(self):
-        from ageom.principal.graph import PrincipalState, route_after_update
+        from sciona.principal.graph import PrincipalState, route_after_update
 
         state = PrincipalState(done=True)
         assert route_after_update(state) == "end"
 
     def test_max_trials(self):
-        from ageom.principal.graph import PrincipalState, route_after_update
+        from sciona.principal.graph import PrincipalState, route_after_update
 
         state = PrincipalState(
             current_trial=10,
@@ -804,7 +804,7 @@ class TestRouteAfterUpdate:
         assert route_after_update(state) == "end"
 
     def test_continues(self):
-        from ageom.principal.graph import PrincipalState, route_after_update
+        from sciona.principal.graph import PrincipalState, route_after_update
 
         state = PrincipalState(current_trial=5, max_trials=10)
         assert route_after_update(state) == "suggest_params"
@@ -812,19 +812,19 @@ class TestRouteAfterUpdate:
 
 class TestRouteAfterForward:
     def test_done(self):
-        from ageom.principal.graph import PrincipalState, route_after_forward
+        from sciona.principal.graph import PrincipalState, route_after_forward
 
         state = PrincipalState(done=True)
         assert route_after_forward(state) == "end"
 
     def test_error_skips_to_time_travel(self):
-        from ageom.principal.graph import PrincipalState, route_after_forward
+        from sciona.principal.graph import PrincipalState, route_after_forward
 
         state = PrincipalState(error="pruned early")
         assert route_after_forward(state) == "time_travel"
 
     def test_normal_evaluates(self):
-        from ageom.principal.graph import PrincipalState, route_after_forward
+        from sciona.principal.graph import PrincipalState, route_after_forward
 
         state = PrincipalState()
         assert route_after_forward(state) == "evaluate"
@@ -832,7 +832,7 @@ class TestRouteAfterForward:
 
 class TestBuildPrincipalGraph:
     def test_graph_compiles(self):
-        from ageom.principal.graph import build_principal_graph
+        from sciona.principal.graph import build_principal_graph
 
         graph = build_principal_graph()
         assert graph is not None

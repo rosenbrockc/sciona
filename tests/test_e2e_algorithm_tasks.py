@@ -19,16 +19,16 @@ if (
         allow_module_level=True,
     )
 
-from ageom.architect.catalog import PrimitiveCatalog
-from ageom.architect.graph import DecompositionAgent
-from ageom.architect.handoff import to_pdg_nodes
-from ageom.architect.models import (
+from sciona.architect.catalog import PrimitiveCatalog
+from sciona.architect.graph import DecompositionAgent
+from sciona.architect.handoff import to_pdg_nodes
+from sciona.architect.models import (
     AlgorithmicPrimitive,
     ConceptType,
     IOSpec,
 )
-from ageom.hunter.graph import HunterAgent
-from ageom.types import (
+from sciona.hunter.graph import HunterAgent
+from sciona.types import (
     Declaration,
     Prover,
     VerificationResult,

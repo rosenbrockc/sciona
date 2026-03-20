@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ageo-matcher"
+name = "sciona"
 version = "0.1.0"
 description = "Functional Matching Agent for grounding predicates into verified library functions in Lean 4/Mathlib and Coq/Rocq"
 requires-python = ">=3.10"
@@ -53,7 +53,7 @@ graph = [
     "neo4j>=5.0",
 ]
 visualizer = [
-    "ageo-matcher[graph]",
+    "sciona[graph]",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
 ]
@@ -67,7 +67,7 @@ api = [
     "stripe>=7.0",
 ]
 synthesizer = [
-    "ageo-matcher[hunter]",
+    "sciona[hunter]",
 ]
 dev = [
     "pytest>=7.0",
@@ -75,14 +75,14 @@ dev = [
     "mypy>=1.0",
 ]
 all = [
-    "ageo-matcher[indexer,lean,coq,hunter,architect,synthesizer,python-target,ghost,graph,dev]",
+    "sciona[indexer,lean,coq,hunter,architect,synthesizer,python-target,ghost,graph,dev]",
 ]
 
 [project.scripts]
-ageom = "ageom.cli:main"
+sciona = "sciona.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ageom"]
+packages = ["sciona"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

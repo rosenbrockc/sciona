@@ -1,7 +1,7 @@
 # AGEO-Matcher Memory
 
 ## Project Structure
-- `ageom/` — main package (architect, hunter, synthesizer, ingester, graph_store, cli)
+- `sciona/` — main package (architect, hunter, synthesizer, ingester, graph_store, cli)
 - `tests/` — pytest suite; mock LLMs route by system prompt keywords (`"paradigm"`, `"sub-nodes"`, `"critic"`)
 - `docker-compose.yml` — memgraph-mage + postgres + visualizer
 - Sibling repo: `../ageo-atoms/ageoa/biosppy/` — ingested CDG atoms

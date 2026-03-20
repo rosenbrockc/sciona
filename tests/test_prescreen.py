@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.clearinghouse.prescreen import prescreen, _scan_source, _check_structure
+from sciona.clearinghouse.prescreen import prescreen, _scan_source, _check_structure
 
 
 class TestSuspiciousPatternScan:

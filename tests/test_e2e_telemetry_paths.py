@@ -5,22 +5,22 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     IOSpec,
     NodeStatus,
 )
-from ageom.orchestrator import refine_on_failure, run_orchestration
-from ageom.telemetry import (
+from sciona.orchestrator import refine_on_failure, run_orchestration
+from sciona.telemetry import (
     PipelineEvent,
     get_event_log,
     log_event,
     reset_telemetry_runtime,
     telemetry_scope,
 )
-from ageom.types import (
+from sciona.types import (
     CandidateMatch,
     Declaration,
     FailureAction,
@@ -67,7 +67,7 @@ def _make_cdg(*node_ids: str) -> CDGExport:
 def _make_match_result(node_id: str, success: bool) -> MatchResult:
     decl = Declaration(name=f"decl_{node_id}", type_signature="nat -> nat")
     candidate = CandidateMatch(declaration=decl, score=0.9, retrieval_method="embedding")
-    vr = __import__("ageom.types", fromlist=["VerificationResult"]).VerificationResult(
+    vr = __import__("sciona.types", fromlist=["VerificationResult"]).VerificationResult(
         candidate=candidate, verified=success
     )
     return MatchResult(
@@ -383,7 +383,7 @@ async def test_events_reach_drain_during_orchestration():
     """Mock drain, run orchestration, assert enqueue_event called."""
     from unittest.mock import MagicMock
 
-    from ageom.telemetry import configure_postgres_telemetry
+    from sciona.telemetry import configure_postgres_telemetry
 
     mock_drain = MagicMock()
     mock_drain.enqueue_event = MagicMock()

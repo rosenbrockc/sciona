@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.architect.graph_alignment import AlignmentScore, GraphAlignmentScorer
-from ageom.architect.graph_retrieval import (
+from sciona.architect.graph_alignment import AlignmentScore, GraphAlignmentScorer
+from sciona.architect.graph_retrieval import (
     ExampleChild,
     ExampleDecomposition,
     ExampleEdge,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,

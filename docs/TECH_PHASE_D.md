@@ -31,7 +31,7 @@ Three Lambda functions, all triggered by SQS:
 
 **a) `fuzz-property-based` -- Hypothesis-style property testing**
 - Generates typed inputs from `IOSpec` using a type-to-strategy mapping (e.g., `type_desc="np.ndarray"` maps to `hypothesis.extra.numpy.arrays()`).
-- Runs the atom in an isolated subprocess (same approach as `ExecutionSandbox` in `/Users/conrad/personal/ageo-matcher/ageom/principal/evaluator.py`).
+- Runs the atom in an isolated subprocess (same approach as `ExecutionSandbox` in `/Users/conrad/personal/sciona/sciona/principal/evaluator.py`).
 - Tests: no exceptions, output type matches `IOSpec.type_desc`, no NaN/Inf in numeric outputs, idempotency where declared.
 - Runtime: Lambda, 5-minute timeout, 2 GB memory.
 
@@ -41,7 +41,7 @@ Three Lambda functions, all triggered by SQS:
 - Shares the isolation model from (a).
 
 **c) `fuzz-param-smoothing` -- HPO on tunable_params**
-- Reuses the existing `OptunaManager` from `/Users/conrad/personal/ageo-matcher/ageom/principal/hpo.py` directly. The `_FallbackStudy` / `_FallbackTrial` classes work without an Optuna dependency, which is suitable for Lambda.
+- Reuses the existing `OptunaManager` from `/Users/conrad/personal/sciona/sciona/principal/hpo.py` directly. The `_FallbackStudy` / `_FallbackTrial` classes work without an Optuna dependency, which is suitable for Lambda.
 - Runs a short Optuna study (20 trials) over the atom's `tunable_params` against each applicable benchmark dataset.
 - Stores the best parameter configuration back to PostgreSQL as `optimized_defaults` on the atom version.
 - Runtime: Lambda, 15-minute timeout (standard max), 4 GB memory.
@@ -127,7 +127,7 @@ CREATE INDEX idx_atom_benchmarks_lookup
 
 #### 2.2 manifest.sqlite Extension (Local CLI)
 
-The existing `load_hyperparams_manifest_sqlite()` in `/Users/conrad/personal/ageo-matcher/ageom/architect/hyperparams.py` queries `atoms` and `hyperparams` tables. Add a new `benchmarks` table to the SQLite snapshot:
+The existing `load_hyperparams_manifest_sqlite()` in `/Users/conrad/personal/sciona/sciona/architect/hyperparams.py` queries `atoms` and `hyperparams` tables. Add a new `benchmarks` table to the SQLite snapshot:
 
 ```sql
 CREATE TABLE benchmarks (
@@ -167,7 +167,7 @@ class BenchmarkRecord:
 
 ### 3. UCB1 Prior Integration in AtomLedger
 
-**File:** `/Users/conrad/personal/ageo-matcher/ageom/principal/atom_ledger.py`
+**File:** `/Users/conrad/personal/sciona/sciona/principal/atom_ledger.py`
 
 The current `rank_candidates()` method (line 62) gives untried atoms `float("inf")` UCB score. With benchmark priors, untried atoms with strong benchmark scores should rank higher than untried atoms without benchmarks, but both should still rank above tried atoms (preserving the exploration-first principle).
 
@@ -204,9 +204,9 @@ A helper function computes the prior for a (slot, atom) pair:
 2. Normalize `metric_value` into [0, 1] reward space (lower loss = higher reward).
 3. Average across relevant benchmarks.
 
-This helper lives in a new module `ageom/principal/benchmark_priors.py` that reads from the manifest.sqlite benchmarks table.
+This helper lives in a new module `sciona/principal/benchmark_priors.py` that reads from the manifest.sqlite benchmarks table.
 
-**Integration point:** In `/Users/conrad/personal/ageo-matcher/ageom/commands/optimize_cmds.py` around line 479 where `atom_ledger = AtomLedger()` is created, load benchmark priors from the manifest and pass them when constructing the `PrincipalDeps`.
+**Integration point:** In `/Users/conrad/personal/sciona/sciona/commands/optimize_cmds.py` around line 479 where `atom_ledger = AtomLedger()` is created, load benchmark priors from the manifest and pass them when constructing the `PrincipalDeps`.
 
 ---
 
@@ -230,7 +230,7 @@ A scheduled job (Lambda, runs after fuzz-param-smoothing completes) compares ben
 2. If the newer version is strictly better on ALL benchmarks (with a 5% margin), mark the older as `superseded`.
 3. Store the `superseded_by` pointer.
 
-#### 4.3 Integration in `ageom optimize`
+#### 4.3 Integration in `sciona optimize`
 
 In `rank_candidates()` (atom_ledger.py), superseded atoms get a penalty factor on their UCB score but are never excluded:
 
@@ -417,7 +417,7 @@ Requires minimum reputation threshold (Algorithmic Impact Factor >= 3). Other ex
 
 #### 8.2 Integration Tests
 
-- End-to-end: publish atom -> fuzz job enqueued -> fuzz results written -> benchmark populated -> manifest.sqlite updated -> `ageom optimize` reads benchmark priors.
+- End-to-end: publish atom -> fuzz job enqueued -> fuzz results written -> benchmark populated -> manifest.sqlite updated -> `sciona optimize` reads benchmark priors.
 - Discipline repo webhook: mock GitHub webhook -> Lambda processes -> atom appears in global registry.
 
 #### 8.3 Performance Tests
@@ -437,7 +437,7 @@ Requires minimum reputation threshold (Algorithmic Impact Factor >= 3). Other ex
 | **Benchmark gaming** | Medium | Community-proposed benchmarks require expert votes. Foundation maintains veto power. Anomaly detection on benchmark results (sudden jumps). |
 | **Supersession cascades** | Low | Atom A supersedes B, then C supersedes A. Only the direct predecessor is marked; no chain cascading. |
 | **manifest.sqlite size growth** | Medium | Benchmarks table adds O(atoms * benchmarks * metrics) rows. At 1000 atoms * 10 benchmarks * 3 metrics = 30K rows, still well within SQLite's comfort zone. Monitor and add pagination if needed. |
-| **Prior strength (k) tuning** | Medium | Default k=2 is conservative. Expose as config (`AGEOM_BENCHMARK_PRIOR_STRENGTH`). Run ablation study on existing optimization runs. |
+| **Prior strength (k) tuning** | Medium | Default k=2 is conservative. Expose as config (`SCIONA_BENCHMARK_PRIOR_STRENGTH`). Run ablation study on existing optimization runs. |
 
 **Open questions:**
 
@@ -452,7 +452,7 @@ Requires minimum reputation threshold (Algorithmic Impact Factor >= 3). Other ex
 1. **Week 1-2:** Benchmark schema (PostgreSQL + manifest.sqlite) + loader + `BenchmarkRecord` dataclass. UCB1 prior integration in `atom_ledger.py`. Tests.
 2. **Week 3-4:** Fuzzing cluster Lambdas (property-based + boundary value). SQS queue + SNS trigger wiring. Fuzz result storage.
 3. **Week 5:** Param smoothing Lambda (reusing `OptunaManager`). Behavioral equivalence batch job.
-4. **Week 6:** Soft deprecation logic (supersession detection + `ageom optimize` integration).
+4. **Week 6:** Soft deprecation logic (supersession detection + `sciona optimize` integration).
 5. **Week 7-8:** Dashboard API endpoints + PostgreSQL views. Auto-BibTeX.
 6. **Week 9:** Discipline repo webhook sync Lambda. Registration endpoint.
 7. **Week 10:** Benchmark suite curation (community proposal/voting endpoints). Bounty-derived benchmark pipeline.
@@ -462,8 +462,8 @@ Requires minimum reputation threshold (Algorithmic Impact Factor >= 3). Other ex
 
 ### Critical Files for Implementation
 
-- `/Users/conrad/personal/ageo-matcher/ageom/principal/atom_ledger.py` - Core file to modify: add benchmark prior support to `rank_candidates()` UCB1 scoring
-- `/Users/conrad/personal/ageo-matcher/ageom/architect/hyperparams.py` - Extend with `load_benchmarks_sqlite()` for reading benchmark records from manifest.sqlite; pattern to follow for the benchmark loader
-- `/Users/conrad/personal/ageo-matcher/ageom/principal/hpo.py` - Reused by the fuzz-param-smoothing Lambda; `OptunaManager` and `_FallbackStudy` are the core classes to wrap
-- `/Users/conrad/personal/ageo-matcher/ageom/architect/atom_similarity.py` - Extend `find_overlapping_atoms()` for behavioral equivalence detection (Type-4); `fingerprint_function()` used by webhook sync
-- `/Users/conrad/personal/ageo-matcher/ageom/commands/optimize_cmds.py` - Integration point where `AtomLedger` and `PrincipalDeps` are wired up (line 479); must pass benchmark priors through to the optimization loop
+- `/Users/conrad/personal/sciona/sciona/principal/atom_ledger.py` - Core file to modify: add benchmark prior support to `rank_candidates()` UCB1 scoring
+- `/Users/conrad/personal/sciona/sciona/architect/hyperparams.py` - Extend with `load_benchmarks_sqlite()` for reading benchmark records from manifest.sqlite; pattern to follow for the benchmark loader
+- `/Users/conrad/personal/sciona/sciona/principal/hpo.py` - Reused by the fuzz-param-smoothing Lambda; `OptunaManager` and `_FallbackStudy` are the core classes to wrap
+- `/Users/conrad/personal/sciona/sciona/architect/atom_similarity.py` - Extend `find_overlapping_atoms()` for behavioral equivalence detection (Type-4); `fingerprint_function()` used by webhook sync
+- `/Users/conrad/personal/sciona/sciona/commands/optimize_cmds.py` - Integration point where `AtomLedger` and `PrincipalDeps` are wired up (line 479); must pass benchmark priors through to the optimization loop

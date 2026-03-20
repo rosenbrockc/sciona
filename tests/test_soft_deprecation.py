@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.ecosystem.models import BenchmarkRecord
-from ageom.ecosystem.soft_deprecation import (
+from sciona.ecosystem.models import BenchmarkRecord
+from sciona.ecosystem.soft_deprecation import (
     apply_supersession_penalty,
     detect_supersession,
 )

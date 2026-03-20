@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from ageom.architect.catalog import CatalogReport
-from ageom.catalog_validation import run_catalog_validation
-from ageom.sources import AtomSource, SourcesConfig
+from sciona.architect.catalog import CatalogReport
+from sciona.catalog_validation import run_catalog_validation
+from sciona.sources import AtomSource, SourcesConfig
 
 
 @pytest.mark.asyncio
@@ -19,7 +19,7 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
         ]
     )
 
-    monkeypatch.setattr("ageom.catalog_validation.load_sources", lambda path=None: sources)
+    monkeypatch.setattr("sciona.catalog_validation.load_sources", lambda path=None: sources)
 
     def _resolve(source, base_dir=None):
         return tmp_path / source.name
@@ -38,10 +38,10 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
     for name in ("ageo-atoms", "hpy-atoms"):
         (tmp_path / name).mkdir()
 
-    monkeypatch.setattr("ageom.catalog_validation.resolve_source", _resolve)
-    monkeypatch.setattr("ageom.catalog_validation.seed_catalog_from_sources", _seed)
+    monkeypatch.setattr("sciona.catalog_validation.resolve_source", _resolve)
+    monkeypatch.setattr("sciona.catalog_validation.seed_catalog_from_sources", _seed)
     monkeypatch.setattr(
-        "ageom.catalog_validation.audit_source_registration_alignment",
+        "sciona.catalog_validation.audit_source_registration_alignment",
         lambda **kwargs: {
             "source_count": 2,
             "matched_total": 7,
@@ -94,7 +94,7 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
         ]
     )
 
-    monkeypatch.setattr("ageom.catalog_validation.load_sources", lambda path=None: sources)
+    monkeypatch.setattr("sciona.catalog_validation.load_sources", lambda path=None: sources)
 
     def _resolve(source, base_dir=None):
         return tmp_path / source.name
@@ -110,10 +110,10 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
         return 3
 
     (tmp_path / "ageo-atoms").mkdir()
-    monkeypatch.setattr("ageom.catalog_validation.resolve_source", _resolve)
-    monkeypatch.setattr("ageom.catalog_validation.seed_catalog_from_sources", _seed)
+    monkeypatch.setattr("sciona.catalog_validation.resolve_source", _resolve)
+    monkeypatch.setattr("sciona.catalog_validation.seed_catalog_from_sources", _seed)
     monkeypatch.setattr(
-        "ageom.catalog_validation.audit_source_registration_alignment",
+        "sciona.catalog_validation.audit_source_registration_alignment",
         lambda **kwargs: {
             "source_count": 2,
             "matched_total": 3,
@@ -158,7 +158,7 @@ async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
         ]
     )
 
-    monkeypatch.setattr("ageom.catalog_validation.load_sources", lambda path=None: sources)
+    monkeypatch.setattr("sciona.catalog_validation.load_sources", lambda path=None: sources)
 
     def _resolve(source, base_dir=None):
         return tmp_path / source.name
@@ -173,10 +173,10 @@ async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
         return 5
 
     (tmp_path / "ageo-atoms").mkdir()
-    monkeypatch.setattr("ageom.catalog_validation.resolve_source", _resolve)
-    monkeypatch.setattr("ageom.catalog_validation.seed_catalog_from_sources", _seed)
+    monkeypatch.setattr("sciona.catalog_validation.resolve_source", _resolve)
+    monkeypatch.setattr("sciona.catalog_validation.seed_catalog_from_sources", _seed)
     monkeypatch.setattr(
-        "ageom.catalog_validation.audit_source_registration_alignment",
+        "sciona.catalog_validation.audit_source_registration_alignment",
         lambda **kwargs: {
             "source_count": 1,
             "matched_total": 4,

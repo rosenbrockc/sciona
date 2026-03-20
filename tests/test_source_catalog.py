@@ -6,13 +6,13 @@ import json
 import sys
 from pathlib import Path
 
-from ageom.architect.catalog import CatalogReport, PrimitiveCatalog
-from ageom.architect.source_catalog import (
+from sciona.architect.catalog import CatalogReport, PrimitiveCatalog
+from sciona.architect.source_catalog import (
     audit_source_registration_alignment,
     seed_catalog_from_sources,
 )
-from ageom.sources import AtomSource, SourcesConfig
-from ageom.types import Declaration, Prover
+from sciona.sources import AtomSource, SourcesConfig
+from sciona.types import Declaration, Prover
 
 
 def _write(path: Path, text: str) -> None:
@@ -607,7 +607,7 @@ def test_seed_catalog_dedup_merges_similar_primitives(tmp_path: Path):
     report = CatalogReport()
 
     # Pre-add detect_peaks so the mock index can find it as incumbent
-    from ageom.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
+    from sciona.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 
     catalog.add(
         AlgorithmicPrimitive(

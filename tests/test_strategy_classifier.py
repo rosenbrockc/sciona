@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from ageom.architect.prompts import SELECT_STRATEGY_SYSTEM, SELECT_STRATEGY_USER
-from ageom.architect.strategy_classifier import StrategyClassifier, _load_phrase_rules
+from sciona.architect.prompts import SELECT_STRATEGY_SYSTEM, SELECT_STRATEGY_USER
+from sciona.architect.strategy_classifier import StrategyClassifier, _load_phrase_rules
 
 
 class _FallbackLLM:
@@ -88,7 +88,7 @@ async def test_strategy_classifier_falls_back_for_ambiguous_goal():
 async def test_loads_from_data_file():
     """Verify that the default data file loads and produces identical classifications."""
     # Load rules explicitly from the default data path.
-    from ageom.architect.strategy_classifier import _DEFAULT_DATA_PATH
+    from sciona.architect.strategy_classifier import _DEFAULT_DATA_PATH
 
     phrase_rules, conjunction_rules = _load_phrase_rules(_DEFAULT_DATA_PATH)
     assert len(phrase_rules) > 0

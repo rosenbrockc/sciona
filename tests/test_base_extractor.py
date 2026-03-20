@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 
-from ageom.ingester.base_extractor import (
+from sciona.ingester.base_extractor import (
     EXTENSION_MAP,
     BaseExtractor,
     SourceLanguage,
 )
-from ageom.ingester.graph import _get_extractor
-from ageom.ingester.python_extractor import PythonASTExtractor
-from ageom.ingester.treesitter_extractor import TreeSitterExtractor
+from sciona.ingester.graph import _get_extractor
+from sciona.ingester.python_extractor import PythonASTExtractor
+from sciona.ingester.treesitter_extractor import TreeSitterExtractor
 
 # ---------------------------------------------------------------------------
 # SourceLanguage enum

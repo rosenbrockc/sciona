@@ -6,12 +6,12 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 
-from ageom.principal.adapters.parsers import (
+from sciona.principal.adapters.parsers import (
     CAPNO_COLS,
     parse_capnostream_file,
     polar_h10_to_pandas,
 )
-from ageom.principal.adapters.transforms import shift_time_meta_attr
+from sciona.principal.adapters.transforms import shift_time_meta_attr
 
 
 def _capno_row(date: str, time: str, rr: str) -> str:
@@ -71,7 +71,7 @@ def test_polar_h10_to_pandas_uses_serial_attr_and_single(monkeypatch, tmp_path: 
         return {"abc123": FakeDataSet()}
 
     monkeypatch.setattr(
-        "ageom.principal.adapters.parsers.PolarH10DataSet.from_file",
+        "sciona.principal.adapters.parsers.PolarH10DataSet.from_file",
         fake_from_file,
     )
 

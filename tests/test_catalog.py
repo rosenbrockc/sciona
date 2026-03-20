@@ -1,20 +1,20 @@
-"""Tests for ageom.architect.catalog — PrimitiveCatalog."""
+"""Tests for sciona.architect.catalog — PrimitiveCatalog."""
 
 import pytest
 
-from ageom.architect.catalog import (
+from sciona.architect.catalog import (
     CatalogReport,
     DedupResult,
     PrimitiveCatalog,
     seed_builtin_primitives,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
     ConceptType,
     IOSpec,
 )
-from ageom.types import Declaration, Prover
+from sciona.types import Declaration, Prover
 
 
 @pytest.fixture

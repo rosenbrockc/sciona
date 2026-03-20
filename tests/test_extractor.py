@@ -7,35 +7,35 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from ageom.synthesizer.cargo_template import (
+from sciona.synthesizer.cargo_template import (
     generate_build_rs,
     generate_cargo_toml,
     generate_lib_rs,
 )
-from ageom.synthesizer.certificate import (
+from sciona.synthesizer.certificate import (
     generate_certificate,
     load_certificate,
     save_certificate,
     verify_certificate,
 )
-from ageom.synthesizer.extractor import (
+from sciona.synthesizer.extractor import (
     _collect_dotted_call_modules,
     _prepare_python_package_source,
 )
-from ageom.synthesizer.lakefile_template import generate_lakefile
-from ageom.synthesizer.models import (
+from sciona.synthesizer.lakefile_template import generate_lakefile
+from sciona.synthesizer.models import (
     AssemblyUnit,
     ExportBundle,
     SkeletonFile,
     SynthesisResult,
     VerificationCertificate,
 )
-from ageom.synthesizer.optimizer import (
+from sciona.synthesizer.optimizer import (
     OptimizationCandidate,
     OptimizationRule,
     Optimizer,
 )
-from ageom.synthesizer.python_template import generate_pipeline_py
+from sciona.synthesizer.python_template import generate_pipeline_py
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -277,23 +277,23 @@ class TestCertificate:
     def test_prepare_python_package_source_imports_required_modules(self):
         source = (
             "from __future__ import annotations\n"
-            "import ageom\n"
+            "import sciona\n"
             "def foo(x):\n"
-            "    return ageom.runtime_signal_event_rate.filter_signal_for_detection(x, 128.0)\n"
+            "    return sciona.runtime_signal_event_rate.filter_signal_for_detection(x, 128.0)\n"
         )
         prepared = _prepare_python_package_source(
             source,
-            required_modules=["ageom.runtime_signal_event_rate"],
+            required_modules=["sciona.runtime_signal_event_rate"],
         )
-        assert "import ageom.runtime_signal_event_rate" in prepared
+        assert "import sciona.runtime_signal_event_rate" in prepared
 
     def test_collect_dotted_call_modules_from_qualified_calls(self):
         source = (
-            "import ageom\n"
+            "import sciona\n"
             "def foo(x, fs):\n"
-            "    return ageom.runtime_signal_event_rate.filter_signal_for_detection(x, fs)\n"
+            "    return sciona.runtime_signal_event_rate.filter_signal_for_detection(x, fs)\n"
         )
-        assert _collect_dotted_call_modules(source) == ["ageom.runtime_signal_event_rate"]
+        assert _collect_dotted_call_modules(source) == ["sciona.runtime_signal_event_rate"]
 
     def test_generate_pipeline_py_is_typed(self):
         pipeline = generate_pipeline_py([])
@@ -312,14 +312,14 @@ class TestCertificate:
     def test_prepare_python_package_source_keeps_instrumented_helper(self):
         source = (
             "import json\n"
-            "_AGEOM_TRACE_PATH = 'trace.jsonl'\n"
-            "def _ageom_probe(node_id, fn):\n"
+            "_SCIONA_TRACE_PATH = 'trace.jsonl'\n"
+            "def _sciona_probe(node_id, fn):\n"
             "    return fn()\n"
             "def foo():\n"
             "    return 1\n"
         )
         prepared = _prepare_python_package_source(source)
-        assert "_AGEOM_TRACE_PATH = 'trace.jsonl'" in prepared
+        assert "_SCIONA_TRACE_PATH = 'trace.jsonl'" in prepared
 
     def test_save_load_roundtrip(self, tmp_path: Path):
         cert = VerificationCertificate(
@@ -450,7 +450,7 @@ class TestCargoTemplate:
 class TestExtractor:
     @pytest.mark.asyncio
     async def test_extract_lean_lib(self, tmp_path: Path):
-        from ageom.synthesizer.extractor import ExportTarget, Extractor
+        from sciona.synthesizer.extractor import ExportTarget, Extractor
 
         config = _mock_config()
         extractor = Extractor(config)
@@ -475,7 +475,7 @@ class TestExtractor:
 
     @pytest.mark.asyncio
     async def test_extract_rust_ffi(self, tmp_path: Path):
-        from ageom.synthesizer.extractor import ExportTarget, Extractor
+        from sciona.synthesizer.extractor import ExportTarget, Extractor
 
         config = _mock_config()
         extractor = Extractor(config)
@@ -498,7 +498,7 @@ class TestExtractor:
 
     @pytest.mark.asyncio
     async def test_extract_c_header(self, tmp_path: Path):
-        from ageom.synthesizer.extractor import ExportTarget, Extractor
+        from sciona.synthesizer.extractor import ExportTarget, Extractor
 
         config = _mock_config()
         extractor = Extractor(config)
@@ -523,7 +523,7 @@ class TestExtractor:
 
     @pytest.mark.asyncio
     async def test_extract_coq_lib(self, tmp_path: Path):
-        from ageom.synthesizer.extractor import ExportTarget, Extractor
+        from sciona.synthesizer.extractor import ExportTarget, Extractor
 
         config = _mock_config()
         extractor = Extractor(config)
@@ -548,7 +548,7 @@ class TestExtractor:
 
     @pytest.mark.asyncio
     async def test_certificate_in_bundle(self, tmp_path: Path):
-        from ageom.synthesizer.extractor import ExportTarget, Extractor
+        from sciona.synthesizer.extractor import ExportTarget, Extractor
 
         config = _mock_config()
         extractor = Extractor(config)
@@ -583,7 +583,7 @@ class TestCLIParserAcceptsExport:
     def test_export_subcommand_exists(self):
         import argparse
 
-        parser = argparse.ArgumentParser(prog="ageom")
+        parser = argparse.ArgumentParser(prog="sciona")
         subparsers = parser.add_subparsers(dest="command")
         export_p = subparsers.add_parser("export")
         export_p.add_argument("source_file")

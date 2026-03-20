@@ -14,16 +14,16 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import ConceptType, NodeStatus
-from ageom.ingester import IngesterAgent, IngestionBundle
-from ageom.ingester.emitter import (
+from sciona.architect.models import ConceptType, NodeStatus
+from sciona.ingester import IngesterAgent, IngestionBundle
+from sciona.ingester.emitter import (
     _opaque_witness_fallback,
     generate_opaque_witnesses,
 )
-from ageom.ingester.extractor import (
+from sciona.ingester.extractor import (
     extract_data_flow,
 )
-from ageom.ingester.models import MacroAtomSpec
+from sciona.ingester.models import MacroAtomSpec
 
 # ---------------------------------------------------------------------------
 # Mock source: mixed pipeline with transparent + opaque classes
@@ -259,7 +259,7 @@ class TestLLMDraftedWitness:
     async def test_llm_drafted_witness_body(self, mixed_source, mock_llm_with_witness):
         dfg = await extract_data_flow(mixed_source, "FeatureExtractor")
 
-        from ageom.architect.models import IOSpec
+        from sciona.architect.models import IOSpec
 
         atoms = [
             MacroAtomSpec(
@@ -285,7 +285,7 @@ class TestLLMDraftedWitness:
     async def test_fallback_when_llm_fails(self, mixed_source, mock_llm_failing):
         dfg = await extract_data_flow(mixed_source, "FeatureExtractor")
 
-        from ageom.architect.models import IOSpec
+        from sciona.architect.models import IOSpec
 
         atoms = [
             MacroAtomSpec(
@@ -308,7 +308,7 @@ class TestLLMDraftedWitness:
         assert 'dtype="float32"' in witness_source
 
     def test_fallback_witness_valid_python(self):
-        from ageom.architect.models import IOSpec
+        from sciona.architect.models import IOSpec
 
         atom = MacroAtomSpec(
             name="TestModule",

@@ -1,6 +1,6 @@
 """Tests for the unified index (Issue 3)."""
 
-from ageom.architect.embedder import SkillIndex
+from sciona.architect.embedder import SkillIndex
 
 
 def test_skill_index_has_semantic_index_methods():
@@ -33,7 +33,7 @@ def test_skill_index_get_declaration_empty():
 
 def test_unified_index_basic():
     """UnifiedIndex basic operations."""
-    from ageom.indexer.unified import UnifiedIndex
+    from sciona.indexer.unified import UnifiedIndex
 
     idx = UnifiedIndex()
     assert idx.size == 0

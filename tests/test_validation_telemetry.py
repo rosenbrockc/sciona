@@ -8,12 +8,12 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_path):
-    from ageom.cli import _cmd_benchmark_validate
-    from ageom.telemetry import configure_dashboard_output, get_persisted_run, reset_telemetry_runtime
+    from sciona.cli import _cmd_benchmark_validate
+    from sciona.telemetry import configure_dashboard_output, get_persisted_run, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     async def _fake_run_benchmark_validation(output_dir):
         return {
@@ -72,7 +72,7 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
         }
 
     monkeypatch.setattr(
-        "ageom.benchmark_validation.run_benchmark_validation",
+        "sciona.benchmark_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
     )
 
@@ -116,12 +116,12 @@ async def test_benchmark_validate_writes_telemetry_metadata(monkeypatch, tmp_pat
 
 @pytest.mark.asyncio
 async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monkeypatch, tmp_path):
-    from ageom.cli import _cmd_benchmark_validate
-    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+    from sciona.cli import _cmd_benchmark_validate
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     async def _fake_run_benchmark_validation(output_dir):
         return {
@@ -174,7 +174,7 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
         }
 
     monkeypatch.setattr(
-        "ageom.benchmark_validation.run_benchmark_validation",
+        "sciona.benchmark_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
     )
 
@@ -206,12 +206,12 @@ async def test_benchmark_validate_fails_telemetry_when_runtime_budget_fails(monk
 
 @pytest.mark.asyncio
 async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path):
-    from ageom.cli import _cmd_release_validate
-    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+    from sciona.cli import _cmd_release_validate
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     async def _fake_run_release_validation(output_dir):
         return {
@@ -296,7 +296,7 @@ async def test_release_validate_writes_telemetry_metadata(monkeypatch, tmp_path)
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_release_validation",
+        "sciona.release_validation.run_release_validation",
         _fake_run_release_validation,
     )
 

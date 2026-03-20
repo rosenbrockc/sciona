@@ -6,9 +6,9 @@ import textwrap
 
 import pytest
 
-from ageom.architect.models import NodeStatus
-from ageom.ingester.emitter import build_procedural_plan, emit_ingestion_bundle
-from ageom.ingester.extractor import (
+from sciona.architect.models import NodeStatus
+from sciona.ingester.emitter import build_procedural_plan, emit_ingestion_bundle
+from sciona.ingester.extractor import (
     _ProceduralBlockVisitor,
     extract_procedural_data_flow,
 )
@@ -266,7 +266,7 @@ class TestProceduralBundle:
         """Full pipeline via IngesterAgent.ingest_procedural."""
         from unittest.mock import AsyncMock
 
-        from ageom.ingester.graph import IngesterAgent
+        from sciona.ingester.graph import IngesterAgent
 
         mock_llm = AsyncMock()
         agent = IngesterAgent(llm=mock_llm)

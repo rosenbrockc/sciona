@@ -7,13 +7,13 @@ from pathlib import Path
 
 import pytest
 
-from ageom.ecosystem.benchmarks import (
+from sciona.ecosystem.benchmarks import (
     compute_atom_prior,
     load_benchmarks_sqlite,
     normalize_metric_to_reward,
 )
-from ageom.ecosystem.models import BenchmarkRecord
-from ageom.principal.benchmark_priors import (
+from sciona.ecosystem.models import BenchmarkRecord
+from sciona.principal.benchmark_priors import (
     apply_benchmark_prior,
     load_benchmark_priors,
     score_untried_with_prior,

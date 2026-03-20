@@ -6,7 +6,7 @@ from decimal import Decimal
 
 import pytest
 
-from ageom.api.bounty_state import (
+from sciona.api.bounty_state import (
     ALL_STATUSES,
     InvalidTransition,
     TARGET_STATUS,

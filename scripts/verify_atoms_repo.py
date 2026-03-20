@@ -12,7 +12,7 @@ REPO_ROOT = SCRIPT_DIR.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from ageom.atoms_repo_verifier import verify_atoms_repo
+from sciona.atoms_repo_verifier import verify_atoms_repo
 
 
 def build_parser() -> argparse.ArgumentParser:

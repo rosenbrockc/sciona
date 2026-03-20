@@ -29,7 +29,7 @@ jobs:
           python -m pip install -e ".[dev,hunter,architect,indexer,synthesizer,python-target]"
 
       - name: Run release validation
-        run: ageom release-validate --output build/release_validation
+        run: sciona release-validate --output build/release_validation
 
       - name: Upload release validation bundle
         uses: actions/upload-artifact@v4

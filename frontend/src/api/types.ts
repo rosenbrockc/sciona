@@ -1,4 +1,4 @@
-// Mirrors Pydantic models from ageom/api/models.py and ageom/ecosystem/models.py
+// Mirrors Pydantic models from sciona/api/models.py and sciona/ecosystem/models.py
 
 export interface BountyResponse {
   bounty_id: string;

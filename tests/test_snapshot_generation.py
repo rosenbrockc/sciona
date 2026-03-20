@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ageom.api.snapshot import generate_manifest_sqlite
+from sciona.api.snapshot import generate_manifest_sqlite
 
 
 class TestSnapshotGeneration:
@@ -99,7 +99,7 @@ class TestSnapshotGeneration:
 
     def test_compatible_with_existing_loader(self, tmp_path: Path):
         """Verify the snapshot is readable by the existing manifest loader."""
-        from ageom.architect.hyperparams import load_hyperparams_manifest_sqlite
+        from sciona.architect.hyperparams import load_hyperparams_manifest_sqlite
 
         atoms = [{"atom_id": "a1", "fqdn": "pkg.filter", "status": "approved"}]
         hps = [

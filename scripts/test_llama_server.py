@@ -121,19 +121,19 @@ def main() -> int:
     )
     parser.add_argument(
         "--base-url",
-        default=_load_dotenv_value("AGEOM_LLAMA_CPP_BASE_URL", dotenv_path)
+        default=_load_dotenv_value("SCIONA_LLAMA_CPP_BASE_URL", dotenv_path)
         or "http://127.0.0.1:18080/v1",
-        help="OpenAI-compatible base URL (default: AGEOM_LLAMA_CPP_BASE_URL or http://127.0.0.1:18080/v1)",
+        help="OpenAI-compatible base URL (default: SCIONA_LLAMA_CPP_BASE_URL or http://127.0.0.1:18080/v1)",
     )
     parser.add_argument(
         "--api-key",
-        default=_load_dotenv_value("AGEOM_LLAMA_CPP_API_KEY", dotenv_path) or "local",
-        help="API key (default: AGEOM_LLAMA_CPP_API_KEY or local)",
+        default=_load_dotenv_value("SCIONA_LLAMA_CPP_API_KEY", dotenv_path) or "local",
+        help="API key (default: SCIONA_LLAMA_CPP_API_KEY or local)",
     )
     parser.add_argument(
         "--model",
-        default=_load_dotenv_value("AGEOM_HUNTER_LLM_MODEL", dotenv_path),
-        help="Model ID to test (default: AGEOM_HUNTER_LLM_MODEL; falls back to first server model)",
+        default=_load_dotenv_value("SCIONA_HUNTER_LLM_MODEL", dotenv_path),
+        help="Model ID to test (default: SCIONA_HUNTER_LLM_MODEL; falls back to first server model)",
     )
     parser.add_argument(
         "--timeout",

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from ageom.receipt import (
+from sciona.receipt import (
     ExecutionReceipt,
     SignedReceipt,
     canonicalize_receipt,
@@ -43,7 +43,7 @@ class TestExecutionReceipt:
             metric_name="loss",
             metric_value=0.42,
             timestamp="2025-01-01T00:00:00Z",
-            ageom_version="0.1.0",
+            sciona_version="0.1.0",
         )
         data = r.model_dump()
         restored = ExecutionReceipt.model_validate(data)
@@ -58,7 +58,7 @@ class TestExecutionReceipt:
             metric_name="loss",
             metric_value=0.5,
             timestamp="t",
-            ageom_version="0.0.0",
+            sciona_version="0.0.0",
         )
         assert r.bounty_id == "bounty-123"
 
@@ -73,7 +73,7 @@ class TestCanonicalizeReceipt:
             metric_name="loss",
             metric_value=0.42,
             timestamp="2025-01-01T00:00:00Z",
-            ageom_version="0.1.0",
+            sciona_version="0.1.0",
         )
         a = canonicalize_receipt(r)
         b = canonicalize_receipt(r)
@@ -88,11 +88,11 @@ class TestCanonicalizeReceipt:
             metric_name="loss",
             metric_value=0.42,
             timestamp="t",
-            ageom_version="0.0.0",
+            sciona_version="0.0.0",
         )
         canonical = canonicalize_receipt(r).decode()
-        # "ageom_version" should come before "bounty_id"
-        assert canonical.index("ageom_version") < canonical.index("bounty_id")
+        # "sciona_version" should come before "bounty_id"
+        assert canonical.index("sciona_version") < canonical.index("bounty_id")
 
 
 class TestGenerateReceipt:
@@ -122,7 +122,7 @@ class TestSaveLoadRoundTrip:
             metric_name="loss",
             metric_value=0.42,
             timestamp="t",
-            ageom_version="0.0.0",
+            sciona_version="0.0.0",
         )
         signed = SignedReceipt(receipt=receipt, signature="SIG_BLOCK")
         path = tmp_path / "receipt.json"
@@ -150,7 +150,7 @@ class TestSignAndVerify:
         """Create an allowed_signers file for the test key."""
         pub_key = pub_key_path.read_text().strip()
         signers = tmp_path / "allowed_signers"
-        signers.write_text(f"ageom-receipt {pub_key}\n")
+        signers.write_text(f"sciona-receipt {pub_key}\n")
         return signers
 
     def test_sign_and_verify(self, tmp_path: Path):

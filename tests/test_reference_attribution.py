@@ -3,10 +3,10 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-from ageom.principal.reference_attribution import compute_reference_loss_gradients
-from ageom.synthesizer.models import ExportBundle
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+from sciona.principal.reference_attribution import compute_reference_loss_gradients
+from sciona.synthesizer.models import ExportBundle
 
 
 def _make_cdg() -> CDGExport:
@@ -42,20 +42,20 @@ def test_reference_loss_gradients_use_counterfactual_rmse(tmp_path: Path) -> Non
             [
                 "import numpy as np",
                 "",
-                "def _ageom_probe(node_id, fn):",
+                "def _sciona_probe(node_id, fn):",
                 "    return fn()",
                 "",
                 "def _stage_a_inner(signal):",
                 "    return signal",
                 "",
                 "def stage_a(signal):",
-                "    return _ageom_probe('node_a', lambda: _stage_a_inner(signal))",
+                "    return _sciona_probe('node_a', lambda: _stage_a_inner(signal))",
                 "",
                 "def _stage_b_inner(x):",
                 "    return x * 10.0",
                 "",
                 "def stage_b(x):",
-                "    return _ageom_probe('node_b', lambda: _stage_b_inner(x))",
+                "    return _sciona_probe('node_b', lambda: _stage_b_inner(x))",
                 "",
                 "def toy_pipeline(signal):",
                 "    return stage_b(stage_a(signal))",
@@ -86,7 +86,7 @@ def test_reference_loss_gradients_use_counterfactual_rmse(tmp_path: Path) -> Non
     )
     dataset_root = tmp_path / "dataset"
     dataset_root.mkdir()
-    (dataset_root / "ageom.yml").write_text("name: demo\n")
+    (dataset_root / "sciona.yml").write_text("name: demo\n")
 
     bundle = ExportBundle(
         target="python-pkg",
@@ -100,7 +100,7 @@ def test_reference_loss_gradients_use_counterfactual_rmse(tmp_path: Path) -> Non
         compute_reference_loss_gradients(
             _make_cdg(),
             bundle,
-            str(dataset_root / "ageom.yml"),
+            str(dataset_root / "sciona.yml"),
             {
                 "loss": "rmse",
                 "reference": {"value_source": "reference"},

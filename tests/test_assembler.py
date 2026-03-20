@@ -8,26 +8,26 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.judge.models import CompilerFeedback
-from ageom.synthesizer.assembler import (
+from sciona.judge.models import CompilerFeedback
+from sciona.synthesizer.assembler import (
     Assembler,
     AssemblyError,
     sanitize_name,
     sanitize_python_source_annotations,
 )
-from ageom.synthesizer.compiler import SkeletonCompiler
-from ageom.synthesizer.models import AssemblyUnit
-from ageom.synthesizer.pipeline import assemble_and_check
-from ageom.synthesizer.toposort import toposort_nodes
-from ageom.types import (
+from sciona.synthesizer.compiler import SkeletonCompiler
+from sciona.synthesizer.models import AssemblyUnit
+from sciona.synthesizer.pipeline import assemble_and_check
+from sciona.synthesizer.toposort import toposort_nodes
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,
@@ -603,15 +603,15 @@ class TestCLIParserAcceptsAssemble:
         """Parser should accept 'assemble' with required args."""
         from unittest.mock import patch
 
-        from ageom.cli import main
+        from sciona.cli import main
 
         cdg = tmp_path / "cdg.json"
         cdg.write_text('{"nodes":[], "edges":[]}')
         matches = tmp_path / "matches.json"
         matches.write_text("[]")
 
-        with patch("sys.argv", ["ageom", "assemble", str(cdg), str(matches)]):
-            with patch("ageom.cli._cmd_assemble") as mock_cmd:
+        with patch("sys.argv", ["sciona", "assemble", str(cdg), str(matches)]):
+            with patch("sciona.cli._cmd_assemble") as mock_cmd:
                 # _cmd_assemble is async so we mock the coroutine
                 mock_cmd.return_value = None
                 # asyncio.run will be called on it, so we need to mock at a higher level
@@ -686,7 +686,7 @@ class TestParamsHarness:
         skeleton = assembler.assemble(cdg, matches)
 
         # No tunables by default → no harness
-        assert "_AGEOM_PARAMS" not in skeleton.source_code
+        assert "_SCIONA_PARAMS" not in skeleton.source_code
 
         # Now assemble with tunables
         # We need to inject tunable_param_names into the unit
@@ -701,9 +701,9 @@ class TestParamsHarness:
             [n for n in cdg.nodes if n.status == NodeStatus.DECOMPOSED],
             skeleton.metadata,
         )
-        assert "_AGEOM_PARAMS" in source
+        assert "_SCIONA_PARAMS" in source
         assert "--params" in source
-        assert "_AGEOM_PARAMS.get('filter_step'" in source
+        assert "_SCIONA_PARAMS.get('filter_step'" in source
 
     def test_no_harness_without_tunables(self):
         cdg = self._make_tunable_cdg()
@@ -712,4 +712,4 @@ class TestParamsHarness:
         )]
         assembler = Assembler(Prover.PYTHON)
         skeleton = assembler.assemble(cdg, matches)
-        assert "_AGEOM_PARAMS" not in skeleton.source_code
+        assert "_SCIONA_PARAMS" not in skeleton.source_code

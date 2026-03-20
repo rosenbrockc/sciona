@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock
 import pytest
 from langchain_core.runnables import RunnableConfig
 
-from ageom.architect.models import ConceptType, IOSpec
-from ageom.ingester.chunker import (
+from sciona.architect.models import ConceptType, IOSpec
+from sciona.ingester.chunker import (
     ChunkerDeps,
     ChunkerState,
     abstract_atoms,
@@ -21,14 +21,14 @@ from ageom.ingester.chunker import (
     _format_io_specs,
     _parse_conceptual_profile,
 )
-from ageom.ingester.models import (
+from sciona.ingester.models import (
     ConceptualProfile,
     MacroAtomSpec,
     ProposedMacroPlan,
     ValidatedMacroPlan,
     RawDataFlowGraph,
 )
-from ageom.ingester.prompts import (
+from sciona.ingester.prompts import (
     CONCEPTUAL_ABSTRACT_SYSTEM,
     CONCEPTUAL_ABSTRACT_USER,
 )
@@ -372,7 +372,7 @@ class TestGraphWiring:
 
 def test_all_concept_types_in_prompt():
     """Every ConceptType value must appear in the ingester prompt."""
-    from ageom.ingester.prompts import SEMANTIC_CHUNK_SYSTEM, DECOMPOSE_ATOM_SYSTEM
+    from sciona.ingester.prompts import SEMANTIC_CHUNK_SYSTEM, DECOMPOSE_ATOM_SYSTEM
 
     for ct in ConceptType:
         assert ct.value in SEMANTIC_CHUNK_SYSTEM, (

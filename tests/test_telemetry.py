@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from ageom.telemetry import (
+from sciona.telemetry import (
     EventLog,
     PipelineEvent,
     configure_dashboard_output,

@@ -68,5 +68,5 @@ The package needs `ghost/registry.py` with a `REGISTRY` dict and
 
 ```bash
 python -m pytest tests/test_source_catalog.py -v
-python -m ageom catalog-gaps --cdg path/to/some_cdg.json
+python -m sciona catalog-gaps --cdg path/to/some_cdg.json
 ```

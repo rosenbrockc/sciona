@@ -21,7 +21,7 @@ The pipeline supports graduated execution tiers so the overhead scales with the 
 | `single_agent` | Deterministic planner: direct match -> decompose -> batch match -> partial acceptance (>=70%) -> selective re-decomposition -> escalation | Most production tasks; avoids full orchestration overhead |
 | `verified` | Full multi-round orchestration with Architect refinement loops | High-correctness tasks where every leaf must be verified |
 
-Set via `--mode <mode>` or `AGEOM_EXECUTION_MODE` in `.env`.
+Set via `--mode <mode>` or `SCIONA_EXECUTION_MODE` in `.env`.
 
 ## Design principle
 
@@ -104,7 +104,7 @@ LLMs are confined to agentic layers. The indexer, oracle, ghost simulation, asse
 
 ## Components
 
-### Shared types (`ageom/types.py`)
+### Shared types (`sciona/types.py`)
 
 Five frozen dataclasses form the vocabulary shared across all components:
 
@@ -116,7 +116,7 @@ Five frozen dataclasses form the vocabulary shared across all components:
 | `VerificationResult` | Compiler output for a single candidate (verified/not, error message) |
 | `MatchResult` | Final result for a PDG node (best verified match + all attempts) |
 
-### Protocols (`ageom/protocols.py`)
+### Protocols (`sciona/protocols.py`)
 
 Four `typing.Protocol` interfaces define the contracts:
 
@@ -127,7 +127,7 @@ Four `typing.Protocol` interfaces define the contracts:
 
 All component implementations are structural subtypes of these protocols. No inheritance required.
 
-### Smart Ingester (`ageom/ingester/`) -- Round 0
+### Smart Ingester (`sciona/ingester/`) -- Round 0
 
 Converts existing source code into stateless atom graphs compatible with the AGEO framework. Supports Python, C++, Julia, and Rust.
 
@@ -188,7 +188,7 @@ For non-Python sources, the emitter appends FFI stubs so generated atoms can cal
 | `ffi_emitter.py` | FFI binding generation for C++, Julia, and Rust |
 | `graph.py` | `IngesterAgent` state machine, `_get_extractor()` dispatch, verification/repair loops |
 
-### Conceptual Dependency Agent (`ageom/architect/`) -- Round 1
+### Conceptual Dependency Agent (`sciona/architect/`) -- Round 1
 
 Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) using an iterative LangGraph cycle.
 
@@ -238,7 +238,7 @@ Before Round 2 receives PDG nodes, `validate_handoff()` checks every atomic leaf
 
 `to_pdg_nodes(cdg, strict=True)` raises `HandoffValidationError` on any issue. Pass `strict=False` to skip validation.
 
-### Semantic Indexer (`ageom/indexer/`)
+### Semantic Indexer (`sciona/indexer/`)
 
 Indexes formal declarations into a searchable vector store.
 
@@ -254,7 +254,7 @@ Library Source ──> Embedder ──> FAISS Store
 - **`CoqDeclarationSource`** -- Parses `.v` files via `coqpyt`, extracting Theorem/Lemma/Definition declarations.
 - **`SemanticIndexImpl`** -- Implements the `SemanticIndex` protocol. Embedding search goes through FAISS; type search delegates to lean-explore for Lean, falls back to embedding for Coq.
 
-### Verification Oracle (`ageom/judge/`)
+### Verification Oracle (`sciona/judge/`)
 
 Compiler-based proof checking. No approximation -- the compiler is the ground truth.
 
@@ -265,7 +265,7 @@ Compiler-based proof checking. No approximation -- the compiler is the ground tr
 
 Verification strategy: for Lean/Coq, attempt direct type unification -- `@CandidateName` as a term for the PDG node's statement. For Python, verify the function exists and is callable with the expected signature. If the check passes, the match is accepted.
 
-### Retrieval Agent (`ageom/hunter/`)
+### Retrieval Agent (`sciona/hunter/`)
 
 An LLM-driven search loop implemented as a typed state machine with `pydantic-graph`.
 
@@ -299,7 +299,7 @@ InitialSearch ──> RankCandidates ──> VerifyTopK ──> End[MatchResult]
 - **Built-in persistence** -- State can be serialized for pause/resume.
 - **Observability** -- Tracing/spans and Mermaid diagram generation come for free.
 
-### LLM integration (`ageom/hunter/llm.py`)
+### LLM integration (`sciona/hunter/llm.py`)
 
 `LLMClient` is a Protocol with a single method: `async complete(system, user) -> str`.
 Built-in implementations:
@@ -314,7 +314,7 @@ Three prompt templates drive the agent's reasoning, each with a deterministic to
 - **`SCORE_CANDIDATES`** -- Embedding reranker handles most cases; LLM called only on low-confidence rankings
 - **`ANALYZE_FAILURE`** -- Deterministic regex analyzer handles known error classes (unknown identifier, arity mismatch, type incompatibility, syntax errors); LLM called only for unrecognized patterns
 
-### Synthesizer (`ageom/synthesizer/`) -- Round 3
+### Synthesizer (`sciona/synthesizer/`) -- Round 3
 
 Assembles CDG + MatchResults into compilable skeleton files, optionally pre-validated by ghost witness simulation.
 
@@ -333,7 +333,7 @@ The ghost simulation is best-effort: if `ageoa` is not installed or no atoms hav
 The ghost simulation pass bridges the two repositories:
 
 ```
-ageoa (ageo-atoms)                    ageom (ageo-matcher)
+ageoa (ageo-atoms)                    sciona (sciona)
   ghost/                                synthesizer/
     registry.py  REGISTRY  <-------->   ghost_sim.py  run_ghost_simulation()
     witnesses.py  witness_fft, ...        |
@@ -369,7 +369,7 @@ ageoa (ageo-atoms)                    ageom (ageo-matcher)
 | `repair.py` | Compile-analyze-patch loop (deterministic fixes first, then LLM for remaining errors) |
 | `extractor.py` | FFI export and verification certificate generation |
 
-### Principal Meta-Optimizer (`ageom/principal/`)
+### Principal Meta-Optimizer (`sciona/principal/`)
 
 Wraps the four-round pipeline in a NAS-style optimisation loop: Forward → Evaluate → Backward → Update.
 
@@ -416,11 +416,11 @@ Interval arithmetic in `ghost_sim.py` computes per-node error expansion (output 
 
 #### Assembly instrumentation
 
-The `Assembler` supports a `with_telemetry=True` flag that wraps each atomic call in a `_ageom_probe()` helper emitting `trace.jsonl` records with `node_id`, `execution_time_ms`, `peak_memory_bytes`, and `error_expansion`. The `ExecutionSandbox` parses these traces after subprocess execution.
+The `Assembler` supports a `with_telemetry=True` flag that wraps each atomic call in a `_sciona_probe()` helper emitting `trace.jsonl` records with `node_id`, `execution_time_ms`, `peak_memory_bytes`, and `error_expansion`. The `ExecutionSandbox` parses these traces after subprocess execution.
 
 ## Telemetry and Dashboard
 
-### Pipeline telemetry (`ageom/telemetry.py`)
+### Pipeline telemetry (`sciona/telemetry.py`)
 
 All commands emit structured pipeline events (``PipelineEvent``) and maintain per-run snapshots (``RunSnapshot``) tracking stage progress, prompt dispatch counters, and metadata. The module keeps:
 
@@ -429,9 +429,9 @@ All commands emit structured pipeline events (``PipelineEvent``) and maintain pe
 
 Key public APIs: `log_event()`, `start_run()`, `finish_run()`, `update_stage()`, `start_prompt_dispatch()`, `finish_prompt_dispatch()`, `telemetry_scope()`, `telemetry_stage()`.
 
-### Postgres telemetry persistence (`ageom/telemetry_store.py`)
+### Postgres telemetry persistence (`sciona/telemetry_store.py`)
 
-When `AGEOM_POSTGRES_URI` is set and `AGEOM_TELEMETRY_BACKEND` is not `file`, telemetry is durably persisted to PostgreSQL alongside the existing Architect checkpoints and shared context data. The in-memory hot path for live SSE streaming is preserved; Postgres is the durable store for cross-run queries.
+When `SCIONA_POSTGRES_URI` is set and `SCIONA_TELEMETRY_BACKEND` is not `file`, telemetry is durably persisted to PostgreSQL alongside the existing Architect checkpoints and shared context data. The in-memory hot path for live SSE streaming is preserved; Postgres is the durable store for cross-run queries.
 
 | Component | Role |
 |-----------|------|
@@ -447,7 +447,7 @@ When `AGEOM_POSTGRES_URI` is set and `AGEOM_TELEMETRY_BACKEND` is not `file`, te
 
 ### Dashboard endpoints
 
-The visualizer API (`ageom/visualizer_api.py`) exposes a telemetry dashboard at `/api/dashboard/`:
+The visualizer API (`sciona/visualizer_api.py`) exposes a telemetry dashboard at `/api/dashboard/`:
 
 | Endpoint | Description |
 |----------|-------------|
@@ -464,42 +464,42 @@ All query endpoints try Postgres first and fall back to in-memory/file when unav
 ### CLI telemetry commands
 
 ```
-ageom telemetry list [--limit N] [--state STATE]   # List recent runs
-ageom telemetry show <run_id>                       # Show run details as JSON
+sciona telemetry list [--limit N] [--state STATE]   # List recent runs
+sciona telemetry show <run_id>                       # Show run details as JSON
 ```
 
 Both commands try Postgres first (via `asyncio.run()`) and fall back to file-based persistence.
 
 ## Configuration
 
-`AgeomConfig` (pydantic-settings) reads from `.env` with prefix `AGEOM_`:
+`AgeomConfig` (pydantic-settings) reads from `.env` with prefix `SCIONA_`:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `AGEOM_INDEX_DIR` | `data/index` | FAISS index location |
-| `AGEOM_LLM_PROVIDER` | `anthropic` | Global LLM provider (`anthropic`, `codex`, or `llama_cpp`) |
-| `AGEOM_ANTHROPIC_API_KEY` | | Claude API key |
-| `AGEOM_OPENAI_API_KEY` | | OpenAI API key for Codex |
-| `AGEOM_OPENAI_BASE_URL` | *(empty)* | Optional OpenAI-compatible endpoint |
-| `AGEOM_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Hunter |
-| `AGEOM_LLAMA_CPP_BASE_URL` | `http://127.0.0.1:8080/v1` | Local llama.cpp endpoint |
-| `AGEOM_HUNTER_LLM_PROVIDER` | `llama_cpp` | Hunter-specific provider (defaults local) |
-| `AGEOM_HUNTER_LLM_MODEL` | `llama-3.1-8b-instruct` | Hunter local model |
-| `AGEOM_HUNTER_MODE` | `speculative_local` | Hunter loop mode |
-| `AGEOM_HUNTER_USE_GBNF` | `true` | Grammar-constrained decoding in Hunter |
-| `AGEOM_EMBEDDING_MODEL` | `microsoft/unixcoder-base` | Embedding model |
-| `AGEOM_LEAN_TOOLCHAIN` | `leanprover/lean4:v4.14.0` | Lean version |
-| `AGEOM_HUNTER_MAX_ITERATIONS` | `5` | Max search-verify-refine loops |
-| `AGEOM_HUNTER_TOP_K_VERIFY` | `3` | Candidates sent to Oracle per iteration |
-| `AGEOM_HUNTER_SEARCH_K` | `20` | Candidates retrieved per search |
-| `AGEOM_POSTGRES_URI` | *(empty)* | PostgreSQL URI for checkpoint, shared context, and telemetry persistence |
-| `AGEOM_TELEMETRY_BACKEND` | `auto` | Telemetry storage backend: `auto` (use Postgres when URI is set), `postgres`, or `file` |
-| `AGEOM_TELEMETRY_RUNS_DIR` | `output/telemetry_runs` | Directory for file-based run snapshot persistence |
-| `AGEOM_TELEMETRY_STALE_SECONDS` | `120` | Seconds before a running stage is flagged as stale in the dashboard |
-| `AGEOM_ARCHITECT_MAX_DEPTH` | `8` | Max CDG decomposition depth |
-| `AGEOM_ARCHITECT_LLM_PROVIDER` | *(empty)* | Optional Round 1 provider override (falls back to `AGEOM_LLM_PROVIDER`) |
-| `AGEOM_ARCHITECT_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Architect |
-| `AGEOM_SKILL_INDEX_DIR` | `data/skill_index` | Skill catalog and index location |
+| `SCIONA_INDEX_DIR` | `data/index` | FAISS index location |
+| `SCIONA_LLM_PROVIDER` | `anthropic` | Global LLM provider (`anthropic`, `codex`, or `llama_cpp`) |
+| `SCIONA_ANTHROPIC_API_KEY` | | Claude API key |
+| `SCIONA_OPENAI_API_KEY` | | OpenAI API key for Codex |
+| `SCIONA_OPENAI_BASE_URL` | *(empty)* | Optional OpenAI-compatible endpoint |
+| `SCIONA_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Hunter |
+| `SCIONA_LLAMA_CPP_BASE_URL` | `http://127.0.0.1:8080/v1` | Local llama.cpp endpoint |
+| `SCIONA_HUNTER_LLM_PROVIDER` | `llama_cpp` | Hunter-specific provider (defaults local) |
+| `SCIONA_HUNTER_LLM_MODEL` | `llama-3.1-8b-instruct` | Hunter local model |
+| `SCIONA_HUNTER_MODE` | `speculative_local` | Hunter loop mode |
+| `SCIONA_HUNTER_USE_GBNF` | `true` | Grammar-constrained decoding in Hunter |
+| `SCIONA_EMBEDDING_MODEL` | `microsoft/unixcoder-base` | Embedding model |
+| `SCIONA_LEAN_TOOLCHAIN` | `leanprover/lean4:v4.14.0` | Lean version |
+| `SCIONA_HUNTER_MAX_ITERATIONS` | `5` | Max search-verify-refine loops |
+| `SCIONA_HUNTER_TOP_K_VERIFY` | `3` | Candidates sent to Oracle per iteration |
+| `SCIONA_HUNTER_SEARCH_K` | `20` | Candidates retrieved per search |
+| `SCIONA_POSTGRES_URI` | *(empty)* | PostgreSQL URI for checkpoint, shared context, and telemetry persistence |
+| `SCIONA_TELEMETRY_BACKEND` | `auto` | Telemetry storage backend: `auto` (use Postgres when URI is set), `postgres`, or `file` |
+| `SCIONA_TELEMETRY_RUNS_DIR` | `output/telemetry_runs` | Directory for file-based run snapshot persistence |
+| `SCIONA_TELEMETRY_STALE_SECONDS` | `120` | Seconds before a running stage is flagged as stale in the dashboard |
+| `SCIONA_ARCHITECT_MAX_DEPTH` | `8` | Max CDG decomposition depth |
+| `SCIONA_ARCHITECT_LLM_PROVIDER` | *(empty)* | Optional Round 1 provider override (falls back to `SCIONA_LLM_PROVIDER`) |
+| `SCIONA_ARCHITECT_LLM_MODEL` | `claude-sonnet-4-5-20250929` | LLM model for Architect |
+| `SCIONA_SKILL_INDEX_DIR` | `data/skill_index` | Skill catalog and index location |
 
 ## Data flow
 
@@ -527,7 +527,7 @@ Both commands try Postgres first (via `asyncio.run()`) and fall back to file-bas
 6. Result: CDGExport { nodes, edges, metadata: { thread_id, ... } }
 ```
 
-Each step is checkpointed. Use `ageom history <thread-id>` to inspect, or `agent.fork()` to branch from any checkpoint.
+Each step is checkpointed. Use `sciona history <thread-id>` to inspect, or `agent.fork()` to branch from any checkpoint.
 
 ### Round 2: Matching
 
@@ -618,7 +618,7 @@ If step 4 fails for all candidates, `ReformulateQuery` asks the LLM to analyze t
 ## Dependency graph
 
 ```
-ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
+sciona/types.py, protocols.py, config.py    (no external deps beyond pydantic)
          |
     +----+----+----------+-----------+------------------+
     |         |          |           |                  |
@@ -651,8 +651,8 @@ ageom/types.py, protocols.py, config.py    (no external deps beyond pydantic)
                    |
             [optional import]
                    |
-           ageom/synthesizer/ghost_sim.py
-           ageom/ingester/emitter.py
+           sciona/synthesizer/ghost_sim.py
+           sciona/ingester/emitter.py
 ```
 
 The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The ingester is independent of the hunter/indexer/judge -- it produces `IngestionBundle`s (CDG + generated source + match results) that the Synthesizer can consume directly. For non-Python sources, the ingester uses tree-sitter for extraction and generates FFI bindings (ctypes for C++/Rust, juliacall for Julia). The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `ageoa` for ghost witness simulation. If `ageoa` is not installed, the synthesizer works normally without the simulation pass. The principal depends on the architect (for time-travel forking), synthesizer (ghost simulation + assembly), and optuna for HPO. It is the outermost layer: all other components are unaware of the principal's existence.

@@ -1,4 +1,4 @@
-"""Tests for ageom.llm_router — LLMRouter, select_llm, and per-prompt config."""
+"""Tests for sciona.llm_router — LLMRouter, select_llm, and per-prompt config."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ageom.llm_router import (
+from sciona.llm_router import (
     ARCHITECT_STRATEGY,
     INGESTER_CHUNK,
     PromptKeyLLMClient,
@@ -18,18 +18,18 @@ from ageom.llm_router import (
     prompt_timeout_seconds,
     select_llm,
 )
-from ageom.telemetry import (
+from sciona.telemetry import (
     get_event_log,
     reset_telemetry_runtime,
     start_run,
     telemetry_scope,
 )
-from ageom.architect.strategy_classifier import StrategyClassifier
-from ageom.architect.deterministic_decompose import DeterministicDecomposer
-from ageom.architect.deterministic_critic import DeterministicCritic
-from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
-from ageom.hunter.failure_analyzer import DeterministicFailureAnalyzer
-from ageom.hunter.query_reformulator import HeuristicQueryReformulator
+from sciona.architect.strategy_classifier import StrategyClassifier
+from sciona.architect.deterministic_decompose import DeterministicDecomposer
+from sciona.architect.deterministic_critic import DeterministicCritic
+from sciona.hunter.candidate_ranker import HeuristicCandidateRanker
+from sciona.hunter.failure_analyzer import DeterministicFailureAnalyzer
+from sciona.hunter.query_reformulator import HeuristicQueryReformulator
 
 
 def _make_mock_llm(name: str = "default") -> AsyncMock:
@@ -178,7 +178,7 @@ class TestSelectLLM:
                 await asyncio.sleep(0.05)
                 return "late"
 
-        monkeypatch.setenv("AGEOM_HUNTER_SCORE_TIMEOUT_S", "0.01")
+        monkeypatch.setenv("SCIONA_HUNTER_SCORE_TIMEOUT_S", "0.01")
         run_id = start_run("algorithm_creation", run_id="test-timeout")
         with telemetry_scope(run_id=run_id, stage="hunter_round_1"):
             wrapped = PromptKeyLLMClient(_SlowClient(), "hunter_score")
@@ -193,16 +193,16 @@ class TestSelectLLM:
         assert payload["error_type"] == "TimeoutError"
         assert payload["provider_error_phase"] == "router_timeout"
         assert payload["prompt_timeout_s"] == pytest.approx(0.01)
-        monkeypatch.delenv("AGEOM_HUNTER_SCORE_TIMEOUT_S")
+        monkeypatch.delenv("SCIONA_HUNTER_SCORE_TIMEOUT_S")
 
 
 class TestConfigPerPromptFields:
     def test_config_picks_up_per_prompt_env_vars(self, monkeypatch):
-        monkeypatch.setenv("AGEOM_SYNTHESIZER_TACTIC_LLM_PROVIDER", "llama_cpp")
-        monkeypatch.setenv("AGEOM_SYNTHESIZER_TACTIC_LLM_MODEL", "qwen-2.5-coder-32b")
-        monkeypatch.setenv("AGEOM_INGESTER_CHUNK_LLM_PROVIDER", "codex")
+        monkeypatch.setenv("SCIONA_SYNTHESIZER_TACTIC_LLM_PROVIDER", "llama_cpp")
+        monkeypatch.setenv("SCIONA_SYNTHESIZER_TACTIC_LLM_MODEL", "qwen-2.5-coder-32b")
+        monkeypatch.setenv("SCIONA_INGESTER_CHUNK_LLM_PROVIDER", "codex")
 
-        from ageom.config import AgeomConfig
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig(_env_file=None)
         assert config.synthesizer_tactic_llm_provider == "llama_cpp"
@@ -214,10 +214,10 @@ class TestConfigPerPromptFields:
         assert isinstance(config.architect_strategy_llm_model, str)
 
     def test_all_per_prompt_fields_exist(self):
-        from ageom.config import AgeomConfig
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig(_env_file=None)
-        from ageom.llm_router import ALL_PROMPT_KEYS
+        from sciona.llm_router import ALL_PROMPT_KEYS
 
         for key in ALL_PROMPT_KEYS:
             assert hasattr(config, f"{key}_llm_provider")
@@ -227,7 +227,7 @@ class TestConfigPerPromptFields:
         assert prompt_timeout_seconds("hunter_score") == pytest.approx(20.0)
 
     def test_unbenchmarked_prompt_defaults_are_not_applied_implicitly(self):
-        from ageom.config import AgeomConfig, prompt_override_matches_code_default, should_apply_prompt_override
+        from sciona.config import AgeomConfig, prompt_override_matches_code_default, should_apply_prompt_override
 
         config = AgeomConfig(_env_file=None)
         assert AgeomConfig.model_fields["ingester_fix_type_llm_provider"].default == "llama_cpp"
@@ -235,7 +235,7 @@ class TestConfigPerPromptFields:
         assert prompt_override_matches_code_default(config, "ingester_fix_type") is True
 
     def test_explicit_override_for_unbenchmarked_prompt_is_still_applied(self):
-        from ageom.config import AgeomConfig, should_apply_prompt_override
+        from sciona.config import AgeomConfig, should_apply_prompt_override
 
         config = AgeomConfig(
             _env_file=None,
@@ -245,7 +245,7 @@ class TestConfigPerPromptFields:
         assert should_apply_prompt_override(config, "ingester_fix_type") is True
 
     def test_structured_mode_suppresses_benchmarked_code_defaults(self):
-        from ageom.config import AgeomConfig, should_apply_prompt_override
+        from sciona.config import AgeomConfig, should_apply_prompt_override
 
         config = AgeomConfig(_env_file=None, execution_mode="structured")
         assert should_apply_prompt_override(
@@ -253,7 +253,7 @@ class TestConfigPerPromptFields:
         ) is False
 
     def test_verified_mode_suppresses_deterministic_code_defaults(self):
-        from ageom.config import AgeomConfig, should_apply_prompt_override
+        from sciona.config import AgeomConfig, should_apply_prompt_override
 
         config = AgeomConfig(_env_file=None, execution_mode="verified")
         assert should_apply_prompt_override(
@@ -266,7 +266,7 @@ class TestConfigPerPromptFields:
 
 class TestCreateLLMRouter:
     def test_architect_strategy_and_critique_use_explicit_overrides(self, monkeypatch):
-        from ageom.cli import _create_llm_router
+        from sciona.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
 
@@ -277,7 +277,7 @@ class TestCreateLLMRouter:
             client.model = model
             return client
 
-        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+        monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
         args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
         config = SimpleNamespace(
@@ -317,7 +317,7 @@ class TestCreateLLMRouter:
         assert isinstance(router.for_prompt("architect_decompose"), DeterministicDecomposer)
 
     def test_hunter_prompts_use_explicit_overrides(self, monkeypatch):
-        from ageom.cli import _create_llm_router
+        from sciona.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
 
@@ -328,7 +328,7 @@ class TestCreateLLMRouter:
             client.model = model
             return client
 
-        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+        monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
         args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
         config = SimpleNamespace(
@@ -376,7 +376,7 @@ class TestCreateLLMRouter:
         assert router.for_prompt("hunter_analyze_failure") is not router.for_prompt("hunter_score")
 
     def test_architect_code_defaults_do_not_spawn_extra_override_clients(self, monkeypatch):
-        from ageom.cli import _create_llm_router
+        from sciona.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
 
@@ -387,7 +387,7 @@ class TestCreateLLMRouter:
             client.model = model
             return client
 
-        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+        monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
         args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
         config = SimpleNamespace(
@@ -424,7 +424,7 @@ class TestCreateLLMRouter:
         assert isinstance(router.for_prompt("architect_critique"), DeterministicCritic)
 
     def test_unbenchmarked_default_override_is_filtered_out(self, monkeypatch):
-        from ageom.cli import _create_llm_router
+        from sciona.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
 
@@ -435,7 +435,7 @@ class TestCreateLLMRouter:
             client.model = model
             return client
 
-        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+        monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
         args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
         config = SimpleNamespace(
@@ -460,7 +460,7 @@ class TestCreateLLMRouter:
         assert created == [("anthropic", "claude-sonnet-4-5-20250929")]
 
     def test_rapid_mode_suppresses_benchmark_default_overrides(self, monkeypatch):
-        from ageom.cli import _create_llm_router
+        from sciona.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
 
@@ -471,7 +471,7 @@ class TestCreateLLMRouter:
             client.model = model
             return client
 
-        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+        monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
         args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None, mode="rapid")
         config = SimpleNamespace(
@@ -497,7 +497,7 @@ class TestCreateLLMRouter:
         assert created == [("anthropic", "claude-sonnet-4-5-20250929")]
 
     def test_structured_mode_suppresses_benchmark_default_overrides(self, monkeypatch):
-        from ageom.cli import _create_llm_router
+        from sciona.cli import _create_llm_router
 
         created: list[tuple[str, str]] = []
 
@@ -508,7 +508,7 @@ class TestCreateLLMRouter:
             client.model = model
             return client
 
-        monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+        monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
         args = SimpleNamespace(
             llm_provider=None,
@@ -541,8 +541,8 @@ class TestCreateLLMRouter:
 
 class TestPromptRoutingSummary:
     def test_summary_reports_active_and_suppressed_overrides(self, capsys):
-        from ageom.cli import _print_prompt_routing_summary, _summarize_prompt_routing
-        from ageom.config import AgeomConfig
+        from sciona.cli import _print_prompt_routing_summary, _summarize_prompt_routing
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig(_env_file=None)
         summary = _summarize_prompt_routing(
@@ -565,8 +565,8 @@ class TestPromptRoutingSummary:
         assert "suppressed_defaults=[ingester_fix_type]" in out
 
     def test_summary_reports_custom_nonbenchmark_override(self):
-        from ageom.cli import _routing_metadata_summary, _summarize_prompt_routing
-        from ageom.config import AgeomConfig
+        from sciona.cli import _routing_metadata_summary, _summarize_prompt_routing
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig(
             _env_file=None,
@@ -592,8 +592,8 @@ class TestPromptRoutingSummary:
         assert metadata["active_overrides"][0]["provider"] == "codex_shim"
 
     def test_rapid_mode_summary_suppresses_benchmark_defaults(self):
-        from ageom.cli import _summarize_prompt_routing
-        from ageom.config import AgeomConfig
+        from sciona.cli import _summarize_prompt_routing
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig(_env_file=None)
         summary = _summarize_prompt_routing(
@@ -614,8 +614,8 @@ class TestPromptRoutingSummary:
         ]
 
     def test_structured_mode_summary_suppresses_benchmark_defaults(self):
-        from ageom.cli import _summarize_prompt_routing
-        from ageom.config import AgeomConfig
+        from sciona.cli import _summarize_prompt_routing
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig(_env_file=None)
         summary = _summarize_prompt_routing(
@@ -640,7 +640,7 @@ class TestPromptRoutingSummary:
 # SubprocessCLIClient tests
 # ---------------------------------------------------------------------------
 
-from ageom.hunter.llm import SubprocessCLIClient, create_llm_client
+from sciona.hunter.llm import SubprocessCLIClient, create_llm_client
 
 
 def _fake_proc(stdout: bytes = b"", stderr: bytes = b"", returncode: int = 0):
@@ -778,7 +778,7 @@ class TestSubprocessCLIClient:
     async def test_complete_success_claude(self):
         c = SubprocessCLIClient(cli="claude", model="sonnet", max_tokens=1024)
         proc = _fake_proc(stdout=b"reply text\n", returncode=0)
-        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc) as mock_exec:
+        with patch("sciona.hunter.llm.asyncio.create_subprocess_exec", return_value=proc) as mock_exec:
             result = await c.complete("sys", "usr")
         assert result == "reply text"
         # Verify stdin was just the user prompt
@@ -791,7 +791,7 @@ class TestSubprocessCLIClient:
         c = SubprocessCLIClient(cli="codex", model="o4-mini", max_tokens=1024)
         jsonl = json.dumps({"role": "assistant", "content": "answer"}) + "\n"
         proc = _fake_proc(stdout=jsonl.encode(), returncode=0)
-        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+        with patch("sciona.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
             result = await c.complete("sys", "usr")
         assert result == "answer"
 
@@ -799,7 +799,7 @@ class TestSubprocessCLIClient:
     async def test_complete_success_gemini(self):
         c = SubprocessCLIClient(cli="gemini", model="pro", max_tokens=1024)
         proc = _fake_proc(stdout=b"gemini reply", returncode=0)
-        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+        with patch("sciona.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
             result = await c.complete("sys", "usr")
         assert result == "gemini reply"
 
@@ -807,7 +807,7 @@ class TestSubprocessCLIClient:
     async def test_complete_nonzero_exit_raises(self):
         c = SubprocessCLIClient(cli="claude", model="m", max_tokens=1)
         proc = _fake_proc(stderr=b"some error", returncode=1)
-        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+        with patch("sciona.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
             with pytest.raises(RuntimeError, match="claude CLI exited with code 1"):
                 await c.complete("sys", "usr")
 
@@ -815,7 +815,7 @@ class TestSubprocessCLIClient:
     async def test_complete_with_grammar_delegates(self):
         c = SubprocessCLIClient(cli="claude", model="m", max_tokens=1)
         proc = _fake_proc(stdout=b"ok", returncode=0)
-        with patch("ageom.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
+        with patch("sciona.hunter.llm.asyncio.create_subprocess_exec", return_value=proc):
             result = await c.complete_with_grammar("sys", "usr", "grammar")
         assert result == "ok"
 
@@ -841,13 +841,13 @@ class TestSubprocessCLIClient:
             return await awaitable
 
         with patch(
-            "ageom.hunter.llm.asyncio.create_subprocess_exec",
+            "sciona.hunter.llm.asyncio.create_subprocess_exec",
             side_effect=[proc1, proc2],
         ), patch(
-            "ageom.hunter.llm.asyncio.wait_for",
+            "sciona.hunter.llm.asyncio.wait_for",
             new=fake_wait_for,
         ), patch(
-            "ageom.hunter.llm.asyncio.sleep",
+            "sciona.hunter.llm.asyncio.sleep",
             new=AsyncMock(return_value=None),
         ):
             result = await c.complete("sys", "usr")

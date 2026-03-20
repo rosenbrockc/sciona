@@ -2,13 +2,13 @@
 
 import pytest
 
-from ageom.architect.models import ConceptType, IOSpec
-from ageom.architect.skeletons import (
+from sciona.architect.models import ConceptType, IOSpec
+from sciona.architect.skeletons import (
     SKELETON_TEMPLATES,
     get_skeleton,
     instantiate_skeleton,
 )
-from ageom.synthesizer.contracts import ContractGenerator
+from sciona.synthesizer.contracts import ContractGenerator
 
 
 class TestDspConceptTypes:

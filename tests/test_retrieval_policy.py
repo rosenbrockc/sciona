@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from ageom.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
-from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
-from ageom.cli import _resolve_retrieval_policy
-from ageom.config import AgeomConfig, resolve_execution_mode
+from sciona.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
+from sciona.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+from sciona.cli import _resolve_retrieval_policy
+from sciona.config import AgeomConfig, resolve_execution_mode
 
 
 def _seed_catalog() -> PrimitiveCatalog:
@@ -74,8 +74,8 @@ def test_retrieval_policy_disables_heavy_retrieval_for_low_confidence_verified_m
 def test_retrieval_policy_keeps_heavier_retrieval_for_high_confidence_verified_mode(
     monkeypatch,
 ):
-    monkeypatch.setenv("AGEOM_GRAPH_RETRIEVAL_ENABLED", "true")
-    monkeypatch.setenv("AGEOM_HUNTER_MODE", "speculative_local")
+    monkeypatch.setenv("SCIONA_GRAPH_RETRIEVAL_ENABLED", "true")
+    monkeypatch.setenv("SCIONA_HUNTER_MODE", "speculative_local")
     config = AgeomConfig()
     mode = resolve_execution_mode(config, "verified")
     catalog = _seed_catalog()

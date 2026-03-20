@@ -7,22 +7,22 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.judge.models import CompilerFeedback
-from ageom.shared_context import InMemorySharedContextStore
-from ageom.synthesizer.classifier import (
+from sciona.judge.models import CompilerFeedback
+from sciona.shared_context import InMemorySharedContextStore
+from sciona.synthesizer.classifier import (
     ErrorCategory,
     classify_error,
     classify_feedback,
     suggest_deterministic_fix,
 )
-from ageom.synthesizer.models import SkeletonFile, SynthesisResult
-from ageom.synthesizer.patcher import (
+from sciona.synthesizer.models import SkeletonFile, SynthesisResult
+from sciona.synthesizer.patcher import (
     Patch,
     apply_patches,
     extract_error_context,
     find_sorry_locations,
 )
-from ageom.synthesizer.repair import (
+from sciona.synthesizer.repair import (
     CompileCheck,
     RepairDeps,
     RepairState,
@@ -582,7 +582,7 @@ class TestSynthesizerAgent:
     @pytest.mark.asyncio
     async def test_synthesize_end_to_end(self):
         """Full pipeline: skeleton → repair → SynthesisResult."""
-        from ageom.synthesizer.agent import SynthesizerAgent
+        from sciona.synthesizer.agent import SynthesizerAgent
 
         skeleton = _make_skeleton("-- clean code\n")
         env = _make_mock_env(
@@ -603,7 +603,7 @@ class TestSynthesizerAgent:
     @pytest.mark.asyncio
     async def test_synthesize_preserves_correct_code(self):
         """Patches don't corrupt working definitions."""
-        from ageom.synthesizer.agent import SynthesizerAgent
+        from sciona.synthesizer.agent import SynthesizerAgent
 
         source = "def good : Nat := 42\ndef bad : Nat := (1 : Int)\n"
         skeleton = _make_skeleton(source)
@@ -637,7 +637,7 @@ class TestSynthesizerAgent:
     @pytest.mark.asyncio
     async def test_synthesize_budget_exhaustion(self):
         """Agent stops after max_iterations even with remaining errors."""
-        from ageom.synthesizer.agent import SynthesizerAgent
+        from sciona.synthesizer.agent import SynthesizerAgent
 
         skeleton = _make_skeleton("broken\n")
         env = _make_mock_env(
@@ -669,10 +669,10 @@ class TestCLIParserAcceptsSynthesize:
         from unittest.mock import patch
 
         with patch.object(
-            sys, "argv", ["ageom", "synthesize", "cdg.json", "matches.json"]
+            sys, "argv", ["sciona", "synthesize", "cdg.json", "matches.json"]
         ):
 
-            parser = argparse.ArgumentParser(prog="ageom")
+            parser = argparse.ArgumentParser(prog="sciona")
             subparsers = parser.add_subparsers(dest="command")
             synth = subparsers.add_parser("synthesize")
             synth.add_argument("cdg_file")

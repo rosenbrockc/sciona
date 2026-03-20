@@ -10,7 +10,7 @@ The **Architect** (Round 1) decomposes a high-level goal into a **Conceptual Dep
 First, generate an initial decomposition of the goal:
 
 ```bash
-ageom decompose "Detect heart rate from raw ECG signal" 
+sciona decompose "Detect heart rate from raw ECG signal" 
   --output ecg_initial.json 
   --max-depth 3
 ```
@@ -20,14 +20,14 @@ Use the `optimize` command to run a Neural Architecture Search (NAS) style loop.
 
 ```bash
 # optimize for precision over 20 trials using a standard JSON dataset
-ageom optimize "Detect heart rate from raw ECG signal" 
+sciona optimize "Detect heart rate from raw ECG signal" 
   --benchmark data/ecg_bench.json 
   --metric precision 
   --trials 20 
   --output ecg_optimal.json
 
 # OR: optimize using a templated adapter dataset (adapter.yml)
-ageom optimize "Detect heart rate from raw ECG signal" 
+sciona optimize "Detect heart rate from raw ECG signal" 
   --benchmark data/ecg_adapter.yml 
   --metric precision 
   --trials 20
@@ -45,7 +45,7 @@ Once you have an optimal CDG, you need to ground its abstract nodes into actual 
 Run the full orchestration to match CDG nodes to verified library functions (e.g., from `numpy`, `scipy`, or `ageoa`) and assemble them into a Python script:
 
 ```bash
-ageom run "Detect heart rate from raw ECG signal" 
+sciona run "Detect heart rate from raw ECG signal" 
   --prover python 
   --output ./build/ecg_pipeline/
 ```
@@ -59,7 +59,7 @@ This command performs:
 Export the verified source into a clean, distributable Python package with FFI bindings if necessary:
 
 ```bash
-ageom export ./build/ecg_pipeline/ecg_verified.py 
+sciona export ./build/ecg_pipeline/ecg_verified.py 
   --target python-pkg 
   --output-dir ./dist/ecg_processor
 ```
@@ -74,7 +74,7 @@ Finally, validate that your generated executable performs as expected on real-wo
 Use the `profile` command to evaluate the exported artifact against your benchmark dataset. This provides empirical telemetry (latency, memory, precision) for the entire pipeline.
 
 ```bash
-ageom profile 
+sciona profile 
   --cdg ./build/ecg_pipeline/cdg.json 
   --artifact ./dist/ecg_processor/main.py 
   --dataset data/ecg_test_set.json 
@@ -112,7 +112,7 @@ When using an `adapter.yml`, AGEO-Matcher automatically:
 
 ## Summary of Commands
 
-1. **Optimize**: `ageom optimize "Goal" --benchmark data.yml`
-2. **Build**: `ageom run "Goal" --prover python --output ./build/`
-3. **Export**: `ageom export ./build/main.py --target python-pkg`
-4. **Validate**: `ageom profile --artifact ./dist/main.py --dataset data.json`
+1. **Optimize**: `sciona optimize "Goal" --benchmark data.yml`
+2. **Build**: `sciona run "Goal" --prover python --output ./build/`
+3. **Export**: `sciona export ./build/main.py --target python-pkg`
+4. **Validate**: `sciona profile --artifact ./dist/main.py --dataset data.json`

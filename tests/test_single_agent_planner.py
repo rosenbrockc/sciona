@@ -4,16 +4,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-from ageom.orchestrator import OrchestratorResult
-from ageom.services import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+from sciona.orchestrator import OrchestratorResult
+from sciona.services import (
     ArchitectDecomposeRequest,
     HunterBatchMatchResult,
     OrchestrationRequest,
     SingleAgentPlanner,
 )
-from ageom.types import FailureAction, MatchFailureReport, PDGNode, Prover
+from sciona.types import FailureAction, MatchFailureReport, PDGNode, Prover
 
 
 class _FakeHunterService:

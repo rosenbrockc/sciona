@@ -1,12 +1,12 @@
-"""Tests for ageom.architect.skeletons — paradigm templates."""
+"""Tests for sciona.architect.skeletons — paradigm templates."""
 
 import pytest
 
-from ageom.architect.models import (
+from sciona.architect.models import (
     ConceptType,
     NodeStatus,
 )
-from ageom.architect.skeletons import (
+from sciona.architect.skeletons import (
     SKELETON_TEMPLATES,
     get_skeleton,
     instantiate_skeleton,

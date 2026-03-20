@@ -1,4 +1,4 @@
-"""Tests for Phase 1 AST extraction (ageom.ingester.extractor)."""
+"""Tests for Phase 1 AST extraction (sciona.ingester.extractor)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import textwrap
 
 import pytest
 
-from ageom.ingester.extractor import extract_data_flow
+from sciona.ingester.extractor import extract_data_flow
 
 # ---------------------------------------------------------------------------
 # Fixtures: write minimal Python classes to tmp_path

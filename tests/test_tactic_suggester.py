@@ -5,17 +5,17 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.commands._helpers import _create_llm_router
-from ageom.judge.models import CompilerFeedback
-from ageom.llm_router import LLMRouter, SYNTHESIZER_TACTIC
-from ageom.synthesizer.prompts import (
+from sciona.commands._helpers import _create_llm_router
+from sciona.judge.models import CompilerFeedback
+from sciona.llm_router import LLMRouter, SYNTHESIZER_TACTIC
+from sciona.synthesizer.prompts import (
     GENERATE_IMPLEMENTATION_SYSTEM_PYTHON,
     GENERATE_TACTIC_SYSTEM,
     GENERATE_TACTIC_USER,
 )
-from ageom.synthesizer.repair import CompileCheck, RepairDeps, RepairState, repair_graph
-from ageom.synthesizer.tactic_suggester import DeterministicTacticSuggester
-from ageom.synthesizer.models import SkeletonFile
+from sciona.synthesizer.repair import CompileCheck, RepairDeps, RepairState, repair_graph
+from sciona.synthesizer.tactic_suggester import DeterministicTacticSuggester
+from sciona.synthesizer.models import SkeletonFile
 
 
 def _make_user(goal_type: str, hypotheses: str = "", lemmas: str = "(use standard Mathlib tactics)") -> str:
@@ -145,7 +145,7 @@ def test_create_llm_router_wraps_synthesizer_tactic_deterministically(monkeypatc
         client.model = model
         return client
 
-    monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+    monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
     args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
     config = SimpleNamespace(

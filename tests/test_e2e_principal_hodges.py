@@ -24,25 +24,25 @@ import pytest
 if importlib.util.find_spec("langgraph") is None:
     pytest.skip("requires langgraph", allow_module_level=True)
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.principal.graph import (
+from sciona.principal.graph import (
     PrincipalDeps,
     PrincipalState,
     build_principal_graph,
 )
-from ageom.principal.models import (
+from sciona.principal.models import (
     BenchmarkResult,
     NodeTelemetry,
     OptimizationMetric,
 )
-from ageom.synthesizer.models import ExportBundle
+from sciona.synthesizer.models import ExportBundle
 
 
 # ---------------------------------------------------------------------------

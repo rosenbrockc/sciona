@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.clearinghouse.models import ObjectiveSpec, WinningCDG
-from ageom.clearinghouse.pareto import (
+from sciona.clearinghouse.models import ObjectiveSpec, WinningCDG
+from sciona.clearinghouse.pareto import (
     compute_pareto_front,
     dominates,
     split_architect_payout,

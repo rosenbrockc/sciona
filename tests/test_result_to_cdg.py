@@ -1,16 +1,16 @@
 """Tests for the OrchestratorResult-to-CDG converter."""
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.orchestrator import OrchestratorResult
-from ageom.result_to_cdg import RunCDGMetadata, orchestrator_result_to_cdg
-from ageom.types import (
+from sciona.orchestrator import OrchestratorResult
+from sciona.result_to_cdg import RunCDGMetadata, orchestrator_result_to_cdg
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

@@ -25,10 +25,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import save_json
-from ageom.architect.models import ConceptType, NodeStatus
-from ageom.ingester.extractor import extract_data_flow
-from ageom.ingester.graph import IngesterAgent
+from sciona.architect.handoff import save_json
+from sciona.architect.models import ConceptType, NodeStatus
+from sciona.ingester.extractor import extract_data_flow
+from sciona.ingester.graph import IngesterAgent
 
 # ---------------------------------------------------------------------------
 # Paths

@@ -6,16 +6,16 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.commands._helpers import _create_llm_router
-from ageom.ingester.ast_state_hoister import (
+from sciona.commands._helpers import _create_llm_router
+from sciona.ingester.ast_state_hoister import (
     ASTStateHoister,
     _hoist_from_attrs,
     _parse_hoist_prompt,
 )
-from ageom.ingester.chunker import ChunkerDeps, hoist_state
-from ageom.architect.models import IOSpec
-from ageom.ingester.models import MacroAtomSpec, ProposedMacroPlan, RawDataFlowGraph
-from ageom.llm_router import INGESTER_HOIST_STATE, LLMRouter
+from sciona.ingester.chunker import ChunkerDeps, hoist_state
+from sciona.architect.models import IOSpec
+from sciona.ingester.models import MacroAtomSpec, ProposedMacroPlan, RawDataFlowGraph
+from sciona.llm_router import INGESTER_HOIST_STATE, LLMRouter
 
 
 def _user(attrs: list[str], macro_plan: list[dict[str, object]]) -> str:
@@ -135,7 +135,7 @@ def test_create_llm_router_wraps_ingester_hoist_state_deterministically(monkeypa
         client.model = model
         return client
 
-    monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+    monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
     args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
     config = SimpleNamespace(

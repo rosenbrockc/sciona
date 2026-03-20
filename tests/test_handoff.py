@@ -1,9 +1,9 @@
-"""Tests for ageom.architect.handoff — CDG serialization and Round 2 conversion."""
+"""Tests for sciona.architect.handoff — CDG serialization and Round 2 conversion."""
 
 import json
 import pytest
 
-from ageom.architect.handoff import (
+from sciona.architect.handoff import (
     CDGExport,
     HandoffValidationError,
     export_cdg,
@@ -11,14 +11,14 @@ from ageom.architect.handoff import (
     save_json,
     to_pdg_nodes,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.types import Prover
+from sciona.types import Prover
 
 
 @pytest.fixture

@@ -7,22 +7,22 @@ for Bayesian atoms, and chunker prompt content.
 from __future__ import annotations
 
 
-from ageom.architect.models import ConceptType, IOSpec
-from ageom.ingester.models import (
+from sciona.architect.models import ConceptType, IOSpec
+from sciona.ingester.models import (
     MacroAtomSpec,
     StateModelSpec,
     StochasticTraceSpec,
     ValidatedMacroPlan,
     ProposedMacroPlan,
 )
-from ageom.ingester.emitter import (
+from sciona.ingester.emitter import (
     _BAYESIAN_CONCEPT_TYPES,
     _generate_bayesian_witness,
     generate_ghost_witnesses,
     generate_state_models,
     emit_ingestion_bundle,
 )
-from ageom.ingester.prompts import SEMANTIC_CHUNK_SYSTEM
+from sciona.ingester.prompts import SEMANTIC_CHUNK_SYSTEM
 
 # ---------------------------------------------------------------------------
 # ConceptType enums

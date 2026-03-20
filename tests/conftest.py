@@ -9,7 +9,7 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 # Force file-only telemetry backend during tests to avoid 30s pool retry
 # timeouts when Postgres is configured in .env but not running.
-os.environ.setdefault("AGEOM_TELEMETRY_BACKEND", "file")
+os.environ.setdefault("SCIONA_TELEMETRY_BACKEND", "file")
 import shlex
 import signal
 import socket
@@ -74,7 +74,7 @@ def repo_root() -> Path:
 
 @pytest.fixture(scope="session")
 def ageo_atoms_root(repo_root: Path) -> Path:
-    configured = os.environ.get("AGEOM_TEST_AGEO_ATOMS_ROOT", "")
+    configured = os.environ.get("SCIONA_TEST_AGEO_ATOMS_ROOT", "")
     if configured:
         return Path(configured).expanduser().resolve()
     return (repo_root / ".." / "ageo-atoms").resolve()
@@ -98,13 +98,13 @@ def ageo_atoms_declarations(ageo_atoms_root: Path) -> list:
 @pytest.fixture(scope="session")
 def llama_server() -> Iterator[dict[str, str]]:
     """Start a dedicated local llama.cpp server on an ephemeral port for live tests."""
-    cmd_template = os.environ.get("AGEOM_TEST_LLAMA_SERVER_CMD", "").strip()
+    cmd_template = os.environ.get("SCIONA_TEST_LLAMA_SERVER_CMD", "").strip()
     if not cmd_template:
         pytest.skip(
-            "Set AGEOM_TEST_LLAMA_SERVER_CMD to enable live llama regression tests"
+            "Set SCIONA_TEST_LLAMA_SERVER_CMD to enable live llama regression tests"
         )
 
-    model_name = os.environ.get("AGEOM_TEST_LLAMA_MODEL", "").strip() or "local-llama"
+    model_name = os.environ.get("SCIONA_TEST_LLAMA_MODEL", "").strip() or "local-llama"
 
     port = _find_free_port()
     cmd_str = cmd_template.format(port=port)

@@ -6,16 +6,16 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import ConceptType, IOSpec
-from ageom.commands._helpers import _create_llm_router
-from ageom.ingester.emitter import generate_opaque_witnesses
-from ageom.ingester.models import MacroAtomSpec, MethodFact, RawDataFlowGraph
-from ageom.ingester.prompts import DRAFT_OPAQUE_WITNESS_SYSTEM, DRAFT_OPAQUE_WITNESS_USER
-from ageom.ingester.template_witness_generator import (
+from sciona.architect.models import ConceptType, IOSpec
+from sciona.commands._helpers import _create_llm_router
+from sciona.ingester.emitter import generate_opaque_witnesses
+from sciona.ingester.models import MacroAtomSpec, MethodFact, RawDataFlowGraph
+from sciona.ingester.prompts import DRAFT_OPAQUE_WITNESS_SYSTEM, DRAFT_OPAQUE_WITNESS_USER
+from sciona.ingester.template_witness_generator import (
     TemplateWitnessGenerator,
     _parse_opaque_prompt,
 )
-from ageom.llm_router import INGESTER_OPAQUE_WITNESS, LLMRouter
+from sciona.llm_router import INGESTER_OPAQUE_WITNESS, LLMRouter
 
 
 def _prompt(
@@ -141,7 +141,7 @@ def test_create_llm_router_wraps_ingester_opaque_witness_deterministically(monke
         client.model = model
         return client
 
-    monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+    monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
     args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None, mode="verified")
     config = SimpleNamespace(

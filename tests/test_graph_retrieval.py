@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ageom.architect.graph_retrieval import (
+from sciona.architect.graph_retrieval import (
     CDGSubgraphRetriever,
     ExampleChild,
     ExampleDecomposition,
@@ -15,7 +15,7 @@ from ageom.architect.graph_retrieval import (
     format_examples_for_prompt,
     make_retriever,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,

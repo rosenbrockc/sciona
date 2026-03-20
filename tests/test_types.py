@@ -1,6 +1,6 @@
 """Tests for shared domain types."""
 
-from ageom.types import (
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

@@ -11,16 +11,16 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.catalog import PrimitiveCatalog
-from ageom.architect.checkpointer import create_checkpointer
-from ageom.architect.graph import DecompositionAgent
-from ageom.architect.handoff import (
+from sciona.architect.catalog import PrimitiveCatalog
+from sciona.architect.checkpointer import create_checkpointer
+from sciona.architect.graph import DecompositionAgent
+from sciona.architect.handoff import (
     CDGExport,
     HandoffValidationError,
     to_pdg_nodes,
     validate_handoff,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
     ConceptType,

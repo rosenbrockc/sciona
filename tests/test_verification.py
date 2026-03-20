@@ -6,8 +6,8 @@ from decimal import Decimal
 
 import pytest
 
-from ageom.clearinghouse.models import BestScore, VerificationBudget
-from ageom.clearinghouse.verification import (
+from sciona.clearinghouse.models import BestScore, VerificationBudget
+from sciona.clearinghouse.verification import (
     compute_overhead_refund,
     consume_verification_slot,
     remaining_slots,

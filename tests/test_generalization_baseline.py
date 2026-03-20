@@ -16,10 +16,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import ConceptType
-from ageom.architect.strategy_classifier import StrategyClassifier
-from ageom.orchestrator import _deterministic_split_subnodes
-from ageom.types import MatchFailureReport, PDGNode
+from sciona.architect.models import ConceptType
+from sciona.architect.strategy_classifier import StrategyClassifier
+from sciona.orchestrator import _deterministic_split_subnodes
+from sciona.types import MatchFailureReport, PDGNode
 
 FIXTURES = Path(__file__).parent / "fixtures" / "generalization_goals.json"
 
@@ -41,7 +41,7 @@ def _classifier() -> StrategyClassifier:
 
 def _try_split(goal: str) -> list[dict[str, str]] | None:
     """Attempt a deterministic split using a minimal failure report."""
-    from ageom.architect.models import AlgorithmicNode, NodeStatus
+    from sciona.architect.models import AlgorithmicNode, NodeStatus
 
     node = AlgorithmicNode(
         node_id="test",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.flow_benchmark import (
+from sciona.flow_benchmark import (
     default_flow_benchmark_cases,
     run_flow_benchmark,
     summarize_flow_benchmark,

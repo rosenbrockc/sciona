@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from ageom.runtime_signal_event_rate import (
+from sciona.runtime_signal_event_rate import (
     compute_event_rate_smoothed,
     detect_peaks_in_signal,
     filter_signal_for_detection,

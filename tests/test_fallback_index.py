@@ -8,9 +8,9 @@ import msgpack
 import numpy as np
 import pytest
 
-from ageom.cli import _load_semantic_index
-from ageom.indexer.fallback_index import LexicalSemanticIndex
-from ageom.types import Declaration, Prover
+from sciona.cli import _load_semantic_index
+from sciona.indexer.fallback_index import LexicalSemanticIndex
+from sciona.types import Declaration, Prover
 
 
 def _write_msgpack_index(tmp_path):
@@ -75,7 +75,7 @@ def test_load_legacy_pickle(tmp_path):
 def test_cli_loader_falls_back_when_faiss_missing(tmp_path, monkeypatch):
     _write_msgpack_index(tmp_path)
 
-    from ageom.indexer.faiss_store import FAISSStore
+    from sciona.indexer.faiss_store import FAISSStore
 
     def _raise_missing(_directory):
         raise ModuleNotFoundError("No module named 'faiss'")
@@ -94,7 +94,7 @@ def test_cli_loader_falls_back_when_faiss_missing(tmp_path, monkeypatch):
 def test_cli_loader_can_force_lexical_backend(tmp_path, monkeypatch):
     _write_msgpack_index(tmp_path)
 
-    from ageom.indexer.faiss_store import FAISSStore
+    from sciona.indexer.faiss_store import FAISSStore
 
     def _should_not_run(_directory):
         raise AssertionError("FAISS loader should not be called in forced lexical mode")
@@ -114,7 +114,7 @@ def test_cli_loader_can_force_lexical_backend(tmp_path, monkeypatch):
 def test_cli_loader_forced_faiss_reraises_missing_backend(tmp_path, monkeypatch):
     _write_msgpack_index(tmp_path)
 
-    from ageom.indexer.faiss_store import FAISSStore
+    from sciona.indexer.faiss_store import FAISSStore
 
     def _raise_missing(_directory):
         raise ModuleNotFoundError("No module named 'faiss'")
@@ -132,7 +132,7 @@ def test_cli_loader_forced_faiss_reraises_missing_backend(tmp_path, monkeypatch)
 def test_cli_loader_reraises_non_faiss_import_errors(tmp_path, monkeypatch):
     _write_msgpack_index(tmp_path)
 
-    from ageom.indexer.faiss_store import FAISSStore
+    from sciona.indexer.faiss_store import FAISSStore
 
     def _raise_other(_directory):
         raise ImportError("broken_dependency")
@@ -148,8 +148,8 @@ def test_cli_loader_reraises_non_faiss_import_errors(tmp_path, monkeypatch):
 
 
 def test_cli_loader_prefers_stored_embedding_backend_metadata(tmp_path, monkeypatch):
-    from ageom.indexer.models import IndexMetadata
-    from ageom.types import Prover
+    from sciona.indexer.models import IndexMetadata
+    from sciona.types import Prover
 
     _write_msgpack_index(tmp_path)
 
@@ -182,8 +182,8 @@ def test_cli_loader_prefers_stored_embedding_backend_metadata(tmp_path, monkeypa
             del text
             return np.array([1.0], dtype=np.float32)
 
-    from ageom.indexer.faiss_store import FAISSStore
-    import ageom.indexer.embedder as embedder_mod
+    from sciona.indexer.faiss_store import FAISSStore
+    import sciona.indexer.embedder as embedder_mod
 
     monkeypatch.setattr(FAISSStore, "load", staticmethod(lambda _directory: _FakeStore()))
     monkeypatch.setattr(

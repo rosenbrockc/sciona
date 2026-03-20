@@ -6,16 +6,16 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.commands._helpers import _create_llm_router
-from ageom.ingester.deterministic_type_fixer import (
+from sciona.architect.handoff import CDGExport
+from sciona.commands._helpers import _create_llm_router
+from sciona.ingester.deterministic_type_fixer import (
     DeterministicTypeFixer,
     _extract_line_number,
     _parse_fix_type_prompt,
 )
-from ageom.ingester.graph import IngesterDeps, repair_types
-from ageom.ingester.models import IngestionBundle
-from ageom.llm_router import INGESTER_FIX_TYPE, LLMRouter
+from sciona.ingester.graph import IngesterDeps, repair_types
+from sciona.ingester.models import IngestionBundle
+from sciona.llm_router import INGESTER_FIX_TYPE, LLMRouter
 
 
 def _prompt(errors: str, source: str) -> str:
@@ -140,7 +140,7 @@ def test_create_llm_router_wraps_ingester_fix_type_deterministically(monkeypatch
         client.model = model
         return client
 
-    monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+    monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
     args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
     config = SimpleNamespace(

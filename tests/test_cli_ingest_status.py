@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 
-from ageom.cli import _cmd_ingest_status, main
-from ageom.ingester.monitor import COMPLETED_FILE, FAILED_FILE, STATUS_FILE
+from sciona.cli import _cmd_ingest_status, main
+from sciona.ingester.monitor import COMPLETED_FILE, FAILED_FILE, STATUS_FILE
 
 
 def _args(tmp_path, *, json_mode: bool = False, stale_seconds: int = 120):
@@ -22,8 +22,8 @@ def _args(tmp_path, *, json_mode: bool = False, stale_seconds: int = 120):
 
 
 def test_parser_accepts_ingest_status_command():
-    with patch("sys.argv", ["ageom", "ingest-status", "outdir"]):
-        with patch("ageom.cli._cmd_ingest_status") as mock_cmd:
+    with patch("sys.argv", ["sciona", "ingest-status", "outdir"]):
+        with patch("sciona.cli._cmd_ingest_status") as mock_cmd:
             main()
             mock_cmd.assert_called_once()
             parsed = mock_cmd.call_args[0][0]

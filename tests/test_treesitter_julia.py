@@ -1,4 +1,4 @@
-"""Tests for Julia tree-sitter extraction (ageom.ingester.treesitter_extractor)."""
+"""Tests for Julia tree-sitter extraction (sciona.ingester.treesitter_extractor)."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import textwrap
 
 import pytest
 
-from ageom.ingester.base_extractor import SourceLanguage
-from ageom.ingester.treesitter_extractor import TreeSitterExtractor
+from sciona.ingester.base_extractor import SourceLanguage
+from sciona.ingester.treesitter_extractor import TreeSitterExtractor
 
 # ---------------------------------------------------------------------------
 # Embedded Tempo.jl-like Julia source

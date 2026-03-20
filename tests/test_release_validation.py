@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from ageom.release_validation import run_release_validation
+from sciona.release_validation import run_release_validation
 
 
 @pytest.mark.asyncio
@@ -122,7 +122,7 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_benchmark_validation",
+        "sciona.release_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
     )
     async def _fake_run_catalog_validation(output_dir):
@@ -145,7 +145,7 @@ async def test_run_release_validation_fails_when_nonbaseline_regressions_exist(
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_catalog_validation",
+        "sciona.release_validation.run_catalog_validation",
         _fake_run_catalog_validation,
     )
 
@@ -248,7 +248,7 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_benchmark_validation",
+        "sciona.release_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
     )
     async def _fake_run_catalog_validation(output_dir):
@@ -271,7 +271,7 @@ async def test_run_release_validation_fails_when_runtime_complexity_budget_excee
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_catalog_validation",
+        "sciona.release_validation.run_catalog_validation",
         _fake_run_catalog_validation,
     )
 
@@ -360,7 +360,7 @@ async def test_run_release_validation_surfaces_benchmark_execution_path_subcheck
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_benchmark_validation",
+        "sciona.release_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
     )
 
@@ -384,7 +384,7 @@ async def test_run_release_validation_surfaces_benchmark_execution_path_subcheck
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_catalog_validation",
+        "sciona.release_validation.run_catalog_validation",
         _fake_run_catalog_validation,
     )
 
@@ -446,7 +446,7 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_benchmark_validation",
+        "sciona.release_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
     )
     async def _fake_run_catalog_validation(output_dir):
@@ -469,7 +469,7 @@ async def test_run_release_validation_fails_when_catalog_validation_fails(
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_catalog_validation",
+        "sciona.release_validation.run_catalog_validation",
         _fake_run_catalog_validation,
     )
 
@@ -551,7 +551,7 @@ async def test_run_release_validation_fails_when_catalog_alignment_is_critical(
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_benchmark_validation",
+        "sciona.release_validation.run_benchmark_validation",
         _fake_run_benchmark_validation,
     )
 
@@ -575,7 +575,7 @@ async def test_run_release_validation_fails_when_catalog_alignment_is_critical(
         }
 
     monkeypatch.setattr(
-        "ageom.release_validation.run_catalog_validation",
+        "sciona.release_validation.run_catalog_validation",
         _fake_run_catalog_validation,
     )
 

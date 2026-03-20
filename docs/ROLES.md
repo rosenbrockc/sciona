@@ -57,9 +57,9 @@ repair on failure.
 - **Ghost Registry** (ageoa) -- generated witnesses follow the `@register_atom`
   pattern
 
-**Key files:** `ageom/ingester/graph.py`, `ageom/ingester/base_extractor.py`,
-`ageom/ingester/treesitter_extractor.py`, `ageom/ingester/emitter.py`,
-`ageom/ingester/ffi_emitter.py`, `ageom/ingester/control_flow_decomposer.py`
+**Key files:** `sciona/ingester/graph.py`, `sciona/ingester/base_extractor.py`,
+`sciona/ingester/treesitter_extractor.py`, `sciona/ingester/emitter.py`,
+`sciona/ingester/ffi_emitter.py`, `sciona/ingester/control_flow_decomposer.py`
 
 ---
 
@@ -85,8 +85,8 @@ Most goals resolve before reaching full orchestration.
 - **Hunter** -- invokes matching for each atomic node
 - **User** -- receives the initial goal, returns final artifacts
 
-**Key files:** `ageom/orchestrator.py`, `ageom/services/planner_service.py`,
-`ageom/cli.py`
+**Key files:** `sciona/orchestrator.py`, `sciona/services/planner_service.py`,
+`sciona/cli.py`
 
 ---
 
@@ -113,8 +113,8 @@ into a Conceptual Dependency Graph (CDG). At each node, it:
 - **Orchestrator** -- receives the goal, returns CDG; accepts refinement
   requests when Hunter fails
 
-**Key files:** `ageom/architect/graph.py`, `ageom/architect/nodes.py`,
-`ageom/architect/handoff.py`
+**Key files:** `sciona/architect/graph.py`, `sciona/architect/nodes.py`,
+`sciona/architect/handoff.py`
 
 ---
 
@@ -136,7 +136,7 @@ with the rejection reason injected into the prompt.
 - **Architect** -- receives decomposition proposals, returns approve/reject
   with reasons and flagged nodes
 
-**Key files:** `ageom/architect/nodes.py` (critique_decomposition, prepare_retry)
+**Key files:** `sciona/architect/nodes.py` (critique_decomposition, prepare_retry)
 
 ---
 
@@ -155,7 +155,7 @@ node is ATOMIC if and only if it matches a catalog entry.
   validate atomicity claims
 - **Critic** -- used to verify that nodes claimed as ATOMIC actually exist
 
-**Key files:** `ageom/architect/catalog.py`
+**Key files:** `sciona/architect/catalog.py`
 
 ---
 
@@ -172,7 +172,7 @@ semantic search.
 **Interacts with:**
 - **Architect** -- queried during decomposition to find relevant primitives
 
-**Key files:** `ageom/architect/embedder.py`
+**Key files:** `sciona/architect/embedder.py`
 
 ---
 
@@ -200,9 +200,9 @@ Loops until a verified match is found or the iteration budget is exhausted.
 - **Orchestrator** -- receives PDGNodes, returns MatchResults; failures trigger
   Architect refinement
 
-**Key files:** `ageom/hunter/nodes.py`, `ageom/hunter/graph.py`,
-`ageom/hunter/state.py`, `ageom/hunter/embedding_reranker.py`,
-`ageom/hunter/failure_analyzer.py`
+**Key files:** `sciona/hunter/nodes.py`, `sciona/hunter/graph.py`,
+`sciona/hunter/state.py`, `sciona/hunter/embedding_reranker.py`,
+`sciona/hunter/failure_analyzer.py`
 
 ---
 
@@ -216,15 +216,15 @@ embeddings produced by UniXcoder. Stores declaration metadata (name, type
 signature, docstring, prover, source library) alongside the vectors. Supports
 both embedding-based search and type-signature search.
 
-Must be built offline as a prerequisite (`ageom index build`) from Mathlib,
+Must be built offline as a prerequisite (`sciona index build`) from Mathlib,
 Coq libraries, or Python packages.
 
 **Interacts with:**
 - **Hunter** -- queried during candidate retrieval
 - **Skill Index** -- shares the same FAISSStore infrastructure
 
-**Key files:** `ageom/indexer/builder.py`, `ageom/indexer/faiss_store.py`,
-`ageom/indexer/unified.py`
+**Key files:** `sciona/indexer/builder.py`, `sciona/indexer/faiss_store.py`,
+`sciona/indexer/unified.py`
 
 ---
 
@@ -251,8 +251,8 @@ Supports parallel verification with configurable concurrency.
 - **Hunter** -- called to verify candidate matches
 - **Repair Agent** -- called to compile repaired skeletons
 
-**Key files:** `ageom/judge/checker.py`, `ageom/judge/lean_env.py`,
-`ageom/judge/coq_env.py`, `ageom/judge/python_env.py`
+**Key files:** `sciona/judge/checker.py`, `sciona/judge/lean_env.py`,
+`sciona/judge/coq_env.py`, `sciona/judge/python_env.py`
 
 ---
 
@@ -274,7 +274,7 @@ compilable source file with correct data flow between them.
 - **Synthesizer pipeline** -- produces the initial SkeletonFile consumed by
   Ghost Simulator and Repair Agent
 
-**Key files:** `ageom/synthesizer/assembler.py`, `ageom/synthesizer/models.py`
+**Key files:** `sciona/synthesizer/assembler.py`, `sciona/synthesizer/models.py`
 
 ---
 
@@ -298,7 +298,7 @@ low. Nodes without witnesses are silently skipped.
 - **Assembler** -- runs on the CDG before or alongside assembly
 - **Ghost Registry** (ageoa) -- looks up witness functions for each atom
 
-**Key files:** `ageom/synthesizer/ghost_sim.py`
+**Key files:** `sciona/synthesizer/ghost_sim.py`
 
 ---
 
@@ -326,7 +326,7 @@ budget is exhausted.
 - **LLM** -- generates patches and proof tactics
 - **Assembler** -- consumes the SkeletonFile produced by assembly
 
-**Key files:** `ageom/synthesizer/repair.py`
+**Key files:** `sciona/synthesizer/repair.py`
 
 ---
 
@@ -347,8 +347,8 @@ Supports export targets: LEAN_LIB, COQ_LIB, PYTHON_PKG, C_HEADER, RUST_FFI.
 - **Repair Agent** -- consumes the final repaired SkeletonFile
 - **Native toolchains** -- invokes lake, coqc, mypy, cargo via subprocess
 
-**Key files:** `ageom/synthesizer/extractor.py`,
-`ageom/synthesizer/certificate.py`
+**Key files:** `sciona/synthesizer/extractor.py`,
+`sciona/synthesizer/certificate.py`
 
 ---
 
@@ -389,9 +389,9 @@ computed, or a non-recoverable error occurs.
 - **User** -- receives the goal and benchmark dataset, returns the best trial's
   artifact
 
-**Key files:** `ageom/principal/graph.py`, `ageom/principal/evaluator.py`,
-`ageom/principal/backprop.py`, `ageom/principal/hpo.py`,
-`ageom/principal/models.py`
+**Key files:** `sciona/principal/graph.py`, `sciona/principal/evaluator.py`,
+`sciona/principal/backprop.py`, `sciona/principal/hpo.py`,
+`sciona/principal/models.py`
 
 ---
 
@@ -414,4 +414,4 @@ These stubs are appended to the generated atoms module by the emitter when
 - **TreeSitterExtractor** -- the upstream extractor that determines which language
   the FFI stubs target
 
-**Key files:** `ageom/ingester/ffi_emitter.py`
+**Key files:** `sciona/ingester/ffi_emitter.py`

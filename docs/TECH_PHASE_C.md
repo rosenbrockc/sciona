@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phase C is entirely net-new code. No bounty, settlement, or sandbox infrastructure exists in the codebase today. The existing `ExecutionSandbox` in `/Users/conrad/personal/ageo-matcher/ageom/principal/evaluator.py` runs artifacts locally as subprocesses -- it is the local analog of what the cloud sandbox must do, and its `_parse_trace` / `_compute_loss` patterns are directly reusable.
+Phase C is entirely net-new code. No bounty, settlement, or sandbox infrastructure exists in the codebase today. The existing `ExecutionSandbox` in `/Users/conrad/personal/sciona/sciona/principal/evaluator.py` runs artifacts locally as subprocesses -- it is the local analog of what the cloud sandbox must do, and its `_parse_trace` / `_compute_loss` patterns are directly reusable.
 
 The plan assumes Phase A (Shapley engine, provenance schema, receipt format) and Phase B (FastAPI API, bounty state machine, PostgreSQL schema, S3 buckets, auth) are already implemented or being developed in parallel. Where Phase C depends on Phase B deliverables, I call out the interface contract.
 
@@ -15,7 +15,7 @@ Cheap, non-deterministic filter that rejects obviously invalid or malicious CDG 
 
 ### Design
 
-**New file: `ageom/clearinghouse/prescreen.py`**
+**New file: `sciona/clearinghouse/prescreen.py`**
 
 A stateless function (deployable as Lambda or callable inline from the FastAPI submission endpoint) that takes a CDG submission payload and returns a pass/reject verdict with reasons.
 
@@ -33,8 +33,8 @@ A stateless function (deployable as Lambda or callable inline from the FastAPI s
 
 2. **Structural validity** -- Verify:
    - Every atom FQDN in the CDG's `DEPENDS_ON` edges exists in the global registry (PostgreSQL lookup)
-   - I/O type signatures match the bounty's `target_spec` from `ageom.yml`
-   - DAG acyclicity (reuse `ageom/synthesizer/toposort.py` which already implements topological sort)
+   - I/O type signatures match the bounty's `target_spec` from `sciona.yml`
+   - DAG acyclicity (reuse `sciona/synthesizer/toposort.py` which already implements topological sort)
 
 3. **Resource estimation** -- Flag CDGs with:
    - More than N nodes (configurable, default 100)
@@ -61,7 +61,7 @@ class PreScreenResult:
 
 ### Architecture
 
-**New file: `ageom/clearinghouse/sandbox.py`**
+**New file: `sciona/clearinghouse/sandbox.py`**
 
 Abstract `SandboxExecutor` protocol with three implementations:
 
@@ -72,7 +72,7 @@ class SandboxExecutor(Protocol):
 
 **`SandboxPayload`** bundles:
 - CDG source code (all atoms, pinned by content hash)
-- `ageom.yml` (data schema)
+- `sciona.yml` (data schema)
 - Dataset split reference (S3 key for blind or public split)
 - `config.yml` parameters
 - Bounty ID (for receipt binding)
@@ -84,11 +84,11 @@ class SandboxExecutor(Protocol):
 - `execution_time_s: float`
 - `peak_memory_bytes: int`
 - `determinism_check: bool` (did a second run produce identical output_hash)
-- `trace: dict[str, NodeTelemetry]` (reuse existing `NodeTelemetry` model from `ageom/principal/models.py`)
+- `trace: dict[str, NodeTelemetry]` (reuse existing `NodeTelemetry` model from `sciona/principal/models.py`)
 
 ### Standard Tier (Lambda)
 
-**New file: `ageom/clearinghouse/sandbox_lambda.py`**
+**New file: `sciona/clearinghouse/sandbox_lambda.py`**
 
 - Package the CDG + atoms + pinned dependencies as a Lambda container image (built from a base image with pinned Python + numpy + scipy + pandas)
 - Lambda configuration: 15 min timeout, 4-10 GB memory (set based on pre-screen estimate)
@@ -96,7 +96,7 @@ class SandboxExecutor(Protocol):
 - `/tmp` is read-only (Lambda natively restricts filesystem; mount data from S3 via pre-signed URL read at init)
 - Environment variables: `PYTHONHASHSEED=0`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`, numpy/torch seed pinning
 
-The implementation pattern mirrors the existing `ExecutionSandbox.evaluate()` method in `ageom/principal/evaluator.py` (lines 41-123) -- construct a command, run it with a timeout, parse the trace output. The cloud version replaces `asyncio.create_subprocess_exec` with a Lambda invocation via boto3.
+The implementation pattern mirrors the existing `ExecutionSandbox.evaluate()` method in `sciona/principal/evaluator.py` (lines 41-123) -- construct a command, run it with a timeout, parse the trace output. The cloud version replaces `asyncio.create_subprocess_exec` with a Lambda invocation via boto3.
 
 **Lambda invocation flow:**
 1. FastAPI endpoint calls `sandbox_lambda.execute(payload)`
@@ -107,7 +107,7 @@ The implementation pattern mirrors the existing `ExecutionSandbox.evaluate()` me
 
 ### Heavy Tier (SageMaker Processing Job)
 
-**New file: `ageom/clearinghouse/sandbox_sagemaker.py`**
+**New file: `sciona/clearinghouse/sandbox_sagemaker.py`**
 
 - SageMaker Processing Job with a custom container (same base as Lambda but larger)
 - Configuration: 2 hr max runtime, `ml.m5.4xlarge` (16 vCPU, 64 GB) or `ml.m5.16xlarge` (64 vCPU, 256 GB) based on pre-screen estimate
@@ -117,7 +117,7 @@ The implementation pattern mirrors the existing `ExecutionSandbox.evaluate()` me
 
 ### GPU Tier (SageMaker/EC2)
 
-**New file: `ageom/clearinghouse/sandbox_gpu.py`**
+**New file: `sciona/clearinghouse/sandbox_gpu.py`**
 
 - SageMaker Processing Job on `ml.g5.xlarge` (1x A10G GPU, 24 GB VRAM, 16 GB RAM) or `ml.p3.2xlarge` (1x V100)
 - 4 hr max runtime
@@ -130,7 +130,7 @@ All tiers run the CDG twice on a small random subset (10 samples from the blind 
 
 ### CDG Packaging
 
-**New file: `ageom/clearinghouse/packager.py`**
+**New file: `sciona/clearinghouse/packager.py`**
 
 Responsible for assembling the sandbox payload:
 1. Fetch all atoms by content hash from S3 (`atoms/` prefix)
@@ -145,25 +145,25 @@ Responsible for assembling the sandbox payload:
 
 ### Design
 
-**New file: `ageom/clearinghouse/data_splitter.py`**
+**New file: `sciona/clearinghouse/data_splitter.py`**
 
 The data splitting pipeline runs once when a bounty transitions from `draft` to `open` (bounty funded). It is triggered by the FastAPI endpoint that processes bounty funding.
 
 **Pipeline steps:**
 
-1. **Parse ageom.yml** -- Use the existing `ageom/principal/datasets/_parser.py` and `core.py` infrastructure to understand the dataset structure. The `DataSetCollection` class and `get_attr_groups` function already parse `ageom.yml`-style configs.
+1. **Parse sciona.yml** -- Use the existing `sciona/principal/datasets/_parser.py` and `core.py` infrastructure to understand the dataset structure. The `DataSetCollection` class and `get_attr_groups` function already parse `sciona.yml`-style configs.
 
-2. **LLM stratification analysis** -- Send a structured prompt to the LLM (via `ageom/llm_router.py` which already handles multi-provider routing) that:
+2. **LLM stratification analysis** -- Send a structured prompt to the LLM (via `sciona/llm_router.py` which already handles multi-provider routing) that:
    - Receives: group structure, property names/types, `meta.user`/`meta.folder` fields, sample statistics (mean, std, count per group)
    - Returns: a JSON object specifying the stratification axis (e.g., `"stratify_by": "meta.user"`) and any additional split constraints
-   - The prompt is deterministic given the same `ageom.yml` (temperature=0, seed fixed)
+   - The prompt is deterministic given the same `sciona.yml` (temperature=0, seed fixed)
 
-   **Prompt template** (new file: `ageom/clearinghouse/prompts/split_strategy.py`):
+   **Prompt template** (new file: `sciona/clearinghouse/prompts/split_strategy.py`):
    ```
    You are analyzing a dataset for stratified train/test splitting.
    
-   Dataset schema (ageom.yml):
-   {ageom_yml_content}
+   Dataset schema (sciona.yml):
+   {sciona_yml_content}
    
    Dataset statistics:
    {statistics_json}
@@ -273,7 +273,7 @@ CREATE TABLE execution_receipts (
     output_hash     TEXT NOT NULL,
     metric_name     TEXT NOT NULL,
     metric_value    FLOAT NOT NULL,
-    ageom_version   TEXT NOT NULL,
+    sciona_version   TEXT NOT NULL,
     ssh_signature   TEXT NOT NULL,
     ssh_public_key  TEXT NOT NULL,
     verified        BOOLEAN DEFAULT false,
@@ -284,7 +284,7 @@ CREATE TABLE execution_receipts (
 
 ### Verification Flow Implementation
 
-**New file: `ageom/clearinghouse/verification.py`**
+**New file: `sciona/clearinghouse/verification.py`**
 
 The `VerificationEngine` class orchestrates the four-phase flow from TECH_GAP 4.14:
 
@@ -323,7 +323,7 @@ def should_trigger_verification(
 
 ### Design
 
-**New file: `ageom/clearinghouse/settlement.py`**
+**New file: `sciona/clearinghouse/settlement.py`**
 
 Triggered when a bounty reaches its deadline. The settlement engine must:
 
@@ -355,7 +355,7 @@ def compute_payout_split(escrow_amount: Decimal, winning_cdgs: list[WinningCDG])
 
 4. **Stripe Connect payouts:**
 
-**New file: `ageom/clearinghouse/stripe_payout.py`**
+**New file: `sciona/clearinghouse/stripe_payout.py`**
 
 ```python
 class StripePayout:
@@ -410,7 +410,7 @@ class StripePayout:
 
 ### Design
 
-**New file: `ageom/clearinghouse/pareto.py`**
+**New file: `sciona/clearinghouse/pareto.py`**
 
 Pareto front computation for multi-objective bounties:
 
@@ -496,7 +496,7 @@ All endpoints live in the FastAPI service (Phase B infrastructure). Phase C adds
 
 ### Unit Tests
 
-Follow the existing pattern in `/Users/conrad/personal/ageo-matcher/tests/` (pytest + pytest-asyncio, `asyncio_mode = "auto"`).
+Follow the existing pattern in `/Users/conrad/personal/sciona/tests/` (pytest + pytest-asyncio, `asyncio_mode = "auto"`).
 
 - **`test_prescreen.py`** -- Test each check independently:
   - Feed known-malicious CDGs (network calls, exec/eval) and verify rejection
@@ -504,7 +504,7 @@ Follow the existing pattern in `/Users/conrad/personal/ageo-matcher/tests/` (pyt
   - Test resource estimation accuracy
 
 - **`test_data_splitter.py`** -- Test split determinism:
-  - Same `ageom.yml` + same data + same bounty salt = same split
+  - Same `sciona.yml` + same data + same bounty salt = same split
   - Different bounty salt = different split
   - Minimum size enforcement
   - Mock the LLM call, return a fixed stratification axis
@@ -540,10 +540,10 @@ Per the user's feedback, the test suite must stay under 1 minute. All cloud serv
 
 ## 9. File Structure Summary
 
-New package: `ageom/clearinghouse/`
+New package: `sciona/clearinghouse/`
 
 ```
-ageom/clearinghouse/
+sciona/clearinghouse/
     __init__.py
     prescreen.py          # LLM pre-screen gate
     sandbox.py            # SandboxExecutor protocol + SandboxPayload/Result models
@@ -616,8 +616,8 @@ tests/
 
 ### Critical Files for Implementation
 
-- `/Users/conrad/personal/ageo-matcher/ageom/principal/evaluator.py` -- Pattern to follow: the existing `ExecutionSandbox` class demonstrates how to execute artifacts, parse traces, and compute losses. The cloud sandbox mirrors this structure.
-- `/Users/conrad/personal/ageo-matcher/ageom/graph_store.py` -- AST walking patterns (lines 39-155) for the pre-screen gate, and Memgraph integration patterns for recording settlement results in the provenance graph.
-- `/Users/conrad/personal/ageo-matcher/ageom/principal/datasets/core.py` -- Dataset parsing infrastructure that the data splitter will reuse for understanding `ageom.yml` structure.
-- `/Users/conrad/personal/ageo-matcher/docs/TECH_GAP.md` -- The authoritative spec: sections 4.7 (sandbox tiers), 4.10-4.11 (submission format, blind split), 4.13-4.17 (cancellation, verification budget, expiry, Pareto, principal params, receipt replay).
-- `/Users/conrad/personal/ageo-matcher/ageom/principal/atom_ledger.py` -- Pattern for `fractions.Fraction`-style exact arithmetic and the UCB1 bandit as a model for how the verification budget's "minimum improvement threshold" trigger should work.
+- `/Users/conrad/personal/sciona/sciona/principal/evaluator.py` -- Pattern to follow: the existing `ExecutionSandbox` class demonstrates how to execute artifacts, parse traces, and compute losses. The cloud sandbox mirrors this structure.
+- `/Users/conrad/personal/sciona/sciona/graph_store.py` -- AST walking patterns (lines 39-155) for the pre-screen gate, and Memgraph integration patterns for recording settlement results in the provenance graph.
+- `/Users/conrad/personal/sciona/sciona/principal/datasets/core.py` -- Dataset parsing infrastructure that the data splitter will reuse for understanding `sciona.yml` structure.
+- `/Users/conrad/personal/sciona/docs/TECH_GAP.md` -- The authoritative spec: sections 4.7 (sandbox tiers), 4.10-4.11 (submission format, blind split), 4.13-4.17 (cancellation, verification budget, expiry, Pareto, principal params, receipt replay).
+- `/Users/conrad/personal/sciona/sciona/principal/atom_ledger.py` -- Pattern for `fractions.Fraction`-style exact arithmetic and the UCB1 bandit as a model for how the verification budget's "minimum improvement threshold" trigger should work.

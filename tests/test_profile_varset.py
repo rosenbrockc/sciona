@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-from ageom.commands.optimize_cmds import _parse_dataset_vars
-from ageom.principal.models import BenchmarkResult, OptimizationMetric
-from ageom.principal.profiler import profile_algorithm_error
-from ageom.synthesizer.models import ExportBundle
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+from sciona.commands.optimize_cmds import _parse_dataset_vars
+from sciona.principal.models import BenchmarkResult, OptimizationMetric
+from sciona.principal.profiler import profile_algorithm_error
+from sciona.synthesizer.models import ExportBundle
 
 
 def test_parse_dataset_vars_accepts_repeated_key_value_entries():
@@ -58,7 +58,7 @@ async def test_profile_algorithm_error_passes_dataset_varset_to_adapter(
             raise AssertionError("YAML datasets should use evaluate_adapter")
 
     monkeypatch.setattr(
-        "ageom.principal.profiler.ExecutionSandbox",
+        "sciona.principal.profiler.ExecutionSandbox",
         lambda: DummySandbox(),
     )
 

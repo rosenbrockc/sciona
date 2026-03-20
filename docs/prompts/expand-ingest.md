@@ -1,6 +1,6 @@
 # Expand Catalog via Ingestion
 
-Use `ageom ingest` to automatically decompose existing source code into
+Use `sciona ingest` to automatically decompose existing source code into
 atoms and register them in the catalog.  This is the preferred method when
 you have a concrete implementation to work from.
 
@@ -12,7 +12,7 @@ Read these files in `../ageo-atoms/` before proceeding:
 
 | File | What it covers |
 |------|----------------|
-| `INGEST_PROMPT.md` | Complete `ageom ingest` command reference, all languages, recursive decomposition, output validation, verification checklist |
+| `INGEST_PROMPT.md` | Complete `sciona ingest` command reference, all languages, recursive decomposition, output validation, verification checklist |
 | `INGESTION.md` | Atom authoring spec: signatures, contracts, witnesses, CDG schema, tests |
 | `INTEREST.md` | Curated interesting algorithms to ingest, organized by source repo |
 | `PENDING.md` | Algorithms already identified for future ingestion |
@@ -101,15 +101,15 @@ hasn't already been ingested by checking `../ageo-atoms/ageoa/`.
 
 ```bash
 # LLM-assisted (default)
-ageom ingest path/to/source.py --class ClassName \
+sciona ingest path/to/source.py --class ClassName \
     --output ../ageo-atoms/ageoa/mydomain
 
 # Deterministic (no LLM)
-ageom ingest path/to/source.py --class ClassName \
+sciona ingest path/to/source.py --class ClassName \
     --procedural --output ../ageo-atoms/ageoa/mydomain
 
 # With monitoring for large classes
-ageom ingest path/to/source.py --class ClassName \
+sciona ingest path/to/source.py --class ClassName \
     --output ../ageo-atoms/ageoa/mydomain --monitor --trace
 ```
 
@@ -139,8 +139,8 @@ Ensure all atoms are imported in `__init__.py` and reachable from
 For complex classes:
 
 ```bash
-export AGEOM_INGESTER_MAX_DEPTH=3
-ageom ingest path/to/source.py --class LargeClass \
+export SCIONA_INGESTER_MAX_DEPTH=3
+sciona ingest path/to/source.py --class LargeClass \
     --output ../ageo-atoms/ageoa/mydomain
 ```
 
@@ -148,7 +148,7 @@ ageom ingest path/to/source.py --class LargeClass \
 
 ```bash
 for cls in ClassA ClassB ClassC; do
-    ageom ingest path/to/source.py --class "$cls" \
+    sciona ingest path/to/source.py --class "$cls" \
         --output "../ageo-atoms/ageoa/${cls,,}"
 done
 ```
@@ -156,8 +156,8 @@ done
 ## Bulk from curated repos
 
 ```bash
-ageom skill ingest --source clrs --path /tmp/clrs
-ageom skill ingest --source coq100 --path /tmp/coq100
+sciona skill ingest --source clrs --path /tmp/clrs
+sciona skill ingest --source coq100 --path /tmp/coq100
 ```
 
 Writes `catalog_*.json` to the skill index directory.

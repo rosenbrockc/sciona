@@ -1,4 +1,4 @@
-"""Tests for ageom.principal.datasets — the standalone templated dataset module."""
+"""Tests for sciona.principal.datasets — the standalone templated dataset module."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # io.py
 # ---------------------------------------------------------------------------
-from ageom.principal.datasets.io import (
+from sciona.principal.datasets.io import (
     is_link,
     substitute_varset,
     read,
@@ -105,7 +105,7 @@ class TestRead:
 # ---------------------------------------------------------------------------
 # core.py — DataFileName
 # ---------------------------------------------------------------------------
-from ageom.principal.datasets.core import DataFileName
+from sciona.principal.datasets.core import DataFileName
 
 
 class TestDataFileName:
@@ -135,7 +135,7 @@ class TestDataFileName:
 # ---------------------------------------------------------------------------
 # core.py — helper functions
 # ---------------------------------------------------------------------------
-from ageom.principal.datasets.core import (
+from sciona.principal.datasets.core import (
     get_prop_name,
     get_source_hash,
     get_datafile_exts,
@@ -350,7 +350,7 @@ class TestZeroSourceFilesError:
 # ---------------------------------------------------------------------------
 # core.py — TemplatedDataSet with a real adapter on disk
 # ---------------------------------------------------------------------------
-from ageom.principal.datasets.core import TemplatedDataSet
+from sciona.principal.datasets.core import TemplatedDataSet
 
 
 def _write_csv_adapter(tmp_path: Path) -> Path:
@@ -592,12 +592,12 @@ class TestTemplatedDataSet:
 # ---------------------------------------------------------------------------
 # factories.py
 # ---------------------------------------------------------------------------
-from ageom.principal.datasets.factories import (
+from sciona.principal.datasets.factories import (
     create_templated_meta_class,
     create_templated_dataset_collection,
     _StubFileSource,
 )
-from ageom.principal.datasets.core import METACLASSES, COLLECTION_CLASSES
+from sciona.principal.datasets.core import METACLASSES, COLLECTION_CLASSES
 
 
 class TestStubFileSource:
@@ -689,7 +689,7 @@ class TestCreateTemplatedDatasetCollection:
 
 class TestPublicAPI:
     def test_all_symbols_importable(self):
-        from ageom.principal.datasets import (
+        from sciona.principal.datasets import (
             TemplatedDataSet,
             DataFileName,
             ZeroSourceFilesError,
@@ -708,7 +708,7 @@ class TestPublicAPI:
         )
 
     def test_read_adapter_alias(self):
-        from ageom.principal.datasets import read_adapter
+        from sciona.principal.datasets import read_adapter
         assert read_adapter is read
 
 
@@ -721,7 +721,7 @@ class TestNoHPYReferences:
 
     @pytest.fixture
     def module_sources(self):
-        base = Path(__file__).resolve().parent.parent / "ageom" / "principal" / "datasets"
+        base = Path(__file__).resolve().parent.parent / "sciona" / "principal" / "datasets"
         return [
             base / "__init__.py",
             base / "io.py",
@@ -752,7 +752,7 @@ class TestEvaluateAdapterLazyImport:
     def test_evaluator_importable_without_datasets(self):
         """Importing ExecutionSandbox should not fail even if datasets
         internals have issues — the import is lazy."""
-        from ageom.principal.evaluator import ExecutionSandbox
+        from sciona.principal.evaluator import ExecutionSandbox
         sandbox = ExecutionSandbox(timeout_s=5.0)
         assert sandbox._timeout_s == 5.0
 
@@ -760,12 +760,12 @@ class TestEvaluateAdapterLazyImport:
 class TestEvaluateAdapterMethod:
     @pytest.fixture
     def sandbox(self):
-        from ageom.principal.evaluator import ExecutionSandbox
+        from sciona.principal.evaluator import ExecutionSandbox
         return ExecutionSandbox(timeout_s=10.0)
 
     def test_missing_adapter_returns_penalty(self, sandbox, tmp_path):
-        from ageom.principal.models import OptimizationMetric
-        from ageom.synthesizer.models import ExportBundle
+        from sciona.principal.models import OptimizationMetric
+        from sciona.synthesizer.models import ExportBundle
 
         bundle = MagicMock(spec=ExportBundle)
         bundle.output_dir = tmp_path

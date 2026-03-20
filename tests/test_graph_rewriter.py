@@ -1,7 +1,7 @@
 import pytest
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, DependencyEdge, ConceptType, NodeStatus
-from ageom.architect.graph_rewriter import GraphState, GraphRewriter, RewriteRule, Morphism, PriorityStrategy
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, DependencyEdge, ConceptType, NodeStatus
+from sciona.architect.graph_rewriter import GraphState, GraphRewriter, RewriteRule, Morphism, PriorityStrategy
 
 def test_graph_state_monad_success():
     """Verify that GraphState successfully binds transformations."""

@@ -1,10 +1,10 @@
 # Benchmark Infrastructure Analysis (2026-03-08)
 
 ## Files Analyzed
-- `ageom/flow_benchmark.py` - flow benchmark harness (3 cases, 4 variants)
-- `ageom/prompt_benchmark.py` - prompt-key benchmark (12 cases, 3 prompt keys, 4 domains)
-- `ageom/benchmark_validation.py` - release validation bundle
-- `ageom/orchestrator.py` - verified mode feedback loop
+- `sciona/flow_benchmark.py` - flow benchmark harness (3 cases, 4 variants)
+- `sciona/prompt_benchmark.py` - prompt-key benchmark (12 cases, 3 prompt keys, 4 domains)
+- `sciona/benchmark_validation.py` - release validation bundle
+- `sciona/orchestrator.py` - verified mode feedback loop
 - `tests/test_flow_benchmark.py`, `tests/test_e2e_flow_benchmark.py`
 - `tests/test_prompt_benchmark.py`, `tests/test_e2e_prompt_benchmark.py`
 - `tests/test_benchmark_validation.py`
@@ -22,7 +22,7 @@
 ### 2. "direct_baseline" is not an LLM-from-scratch baseline
 - It runs a single HunterAgent.find_match() on the raw prompt
 - Uses the same mock LLM, same lexical index, same oracle
-- It measures "Hunter without decomposition" not "LLM without ageo-matcher"
+- It measures "Hunter without decomposition" not "LLM without sciona"
 - The ROADMAP explicitly asks for proof that the package outperforms direct LLM coding
 
 ### 3. Prompt benchmarks have a live artifact but no live flow benchmarks

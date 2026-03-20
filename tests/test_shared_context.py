@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.shared_context import (
+from sciona.shared_context import (
     ContextRecord,
     InMemorySharedContextStore,
     InstrumentedSharedContextStore,

@@ -8,16 +8,16 @@ Minimal path to create a new algorithm from a goal and take it through profiling
 - Build the search index once:
 
 ```bash
-ageom index build --prover python
+sciona index build --prover python
 ```
 
 - For Python synthesis/profile runs, use the same runtime as the benchmark:
 
 ```bash
 export PYTHONPATH=$PWD
-export AGEOM_PYTHON_PATH=$PWD/.venv/bin/python
+export SCIONA_PYTHON_PATH=$PWD/.venv/bin/python
 export PYTHON_JULIACALL_INIT=no
-export JULIA_DEPOT_PATH=/tmp/ageom-julia-depot
+export JULIA_DEPOT_PATH=/tmp/sciona-julia-depot
 ```
 
 ## 1. Generate Grounding Artifacts
@@ -25,7 +25,7 @@ export JULIA_DEPOT_PATH=/tmp/ageom-julia-depot
 Pick a goal and output directory:
 
 ```bash
-ageom run "Detect heart rate from raw ECG signal" \
+sciona run "Detect heart rate from raw ECG signal" \
   --mode verified \
   --prover python \
   --output output/my_algorithm
@@ -38,7 +38,7 @@ This produces at least:
 ## 2. Synthesize The Algorithm
 
 ```bash
-ageom synthesize output/my_algorithm/cdg.json output/my_algorithm/matches.json \
+sciona synthesize output/my_algorithm/cdg.json output/my_algorithm/matches.json \
   --mode verified \
   --prover python \
   --output output/my_algorithm/verified.py
@@ -47,7 +47,7 @@ ageom synthesize output/my_algorithm/cdg.json output/my_algorithm/matches.json \
 ## 3. Export A Runnable Artifact
 
 ```bash
-ageom export output/my_algorithm/verified.py \
+sciona export output/my_algorithm/verified.py \
   --target python-pkg \
   --prover python \
   --output-dir output/my_algorithm/export_python_pkg
@@ -61,10 +61,10 @@ The runnable artifact is:
 Example against the NIGHTCAP adapter dataset:
 
 ```bash
-ageom profile \
+sciona profile \
   --cdg output/my_algorithm/cdg.json \
   --artifact output/my_algorithm/verified.py \
-  --dataset "$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/ageom.yml" \
+  --dataset "$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/sciona.yml" \
   --dataset-var tracker=single \
   --metric precision
 ```

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.prompt_benchmark import (
+from sciona.prompt_benchmark import (
     PromptBenchmarkProvider,
     default_prompt_benchmark_cases,
     run_prompt_benchmark,

@@ -6,17 +6,17 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import DependencyEdge
-from ageom.commands._helpers import _create_llm_router
-from ageom.ingester.deterministic_cycle_breaker import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import DependencyEdge
+from sciona.commands._helpers import _create_llm_router
+from sciona.ingester.deterministic_cycle_breaker import (
     DeterministicCycleBreaker,
     _break_cycle,
     _parse_cycle_prompt,
 )
-from ageom.ingester.graph import IngesterDeps, repair_message_cycle
-from ageom.ingester.models import IngestionBundle
-from ageom.llm_router import INGESTER_FIX_MESSAGE_CYCLE, LLMRouter
+from sciona.ingester.graph import IngesterDeps, repair_message_cycle
+from sciona.ingester.models import IngestionBundle
+from sciona.llm_router import INGESTER_FIX_MESSAGE_CYCLE, LLMRouter
 
 
 def _prompt(source: str, deadlocked_nodes: str = "variable_to_factor, memoization_state") -> str:
@@ -170,7 +170,7 @@ def test_create_llm_router_wraps_ingester_fix_message_cycle_deterministically(mo
         client.model = model
         return client
 
-    monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+    monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
     args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
     config = SimpleNamespace(

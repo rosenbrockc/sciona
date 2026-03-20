@@ -6,7 +6,7 @@ import textwrap
 
 import pytest
 
-from ageom.architect.atom_similarity import (
+from sciona.architect.atom_similarity import (
     CallGraph,
     SimilarityHit,
     build_fingerprint_index,

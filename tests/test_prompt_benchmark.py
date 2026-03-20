@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from ageom.cli import _parse_prompt_benchmark_provider_specs
-from ageom.prompt_benchmark import (
+from sciona.cli import _parse_prompt_benchmark_provider_specs
+from sciona.prompt_benchmark import (
     PromptBenchmarkProvider,
     default_prompt_benchmark_cases,
     format_prompt_benchmark_summary,

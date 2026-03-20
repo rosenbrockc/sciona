@@ -5,9 +5,9 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from ageom.cli import main
+from sciona.cli import main
 
-STATIC_DIR = Path(__file__).resolve().parent.parent / "ageom" / "static"
+STATIC_DIR = Path(__file__).resolve().parent.parent / "sciona" / "static"
 
 
 @pytest.fixture
@@ -128,8 +128,8 @@ class TestStaticFileContents:
 class TestCLIParserAcceptsVisualize:
     def test_visualize_no_args(self):
         """Parser should accept 'visualize' with no arguments."""
-        with patch("sys.argv", ["ageom", "visualize", "--no-serve"]):
-            with patch("ageom.cli._cmd_visualize") as mock_cmd:
+        with patch("sys.argv", ["sciona", "visualize", "--no-serve"]):
+            with patch("sciona.cli._cmd_visualize") as mock_cmd:
                 main()
                 mock_cmd.assert_called_once()
                 args = mock_cmd.call_args[0][0]
@@ -140,16 +140,16 @@ class TestCLIParserAcceptsVisualize:
 
     def test_visualize_with_cdg_file(self, sample_cdg):
         """Parser should accept a positional cdg_file argument."""
-        with patch("sys.argv", ["ageom", "visualize", str(sample_cdg), "--no-serve"]):
-            with patch("ageom.cli._cmd_visualize") as mock_cmd:
+        with patch("sys.argv", ["sciona", "visualize", str(sample_cdg), "--no-serve"]):
+            with patch("sciona.cli._cmd_visualize") as mock_cmd:
                 main()
                 args = mock_cmd.call_args[0][0]
                 assert args.cdg_file == str(sample_cdg)
 
     def test_visualize_with_port(self):
         """Parser should accept --port."""
-        with patch("sys.argv", ["ageom", "visualize", "--port", "8080"]):
-            with patch("ageom.cli._cmd_visualize") as mock_cmd:
+        with patch("sys.argv", ["sciona", "visualize", "--port", "8080"]):
+            with patch("sciona.cli._cmd_visualize") as mock_cmd:
                 main()
                 args = mock_cmd.call_args[0][0]
                 assert args.port == 8080
@@ -161,7 +161,7 @@ class TestCDGCopyAndCleanup:
         default_cdg = STATIC_DIR / "default_cdg.json"
         assert not default_cdg.exists(), "default_cdg.json should not exist before test"
 
-        with patch("sys.argv", ["ageom", "visualize", str(sample_cdg), "--no-serve"]):
+        with patch("sys.argv", ["sciona", "visualize", str(sample_cdg), "--no-serve"]):
             with patch("webbrowser.open"):
                 main()
 
@@ -172,7 +172,7 @@ class TestCDGCopyAndCleanup:
 
     def test_rejects_invalid_cdg(self, bad_cdg):
         """Should exit with error if CDG JSON is missing 'nodes'."""
-        with patch("sys.argv", ["ageom", "visualize", str(bad_cdg), "--no-serve"]):
+        with patch("sys.argv", ["sciona", "visualize", str(bad_cdg), "--no-serve"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 1
@@ -180,7 +180,7 @@ class TestCDGCopyAndCleanup:
     def test_rejects_nonexistent_file(self):
         """Should exit with error if CDG file doesn't exist."""
         with patch(
-            "sys.argv", ["ageom", "visualize", "/nonexistent/cdg.json", "--no-serve"]
+            "sys.argv", ["sciona", "visualize", "/nonexistent/cdg.json", "--no-serve"]
         ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
@@ -190,7 +190,7 @@ class TestCDGCopyAndCleanup:
         """Should exit with error if file is not valid JSON."""
         bad_file = tmp_path / "not_json.json"
         bad_file.write_text("this is not json {{{")
-        with patch("sys.argv", ["ageom", "visualize", str(bad_file), "--no-serve"]):
+        with patch("sys.argv", ["sciona", "visualize", str(bad_file), "--no-serve"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 1
@@ -199,7 +199,7 @@ class TestCDGCopyAndCleanup:
 class TestNoServeMode:
     def test_opens_file_url(self, sample_cdg):
         """--no-serve should open a file:// URL."""
-        with patch("sys.argv", ["ageom", "visualize", str(sample_cdg), "--no-serve"]):
+        with patch("sys.argv", ["sciona", "visualize", str(sample_cdg), "--no-serve"]):
             with patch("webbrowser.open") as mock_open:
                 main()
                 mock_open.assert_called_once()

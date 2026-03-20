@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ageom.telemetry_store import (
+from sciona.telemetry_store import (
     PostgresTelemetryStore,
     TelemetryDrain,
     _DDL_PIPELINE_EVENTS,
@@ -259,7 +259,7 @@ async def test_drain_silent_failure():
 async def test_configure_postgres_telemetry_wires_drain():
     from unittest.mock import patch as _patch
 
-    from ageom.telemetry import configure_postgres_telemetry, log_event, reset_telemetry_runtime
+    from sciona.telemetry import configure_postgres_telemetry, log_event, reset_telemetry_runtime
 
     mock_drain = MagicMock()
     mock_drain.enqueue_event = MagicMock()

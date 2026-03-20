@@ -63,8 +63,8 @@ bash llms/install_defaults.sh
 # 2. Start serving
 bash llms/run_defaults.sh
 
-# 3. Point ageom at Ollama's OpenAI-compatible endpoint
-export AGEOM_LLAMA_CPP_BASE_URL=http://127.0.0.1:11434/v1
+# 3. Point sciona at Ollama's OpenAI-compatible endpoint
+export SCIONA_LLAMA_CPP_BASE_URL=http://127.0.0.1:11434/v1
 ```
 
 ## Overriding Defaults
@@ -73,10 +73,10 @@ Any prompt can be rerouted via environment variables:
 
 ```bash
 # Run architect_decompose locally instead of remote
-export AGEOM_ARCHITECT_DECOMPOSE_LLM_PROVIDER=llama_cpp
-export AGEOM_ARCHITECT_DECOMPOSE_LLM_MODEL=deepseek-r1:32b
+export SCIONA_ARCHITECT_DECOMPOSE_LLM_PROVIDER=llama_cpp
+export SCIONA_ARCHITECT_DECOMPOSE_LLM_MODEL=deepseek-r1:32b
 
 # Push a local prompt to remote
-export AGEOM_HUNTER_SCORE_LLM_PROVIDER=anthropic
-export AGEOM_HUNTER_SCORE_LLM_MODEL=claude-sonnet-4-5-20250929
+export SCIONA_HUNTER_SCORE_LLM_PROVIDER=anthropic
+export SCIONA_HUNTER_SCORE_LLM_MODEL=claude-sonnet-4-5-20250929
 ```

@@ -26,17 +26,17 @@ PostgreSQL is used for Architect checkpoint persistence, shared context, and pip
 docker compose up -d postgres
 ```
 
-This starts PostgreSQL on port 5433 with database `ageom_architect`, user `ageom`, password `ageom_dev`. Add to your `.env`:
+This starts PostgreSQL on port 5433 with database `sciona_architect`, user `sciona`, password `sciona_dev`. Add to your `.env`:
 
 ```bash
-AGEOM_POSTGRES_URI=postgresql://ageom:ageom_dev@localhost:5433/ageom_architect
+SCIONA_POSTGRES_URI=postgresql://sciona:sciona_dev@localhost:5433/sciona_architect
 ```
 
 Tables are created automatically on first use. Telemetry backend selection:
 
-| `AGEOM_TELEMETRY_BACKEND` | Behavior |
+| `SCIONA_TELEMETRY_BACKEND` | Behavior |
 |---------------------------|----------|
-| `auto` (default) | Use Postgres when `AGEOM_POSTGRES_URI` is set, otherwise file-only |
+| `auto` (default) | Use Postgres when `SCIONA_POSTGRES_URI` is set, otherwise file-only |
 | `postgres` | Require Postgres (falls back silently on connection failure) |
 | `file` | File-based persistence only, even when Postgres URI is configured |
 
@@ -100,28 +100,28 @@ AGEO-Matcher expects an OpenAI-compatible base URL:
 
 ## 6. Configure Providers and Model Types
 
-Configuration is read from `.env` with `AGEOM_` prefix.
+Configuration is read from `.env` with `SCIONA_` prefix.
 
 ### 6.1 Recommended local-first config (Hunter default)
 
 ```bash
-AGEOM_LLAMA_CPP_BASE_URL=http://127.0.0.1:8080/v1
-AGEOM_LLAMA_CPP_API_KEY=local
+SCIONA_LLAMA_CPP_BASE_URL=http://127.0.0.1:8080/v1
+SCIONA_LLAMA_CPP_API_KEY=local
 
 # Global defaults (used when role-specific override is not set)
-AGEOM_LLM_PROVIDER=anthropic
-AGEOM_LLM_MODEL=claude-sonnet-4-5-20250929
+SCIONA_LLM_PROVIDER=anthropic
+SCIONA_LLM_MODEL=claude-sonnet-4-5-20250929
 
 # Hunter (Round 2): local quantized worker
-AGEOM_HUNTER_LLM_PROVIDER=llama_cpp
-AGEOM_HUNTER_LLM_MODEL=llama-3.1-8b-instruct
-AGEOM_HUNTER_LLM_MAX_TOKENS=1024
-AGEOM_HUNTER_MODE=speculative_local
-AGEOM_HUNTER_USE_GBNF=true
-AGEOM_HUNTER_QUERY_BATCH_SIZE=40
-AGEOM_HUNTER_TOP_K_PER_QUERY=50
-AGEOM_HUNTER_MAX_CANDIDATES_TOTAL=3000
-AGEOM_HUNTER_TOP_K_VERIFY=10
+SCIONA_HUNTER_LLM_PROVIDER=llama_cpp
+SCIONA_HUNTER_LLM_MODEL=llama-3.1-8b-instruct
+SCIONA_HUNTER_LLM_MAX_TOKENS=1024
+SCIONA_HUNTER_MODE=speculative_local
+SCIONA_HUNTER_USE_GBNF=true
+SCIONA_HUNTER_QUERY_BATCH_SIZE=40
+SCIONA_HUNTER_TOP_K_PER_QUERY=50
+SCIONA_HUNTER_MAX_CANDIDATES_TOTAL=3000
+SCIONA_HUNTER_TOP_K_VERIFY=10
 ```
 
 ### 6.2 Role-specific model selection
@@ -129,22 +129,22 @@ AGEOM_HUNTER_TOP_K_VERIFY=10
 You can configure providers/models at three levels:
 
 1. Global:
-- `AGEOM_LLM_PROVIDER`
-- `AGEOM_LLM_MODEL`
-- `AGEOM_LLM_MAX_TOKENS`
+- `SCIONA_LLM_PROVIDER`
+- `SCIONA_LLM_MODEL`
+- `SCIONA_LLM_MAX_TOKENS`
 
 2. Role-specific overrides:
 - Architect (Round 1):
-  - `AGEOM_ARCHITECT_LLM_PROVIDER`
-  - `AGEOM_ARCHITECT_LLM_MODEL`
+  - `SCIONA_ARCHITECT_LLM_PROVIDER`
+  - `SCIONA_ARCHITECT_LLM_MODEL`
 - Hunter (Round 2):
-  - `AGEOM_HUNTER_LLM_PROVIDER`
-  - `AGEOM_HUNTER_LLM_MODEL`
-  - `AGEOM_HUNTER_LLM_MAX_TOKENS`
+  - `SCIONA_HUNTER_LLM_PROVIDER`
+  - `SCIONA_HUNTER_LLM_MODEL`
+  - `SCIONA_HUNTER_LLM_MAX_TOKENS`
   - plus Hunter mode controls above
 - Synthesizer (Round 3):
-  - `AGEOM_SYNTHESIZER_LLM_PROVIDER`
-  - `AGEOM_SYNTHESIZER_LLM_MODEL`
+  - `SCIONA_SYNTHESIZER_LLM_PROVIDER`
+  - `SCIONA_SYNTHESIZER_LLM_MODEL`
 
 3. Per-command CLI overrides:
 - `--llm-provider`
@@ -163,7 +163,7 @@ Valid provider values:
 ### Match (Hunter) with local model
 
 ```bash
-ageom match \
+sciona match \
   --statement "forall n m : Nat, n + m = m + n" \
   --prover lean4 \
   --llm-provider llama_cpp \
@@ -173,7 +173,7 @@ ageom match \
 ### Decompose with local override
 
 ```bash
-ageom decompose \
+sciona decompose \
   "Implement merge sort" \
   --llm-provider llama_cpp \
   --llm-model llama-3.1-8b-instruct \
@@ -186,7 +186,7 @@ Hunter supports grammar-constrained decoding for key structured outputs
 (ranking indices and query arrays). This is enabled with:
 
 ```bash
-AGEOM_HUNTER_USE_GBNF=true
+SCIONA_HUNTER_USE_GBNF=true
 ```
 
 Use a recent llama.cpp build that supports grammar-constrained generation

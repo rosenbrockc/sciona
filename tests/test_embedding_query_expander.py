@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from ageom.hunter.embedding_query_expander import EmbeddingQueryExpander
-from ageom.types import Declaration, Prover
+from sciona.hunter.embedding_query_expander import EmbeddingQueryExpander
+from sciona.types import Declaration, Prover
 
 
 class _FakeEmbedder:

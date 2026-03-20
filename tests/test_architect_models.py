@@ -1,8 +1,8 @@
-"""Tests for ageom.architect.models — CDG Pydantic models."""
+"""Tests for sciona.architect.models — CDG Pydantic models."""
 
 import pytest
 
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
     ConceptType,

@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-if [[ -x "${AGEOM_PYTHON:-}" ]]; then
-  PYTHON_BIN="$AGEOM_PYTHON"
+if [[ -x "${SCIONA_PYTHON:-}" ]]; then
+  PYTHON_BIN="$SCIONA_PYTHON"
 elif [[ -x "$SCRIPT_DIR/.venv/bin/python" ]]; then
   PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
 else
@@ -20,8 +20,8 @@ fi
 MAX_VERIFIER_WARNINGS="${SYNC_CATALOG_MAX_VERIFIER_WARNINGS:-0}"
 VERIFY_IMPORT_SMOKE="${SYNC_CATALOG_VERIFY_IMPORT_SMOKE:-false}"
 
-run_ageom() {
-  "$PYTHON_BIN" -m ageom.cli "$@"
+run_sciona() {
+  "$PYTHON_BIN" -m sciona.cli "$@"
 }
 
 count_warning_lines() {
@@ -65,8 +65,8 @@ run_verifier() {
 list_sources() {
   "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
-from ageom.config import AgeomConfig
-from ageom.sources import load_sources, resolve_source
+from sciona.config import AgeomConfig
+from sciona.sources import load_sources, resolve_source
 
 config = AgeomConfig()
 sources = load_sources(config.sources_file)
@@ -78,7 +78,7 @@ PY
 
 echo "[sync_catalog] using python: $PYTHON_BIN"
 echo "[sync_catalog] syncing sources from sources.yml"
-run_ageom sources sync
+run_sciona sources sync
 
 while IFS=$'\t' read -r source_name source_package source_root; do
   [[ -n "${source_name:-}" ]] || continue
@@ -94,9 +94,9 @@ while IFS=$'\t' read -r source_name source_package source_root; do
 done < <(list_sources)
 
 echo "[sync_catalog] rebuilding python declaration index"
-run_ageom index build --prover python --output "$SCRIPT_DIR/data/index"
+run_sciona index build --prover python --output "$SCRIPT_DIR/data/index"
 
 echo "[sync_catalog] rebuilding skill index from built-ins plus sources.yml"
-run_ageom skill index --sources-only --output "$SCRIPT_DIR/data/skill_index"
+run_sciona skill index --sources-only --output "$SCRIPT_DIR/data/skill_index"
 
 echo "[sync_catalog] done"

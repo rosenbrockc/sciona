@@ -1,6 +1,6 @@
 # CDG Visualizer
 
-Browser-based network visualization for Conceptual Dependency Graphs stored in Memgraph or exported as JSON by `ageom decompose`.
+Browser-based network visualization for Conceptual Dependency Graphs stored in Memgraph or exported as JSON by `sciona decompose`.
 
 ## Starting the visualizer
 
@@ -13,7 +13,7 @@ Connects to Memgraph and serves the full UI with CDG browsing, compare mode, and
 docker compose up -d memgraph
 
 # Start the visualizer
-ageom visualize --api
+sciona visualize --api
 ```
 
 Opens `http://127.0.0.1:8080` in your default browser. Press `Ctrl+C` to stop.
@@ -24,19 +24,19 @@ Load a single CDG JSON file without Memgraph.
 
 ```bash
 # Pre-load a CDG file
-ageom visualize cdg.json
+sciona visualize cdg.json
 
 # Specific port
-ageom visualize cdg.json --port 9000
+sciona visualize cdg.json --port 9000
 
 # Open file:// directly (no server, drag-drop only)
-ageom visualize --no-serve
+sciona visualize --no-serve
 ```
 
 ### CLI options
 
 ```
-ageom visualize [cdg_file] [--port PORT] [--no-serve] [--api]
+sciona visualize [cdg_file] [--port PORT] [--no-serve] [--api]
 ```
 
 | Option | Description |
@@ -195,7 +195,7 @@ curl -X POST http://localhost:8080/api/isomorphisms \
 
 ### Telemetry dashboard endpoints
 
-The visualizer also serves a pipeline telemetry dashboard. All query endpoints try Postgres first when `AGEOM_POSTGRES_URI` is configured, falling back to in-memory/file-based storage.
+The visualizer also serves a pipeline telemetry dashboard. All query endpoints try Postgres first when `SCIONA_POSTGRES_URI` is configured, falling back to in-memory/file-based storage.
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -228,7 +228,7 @@ curl http://localhost:8080/api/dashboard/runs/abc123/coverage
 
 ## CDG JSON format
 
-The visualizer accepts JSON in the format produced by `ageom decompose --output`:
+The visualizer accepts JSON in the format produced by `sciona decompose --output`:
 
 ```json
 {
@@ -273,4 +273,4 @@ Only `nodes` (array) is required. `edges` defaults to `[]` if absent. `metadata`
 
 ## Loading without the CLI
 
-Open `ageom/static/index.html` directly in a browser and drag-drop a CDG JSON file. No server or installation required — Cytoscape.js loads from a CDN. The CDG browser, compare mode, and isomorphism search are unavailable without the API server.
+Open `sciona/static/index.html` directly in a browser and drag-drop a CDG JSON file. No server or installation required — Cytoscape.js loads from a CDN. The CDG browser, compare mode, and isomorphism search are unavailable without the API server.

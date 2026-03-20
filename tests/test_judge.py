@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.judge.models import CompilerFeedback
-from ageom.types import CandidateMatch, Declaration, PDGNode, Prover
+from sciona.judge.models import CompilerFeedback
+from sciona.types import CandidateMatch, Declaration, PDGNode, Prover
 
 
 class TestCompilerFeedback:
@@ -26,13 +26,13 @@ class TestCompilerFeedback:
 
 class TestLeanOutputParsing:
     def test_parse_clean_output(self):
-        from ageom.judge.lean_env import _parse_lean_output
+        from sciona.judge.lean_env import _parse_lean_output
 
         fb = _parse_lean_output("")
         assert fb.success is True
 
     def test_parse_error_output(self):
-        from ageom.judge.lean_env import _parse_lean_output
+        from sciona.judge.lean_env import _parse_lean_output
 
         raw = "file:1:0: error: type mismatch\n  expected Nat\n  got Bool"
         fb = _parse_lean_output(raw)
@@ -40,7 +40,7 @@ class TestLeanOutputParsing:
         assert len(fb.errors) >= 1
 
     def test_parse_unsolved_goals(self):
-        from ageom.judge.lean_env import _parse_lean_output
+        from sciona.judge.lean_env import _parse_lean_output
 
         raw = "unsolved goals\n⊢ 1 + 1 = 2"
         fb = _parse_lean_output(raw)
@@ -51,7 +51,7 @@ class TestLeanOutputParsing:
 class TestVerificationOracleImpl:
     @pytest.fixture
     def oracle(self):
-        from ageom.judge.checker import VerificationOracleImpl
+        from sciona.judge.checker import VerificationOracleImpl
 
         mock_lean = AsyncMock()
         mock_lean.check_term = AsyncMock(return_value=(True, "ok"))
@@ -84,7 +84,7 @@ class TestVerificationOracleImpl:
 
     @pytest.mark.asyncio
     async def test_verify_candidate_failure(self, pdg_node, candidate):
-        from ageom.judge.checker import VerificationOracleImpl
+        from sciona.judge.checker import VerificationOracleImpl
 
         mock_lean = AsyncMock()
         mock_lean.check_term = AsyncMock(return_value=(False, "type mismatch"))
@@ -96,7 +96,7 @@ class TestVerificationOracleImpl:
 
     @pytest.mark.asyncio
     async def test_verify_candidates_short_circuits(self, pdg_node):
-        from ageom.judge.checker import VerificationOracleImpl
+        from sciona.judge.checker import VerificationOracleImpl
 
         mock_lean = AsyncMock()
         # First fails, second succeeds
@@ -117,7 +117,7 @@ class TestVerificationOracleImpl:
 
     @pytest.mark.asyncio
     async def test_no_lean_env_raises(self, pdg_node, candidate):
-        from ageom.judge.checker import VerificationOracleImpl
+        from sciona.judge.checker import VerificationOracleImpl
 
         oracle = VerificationOracleImpl()
         with pytest.raises(RuntimeError, match="LeanEnvironment not configured"):

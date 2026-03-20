@@ -6,8 +6,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from ageom.architect.handoff import load_json, to_pdg_nodes
-from ageom.types import (
+from sciona.architect.handoff import load_json, to_pdg_nodes
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

@@ -1,4 +1,4 @@
-"""Tests for ageom.sources — multi-repo atom source management."""
+"""Tests for sciona.sources — multi-repo atom source management."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from ageom.sources import (
+from sciona.sources import (
     AtomSource,
     SourcesConfig,
     discover_cdgs,
@@ -109,21 +109,21 @@ class TestResolveSource:
             package="remote_pkg",
             git="https://github.com/org/remote.git",
         )
-        with patch("ageom.sources._git_clone") as mock_clone:
+        with patch("sciona.sources._git_clone") as mock_clone:
             resolved = resolve_source(src, base_dir=tmp_path)
             mock_clone.assert_called_once()
-            assert ".ageom_cache" in str(resolved)
+            assert ".sciona_cache" in str(resolved)
             assert "remote" in str(resolved)
 
     def test_resolve_git_source_fetches_existing(self, tmp_path: Path):
-        cache_dir = tmp_path / ".ageom_cache" / "remote"
+        cache_dir = tmp_path / ".sciona_cache" / "remote"
         cache_dir.mkdir(parents=True)
         src = AtomSource(
             name="remote",
             package="remote_pkg",
             git="https://github.com/org/remote.git",
         )
-        with patch("ageom.sources._git_fetch_checkout") as mock_fetch:
+        with patch("sciona.sources._git_fetch_checkout") as mock_fetch:
             resolved = resolve_source(src, base_dir=tmp_path)
             mock_fetch.assert_called_once_with(cache_dir, "main")
             assert resolved == cache_dir

@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from ageom.principal.atom_ledger import AtomLedger, SlotSignature
+from sciona.principal.atom_ledger import AtomLedger, SlotSignature
 
 
 def _slot() -> SlotSignature:

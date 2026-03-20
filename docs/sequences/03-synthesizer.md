@@ -60,7 +60,7 @@ sequenceDiagram
     Assembler->>Assembler: Topological sort
     Assembler->>Assembler: Emit language-specific source<br/>(Lean 4 / Python / Coq)
     opt with_telemetry = true
-        Assembler->>Assembler: Wrap atomic calls in _ageom_probe()<br/>(emits trace.jsonl with timing + memory)
+        Assembler->>Assembler: Wrap atomic calls in _sciona_probe()<br/>(emits trace.jsonl with timing + memory)
     end
     Assembler->>Assembler: Generate composition functions<br/>for root/decomposed nodes
 

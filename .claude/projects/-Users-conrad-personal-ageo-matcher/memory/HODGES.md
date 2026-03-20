@@ -5,7 +5,7 @@
 - All biosppy CDGs upserted into Memgraph as separate repos (`biosppy.ecg_christov`, `biosppy.emg_solnik`, etc.)
 
 ## Test file location
-`/Users/conrad/personal/ageo-matcher/tests/test_retrieval_e2e_hodges.py`
+`/Users/conrad/personal/sciona/tests/test_retrieval_e2e_hodges.py`
 
 ## What's passing (7 tests)
 - **Part 1 (all 5)**: Retrieval against live Memgraph works perfectly
@@ -113,14 +113,14 @@ From: Baseline(0,2), Remove(1,1), TestStat(2,1), Smooth(1,1), Threshold(1,2), Me
 
 ## Related files modified in the retrieval feature
 - `docker-compose.yml` — memgraph-mage image
-- `ageom/config.py` — 4 graph_retrieval_* fields
-- `ageom/graph_store.py` — topo_hash index + 3 query methods
-- `ageom/architect/graph_retrieval.py` — NEW: retriever, data model, prompt formatter, factory
-- `ageom/architect/state.py` — graph_retriever field on DecompositionDeps
-- `ageom/architect/prompts.py` — {example_decompositions} placeholder
-- `ageom/architect/nodes.py` — retriever call in decompose_node
-- `ageom/architect/graph.py` — graph_retriever param on DecompositionAgent
-- `ageom/cli.py` — wiring in _cmd_decompose and _cmd_run
+- `sciona/config.py` — 4 graph_retrieval_* fields
+- `sciona/graph_store.py` — topo_hash index + 3 query methods
+- `sciona/architect/graph_retrieval.py` — NEW: retriever, data model, prompt formatter, factory
+- `sciona/architect/state.py` — graph_retriever field on DecompositionDeps
+- `sciona/architect/prompts.py` — {example_decompositions} placeholder
+- `sciona/architect/nodes.py` — retriever call in decompose_node
+- `sciona/architect/graph.py` — graph_retriever param on DecompositionAgent
+- `sciona/cli.py` — wiring in _cmd_decompose and _cmd_run
 
 ## Upsert note
 `upsert_cdg.py` uses `glob("*cdg*.json")` (non-recursive). Biosppy subdirectories must be upserted individually:
@@ -128,7 +128,7 @@ From: Baseline(0,2), Remove(1,1), TestStat(2,1), Smooth(1,1), Threshold(1,2), Me
 for dir in ../ageo-atoms/ageoa/biosppy/*/; do
   if [ -f "$dir/cdg.json" ]; then
     name=$(basename "$dir")
-    ageom upsert-cdg "$dir" --repo-name "biosppy.$name"
+    sciona upsert-cdg "$dir" --repo-name "biosppy.$name"
   fi
 done
 ```

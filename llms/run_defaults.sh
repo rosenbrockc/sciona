@@ -44,6 +44,6 @@ done
 
 echo
 echo "Ready. Ollama is serving on http://127.0.0.1:11434"
-echo "The llama_cpp provider in ageom connects via AGEOM_LLAMA_CPP_BASE_URL (default http://127.0.0.1:8080/v1)."
+echo "The llama_cpp provider in sciona connects via SCIONA_LLAMA_CPP_BASE_URL (default http://127.0.0.1:8080/v1)."
 echo "If using Ollama's OpenAI-compatible endpoint, set:"
-echo "  export AGEOM_LLAMA_CPP_BASE_URL=http://127.0.0.1:11434/v1"
+echo "  export SCIONA_LLAMA_CPP_BASE_URL=http://127.0.0.1:11434/v1"

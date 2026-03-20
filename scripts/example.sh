@@ -4,8 +4,8 @@
 set -euo pipefail
 
 # Preflight checks
-if ! command -v ageom >/dev/null 2>&1; then
-  echo "Error: 'ageom' CLI not found in PATH." >&2
+if ! command -v sciona >/dev/null 2>&1; then
+  echo "Error: 'sciona' CLI not found in PATH." >&2
   exit 1
 fi
 
@@ -24,14 +24,14 @@ if [[ ! -f "$ADAPTER_PATH" ]]; then
   exit 1
 fi
 
-if [[ -z "${AGEOM_POSTGRES_URI:-}" ]]; then
-  echo "Warning: AGEOM_POSTGRES_URI is not set; shared context will use in-memory backend."
+if [[ -z "${SCIONA_POSTGRES_URI:-}" ]]; then
+  echo "Warning: SCIONA_POSTGRES_URI is not set; shared context will use in-memory backend."
 fi
 
 echo "=== Step 1: Decompose, Match, and Assemble ==="
 # Run the full orchestration loop: decompose → match → refine.
 # Produces cdg.json and matches.json in the build directory.
-ageom run "$GOAL" \
+sciona run "$GOAL" \
   --prover python \
   --output "$BUILD_DIR" \
   --trace
@@ -47,7 +47,7 @@ fi
 echo -e "\n=== Step 2: Synthesize Verified Source ==="
 # Assemble CDG + match results into a compilable Python file,
 # then run the compile-analyze-patch repair loop to fix type/shape mismatches.
-ageom synthesize "$BUILD_DIR/cdg.json" "$BUILD_DIR/matches.json" \
+sciona synthesize "$BUILD_DIR/cdg.json" "$BUILD_DIR/matches.json" \
   --prover python \
   --output "$BUILD_DIR/verified.py"
 
@@ -61,7 +61,7 @@ fi
 
 echo -e "\n=== Step 3: Export as Python Package ==="
 # Export the verified source into a distributable Python package.
-ageom export "$BUILD_DIR/verified.py" \
+sciona export "$BUILD_DIR/verified.py" \
   --target python-pkg \
   --prover python \
   --output-dir "$DIST_DIR"
@@ -69,7 +69,7 @@ ageom export "$BUILD_DIR/verified.py" \
 echo -e "\n=== Step 4: Profile Against Benchmark ==="
 # Evaluate the final artifact's performance on the NIGHTCAP dataset.
 # Produces per-node gradient scores ranking error contributors.
-ageom profile \
+sciona profile \
   --cdg "$BUILD_DIR/cdg.json" \
   --artifact "$BUILD_DIR/verified.py" \
   --dataset "$ADAPTER_PATH" \

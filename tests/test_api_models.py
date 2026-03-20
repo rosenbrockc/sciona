@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 
-from ageom.api.models import (
+from sciona.api.models import (
     AtomPublishRequest,
     AtomPublishResponse,
     BountyCreateRequest,

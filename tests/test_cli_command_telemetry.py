@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from ageom.types import (
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,
@@ -91,12 +91,12 @@ def _latest_persisted_run(root: Path) -> dict[str, object]:
 
 @pytest.mark.asyncio
 async def test_decompose_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path):
-    from ageom.cli import _cmd_decompose
-    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+    from sciona.cli import _cmd_decompose
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     output_path = tmp_path / "cdg.json"
     metrics = _FakeMetrics("memory")
@@ -107,7 +107,7 @@ async def test_decompose_writes_persisted_telemetry_run(monkeypatch, tmp_path: P
         is_complete=lambda: True,
     )
 
-    _D = "ageom.commands.decompose_cmds"
+    _D = "sciona.commands.decompose_cmds"
     monkeypatch.setattr(
         f"{_D}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=3), {"source_candidates": 3}),
@@ -139,15 +139,15 @@ async def test_decompose_writes_persisted_telemetry_run(monkeypatch, tmp_path: P
     monkeypatch.setattr(f"{_D}._create_shared_context", _fake_create_shared_context)
     monkeypatch.setattr(f"{_D}._run_decompose", _fake_run_decompose)
     monkeypatch.setattr(
-        "ageom.architect.checkpointer.create_checkpointer",
+        "sciona.architect.checkpointer.create_checkpointer",
         lambda uri: _AsyncNullContext(),
     )
     monkeypatch.setattr(
-        "ageom.architect.graph.DecompositionAgent",
+        "sciona.architect.graph.DecompositionAgent",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
     monkeypatch.setattr(
-        "ageom.architect.handoff.save_json",
+        "sciona.architect.handoff.save_json",
         lambda cdg, path: Path(path).write_text('{"ok": true}', encoding="utf-8"),
     )
 
@@ -177,19 +177,19 @@ async def test_decompose_writes_persisted_telemetry_run(monkeypatch, tmp_path: P
 
 @pytest.mark.asyncio
 async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path):
-    from ageom.cli import _cmd_match
-    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+    from sciona.cli import _cmd_match
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     index_dir = tmp_path / "index"
     index_dir.mkdir()
     metrics = _FakeMetrics("postgres")
     env = _FakeEnv()
 
-    _M = "ageom.commands.match_cmds"
+    _M = "sciona.commands.match_cmds"
     monkeypatch.setattr(
         f"{_M}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=5), {"source_candidates": 5}),
@@ -208,7 +208,7 @@ async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path)
     monkeypatch.setattr(f"{_M}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
     monkeypatch.setattr(f"{_M}._create_proof_env", lambda prover, config: env)
     monkeypatch.setattr(
-        "ageom.judge.checker.VerificationOracleImpl",
+        "sciona.judge.checker.VerificationOracleImpl",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
     monkeypatch.setattr(f"{_M}._create_llm_router", lambda *args, **kwargs: object())
@@ -239,7 +239,7 @@ async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path)
 
     monkeypatch.setattr(f"{_M}._warm_llm_if_supported", _noop_warm)
     monkeypatch.setattr(f"{_M}._create_shared_context", _fake_create_shared_context)
-    monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("sciona.hunter.graph.HunterAgent", _FakeHunterAgent)
 
     await _cmd_match(
         argparse.Namespace(
@@ -260,12 +260,12 @@ async def test_match_writes_persisted_telemetry_run(monkeypatch, tmp_path: Path)
 
 @pytest.mark.asyncio
 async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path):
-    from ageom.cli import _cmd_run
-    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+    from sciona.cli import _cmd_run
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     output_dir = tmp_path / "run_output"
     index_dir = tmp_path / "index"
@@ -273,7 +273,7 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
     metrics = _FakeMetrics("memory")
     env = _FakeEnv()
 
-    _R = "ageom.commands.run_cmds"
+    _R = "sciona.commands.run_cmds"
     monkeypatch.setattr(
         f"{_R}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=0), {"source_candidates": 0}),
@@ -292,7 +292,7 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
     monkeypatch.setattr(f"{_R}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
     monkeypatch.setattr(f"{_R}._create_proof_env", lambda prover, config: env)
     monkeypatch.setattr(
-        "ageom.judge.checker.VerificationOracleImpl",
+        "sciona.judge.checker.VerificationOracleImpl",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
     monkeypatch.setattr(f"{_R}._create_llm_router", lambda *args, **kwargs: object())
@@ -315,14 +315,14 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
 
     monkeypatch.setattr(f"{_R}._warm_llm_if_supported", _noop_warm)
     monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
-    monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
-    monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)
+    monkeypatch.setattr("sciona.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("sciona.architect.handoff.save_json", _save_cdg)
     monkeypatch.setattr(
-        "ageom.architect.graph.DecompositionAgent",
+        "sciona.architect.graph.DecompositionAgent",
         lambda **kwargs: (_ for _ in ()).throw(AssertionError("architect should be skipped")),
     )
     monkeypatch.setattr(
-        "ageom.orchestrator.run_orchestration",
+        "sciona.orchestrator.run_orchestration",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             AssertionError("orchestration should be skipped")
         ),
@@ -360,14 +360,14 @@ async def test_run_rapid_mode_uses_direct_match_path(monkeypatch, tmp_path: Path
 
 @pytest.mark.asyncio
 async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_path: Path):
-    from ageom.architect.handoff import CDGExport
-    from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-    from ageom.cli import _cmd_run
-    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+    from sciona.architect.handoff import CDGExport
+    from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+    from sciona.cli import _cmd_run
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     output_dir = tmp_path / "structured_output"
     index_dir = tmp_path / "index"
@@ -390,7 +390,7 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
         metadata={"goal": "Detect heart rate from ECG"},
     )
 
-    _R = "ageom.commands.run_cmds"
+    _R = "sciona.commands.run_cmds"
     monkeypatch.setattr(
         f"{_R}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=2), {"source_candidates": 2}),
@@ -410,7 +410,7 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
     monkeypatch.setattr(f"{_R}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
     monkeypatch.setattr(f"{_R}._create_proof_env", lambda prover, config: env)
     monkeypatch.setattr(
-        "ageom.judge.checker.VerificationOracleImpl",
+        "sciona.judge.checker.VerificationOracleImpl",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
     monkeypatch.setattr(f"{_R}._create_llm_router", lambda *args, **kwargs: object())
@@ -440,15 +440,15 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
 
     monkeypatch.setattr(f"{_R}._warm_llm_if_supported", _noop_warm)
     monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
-    monkeypatch.setattr("ageom.architect.graph.DecompositionAgent", _FakeArchitectAgent)
-    monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
-    monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)
+    monkeypatch.setattr("sciona.architect.graph.DecompositionAgent", _FakeArchitectAgent)
+    monkeypatch.setattr("sciona.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("sciona.architect.handoff.save_json", _save_cdg)
     monkeypatch.setattr(
-        "ageom.architect.checkpointer.create_checkpointer",
+        "sciona.architect.checkpointer.create_checkpointer",
         lambda uri: _AsyncNullContext(),
     )
     monkeypatch.setattr(
-        "ageom.orchestrator.run_orchestration",
+        "sciona.orchestrator.run_orchestration",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             AssertionError("orchestration should be skipped")
         ),
@@ -483,12 +483,12 @@ async def test_run_structured_mode_uses_single_pass_matching(monkeypatch, tmp_pa
 
 @pytest.mark.asyncio
 async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_path: Path):
-    from ageom.cli import _cmd_run
-    from ageom.telemetry import configure_dashboard_output, reset_telemetry_runtime
+    from sciona.cli import _cmd_run
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
 
     reset_telemetry_runtime()
     configure_dashboard_output(tmp_path)
-    monkeypatch.setenv("AGEOM_TELEMETRY_RUNS_DIR", str(tmp_path))
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
 
     output_dir = tmp_path / "single_agent_output"
     index_dir = tmp_path / "index"
@@ -496,7 +496,7 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     metrics = _FakeMetrics("memory")
     env = _FakeEnv()
 
-    _R = "ageom.commands.run_cmds"
+    _R = "sciona.commands.run_cmds"
     monkeypatch.setattr(
         f"{_R}._load_architect_catalog",
         lambda args, config: (SimpleNamespace(size=1), {"source_candidates": 1}),
@@ -516,7 +516,7 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     monkeypatch.setattr(f"{_R}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
     monkeypatch.setattr(f"{_R}._create_proof_env", lambda prover, config: env)
     monkeypatch.setattr(
-        "ageom.judge.checker.VerificationOracleImpl",
+        "sciona.judge.checker.VerificationOracleImpl",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
     monkeypatch.setattr(f"{_R}._create_llm_router", lambda *args, **kwargs: object())
@@ -539,16 +539,16 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
 
     monkeypatch.setattr(f"{_R}._warm_llm_if_supported", _noop_warm)
     monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
-    monkeypatch.setattr("ageom.hunter.graph.HunterAgent", _FakeHunterAgent)
-    monkeypatch.setattr("ageom.architect.handoff.save_json", _save_cdg)
+    monkeypatch.setattr("sciona.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("sciona.architect.handoff.save_json", _save_cdg)
     monkeypatch.setattr(
-        "ageom.architect.graph.DecompositionAgent",
+        "sciona.architect.graph.DecompositionAgent",
         lambda **kwargs: (_ for _ in ()).throw(
             AssertionError("architect should be skipped on direct single-agent success")
         ),
     )
     monkeypatch.setattr(
-        "ageom.orchestrator.run_orchestration",
+        "sciona.orchestrator.run_orchestration",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             AssertionError("orchestration should be skipped on direct single-agent success")
         ),

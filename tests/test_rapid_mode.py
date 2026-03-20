@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.cli import _build_rapid_direct_cdg, _run_rapid_direct_match
-from ageom.types import (
+from sciona.cli import _build_rapid_direct_cdg, _run_rapid_direct_match
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.models import NodeStatus
-from ageom.ingester import IngesterAgent, IngestionBundle
+from sciona.architect.models import NodeStatus
+from sciona.ingester import IngesterAgent, IngestionBundle
 
 # ---------------------------------------------------------------------------
 # Fixtures

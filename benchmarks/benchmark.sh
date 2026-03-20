@@ -29,7 +29,7 @@ fail()  { echo -e "${RED}[FAIL]${NC} $*"; }
 # 1. Deterministic validation (mocks) — proves harness is healthy
 # ---------------------------------------------------------------------------
 info "Running deterministic benchmark validation..."
-ageom benchmark-validate --output "$OUTPUT_DIR/validation"
+sciona benchmark-validate --output "$OUTPUT_DIR/validation"
 
 VALIDATION_STATUS=$(python -c "
 import json, sys
@@ -48,7 +48,7 @@ fi
 # 2. Live prompt benchmark — codex_shim
 # ---------------------------------------------------------------------------
 info "Running prompt benchmark: codex_shim:gpt-5.3-codex (repeats=$REPEATS)..."
-ageom prompt-benchmark \
+sciona prompt-benchmark \
     --provider codex_shim:gpt-5.3-codex \
     --repeats "$REPEATS" \
     --compare-direct-baseline \
@@ -59,7 +59,7 @@ ageom prompt-benchmark \
 # 3. Live prompt benchmark — gemini_shim
 # ---------------------------------------------------------------------------
 info "Running prompt benchmark: gemini_shim:gemini-2.5-pro (repeats=$REPEATS)..."
-ageom prompt-benchmark \
+sciona prompt-benchmark \
     --provider gemini_shim:gemini-2.5-pro \
     --repeats "$REPEATS" \
     --compare-direct-baseline \
@@ -70,7 +70,7 @@ ageom prompt-benchmark \
 # 4. Head-to-head — both providers, all prompt keys
 # ---------------------------------------------------------------------------
 info "Running head-to-head: codex_shim vs gemini_shim (repeats=$REPEATS)..."
-ageom prompt-benchmark \
+sciona prompt-benchmark \
     --provider codex_shim:gpt-5.3-codex \
     --provider gemini_shim:gemini-2.5-pro \
     --repeats "$REPEATS" \

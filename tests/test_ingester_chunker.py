@@ -1,4 +1,4 @@
-"""Tests for Phase 2 semantic chunking (ageom.ingester.chunker)."""
+"""Tests for Phase 2 semantic chunking (sciona.ingester.chunker)."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.ingester.chunker import (
+from sciona.ingester.chunker import (
     ChunkerDeps,
     ChunkerState,
     build_chunker_graph,
     critic_validate,
     propose_macro_atoms,
 )
-from ageom.ingester.models import (
+from sciona.ingester.models import (
     MacroAtomSpec,
     MethodFact,
     ProposedMacroPlan,

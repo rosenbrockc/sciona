@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from ageom.architect.models import ConceptType, IOSpec
-from ageom.ingester.emitter import emit_ingestion_bundle
-from ageom.ingester.graph import apply_conjugate_heuristics
-from ageom.ingester.models import (
+from sciona.architect.models import ConceptType, IOSpec
+from sciona.ingester.emitter import emit_ingestion_bundle
+from sciona.ingester.graph import apply_conjugate_heuristics
+from sciona.ingester.models import (
     MacroAtomSpec,
     MethodFact,
     ProposedMacroPlan,

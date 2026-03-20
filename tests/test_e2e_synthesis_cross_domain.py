@@ -12,17 +12,17 @@ import ast
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.synthesizer.assembler import Assembler, sanitize_name
-from ageom.synthesizer.python_template import generate_pipeline_py
-from ageom.types import (
+from sciona.synthesizer.assembler import Assembler, sanitize_name
+from sciona.synthesizer.python_template import generate_pipeline_py
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,

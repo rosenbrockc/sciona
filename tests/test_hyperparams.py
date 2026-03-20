@@ -7,14 +7,14 @@ import sqlite3
 
 import pytest
 
-from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
-from ageom.architect.hyperparams import (
+from sciona.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+from sciona.architect.hyperparams import (
     get_runtime_signal_event_rate_params,
     load_hyperparams_manifest,
     load_hyperparams_manifest_sqlite,
     load_manifest,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicPrimitive,
     ConceptType,
     ParamStatus,

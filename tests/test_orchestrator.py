@@ -5,15 +5,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     IOSpec,
     NodeStatus,
 )
-from ageom.orchestrator import refine_on_failure, run_orchestration
-from ageom.types import (
+from sciona.orchestrator import refine_on_failure, run_orchestration
+from sciona.types import (
     CandidateMatch,
     Declaration,
     FailureAction,

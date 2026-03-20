@@ -117,7 +117,7 @@ CREATE TABLE bounties (
     verifications_used  INTEGER NOT NULL DEFAULT 0,
     config_yml    JSONB NOT NULL DEFAULT '{}',
     flare_payload JSONB,                    -- frozen FlarePayload
-    ageom_yml_s3  TEXT,                     -- S3 key for ageom.yml
+    sciona_yml_s3  TEXT,                     -- S3 key for sciona.yml
     dataset_s3    TEXT,                     -- S3 prefix for data
     public_split_hash TEXT,
     blind_split_hash  TEXT,
@@ -179,10 +179,10 @@ Key design notes:
 
 ### 2. FastAPI Router Structure
 
-New package: `ageom/api/`
+New package: `sciona/api/`
 
 ```
-ageom/api/
+sciona/api/
     __init__.py
     app.py              # FastAPI app + lifespan
     deps.py             # Dependency injection
@@ -315,9 +315,9 @@ async def download_manifest() -> FileResponse:
 
 ### 3. Auth Middleware Design
 
-The auth system is located in `ageom/api/deps.py` and `ageom/api/routers/auth.py`.
+The auth system is located in `sciona/api/deps.py` and `sciona/api/routers/auth.py`.
 
-**JWT signing:** Use PyJWT with an RSA key pair. In production, the private key is stored in AWS KMS (via `boto3`); locally, a file-based key at `~/.ageom/jwt_key.pem`.
+**JWT signing:** Use PyJWT with an RSA key pair. In production, the private key is stored in AWS KMS (via `boto3`); locally, a file-based key at `~/.sciona/jwt_key.pem`.
 
 ```python
 # deps.py -- dependency injection sketch
@@ -345,7 +345,7 @@ async def require_auth(
     try:
         payload = jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
     except jwt.ExpiredSignatureError:
-        raise HTTPException(401, "Token expired — run `ageom login`")
+        raise HTTPException(401, "Token expired — run `sciona login`")
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Invalid token")
     user = await db.fetchrow("SELECT * FROM users WHERE user_id = $1", payload["sub"])
@@ -369,7 +369,7 @@ async def require_auth(
 }
 ```
 
-30-day expiry. No refresh tokens. `ageom login` re-authenticates from scratch.
+30-day expiry. No refresh tokens. `sciona login` re-authenticates from scratch.
 
 **Device flow for CLI:** The CLI cannot open a redirect callback server (it may be SSH). GitHub Device Flow (RFC 8628) is the right choice:
 
@@ -377,7 +377,7 @@ async def require_auth(
 2. CLI prints: "Open https://github.com/login/device and enter code: ABCD-1234".
 3. CLI polls `POST /auth/github/device/poll` every 5 seconds.
 4. When user completes browser auth, the platform exchanges the device code for a GitHub access token, fetches profile, upserts user, issues JWT.
-5. CLI stores JWT to `~/.ageom/config` (TOML or JSON, matching existing config pattern).
+5. CLI stores JWT to `~/.sciona/config` (TOML or JSON, matching existing config pattern).
 
 ### 4. Bounty State Machine
 
@@ -418,7 +418,7 @@ def compute_cancellation_fee(bounty: Bounty, has_submissions: bool) -> Decimal:
 
 ### 5. SQLite Snapshot Generation Pipeline
 
-This is the bridge between the platform PostgreSQL and the offline CLI. The existing `load_hyperparams_manifest_sqlite()` in `/Users/conrad/personal/ageo-matcher/ageom/architect/hyperparams.py` already reads `manifest.sqlite` with the schema: `atoms(atom_id, fqdn, status)` and `hyperparams(hp_id, atom_id, name, ...)`. The platform must generate this exact schema.
+This is the bridge between the platform PostgreSQL and the offline CLI. The existing `load_hyperparams_manifest_sqlite()` in `/Users/conrad/personal/sciona/sciona/architect/hyperparams.py` already reads `manifest.sqlite` with the schema: `atoms(atom_id, fqdn, status)` and `hyperparams(hp_id, atom_id, name, ...)`. The platform must generate this exact schema.
 
 **Pipeline:**
 
@@ -441,17 +441,17 @@ This is the bridge between the platform PostgreSQL and the offline CLI. The exis
 4. Upload to S3 `manifests/manifest.sqlite` (versioned with a timestamp suffix for rollback).
 5. Optionally publish an SNS notification so other Fargate tasks refresh.
 
-**New module:** `ageom/api/snapshot.py`
+**New module:** `sciona/api/snapshot.py`
 
-**CLI side:** `ageom catalog sync` downloads `manifests/manifest.sqlite` from S3 to `~/.ageom/manifest.sqlite`. The existing `load_manifest()` in `hyperparams.py` already supports reading from an arbitrary path -- the CLI just needs to point it there.
+**CLI side:** `sciona catalog sync` downloads `manifests/manifest.sqlite` from S3 to `~/.sciona/manifest.sqlite`. The existing `load_manifest()` in `hyperparams.py` already supports reading from an arbitrary path -- the CLI just needs to point it there.
 
 ### 6. CLI Command Signatures
 
-New commands added to `ageom/cli.py` following the existing argparse pattern (no click migration needed -- the entire CLI uses argparse today):
+New commands added to `sciona/cli.py` following the existing argparse pattern (no click migration needed -- the entire CLI uses argparse today):
 
 ```python
 # --- login ---
-login_parser = subparsers.add_parser("login", help="Authenticate with the AGEOM platform via GitHub")
+login_parser = subparsers.add_parser("login", help="Authenticate with the SCIONA platform via GitHub")
 login_parser.add_argument("--api-url", type=str, default=None, help="Platform API URL override")
 
 # --- catalog sync ---
@@ -481,10 +481,10 @@ bounty_fund_parser.add_argument("bounty_id", type=str, help="Bounty ID to fund")
 ```
 
 New CLI modules:
-- `ageom/commands/login_cmds.py`
-- `ageom/commands/catalog_cmds.py`
-- `ageom/commands/atom_cmds.py`
-- `ageom/commands/bounty_cmds.py`
+- `sciona/commands/login_cmds.py`
+- `sciona/commands/catalog_cmds.py`
+- `sciona/commands/atom_cmds.py`
+- `sciona/commands/bounty_cmds.py`
 
 Each follows the pattern of existing `*_cmds.py` files: define `_cmd_*` async functions, imported into `cli.py`.
 
@@ -524,10 +524,10 @@ Each follows the pattern of existing `*_cmds.py` files: define `_cmd_*` async fu
 FROM python:3.12-slim
 WORKDIR /app
 COPY pyproject.toml .
-COPY ageom/ ageom/
+COPY sciona/ sciona/
 RUN pip install --no-cache-dir ".[api]"
 EXPOSE 8000
-CMD ["uvicorn", "ageom.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "sciona.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 This requires a new `[project.optional-dependencies]` group in `pyproject.toml`:
@@ -548,7 +548,7 @@ api = [
 
 ```json
 {
-  "family": "ageom-api",
+  "family": "sciona-api",
   "cpu": "256",
   "memory": "512",
   "networkMode": "awsvpc",
@@ -557,20 +557,20 @@ api = [
     "image": "${ECR_REPO}:latest",
     "portMappings": [{"containerPort": 8000}],
     "environment": [
-      {"name": "AGEOM_SUPABASE_URL", "value": "..."},
-      {"name": "AGEOM_MEMGRAPH_URI", "value": "bolt://memgraph.internal:7687"},
-      {"name": "AGEOM_S3_BUCKET", "value": "ageom-platform"},
-      {"name": "AGEOM_JWT_KMS_KEY_ID", "value": "..."}
+      {"name": "SCIONA_SUPABASE_URL", "value": "..."},
+      {"name": "SCIONA_MEMGRAPH_URI", "value": "bolt://memgraph.internal:7687"},
+      {"name": "SCIONA_S3_BUCKET", "value": "sciona-platform"},
+      {"name": "SCIONA_JWT_KMS_KEY_ID", "value": "..."}
     ],
     "secrets": [
-      {"name": "AGEOM_SUPABASE_KEY", "valueFrom": "arn:aws:secretsmanager:..."},
+      {"name": "SCIONA_SUPABASE_KEY", "valueFrom": "arn:aws:secretsmanager:..."},
       {"name": "GITHUB_OAUTH_CLIENT_SECRET", "valueFrom": "arn:aws:secretsmanager:..."},
       {"name": "STRIPE_SECRET_KEY", "valueFrom": "arn:aws:secretsmanager:..."}
     ],
     "logConfiguration": {
       "logDriver": "awslogs",
       "options": {
-        "awslogs-group": "/ecs/ageom-api",
+        "awslogs-group": "/ecs/sciona-api",
         "awslogs-region": "us-east-1"
       }
     }
@@ -581,7 +581,7 @@ api = [
 **S3 bucket structure:**
 
 ```
-ageom-platform/
+sciona-platform/
     atoms/{content_hash}.tar.gz
     datasets/{bounty_id}/
     receipts/{submission_id}.receipt
@@ -603,10 +603,10 @@ api:
   ports:
     - "8000:8000"
   environment:
-    AGEOM_MEMGRAPH_URI: bolt://memgraph:7687
-    AGEOM_POSTGRES_URI: postgresql://ageom:ageom_dev@postgres:5432/ageom_architect
-    AGEOM_S3_BUCKET: ageom-platform-dev
-    AGEOM_JWT_PRIVATE_KEY_PATH: /app/dev_jwt_key.pem
+    SCIONA_MEMGRAPH_URI: bolt://memgraph:7687
+    SCIONA_POSTGRES_URI: postgresql://sciona:sciona_dev@postgres:5432/sciona_architect
+    SCIONA_S3_BUCKET: sciona-platform-dev
+    SCIONA_JWT_PRIVATE_KEY_PATH: /app/dev_jwt_key.pem
     GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
     GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
   depends_on:
@@ -618,7 +618,7 @@ api:
 
 | Step | Deliverable | Depends On | Effort |
 |------|------------|------------|--------|
-| B.1 | `ageom/api/models.py` -- Pydantic request/response models | Nothing | 0.5 day |
+| B.1 | `sciona/api/models.py` -- Pydantic request/response models | Nothing | 0.5 day |
 | B.2 | PostgreSQL migration SQL + asyncpg connection pool in `deps.py` | B.1 | 1 day |
 | B.3 | `routers/auth.py` -- GitHub device flow + JWT | B.2 | 1.5 days |
 | B.4 | `routers/registry.py` -- Atom CRUD + S3 upload | B.2, B.3 | 1.5 days |
@@ -652,8 +652,8 @@ Total: approximately 2-3 weeks.
 8. **Open question: Stripe Connect vs Stripe Checkout.** For funding bounties (Principal pays escrow), Stripe Checkout works. For paying out to Architects/Originators, Stripe Connect with Express accounts is needed. The KYC trigger on first attribution maps cleanly to Stripe Connect's "deferred onboarding" pattern. This needs careful sequencing with the Payee tier upgrade.
 
 ### Critical Files for Implementation
-- `/Users/conrad/personal/ageo-matcher/ageom/architect/hyperparams.py` - Contains the existing `load_hyperparams_manifest_sqlite()` function and schema that the SQLite snapshot must match exactly
-- `/Users/conrad/personal/ageo-matcher/ageom/cli.py` - Main CLI entrypoint; all new commands (login, catalog, atom, bounty) must be registered here following the existing argparse pattern
-- `/Users/conrad/personal/ageo-matcher/ageom/config.py` - Central config via pydantic-settings; new API config fields (supabase URL, S3 bucket, JWT key, GitHub OAuth creds) go here
-- `/Users/conrad/personal/ageo-matcher/ageom/visualizer_api.py` - Existing FastAPI app pattern to follow for lifespan management, Memgraph driver init, and asyncpg setup
-- `/Users/conrad/personal/ageo-matcher/pyproject.toml` - Needs new `[api]` optional dependency group and script entrypoint for the platform service
+- `/Users/conrad/personal/sciona/sciona/architect/hyperparams.py` - Contains the existing `load_hyperparams_manifest_sqlite()` function and schema that the SQLite snapshot must match exactly
+- `/Users/conrad/personal/sciona/sciona/cli.py` - Main CLI entrypoint; all new commands (login, catalog, atom, bounty) must be registered here following the existing argparse pattern
+- `/Users/conrad/personal/sciona/sciona/config.py` - Central config via pydantic-settings; new API config fields (supabase URL, S3 bucket, JWT key, GitHub OAuth creds) go here
+- `/Users/conrad/personal/sciona/sciona/visualizer_api.py` - Existing FastAPI app pattern to follow for lifespan management, Memgraph driver init, and asyncpg setup
+- `/Users/conrad/personal/sciona/pyproject.toml` - Needs new `[api]` optional dependency group and script entrypoint for the platform service

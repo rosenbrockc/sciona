@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 
-from ageom.architect.models import AlgorithmicNode, ConceptType, IOSpec, NodeStatus
-from ageom.principal.atom_ledger import (
+from sciona.architect.models import AlgorithmicNode, ConceptType, IOSpec, NodeStatus
+from sciona.principal.atom_ledger import (
     AtomLedger,
     SlotSignature,
     compute_slot_signature,

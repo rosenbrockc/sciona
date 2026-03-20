@@ -6,28 +6,28 @@ from pathlib import Path
 
 import pytest
 
-from ageom.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-from ageom.architect.strategy_classifier import (
+from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+from sciona.architect.strategy_classifier import (
     StrategyClassifier,
     _load_phrase_rules,
 )
-from ageom.hunter.query_reformulator import (
+from sciona.hunter.query_reformulator import (
     _load_query_rules,
     _match_phrase_rule,
 )
-from ageom.orchestrator import (
+from sciona.orchestrator import (
     _deterministic_split_subnodes,
     _load_split_patterns,
     _pattern_matches,
 )
-from ageom.types import (
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchFailureReport,
     PDGNode,
 )
 
-_DATA_DIR = Path(__file__).resolve().parent.parent / "ageom" / "data"
+_DATA_DIR = Path(__file__).resolve().parent.parent / "sciona" / "data"
 
 
 # ---------------------------------------------------------------------------

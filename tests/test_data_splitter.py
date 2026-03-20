@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.clearinghouse.data_splitter import (
+from sciona.clearinghouse.data_splitter import (
     assign_partition,
     compute_split_hash,
     split_dataset,
     validate_dataset,
 )
-from ageom.clearinghouse.models import SplitAssignment
+from sciona.clearinghouse.models import SplitAssignment
 
 
 class TestPartitionAssignment:

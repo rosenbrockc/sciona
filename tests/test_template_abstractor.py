@@ -7,13 +7,13 @@ from unittest.mock import AsyncMock
 import pytest
 from langchain_core.runnables import RunnableConfig
 
-from ageom.architect.models import ConceptType, IOSpec
-from ageom.commands._helpers import _create_llm_router
-from ageom.ingester.chunker import ChunkerDeps, ChunkerState, abstract_atoms
-from ageom.ingester.models import ConceptualProfile, MacroAtomSpec, ProposedMacroPlan, RawDataFlowGraph, ValidatedMacroPlan
-from ageom.ingester.prompts import CONCEPTUAL_ABSTRACT_SYSTEM, CONCEPTUAL_ABSTRACT_USER
-from ageom.ingester.template_abstractor import TemplateAbstractor, _parse_abstract_prompt
-from ageom.llm_router import INGESTER_ABSTRACT, LLMRouter
+from sciona.architect.models import ConceptType, IOSpec
+from sciona.commands._helpers import _create_llm_router
+from sciona.ingester.chunker import ChunkerDeps, ChunkerState, abstract_atoms
+from sciona.ingester.models import ConceptualProfile, MacroAtomSpec, ProposedMacroPlan, RawDataFlowGraph, ValidatedMacroPlan
+from sciona.ingester.prompts import CONCEPTUAL_ABSTRACT_SYSTEM, CONCEPTUAL_ABSTRACT_USER
+from sciona.ingester.template_abstractor import TemplateAbstractor, _parse_abstract_prompt
+from sciona.llm_router import INGESTER_ABSTRACT, LLMRouter
 
 
 def _user() -> str:
@@ -116,7 +116,7 @@ def test_create_llm_router_wraps_ingester_abstract_deterministically(monkeypatch
         client.model = model
         return client
 
-    monkeypatch.setattr("ageom.hunter.llm.create_llm_client", _fake_create_llm_client)
+    monkeypatch.setattr("sciona.hunter.llm.create_llm_client", _fake_create_llm_client)
 
     args = SimpleNamespace(llm_provider=None, llm_model=None, llm_max_tokens=None)
     config = SimpleNamespace(

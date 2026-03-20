@@ -7,29 +7,29 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ageom.architect.graph_alignment import AlignmentScore, GraphAlignmentScorer
-from ageom.architect.graph_retrieval import ExampleChild, ExampleDecomposition
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import (
+from sciona.architect.graph_alignment import AlignmentScore, GraphAlignmentScorer
+from sciona.architect.graph_retrieval import ExampleChild, ExampleDecomposition
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.architect.template_retriever import TemplateMatch, TemplateRetriever
-from ageom.config import AgeomConfig
-from ageom.orchestrator import OrchestratorResult
-from ageom.result_to_cdg import RunCDGMetadata, orchestrator_result_to_cdg
-from ageom.telemetry import get_event_log, log_event, reset_telemetry_runtime
-from ageom.types import (
+from sciona.architect.template_retriever import TemplateMatch, TemplateRetriever
+from sciona.config import AgeomConfig
+from sciona.orchestrator import OrchestratorResult
+from sciona.result_to_cdg import RunCDGMetadata, orchestrator_result_to_cdg
+from sciona.telemetry import get_event_log, log_event, reset_telemetry_runtime
+from sciona.types import (
     CandidateMatch,
     Declaration,
     MatchResult,
     PDGNode,
     VerificationResult,
 )
-from ageom.upsert_cdg import sanitize_cdg
+from sciona.upsert_cdg import sanitize_cdg
 
 
 # ---------------------------------------------------------------------------

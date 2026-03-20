@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.flow_benchmark import (
+from sciona.flow_benchmark import (
     default_flow_benchmark_cases,
     format_flow_benchmark_summary,
     run_flow_benchmark,

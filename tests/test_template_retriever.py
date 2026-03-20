@@ -6,16 +6,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ageom.architect.graph_alignment import GraphAlignmentScorer
-from ageom.architect.graph_retrieval import ExampleChild, ExampleDecomposition, ExampleEdge
-from ageom.architect.models import (
+from sciona.architect.graph_alignment import GraphAlignmentScorer
+from sciona.architect.graph_retrieval import ExampleChild, ExampleDecomposition, ExampleEdge
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.architect.template_retriever import TemplateMatch, TemplateRetriever
+from sciona.architect.template_retriever import TemplateMatch, TemplateRetriever
 
 
 def _make_node(

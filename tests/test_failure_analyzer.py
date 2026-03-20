@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from ageom.hunter.failure_analyzer import DeterministicFailureAnalyzer
-from ageom.hunter.prompts import ANALYZE_FAILURE_SYSTEM, ANALYZE_FAILURE_USER
+from sciona.hunter.failure_analyzer import DeterministicFailureAnalyzer
+from sciona.hunter.prompts import ANALYZE_FAILURE_SYSTEM, ANALYZE_FAILURE_USER
 
 
 class _FallbackLLM:

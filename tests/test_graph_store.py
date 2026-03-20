@@ -1,4 +1,4 @@
-"""Tests for ageom.graph_store — Cypher param generation, metadata extraction, idempotency.
+"""Tests for sciona.graph_store — Cypher param generation, metadata extraction, idempotency.
 
 All tests are pure-Python (no live Memgraph required).
 """
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from ageom.graph_store import (
+from sciona.graph_store import (
     build_atom_params,
     build_edge_params,
     build_port_params,

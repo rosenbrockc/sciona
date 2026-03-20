@@ -4,7 +4,7 @@ import json
 
 import numpy as np
 
-from ageom.principal.eval_spec import (
+from sciona.principal.eval_spec import (
     compute_evaluation_payload,
     load_evaluation_spec,
 )

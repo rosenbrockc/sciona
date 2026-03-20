@@ -1,6 +1,6 @@
 # Variant Families
 
-This repo supports family-specific Principal mutations through a small plugin-style interface in [ageom/principal/variant_mutation.py](/Users/conrad/personal/ageo-matcher/ageom/principal/variant_mutation.py).
+This repo supports family-specific Principal mutations through a small plugin-style interface in [sciona/principal/variant_mutation.py](/Users/conrad/personal/sciona/sciona/principal/variant_mutation.py).
 
 ## Goal
 
@@ -36,7 +36,7 @@ If a family returns `applied=False` with `allow_redecompose=False`, Principal st
 
 1. Create or identify a reusable scaffold family.
 2. Put the family-specific primitive declarations in a registry module if needed.
-3. Add a class in [ageom/principal/variant_mutation.py](/Users/conrad/personal/ageo-matcher/ageom/principal/variant_mutation.py) that:
+3. Add a class in [sciona/principal/variant_mutation.py](/Users/conrad/personal/sciona/sciona/principal/variant_mutation.py) that:
    - detects the family structurally from the CDG
    - swaps only semantically equivalent node variants
    - returns `applied=False` when no safe variant exists
@@ -87,8 +87,8 @@ How it works:
 The ledger bandit fires only after curated families have been tried. It always returns `allow_redecompose=True`, so the Principal can still fall through to time-travel re-decomposition if the bandit has no useful suggestion.
 
 Key files:
-- `ageom/principal/atom_ledger.py` — `AtomLedger`, `SlotSignature`, `compute_slot_signature`
-- `ageom/principal/variant_mutation.py` — `LedgerVariantFamily`
+- `sciona/principal/atom_ledger.py` — `AtomLedger`, `SlotSignature`, `compute_slot_signature`
+- `sciona/principal/variant_mutation.py` — `LedgerVariantFamily`
 
 ## Future Work
 

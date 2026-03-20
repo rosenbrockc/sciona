@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from ageom.ecosystem.fuzzing import (
+from sciona.ecosystem.fuzzing import (
     check_behavioral_equivalence,
     generate_boundary_inputs,
     generate_random_inputs,

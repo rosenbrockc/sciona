@@ -12,21 +12,21 @@ Covers:
 from __future__ import annotations
 
 
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     ConceptType,
     DependencyEdge,
     IOSpec,
     NodeStatus,
 )
-from ageom.ingester.emitter import (
+from sciona.ingester.emitter import (
     _MESSAGE_PASSING_CONCEPT_TYPES,
     _generate_message_passing_witness,
     generate_atom_wrappers,
     generate_ghost_witnesses,
 )
-from ageom.ingester.models import MacroAtomSpec
-from ageom.synthesizer.ghost_sim import (
+from sciona.ingester.models import MacroAtomSpec
+from sciona.synthesizer.ghost_sim import (
     GhostSimReport,
     _detect_message_passing_cycle,
 )
@@ -431,7 +431,7 @@ class TestGhostSimReportCyclicFields:
 
 class TestLLMRouterKey:
     def test_key_in_all_prompt_keys(self):
-        from ageom.llm_router import ALL_PROMPT_KEYS, INGESTER_FIX_MESSAGE_CYCLE
+        from sciona.llm_router import ALL_PROMPT_KEYS, INGESTER_FIX_MESSAGE_CYCLE
 
         assert INGESTER_FIX_MESSAGE_CYCLE in ALL_PROMPT_KEYS
         assert INGESTER_FIX_MESSAGE_CYCLE == "ingester_fix_message_cycle"
@@ -439,7 +439,7 @@ class TestLLMRouterKey:
 
 class TestConfigFields:
     def test_message_cycle_config_fields_exist(self):
-        from ageom.config import AgeomConfig
+        from sciona.config import AgeomConfig
 
         config = AgeomConfig()
         assert hasattr(config, "ingester_fix_message_cycle_llm_provider")
@@ -455,7 +455,7 @@ class TestConfigFields:
 
 class TestPrompts:
     def test_fix_message_cycle_prompts_exist(self):
-        from ageom.ingester.prompts import (
+        from sciona.ingester.prompts import (
             FIX_MESSAGE_CYCLE_SYSTEM,
             FIX_MESSAGE_CYCLE_USER,
         )
@@ -473,9 +473,9 @@ class TestPrompts:
 
 class TestGraphRouting:
     def test_route_after_ghost_to_message_cycle_repair(self):
-        from ageom.ingester.graph import route_after_ghost
-        from ageom.ingester.models import IngestionBundle
-        from ageom.architect.handoff import CDGExport
+        from sciona.ingester.graph import route_after_ghost
+        from sciona.ingester.models import IngestionBundle
+        from sciona.architect.handoff import CDGExport
 
         bundle = IngestionBundle(
             cdg=CDGExport(nodes=[], edges=[]),
@@ -492,9 +492,9 @@ class TestGraphRouting:
         assert route_after_ghost(state) == "repair_message_cycle"
 
     def test_route_after_ghost_normal_failure(self):
-        from ageom.ingester.graph import route_after_ghost
-        from ageom.ingester.models import IngestionBundle
-        from ageom.architect.handoff import CDGExport
+        from sciona.ingester.graph import route_after_ghost
+        from sciona.ingester.models import IngestionBundle
+        from sciona.architect.handoff import CDGExport
 
         bundle = IngestionBundle(
             cdg=CDGExport(nodes=[], edges=[]),

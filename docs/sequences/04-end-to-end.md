@@ -19,11 +19,11 @@ sequenceDiagram
     participant Extractor
 
     Note over User,Extractor: Prerequisites
-    User->>Index: ageom index build --prover lean4
+    User->>Index: sciona index build --prover lean4
     Note over Index: Extract declarations from Mathlib/Coq/Python<br/>Embed with UniXcoder, store in FAISS
 
     Note over User,Extractor: Pipeline Start
-    User->>Orchestrator: ageom run "Implement FFT-based spectral analysis"
+    User->>Orchestrator: sciona run "Implement FFT-based spectral analysis"
 
     rect rgb(59, 130, 246, 0.08)
         Note over Orchestrator,Catalog: Round 1: Decomposition
@@ -115,7 +115,7 @@ sequenceDiagram
 
 ## With Principal (optimised pipeline)
 
-When invoked via `ageom optimize`, the Principal wraps the above pipeline in a
+When invoked via `sciona optimize`, the Principal wraps the above pipeline in a
 meta-optimisation loop. See [05-principal.md](05-principal.md) for the detailed
 sequence diagram.
 

@@ -6,11 +6,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.shared_context import InMemorySharedContextStore
-from ageom.shared_context import SharedContextMetrics
-from ageom.hunter.state import HunterState
-from ageom.telemetry import get_runtime_run, reset_telemetry_runtime, start_run, telemetry_scope
-from ageom.types import (
+from sciona.shared_context import InMemorySharedContextStore
+from sciona.shared_context import SharedContextMetrics
+from sciona.hunter.state import HunterState
+from sciona.telemetry import get_runtime_run, reset_telemetry_runtime, start_run, telemetry_scope
+from sciona.types import (
     Declaration,
     PDGNode,
     Prover,
@@ -122,7 +122,7 @@ class TestHunterHappyPath:
     async def test_finds_correct_match_on_first_try(
         self, pdg_node, correct_decl, wrong_decl
     ):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         index = _make_mock_index([correct_decl, wrong_decl])
         oracle = _make_mock_oracle({"Nat.add_comm"})
@@ -139,7 +139,7 @@ class TestHunterHappyPath:
     async def test_records_hunter_metrics_in_telemetry(
         self, pdg_node, correct_decl, wrong_decl
     ):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         reset_telemetry_runtime()
         run_id = start_run("match", run_id="hunter-metrics")
@@ -174,7 +174,7 @@ class TestHunterRefinement:
 
     @pytest.mark.asyncio
     async def test_refines_and_finds_match(self, pdg_node, correct_decl, wrong_decl):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         call_count = 0
 
@@ -206,7 +206,7 @@ class TestHunterRefinement:
     async def test_failure_context_metrics_track_search_and_write(
         self, pdg_node, correct_decl, wrong_decl
     ):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         call_count = 0
 
@@ -253,7 +253,7 @@ class TestHunterBudgetExhaustion:
 
     @pytest.mark.asyncio
     async def test_exhausts_budget(self, pdg_node, wrong_decl):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         index = _make_mock_index([wrong_decl])
         oracle = _make_mock_oracle(set())  # Nothing verifies
@@ -274,7 +274,7 @@ class TestHunterNoCandidates:
 
     @pytest.mark.asyncio
     async def test_no_candidates(self, pdg_node):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         index = _make_mock_index([])
         oracle = _make_mock_oracle(set())
@@ -320,7 +320,7 @@ class _GrammarAwareLLM:
 class TestHunterSpeculativeLocal:
     @pytest.mark.asyncio
     async def test_uses_gbnf_and_query_batching(self, pdg_node, wrong_decl):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         search_calls = 0
 
@@ -381,7 +381,7 @@ class TestHunterSharedContext:
     async def test_writes_verified_match_to_shared_context(
         self, pdg_node, correct_decl, wrong_decl
     ):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         store = InMemorySharedContextStore()
         index = _make_mock_index([correct_decl, wrong_decl])
@@ -404,7 +404,7 @@ class TestHunterSharedContext:
 
     @pytest.mark.asyncio
     async def test_injects_shared_context_into_rank_prompt(self, pdg_node, wrong_decl):
-        from ageom.hunter.graph import HunterAgent
+        from sciona.hunter.graph import HunterAgent
 
         store = InMemorySharedContextStore()
         await store.put(

@@ -1,12 +1,12 @@
-"""Tests for Phase 3 code generation (ageom.ingester.emitter)."""
+"""Tests for Phase 3 code generation (sciona.ingester.emitter)."""
 
 from __future__ import annotations
 
 import ast
 
 
-from ageom.architect.models import ConceptType, DependencyEdge, IOSpec, NodeStatus
-from ageom.ingester.emitter import (
+from sciona.architect.models import ConceptType, DependencyEdge, IOSpec, NodeStatus
+from sciona.ingester.emitter import (
     build_cdg_export,
     build_match_results,
     emit_ingestion_bundle,
@@ -14,7 +14,7 @@ from ageom.ingester.emitter import (
     generate_ghost_witnesses,
     generate_state_models,
 )
-from ageom.ingester.models import (
+from sciona.ingester.models import (
     MacroAtomSpec,
     ProposedMacroPlan,
     StateModelSpec,
@@ -224,7 +224,7 @@ class TestBuildMatchResults:
         cdg = build_cdg_export(plan, "TestClass")
         results = build_match_results(cdg, "")
 
-        from ageom.types import VerificationLevel
+        from sciona.types import VerificationLevel
 
         for mr in results:
             assert (

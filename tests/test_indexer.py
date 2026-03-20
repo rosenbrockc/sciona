@@ -11,8 +11,8 @@ import tempfile
 import numpy as np
 import pytest
 
-from ageom.indexer.models import IndexEntry, IndexMetadata
-from ageom.types import Declaration, Prover
+from sciona.indexer.models import IndexEntry, IndexMetadata
+from sciona.types import Declaration, Prover
 
 
 class TestIndexEntry:
@@ -52,7 +52,7 @@ class TestFAISSStore:
     @pytest.fixture
     def store(self):
         pytest.importorskip("faiss")
-        from ageom.indexer.faiss_store import FAISSStore
+        from sciona.indexer.faiss_store import FAISSStore
 
         return FAISSStore(dim=8)
 
@@ -111,7 +111,7 @@ class TestFAISSStore:
         with tempfile.TemporaryDirectory() as tmpdir:
             store.save(tmpdir)
 
-            from ageom.indexer.faiss_store import FAISSStore
+            from sciona.indexer.faiss_store import FAISSStore
 
             loaded = FAISSStore.load(tmpdir)
             assert loaded.size == 5
@@ -126,7 +126,7 @@ class TestFAISSStore:
 
 class TestEmbedderFactory:
     def test_create_fastembed_embedder_uses_local_fastembed_backend(self, monkeypatch):
-        import ageom.indexer.embedder as embedder_mod
+        import sciona.indexer.embedder as embedder_mod
 
         class _FakeTextEmbedding:
             def __init__(self, model_name: str):
@@ -153,7 +153,7 @@ class TestEmbedderFactory:
         assert abs(float(np.linalg.norm(vec)) - 1.0) < 1e-6
 
     def test_create_unixcoder_embedder_uses_guard_before_transformers_import(self, monkeypatch):
-        import ageom.indexer.embedder as embedder_mod
+        import sciona.indexer.embedder as embedder_mod
 
         order: list[str] = []
 
@@ -209,7 +209,7 @@ class TestUniXcoderEmbedder:
                 "real UniXcoder integration is unstable with juliacall+torch on macOS; "
                 "covered by import-order unit test and end-to-end runtime checks"
             )
-        from ageom.indexer.embedder import UniXcoderEmbedder
+        from sciona.indexer.embedder import UniXcoderEmbedder
 
         return UniXcoderEmbedder()
 

@@ -25,7 +25,7 @@ The pipeline supports graduated tiers so the overhead scales with the task:
 | `single_agent` | Deterministic planner with partial acceptance and selective re-decomposition | Most production tasks |
 | `verified` | Full multi-round orchestration with Architect refinement | High-correctness tasks |
 
-Set via `--mode <mode>` or `AGEOM_EXECUTION_MODE` in `.env`.
+Set via `--mode <mode>` or `SCIONA_EXECUTION_MODE` in `.env`.
 
 ## How it works
 
@@ -74,40 +74,40 @@ pip install -e ".[all]"
 - **Lean 4**: Install [elan](https://github.com/leanprover/elan) and run `lean-explore data fetch` for Mathlib data
 - **Coq**: Install via opam with your project's dependencies
 - **LLM**: Configure one provider in `.env`
-  - Anthropic: `AGEOM_LLM_PROVIDER=anthropic` + `AGEOM_ANTHROPIC_API_KEY`
-  - Codex: `AGEOM_LLM_PROVIDER=codex` + `AGEOM_OPENAI_API_KEY`
-  - Local llama.cpp (Hunter default): `AGEOM_HUNTER_LLM_PROVIDER=llama_cpp`
+  - Anthropic: `SCIONA_LLM_PROVIDER=anthropic` + `SCIONA_ANTHROPIC_API_KEY`
+  - Codex: `SCIONA_LLM_PROVIDER=codex` + `SCIONA_OPENAI_API_KEY`
+  - Local llama.cpp (Hunter default): `SCIONA_HUNTER_LLM_PROVIDER=llama_cpp`
 
 ## Configuration
 
-All settings are read from `.env` (prefixed with `AGEOM_`) via pydantic-settings:
+All settings are read from `.env` (prefixed with `SCIONA_`) via pydantic-settings:
 
 ```bash
 # .env
-AGEOM_INDEX_DIR=data/index
-AGEOM_LLM_PROVIDER=anthropic
-AGEOM_ANTHROPIC_API_KEY=sk-ant-...
-AGEOM_LLM_MODEL=claude-sonnet-4-5-20250929
+SCIONA_INDEX_DIR=data/index
+SCIONA_LLM_PROVIDER=anthropic
+SCIONA_ANTHROPIC_API_KEY=sk-ant-...
+SCIONA_LLM_MODEL=claude-sonnet-4-5-20250929
 # For Codex/OpenAI provider:
-# AGEOM_OPENAI_API_KEY=sk-...
-# AGEOM_LLM_MODEL=codex-mini-latest
+# SCIONA_OPENAI_API_KEY=sk-...
+# SCIONA_LLM_MODEL=codex-mini-latest
 # Hunter local defaults (GBNF + speculative retrieval):
-AGEOM_HUNTER_LLM_PROVIDER=llama_cpp
-AGEOM_HUNTER_LLM_MODEL=llama-3.1-8b-instruct
-AGEOM_LLAMA_CPP_BASE_URL=http://127.0.0.1:8080/v1
-AGEOM_HUNTER_MODE=speculative_local
-AGEOM_HUNTER_USE_GBNF=true
-AGEOM_HUNTER_MAX_ITERATIONS=5
+SCIONA_HUNTER_LLM_PROVIDER=llama_cpp
+SCIONA_HUNTER_LLM_MODEL=llama-3.1-8b-instruct
+SCIONA_LLAMA_CPP_BASE_URL=http://127.0.0.1:8080/v1
+SCIONA_HUNTER_MODE=speculative_local
+SCIONA_HUNTER_USE_GBNF=true
+SCIONA_HUNTER_MAX_ITERATIONS=5
 
 # PostgreSQL persistence (optional -- omit for in-memory only)
 # Used by Architect checkpoints, shared context, and telemetry
-AGEOM_POSTGRES_URI=postgresql://ageom:ageom_dev@localhost:5433/ageom_architect
+SCIONA_POSTGRES_URI=postgresql://sciona:sciona_dev@localhost:5433/sciona_architect
 
 # Telemetry storage: "auto" (Postgres when URI set), "postgres", or "file"
-AGEOM_TELEMETRY_BACKEND=auto
+SCIONA_TELEMETRY_BACKEND=auto
 ```
 
-CLI flags override `.env` when provided. See `ageom/config.py` for all options.
+CLI flags override `.env` when provided. See `sciona/config.py` for all options.
 
 ### PostgreSQL setup (optional)
 
@@ -115,10 +115,10 @@ PostgreSQL is used for Architect checkpoint persistence, shared context, and pip
 
 ```bash
 docker compose up -d postgres
-# Default URI: postgresql://ageom:ageom_dev@localhost:5433/ageom_architect
+# Default URI: postgresql://sciona:sciona_dev@localhost:5433/sciona_architect
 ```
 
-Tables are created automatically on first use. Set `AGEOM_TELEMETRY_BACKEND=file` to disable Postgres telemetry even when a URI is configured.
+Tables are created automatically on first use. Set `SCIONA_TELEMETRY_BACKEND=file` to disable Postgres telemetry even when a URI is configured.
 
 ## Usage
 
@@ -126,36 +126,36 @@ Tables are created automatically on first use. Set `AGEOM_TELEMETRY_BACKEND=file
 
 ```bash
 # Index Lean 4 / Mathlib declarations
-ageom index build --prover lean4
+sciona index build --prover lean4
 
 # Index a Coq project
-ageom index build --prover coq --path ./my-coq-project
+sciona index build --prover coq --path ./my-coq-project
 ```
 
 ### Decompose a goal (Round 1)
 
 ```bash
 # Basic decomposition (in-memory checkpointing)
-ageom decompose "Implement merge sort" --no-persist --output cdg.json
+sciona decompose "Implement merge sort" --no-persist --output cdg.json
 
 # Use Codex for Round 1 (override .env)
-ageom decompose "Implement merge sort" --llm-provider codex --llm-model codex-mini-latest --no-persist
+sciona decompose "Implement merge sort" --llm-provider codex --llm-model codex-mini-latest --no-persist
 
 # With a specific thread ID
-ageom decompose "Sort and search" --thread-id my-run-01
+sciona decompose "Sort and search" --thread-id my-run-01
 
 # View checkpoint history for a thread
-ageom history my-run-01
+sciona history my-run-01
 ```
 
 ### Optimize a goal (Principal)
 
 ```bash
 # Run the NAS-style optimisation loop over a benchmark
-ageom optimize "Implement merge sort" --benchmark data/bench.json --metric latency --trials 20
+sciona optimize "Implement merge sort" --benchmark data/bench.json --metric latency --trials 20
 
 # With Codex and a custom timeout
-ageom optimize "FFT spectral analysis" --benchmark data/fft_bench.json \
+sciona optimize "FFT spectral analysis" --benchmark data/fft_bench.json \
   --metric precision --trials 50 --timeout 300 \
   --llm-provider codex --llm-model codex-mini-latest
 ```
@@ -164,16 +164,16 @@ ageom optimize "FFT spectral analysis" --benchmark data/fft_bench.json \
 
 ```bash
 # Single statement
-ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4
+sciona match --statement "forall n m : Nat, n + m = m + n" --prover lean4
 
 # Use Codex for Round 2 (override .env)
-ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4 --llm-provider codex --llm-model codex-mini-latest
+sciona match --statement "forall n m : Nat, n + m = m + n" --prover lean4 --llm-provider codex --llm-model codex-mini-latest
 
 # Use local llama.cpp for Round 2 (default if configured in .env)
-ageom match --statement "forall n m : Nat, n + m = m + n" --prover lean4 --llm-provider llama_cpp --llm-model llama-3.1-8b-instruct
+sciona match --statement "forall n m : Nat, n + m = m + n" --prover lean4 --llm-provider llama_cpp --llm-model llama-3.1-8b-instruct
 
 # Batch from a PDG file
-ageom match --pdg-file predicates.json --prover lean4
+sciona match --pdg-file predicates.json --prover lean4
 ```
 
 The PDG file is a JSON array:
@@ -194,13 +194,13 @@ The PDG file is a JSON array:
 pip install -e ".[dev]"
 pytest                     # run all tests (skips slow/model-download tests)
 pytest -m slow             # run slow tests (requires transformers + torch)
-mypy ageom/
+mypy sciona/
 ```
 
 ## Project structure
 
 ```
-ageom/
+sciona/
   types.py          Shared domain types (Declaration, PDGNode, MatchResult, ...)
   protocols.py      Protocol interfaces (SemanticIndex, ProofEnvironment, ...)
   config.py         AgeomConfig (pydantic-settings, reads .env)

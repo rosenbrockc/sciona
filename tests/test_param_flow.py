@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from ageom.principal.graph import PrincipalState
-from ageom.principal.models import OptimizationMetric
-from ageom.synthesizer.models import ExportBundle
+from sciona.principal.graph import PrincipalState
+from sciona.principal.models import OptimizationMetric
+from sciona.synthesizer.models import ExportBundle
 
 
 class TestExportBundleParameterAssignments:
@@ -67,8 +67,8 @@ class TestEvaluatorParamsFlag:
         """Verify that --params is added to subprocess command when assignments present."""
         from unittest.mock import AsyncMock, patch
 
-        from ageom.principal.evaluator import ExecutionSandbox
-        from ageom.principal.models import BenchmarkResult
+        from sciona.principal.evaluator import ExecutionSandbox
+        from sciona.principal.models import BenchmarkResult
 
         # Create a minimal artifact
         artifact = tmp_path / "artifact.py"
@@ -122,7 +122,7 @@ class TestEvaluatorParamsFlag:
         """No --params flag when parameter_assignments is empty."""
         from unittest.mock import AsyncMock, patch
 
-        from ageom.principal.evaluator import ExecutionSandbox
+        from sciona.principal.evaluator import ExecutionSandbox
 
         artifact = tmp_path / "artifact.py"
         artifact.write_text("print('ok')")

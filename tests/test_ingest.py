@@ -3,7 +3,7 @@
 from pathlib import Path
 from textwrap import dedent
 
-from ageom.architect.models import ConceptType
+from sciona.architect.models import ConceptType
 
 
 class TestIngestCLRS:
@@ -108,7 +108,7 @@ class TestIngestCLRS:
         return clrs_root
 
     def test_ingest_produces_primitives(self, tmp_path):
-        from ageom.architect.ingest_clrs import ingest_clrs
+        from sciona.architect.ingest_clrs import ingest_clrs
 
         repo = self._create_mock_clrs_repo(tmp_path)
         catalog = ingest_clrs(repo)
@@ -117,7 +117,7 @@ class TestIngestCLRS:
         assert catalog.size >= 5
 
     def test_sorting_algorithms_categorized(self, tmp_path):
-        from ageom.architect.ingest_clrs import ingest_clrs
+        from sciona.architect.ingest_clrs import ingest_clrs
 
         repo = self._create_mock_clrs_repo(tmp_path)
         catalog = ingest_clrs(repo)
@@ -129,7 +129,7 @@ class TestIngestCLRS:
         assert insertion.category in (ConceptType.SORTING, ConceptType.CUSTOM)
 
     def test_graph_algorithms_categorized(self, tmp_path):
-        from ageom.architect.ingest_clrs import ingest_clrs
+        from sciona.architect.ingest_clrs import ingest_clrs
 
         repo = self._create_mock_clrs_repo(tmp_path)
         catalog = ingest_clrs(repo)
@@ -139,7 +139,7 @@ class TestIngestCLRS:
         assert bfs.source == "clrs-30"
 
     def test_io_specs_extracted(self, tmp_path):
-        from ageom.architect.ingest_clrs import ingest_clrs
+        from sciona.architect.ingest_clrs import ingest_clrs
 
         repo = self._create_mock_clrs_repo(tmp_path)
         catalog = ingest_clrs(repo)
@@ -150,7 +150,7 @@ class TestIngestCLRS:
         assert len(dijkstra.inputs) >= 1 or len(dijkstra.outputs) >= 1
 
     def test_empty_path_returns_empty_catalog(self, tmp_path):
-        from ageom.architect.ingest_clrs import ingest_clrs
+        from sciona.architect.ingest_clrs import ingest_clrs
 
         catalog = ingest_clrs(tmp_path / "nonexistent")
         assert catalog.size == 0
@@ -195,7 +195,7 @@ class TestIngestCoq100:
         return repo
 
     def test_ingest_produces_primitives(self, tmp_path):
-        from ageom.architect.ingest_coq100 import ingest_coq100
+        from sciona.architect.ingest_coq100 import ingest_coq100
 
         repo = self._create_mock_coq100_repo(tmp_path)
         catalog = ingest_coq100(repo)
@@ -203,7 +203,7 @@ class TestIngestCoq100:
         assert catalog.size == 10
 
     def test_theorem_classification(self, tmp_path):
-        from ageom.architect.ingest_coq100 import ingest_coq100
+        from sciona.architect.ingest_coq100 import ingest_coq100
 
         repo = self._create_mock_coq100_repo(tmp_path)
         catalog = ingest_coq100(repo)
@@ -224,7 +224,7 @@ class TestIngestCoq100:
         assert binom.category == ConceptType.COMBINATORICS
 
     def test_type_signatures_populated(self, tmp_path):
-        from ageom.architect.ingest_coq100 import ingest_coq100
+        from sciona.architect.ingest_coq100 import ingest_coq100
 
         repo = self._create_mock_coq100_repo(tmp_path)
         catalog = ingest_coq100(repo)
@@ -235,7 +235,7 @@ class TestIngestCoq100:
         assert "forall" in thm1.type_signature
 
     def test_source_is_coq_100(self, tmp_path):
-        from ageom.architect.ingest_coq100 import ingest_coq100
+        from sciona.architect.ingest_coq100 import ingest_coq100
 
         repo = self._create_mock_coq100_repo(tmp_path)
         catalog = ingest_coq100(repo)
@@ -244,7 +244,7 @@ class TestIngestCoq100:
             assert prim.source == "coq-100-theorems"
 
     def test_empty_repo_returns_empty(self, tmp_path):
-        from ageom.architect.ingest_coq100 import ingest_coq100
+        from sciona.architect.ingest_coq100 import ingest_coq100
 
         repo = tmp_path / "empty_repo"
         repo.mkdir()

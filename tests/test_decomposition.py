@@ -7,12 +7,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
-from ageom.architect.deterministic_decompose import (
+from sciona.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+from sciona.architect.deterministic_decompose import (
     DeterministicRewriteError,
     build_deterministic_decomposition,
 )
-from ageom.architect.models import (
+from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
     ConceptType,
@@ -20,8 +20,8 @@ from ageom.architect.models import (
     IOSpec,
     NodeStatus,
 )
-from ageom.architect.state import DecompositionState, _merge_nodes
-from ageom.shared_context import InMemorySharedContextStore, SharedContextMetrics
+from sciona.architect.state import DecompositionState, _merge_nodes
+from sciona.shared_context import InMemorySharedContextStore, SharedContextMetrics
 
 # ---------------------------------------------------------------------------
 # Mock factories
@@ -794,7 +794,7 @@ class TestSelectStrategy:
 
     @pytest.mark.asyncio
     async def test_picks_paradigm_and_instantiates_skeleton(self):
-        from ageom.architect.nodes import select_strategy
+        from sciona.architect.nodes import select_strategy
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -817,7 +817,7 @@ class TestSelectStrategy:
             "error": "",
         }
 
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.state import DecompositionDeps
 
         deps = DecompositionDeps(
             catalog=catalog,
@@ -842,7 +842,7 @@ class TestSelectStrategy:
     @pytest.mark.asyncio
     async def test_fallback_on_parse_error(self):
         """JSON parse failure falls back to CUSTOM paradigm."""
-        from ageom.architect.nodes import select_strategy
+        from sciona.architect.nodes import select_strategy
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -865,7 +865,7 @@ class TestSelectStrategy:
             "error": "",
         }
 
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.state import DecompositionDeps
 
         deps = DecompositionDeps(
             catalog=catalog,
@@ -886,8 +886,8 @@ class TestSelectStrategy:
 
     @pytest.mark.asyncio
     async def test_signal_transform_skeleton_nodes_bind_to_builtin_primitives(self):
-        from ageom.architect.nodes import select_strategy
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import select_strategy
+        from sciona.architect.state import DecompositionDeps
 
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -945,25 +945,25 @@ class TestRouteAfterCritic:
     """Test the 4 routing cases for route_after_critic."""
 
     def test_retry_on_failure_under_limit(self):
-        from ageom.architect.nodes import route_after_critic
+        from sciona.architect.nodes import route_after_critic
 
         state = {"critique_passed": False, "critique_retries": 1}
         assert route_after_critic(state) == "retry_decompose"
 
     def test_block_node_on_max_retries(self):
-        from ageom.architect.nodes import route_after_critic
+        from sciona.architect.nodes import route_after_critic
 
         state = {"critique_passed": False, "critique_retries": 3}
         assert route_after_critic(state) == "block_node"
 
     def test_next_node_on_pass(self):
-        from ageom.architect.nodes import route_after_critic
+        from sciona.architect.nodes import route_after_critic
 
         state = {"critique_passed": True, "critique_retries": 0}
         assert route_after_critic(state) == "next_node"
 
     def test_next_node_on_pass_with_retries(self):
-        from ageom.architect.nodes import route_after_critic
+        from sciona.architect.nodes import route_after_critic
 
         state = {"critique_passed": True, "critique_retries": 2}
         assert route_after_critic(state) == "next_node"
@@ -973,19 +973,19 @@ class TestRouteAfterAdvance:
     """Test route_after_advance routing."""
 
     def test_end_when_done(self):
-        from ageom.architect.nodes import route_after_advance
+        from sciona.architect.nodes import route_after_advance
 
         state = {"done": True, "pending_node_ids": []}
         assert route_after_advance(state) == "end"
 
     def test_end_when_no_pending(self):
-        from ageom.architect.nodes import route_after_advance
+        from sciona.architect.nodes import route_after_advance
 
         state = {"done": False, "pending_node_ids": []}
         assert route_after_advance(state) == "end"
 
     def test_decompose_when_pending(self):
-        from ageom.architect.nodes import route_after_advance
+        from sciona.architect.nodes import route_after_advance
 
         state = {"done": False, "pending_node_ids": ["n1"]}
         assert route_after_advance(state) == "decompose"
@@ -996,7 +996,7 @@ class TestDecompositionHappyPath:
 
     @pytest.mark.asyncio
     async def test_full_decomposition(self):
-        from ageom.architect.graph import DecompositionAgent
+        from sciona.architect.graph import DecompositionAgent
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1033,7 +1033,7 @@ class TestCritiqueRejection:
 
     @pytest.mark.asyncio
     async def test_retry_then_approve(self):
-        from ageom.architect.graph import DecompositionAgent
+        from sciona.architect.graph import DecompositionAgent
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1145,7 +1145,7 @@ class TestCritiqueRejection:
 class TestBlockedDecomposition:
     @pytest.mark.asyncio
     async def test_agent_metadata_marks_blocked_decomposition(self):
-        from ageom.architect.graph import DecompositionAgent
+        from sciona.architect.graph import DecompositionAgent
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1204,7 +1204,7 @@ class TestBlockedDecomposition:
     async def test_heart_rate_goal_uses_skeleton_when_variant_matched(self):
         """When the LLM selects bandpass_hr_detection variant, the skeleton
         covers the entire goal — no decompose/critique loop needed."""
-        from ageom.architect.graph import DecompositionAgent
+        from sciona.architect.graph import DecompositionAgent
 
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -1276,8 +1276,8 @@ class TestMaxDepth:
 
     @pytest.mark.asyncio
     async def test_depth_violation_rejected(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1345,8 +1345,8 @@ class TestCritiqueHardening:
 
     @pytest.mark.asyncio
     async def test_deterministic_only_critique_skips_llm_when_disabled(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1428,8 +1428,8 @@ class TestCritiqueHardening:
 
     @pytest.mark.asyncio
     async def test_malformed_critique_schema_fails_open(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1500,8 +1500,8 @@ class TestCritiqueHardening:
 
     @pytest.mark.asyncio
     async def test_deterministic_critique_rejects_uncovered_parent_outputs(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1565,8 +1565,8 @@ class TestCritiqueHardening:
 
     @pytest.mark.asyncio
     async def test_deterministic_critique_rejects_duplicate_children(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1630,7 +1630,7 @@ class TestCritiqueHardening:
 
     @pytest.mark.asyncio
     async def test_prepare_retry_rejects_prior_atomic_children(self):
-        from ageom.architect.nodes import prepare_retry
+        from sciona.architect.nodes import prepare_retry
 
         parent = AlgorithmicNode(
             node_id="p",
@@ -1685,7 +1685,7 @@ class TestCritiqueHardening:
 
     @pytest.mark.asyncio
     async def test_block_node_discards_descendants_and_sets_error(self):
-        from ageom.architect.nodes import block_node
+        from sciona.architect.nodes import block_node
 
         parent = AlgorithmicNode(
             node_id="p",
@@ -1745,8 +1745,8 @@ class TestCritiqueHardening:
 class TestSharedContext:
     @pytest.mark.asyncio
     async def test_select_strategy_injects_and_writes_shared_context(self):
-        from ageom.architect.nodes import select_strategy
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import select_strategy
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1804,8 +1804,8 @@ class TestSharedContext:
 
     @pytest.mark.asyncio
     async def test_decompose_node_injects_and_writes_shared_context(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1906,8 +1906,8 @@ class TestSharedContext:
 
     @pytest.mark.asyncio
     async def test_decompose_node_injects_template_context_from_shared_namespace(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -1986,8 +1986,8 @@ class TestSharedContext:
 
     @pytest.mark.asyncio
     async def test_decompose_prompt_requests_conceptual_structure_only(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -2041,9 +2041,9 @@ class TestSharedContext:
 
     @pytest.mark.asyncio
     async def test_decompose_node_injects_failure_context_from_shared_namespace(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
-        from ageom.shared_context import SharedContextMetrics
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
+        from sciona.shared_context import SharedContextMetrics
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -2119,9 +2119,9 @@ class TestSharedContext:
 
     @pytest.mark.asyncio
     async def test_critique_rejection_writes_failure_context_to_shared_namespace(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
-        from ageom.shared_context import SharedContextMetrics
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
+        from sciona.shared_context import SharedContextMetrics
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -2187,8 +2187,8 @@ class TestSharedContext:
 class TestDeterministicDecompose:
     @pytest.mark.asyncio
     async def test_conceptual_payload_gets_deterministic_ports_and_edges(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -2275,8 +2275,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_signal_filter_uses_deterministic_fallback_steps(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -2339,8 +2339,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_signal_filter_hints_resolve_to_atomic_builtins(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -2405,8 +2405,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_signal_transform_hints_resolve_to_atomic_builtins(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -2698,8 +2698,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_critique_prompt_includes_matched_primitives(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -2781,8 +2781,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_approved_critique_does_not_downgrade_flagged_atomic_children(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -2861,8 +2861,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_deterministic_critique_rejects_weak_atomic_token_overlap_binding(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -2937,8 +2937,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_decompose_uses_lexical_primitive_fallback_when_semantic_empty(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         # Force semantic/category retrieval path to return empty.
@@ -3005,8 +3005,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_critique_rejects_any_ports_when_parent_is_typed(self):
-        from ageom.architect.nodes import critique_decomposition
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import critique_decomposition
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -3079,8 +3079,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_decompose_node_returns_rewrite_error_for_invalid_primitive_shape(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()
@@ -3143,8 +3143,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_decompose_node_history_records_rewrite_actions(self):
-        from ageom.architect.nodes import decompose_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = PrimitiveCatalog()
         seed_builtin_primitives(catalog)
@@ -3208,8 +3208,8 @@ class TestDeterministicDecompose:
 
     @pytest.mark.asyncio
     async def test_advance_node_writes_successful_template_to_shared_context(self):
-        from ageom.architect.nodes import advance_node
-        from ageom.architect.state import DecompositionDeps
+        from sciona.architect.nodes import advance_node
+        from sciona.architect.state import DecompositionDeps
 
         catalog = _make_catalog()
         skill_index = _make_skill_index()

@@ -5,18 +5,18 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ageom.architect.handoff import CDGExport
-from ageom.architect.models import AlgorithmicNode, ConceptType, IOSpec, NodeStatus
-from ageom.judge.models import CompilerFeedback
-from ageom.services import (
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, ConceptType, IOSpec, NodeStatus
+from sciona.judge.models import CompilerFeedback
+from sciona.services import (
     SynthesizerAssembleAndCheckRequest,
     SynthesizerAssembleRequest,
     SynthesizerCompileRequest,
     SynthesizerRepairRequest,
     SynthesizerService,
 )
-from ageom.synthesizer.models import AssemblyResult, SkeletonFile, SynthesisResult
-from ageom.types import CandidateMatch, Declaration, MatchResult, PDGNode, Prover, VerificationResult
+from sciona.synthesizer.models import AssemblyResult, SkeletonFile, SynthesisResult
+from sciona.types import CandidateMatch, Declaration, MatchResult, PDGNode, Prover, VerificationResult
 
 
 def _sample_cdg() -> CDGExport:

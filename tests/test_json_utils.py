@@ -1,4 +1,4 @@
-"""Tests for ageom.json_utils.extract_json."""
+"""Tests for sciona.json_utils.extract_json."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from ageom.json_utils import extract_json
+from sciona.json_utils import extract_json
 
 
 class TestExtractJsonFastPath:

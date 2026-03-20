@@ -6,7 +6,7 @@ from fractions import Fraction
 
 import pytest
 
-from ageom.provenance.shapley import compute_shapley_values
+from sciona.provenance.shapley import compute_shapley_values
 
 
 class TestSingleNode:

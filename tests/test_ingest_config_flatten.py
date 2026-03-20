@@ -14,10 +14,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ageom.architect.models import NodeStatus
-from ageom.ingester.extractor import extract_data_flow
-from ageom.ingester.graph import IngesterAgent
-from ageom.ingester.models import IngestionBundle
+from sciona.architect.models import NodeStatus
+from sciona.ingester.extractor import extract_data_flow
+from sciona.ingester.graph import IngesterAgent
+from sciona.ingester.models import IngestionBundle
 
 # ---------------------------------------------------------------------------
 # Mock class source
@@ -173,7 +173,7 @@ class TestOptionalCDGNode:
         ]
 
         mock_ghost_mod = MagicMock()
-        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+        with patch.dict("sys.modules", {"sciona.synthesizer.ghost_sim": mock_ghost_mod}):
             mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
                 passed=True, ran=True, error=""
             )
@@ -194,7 +194,7 @@ class TestOptionalCDGNode:
         ]
 
         mock_ghost_mod = MagicMock()
-        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+        with patch.dict("sys.modules", {"sciona.synthesizer.ghost_sim": mock_ghost_mod}):
             mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
                 passed=True, ran=True, error=""
             )
@@ -218,7 +218,7 @@ class TestOptionalCDGNode:
         ]
 
         mock_ghost_mod = MagicMock()
-        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+        with patch.dict("sys.modules", {"sciona.synthesizer.ghost_sim": mock_ghost_mod}):
             mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
                 passed=True, ran=True, error=""
             )
@@ -260,7 +260,7 @@ class TestMypyRepairLoop:
         ]
 
         mock_ghost_mod = MagicMock()
-        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+        with patch.dict("sys.modules", {"sciona.synthesizer.ghost_sim": mock_ghost_mod}):
             mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
                 passed=True, ran=True, error=""
             )
@@ -295,7 +295,7 @@ class TestMypyRepairLoop:
         ]
 
         mock_ghost_mod = MagicMock()
-        with patch.dict("sys.modules", {"ageom.synthesizer.ghost_sim": mock_ghost_mod}):
+        with patch.dict("sys.modules", {"sciona.synthesizer.ghost_sim": mock_ghost_mod}):
             mock_ghost_mod.run_ghost_simulation.return_value = MagicMock(
                 passed=True, ran=True, error=""
             )

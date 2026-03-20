@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ageom.ecosystem.dashboard import (
+from sciona.ecosystem.dashboard import (
     compute_h_index,
     compute_impact_factor,
     estimate_compute_preserved,

@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 
 
 # ---------------------------------------------------------------------------
-# Known valid concept types (from ageom.architect.models.ConceptType)
+# Known valid concept types (from sciona.architect.models.ConceptType)
 # ---------------------------------------------------------------------------
 VALID_CONCEPT_TYPES = {
     "sorting", "searching", "divide_and_conquer", "greedy",

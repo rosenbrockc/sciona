@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from ageom.hunter.candidate_ranker import HeuristicCandidateRanker
-from ageom.hunter.prompts import SCORE_CANDIDATES_SYSTEM, SCORE_CANDIDATES_USER
+from sciona.hunter.candidate_ranker import HeuristicCandidateRanker
+from sciona.hunter.prompts import SCORE_CANDIDATES_SYSTEM, SCORE_CANDIDATES_USER
 
 
 class _FallbackLLM:
