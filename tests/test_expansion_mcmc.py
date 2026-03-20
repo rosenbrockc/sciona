@@ -16,7 +16,7 @@ from sciona.principal.expansion import ExpansionContext, ExpansionEngine
 from sciona.principal.expansion_rules.mcmc import (
     MCMCExpansionRuleSet,
 )
-from sciona.runtime_mcmc import (
+from sciona.expansion_atoms.runtime_mcmc import (
     compute_convergence_diagnostics,
     compute_dual_averaging_step_size,
     detect_divergent_transitions,

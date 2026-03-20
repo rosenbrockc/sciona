@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, AlgorithmicPrimitive, NodeStatus
-from sciona.signal_event_rate_registry import (
+from sciona.expansion_atoms.signal_event_rate_registry import (
     SIGNAL_EVENT_RATE_DECLARATIONS,
     next_signal_event_rate_variant,
 )

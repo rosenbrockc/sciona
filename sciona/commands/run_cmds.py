@@ -29,7 +29,7 @@ from sciona.commands._helpers import (
     _warm_llm_if_supported,
     _write_shared_context_metrics_file,
 )
-from sciona.signal_event_rate_registry import SIGNAL_EVENT_RATE_DECLARATIONS
+from sciona.expansion_atoms.signal_event_rate_registry import SIGNAL_EVENT_RATE_DECLARATIONS
 
 if TYPE_CHECKING:
     from sciona.types import Prover
@@ -78,7 +78,7 @@ def _build_signal_event_rate_match_results(cdg: Any, prover: "Prover"):
             type_signature=type_signature,
             docstring=docstring,
             conceptual_summary=node.description,
-            source_lib="sciona.runtime_signal_event_rate",
+            source_lib="sciona.expansion_atoms.runtime_signal_event_rate",
             prover=prover,
         )
         candidate = CandidateMatch(

@@ -16,7 +16,7 @@ from sciona.principal.expansion import ExpansionContext, ExpansionEngine
 from sciona.principal.expansion_rules.sequential_filter import (
     SequentialFilterExpansionRuleSet,
 )
-from sciona.runtime_sequential_filter import (
+from sciona.expansion_atoms.runtime_sequential_filter import (
     adapt_process_noise,
     check_observability,
     detect_filter_divergence,

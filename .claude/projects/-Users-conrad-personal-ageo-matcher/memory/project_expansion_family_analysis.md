@@ -9,9 +9,9 @@ type: project
 | Paradigm | Expansion richness | Key patterns | Status |
 |---|---|---|---|
 | Signal Event Rate | Very high | SQI, jump removal, outlier rejection | Done (4 rules, 3 diagnostics) |
-| Sequential Filter (Kalman/Particle) | Very high | Observability checks, innovation monitoring, adaptive noise estimation, filter divergence detection | In progress |
-| MCMC/HMC | Very high | Warmup adaptation, convergence diagnostics (R-hat, ESS), divergence detection, mass matrix tuning | Not started |
-| Graph Traversal | High | Cycle detection, connectivity pre-check, visited-set compaction | Not started |
+| Sequential Filter (Kalman/Particle) | Very high | Observability checks, innovation monitoring, adaptive noise estimation, filter divergence detection | Done (4 rules, 3 diagnostics) |
+| MCMC/HMC | Very high | Warmup adaptation, convergence diagnostics (R-hat, ESS), divergence detection, mass matrix tuning | Done (4 rules, 4 diagnostics) |
+| Graph Traversal | High | Cycle detection, connectivity pre-check, visited-set compaction, frontier overflow detection | Done (4 rules, 4 diagnostics) |
 | Dynamic Programming | High | Sparsification, constraint pruning, space-time tradeoff selection | Not started |
 | Signal Filter | Moderate | Stability validation, pre-warping, cascading | Not started |
 | Signal Transform | Moderate | Windowing, zero-padding, spectral leakage correction | Not started |

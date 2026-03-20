@@ -279,21 +279,21 @@ class TestCertificate:
             "from __future__ import annotations\n"
             "import sciona\n"
             "def foo(x):\n"
-            "    return sciona.runtime_signal_event_rate.filter_signal_for_detection(x, 128.0)\n"
+            "    return sciona.expansion_atoms.runtime_signal_event_rate.filter_signal_for_detection(x, 128.0)\n"
         )
         prepared = _prepare_python_package_source(
             source,
-            required_modules=["sciona.runtime_signal_event_rate"],
+            required_modules=["sciona.expansion_atoms.runtime_signal_event_rate"],
         )
-        assert "import sciona.runtime_signal_event_rate" in prepared
+        assert "import sciona.expansion_atoms.runtime_signal_event_rate" in prepared
 
     def test_collect_dotted_call_modules_from_qualified_calls(self):
         source = (
             "import sciona\n"
             "def foo(x, fs):\n"
-            "    return sciona.runtime_signal_event_rate.filter_signal_for_detection(x, fs)\n"
+            "    return sciona.expansion_atoms.runtime_signal_event_rate.filter_signal_for_detection(x, fs)\n"
         )
-        assert _collect_dotted_call_modules(source) == ["sciona.runtime_signal_event_rate"]
+        assert _collect_dotted_call_modules(source) == ["sciona.expansion_atoms.runtime_signal_event_rate"]
 
     def test_generate_pipeline_py_is_typed(self):
         pipeline = generate_pipeline_py([])
