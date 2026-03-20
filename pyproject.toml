@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sciona"
-version = "0.1.0"
+version = "0.1.1"
 description = "Functional Matching Agent for grounding predicates into verified library functions in Lean 4/Mathlib and Coq/Rocq"
 requires-python = ">=3.10"
 license = "MIT"
@@ -80,6 +80,9 @@ all = [
 
 [project.scripts]
 sciona = "sciona.cli:main"
+
+[tool.hatch.build.targets.sdist]
+include = ["sciona/", "pyproject.toml", "README.md"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["sciona"]
