@@ -24,6 +24,22 @@ SIGNAL_EVENT_RATE_DECLARATIONS = {
         "np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
         "Convert ordered event indices into a smoothed per-minute rate estimate.",
     ),
+    # Expansion atoms — inserted by the DPO expansion engine
+    "assess_signal_quality": (
+        "sciona.runtime_signal_event_rate.assess_signal_quality",
+        "np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
+        "Compute per-window signal quality mask using kurtosis.",
+    ),
+    "remove_signal_jumps": (
+        "sciona.runtime_signal_event_rate.remove_signal_jumps",
+        "np.ndarray, float -> np.ndarray",
+        "Remove step discontinuities from raw signal.",
+    ),
+    "reject_outlier_intervals": (
+        "sciona.runtime_signal_event_rate.reject_outlier_intervals",
+        "np.ndarray, float -> np.ndarray",
+        "Remove events creating physiologically implausible intervals.",
+    ),
 }
 
 

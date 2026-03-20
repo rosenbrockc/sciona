@@ -153,3 +153,122 @@ def compute_event_rate_smoothed(
     kernel = np.ones(window, dtype=np.float64) / float(window)
     smoothed = np.convolve(event_rate, kernel, mode="same")
     return midpoints, smoothed.astype(np.float64)
+
+
+# ---------------------------------------------------------------------------
+# Expansion atoms — inserted by the DPO expansion engine
+# ---------------------------------------------------------------------------
+
+
+def assess_signal_quality(
+    signal: np.ndarray,
+    sampling_rate: float | int,
+    *,
+    window_seconds: float = 10.0,
+    min_kurtosis: float = 1.5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute per-window signal quality mask using excess kurtosis.
+
+    Windows with kurtosis below *min_kurtosis* are flagged as low-quality
+    (ECG with sharp R-peaks has high kurtosis; noise does not).
+
+    Returns ``(signal_passthrough, quality_mask)`` where ``quality_mask``
+    is a boolean array (True = adequate quality).
+    """
+    rate = _coerce_sampling_rate(sampling_rate)
+    values = _coerce_signal(signal)
+    if values.size == 0:
+        return values, np.ones(0, dtype=bool)
+
+    window = max(1, int(round(window_seconds * rate)))
+    mask = np.ones(values.size, dtype=bool)
+
+    for start in range(0, values.size, window):
+        end = min(start + window, values.size)
+        seg = values[start:end]
+        if seg.size < 4:
+            continue
+        centered = seg - np.mean(seg)
+        std = float(np.std(centered))
+        if std < 1e-10:
+            mask[start:end] = False
+            continue
+        kurt = float(np.mean((centered / std) ** 4)) - 3.0
+        if kurt < min_kurtosis:
+            mask[start:end] = False
+
+    return values, mask
+
+
+def remove_signal_jumps(
+    signal: np.ndarray,
+    sampling_rate: float | int,
+    *,
+    jump_threshold_scale: float = 5.0,
+) -> np.ndarray:
+    """Remove step discontinuities from a raw signal.
+
+    Detects sample-to-sample jumps exceeding ``jump_threshold_scale * MAD``
+    of the first-differenced signal, then subtracts the cumulative shift
+    so downstream filters see a continuous baseline.
+    """
+    _coerce_sampling_rate(sampling_rate)  # validate
+    values = _coerce_signal(signal)
+    if values.size < 2:
+        return values
+
+    diff = np.diff(values)
+    median_diff = float(np.median(diff))
+    mad_diff = float(np.median(np.abs(diff - median_diff)))
+    if mad_diff < 1e-10:
+        return values
+
+    threshold = jump_threshold_scale * mad_diff
+    jumps = np.where(np.abs(diff - median_diff) > threshold)[0]
+    if jumps.size == 0:
+        return values
+
+    result = values.copy()
+    for idx in jumps:
+        shift = result[idx + 1] - result[idx]
+        result[idx + 1 :] -= shift
+
+    return result
+
+
+def reject_outlier_intervals(
+    events: np.ndarray,
+    sampling_rate: float | int,
+    *,
+    mad_scale: float = 3.0,
+) -> np.ndarray:
+    """Remove detected events that create physiologically implausible intervals.
+
+    Keeps an event only if at least one of its adjacent inter-event intervals
+    falls within ``median ± mad_scale * MAD`` of all intervals.
+    """
+    _coerce_sampling_rate(sampling_rate)  # validate
+    idx = np.asarray(events, dtype=np.int64).reshape(-1)
+    if idx.size < 3:
+        return idx
+
+    idx = np.unique(idx)
+    intervals = np.diff(idx).astype(np.float64)
+    median_ivl = float(np.median(intervals))
+    mad_ivl = float(np.median(np.abs(intervals - median_ivl)))
+    if mad_ivl < 1e-10:
+        return idx
+
+    lo = max(1.0, median_ivl - mad_scale * mad_ivl)
+    hi = median_ivl + mad_scale * mad_ivl
+    good = (intervals >= lo) & (intervals <= hi)
+
+    # Keep a peak if at least one adjacent interval is good.
+    keep = np.ones(idx.size, dtype=bool)
+    for i in range(1, idx.size - 1):
+        left_good = bool(good[i - 1])
+        right_good = bool(good[i])
+        if not left_good and not right_good:
+            keep[i] = False
+
+    return idx[keep]

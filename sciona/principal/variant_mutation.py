@@ -53,12 +53,24 @@ class SignalEventRateVariantFamily:
 
     name = "signal_event_rate"
 
+    # Anchor atoms that identify this family.  The CDG is recognized as a
+    # signal-event-rate pipeline if *any* anchor is present — not requiring
+    # every atom to be registered.  This allows expanded CDGs (with SQI,
+    # jump-removal, or cross-domain atoms) to still match the family for
+    # variant swapping on the core nodes.
+    _ANCHORS = {
+        "filter_signal_for_detection",
+        "detect_peaks_in_signal",
+        "compute_event_rate",
+        "compute_event_rate_smoothed",
+    }
+
     def matches(self, cdg: CDGExport) -> bool:
         atomic_nodes = [node for node in cdg.nodes if node.status == NodeStatus.ATOMIC]
         if not atomic_nodes:
             return False
-        return all(
-            str(node.matched_primitive or "") in SIGNAL_EVENT_RATE_DECLARATIONS
+        return any(
+            str(node.matched_primitive or "") in self._ANCHORS
             for node in atomic_nodes
         )
 
