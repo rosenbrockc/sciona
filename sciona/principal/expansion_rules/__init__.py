@@ -16,8 +16,14 @@ if TYPE_CHECKING:
 
 def default_rule_sets() -> list[ExpansionRuleSet]:
     """Return all built-in expansion rule sets."""
+    from sciona.principal.expansion_rules.sequential_filter import (
+        SequentialFilterExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.signal_event_rate import (
         SignalEventRateExpansionRuleSet,
     )
 
-    return [SignalEventRateExpansionRuleSet()]
+    return [
+        SignalEventRateExpansionRuleSet(),
+        SequentialFilterExpansionRuleSet(),
+    ]
