@@ -23,3 +23,7 @@
 - E2E test `tests/test_retrieval_e2e_hodges.py` — all 11 passing
 - Fix: bypassed `select_strategy`/skeleton by calling `decompose_node` directly with pre-built state (Option D)
 - Root cause: `_AcceptAllCatalog` marks all skeleton nodes ATOMIC → empty pending queue → done immediately
+
+## Memory Index
+- [project_expansion_family_analysis.md](project_expansion_family_analysis.md) — Ranked analysis of which skeleton paradigms should get expansion rules next
+- [plan_mcmc_expansion.md](plan_mcmc_expansion.md) — Approved implementation plan for MCMC/HMC expansion rules (ready to implement)

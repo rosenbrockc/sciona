@@ -51,6 +51,9 @@
 - `/Users/conrad/personal/sciona/sciona/benchmark_validation.py` - release validation
 - `/Users/conrad/personal/sciona/sciona/flow_benchmark.py` - flow benchmark harness
 
+## CDG Expansion
+- [project_cdg_expansion.md](project_cdg_expansion.md) -- Formal analysis of topology expansion mechanism (DPO-based, beyond node swaps)
+
 ## Algorithmic Commons Foundation
 - See [project_algorithmic_commons.md](project_algorithmic_commons.md) for formal analysis of the 6-component marketplace architecture
 - Key risk: AST fingerprint 64-bit truncation insufficient at registry scale; Shapley tractable via DAG closed-form; gradient scores leak in Dead-End Flare
