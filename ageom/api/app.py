@@ -6,6 +6,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
@@ -69,6 +70,13 @@ def create_app() -> FastAPI:
     from ageom.api.routers.registry import router as registry_router
     from ageom.api.routers.verification import router as verification_router
     from ageom.api.routers.dashboard import router as dashboard_router
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     application.include_router(auth_router, tags=["auth"])
     application.include_router(registry_router, prefix="/atoms", tags=["registry"])
