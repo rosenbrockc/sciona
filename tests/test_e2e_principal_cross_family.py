@@ -128,6 +128,21 @@ def _build_catalog() -> PrimitiveCatalog:
     return catalog
 
 
+def _build_catalog_with_local_alternative() -> PrimitiveCatalog:
+    catalog = _build_catalog()
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="ageoa.signal.filter_signal_fast",
+            source="ageoa.signal",
+            category=ConceptType.SIGNAL_FILTER,
+            description="Same-family faster filtering primitive.",
+            inputs=[IOSpec(name="signal", type_desc="ndarray")],
+            outputs=[IOSpec(name="filtered_signal", type_desc="ndarray")],
+        )
+    )
+    return catalog
+
+
 class _SingleShotArchitect:
     def __init__(self) -> None:
         self.decompose_calls: list[dict[str, str]] = []
@@ -311,6 +326,66 @@ class TestPrincipalCrossFamilyExpansionE2E:
         assert structure["cross_family_node_count"] == 2
         assert structure["family_entropy"] > 0.0
         assert state.best_loss == 60.0
+
+
+@pytest.fixture(scope="module")
+def principal_cross_family_preference_result():
+    async def _run():
+        architect = _SingleShotArchitect()
+        sandbox = _ExpansionAwareSandbox()
+        expansion_engine = _SingleShotExpansionEngine()
+        catalog = _build_catalog_with_local_alternative()
+        ledger = AtomLedger()
+        baseline = _build_baseline_cdg()
+        node = baseline.nodes[1]
+        root = baseline.nodes[0]
+        slot = compute_slot_signature(node, root)
+        for trial in range(5):
+            ledger.record(slot, "ageoa.signal.filter_signal_basic", 80.0, trial=trial)
+            ledger.record(slot, "ageoa.signal.filter_signal_fast", 5.0, trial=trial)
+
+        deps = PrincipalDeps(
+            architect=architect,
+            sandbox=sandbox,
+            match_results_fn=_mock_match_results_fn,
+            synthesize_fn=_mock_synthesize_fn,
+            catalog=catalog,
+            atom_ledger=ledger,
+            expansion_engine=expansion_engine,
+        )
+        graph = build_principal_graph()
+        compiled = graph.compile()
+        initial_state = PrincipalState(
+            goal="Improve a signal-analysis pipeline with quality control",
+            metric=OptimizationMetric.LATENCY,
+            max_trials=2,
+        )
+        config = {"configurable": {"deps": deps}}
+        result = await compiled.ainvoke(initial_state, config=config)
+        state = PrincipalState(**result) if isinstance(result, dict) else result
+        return state, sandbox, architect, expansion_engine
+
+    return asyncio.get_event_loop().run_until_complete(_run())
+
+
+class TestPrincipalExpansionPreferredOverFallbackE2E:
+    def test_expansion_happens_before_same_family_fallback(
+        self, principal_cross_family_preference_result
+    ):
+        state, sandbox, architect, expansion_engine = principal_cross_family_preference_result
+        assert len(state.trial_history) == 2
+        assert sandbox.call_count == 2
+        assert len(architect.decompose_calls) == 1
+        assert expansion_engine.call_count == 2
+        assert state.cdg is not None
+        by_name = {
+            node.name: node
+            for node in state.cdg.nodes
+            if node.status == NodeStatus.ATOMIC
+        }
+        assert "Score Signal Quality" in by_name
+        assert by_name["Filter Signal"].matched_primitive == "ageoa.signal.filter_signal_basic"
+        assert by_name["Filter Signal"].matched_primitive != "ageoa.signal.filter_signal_fast"
 
 
 def _build_graph_opt_cdg() -> CDGExport:
