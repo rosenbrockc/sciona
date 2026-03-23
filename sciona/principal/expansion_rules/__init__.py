@@ -40,6 +40,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.signal_event_rate import (
         SignalEventRateExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.sorting import (
+        SortingExpansionRuleSet,
+    )
 
     return [
         SignalEventRateExpansionRuleSet(),
@@ -50,4 +53,5 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         GreedyExpansionRuleSet(),
         DivideAndConquerExpansionRuleSet(),
         GraphOptimizationExpansionRuleSet(),
+        SortingExpansionRuleSet(),
     ]
