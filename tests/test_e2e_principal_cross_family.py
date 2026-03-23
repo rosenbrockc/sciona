@@ -26,6 +26,7 @@ from sciona.architect.models import (
 from sciona.principal.expansion import ExpansionDiagnostic, ExpansionResult
 from sciona.principal.graph import PrincipalDeps, PrincipalState, build_principal_graph
 from sciona.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
+from sciona.principal.atom_ledger import AtomLedger, compute_slot_signature
 from sciona.synthesizer.models import ExportBundle
 
 
@@ -240,7 +241,12 @@ def _mock_match_results_fn(cdg: CDGExport) -> list:
 async def _mock_synthesize_fn(cdg: CDGExport, match_results: list) -> ExportBundle:
     tmp = Path(tempfile.mkdtemp())
     source = tmp / "cross_family.py"
-    source.write_text("# mock artifact\n")
+    primitive_names = [
+        str(node.matched_primitive or "")
+        for node in cdg.nodes
+        if node.status == NodeStatus.ATOMIC
+    ]
+    source.write_text("\n".join(primitive_names) + "\n")
     return ExportBundle(target="python", output_dir=tmp, source_path=source)
 
 
@@ -305,3 +311,201 @@ class TestPrincipalCrossFamilyExpansionE2E:
         assert structure["cross_family_node_count"] == 2
         assert structure["family_entropy"] > 0.0
         assert state.best_loss == 60.0
+
+
+def _build_graph_opt_cdg() -> CDGExport:
+    root = AlgorithmicNode(
+        node_id="graph_opt_root",
+        name="Graph Optimization Pipeline",
+        description="Optimize a graph update step.",
+        concept_type=ConceptType.GRAPH_OPTIMIZATION,
+        status=NodeStatus.DECOMPOSED,
+        depth=0,
+        children=["relax_edges"],
+    )
+    relax_edges = AlgorithmicNode(
+        node_id="relax_edges",
+        parent_id="graph_opt_root",
+        name="Relax Edges",
+        description="Apply a repeated relaxation update over a dense state vector.",
+        concept_type=ConceptType.GRAPH_OPTIMIZATION,
+        status=NodeStatus.ATOMIC,
+        depth=1,
+        matched_primitive="ageoa.graph.relax_edges_iterative",
+        inputs=[IOSpec(name="state", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="updated_state", type_desc="np.ndarray")],
+        type_signature="np.ndarray -> np.ndarray",
+    )
+    return CDGExport(nodes=[root, relax_edges], edges=[])
+
+
+def _build_graph_opt_catalog() -> PrimitiveCatalog:
+    catalog = PrimitiveCatalog()
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="ageoa.graph.relax_edges_iterative",
+            source="ageoa.graph",
+            category=ConceptType.GRAPH_OPTIMIZATION,
+            description="Graph-local iterative edge relaxation.",
+            inputs=[IOSpec(name="state", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="updated_state", type_desc="np.ndarray")],
+        )
+    )
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="ageoa.linalg.solve_relaxation_system",
+            source="ageoa.linalg",
+            category=ConceptType.ALGEBRA,
+            description="Linear-algebra solver for a structurally equivalent state update.",
+            inputs=[IOSpec(name="state", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="updated_state", type_desc="np.ndarray")],
+        )
+    )
+    return catalog
+
+
+class _GraphOptArchitect:
+    def __init__(self) -> None:
+        self.decompose_calls: list[dict[str, str]] = []
+
+    async def decompose(
+        self,
+        goal: str,
+        *,
+        thread_id: str | None = None,
+    ) -> CDGExport:
+        thread_id = thread_id or uuid.uuid4().hex
+        self.decompose_calls.append({"goal": goal, "thread_id": thread_id})
+        return _build_graph_opt_cdg()
+
+    async def get_state_history(self, thread_id: str) -> list[dict]:
+        return []
+
+    async def fork(
+        self,
+        source_thread_id: str,
+        checkpoint_id: str,
+        new_thread_id: str | None = None,
+    ) -> str:
+        raise AssertionError("time-travel should not be reached in the ledger mutation test")
+
+
+class _NoopExpansionEngine:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def expand(self, cdg: CDGExport, context) -> ExpansionResult:
+        self.call_count += 1
+        return ExpansionResult(cdg=cdg, applied_rules=(), diagnostics=(), expanded=False)
+
+
+class _GraphOptMutationSandbox:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    async def evaluate(
+        self,
+        bundle: ExportBundle,
+        dataset_path: str,
+        metric: OptimizationMetric,
+        evaluation_spec: object | None = None,
+    ) -> BenchmarkResult:
+        self.call_count += 1
+        source_text = bundle.source_path.read_text()
+        if "ageoa.linalg.solve_relaxation_system" in source_text:
+            return BenchmarkResult(
+                global_loss=30.0,
+                node_telemetry={
+                    "relax_edges": NodeTelemetry(
+                        node_id="relax_edges",
+                        execution_time_ms=30.0,
+                        peak_memory_bytes=1024,
+                        error_expansion=0.0,
+                    )
+                },
+                runtime_artifacts={
+                    "stdout_payload": {"metric": "latency", "global_loss": 30.0}
+                },
+            )
+        return BenchmarkResult(
+            global_loss=90.0,
+            node_telemetry={
+                "relax_edges": NodeTelemetry(
+                    node_id="relax_edges",
+                    execution_time_ms=90.0,
+                    peak_memory_bytes=1024,
+                    error_expansion=0.0,
+                )
+            },
+            runtime_artifacts={
+                "stdout_payload": {"metric": "latency", "global_loss": 90.0}
+            },
+        )
+
+
+@pytest.fixture(scope="module")
+def principal_cross_family_mutation_result():
+    async def _run():
+        architect = _GraphOptArchitect()
+        sandbox = _GraphOptMutationSandbox()
+        expansion_engine = _NoopExpansionEngine()
+        catalog = _build_graph_opt_catalog()
+        ledger = AtomLedger()
+        cdg = _build_graph_opt_cdg()
+        node = cdg.nodes[1]
+        root = cdg.nodes[0]
+        slot = compute_slot_signature(node, root)
+        for trial in range(5):
+            ledger.record(slot, "ageoa.graph.relax_edges_iterative", 85.0, trial=trial)
+            ledger.record(slot, "ageoa.linalg.solve_relaxation_system", 10.0, trial=trial)
+
+        deps = PrincipalDeps(
+            architect=architect,
+            sandbox=sandbox,
+            match_results_fn=_mock_match_results_fn,
+            synthesize_fn=_mock_synthesize_fn,
+            catalog=catalog,
+            atom_ledger=ledger,
+            expansion_engine=expansion_engine,
+        )
+        graph = build_principal_graph()
+        compiled = graph.compile()
+        initial_state = PrincipalState(
+            goal="Optimize a graph relaxation update",
+            metric=OptimizationMetric.LATENCY,
+            max_trials=2,
+        )
+        config = {"configurable": {"deps": deps}}
+        result = await compiled.ainvoke(initial_state, config=config)
+        state = PrincipalState(**result) if isinstance(result, dict) else result
+        return state, sandbox, architect, expansion_engine
+
+    return asyncio.get_event_loop().run_until_complete(_run())
+
+
+class TestPrincipalCrossFamilyMutationE2E:
+    def test_ledger_mutation_adopts_foreign_family_primitive(
+        self, principal_cross_family_mutation_result
+    ):
+        state, sandbox, architect, expansion_engine = principal_cross_family_mutation_result
+        assert len(state.trial_history) == 2
+        assert sandbox.call_count == 2
+        assert len(architect.decompose_calls) == 1
+        assert expansion_engine.call_count == 2
+        assert state.cdg is not None
+        atomic = [node for node in state.cdg.nodes if node.status == NodeStatus.ATOMIC]
+        assert len(atomic) == 1
+        assert atomic[0].matched_primitive == "ageoa.linalg.solve_relaxation_system"
+        assert state.best_loss == 30.0
+
+    def test_mutation_trial_records_foreign_family_binding(
+        self, principal_cross_family_mutation_result
+    ):
+        state, _, _, _ = principal_cross_family_mutation_result
+        second_trial = state.trial_history[1]
+        structure = second_trial["structure"]
+        assert structure["topology_changed"] is False
+        assert structure["primitive_assignment_changed"] is True
+        assert structure["foreign_family_binding_count"] == 1
+        assert structure["foreign_family_bindings"] == ["relax_edges"]
+        assert structure["distinct_primitive_families"] == ["ageoa.linalg"]
