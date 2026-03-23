@@ -492,6 +492,7 @@ class _MockSandbox:
         bundle: ExportBundle,
         dataset_path: str,
         metric: OptimizationMetric,
+        evaluation_spec: object | None = None,
     ) -> BenchmarkResult:
         self.call_count += 1
         if self.call_count == 1:
