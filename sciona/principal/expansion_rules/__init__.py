@@ -22,6 +22,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.dynamic_programming import (
         DynamicProgrammingExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.geometry import (
+        GeometryExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.graph_optimization import (
         GraphOptimizationExpansionRuleSet,
     )
@@ -30,6 +33,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     )
     from sciona.principal.expansion_rules.greedy import (
         GreedyExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.number_theory import (
+        NumberTheoryExpansionRuleSet,
     )
     from sciona.principal.expansion_rules.mcmc import (
         MCMCExpansionRuleSet,
@@ -62,4 +68,6 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         SortingExpansionRuleSet(),
         StringMatchingExpansionRuleSet(),
         SearchingExpansionRuleSet(),
+        GeometryExpansionRuleSet(),
+        NumberTheoryExpansionRuleSet(),
     ]
