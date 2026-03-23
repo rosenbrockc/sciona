@@ -865,6 +865,11 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
                 "cross_family_edge_count": int(
                     row.get("cross_family_edge_count", 0) or 0
                 ),
+                "rollback_applied": bool(row.get("rollback_applied")),
+                "rollback_restored_trial": int(
+                    row.get("rollback_restored_trial", 0) or 0
+                ),
+                "rollback_reason": str(row.get("rollback_reason", "") or ""),
             }
         )
     best_structure = optimize.get("best_structure", {})
@@ -889,6 +894,7 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
         "primitive_change_trials": int(optimize.get("primitive_change_trials", 0) or 0),
         "topology_change_trials": int(optimize.get("topology_change_trials", 0) or 0),
         "expansion_applied_trials": int(optimize.get("expansion_applied_trials", 0) or 0),
+        "rollback_trials": int(optimize.get("rollback_trials", 0) or 0),
         "unique_primitive_signatures": int(
             optimize.get("unique_primitive_signatures", 0) or 0
         ),
@@ -897,6 +903,12 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
         "max_family_entropy": float(optimize.get("max_family_entropy", 0.0) or 0.0),
         "max_distinct_primitive_families": int(
             optimize.get("max_distinct_primitive_families", 0) or 0
+        ),
+        "mean_expansion_loss_delta": float(
+            optimize.get("mean_expansion_loss_delta", 0.0) or 0.0
+        ),
+        "worst_expansion_loss_delta": float(
+            optimize.get("worst_expansion_loss_delta", 0.0) or 0.0
         ),
         "best_structure": {
             "node_count": int(best_structure.get("node_count", 0) or 0),

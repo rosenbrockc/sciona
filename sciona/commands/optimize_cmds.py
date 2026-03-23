@@ -64,22 +64,29 @@ def _summarize_optimize_history(
     primitive_change_trials = 0
     topology_change_trials = 0
     expansion_applied_trials = 0
+    rollback_trials = 0
     primitive_signatures: set[str] = set()
     topology_signatures: set[str] = set()
     expansion_rules: set[str] = set()
     max_family_entropy = 0.0
     max_distinct_primitive_families = 0
+    expansion_deltas: list[float] = []
+    trial_loss_by_id: dict[int, float] = {}
 
     for entry in history:
         if not isinstance(entry, dict):
             continue
         structure = entry.get("structure", {}) if isinstance(entry.get("structure"), dict) else {}
         expansion = entry.get("expansion", {}) if isinstance(entry.get("expansion"), dict) else {}
+        rollback = entry.get("rollback", {}) if isinstance(entry.get("rollback"), dict) else {}
         params = (
             entry.get("parameter_assignments", {})
             if isinstance(entry.get("parameter_assignments"), dict)
             else {}
         )
+        trial_id = int(entry.get("trial", 0) or 0)
+        loss_value = float(entry.get("loss", 0.0) or 0.0)
+        trial_loss_by_id[trial_id] = loss_value
         primitive_signature = str(structure.get("primitive_signature", "") or "")
         topo_hash = str(structure.get("topo_hash", "") or "")
         if primitive_signature:
@@ -94,6 +101,8 @@ def _summarize_optimize_history(
             topology_change_trials += 1
         if bool(expansion.get("applied")):
             expansion_applied_trials += 1
+        if bool(rollback.get("applied")):
+            rollback_trials += 1
         rule_names = expansion.get("rules_applied", [])
         if isinstance(rule_names, list):
             for rule_name in rule_names:
@@ -107,9 +116,18 @@ def _summarize_optimize_history(
             max_distinct_primitive_families,
             int(structure.get("distinct_primitive_family_count", 0) or 0),
         )
+        restored_trial = rollback.get("restored_trial")
+        if restored_trial is not None:
+            try:
+                restored_trial_id = int(restored_trial)
+            except (TypeError, ValueError):
+                restored_trial_id = 0
+            baseline_loss = trial_loss_by_id.get(restored_trial_id)
+            if baseline_loss is not None:
+                expansion_deltas.append(loss_value - baseline_loss)
         row = {
-            "trial": int(entry.get("trial", 0) or 0),
-            "loss": float(entry.get("loss", 0.0) or 0.0),
+            "trial": trial_id,
+            "loss": loss_value,
             "node_count": int(structure.get("node_count", 0) or 0),
             "edge_count": int(structure.get("edge_count", 0) or 0),
             "topo_hash": topo_hash,
@@ -128,6 +146,13 @@ def _summarize_optimize_history(
             "cross_family_edge_count": int(
                 structure.get("cross_family_edge_count", 0) or 0
             ),
+            "rollback_applied": bool(rollback.get("applied")),
+            "rollback_restored_trial": (
+                int(rollback.get("restored_trial", 0) or 0)
+                if rollback.get("restored_trial") is not None
+                else 0
+            ),
+            "rollback_reason": str(rollback.get("reason", "") or ""),
         }
         trial_rows.append(row)
         if best_entry is None or row["loss"] < float(best_entry.get("loss", float("inf"))):
@@ -159,11 +184,22 @@ def _summarize_optimize_history(
         "primitive_change_trials": primitive_change_trials,
         "topology_change_trials": topology_change_trials,
         "expansion_applied_trials": expansion_applied_trials,
+        "rollback_trials": rollback_trials,
         "unique_primitive_signatures": len(primitive_signatures),
         "unique_topologies": len(topology_signatures),
         "expansion_rules_applied": sorted(expansion_rules),
         "max_family_entropy": max_family_entropy,
         "max_distinct_primitive_families": max_distinct_primitive_families,
+        "mean_expansion_loss_delta": (
+            float(sum(expansion_deltas) / len(expansion_deltas))
+            if expansion_deltas
+            else 0.0
+        ),
+        "worst_expansion_loss_delta": (
+            float(max(expansion_deltas))
+            if expansion_deltas
+            else 0.0
+        ),
         "best_parameter_assignments": best_params,
         "best_structure": best_structure,
         "trial_history_path": str(output_root / "trial_history.json"),
