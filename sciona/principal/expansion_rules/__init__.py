@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 
 def default_rule_sets() -> list[ExpansionRuleSet]:
     """Return all built-in expansion rule sets."""
+    from sciona.principal.expansion_rules.divide_and_conquer import (
+        DivideAndConquerExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.dynamic_programming import (
         DynamicProgrammingExpansionRuleSet,
     )
@@ -42,4 +45,5 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         GraphTraversalExpansionRuleSet(),
         DynamicProgrammingExpansionRuleSet(),
         GreedyExpansionRuleSet(),
+        DivideAndConquerExpansionRuleSet(),
     ]
