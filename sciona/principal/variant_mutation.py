@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
@@ -161,7 +162,7 @@ class LedgerVariantFamily:
 
         candidates = [
             p.name
-            for p in self._catalog.search_by_category(target.concept_type)
+            for p in self._catalog.all_primitives()
             if _is_primitive_structurally_compatible(target, p)
         ]
         if not candidates:
@@ -172,6 +173,7 @@ class LedgerVariantFamily:
         ranked = self._ledger.rank_candidates(slot, candidates)
         if not ranked:
             return VariantMutationResult(cdg=cdg, applied=False)
+        ranked = self._apply_family_prior(target, ranked)
 
         best_name, _best_score = ranked[0]
         if best_name == target.matched_primitive:
@@ -201,6 +203,26 @@ class LedgerVariantFamily:
             variant_name=best_name,
             allow_redecompose=True,
         )
+
+    def _apply_family_prior(
+        self,
+        target: AlgorithmicNode,
+        ranked: list[tuple[str, float]],
+    ) -> list[tuple[str, float]]:
+        """Prefer same-family primitives without forbidding cross-family swaps."""
+        adjusted: list[tuple[str, float]] = []
+        for primitive_name, score in ranked:
+            primitive = self._catalog.get(primitive_name)
+            same_family = (
+                primitive is not None and primitive.category == target.concept_type
+            )
+            adjusted_score = _apply_family_prior_score(
+                score,
+                same_family=same_family,
+            )
+            adjusted.append((primitive_name, adjusted_score))
+        adjusted.sort(key=lambda item: -item[1])
+        return adjusted
 
 
 def maybe_apply_bottleneck_variant(
@@ -254,8 +276,6 @@ def _is_primitive_structurally_compatible(
     primitive: AlgorithmicPrimitive,
 ) -> bool:
     """Return whether a primitive is safe to slot into a node without rewiring."""
-    if primitive.category != node.concept_type:
-        return False
     if len(node.inputs) != len(primitive.inputs):
         return False
     if len(node.outputs) != len(primitive.outputs):
@@ -266,3 +286,12 @@ def _is_primitive_structurally_compatible(
     node_output_types = [_normalize_type_desc(port.type_desc) for port in node.outputs]
     prim_output_types = [_normalize_type_desc(port.type_desc) for port in primitive.outputs]
     return node_input_types == prim_input_types and node_output_types == prim_output_types
+
+
+def _apply_family_prior_score(score: float, *, same_family: bool) -> float:
+    """Apply a modest penalty to cross-family candidates after ledger ranking."""
+    if same_family:
+        return score
+    if math.isinf(score):
+        return 1e6
+    return score - 0.15

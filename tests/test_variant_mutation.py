@@ -389,6 +389,127 @@ def test_ledger_filters_out_structurally_incompatible_candidates() -> None:
     assert result.family == "ledger_bandit"
 
 
+def test_ledger_can_swap_to_cross_family_candidate_when_structurally_compatible() -> None:
+    from sciona.architect.catalog import PrimitiveCatalog
+
+    ledger = AtomLedger()
+    ports_in = [IOSpec(name="x", type_desc="np.ndarray")]
+    ports_out = [IOSpec(name="y", type_desc="np.ndarray")]
+    catalog = PrimitiveCatalog()
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="atom_local",
+            source="test.local",
+            category=ConceptType.CUSTOM,
+            description="local atom",
+            inputs=ports_in,
+            outputs=ports_out,
+            type_signature="test",
+        )
+    )
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="atom_foreign",
+            source="test.foreign",
+            category=ConceptType.SIGNAL_FILTER,
+            description="foreign atom",
+            inputs=ports_in,
+            outputs=ports_out,
+            type_signature="test",
+        )
+    )
+
+    cdg = CDGExport(
+        nodes=[
+            _generic_node(
+                "n1",
+                "Step",
+                matched_primitive="atom_local",
+                concept_type=ConceptType.CUSTOM,
+            )
+        ],
+        edges=[],
+    )
+
+    node = cdg.nodes[0]
+    slot = compute_slot_signature(node, None)
+    for t in range(5):
+        ledger.record(slot, "atom_local", 80.0, trial=t)
+        ledger.record(slot, "atom_foreign", 10.0, trial=t)
+
+    result = maybe_apply_bottleneck_variant(
+        cdg,
+        bottleneck_name="Step",
+        atom_ledger=ledger,
+        catalog=catalog,
+    )
+
+    assert result.applied is True
+    assert result.family == "ledger_bandit"
+    assert result.variant_name == "atom_foreign"
+    assert result.cdg.nodes[0].matched_primitive == "atom_foreign"
+
+
+def test_ledger_prefers_same_family_when_scores_are_tied() -> None:
+    from sciona.architect.catalog import PrimitiveCatalog
+
+    ledger = AtomLedger()
+    ports_in = [IOSpec(name="x", type_desc="np.ndarray")]
+    ports_out = [IOSpec(name="y", type_desc="np.ndarray")]
+    catalog = PrimitiveCatalog()
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="atom_local",
+            source="test.local",
+            category=ConceptType.CUSTOM,
+            description="local atom",
+            inputs=ports_in,
+            outputs=ports_out,
+            type_signature="test",
+        )
+    )
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="atom_foreign",
+            source="test.foreign",
+            category=ConceptType.SIGNAL_FILTER,
+            description="foreign atom",
+            inputs=ports_in,
+            outputs=ports_out,
+            type_signature="test",
+        )
+    )
+
+    cdg = CDGExport(
+        nodes=[
+            _generic_node(
+                "n1",
+                "Step",
+                matched_primitive="atom_local",
+                concept_type=ConceptType.CUSTOM,
+            )
+        ],
+        edges=[],
+    )
+
+    node = cdg.nodes[0]
+    slot = compute_slot_signature(node, None)
+    for t in range(5):
+        ledger.record(slot, "atom_local", 10.0, trial=t)
+        ledger.record(slot, "atom_foreign", 10.0, trial=t)
+
+    result = maybe_apply_bottleneck_variant(
+        cdg,
+        bottleneck_name="Step",
+        atom_ledger=ledger,
+        catalog=catalog,
+    )
+
+    assert result.applied is False
+    assert result.family == "ledger_bandit"
+    assert result.allow_redecompose is True
+
+
 def test_backward_compatible_without_ledger() -> None:
     cdg = CDGExport(
         nodes=[_generic_node("n1", "Step", matched_primitive="some_atom")],
