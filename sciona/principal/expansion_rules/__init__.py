@@ -22,6 +22,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.graph_traversal import (
         GraphTraversalExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.greedy import (
+        GreedyExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.mcmc import (
         MCMCExpansionRuleSet,
     )
@@ -38,4 +41,5 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         MCMCExpansionRuleSet(),
         GraphTraversalExpansionRuleSet(),
         DynamicProgrammingExpansionRuleSet(),
+        GreedyExpansionRuleSet(),
     ]
