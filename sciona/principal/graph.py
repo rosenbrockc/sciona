@@ -81,6 +81,14 @@ class PrincipalState:
     param_trials_remaining: int = 0
     expansion_applied: bool = False
     expansion_rules_applied: list[str] = field(default_factory=list)
+    expansion_candidate_active: bool = False
+    expansion_baseline_trial: int | None = None
+    expansion_baseline_loss: float | None = None
+    expansion_baseline_thread_id: str = ""
+    expansion_baseline_cdg: CDGExport | None = None
+    expansion_baseline_export_bundle: ExportBundle | None = None
+    expansion_baseline_benchmark: BenchmarkResult | None = None
+    expansion_baseline_node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Bookkeeping
     done: bool = False
@@ -304,6 +312,11 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
                 "diagnostic_count": 0,
                 "context_summary": {},
             },
+            "rollback": {
+                "applied": False,
+                "reason": "",
+                "restored_trial": None,
+            },
         }
     )
 
@@ -316,6 +329,43 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
         if state.param_trials_remaining <= 0:
             state.pending_param_search = False
 
+    rollback_payload: dict[str, Any] = {}
+    if (
+        state.expansion_candidate_active
+        and state.expansion_baseline_loss is not None
+        and benchmark.global_loss > state.expansion_baseline_loss
+        and state.expansion_baseline_cdg is not None
+    ):
+        restored_trial = state.expansion_baseline_trial
+        state.cdg = state.expansion_baseline_cdg
+        state.export_bundle = state.expansion_baseline_export_bundle
+        state.benchmark = state.expansion_baseline_benchmark
+        state.thread_id = state.expansion_baseline_thread_id
+        state.node_params = dict(state.expansion_baseline_node_params)
+        state.expansion_candidate_active = False
+        state.expansion_applied = False
+        state.expansion_rules_applied = []
+        state.done = True
+        latest = dict(state.trial_history[-1])
+        latest["rollback"] = {
+            "applied": True,
+            "reason": "expanded structure increased objective loss",
+            "restored_trial": restored_trial,
+        }
+        state.trial_history[-1] = latest
+        _clear_expansion_baseline(state)
+        rollback_payload = {
+            "cdg": state.cdg,
+            "export_bundle": state.export_bundle,
+            "benchmark": state.benchmark,
+            "node_params": state.node_params,
+            "done": True,
+            "trial_history": state.trial_history,
+        }
+    elif state.expansion_candidate_active:
+        state.expansion_candidate_active = False
+        _clear_expansion_baseline(state)
+
     return {
         "benchmark": benchmark,
         "best_loss": state.best_loss,
@@ -324,6 +374,15 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
         "current_trial": state.current_trial,
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
+        "expansion_candidate_active": state.expansion_candidate_active,
+        "expansion_baseline_trial": state.expansion_baseline_trial,
+        "expansion_baseline_loss": state.expansion_baseline_loss,
+        "expansion_baseline_thread_id": state.expansion_baseline_thread_id,
+        "expansion_baseline_cdg": state.expansion_baseline_cdg,
+        "expansion_baseline_export_bundle": state.expansion_baseline_export_bundle,
+        "expansion_baseline_benchmark": state.expansion_baseline_benchmark,
+        "expansion_baseline_node_params": state.expansion_baseline_node_params,
+        **rollback_payload,
     }
 
 
@@ -375,6 +434,8 @@ def _build_expansion_context(state: PrincipalState) -> ExpansionContext:
 async def apply_expansion(state: PrincipalState, config: RunnableConfig) -> dict:
     """Apply family-agnostic CDG expansion rules using runtime diagnostics."""
     deps: PrincipalDeps = config["configurable"]["deps"]
+    if state.done:
+        return {"done": True}
     if state.cdg is None or state.benchmark is None:
         state.expansion_applied = False
         state.expansion_rules_applied = []
@@ -407,8 +468,34 @@ async def apply_expansion(state: PrincipalState, config: RunnableConfig) -> dict
             "expansion_applied": False,
             "expansion_rules_applied": [],
             "trial_history": state.trial_history,
+            "expansion_candidate_active": state.expansion_candidate_active,
+            "expansion_baseline_trial": state.expansion_baseline_trial,
+            "expansion_baseline_loss": state.expansion_baseline_loss,
+            "expansion_baseline_thread_id": state.expansion_baseline_thread_id,
+            "expansion_baseline_cdg": state.expansion_baseline_cdg,
+            "expansion_baseline_export_bundle": state.expansion_baseline_export_bundle,
+            "expansion_baseline_benchmark": state.expansion_baseline_benchmark,
+            "expansion_baseline_node_params": state.expansion_baseline_node_params,
         }
 
+    state.expansion_candidate_active = True
+    state.expansion_baseline_trial = state.current_trial
+    state.expansion_baseline_loss = (
+        state.benchmark.global_loss if state.benchmark is not None else None
+    )
+    state.expansion_baseline_thread_id = state.thread_id
+    state.expansion_baseline_cdg = state.cdg.model_copy(deep=True)
+    state.expansion_baseline_export_bundle = (
+        state.export_bundle.model_copy(deep=True)
+        if state.export_bundle is not None
+        else None
+    )
+    state.expansion_baseline_benchmark = (
+        state.benchmark.model_copy(deep=True)
+        if state.benchmark is not None
+        else None
+    )
+    state.expansion_baseline_node_params = dict(state.node_params)
     state.cdg = result.cdg
     state.node_params = {}
     state.param_signature = ""
@@ -430,7 +517,26 @@ async def apply_expansion(state: PrincipalState, config: RunnableConfig) -> dict
         "trial_history": state.trial_history,
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
+        "expansion_candidate_active": state.expansion_candidate_active,
+        "expansion_baseline_trial": state.expansion_baseline_trial,
+        "expansion_baseline_loss": state.expansion_baseline_loss,
+        "expansion_baseline_thread_id": state.expansion_baseline_thread_id,
+        "expansion_baseline_cdg": state.expansion_baseline_cdg,
+        "expansion_baseline_export_bundle": state.expansion_baseline_export_bundle,
+        "expansion_baseline_benchmark": state.expansion_baseline_benchmark,
+        "expansion_baseline_node_params": state.expansion_baseline_node_params,
     }
+
+
+def _clear_expansion_baseline(state: PrincipalState) -> None:
+    """Clear any stored pre-expansion baseline snapshot."""
+    state.expansion_baseline_trial = None
+    state.expansion_baseline_loss = None
+    state.expansion_baseline_thread_id = ""
+    state.expansion_baseline_cdg = None
+    state.expansion_baseline_export_bundle = None
+    state.expansion_baseline_benchmark = None
+    state.expansion_baseline_node_params = {}
 
 
 def _record_gradients_to_ledger(

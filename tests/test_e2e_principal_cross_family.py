@@ -509,3 +509,108 @@ class TestPrincipalCrossFamilyMutationE2E:
         assert structure["foreign_family_binding_count"] == 1
         assert structure["foreign_family_bindings"] == ["relax_edges"]
         assert structure["distinct_primitive_families"] == ["ageoa.linalg"]
+
+
+class _HarmfulExpansionSandbox:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    async def evaluate(
+        self,
+        bundle: ExportBundle,
+        dataset_path: str,
+        metric: OptimizationMetric,
+        evaluation_spec: object | None = None,
+    ) -> BenchmarkResult:
+        self.call_count += 1
+        if self.call_count == 1:
+            return BenchmarkResult(
+                global_loss=50.0,
+                node_telemetry={
+                    "filter_signal": NodeTelemetry(
+                        node_id="filter_signal",
+                        execution_time_ms=50.0,
+                        peak_memory_bytes=2048,
+                        error_expansion=0.0,
+                    )
+                },
+                runtime_artifacts={
+                    "stdout_payload": {"metric": "latency", "global_loss": 50.0}
+                },
+            )
+        return BenchmarkResult(
+            global_loss=75.0,
+            node_telemetry={
+                "filter_signal": NodeTelemetry(
+                    node_id="filter_signal",
+                    execution_time_ms=50.0,
+                    peak_memory_bytes=2048,
+                    error_expansion=0.0,
+                ),
+                "score_signal_quality": NodeTelemetry(
+                    node_id="score_signal_quality",
+                    execution_time_ms=25.0,
+                    peak_memory_bytes=1024,
+                    error_expansion=0.0,
+                ),
+            },
+            runtime_artifacts={
+                "stdout_payload": {"metric": "latency", "global_loss": 75.0}
+            },
+        )
+
+
+@pytest.fixture(scope="module")
+def principal_harmful_expansion_result():
+    async def _run():
+        architect = _SingleShotArchitect()
+        sandbox = _HarmfulExpansionSandbox()
+        expansion_engine = _SingleShotExpansionEngine()
+        deps = PrincipalDeps(
+            architect=architect,
+            sandbox=sandbox,
+            match_results_fn=_mock_match_results_fn,
+            synthesize_fn=_mock_synthesize_fn,
+            catalog=_build_catalog(),
+            expansion_engine=expansion_engine,
+        )
+        graph = build_principal_graph()
+        compiled = graph.compile()
+        initial_state = PrincipalState(
+            goal="Improve a signal-analysis pipeline with quality control",
+            metric=OptimizationMetric.LATENCY,
+            max_trials=2,
+        )
+        config = {"configurable": {"deps": deps}}
+        result = await compiled.ainvoke(initial_state, config=config)
+        state = PrincipalState(**result) if isinstance(result, dict) else result
+        return state, sandbox, architect, expansion_engine
+
+    return asyncio.get_event_loop().run_until_complete(_run())
+
+
+class TestPrincipalCrossFamilyRollbackE2E:
+    def test_harmful_expansion_restores_baseline_cdg(
+        self, principal_harmful_expansion_result
+    ):
+        state, sandbox, architect, expansion_engine = principal_harmful_expansion_result
+        assert len(state.trial_history) == 2
+        assert sandbox.call_count == 2
+        assert len(architect.decompose_calls) == 1
+        assert expansion_engine.call_count == 1
+        assert state.done is True
+        assert state.best_loss == 50.0
+        assert state.cdg is not None
+        atomic_names = {
+            node.name for node in state.cdg.nodes if node.status == NodeStatus.ATOMIC
+        }
+        assert atomic_names == {"Filter Signal"}
+
+    def test_harmful_expansion_records_rollback_metadata(
+        self, principal_harmful_expansion_result
+    ):
+        state, _, _, _ = principal_harmful_expansion_result
+        second_trial = state.trial_history[1]
+        assert second_trial["rollback"]["applied"] is True
+        assert second_trial["rollback"]["restored_trial"] == 1
+        assert "increased objective loss" in second_trial["rollback"]["reason"]
