@@ -89,6 +89,7 @@ class PrincipalState:
     expansion_baseline_export_bundle: ExportBundle | None = None
     expansion_baseline_benchmark: BenchmarkResult | None = None
     expansion_baseline_node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
+    selected_proposal: str = ""
 
     # Bookkeeping
     done: bool = False
@@ -222,6 +223,7 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
         "current_trial": state.current_trial,
         "match_results": state.match_results,
         "error": "",
+        "selected_proposal": "",
     }
 
 
@@ -539,6 +541,209 @@ def _clear_expansion_baseline(state: PrincipalState) -> None:
     state.expansion_baseline_node_params = {}
 
 
+async def _evaluate_proposal_candidate(
+    state: PrincipalState,
+    deps: "PrincipalDeps",
+    cdg: CDGExport,
+) -> tuple[float, ExportBundle | None, BenchmarkResult | None, list[Any], GhostSimReport]:
+    """Evaluate a proposal candidate without mutating trial history."""
+    match_results = deps.match_results_fn(cdg) if deps.match_results_fn else []
+    if inspect.isawaitable(match_results):
+        match_results = await match_results
+    match_results = list(match_results)
+    ghost_report = run_ghost_simulation(cdg, match_results)
+    bundle: ExportBundle | None = None
+    benchmark: BenchmarkResult | None = None
+    if deps.synthesize_fn is not None:
+        bundle = await deps.synthesize_fn(cdg, match_results)
+    if state.metric == OptimizationMetric.STRUCTURE:
+        benchmark = benchmark_from_ghost_report(ghost_report)
+    elif bundle is not None:
+        sandbox = deps.sandbox
+        if state.dataset_path.endswith((".yml", ".yaml")):
+            benchmark = await sandbox.evaluate_adapter(
+                bundle,
+                state.dataset_path,
+                state.metric,
+                varset=deps.dataset_varset,
+                evaluation_spec=deps.evaluation_spec,
+            )
+        else:
+            benchmark = await sandbox.evaluate(
+                bundle,
+                state.dataset_path,
+                state.metric,
+                evaluation_spec=deps.evaluation_spec,
+            )
+    loss = (
+        float(benchmark.global_loss)
+        if benchmark is not None
+        else float("inf")
+    )
+    return loss, bundle, benchmark, match_results, ghost_report
+
+
+async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict:
+    """Compare sibling expansion and mutation proposals from the same baseline."""
+    deps: PrincipalDeps = config["configurable"]["deps"]
+    if (
+        state.cdg is None
+        or state.benchmark is None
+        or not state.bottleneck_node_id
+    ):
+        state.selected_proposal = ""
+        return {"selected_proposal": ""}
+
+    baseline_cdg = state.cdg.model_copy(deep=True)
+    baseline_loss = float(state.benchmark.global_loss)
+    bottleneck_name = next(
+        (node.name for node in baseline_cdg.nodes if node.node_id == state.bottleneck_node_id),
+        None,
+    )
+    proposal_rows: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
+
+    engine = deps.expansion_engine or ExpansionEngine(default_rule_sets())
+    context = _build_expansion_context(state)
+    expansion = engine.expand(baseline_cdg, context)
+    if expansion.expanded:
+        loss, bundle, benchmark, match_results, ghost_report = await _evaluate_proposal_candidate(
+            state,
+            deps,
+            expansion.cdg,
+        )
+        candidates.append(
+            {
+                "label": "expansion",
+                "loss": loss,
+                "cdg": expansion.cdg,
+                "bundle": bundle,
+                "benchmark": benchmark,
+                "match_results": match_results,
+                "ghost_report": ghost_report,
+                "rules_applied": list(expansion.applied_rules),
+            }
+        )
+        proposal_rows.append(
+            {
+                "label": "expansion",
+                "loss": loss,
+                "improves_baseline": loss < baseline_loss,
+                "rules_applied": list(expansion.applied_rules),
+            }
+        )
+
+    mutation = maybe_apply_bottleneck_variant(
+        baseline_cdg,
+        bottleneck_name=bottleneck_name,
+        atom_ledger=deps.atom_ledger,
+        catalog=deps.catalog,
+    )
+    if mutation.applied:
+        loss, bundle, benchmark, match_results, ghost_report = await _evaluate_proposal_candidate(
+            state,
+            deps,
+            mutation.cdg,
+        )
+        candidates.append(
+            {
+                "label": "local_mutation",
+                "loss": loss,
+                "cdg": mutation.cdg,
+                "bundle": bundle,
+                "benchmark": benchmark,
+                "match_results": match_results,
+                "ghost_report": ghost_report,
+                "variant_name": mutation.variant_name or "",
+                "family": mutation.family or "",
+            }
+        )
+        proposal_rows.append(
+            {
+                "label": "local_mutation",
+                "loss": loss,
+                "improves_baseline": loss < baseline_loss,
+                "variant_name": mutation.variant_name or "",
+                "family": mutation.family or "",
+            }
+        )
+
+    selected = None
+    for candidate in sorted(candidates, key=lambda row: (row["loss"], row["label"])):
+        if candidate["loss"] < baseline_loss:
+            selected = candidate
+            break
+
+    if state.trial_history:
+        latest = dict(state.trial_history[-1])
+        latest["proposal_selection"] = {
+            "baseline_loss": baseline_loss,
+            "candidates": proposal_rows,
+            "selected": str(selected["label"]) if selected is not None else "",
+        }
+        latest["expansion"] = {
+            "applied": selected is not None and selected["label"] == "expansion",
+            "rules_applied": (
+                list(selected.get("rules_applied", []))
+                if selected is not None and selected["label"] == "expansion"
+                else []
+            ),
+            "diagnostic_count": len(expansion.diagnostics),
+            "diagnostic_rule_names": sorted(
+                {diag.rule_name for diag in expansion.diagnostics}
+            ),
+            "context_summary": _summarize_expansion_context(context),
+        }
+        state.trial_history[-1] = latest
+
+    if selected is None:
+        state.selected_proposal = ""
+        return {
+            "selected_proposal": "",
+            "trial_history": state.trial_history,
+            "expansion_applied": False,
+            "expansion_rules_applied": [],
+        }
+
+    state.cdg = selected["cdg"]
+    state.export_bundle = selected.get("bundle")
+    state.benchmark = selected.get("benchmark")
+    state.match_results = list(selected.get("match_results", []))
+    state.ghost_report = selected["ghost_report"]
+    state.expansion_applied = selected["label"] == "expansion"
+    state.expansion_rules_applied = list(selected.get("rules_applied", []))
+    state.node_params = {}
+    state.param_signature = ""
+    state.hpo_trial_number = None
+    state.pending_param_search = _structure_has_tunables(state.cdg, deps.catalog) and (
+        deps.param_trials_per_structure > 0
+    )
+    state.param_trials_remaining = (
+        deps.param_trials_per_structure if state.pending_param_search else 0
+    )
+    state.selected_proposal = str(selected["label"])
+    logger.info(
+        "Trial %d selected proposal '%s' (loss=%.6f vs baseline %.6f)",
+        state.current_trial,
+        state.selected_proposal,
+        float(selected["loss"]),
+        baseline_loss,
+    )
+    return {
+        "cdg": state.cdg,
+        "export_bundle": state.export_bundle,
+        "benchmark": state.benchmark,
+        "match_results": state.match_results,
+        "ghost_report": state.ghost_report,
+        "expansion_applied": state.expansion_applied,
+        "expansion_rules_applied": state.expansion_rules_applied,
+        "pending_param_search": state.pending_param_search,
+        "param_trials_remaining": state.param_trials_remaining,
+        "selected_proposal": state.selected_proposal,
+        "trial_history": state.trial_history,
+    }
+
+
 def _record_gradients_to_ledger(
     ledger: AtomLedger,
     cdg: CDGExport,
@@ -637,35 +842,6 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
         (node.name for node in state.cdg.nodes if node.node_id == state.bottleneck_node_id),
         None,
     )
-    mutation = maybe_apply_bottleneck_variant(
-        state.cdg,
-        bottleneck_name=bottleneck_name,
-        atom_ledger=deps.atom_ledger,
-        catalog=deps.catalog,
-    )
-    if mutation.applied:
-        state.cdg = mutation.cdg
-        has_tunables = _structure_has_tunables(mutation.cdg, deps.catalog)
-        state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
-        state.param_trials_remaining = deps.param_trials_per_structure if has_tunables else 0
-        logger.info(
-            "Applied variant family '%s' in place for '%s' -> %s",
-            mutation.family or "unknown",
-            bottleneck_name or state.bottleneck_node_id,
-            mutation.variant_name or "variant",
-        )
-        return {
-            "cdg": mutation.cdg,
-            "pending_param_search": state.pending_param_search,
-            "param_trials_remaining": state.param_trials_remaining,
-        }
-    if mutation.family is not None and not mutation.allow_redecompose:
-        logger.info(
-            "Variant family '%s' has no further safe mutations for '%s'; ending loop.",
-            mutation.family,
-            bottleneck_name or state.bottleneck_node_id,
-        )
-        return {"done": True}
 
     # Find the checkpoint just before the bottleneck node was decomposed
     history = await architect.get_state_history(state.thread_id)
@@ -758,17 +934,17 @@ def route_after_gradients(state: PrincipalState) -> str:
     """Decide whether to continue optimising or stop."""
     if state.done:
         return "end"
-    if len(state.trial_history) >= state.max_trials:
+    if len(state.trial_history) >= state.max_trials and state.current_trial > 1:
         return "end"
     if state.error and "pruned" not in state.error.lower():
         return "end"
     if state.pending_param_search and state.param_trials_remaining > 0:
         return "suggest_params"
-    return "time_travel"
+    return "select_proposal"
 
 
 def route_after_expansion(state: PrincipalState) -> str:
-    """After expansion, either evaluate the new structure or continue normally."""
+    """Backward-compatible routing helper for legacy expansion tests."""
     if state.done:
         return "end"
     if len(state.trial_history) >= state.max_trials:
@@ -776,6 +952,17 @@ def route_after_expansion(state: PrincipalState) -> str:
     if state.expansion_applied:
         return "suggest_params"
     return "gradients"
+
+
+def route_after_proposal(state: PrincipalState) -> str:
+    """After proposal comparison, either evaluate the chosen branch or continue."""
+    if state.done:
+        return "end"
+    if len(state.trial_history) >= state.max_trials:
+        return "end"
+    if state.selected_proposal:
+        return "suggest_params"
+    return "time_travel"
 
 
 def route_after_update(state: PrincipalState) -> str:
@@ -834,6 +1021,7 @@ def build_principal_graph() -> StateGraph:
     graph.add_node("evaluate", evaluate_run)
     graph.add_node("expand", apply_expansion)
     graph.add_node("gradients", compute_gradients)
+    graph.add_node("select_proposal", select_proposal)
     graph.add_node("time_travel", time_travel_update)
 
     graph.set_entry_point("seed")
@@ -844,15 +1032,15 @@ def build_principal_graph() -> StateGraph:
         route_after_forward,
         {"evaluate": "evaluate", "time_travel": "time_travel", "end": END},
     )
-    graph.add_edge("evaluate", "expand")
-    graph.add_conditional_edges(
-        "expand",
-        route_after_expansion,
-        {"suggest_params": "suggest_params", "gradients": "gradients", "end": END},
-    )
+    graph.add_edge("evaluate", "gradients")
     graph.add_conditional_edges(
         "gradients",
         route_after_gradients,
+        {"suggest_params": "suggest_params", "select_proposal": "select_proposal", "end": END},
+    )
+    graph.add_conditional_edges(
+        "select_proposal",
+        route_after_proposal,
         {"suggest_params": "suggest_params", "time_travel": "time_travel", "end": END},
     )
     graph.add_conditional_edges(

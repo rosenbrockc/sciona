@@ -218,6 +218,64 @@ class _ExpansionAwareSandbox:
         )
 
 
+class _ProposalPreferenceSandbox:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    async def evaluate(
+        self,
+        bundle: ExportBundle,
+        dataset_path: str,
+        metric: OptimizationMetric,
+        evaluation_spec: object | None = None,
+    ) -> BenchmarkResult:
+        self.call_count += 1
+        source_text = bundle.source_path.read_text()
+        if "ageoa.signal.filter_signal_fast" in source_text:
+            loss = 40.0
+            telemetry = {
+                "filter_signal": NodeTelemetry(
+                    node_id="filter_signal",
+                    execution_time_ms=40.0,
+                    peak_memory_bytes=1024,
+                    error_expansion=0.0,
+                )
+            }
+        elif "ageoa.statistics.score_signal_quality" in source_text:
+            loss = 60.0
+            telemetry = {
+                "filter_signal": NodeTelemetry(
+                    node_id="filter_signal",
+                    execution_time_ms=52.0,
+                    peak_memory_bytes=2048,
+                    error_expansion=0.0,
+                ),
+                "score_signal_quality": NodeTelemetry(
+                    node_id="score_signal_quality",
+                    execution_time_ms=8.0,
+                    peak_memory_bytes=512,
+                    error_expansion=0.0,
+                ),
+            }
+        else:
+            loss = 100.0
+            telemetry = {
+                "filter_signal": NodeTelemetry(
+                    node_id="filter_signal",
+                    execution_time_ms=80.0,
+                    peak_memory_bytes=2048,
+                    error_expansion=0.0,
+                )
+            }
+        return BenchmarkResult(
+            global_loss=loss,
+            node_telemetry=telemetry,
+            runtime_artifacts={
+                "stdout_payload": {"metric": "latency", "global_loss": loss}
+            },
+        )
+
+
 class _SingleShotExpansionEngine:
     def __init__(self) -> None:
         self.call_count = 0
@@ -299,9 +357,9 @@ class TestPrincipalCrossFamilyExpansionE2E:
         state, sandbox, architect, expansion_engine = principal_cross_family_result
         assert len(state.trial_history) == 2
         assert state.current_trial == 2
-        assert sandbox.call_count == 2
+        assert sandbox.call_count == 3
         assert len(architect.decompose_calls) == 1
-        assert expansion_engine.call_count == 2
+        assert expansion_engine.call_count == 1
 
     def test_trial_history_records_expansion_metadata(self, principal_cross_family_result):
         state, _, _, _ = principal_cross_family_result
@@ -332,7 +390,7 @@ class TestPrincipalCrossFamilyExpansionE2E:
 def principal_cross_family_preference_result():
     async def _run():
         architect = _SingleShotArchitect()
-        sandbox = _ExpansionAwareSandbox()
+        sandbox = _ProposalPreferenceSandbox()
         expansion_engine = _SingleShotExpansionEngine()
         catalog = _build_catalog_with_local_alternative()
         ledger = AtomLedger()
@@ -369,23 +427,24 @@ def principal_cross_family_preference_result():
 
 
 class TestPrincipalExpansionPreferredOverFallbackE2E:
-    def test_expansion_happens_before_same_family_fallback(
+    def test_local_mutation_can_beat_expansion_when_it_scores_better(
         self, principal_cross_family_preference_result
     ):
         state, sandbox, architect, expansion_engine = principal_cross_family_preference_result
         assert len(state.trial_history) == 2
-        assert sandbox.call_count == 2
+        assert sandbox.call_count >= 4
         assert len(architect.decompose_calls) == 1
-        assert expansion_engine.call_count == 2
+        assert expansion_engine.call_count == 1
         assert state.cdg is not None
         by_name = {
             node.name: node
             for node in state.cdg.nodes
             if node.status == NodeStatus.ATOMIC
         }
-        assert "Score Signal Quality" in by_name
-        assert by_name["Filter Signal"].matched_primitive == "ageoa.signal.filter_signal_basic"
-        assert by_name["Filter Signal"].matched_primitive != "ageoa.signal.filter_signal_fast"
+        assert "Score Signal Quality" not in by_name
+        assert by_name["Filter Signal"].matched_primitive == "ageoa.signal.filter_signal_fast"
+        proposal = state.trial_history[0]["proposal_selection"]
+        assert proposal["selected"] == "local_mutation"
 
 
 def _build_graph_opt_cdg() -> CDGExport:
@@ -564,9 +623,9 @@ class TestPrincipalCrossFamilyMutationE2E:
     ):
         state, sandbox, architect, expansion_engine = principal_cross_family_mutation_result
         assert len(state.trial_history) == 2
-        assert sandbox.call_count == 2
+        assert sandbox.call_count == 3
         assert len(architect.decompose_calls) == 1
-        assert expansion_engine.call_count == 2
+        assert expansion_engine.call_count == 1
         assert state.cdg is not None
         atomic = [node for node in state.cdg.nodes if node.status == NodeStatus.ATOMIC]
         assert len(atomic) == 1
@@ -665,11 +724,11 @@ def principal_harmful_expansion_result():
 
 
 class TestPrincipalCrossFamilyRollbackE2E:
-    def test_harmful_expansion_restores_baseline_cdg(
+    def test_harmful_expansion_is_rejected_at_proposal_selection(
         self, principal_harmful_expansion_result
     ):
         state, sandbox, architect, expansion_engine = principal_harmful_expansion_result
-        assert len(state.trial_history) == 2
+        assert len(state.trial_history) == 1
         assert sandbox.call_count == 2
         assert len(architect.decompose_calls) == 1
         assert expansion_engine.call_count == 1
@@ -681,11 +740,10 @@ class TestPrincipalCrossFamilyRollbackE2E:
         }
         assert atomic_names == {"Filter Signal"}
 
-    def test_harmful_expansion_records_rollback_metadata(
+    def test_harmful_expansion_records_no_selected_proposal(
         self, principal_harmful_expansion_result
     ):
         state, _, _, _ = principal_harmful_expansion_result
-        second_trial = state.trial_history[1]
-        assert second_trial["rollback"]["applied"] is True
-        assert second_trial["rollback"]["restored_trial"] == 1
-        assert "increased objective loss" in second_trial["rollback"]["reason"]
+        first_trial = state.trial_history[0]
+        assert first_trial["proposal_selection"]["selected"] == ""
+        assert first_trial["expansion"]["applied"] is False

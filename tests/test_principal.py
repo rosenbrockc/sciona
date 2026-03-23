@@ -777,13 +777,13 @@ class TestRouteAfterGradients:
         from sciona.principal.graph import PrincipalState, route_after_gradients
 
         state = PrincipalState(error="Trial pruned early")
-        assert route_after_gradients(state) == "time_travel"
+        assert route_after_gradients(state) == "select_proposal"
 
     def test_normal_continues(self):
         from sciona.principal.graph import PrincipalState, route_after_gradients
 
         state = PrincipalState()
-        assert route_after_gradients(state) == "time_travel"
+        assert route_after_gradients(state) == "select_proposal"
 
 
 class TestRouteAfterExpansion:
