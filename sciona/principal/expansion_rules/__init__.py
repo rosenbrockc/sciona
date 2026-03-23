@@ -22,6 +22,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.dynamic_programming import (
         DynamicProgrammingExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.graph_optimization import (
+        GraphOptimizationExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.graph_traversal import (
         GraphTraversalExpansionRuleSet,
     )
@@ -46,4 +49,5 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         DynamicProgrammingExpansionRuleSet(),
         GreedyExpansionRuleSet(),
         DivideAndConquerExpansionRuleSet(),
+        GraphOptimizationExpansionRuleSet(),
     ]
