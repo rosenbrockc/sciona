@@ -55,6 +55,30 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.string_matching import (
         StringMatchingExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.signal_transform import (
+        SignalTransformExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.signal_filter import (
+        SignalFilterExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.signal_detect_measure import (
+        SignalDetectMeasureExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.graph_signal_processing import (
+        GraphSignalProcessingExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.vi_advi import (
+        VIADVIExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.particle_filter import (
+        ParticleFilterExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.kalman_filter import (
+        KalmanFilterExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.belief_propagation import (
+        BeliefPropagationExpansionRuleSet,
+    )
 
     return [
         SignalEventRateExpansionRuleSet(),
@@ -70,4 +94,12 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         SearchingExpansionRuleSet(),
         GeometryExpansionRuleSet(),
         NumberTheoryExpansionRuleSet(),
+        SignalTransformExpansionRuleSet(),
+        SignalFilterExpansionRuleSet(),
+        SignalDetectMeasureExpansionRuleSet(),
+        GraphSignalProcessingExpansionRuleSet(),
+        VIADVIExpansionRuleSet(),
+        ParticleFilterExpansionRuleSet(),
+        KalmanFilterExpansionRuleSet(),
+        BeliefPropagationExpansionRuleSet(),
     ]
