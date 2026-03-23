@@ -541,6 +541,77 @@ def _clear_expansion_baseline(state: PrincipalState) -> None:
     state.expansion_baseline_node_params = {}
 
 
+async def _build_redecomposition_candidate(
+    state: PrincipalState,
+    deps: "PrincipalDeps",
+    *,
+    bottleneck_name: str | None,
+) -> tuple[CDGExport, str] | None:
+    """Fork and re-decompose a candidate structure for the current bottleneck."""
+    if not state.bottleneck_node_id or state.cdg is None:
+        return None
+
+    history = await deps.architect.get_state_history(state.thread_id)
+    target_cp: str | None = None
+    for entry in history:
+        vals = entry.get("values", {})
+        node_ids = {n.node_id for n in vals.get("nodes", [])}
+        if state.bottleneck_node_id not in node_ids:
+            target_cp = entry.get("checkpoint_id")
+            break
+
+    if target_cp is None and history:
+        target_cp = history[-1].get("checkpoint_id")
+    if target_cp is None:
+        return None
+
+    new_thread_id = await deps.architect.fork(state.thread_id, target_cp)
+    constraint = (
+        f"The previous decomposition caused a bottleneck: "
+        f"{state.bottleneck_reason}. Re-decompose more efficiently."
+    )
+
+    if deps.atom_ledger is not None and deps.catalog is not None and state.cdg is not None:
+        bottleneck_node = next(
+            (n for n in state.cdg.nodes if n.node_id == state.bottleneck_node_id),
+            None,
+        )
+        if bottleneck_node is not None and bottleneck_node.matched_primitive:
+            node_map = {n.node_id: n for n in state.cdg.nodes}
+            parent = (
+                node_map.get(bottleneck_node.parent_id)
+                if bottleneck_node.parent_id
+                else None
+            )
+            slot = compute_slot_signature(bottleneck_node, parent)
+            same_category = [
+                p.name
+                for p in deps.catalog.search_by_category(bottleneck_node.concept_type)
+            ]
+            if len(same_category) > 1:
+                ranked = deps.atom_ledger.rank_candidates(slot, same_category)
+                top_3 = [
+                    (name, f"{score:.2f}")
+                    for name, score in ranked[:3]
+                    if score != float("inf")
+                ]
+                if top_3:
+                    constraint += (
+                        f"\nATOM RANKINGS for '{bottleneck_name}': "
+                        f"prefer {top_3}"
+                    )
+
+    constrained_goal = f"{state.goal}\n\nCONSTRAINT: {constraint}"
+    cdg = await deps.architect.decompose(constrained_goal, thread_id=new_thread_id)
+    mutation = maybe_apply_bottleneck_variant(
+        cdg,
+        bottleneck_name=bottleneck_name,
+        atom_ledger=deps.atom_ledger,
+        catalog=deps.catalog,
+    )
+    return mutation.cdg, new_thread_id
+
+
 async def _evaluate_proposal_candidate(
     state: PrincipalState,
     deps: "PrincipalDeps",
@@ -674,6 +745,41 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             selected = candidate
             break
 
+    if selected is None:
+        redecomposition = await _build_redecomposition_candidate(
+            state,
+            deps,
+            bottleneck_name=bottleneck_name,
+        )
+        if redecomposition is not None:
+            redecompose_cdg, redecompose_thread_id = redecomposition
+            loss, bundle, benchmark, match_results, ghost_report = await _evaluate_proposal_candidate(
+                state,
+                deps,
+                redecompose_cdg,
+            )
+            candidates.append(
+                {
+                    "label": "redecompose",
+                    "loss": loss,
+                    "cdg": redecompose_cdg,
+                    "bundle": bundle,
+                    "benchmark": benchmark,
+                    "match_results": match_results,
+                    "ghost_report": ghost_report,
+                    "thread_id": redecompose_thread_id,
+                }
+            )
+            proposal_rows.append(
+                {
+                    "label": "redecompose",
+                    "loss": loss,
+                    "improves_baseline": loss < baseline_loss,
+                }
+            )
+            if loss < baseline_loss:
+                selected = candidates[-1]
+
     if state.trial_history:
         latest = dict(state.trial_history[-1])
         latest["proposal_selection"] = {
@@ -698,11 +804,13 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
 
     if selected is None:
         state.selected_proposal = ""
+        state.done = True
         return {
             "selected_proposal": "",
             "trial_history": state.trial_history,
             "expansion_applied": False,
             "expansion_rules_applied": [],
+            "done": True,
         }
 
     state.cdg = selected["cdg"]
@@ -712,6 +820,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
     state.ghost_report = selected["ghost_report"]
     state.expansion_applied = selected["label"] == "expansion"
     state.expansion_rules_applied = list(selected.get("rules_applied", []))
+    state.thread_id = str(selected.get("thread_id", state.thread_id) or state.thread_id)
     state.node_params = {}
     state.param_signature = ""
     state.hpo_trial_number = None
@@ -740,6 +849,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
         "selected_proposal": state.selected_proposal,
+        "thread_id": state.thread_id,
         "trial_history": state.trial_history,
     }
 
@@ -837,88 +947,33 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
     if not state.bottleneck_node_id or state.cdg is None:
         return {"done": True}
 
-    architect = deps.architect
     bottleneck_name = next(
         (node.name for node in state.cdg.nodes if node.node_id == state.bottleneck_node_id),
         None,
     )
-
-    # Find the checkpoint just before the bottleneck node was decomposed
-    history = await architect.get_state_history(state.thread_id)
-    target_cp: str | None = None
-    for entry in history:
-        vals = entry.get("values", {})
-        node_ids = {n.node_id for n in vals.get("nodes", [])}
-        if state.bottleneck_node_id not in node_ids:
-            # This checkpoint is just before the bottleneck was created
-            target_cp = entry.get("checkpoint_id")
-            break
-
-    if target_cp is None:
-        # Fallback: use the earliest checkpoint
-        if history:
-            target_cp = history[-1].get("checkpoint_id")
-
-    if target_cp is None:
+    candidate = await _build_redecomposition_candidate(
+        state,
+        deps,
+        bottleneck_name=bottleneck_name,
+    )
+    if candidate is None:
         logger.warning("No checkpoint found for time-travel; ending loop.")
         return {"done": True}
 
-    # Fork a new thread from that checkpoint
-    new_thread_id = await architect.fork(state.thread_id, target_cp)
+    cdg, new_thread_id = candidate
     state.thread_id = new_thread_id
-
-    constraint = (
-        f"The previous decomposition caused a bottleneck: "
-        f"{state.bottleneck_reason}. Re-decompose more efficiently."
-    )
-
-    # Append bandit ranking hints for the bottleneck slot
-    if deps.atom_ledger is not None and deps.catalog is not None and state.cdg is not None:
-        bottleneck_node = next(
-            (n for n in state.cdg.nodes if n.node_id == state.bottleneck_node_id),
-            None,
-        )
-        if bottleneck_node is not None and bottleneck_node.matched_primitive:
-            node_map = {n.node_id: n for n in state.cdg.nodes}
-            parent = node_map.get(bottleneck_node.parent_id) if bottleneck_node.parent_id else None
-            slot = compute_slot_signature(bottleneck_node, parent)
-            same_category = [
-                p.name for p in deps.catalog.search_by_category(bottleneck_node.concept_type)
-            ]
-            if len(same_category) > 1:
-                ranked = deps.atom_ledger.rank_candidates(slot, same_category)
-                top_3 = [
-                    (name, f"{score:.2f}")
-                    for name, score in ranked[:3]
-                    if score != float("inf")
-                ]
-                if top_3:
-                    constraint += (
-                        f"\nATOM RANKINGS for '{bottleneck_name}': "
-                        f"prefer {top_3}"
-                    )
-
-    constrained_goal = f"{state.goal}\n\nCONSTRAINT: {constraint}"
-    cdg = await architect.decompose(constrained_goal, thread_id=new_thread_id)
-    mutation = maybe_apply_bottleneck_variant(
-        cdg,
-        bottleneck_name=bottleneck_name,
-        atom_ledger=deps.atom_ledger,
-        catalog=deps.catalog,
-    )
-    state.cdg = mutation.cdg
-    has_tunables = _structure_has_tunables(mutation.cdg, deps.catalog)
+    state.cdg = cdg
+    has_tunables = _structure_has_tunables(cdg, deps.catalog)
     state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
     state.param_trials_remaining = deps.param_trials_per_structure if has_tunables else 0
 
     logger.info(
-        "Time-travel: forked at checkpoint %s -> thread %s",
-        target_cp,
+        "Time-travel: forked new thread %s for re-decomposition",
         new_thread_id,
     )
 
     return {
-        "cdg": mutation.cdg,
+        "cdg": cdg,
         "thread_id": new_thread_id,
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
@@ -958,11 +1013,11 @@ def route_after_proposal(state: PrincipalState) -> str:
     """After proposal comparison, either evaluate the chosen branch or continue."""
     if state.done:
         return "end"
-    if len(state.trial_history) >= state.max_trials:
-        return "end"
     if state.selected_proposal:
+        if len(state.trial_history) >= state.max_trials:
+            return "end"
         return "suggest_params"
-    return "time_travel"
+    return "end"
 
 
 def route_after_update(state: PrincipalState) -> str:

@@ -668,10 +668,10 @@ class TestPrincipalHodgesE2E:
         )
         assert state.best_loss == trial_2_loss
 
-    def test_sandbox_evaluated_twice(self, principal_result):
-        """The sandbox evaluate() was called exactly twice."""
+    def test_sandbox_evaluated_three_times(self, principal_result):
+        """The sandbox evaluates baseline, redecompose proposal, and selected trial."""
         _, sandbox, _ = principal_result
-        assert sandbox.call_count == 2
+        assert sandbox.call_count == 3
 
     def test_trials_produce_different_cdgs(self, principal_result):
         """The two trials' CDGs have different node counts (6 vs 5 atomic leaves)."""
@@ -697,7 +697,7 @@ class TestPrincipalHodgesE2E:
         )
 
     def test_time_travel_forks_new_thread(self, principal_result):
-        """thread_id changes between trials (fork happened)."""
+        """thread_id changes between trials when redecomposition is selected."""
         state, _, _ = principal_result
         # Trial history records thread_ids; they should differ
         t1_thread = state.trial_history[0]["thread_id"]
@@ -705,6 +705,12 @@ class TestPrincipalHodgesE2E:
         assert t1_thread != t2_thread, (
             f"Expected different thread_ids, both are '{t1_thread}'"
         )
+
+    def test_redecompose_wins_proposal_selection(self, principal_result):
+        """Trial 1 records redecompose as the selected sibling proposal."""
+        state, _, _ = principal_result
+        proposal = state.trial_history[0]["proposal_selection"]
+        assert proposal["selected"] == "redecompose"
 
     def test_constraint_injected_into_goal(self, principal_result):
         """The second decomposition call received the CONSTRAINT injection."""
