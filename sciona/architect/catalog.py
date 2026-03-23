@@ -395,28 +395,23 @@ class PrimitiveCatalog:
     def find_matching_primitives(
         self, node: AlgorithmicNode, k: int = 5
     ) -> list[AlgorithmicPrimitive]:
-        """Find primitives matching a node by category, then by keyword overlap.
+        """Find primitives matching a node by compatibility and keyword overlap.
+
+        Same-category matches get a modest prior, but strong cross-category
+        candidates remain eligible. This keeps cross-family grounding visible
+        when a node description clearly matches a foreign-family primitive.
 
         For full semantic search, use SkillIndex.search() instead.
         """
-        # First: exact category matches
-        category_matches = self.search_by_category(node.concept_type)
-
-        # Score by keyword overlap between node description and primitive description
-        node_words = set(node.description.lower().split())
+        node_words = set((node.name + " " + node.description).lower().split())
         scored: list[tuple[float, AlgorithmicPrimitive]] = []
-        for prim in category_matches:
+        for prim in self._primitives.values():
             prim_words = set(prim.description.lower().split())
             overlap = len(node_words & prim_words)
-            scored.append((overlap + self._arity_match_bonus(node, prim), prim))
-
-        # If not enough from same category, add cross-category matches
-        if len(scored) < k:
-            for prim in self._primitives.values():
-                if prim.category != node.concept_type:
-                    prim_words = set(prim.description.lower().split())
-                    overlap = len(node_words & prim_words)
-                    scored.append((overlap + self._arity_match_bonus(node, prim), prim))
+            category_bonus = 0.75 if prim.category == node.concept_type else 0.0
+            scored.append(
+                (overlap + self._arity_match_bonus(node, prim) + category_bonus, prim)
+            )
 
         scored.sort(key=lambda x: x[0], reverse=True)
         return [prim for _, prim in scored[:k]]

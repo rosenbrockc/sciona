@@ -144,6 +144,22 @@ class TestFindMatchingPrimitives:
         assert len(matches) >= 1
         assert any(m.name == "dijkstra" for m in matches)
 
+    def test_strong_cross_category_match_can_outrank_same_category_prior(self, catalog):
+        node = AlgorithmicNode(
+            node_id="n1",
+            name="Search Sorted Target",
+            description="Search the sorted target item using binary division",
+            concept_type=ConceptType.SORTING,
+            inputs=[
+                IOSpec(name="data", type_desc="sorted list[int]"),
+                IOSpec(name="target", type_desc="int"),
+            ],
+            outputs=[IOSpec(name="index", type_desc="int")],
+        )
+
+        matches = catalog.find_matching_primitives(node, k=3)
+        assert matches[0].name == "binary_search"
+
     def test_optional_extra_inputs_are_not_filtered_out_of_matches(self):
         catalog = PrimitiveCatalog()
         catalog.add(

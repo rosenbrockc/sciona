@@ -452,9 +452,45 @@ class TestDeterministicRewrite:
         assert result.nodes
         node = result.nodes[0]
         assert node.matched_primitive == "binary_search"
-        assert node.primitive_binding_source == "token_overlap"
+        assert node.primitive_binding_source == "token_overlap_cross_family"
         assert node.primitive_binding_confidence < 0.70
         assert node.status == NodeStatus.PENDING
+
+    def test_cross_family_exact_name_binding_is_labeled_and_atomic(self):
+        catalog = _make_catalog()
+        parent = AlgorithmicNode(
+            node_id="parent_sorting",
+            name="Plan Search Step",
+            description="Coordinate search behavior inside a larger sorting workflow",
+            concept_type=ConceptType.SORTING,
+            inputs=[
+                IOSpec(name="data", type_desc="sorted list[comparable]"),
+                IOSpec(name="target", type_desc="comparable"),
+            ],
+            outputs=[IOSpec(name="index", type_desc="int")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+
+        result = build_deterministic_decomposition(
+            parsed={
+                "sub_nodes": [
+                    {
+                        "name": "binary_search",
+                        "description": "Search a sorted array for a target value.",
+                    }
+                ]
+            },
+            parent=parent,
+            catalog=catalog,
+        )
+
+        assert result.nodes
+        node = result.nodes[0]
+        assert node.matched_primitive == "binary_search"
+        assert node.primitive_binding_source == "exact_name_cross_family"
+        assert node.primitive_binding_confidence >= 0.9
+        assert node.status == NodeStatus.ATOMIC
 
     def test_collapses_routing_wrappers_when_work_nodes_exist(self):
         catalog = PrimitiveCatalog()

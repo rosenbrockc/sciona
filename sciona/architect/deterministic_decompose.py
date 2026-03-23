@@ -356,6 +356,15 @@ def _primitive_signature_text(primitive: Any) -> str:
     return " ".join(part for part in parts if part)
 
 
+def _binding_source_label(base: str, *, primitive: Any, parent: AlgorithmicNode) -> str:
+    """Encode whether a binding crosses the parent-family prior."""
+    if primitive is None:
+        return base
+    if primitive.category != parent.concept_type:
+        return f"{base}_cross_family"
+    return base
+
+
 def _suggest_primitive_for_spec(
     spec: dict[str, Any],
     *,
@@ -378,7 +387,11 @@ def _suggest_primitive_for_spec(
     if explicit:
         prim = _find_primitive(catalog, explicit)
         if prim is not None:
-            return PrimitiveBindingSuggestion(prim, 1.0, "explicit_hint")
+            return PrimitiveBindingSuggestion(
+                prim,
+                1.0,
+                _binding_source_label("explicit_hint", primitive=prim, parent=parent),
+            )
 
     name = str(spec.get("name", "")).strip()
     description = str(spec.get("description", "")).strip()
@@ -389,13 +402,17 @@ def _suggest_primitive_for_spec(
         if prim is not None:
             source = "exact_name" if probe == name else "exact_description"
             confidence = 0.95 if probe == name else 0.90
-            return PrimitiveBindingSuggestion(prim, confidence, source)
+            return PrimitiveBindingSuggestion(
+                prim,
+                confidence,
+                _binding_source_label(source, primitive=prim, parent=parent),
+            )
 
     if not spec_tokens:
         return PrimitiveBindingSuggestion(None, 0.0, "")
 
-    best_primitive = None
-    best_score = 0.0
+    best_same_family: tuple[Any, float] | None = None
+    best_cross_family: tuple[Any, float] | None = None
     for primitive in catalog.all_primitives():
         primitive_tokens = _primitive_match_tokens(_primitive_signature_text(primitive))
         if not primitive_tokens:
@@ -405,20 +422,36 @@ def _suggest_primitive_for_spec(
             continue
 
         score = float(len(overlap))
-        if primitive.category == parent.concept_type:
-            score += 1.5
         if _norm(primitive.name) in _norm(name):
             score += 1.0
         if len(overlap) >= max(2, len(spec_tokens) // 2):
             score += 0.5
+        if primitive.category == parent.concept_type:
+            score += 0.75
+            if best_same_family is None or score > best_same_family[1]:
+                best_same_family = (primitive, score)
+        else:
+            if best_cross_family is None or score > best_cross_family[1]:
+                best_cross_family = (primitive, score)
 
-        if score > best_score:
-            best_score = score
-            best_primitive = primitive
+    best_primitive = None
+    best_score = 0.0
+    source = "token_overlap"
+    if best_same_family is not None:
+        best_primitive, best_score = best_same_family
+    if best_cross_family is not None:
+        cross_primitive, cross_score = best_cross_family
+        if (
+            best_same_family is None
+            or cross_score >= best_score + 0.75
+        ):
+            best_primitive = cross_primitive
+            best_score = cross_score
+            source = "token_overlap_cross_family"
 
-    if best_score >= 3.0:
+    if best_score >= 3.0 and best_primitive is not None:
         normalized = min(0.85, 0.30 + best_score * 0.10)
-        return PrimitiveBindingSuggestion(best_primitive, normalized, "token_overlap")
+        return PrimitiveBindingSuggestion(best_primitive, normalized, source)
     return PrimitiveBindingSuggestion(None, 0.0, "")
 
 
