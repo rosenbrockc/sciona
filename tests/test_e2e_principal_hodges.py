@@ -668,10 +668,10 @@ class TestPrincipalHodgesE2E:
         )
         assert state.best_loss == trial_2_loss
 
-    def test_sandbox_evaluated_three_times(self, principal_result):
-        """The sandbox evaluates baseline, redecompose proposal, and selected trial."""
+    def test_sandbox_evaluated_twice(self, principal_result):
+        """The sandbox evaluates baseline and the redecompose proposal only once each."""
         _, sandbox, _ = principal_result
-        assert sandbox.call_count == 3
+        assert sandbox.call_count == 2
 
     def test_trials_produce_different_cdgs(self, principal_result):
         """The two trials' CDGs have different node counts (6 vs 5 atomic leaves)."""
@@ -711,6 +711,7 @@ class TestPrincipalHodgesE2E:
         state, _, _ = principal_result
         proposal = state.trial_history[0]["proposal_selection"]
         assert proposal["selected"] == "redecompose"
+        assert state.trial_history[1]["reused_cached_evaluation"] is True
 
     def test_constraint_injected_into_goal(self, principal_result):
         """The second decomposition call received the CONSTRAINT injection."""

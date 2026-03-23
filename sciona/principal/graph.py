@@ -90,6 +90,7 @@ class PrincipalState:
     expansion_baseline_benchmark: BenchmarkResult | None = None
     expansion_baseline_node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
     selected_proposal: str = ""
+    reuse_cached_evaluation: bool = False
 
     # Bookkeeping
     done: bool = False
@@ -189,6 +190,26 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
     if state.cdg is None:
         return {"error": "No CDG available", "done": True}
 
+    if (
+        state.reuse_cached_evaluation
+        and state.export_bundle is not None
+        and state.benchmark is not None
+    ):
+        logger.info(
+            "Trial %d reusing cached proposal evaluation for '%s'",
+            state.current_trial,
+            state.selected_proposal or "proposal",
+        )
+        return {
+            "ghost_report": state.ghost_report,
+            "export_bundle": state.export_bundle,
+            "current_trial": state.current_trial,
+            "match_results": state.match_results,
+            "error": "",
+            "selected_proposal": "",
+            "reuse_cached_evaluation": True,
+        }
+
     # Ghost simulation for early pruning and precision gradients
     match_results = deps.match_results_fn(state.cdg) if deps.match_results_fn else []
     if inspect.isawaitable(match_results):
@@ -224,6 +245,7 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
         "match_results": state.match_results,
         "error": "",
         "selected_proposal": "",
+        "reuse_cached_evaluation": False,
     }
 
 
@@ -234,7 +256,10 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     if state.export_bundle is None:
         return {"error": "No export bundle to evaluate", "done": True}
 
-    if state.metric == OptimizationMetric.STRUCTURE:
+    reused_cached_evaluation = bool(state.reuse_cached_evaluation)
+    if reused_cached_evaluation and state.benchmark is not None:
+        benchmark = state.benchmark
+    elif state.metric == OptimizationMetric.STRUCTURE:
         benchmark = benchmark_from_ghost_report(state.ghost_report)
     else:
         sandbox = deps.sandbox
@@ -254,6 +279,7 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
                 evaluation_spec=deps.evaluation_spec,
             )
     state.benchmark = benchmark
+    state.reuse_cached_evaluation = False
 
     if deps.hpo_manager is not None:
         deps.hpo_manager.complete_trial(
@@ -308,6 +334,7 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
             "thread_id": state.thread_id,
             "structure": structure,
             "parameter_assignments": dict(state.node_params),
+            "reused_cached_evaluation": reused_cached_evaluation,
             "expansion": {
                 "applied": False,
                 "rules_applied": [],
@@ -373,6 +400,7 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
         "best_loss": state.best_loss,
         "best_node_params": state.best_node_params,
         "trial_history": state.trial_history,
+        "reuse_cached_evaluation": state.reuse_cached_evaluation,
         "current_trial": state.current_trial,
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
@@ -804,12 +832,14 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
 
     if selected is None:
         state.selected_proposal = ""
+        state.reuse_cached_evaluation = False
         state.done = True
         return {
             "selected_proposal": "",
             "trial_history": state.trial_history,
             "expansion_applied": False,
             "expansion_rules_applied": [],
+            "reuse_cached_evaluation": False,
             "done": True,
         }
 
@@ -831,6 +861,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         deps.param_trials_per_structure if state.pending_param_search else 0
     )
     state.selected_proposal = str(selected["label"])
+    state.reuse_cached_evaluation = not state.pending_param_search
     logger.info(
         "Trial %d selected proposal '%s' (loss=%.6f vs baseline %.6f)",
         state.current_trial,
@@ -850,6 +881,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         "param_trials_remaining": state.param_trials_remaining,
         "selected_proposal": state.selected_proposal,
         "thread_id": state.thread_id,
+        "reuse_cached_evaluation": state.reuse_cached_evaluation,
         "trial_history": state.trial_history,
     }
 

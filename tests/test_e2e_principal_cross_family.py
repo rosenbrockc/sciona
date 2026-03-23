@@ -357,7 +357,7 @@ class TestPrincipalCrossFamilyExpansionE2E:
         state, sandbox, architect, expansion_engine = principal_cross_family_result
         assert len(state.trial_history) == 2
         assert state.current_trial == 2
-        assert sandbox.call_count == 3
+        assert sandbox.call_count == 2
         assert len(architect.decompose_calls) == 1
         assert expansion_engine.call_count == 1
 
@@ -375,6 +375,7 @@ class TestPrincipalCrossFamilyExpansionE2E:
         state, _, _, _ = principal_cross_family_result
         second_trial = state.trial_history[1]
         structure = second_trial["structure"]
+        assert second_trial["reused_cached_evaluation"] is True
         assert structure["distinct_primitive_family_count"] == 2
         assert set(structure["distinct_primitive_families"]) == {
             "ageoa.signal",
@@ -432,7 +433,7 @@ class TestPrincipalExpansionPreferredOverFallbackE2E:
     ):
         state, sandbox, architect, expansion_engine = principal_cross_family_preference_result
         assert len(state.trial_history) == 2
-        assert sandbox.call_count >= 4
+        assert sandbox.call_count == 3
         assert len(architect.decompose_calls) == 1
         assert expansion_engine.call_count == 1
         assert state.cdg is not None
@@ -623,7 +624,7 @@ class TestPrincipalCrossFamilyMutationE2E:
     ):
         state, sandbox, architect, expansion_engine = principal_cross_family_mutation_result
         assert len(state.trial_history) == 2
-        assert sandbox.call_count == 3
+        assert sandbox.call_count == 2
         assert len(architect.decompose_calls) == 1
         assert expansion_engine.call_count == 1
         assert state.cdg is not None
@@ -637,6 +638,7 @@ class TestPrincipalCrossFamilyMutationE2E:
     ):
         state, _, _, _ = principal_cross_family_mutation_result
         second_trial = state.trial_history[1]
+        assert second_trial["reused_cached_evaluation"] is True
         structure = second_trial["structure"]
         assert structure["topology_changed"] is False
         assert structure["primitive_assignment_changed"] is True
