@@ -870,6 +870,9 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
                     row.get("rollback_restored_trial", 0) or 0
                 ),
                 "rollback_reason": str(row.get("rollback_reason", "") or ""),
+                "reused_cached_evaluation": bool(
+                    row.get("reused_cached_evaluation")
+                ),
                 "proposal_selected": str(row.get("proposal_selected", "") or ""),
                 "proposal_candidate_count": int(
                     row.get("proposal_candidate_count", 0) or 0
@@ -924,6 +927,10 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
         ),
         "proposal_rejected_trials": int(
             optimize.get("proposal_rejected_trials", 0) or 0
+        ),
+        "cached_reuse_trials": int(optimize.get("cached_reuse_trials", 0) or 0),
+        "cached_reruns_avoided": int(
+            optimize.get("cached_reruns_avoided", 0) or 0
         ),
         "selected_proposal_counts": {
             str(key): int(value or 0)

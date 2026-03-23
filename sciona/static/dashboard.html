@@ -780,7 +780,7 @@
             ? `<div class="run-meta">bench=${benchmarkStatus} prompt=${Number(benchmark.prompt_results || 0)} flow=${Number(benchmark.flow_results || 0)} runtime_providers=${Number(benchmarkRuntime.provider_count || 0)}${benchmark.release_status ? ` release=${benchmark.release_status}` : ""}</div>`
             : "";
           const optimizeLine = optimize.trials_run
-            ? `<div class="run-meta">optimize objective=${optimize.objective || "--"} best=${Number(optimize.best_loss || 0).toFixed(6)} trials=${Number(optimize.trials_run || 0)}/${Number(optimize.max_trials || 0)} params=${Number(optimize.parameterized_trials || 0)} variants=${Number(optimize.primitive_change_trials || 0)} proposals=${Number(optimize.proposal_selection_trials || 0)} rollbacks=${Number(optimize.rollback_trials || 0)} delta=${Number(optimize.mean_expansion_loss_delta || 0).toFixed(3)}</div>`
+            ? `<div class="run-meta">optimize objective=${optimize.objective || "--"} best=${Number(optimize.best_loss || 0).toFixed(6)} trials=${Number(optimize.trials_run || 0)}/${Number(optimize.max_trials || 0)} params=${Number(optimize.parameterized_trials || 0)} variants=${Number(optimize.primitive_change_trials || 0)} proposals=${Number(optimize.proposal_selection_trials || 0)} rollbacks=${Number(optimize.rollback_trials || 0)} reuse=${Number(optimize.cached_reuse_trials || 0)} delta=${Number(optimize.mean_expansion_loss_delta || 0).toFixed(3)}</div>`
             : "";
           const proposalCounts = optimize.selected_proposal_counts || {};
           const proposalSummary = Object.keys(proposalCounts).length
@@ -788,6 +788,9 @@
             : "";
           const proposalLine = optimize.proposal_selection_trials
             ? `<div class="run-meta">optimize_proposals selected=${proposalSummary || "--"} rejected=${Number(optimize.proposal_rejected_trials || 0)} gain=${Number(optimize.mean_selected_proposal_improvement || 0).toFixed(3)}</div>`
+            : "";
+          const reuseLine = optimize.cached_reuse_trials
+            ? `<div class="run-meta">optimize_reuse reused=${Number(optimize.cached_reuse_trials || 0)} avoided=${Number(optimize.cached_reruns_avoided || 0)}</div>`
             : "";
           div.innerHTML = [
             '<div class="run-line">',
@@ -809,6 +812,7 @@
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
             optimizeLine,
             proposalLine,
+            reuseLine,
             (flowPromptCallSummary ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>` : ""),
             (flowPlannerToolSummary ? `<div class="run-meta">flow_tools ${flowPlannerToolSummary}</div>` : ""),
             (flowPlannerEscalationSummary ? `<div class="run-meta">flow_escalations ${flowPlannerEscalationSummary}</div>` : ""),
@@ -937,6 +941,8 @@
           ["opt rollback trials", String(Number(optimize.rollback_trials || 0))],
           ["opt proposal trials", String(Number(optimize.proposal_selection_trials || 0))],
           ["opt proposal rejected", String(Number(optimize.proposal_rejected_trials || 0))],
+          ["opt cached reuse", String(Number(optimize.cached_reuse_trials || 0))],
+          ["opt reruns avoided", String(Number(optimize.cached_reruns_avoided || 0))],
           ["opt proposal counts", Object.keys(optimize.selected_proposal_counts || {}).length
             ? Object.entries(optimize.selected_proposal_counts || {}).map(([label, count]) => `${label}=${Number(count || 0)}`).join(", ")
             : "--"],

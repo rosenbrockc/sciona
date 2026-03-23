@@ -67,6 +67,8 @@ def _summarize_optimize_history(
     rollback_trials = 0
     proposal_selection_trials = 0
     proposal_rejected_trials = 0
+    cached_reuse_trials = 0
+    cached_reruns_avoided = 0
     selected_proposal_counts: dict[str, int] = {}
     primitive_signatures: set[str] = set()
     topology_signatures: set[str] = set()
@@ -95,6 +97,7 @@ def _summarize_optimize_history(
         )
         trial_id = int(entry.get("trial", 0) or 0)
         loss_value = float(entry.get("loss", 0.0) or 0.0)
+        reused_cached_evaluation = bool(entry.get("reused_cached_evaluation"))
         trial_loss_by_id[trial_id] = loss_value
         primitive_signature = str(structure.get("primitive_signature", "") or "")
         topo_hash = str(structure.get("topo_hash", "") or "")
@@ -112,6 +115,10 @@ def _summarize_optimize_history(
             expansion_applied_trials += 1
         if bool(rollback.get("applied")):
             rollback_trials += 1
+        if reused_cached_evaluation:
+            cached_reuse_trials += 1
+            if selected_proposal:
+                cached_reruns_avoided += 1
         candidate_rows = proposal.get("candidates", [])
         if not isinstance(candidate_rows, list):
             candidate_rows = []
@@ -198,6 +205,7 @@ def _summarize_optimize_history(
                 else 0
             ),
             "rollback_reason": str(rollback.get("reason", "") or ""),
+            "reused_cached_evaluation": reused_cached_evaluation,
             "proposal_selected": selected_proposal,
             "proposal_candidate_count": candidate_count,
             "proposal_candidates": candidate_labels,
@@ -247,6 +255,8 @@ def _summarize_optimize_history(
         "rollback_trials": rollback_trials,
         "proposal_selection_trials": proposal_selection_trials,
         "proposal_rejected_trials": proposal_rejected_trials,
+        "cached_reuse_trials": cached_reuse_trials,
+        "cached_reruns_avoided": cached_reruns_avoided,
         "selected_proposal_counts": dict(sorted(selected_proposal_counts.items())),
         "unique_primitive_signatures": len(primitive_signatures),
         "unique_topologies": len(topology_signatures),

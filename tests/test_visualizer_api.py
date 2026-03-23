@@ -842,6 +842,8 @@ class TestDashboardAPI:
                     "rollback_trials": 1,
                     "proposal_selection_trials": 3,
                     "proposal_rejected_trials": 1,
+                    "cached_reuse_trials": 1,
+                    "cached_reruns_avoided": 1,
                     "selected_proposal_counts": {
                         "expansion": 1,
                         "local_mutation": 1,
@@ -890,6 +892,7 @@ class TestDashboardAPI:
                             "rollback_applied": False,
                             "rollback_restored_trial": 0,
                             "rollback_reason": "",
+                            "reused_cached_evaluation": False,
                             "proposal_selected": "",
                             "proposal_candidate_count": 2,
                             "proposal_candidates": [
@@ -918,6 +921,7 @@ class TestDashboardAPI:
                             "rollback_applied": True,
                             "rollback_restored_trial": 2,
                             "rollback_reason": "expanded structure increased objective loss",
+                            "reused_cached_evaluation": True,
                             "proposal_selected": "expansion",
                             "proposal_candidate_count": 2,
                             "proposal_candidates": [
@@ -949,6 +953,8 @@ class TestDashboardAPI:
         assert data["optimize_summary"]["rollback_trials"] == 1
         assert data["optimize_summary"]["proposal_selection_trials"] == 3
         assert data["optimize_summary"]["proposal_rejected_trials"] == 1
+        assert data["optimize_summary"]["cached_reuse_trials"] == 1
+        assert data["optimize_summary"]["cached_reruns_avoided"] == 1
         assert data["optimize_summary"]["selected_proposal_counts"] == {
             "expansion": 1,
             "local_mutation": 1,
@@ -981,8 +987,10 @@ class TestDashboardAPI:
         assert data["optimize_summary"]["trial_rows"][1]["rollback_applied"] is True
         assert data["optimize_summary"]["trial_rows"][1]["rollback_restored_trial"] == 2
         assert data["optimize_summary"]["trial_rows"][0]["proposal_rejected"] is True
+        assert data["optimize_summary"]["trial_rows"][0]["reused_cached_evaluation"] is False
         assert data["optimize_summary"]["trial_rows"][1]["proposal_selected"] == "expansion"
         assert data["optimize_summary"]["trial_rows"][1]["proposal_candidate_count"] == 2
+        assert data["optimize_summary"]["trial_rows"][1]["reused_cached_evaluation"] is True
 
     def test_dashboard_run_includes_single_agent_summary(
         self, client, monkeypatch, tmp_path
