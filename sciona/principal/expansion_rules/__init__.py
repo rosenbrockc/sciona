@@ -43,6 +43,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.sorting import (
         SortingExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.searching import (
+        SearchingExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.string_matching import (
         StringMatchingExpansionRuleSet,
     )
@@ -58,4 +61,5 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         GraphOptimizationExpansionRuleSet(),
         SortingExpansionRuleSet(),
         StringMatchingExpansionRuleSet(),
+        SearchingExpansionRuleSet(),
     ]
