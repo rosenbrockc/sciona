@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 
 def default_rule_sets() -> list[ExpansionRuleSet]:
     """Return all built-in expansion rule sets."""
+    from sciona.principal.expansion_rules.dynamic_programming import (
+        DynamicProgrammingExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.graph_traversal import (
         GraphTraversalExpansionRuleSet,
     )
@@ -34,4 +37,5 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         SequentialFilterExpansionRuleSet(),
         MCMCExpansionRuleSet(),
         GraphTraversalExpansionRuleSet(),
+        DynamicProgrammingExpansionRuleSet(),
     ]
