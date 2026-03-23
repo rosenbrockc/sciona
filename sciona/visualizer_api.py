@@ -870,6 +870,27 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
                     row.get("rollback_restored_trial", 0) or 0
                 ),
                 "rollback_reason": str(row.get("rollback_reason", "") or ""),
+                "proposal_selected": str(row.get("proposal_selected", "") or ""),
+                "proposal_candidate_count": int(
+                    row.get("proposal_candidate_count", 0) or 0
+                ),
+                "proposal_candidates": list(row.get("proposal_candidates", []) or []),
+                "proposal_rejected": bool(row.get("proposal_rejected")),
+                "proposal_baseline_loss": (
+                    float(row.get("proposal_baseline_loss"))
+                    if row.get("proposal_baseline_loss") is not None
+                    else None
+                ),
+                "proposal_selected_loss": (
+                    float(row.get("proposal_selected_loss"))
+                    if row.get("proposal_selected_loss") is not None
+                    else None
+                ),
+                "proposal_improvement": (
+                    float(row.get("proposal_improvement"))
+                    if row.get("proposal_improvement") is not None
+                    else None
+                ),
             }
         )
     best_structure = optimize.get("best_structure", {})
@@ -878,6 +899,9 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
     best_params = optimize.get("best_parameter_assignments", {})
     if not isinstance(best_params, dict):
         best_params = {}
+    selected_proposal_counts = optimize.get("selected_proposal_counts", {})
+    if not isinstance(selected_proposal_counts, dict):
+        selected_proposal_counts = {}
     return {
         "objective": str(optimize.get("objective", "") or ""),
         "execution_metric": str(optimize.get("execution_metric", "") or ""),
@@ -895,6 +919,16 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
         "topology_change_trials": int(optimize.get("topology_change_trials", 0) or 0),
         "expansion_applied_trials": int(optimize.get("expansion_applied_trials", 0) or 0),
         "rollback_trials": int(optimize.get("rollback_trials", 0) or 0),
+        "proposal_selection_trials": int(
+            optimize.get("proposal_selection_trials", 0) or 0
+        ),
+        "proposal_rejected_trials": int(
+            optimize.get("proposal_rejected_trials", 0) or 0
+        ),
+        "selected_proposal_counts": {
+            str(key): int(value or 0)
+            for key, value in selected_proposal_counts.items()
+        },
         "unique_primitive_signatures": int(
             optimize.get("unique_primitive_signatures", 0) or 0
         ),
@@ -909,6 +943,12 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
         ),
         "worst_expansion_loss_delta": float(
             optimize.get("worst_expansion_loss_delta", 0.0) or 0.0
+        ),
+        "mean_selected_proposal_improvement": float(
+            optimize.get("mean_selected_proposal_improvement", 0.0) or 0.0
+        ),
+        "best_selected_proposal_improvement": float(
+            optimize.get("best_selected_proposal_improvement", 0.0) or 0.0
         ),
         "best_structure": {
             "node_count": int(best_structure.get("node_count", 0) or 0),

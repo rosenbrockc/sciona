@@ -65,12 +65,16 @@ def _summarize_optimize_history(
     topology_change_trials = 0
     expansion_applied_trials = 0
     rollback_trials = 0
+    proposal_selection_trials = 0
+    proposal_rejected_trials = 0
+    selected_proposal_counts: dict[str, int] = {}
     primitive_signatures: set[str] = set()
     topology_signatures: set[str] = set()
     expansion_rules: set[str] = set()
     max_family_entropy = 0.0
     max_distinct_primitive_families = 0
     expansion_deltas: list[float] = []
+    selected_proposal_improvements: list[float] = []
     trial_loss_by_id: dict[int, float] = {}
 
     for entry in history:
@@ -79,6 +83,11 @@ def _summarize_optimize_history(
         structure = entry.get("structure", {}) if isinstance(entry.get("structure"), dict) else {}
         expansion = entry.get("expansion", {}) if isinstance(entry.get("expansion"), dict) else {}
         rollback = entry.get("rollback", {}) if isinstance(entry.get("rollback"), dict) else {}
+        proposal = (
+            entry.get("proposal_selection", {})
+            if isinstance(entry.get("proposal_selection"), dict)
+            else {}
+        )
         params = (
             entry.get("parameter_assignments", {})
             if isinstance(entry.get("parameter_assignments"), dict)
@@ -103,6 +112,42 @@ def _summarize_optimize_history(
             expansion_applied_trials += 1
         if bool(rollback.get("applied")):
             rollback_trials += 1
+        candidate_rows = proposal.get("candidates", [])
+        if not isinstance(candidate_rows, list):
+            candidate_rows = []
+        selected_proposal = str(proposal.get("selected", "") or "")
+        baseline_loss = proposal.get("baseline_loss")
+        selected_loss: float | None = None
+        candidate_labels: list[str] = []
+        candidate_count = 0
+        for candidate in candidate_rows:
+            if not isinstance(candidate, dict):
+                continue
+            candidate_count += 1
+            label = str(candidate.get("label", "") or "")
+            if label:
+                candidate_labels.append(label)
+            if selected_proposal and label == selected_proposal:
+                try:
+                    selected_loss = float(candidate.get("loss", 0.0) or 0.0)
+                except (TypeError, ValueError):
+                    selected_loss = None
+        if candidate_count > 0 or baseline_loss is not None:
+            proposal_selection_trials += 1
+        if selected_proposal:
+            selected_proposal_counts[selected_proposal] = (
+                selected_proposal_counts.get(selected_proposal, 0) + 1
+            )
+            try:
+                baseline_loss_value = float(baseline_loss)
+            except (TypeError, ValueError):
+                baseline_loss_value = None
+            if baseline_loss_value is not None and selected_loss is not None:
+                selected_proposal_improvements.append(
+                    baseline_loss_value - selected_loss
+                )
+        elif candidate_count > 0:
+            proposal_rejected_trials += 1
         rule_names = expansion.get("rules_applied", [])
         if isinstance(rule_names, list):
             for rule_name in rule_names:
@@ -153,6 +198,21 @@ def _summarize_optimize_history(
                 else 0
             ),
             "rollback_reason": str(rollback.get("reason", "") or ""),
+            "proposal_selected": selected_proposal,
+            "proposal_candidate_count": candidate_count,
+            "proposal_candidates": candidate_labels,
+            "proposal_rejected": not bool(selected_proposal) and candidate_count > 0,
+            "proposal_baseline_loss": (
+                float(baseline_loss)
+                if baseline_loss is not None
+                else None
+            ),
+            "proposal_selected_loss": selected_loss,
+            "proposal_improvement": (
+                float(baseline_loss) - selected_loss
+                if baseline_loss is not None and selected_loss is not None
+                else None
+            ),
         }
         trial_rows.append(row)
         if best_entry is None or row["loss"] < float(best_entry.get("loss", float("inf"))):
@@ -185,6 +245,9 @@ def _summarize_optimize_history(
         "topology_change_trials": topology_change_trials,
         "expansion_applied_trials": expansion_applied_trials,
         "rollback_trials": rollback_trials,
+        "proposal_selection_trials": proposal_selection_trials,
+        "proposal_rejected_trials": proposal_rejected_trials,
+        "selected_proposal_counts": dict(sorted(selected_proposal_counts.items())),
         "unique_primitive_signatures": len(primitive_signatures),
         "unique_topologies": len(topology_signatures),
         "expansion_rules_applied": sorted(expansion_rules),
@@ -198,6 +261,16 @@ def _summarize_optimize_history(
         "worst_expansion_loss_delta": (
             float(max(expansion_deltas))
             if expansion_deltas
+            else 0.0
+        ),
+        "mean_selected_proposal_improvement": (
+            float(sum(selected_proposal_improvements) / len(selected_proposal_improvements))
+            if selected_proposal_improvements
+            else 0.0
+        ),
+        "best_selected_proposal_improvement": (
+            float(max(selected_proposal_improvements))
+            if selected_proposal_improvements
             else 0.0
         ),
         "best_parameter_assignments": best_params,
