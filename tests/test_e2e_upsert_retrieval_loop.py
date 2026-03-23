@@ -240,19 +240,35 @@ class TestUpsertedRunBecomesRetrievalCandidate:
             retriever.find_refinement_templates(failed_node, failure_context)
         )
 
-        # Verify: query_verified_exemplars was called with correct args
-        mock_store.query_verified_exemplars.assert_awaited_once_with(
-            concept_type="sorting",
-            min_coverage=0.5,
-            limit=10,
-        )
+        # Verify: refinement first queries same-family exemplars, then a
+        # cross-family structure-compatible fallback.
+        assert mock_store.query_verified_exemplars.await_count == 2
+        same_family = mock_store.query_verified_exemplars.await_args_list[0]
+        cross_family = mock_store.query_verified_exemplars.await_args_list[1]
+        assert same_family.kwargs == {
+            "concept_type": "sorting",
+            "n_inputs": 0,
+            "n_outputs": 0,
+            "min_coverage": 0.5,
+            "limit": 10,
+        }
+        assert cross_family.kwargs == {
+            "concept_type": "",
+            "n_inputs": 0,
+            "n_outputs": 0,
+            "min_coverage": 0.5,
+            "limit": 10,
+        }
 
         # Non-empty results with confidence >= threshold
         assert len(matches) > 0
         for match in matches:
             assert isinstance(match, TemplateMatch)
             assert match.confidence >= 0.6
-            assert match.source == "verified_exemplar"
+            assert match.source in {
+                "verified_exemplar_same_family",
+                "verified_exemplar_cross_family",
+            }
 
 
 class TestSanitizeCdgPreservesMatchedPrimitives:

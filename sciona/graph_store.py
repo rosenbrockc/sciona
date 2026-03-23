@@ -442,7 +442,9 @@ class GraphStore:
 
     async def query_verified_exemplars(
         self,
-        concept_type: str,
+        concept_type: str = "",
+        n_inputs: int = -1,
+        n_outputs: int = -1,
         min_coverage: float = 0.8,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
@@ -450,17 +452,28 @@ class GraphStore:
         cypher = (
             "MATCH (p:Atom:Decomposed) "
             "WHERE p.verified_leaf_coverage >= $min_coverage "
-            "  AND p.concept_type = $concept_type "
+            "  AND ($concept_type = '' OR p.concept_type = $concept_type) "
+            "  AND ($n_inputs < 0 OR abs(p.n_inputs - $n_inputs) <= 1) "
+            "  AND ($n_outputs < 0 OR abs(p.n_outputs - $n_outputs) <= 1) "
             "RETURN p.fqn AS fqn, p.repo AS repo, "
             "       p.verified_leaf_coverage AS verified_leaf_coverage, "
-            "       p.topo_hash AS topo_hash "
-            "ORDER BY p.verified_leaf_coverage DESC "
+            "       p.topo_hash AS topo_hash, "
+            "       p.concept_type AS concept_type, "
+            "       p.n_inputs AS n_inputs, "
+            "       p.n_outputs AS n_outputs "
+            "ORDER BY "
+            "       CASE WHEN $concept_type <> '' AND p.concept_type = $concept_type THEN 0 ELSE 1 END ASC, "
+            "       CASE WHEN $n_inputs >= 0 THEN abs(p.n_inputs - $n_inputs) ELSE 0 END "
+            "         + CASE WHEN $n_outputs >= 0 THEN abs(p.n_outputs - $n_outputs) ELSE 0 END ASC, "
+            "       p.verified_leaf_coverage DESC "
             "LIMIT $limit"
         )
         async with self._driver.session() as session:
             result = await session.run(
                 cypher,
                 concept_type=concept_type,
+                n_inputs=n_inputs,
+                n_outputs=n_outputs,
                 min_coverage=min_coverage,
                 limit=limit,
             )

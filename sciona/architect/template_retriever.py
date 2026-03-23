@@ -152,27 +152,52 @@ class TemplateRetriever:
 
         try:
             concept_type = failed_node.concept_type.value
-            records = await self._store.query_verified_exemplars(
+            same_family_records = await self._store.query_verified_exemplars(
                 concept_type=concept_type,
+                n_inputs=len(failed_node.inputs),
+                n_outputs=len(failed_node.outputs),
                 min_coverage=0.5,
                 limit=10,
             )
-            if not records:
+            cross_family_records = await self._store.query_verified_exemplars(
+                concept_type="",
+                n_inputs=len(failed_node.inputs),
+                n_outputs=len(failed_node.outputs),
+                min_coverage=0.5,
+                limit=10,
+            )
+
+            merged_records: list[dict[str, Any]] = []
+            seen_fqns: set[str] = set()
+            for record in same_family_records + cross_family_records:
+                if not isinstance(record, dict):
+                    continue
+                fqn = str(record.get("fqn", "") or "")
+                if not fqn or fqn in seen_fqns:
+                    continue
+                seen_fqns.add(fqn)
+                merged_records.append(record)
+            if not merged_records:
                 return []
 
-            # For refinement, we don't have full subgraph info,
-            # so return basic matches with confidence from coverage
             matches: list[TemplateMatch] = []
-            for rec in records:
+            for rec in merged_records:
                 coverage = float(rec.get("verified_leaf_coverage", 0.0))
-                confidence = min(0.95, coverage)
+                candidate_concept = str(rec.get("concept_type", "") or "")
+                candidate_n_inputs = int(rec.get("n_inputs", 0) or 0)
+                candidate_n_outputs = int(rec.get("n_outputs", 0) or 0)
+                concept_match = 1.0 if candidate_concept == concept_type else 0.0
+                io_delta = abs(candidate_n_inputs - len(failed_node.inputs)) + abs(
+                    candidate_n_outputs - len(failed_node.outputs)
+                )
+                io_match = max(0.0, 1.0 - 0.15 * io_delta)
+                confidence = min(0.95, coverage * (0.75 + 0.25 * io_match))
                 if confidence >= self._confidence_threshold:
-                    # Create a minimal ExampleDecomposition for reference
                     example = ExampleDecomposition(
                         fqn=rec.get("fqn", ""),
                         name="",
                         description="",
-                        concept_type=concept_type,
+                        concept_type=candidate_concept or concept_type,
                         repo=rec.get("repo", ""),
                         topo_hash=rec.get("topo_hash", ""),
                         children=[],
@@ -182,8 +207,8 @@ class TemplateRetriever:
                     )
                     alignment = AlignmentScore(
                         total=confidence,
-                        concept_type_match=1.0,
-                        io_arity_match=0.0,
+                        concept_type_match=concept_match,
+                        io_arity_match=io_match,
                         child_concept_overlap=0.0,
                         topo_match=0.0,
                         type_class_match=0.0,
@@ -194,7 +219,11 @@ class TemplateRetriever:
                             example=example,
                             alignment=alignment,
                             confidence=confidence,
-                            source="verified_exemplar",
+                            source=(
+                                "verified_exemplar_same_family"
+                                if concept_match >= 1.0
+                                else "verified_exemplar_cross_family"
+                            ),
                         )
                     )
 

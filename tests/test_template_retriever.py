@@ -193,8 +193,19 @@ async def test_find_refinement_templates_no_store():
 async def test_find_refinement_templates_returns_verified():
     store = MagicMock()
     store.query_verified_exemplars = AsyncMock(
-        return_value=[
-            {"fqn": "repo.good_node", "repo": "repo", "verified_leaf_coverage": 0.9, "topo_hash": "x"},
+        side_effect=[
+            [
+                {
+                    "fqn": "repo.good_node",
+                    "repo": "repo",
+                    "verified_leaf_coverage": 0.9,
+                    "topo_hash": "x",
+                    "concept_type": "sorting",
+                    "n_inputs": 1,
+                    "n_outputs": 1,
+                }
+            ],
+            [],
         ]
     )
 
@@ -207,5 +218,40 @@ async def test_find_refinement_templates_returns_verified():
     result = await retriever.find_refinement_templates(node, {})
 
     assert len(result) == 1
-    assert result[0].source == "verified_exemplar"
+    assert result[0].source == "verified_exemplar_same_family"
     assert result[0].confidence >= 0.5
+    assert store.query_verified_exemplars.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_find_refinement_templates_falls_back_to_cross_family_structure() -> None:
+    store = MagicMock()
+    store.query_verified_exemplars = AsyncMock(
+        side_effect=[
+            [],
+            [
+                {
+                    "fqn": "repo.foreign_node",
+                    "repo": "repo",
+                    "verified_leaf_coverage": 0.92,
+                    "topo_hash": "y",
+                    "concept_type": "signal_filter",
+                    "n_inputs": 1,
+                    "n_outputs": 1,
+                }
+            ],
+        ]
+    )
+
+    scorer = GraphAlignmentScorer()
+    retriever = TemplateRetriever(store=store, scorer=scorer, confidence_threshold=0.5)
+    retriever._store = store
+
+    node = _make_node(concept_type=ConceptType.SORTING)
+    result = await retriever.find_refinement_templates(node, {})
+
+    assert len(result) == 1
+    assert result[0].source == "verified_exemplar_cross_family"
+    assert result[0].example.concept_type == "signal_filter"
+    assert result[0].alignment.concept_type_match == 0.0
+    assert result[0].alignment.io_arity_match == 1.0
