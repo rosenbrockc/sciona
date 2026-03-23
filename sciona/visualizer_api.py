@@ -857,6 +857,14 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
                 "primitive_assignment_changed": bool(
                     row.get("primitive_assignment_changed")
                 ),
+                "expansion_applied": bool(row.get("expansion_applied")),
+                "distinct_primitive_family_count": int(
+                    row.get("distinct_primitive_family_count", 0) or 0
+                ),
+                "family_entropy": float(row.get("family_entropy", 0.0) or 0.0),
+                "cross_family_edge_count": int(
+                    row.get("cross_family_edge_count", 0) or 0
+                ),
             }
         )
     best_structure = optimize.get("best_structure", {})
@@ -880,16 +888,29 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
         "parameterized_trials": int(optimize.get("parameterized_trials", 0) or 0),
         "primitive_change_trials": int(optimize.get("primitive_change_trials", 0) or 0),
         "topology_change_trials": int(optimize.get("topology_change_trials", 0) or 0),
+        "expansion_applied_trials": int(optimize.get("expansion_applied_trials", 0) or 0),
         "unique_primitive_signatures": int(
             optimize.get("unique_primitive_signatures", 0) or 0
         ),
         "unique_topologies": int(optimize.get("unique_topologies", 0) or 0),
+        "expansion_rules_applied": list(optimize.get("expansion_rules_applied", []) or []),
+        "max_family_entropy": float(optimize.get("max_family_entropy", 0.0) or 0.0),
+        "max_distinct_primitive_families": int(
+            optimize.get("max_distinct_primitive_families", 0) or 0
+        ),
         "best_structure": {
             "node_count": int(best_structure.get("node_count", 0) or 0),
             "edge_count": int(best_structure.get("edge_count", 0) or 0),
             "topo_hash": str(best_structure.get("topo_hash", "") or ""),
             "primitive_signature": str(
                 best_structure.get("primitive_signature", "") or ""
+            ),
+            "distinct_primitive_family_count": int(
+                best_structure.get("distinct_primitive_family_count", 0) or 0
+            ),
+            "family_entropy": float(best_structure.get("family_entropy", 0.0) or 0.0),
+            "cross_family_edge_count": int(
+                best_structure.get("cross_family_edge_count", 0) or 0
             ),
         },
         "best_parameter_assignments": best_params,

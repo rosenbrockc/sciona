@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -40,6 +41,14 @@ class BenchmarkResult(BaseModel, frozen=True):
     node_telemetry: dict[str, NodeTelemetry] = Field(
         default_factory=dict,
         description="Per-node telemetry keyed by node_id.",
+    )
+    runtime_artifacts: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Best-effort runtime payloads captured during evaluation, such as "
+            "stdout JSON, dataset-derived signal context, and explicit "
+            "intermediate summaries."
+        ),
     )
 
 

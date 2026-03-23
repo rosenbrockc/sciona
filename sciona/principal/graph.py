@@ -23,6 +23,8 @@ from sciona.principal.atom_ledger import AtomLedger, compute_slot_signature
 from sciona.principal.backprop import CreditAssigner
 from sciona.principal.evaluator import ExecutionSandbox
 from sciona.principal.hpo import OptunaManager, SuggestedParams, TrialPrunedEarly
+from sciona.principal.expansion import ExpansionContext, ExpansionEngine
+from sciona.principal.expansion_rules import default_rule_sets
 from sciona.principal.models import (
     BenchmarkResult,
     NodeGradient,
@@ -77,6 +79,8 @@ class PrincipalState:
     hpo_trial_number: int | None = None
     pending_param_search: bool = False
     param_trials_remaining: int = 0
+    expansion_applied: bool = False
+    expansion_rules_applied: list[str] = field(default_factory=list)
 
     # Bookkeeping
     done: bool = False
@@ -262,6 +266,7 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
             state.cdg,
             ghost_report=state.ghost_report,
             match_results=state.match_results,
+            catalog=deps.catalog,
         )
         if state.cdg is not None
         else {}
@@ -293,6 +298,12 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
             "thread_id": state.thread_id,
             "structure": structure,
             "parameter_assignments": dict(state.node_params),
+            "expansion": {
+                "applied": False,
+                "rules_applied": [],
+                "diagnostic_count": 0,
+                "context_summary": {},
+            },
         }
     )
 
@@ -311,6 +322,112 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
         "best_node_params": state.best_node_params,
         "trial_history": state.trial_history,
         "current_trial": state.current_trial,
+        "pending_param_search": state.pending_param_search,
+        "param_trials_remaining": state.param_trials_remaining,
+    }
+
+
+def _summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
+    """Return a compact telemetry summary for the runtime expansion context."""
+    signal_data = context.signal_data or {}
+    intermediates = context.intermediates or {}
+    eval_result = context.eval_result or {}
+    return {
+        "signal_keys": sorted(signal_data.keys())[:12],
+        "intermediate_keys": sorted(intermediates.keys())[:16],
+        "has_eval_result": bool(eval_result),
+        "eval_keys": (
+            sorted(eval_result.keys())[:16]
+            if isinstance(eval_result, dict)
+            else []
+        ),
+    }
+
+
+def _build_expansion_context(state: PrincipalState) -> ExpansionContext:
+    """Construct a best-effort runtime context from the latest evaluation artifacts."""
+    artifacts = (
+        dict(state.benchmark.runtime_artifacts)
+        if state.benchmark is not None
+        else {}
+    )
+    stdout_payload = artifacts.get("stdout_payload", {})
+    eval_result: dict[str, Any]
+    if isinstance(stdout_payload, dict):
+        eval_result = dict(stdout_payload)
+    else:
+        eval_result = {}
+    if state.benchmark is not None:
+        eval_result.setdefault("global_loss", state.benchmark.global_loss)
+    intermediates = artifacts.get("intermediates", {})
+    signal_data = artifacts.get("signal_data", {})
+    if not isinstance(intermediates, dict):
+        intermediates = {}
+    if not isinstance(signal_data, dict):
+        signal_data = {}
+    return ExpansionContext(
+        intermediates=dict(intermediates),
+        eval_result=eval_result or None,
+        signal_data=dict(signal_data) or None,
+    )
+
+
+async def apply_expansion(state: PrincipalState, config: RunnableConfig) -> dict:
+    """Apply family-agnostic CDG expansion rules using runtime diagnostics."""
+    deps: PrincipalDeps = config["configurable"]["deps"]
+    if state.cdg is None or state.benchmark is None:
+        state.expansion_applied = False
+        state.expansion_rules_applied = []
+        return {
+            "expansion_applied": False,
+            "expansion_rules_applied": [],
+        }
+
+    engine = deps.expansion_engine or ExpansionEngine(default_rule_sets())
+    context = _build_expansion_context(state)
+    result = engine.expand(state.cdg, context)
+    state.expansion_applied = bool(result.expanded)
+    state.expansion_rules_applied = list(result.applied_rules)
+
+    if state.trial_history:
+        latest = dict(state.trial_history[-1])
+        latest["expansion"] = {
+            "applied": bool(result.expanded),
+            "rules_applied": list(result.applied_rules),
+            "diagnostic_count": len(result.diagnostics),
+            "diagnostic_rule_names": sorted(
+                {diag.rule_name for diag in result.diagnostics}
+            ),
+            "context_summary": _summarize_expansion_context(context),
+        }
+        state.trial_history[-1] = latest
+
+    if not result.expanded:
+        return {
+            "expansion_applied": False,
+            "expansion_rules_applied": [],
+            "trial_history": state.trial_history,
+        }
+
+    state.cdg = result.cdg
+    state.node_params = {}
+    state.param_signature = ""
+    state.hpo_trial_number = None
+    has_tunables = _structure_has_tunables(result.cdg, deps.catalog)
+    state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
+    state.param_trials_remaining = (
+        deps.param_trials_per_structure if has_tunables else 0
+    )
+    logger.info(
+        "Trial %d expansion applied: %s",
+        state.current_trial,
+        ", ".join(result.applied_rules) or "(none)",
+    )
+    return {
+        "cdg": result.cdg,
+        "expansion_applied": True,
+        "expansion_rules_applied": list(result.applied_rules),
+        "trial_history": state.trial_history,
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
     }
@@ -544,6 +661,17 @@ def route_after_gradients(state: PrincipalState) -> str:
     return "time_travel"
 
 
+def route_after_expansion(state: PrincipalState) -> str:
+    """After expansion, either evaluate the new structure or continue normally."""
+    if state.done:
+        return "end"
+    if len(state.trial_history) >= state.max_trials:
+        return "end"
+    if state.expansion_applied:
+        return "suggest_params"
+    return "gradients"
+
+
 def route_after_update(state: PrincipalState) -> str:
     """After time-travel update, loop back or stop."""
     if state.done:
@@ -582,6 +710,7 @@ class PrincipalDeps:
     catalog: PrimitiveCatalog | None = None
     hpo_manager: OptunaManager | None = None
     param_trials_per_structure: int = 1
+    expansion_engine: ExpansionEngine | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -597,6 +726,7 @@ def build_principal_graph() -> StateGraph:
     graph.add_node("suggest_params", suggest_params)
     graph.add_node("forward", execute_forward)
     graph.add_node("evaluate", evaluate_run)
+    graph.add_node("expand", apply_expansion)
     graph.add_node("gradients", compute_gradients)
     graph.add_node("time_travel", time_travel_update)
 
@@ -608,7 +738,12 @@ def build_principal_graph() -> StateGraph:
         route_after_forward,
         {"evaluate": "evaluate", "time_travel": "time_travel", "end": END},
     )
-    graph.add_edge("evaluate", "gradients")
+    graph.add_edge("evaluate", "expand")
+    graph.add_conditional_edges(
+        "expand",
+        route_after_expansion,
+        {"suggest_params": "suggest_params", "gradients": "gradients", "end": END},
+    )
     graph.add_conditional_edges(
         "gradients",
         route_after_gradients,

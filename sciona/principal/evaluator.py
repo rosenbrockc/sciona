@@ -99,6 +99,13 @@ class ExecutionSandbox:
             logger.error("Failed to launch artifact: %s", exc)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
+        stdout_payload = _parse_stdout_payload(stdout)
+        runtime_artifacts = _build_runtime_artifacts(
+            trace_path=trace_path,
+            stdout_payload=stdout_payload,
+            signal_data=_load_signal_data_from_dataset_path(dataset_path),
+        )
+
         if proc.returncode != 0:
             telemetry = _parse_trace(trace_path)
             logger.error(
@@ -109,6 +116,7 @@ class ExecutionSandbox:
             return BenchmarkResult(
                 global_loss=_FAILURE_PENALTY,
                 node_telemetry=telemetry,
+                runtime_artifacts=runtime_artifacts,
             )
 
         # Parse trace.jsonl
@@ -120,6 +128,7 @@ class ExecutionSandbox:
         return BenchmarkResult(
             global_loss=global_loss,
             node_telemetry=telemetry,
+            runtime_artifacts=runtime_artifacts,
         )
 
     async def evaluate_adapter(
@@ -169,6 +178,7 @@ class ExecutionSandbox:
                 evaluation_spec=evaluation_spec,
             )
 
+        signal_data: dict[str, Any] = {}
         try:
             coll_cls = create_templated_dataset_collection(
                 str(adapter), varset=varset,
@@ -176,6 +186,7 @@ class ExecutionSandbox:
             options = coll_cls.get_filter_options(user, serial, recursive=True)
             coll = coll_cls.from_folder(options=options)
             dfs = coll.to_pandas()
+            signal_data = _collect_signal_data_from_frames(dfs)
         except Exception as exc:
             logger.error("Failed to load adapter dataset: %s", exc)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
@@ -191,12 +202,16 @@ class ExecutionSandbox:
         manifest_path = out_dir / "dataset_manifest.json"
         manifest_path.write_text(json.dumps(manifest, indent=2))
 
-        return await self.evaluate(
+        result = await self.evaluate(
             bundle,
             str(manifest_path),
             metric,
             evaluation_spec=evaluation_spec,
         )
+        artifacts = dict(result.runtime_artifacts)
+        if signal_data:
+            artifacts["signal_data"] = signal_data
+        return result.model_copy(update={"runtime_artifacts": artifacts})
 
     async def _evaluate_python_adapter_runner(
         self,
@@ -216,6 +231,17 @@ class ExecutionSandbox:
         if not artifact.exists():
             logger.error("Artifact not found: %s", artifact)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
+
+        signal_data: dict[str, Any] = {}
+        try:
+            from sciona.principal.datasets import create_templated_dataset_collection
+
+            coll_cls = create_templated_dataset_collection(str(adapter), varset=varset)
+            options = coll_cls.get_filter_options(user, serial, recursive=True)
+            coll = coll_cls.from_folder(options=options)
+            signal_data = _collect_signal_data_from_frames(coll.to_pandas())
+        except Exception:
+            signal_data = {}
 
         trace_path = output_dir / "trace.jsonl"
         if trace_path.exists():
@@ -263,6 +289,13 @@ class ExecutionSandbox:
             logger.error("Failed to launch artifact: %s", exc)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
+        stdout_payload = _parse_stdout_payload(stdout)
+        runtime_artifacts = _build_runtime_artifacts(
+            trace_path=trace_path,
+            stdout_payload=stdout_payload,
+            signal_data=signal_data,
+        )
+
         if proc.returncode != 0:
             telemetry = _parse_trace(trace_path)
             logger.error(
@@ -273,11 +306,16 @@ class ExecutionSandbox:
             return BenchmarkResult(
                 global_loss=_FAILURE_PENALTY,
                 node_telemetry=telemetry,
+                runtime_artifacts=runtime_artifacts,
             )
 
         telemetry = _parse_trace(trace_path)
         global_loss = _compute_loss(telemetry, metric, stdout)
-        return BenchmarkResult(global_loss=global_loss, node_telemetry=telemetry)
+        return BenchmarkResult(
+            global_loss=global_loss,
+            node_telemetry=telemetry,
+            runtime_artifacts=runtime_artifacts,
+        )
 
 
 def _parse_trace(trace_path: Path) -> dict[str, NodeTelemetry]:
@@ -362,6 +400,161 @@ def _parse_precision_loss_from_stdout(stdout: bytes | None) -> float:
         except (json.JSONDecodeError, ValueError, TypeError):
             continue
     return _FAILURE_PENALTY
+
+
+def _parse_stdout_payload(stdout: bytes | None) -> dict[str, Any] | None:
+    """Return the last JSON object emitted to stdout, when present."""
+    if not stdout:
+        return None
+    lines = stdout.decode(errors="replace").strip().splitlines()
+    for line in reversed(lines):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            data = json.loads(line)
+        except (json.JSONDecodeError, ValueError, TypeError):
+            continue
+        if isinstance(data, dict):
+            return data
+    return None
+
+
+def _build_runtime_artifacts(
+    *,
+    trace_path: Path,
+    stdout_payload: dict[str, Any] | None,
+    signal_data: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Assemble best-effort runtime artifacts for downstream expansion."""
+    artifacts: dict[str, Any] = {"trace_path": str(trace_path)}
+    if stdout_payload:
+        artifacts["stdout_payload"] = stdout_payload
+        intermediates = stdout_payload.get("intermediates", {})
+        if isinstance(intermediates, dict):
+            artifacts["intermediates"] = dict(intermediates)
+        outputs = stdout_payload.get("outputs")
+        if isinstance(outputs, dict):
+            merged = dict(artifacts.get("intermediates", {}))
+            for key, value in outputs.items():
+                if key not in merged:
+                    merged[key] = value
+            artifacts["intermediates"] = merged
+    if signal_data:
+        artifacts["signal_data"] = dict(signal_data)
+    return artifacts
+
+
+def _load_signal_data_from_dataset_path(dataset_path: str) -> dict[str, Any]:
+    """Best-effort signal-data loading from a dataset manifest path."""
+    candidate = Path(dataset_path).expanduser()
+    if not candidate.exists() or candidate.suffix.lower() != ".json":
+        return {}
+    try:
+        payload = json.loads(candidate.read_text())
+    except Exception:
+        return {}
+    if not isinstance(payload, dict) or not payload:
+        return {}
+    try:
+        import pandas as pd
+    except Exception:
+        return {}
+    frames: dict[str, Any] = {}
+    for group_name, raw_path in payload.items():
+        if not isinstance(group_name, str) or not isinstance(raw_path, str):
+            continue
+        path = Path(raw_path).expanduser()
+        if not path.exists() or path.suffix.lower() != ".parquet":
+            continue
+        try:
+            frames[group_name] = pd.read_parquet(path)
+        except Exception:
+            continue
+    return _collect_signal_data_from_frames(frames)
+
+
+def _collect_signal_data_from_frames(group_frames: dict[str, Any]) -> dict[str, Any]:
+    """Extract signal-oriented arrays and sampling metadata from dataset frames."""
+    if not isinstance(group_frames, dict):
+        return {}
+
+    signal_data: dict[str, Any] = {}
+    for group_name, frame in group_frames.items():
+        if not hasattr(frame, "columns"):
+            continue
+        group = str(group_name)
+        group_lower = group.lower()
+        group_alias = group.rsplit("_", 1)[-1] if "_" in group else group
+        time_column = _pick_time_column(frame)
+        sampling_rate = _infer_sampling_rate(frame, time_column=time_column)
+        if sampling_rate is not None:
+            signal_data.setdefault("sampling_rate", sampling_rate)
+            signal_data[f"{group}_sampling_rate"] = sampling_rate
+            if group_alias:
+                signal_data[f"{group_alias}_sampling_rate"] = sampling_rate
+
+        for column in frame.columns:
+            series = frame[column]
+            values = series.to_numpy() if hasattr(series, "to_numpy") else list(series)
+            key = str(column)
+            signal_data[key] = values
+            if key.startswith(f"{group}_"):
+                alias = key[len(group) + 1 :]
+                signal_data.setdefault(alias, values)
+                if group_alias and alias != "value":
+                    signal_data.setdefault(f"{group_alias}_{alias}", values)
+                if group_alias and alias == "value":
+                    signal_data.setdefault(group_alias, values)
+            if key == "value" and any(
+                token in group_lower for token in ("signal", "wave", "waveform", "ecg", "ppg", "eeg", "emg")
+            ):
+                signal_data.setdefault("signal", values)
+            if time_column is not None and key == time_column:
+                signal_data.setdefault("time", values)
+
+    return signal_data
+
+
+def _pick_time_column(frame: Any) -> str | None:
+    columns = [str(column) for column in getattr(frame, "columns", [])]
+    if "t" in columns:
+        return "t"
+    for column in columns:
+        if column.endswith("_t"):
+            return column
+    return None
+
+
+def _infer_sampling_rate(frame: Any, *, time_column: str | None = None) -> float | None:
+    """Estimate sampling rate from a frame time column using median delta."""
+    time_column = time_column or _pick_time_column(frame)
+    if time_column is None:
+        return None
+    times = frame[time_column]
+    values = times.to_numpy() if hasattr(times, "to_numpy") else times
+    if values is None or len(values) < 2:
+        return None
+    diffs: list[float] = []
+    prev: float | None = None
+    for raw in values:
+        try:
+            current = float(raw)
+        except (TypeError, ValueError):
+            prev = None
+            continue
+        if prev is not None:
+            delta = current - prev
+            if delta > 0:
+                diffs.append(delta)
+        prev = current
+    if not diffs:
+        return None
+    diffs.sort()
+    median = diffs[len(diffs) // 2]
+    if median <= 0:
+        return None
+    return 1.0 / median
 
 
 def _materialize_evaluation_spec_arg(

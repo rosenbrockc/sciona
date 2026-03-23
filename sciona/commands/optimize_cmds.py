@@ -63,13 +63,18 @@ def _summarize_optimize_history(
     parameterized_trials = 0
     primitive_change_trials = 0
     topology_change_trials = 0
+    expansion_applied_trials = 0
     primitive_signatures: set[str] = set()
     topology_signatures: set[str] = set()
+    expansion_rules: set[str] = set()
+    max_family_entropy = 0.0
+    max_distinct_primitive_families = 0
 
     for entry in history:
         if not isinstance(entry, dict):
             continue
         structure = entry.get("structure", {}) if isinstance(entry.get("structure"), dict) else {}
+        expansion = entry.get("expansion", {}) if isinstance(entry.get("expansion"), dict) else {}
         params = (
             entry.get("parameter_assignments", {})
             if isinstance(entry.get("parameter_assignments"), dict)
@@ -87,6 +92,21 @@ def _summarize_optimize_history(
             primitive_change_trials += 1
         if bool(structure.get("topology_changed")):
             topology_change_trials += 1
+        if bool(expansion.get("applied")):
+            expansion_applied_trials += 1
+        rule_names = expansion.get("rules_applied", [])
+        if isinstance(rule_names, list):
+            for rule_name in rule_names:
+                if isinstance(rule_name, str) and rule_name:
+                    expansion_rules.add(rule_name)
+        max_family_entropy = max(
+            max_family_entropy,
+            float(structure.get("family_entropy", 0.0) or 0.0),
+        )
+        max_distinct_primitive_families = max(
+            max_distinct_primitive_families,
+            int(structure.get("distinct_primitive_family_count", 0) or 0),
+        )
         row = {
             "trial": int(entry.get("trial", 0) or 0),
             "loss": float(entry.get("loss", 0.0) or 0.0),
@@ -99,6 +119,14 @@ def _summarize_optimize_history(
             "topology_changed": bool(structure.get("topology_changed")),
             "primitive_assignment_changed": bool(
                 structure.get("primitive_assignment_changed")
+            ),
+            "expansion_applied": bool(expansion.get("applied")),
+            "distinct_primitive_family_count": int(
+                structure.get("distinct_primitive_family_count", 0) or 0
+            ),
+            "family_entropy": float(structure.get("family_entropy", 0.0) or 0.0),
+            "cross_family_edge_count": int(
+                structure.get("cross_family_edge_count", 0) or 0
             ),
         }
         trial_rows.append(row)
@@ -130,8 +158,12 @@ def _summarize_optimize_history(
         "parameterized_trials": parameterized_trials,
         "primitive_change_trials": primitive_change_trials,
         "topology_change_trials": topology_change_trials,
+        "expansion_applied_trials": expansion_applied_trials,
         "unique_primitive_signatures": len(primitive_signatures),
         "unique_topologies": len(topology_signatures),
+        "expansion_rules_applied": sorted(expansion_rules),
+        "max_family_entropy": max_family_entropy,
+        "max_distinct_primitive_families": max_distinct_primitive_families,
         "best_parameter_assignments": best_params,
         "best_structure": best_structure,
         "trial_history_path": str(output_root / "trial_history.json"),
@@ -257,6 +289,8 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         build_principal_graph,
     )
     from sciona.principal.hpo import OptunaManager
+    from sciona.principal.expansion import ExpansionEngine
+    from sciona.principal.expansion_rules import default_rule_sets
     from sciona.principal.metric_selection import resolve_optimization_objective
     from sciona.telemetry import (
         configure_dashboard_output,
@@ -481,6 +515,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                 sandbox = ExecutionSandbox(timeout_s=args.timeout)
                 atom_ledger = AtomLedger()
                 hpo_manager = OptunaManager(study_name="principal")
+                expansion_engine = ExpansionEngine(default_rule_sets())
                 deps = PrincipalDeps(
                     architect=architect,
                     sandbox=sandbox,
@@ -498,6 +533,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                     catalog=catalog,
                     hpo_manager=hpo_manager,
                     param_trials_per_structure=2,
+                    expansion_engine=expansion_engine,
                 )
                 graph = build_principal_graph().compile()
 

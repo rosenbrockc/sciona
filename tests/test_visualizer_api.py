@@ -838,14 +838,24 @@ class TestDashboardAPI:
                     "parameterized_trials": 4,
                     "primitive_change_trials": 1,
                     "topology_change_trials": 0,
+                    "expansion_applied_trials": 2,
                     "unique_primitive_signatures": 2,
                     "unique_topologies": 1,
+                    "expansion_rules_applied": [
+                        "insert_sqi_before_filter",
+                        "insert_outlier_rejection_after_detection_smoothed",
+                    ],
+                    "max_family_entropy": 0.811278,
+                    "max_distinct_primitive_families": 2,
                     "trial_history_path": "output/principal_optimize_20260319_140027/trial_history.json",
                     "best_structure": {
                         "node_count": 4,
                         "edge_count": 2,
                         "topo_hash": "05c468d81ba2b726",
                         "primitive_signature": "c3fe45feb08a06c7",
+                        "distinct_primitive_family_count": 2,
+                        "family_entropy": 0.811278,
+                        "cross_family_edge_count": 1,
                     },
                     "best_parameter_assignments": {
                         "n_filter": {"filter_order": 4},
@@ -862,6 +872,10 @@ class TestDashboardAPI:
                             "parameter_node_count": 2,
                             "topology_changed": False,
                             "primitive_assignment_changed": False,
+                            "expansion_applied": False,
+                            "distinct_primitive_family_count": 1,
+                            "family_entropy": 0.0,
+                            "cross_family_edge_count": 0,
                         },
                         {
                             "trial": 3,
@@ -873,6 +887,10 @@ class TestDashboardAPI:
                             "parameter_node_count": 3,
                             "topology_changed": False,
                             "primitive_assignment_changed": True,
+                            "expansion_applied": True,
+                            "distinct_primitive_family_count": 2,
+                            "family_entropy": 0.811278,
+                            "cross_family_edge_count": 1,
                         },
                     ],
                 }
@@ -890,11 +908,18 @@ class TestDashboardAPI:
         assert data["optimize_summary"]["best_trial"] == 3
         assert data["optimize_summary"]["parameterized_trials"] == 4
         assert data["optimize_summary"]["primitive_change_trials"] == 1
+        assert data["optimize_summary"]["expansion_applied_trials"] == 2
         assert data["optimize_summary"]["unique_primitive_signatures"] == 2
+        assert data["optimize_summary"]["max_distinct_primitive_families"] == 2
+        assert set(data["optimize_summary"]["expansion_rules_applied"]) == {
+            "insert_sqi_before_filter",
+            "insert_outlier_rejection_after_detection_smoothed",
+        }
         assert (
             data["optimize_summary"]["best_structure"]["primitive_signature"]
             == "c3fe45feb08a06c7"
         )
+        assert data["optimize_summary"]["best_structure"]["cross_family_edge_count"] == 1
         assert (
             data["optimize_summary"]["best_parameter_assignments"]["n_rate"][
                 "smoothing_window"
@@ -904,6 +929,7 @@ class TestDashboardAPI:
         assert data["optimize_summary"]["trial_rows"][1][
             "primitive_assignment_changed"
         ] is True
+        assert data["optimize_summary"]["trial_rows"][1]["expansion_applied"] is True
 
     def test_dashboard_run_includes_single_agent_summary(
         self, client, monkeypatch, tmp_path

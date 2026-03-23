@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from typing import Any
 
 from sciona.architect.handoff import CDGExport
@@ -19,6 +20,7 @@ def summarize_trial_structure(
     *,
     ghost_report: GhostSimReport | None = None,
     match_results: list[MatchResult] | None = None,
+    catalog: Any | None = None,
 ) -> dict[str, Any]:
     """Summarize a CDG structure for trial-history comparisons."""
     nodes = list(cdg.nodes)
@@ -62,6 +64,64 @@ def summarize_trial_structure(
         "primitive_signature": primitive_signature,
         "atomic_primitives": primitive_map,
     }
+    concept_types = sorted({node.concept_type.value for node in atomic_nodes})
+    primitive_families = {
+        node.node_id: _primitive_family(str(node.matched_primitive or ""), catalog)
+        for node in atomic_nodes
+        if node.matched_primitive
+    }
+    family_counts: dict[str, int] = {}
+    for family in primitive_families.values():
+        family_counts[family] = family_counts.get(family, 0) + 1
+    total_family_nodes = sum(family_counts.values())
+    family_entropy = 0.0
+    if total_family_nodes > 0:
+        for count in family_counts.values():
+            p = count / total_family_nodes
+            family_entropy -= p * math.log2(p)
+    cross_family_edge_count = 0
+    cross_family_nodes: set[str] = set()
+    atomic_ids = {node.node_id for node in atomic_nodes}
+    concept_type_by_node = {node.node_id: node.concept_type.value for node in atomic_nodes}
+    for edge in edges:
+        if edge.source_id not in atomic_ids or edge.target_id not in atomic_ids:
+            continue
+        source_family = primitive_families.get(edge.source_id, "")
+        target_family = primitive_families.get(edge.target_id, "")
+        source_concept = concept_type_by_node.get(edge.source_id, "")
+        target_concept = concept_type_by_node.get(edge.target_id, "")
+        if (
+            source_family
+            and target_family
+            and source_family != target_family
+        ) or (source_concept and target_concept and source_concept != target_concept):
+            cross_family_edge_count += 1
+            cross_family_nodes.add(edge.source_id)
+            cross_family_nodes.add(edge.target_id)
+    foreign_family_bindings: list[str] = []
+    if catalog is not None:
+        for node in atomic_nodes:
+            primitive_name = str(node.matched_primitive or "")
+            if not primitive_name:
+                continue
+            prim = catalog.get(primitive_name)
+            if prim is None:
+                continue
+            if prim.category != node.concept_type:
+                foreign_family_bindings.append(node.node_id)
+    summary.update(
+        {
+            "distinct_concept_types": concept_types,
+            "distinct_concept_type_count": len(concept_types),
+            "distinct_primitive_families": sorted(family_counts),
+            "distinct_primitive_family_count": len(family_counts),
+            "family_entropy": family_entropy,
+            "cross_family_edge_count": cross_family_edge_count,
+            "cross_family_node_count": len(cross_family_nodes),
+            "foreign_family_binding_count": len(foreign_family_bindings),
+            "foreign_family_bindings": sorted(foreign_family_bindings),
+        }
+    )
     if ghost_report is not None:
         summary["ghost_coverage"] = float(ghost_report.coverage)
         summary["structure_loss"] = float(compute_structure_loss(ghost_report))
@@ -76,3 +136,23 @@ def _infer_root_id(nodes: list[Any], edges: list[Any]) -> str | None:
     if roots:
         return sorted(roots)[0]
     return nodes[0].node_id if nodes else None
+
+
+def _primitive_family(primitive_name: str, catalog: Any | None) -> str:
+    primitive_name = str(primitive_name or "").strip()
+    if not primitive_name:
+        return ""
+    if catalog is not None:
+        prim = catalog.get(primitive_name)
+        if prim is not None:
+            source = str(getattr(prim, "source", "") or "").strip()
+            if source:
+                return source
+    if primitive_name.startswith("ageoa."):
+        parts = primitive_name.split(".")
+        if len(parts) >= 3:
+            return ".".join(parts[:3])
+        return primitive_name
+    if "." in primitive_name:
+        return primitive_name.split(".", 1)[0]
+    return "builtin"
