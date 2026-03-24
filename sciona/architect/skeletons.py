@@ -1609,6 +1609,144 @@ def _build_dimensionality_reduction() -> SkeletonGraph:
     )
 
 
+def _build_ode_solver() -> SkeletonGraph:
+    evaluate = _node(
+        "Evaluate Derivative",
+        "Evaluate the derivative function at the current state and time.",
+        ConceptType.ODE_SOLVER,
+        inputs=[
+            IOSpec(name="t", type_desc="float"),
+            IOSpec(name="y", type_desc="ndarray"),
+        ],
+        outputs=[IOSpec(name="dy", type_desc="ndarray")],
+    )
+    advance = _node(
+        "Advance State",
+        "Advance the state using the current derivative estimate and step size.",
+        ConceptType.ODE_SOLVER,
+        inputs=[
+            IOSpec(name="y", type_desc="ndarray"),
+            IOSpec(name="dy", type_desc="ndarray"),
+            IOSpec(name="h", type_desc="float"),
+        ],
+        outputs=[IOSpec(name="y_new", type_desc="ndarray")],
+    )
+    error = _node(
+        "Estimate Error",
+        "Estimate local truncation error for the candidate step.",
+        ConceptType.ODE_SOLVER,
+        inputs=[IOSpec(name="y_new", type_desc="ndarray")],
+        outputs=[IOSpec(name="error_estimate", type_desc="float")],
+    )
+    adapt = _node(
+        "Adapt Step Size",
+        "Adapt the step size based on the local error estimate and acceptance test.",
+        ConceptType.ODE_SOLVER,
+        inputs=[
+            IOSpec(name="error_estimate", type_desc="float"),
+            IOSpec(name="h", type_desc="float"),
+        ],
+        outputs=[
+            IOSpec(name="h_new", type_desc="float"),
+            IOSpec(name="accepted", type_desc="bool"),
+        ],
+    )
+    edges = [
+        _edge(evaluate, advance, "dy", "dy", "ndarray"),
+        _edge(advance, error, "y_new", "y_new", "ndarray"),
+        _edge(error, adapt, "error_estimate", "error_estimate", "float"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.ODE_SOLVER,
+        name="ODE Solver",
+        description="Evaluate derivative, advance state, estimate error, and adapt the step size.",
+        template_nodes=[evaluate, advance, error, adapt],
+        template_edges=edges,
+        variants=["euler", "runge_kutta_4", "dormand_prince", "bdf", "adams_bashforth"],
+    )
+
+
+def _build_quadrature() -> SkeletonGraph:
+    sample = _node(
+        "Sample Points",
+        "Generate quadrature sample points and weights over the integration domain.",
+        ConceptType.QUADRATURE,
+        inputs=[IOSpec(name="domain", type_desc="tuple[float, float]")],
+        outputs=[
+            IOSpec(name="points", type_desc="ndarray"),
+            IOSpec(name="weights", type_desc="ndarray"),
+        ],
+    )
+    evaluate = _node(
+        "Evaluate Integrand",
+        "Evaluate the integrand at the sampled points.",
+        ConceptType.QUADRATURE,
+        inputs=[IOSpec(name="points", type_desc="ndarray")],
+        outputs=[IOSpec(name="values", type_desc="ndarray")],
+    )
+    refine = _node(
+        "Estimate Error/Refine",
+        "Aggregate weighted values, estimate quadrature error, and decide whether to refine.",
+        ConceptType.QUADRATURE,
+        inputs=[
+            IOSpec(name="values", type_desc="ndarray"),
+            IOSpec(name="weights", type_desc="ndarray"),
+        ],
+        outputs=[
+            IOSpec(name="integral", type_desc="float"),
+            IOSpec(name="error_estimate", type_desc="float"),
+        ],
+    )
+    edges = [
+        _edge(sample, evaluate, "points", "points", "ndarray"),
+        _edge(evaluate, refine, "values", "values", "ndarray"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.QUADRATURE,
+        name="Quadrature",
+        description="Sample points, evaluate the integrand, and estimate integral/error adaptively.",
+        template_nodes=[sample, evaluate, refine],
+        template_edges=edges,
+        variants=["trapezoidal", "simpsons", "gauss_legendre", "monte_carlo_integration", "adaptive_quadrature"],
+    )
+
+
+def _build_randomized() -> SkeletonGraph:
+    generate = _node(
+        "Generate Samples",
+        "Generate randomized samples or projections from the input data.",
+        ConceptType.RANDOMIZED,
+        inputs=[IOSpec(name="data", type_desc="ndarray")],
+        outputs=[IOSpec(name="samples", type_desc="ndarray")],
+    )
+    sketch = _node(
+        "Sketch/Hash",
+        "Hash or sketch the sampled data into a compact randomized summary.",
+        ConceptType.RANDOMIZED,
+        inputs=[IOSpec(name="samples", type_desc="ndarray")],
+        outputs=[IOSpec(name="sketch", type_desc="ndarray")],
+    )
+    estimate = _node(
+        "Estimate",
+        "Estimate the target quantity from the randomized sketch.",
+        ConceptType.RANDOMIZED,
+        inputs=[IOSpec(name="sketch", type_desc="ndarray")],
+        outputs=[IOSpec(name="estimate", type_desc="ndarray")],
+    )
+    edges = [
+        _edge(generate, sketch, "samples", "samples", "ndarray"),
+        _edge(sketch, estimate, "sketch", "sketch", "ndarray"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.RANDOMIZED,
+        name="Randomized",
+        description="Generate samples, sketch/hash them, and estimate the target quantity.",
+        template_nodes=[generate, sketch, estimate],
+        template_edges=edges,
+        variants=["reservoir_sampling", "count_min_sketch", "locality_sensitive_hashing", "random_projection", "importance_sampling"],
+    )
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -1634,6 +1772,9 @@ SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.NEURAL_NETWORK: _build_neural_network(),
     ConceptType.CLUSTERING: _build_clustering(),
     ConceptType.DIMENSIONALITY_REDUCTION: _build_dimensionality_reduction(),
+    ConceptType.ODE_SOLVER: _build_ode_solver(),
+    ConceptType.QUADRATURE: _build_quadrature(),
+    ConceptType.RANDOMIZED: _build_randomized(),
 }
 
 

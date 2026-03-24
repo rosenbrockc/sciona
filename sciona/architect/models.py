@@ -33,6 +33,9 @@ class ConceptType(str, Enum):
     NEURAL_NETWORK = "neural_network"
     CLUSTERING = "clustering"
     DIMENSIONALITY_REDUCTION = "dimensionality_reduction"
+    ODE_SOLVER = "ode_solver"
+    QUADRATURE = "quadrature"
+    RANDOMIZED = "randomized"
     # Bayesian / probabilistic inference
     SAMPLER = "sampler"
     LOG_PROB = "log_prob"
