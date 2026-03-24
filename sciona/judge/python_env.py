@@ -6,7 +6,6 @@ import asyncio
 import re
 import shutil
 import tempfile
-import textwrap
 from pathlib import Path
 
 from sciona.judge.models import CompilerFeedback
@@ -129,6 +128,52 @@ class PythonEnvironment:
         feedback = await self._run_file(code)
         return feedback.success, feedback.raw_output
 
+    async def check_generated_files(
+        self,
+        files: dict[str, str],
+        *,
+        verify_mode: str = "mypy",
+        strict: bool = True,
+        ignore_missing_imports: bool = True,
+    ) -> tuple[bool, str]:
+        """Verify a generated multi-file Python bundle.
+
+        The ingester emits several sibling modules (for example ``atoms.py`` and
+        ``state_models.py``). Type-checking those files independently loses
+        import context, so write them into one temp directory and run the chosen
+        verifier against the whole bundle.
+        """
+        bundle_dir = Path(tempfile.mkdtemp(dir=self._tmpdir, prefix="bundle_"))
+        paths: list[str] = []
+        for filename, source in files.items():
+            if not filename:
+                continue
+            path = bundle_dir / Path(filename).name
+            path.write_text(source)
+            paths.append(str(path))
+
+        if not paths:
+            return True, ""
+
+        mode = (verify_mode or self._verify_mode).strip().lower()
+        if mode == "mypy":
+            feedback = await self._run_mypy_paths(
+                paths,
+                cwd=bundle_dir,
+                strict=strict,
+                ignore_missing_imports=ignore_missing_imports,
+            )
+            return feedback.success, feedback.raw_output
+
+        errors: list[str] = []
+        outputs: list[str] = []
+        for path in paths:
+            feedback = await self._run_file(Path(path).read_text())
+            if feedback.raw_output:
+                outputs.append(feedback.raw_output)
+            errors.extend(feedback.errors)
+        return len(errors) == 0, "\n".join(part for part in outputs if part).strip()
+
     async def _run(self, code: str) -> CompilerFeedback:
         """Execute raw Python source for whole-file validation."""
         return await self._run_file(code)
@@ -163,12 +208,28 @@ class PythonEnvironment:
         """Write code to a temp .py file and run mypy --strict."""
         tmp_path = Path(self._tmpdir) / "_check.py"
         tmp_path.write_text(code)
+        return await self._run_mypy_paths([str(tmp_path)])
+
+    async def _run_mypy_paths(
+        self,
+        paths: list[str],
+        *,
+        cwd: Path | None = None,
+        strict: bool = True,
+        ignore_missing_imports: bool = False,
+    ) -> CompilerFeedback:
+        """Run mypy against one or more existing Python paths."""
+        cmd = [self._mypy_path]
+        if strict:
+            cmd.append("--strict")
+        if ignore_missing_imports:
+            cmd.append("--ignore-missing-imports")
+        cmd.extend(paths)
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                self._mypy_path,
-                "--strict",
-                str(tmp_path),
+                *cmd,
+                cwd=str(cwd) if cwd is not None else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

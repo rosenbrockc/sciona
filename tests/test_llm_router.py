@@ -226,6 +226,9 @@ class TestConfigPerPromptFields:
     def test_prompt_timeout_defaults_exist_for_hunter_score(self):
         assert prompt_timeout_seconds("hunter_score") == pytest.approx(20.0)
 
+    def test_prompt_timeout_defaults_exist_for_ingester_fix_type(self):
+        assert prompt_timeout_seconds("ingester_fix_type") == pytest.approx(60.0)
+
     def test_unbenchmarked_prompt_defaults_are_not_applied_implicitly(self):
         from sciona.config import AgeomConfig, prompt_override_matches_code_default, should_apply_prompt_override
 

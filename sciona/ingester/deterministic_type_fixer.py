@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 from typing import Any
 
 from sciona.synthesizer.classifier import (
@@ -16,17 +17,37 @@ _ERRORS_RE = re.compile(
     r"mypy errors:\n(?P<errors>.*?)\n\nGenerated source:\n```python\n(?P<source>.*?)\n```",
     re.DOTALL,
 )
+_BUNDLE_ERRORS_RE = re.compile(
+    r"mypy errors:\n(?P<errors>.*?)\n\nGenerated files:\n(?P<sources>.*?)\n\nReturn JSON array of fixes:",
+    re.DOTALL,
+)
+_FILE_BLOCK_RE = re.compile(
+    r"<<FILE:\s*(?P<filename>[^\n>]+?)\s*>>\n```python\n(?P<source>.*?)\n```\n<<END FILE>>",
+    re.DOTALL,
+)
 _LINE_NUMBER_RE = re.compile(r"^[^:\n]+:(\d+):\s+(?:error|note):", re.IGNORECASE)
+_ERROR_PATH_RE = re.compile(
+    r"^(?P<path>[^:\n]+):(?P<line>\d+):\s+(?:error|note):",
+    re.IGNORECASE,
+)
 _RETURN_RE = re.compile(r"^(?P<indent>\s*)return\s+(?P<expr>.+?)\s*$")
 _WRAP_RETURN_RE = re.compile(r"^Wrap return value:\s*(?P<template>.+?)\s*$")
 _UNDEFINED_NAME_RE = re.compile(r'Name "(\w+)" is not defined', re.IGNORECASE)
 
 
-def _parse_fix_type_prompt(user: str) -> tuple[str, str]:
+def _parse_fix_type_prompt(user: str) -> tuple[str, dict[str, str]]:
+    match = _BUNDLE_ERRORS_RE.search(user)
+    if match is not None:
+        files: dict[str, str] = {}
+        for file_match in _FILE_BLOCK_RE.finditer(match.group("sources")):
+            filename = Path(file_match.group("filename").strip()).name
+            files[filename] = file_match.group("source")
+        return match.group("errors").strip(), files
+
     match = _ERRORS_RE.search(user)
     if match is None:
-        return "", ""
-    return match.group("errors").strip(), match.group("source")
+        return "", {}
+    return match.group("errors").strip(), {"atoms.py": match.group("source")}
 
 
 def _extract_line_number(error_line: str) -> int | None:
@@ -38,6 +59,25 @@ def _extract_line_number(error_line: str) -> int | None:
     except ValueError:
         return None
     return line_no if line_no > 0 else None
+
+
+def _extract_error_filename(error_line: str) -> str | None:
+    match = _ERROR_PATH_RE.match(error_line.strip())
+    if match is None:
+        return None
+    raw_path = match.group("path").strip()
+    return Path(raw_path).name or None
+
+
+def _resolve_error_filename(
+    error_line: str, source_files: dict[str, str]
+) -> str:
+    filename = _extract_error_filename(error_line)
+    if filename and filename in source_files:
+        return filename
+    if len(source_files) == 1:
+        return next(iter(source_files))
+    return filename or "atoms.py"
 
 
 def _import_patch(source_code: str, import_stmt: str) -> dict[str, Any] | None:
@@ -137,7 +177,7 @@ class DeterministicTypeFixer:
         return dict(self._last_error_metadata)
 
     async def complete(self, system: str, user: str) -> str:
-        mypy_errors, source_code = _parse_fix_type_prompt(user)
+        mypy_errors, source_files = _parse_fix_type_prompt(user)
         error_lines = [
             line.strip()
             for line in mypy_errors.splitlines()
@@ -145,11 +185,16 @@ class DeterministicTypeFixer:
         ]
         patches: list[dict[str, Any]] = []
         for error_line in error_lines:
+            filename = _resolve_error_filename(error_line, source_files)
+            source_code = source_files.get(filename, "")
+            if not source_code and len(source_files) == 1:
+                source_code = next(iter(source_files.values()))
             patch = _build_patch(source_code, error_line)
             if patch is None:
                 self._last_completion_metadata = {"type_fix_source": "fallback"}
                 self._last_error_metadata = {}
                 return await self._fallback.complete(system, user)
+            patch["file"] = filename
             patches.append(patch)
 
         if not patches:
@@ -160,6 +205,7 @@ class DeterministicTypeFixer:
         deduped: dict[tuple[int, int, str], dict[str, Any]] = {}
         for patch in patches:
             key = (
+                str(patch.get("file", "") or ""),
                 int(patch.get("line_start", 0) or 0),
                 int(patch.get("line_end", 0) or 0),
                 str(patch.get("replacement", "") or ""),
@@ -167,8 +213,10 @@ class DeterministicTypeFixer:
             deduped[key] = patch
         ordered = sorted(
             deduped.values(),
-            key=lambda patch: int(patch.get("line_start", 0) or 0),
-            reverse=True,
+            key=lambda patch: (
+                str(patch.get("file", "") or ""),
+                -int(patch.get("line_start", 0) or 0),
+            ),
         )
         self._last_completion_metadata = {
             "type_fix_source": "deterministic",

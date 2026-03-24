@@ -348,6 +348,38 @@ class TestPythonEnvironment:
 
         await env.close()
 
+    @pytest.mark.asyncio
+    async def test_check_generated_files_runs_mypy_on_bundle(self):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (
+            b"Success: no issues found in 2 source files\n",
+            b"",
+        )
+        mock_proc.returncode = 0
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_proc) as create_proc:
+            success, _output = await env.check_generated_files(
+                {
+                    "atoms.py": "from state_models import State\n",
+                    "state_models.py": "class State:\n    pass\n",
+                },
+                verify_mode="mypy",
+                ignore_missing_imports=True,
+            )
+            assert success is True
+            args = create_proc.await_args_list[0].args
+            assert args[0] == env._mypy_path
+            assert "--strict" in args
+            assert "--ignore-missing-imports" in args
+            assert any(str(arg).endswith("atoms.py") for arg in args)
+            assert any(str(arg).endswith("state_models.py") for arg in args)
+
+        await env.close()
+
 
 # ---------------------------------------------------------------------------
 # TestPythonAssembler

@@ -313,7 +313,7 @@ Return JSON:
 
 FIX_TYPE_ERROR_SYSTEM = """\
 You are a Python type-checking repair agent. Given mypy errors and the \
-generated source code, produce minimal line replacements to fix the errors.
+generated source bundle, produce minimal line replacements to fix the errors.
 
 Return valid JSON only."""
 
@@ -321,14 +321,13 @@ FIX_TYPE_ERROR_USER = """\
 mypy errors:
 {mypy_errors}
 
-Generated source:
-```python
-{source_code}
-```
+Generated files:
+{bundle_sources}
 
 Return JSON array of fixes:
 [
   {{
+    "file": "<atoms.py|state_models.py|witnesses.py>",
     "line_start": <int>,
     "line_end": <int>,
     "replacement": "<fixed code>"

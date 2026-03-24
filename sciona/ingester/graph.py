@@ -7,9 +7,9 @@ mypy type-checking and ghost simulation.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -56,6 +56,8 @@ from sciona.llm_router import (
     INGESTER_FIX_GHOST,
     INGESTER_FIX_MESSAGE_CYCLE,
     INGESTER_FIX_TYPE,
+    PromptKeyLLMClient,
+    prompt_timeout_seconds,
     select_llm,
 )
 from sciona.shared_context import SharedContextMetrics, SharedContextStore
@@ -135,6 +137,12 @@ _DIST_EDGE_HINTS: frozenset[str] = frozenset(
         "beta",
     }
 )
+
+_BUNDLE_FILE_ATTRS: dict[str, str] = {
+    "atoms.py": "generated_atoms",
+    "state_models.py": "generated_state_models",
+    "witnesses.py": "generated_witnesses",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +225,77 @@ def _get_extractor(source_path: str) -> BaseExtractor:
             return JAXprExtractor()
         return PythonASTExtractor()
     return TreeSitterExtractor(lang)
+
+
+def _bundle_files(bundle: IngestionBundle) -> dict[str, str]:
+    """Return non-empty generated bundle files keyed by their module filenames."""
+    files: dict[str, str] = {}
+    for filename, attr in _BUNDLE_FILE_ATTRS.items():
+        source = getattr(bundle, attr, "")
+        if source:
+            files[filename] = source
+    return files
+
+
+def _render_type_repair_sources(bundle: IngestionBundle) -> str:
+    """Render the generated bundle into a prompt-friendly multi-file block."""
+    blocks: list[str] = []
+    for filename, source in _bundle_files(bundle).items():
+        blocks.append(
+            f"<<FILE: {filename}>>\n"
+            "```python\n"
+            f"{source}\n"
+            "```\n"
+            "<<END FILE>>"
+        )
+    return "\n\n".join(blocks)
+
+
+def _normalize_bundle_filename(filename: str | None) -> str:
+    if not filename:
+        return "atoms.py"
+    return Path(filename).name or "atoms.py"
+
+
+def _apply_line_fixes(source: str, fixes: list[dict[str, Any]]) -> str:
+    lines = source.splitlines()
+    ordered = sorted(
+        fixes,
+        key=lambda fix: int(fix.get("line_start", 0) or 0),
+        reverse=True,
+    )
+    for fix in ordered:
+        start = max(0, int(fix.get("line_start", 1) or 1) - 1)
+        end = max(start, int(fix.get("line_end", start + 1) or (start + 1)))
+        replacement = str(fix.get("replacement", "") or "")
+        lines[start:end] = replacement.splitlines()
+    return "\n".join(lines)
+
+
+def _apply_bundle_fixes(
+    bundle: IngestionBundle, fixes: list[dict[str, Any]]
+) -> IngestionBundle | None:
+    if not fixes:
+        return None
+
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for fix in fixes:
+        filename = _normalize_bundle_filename(fix.get("file"))
+        grouped.setdefault(filename, []).append(fix)
+
+    updates: dict[str, str] = {}
+    for filename, file_fixes in grouped.items():
+        attr = _BUNDLE_FILE_ATTRS.get(filename)
+        if attr is None:
+            continue
+        source = getattr(bundle, attr, "")
+        if not source:
+            continue
+        updates[attr] = _apply_line_fixes(source, file_fixes)
+
+    if not updates:
+        return None
+    return bundle.model_copy(update=updates)
 
 
 # ---------------------------------------------------------------------------
@@ -594,17 +673,18 @@ async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str
     if deps.proof_env is None:
         return {"mypy_passed": True}
 
-    # Write generated source to temp directory
-    tmp_dir = Path(tempfile.mkdtemp(prefix="ingester_"))
-    atoms_path = tmp_dir / "atoms.py"
-    atoms_path.write_text(bundle.generated_atoms)
-
-    if bundle.generated_state_models:
-        models_path = tmp_dir / "state_models.py"
-        models_path.write_text(bundle.generated_state_models)
-
     try:
-        ok, output = await deps.proof_env.check_proof(bundle.generated_atoms, "")
+        bundle_files = _bundle_files(bundle)
+        check_generated_files = getattr(deps.proof_env, "check_generated_files", None)
+        if callable(check_generated_files):
+            ok, output = await check_generated_files(
+                bundle_files,
+                verify_mode="mypy",
+                strict=True,
+                ignore_missing_imports=True,
+            )
+        else:
+            ok, output = await deps.proof_env.check_proof(bundle.generated_atoms, "")
         if ok:
             if mon:
                 mon.phase_end("verify_types", step="passed")
@@ -675,15 +755,26 @@ async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str
 
     user_prompt = FIX_TYPE_ERROR_USER.format(
         mypy_errors=state.get("mypy_errors", ""),
-        source_code=bundle.generated_atoms,
+        bundle_sources=_render_type_repair_sources(bundle),
     )
 
     if mon:
         mon.llm_start(INGESTER_FIX_TYPE)
     try:
-        response = await select_llm(deps.llm, INGESTER_FIX_TYPE).complete(
-            FIX_TYPE_ERROR_SYSTEM, user_prompt
-        )
+        llm = select_llm(deps.llm, INGESTER_FIX_TYPE)
+        timeout_s = prompt_timeout_seconds(INGESTER_FIX_TYPE)
+        if timeout_s and not isinstance(llm, PromptKeyLLMClient):
+            try:
+                response = await asyncio.wait_for(
+                    llm.complete(FIX_TYPE_ERROR_SYSTEM, user_prompt),
+                    timeout=timeout_s,
+                )
+            except asyncio.TimeoutError as exc:
+                raise RuntimeError(
+                    f"{INGESTER_FIX_TYPE} timed out after {timeout_s:.1f}s"
+                ) from exc
+        else:
+            response = await llm.complete(FIX_TYPE_ERROR_SYSTEM, user_prompt)
         if mon:
             mon.llm_end(INGESTER_FIX_TYPE, ok=True)
     except Exception as exc:
@@ -694,25 +785,16 @@ async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str
     try:
         fixes = extract_json(response)
         if isinstance(fixes, list) and fixes:
-            lines = bundle.generated_atoms.splitlines()
-            for fix in fixes:
-                start = fix.get("line_start", 1) - 1
-                end = fix.get("line_end", start + 1)
-                replacement = fix.get("replacement", "")
-                lines[start:end] = replacement.splitlines()
-            updated_atoms = "\n".join(lines)
-            updated_bundle = bundle.model_copy(
-                update={
-                    "generated_atoms": updated_atoms,
-                }
-            )
+            updated_bundle = _apply_bundle_fixes(bundle, fixes)
+            if updated_bundle is None:
+                raise ValueError("No applicable bundle fixes returned")
             if mon:
                 mon.phase_end("repair_types", step="patched")
             return {
                 "bundle": updated_bundle,
                 "type_repair_count": state.get("type_repair_count", 0) + 1,
             }
-    except (json.JSONDecodeError, KeyError, IndexError) as exc:
+    except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as exc:
         logger.warning("Failed to parse type repair response: %s", exc)
 
     if mon:

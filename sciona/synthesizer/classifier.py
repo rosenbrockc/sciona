@@ -143,6 +143,8 @@ _COMMON_IMPORTS: dict[str, str] = {
     "List": "from typing import List",
     "Dict": "from typing import Dict",
     "Tuple": "from typing import Tuple",
+    "Iterable": "from typing import Iterable",
+    "Literal": "from typing import Literal",
     "Callable": "from typing import Callable",
     "Any": "from typing import Any",
 }

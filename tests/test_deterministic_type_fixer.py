@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -13,30 +14,32 @@ from sciona.ingester.deterministic_type_fixer import (
     _extract_line_number,
     _parse_fix_type_prompt,
 )
-from sciona.ingester.graph import IngesterDeps, repair_types
+from sciona.ingester.graph import IngesterDeps, repair_types, verify_types
 from sciona.ingester.models import IngestionBundle
 from sciona.llm_router import INGESTER_FIX_TYPE, LLMRouter
 
 
-def _prompt(errors: str, source: str) -> str:
+def _prompt(errors: str, source: str, *, filename: str = "atoms.py") -> str:
     return (
         "mypy errors:\n"
         f"{errors}\n\n"
-        "Generated source:\n"
+        "Generated files:\n"
+        f"<<FILE: {filename}>>\n"
         "```python\n"
         f"{source}\n"
-        "```\n\n"
+        "```\n"
+        "<<END FILE>>\n\n"
         "Return JSON array of fixes:\n[]"
     )
 
 
 def test_parse_fix_type_prompt_extracts_sections():
-    errors, source = _parse_fix_type_prompt(
+    errors, files = _parse_fix_type_prompt(
         _prompt('_check.py:2: error: Name "np" is not defined', "def f():\n    return np.array([1])")
     )
 
     assert 'Name "np" is not defined' in errors
-    assert "return np.array" in source
+    assert "return np.array" in files["atoms.py"]
 
 
 def test_extract_line_number_handles_standard_mypy_format():
@@ -59,6 +62,7 @@ async def test_deterministic_type_fixer_inserts_missing_import():
     patches = json.loads(response)
     assert patches == [
         {
+            "file": "atoms.py",
             "line_start": 1,
             "line_end": 1,
             "replacement": "def f(xs):\nimport numpy as np",
@@ -82,6 +86,7 @@ async def test_deterministic_type_fixer_wraps_return_value():
     patches = json.loads(response)
     assert patches == [
         {
+            "file": "atoms.py",
             "line_start": 2,
             "line_end": 2,
             'replacement': '    return int("1")',
@@ -108,6 +113,31 @@ async def test_deterministic_type_fixer_falls_back_for_unknown_assignment_rewrit
 
 
 @pytest.mark.asyncio
+async def test_deterministic_type_fixer_targets_matching_bundle_file():
+    fallback = AsyncMock()
+    fixer = DeterministicTypeFixer(fallback)
+    response = await fixer.complete(
+        "sys",
+        _prompt(
+            'state_models.py:2: error: Name "Literal" is not defined',
+            "from typing import Any\nx: Literal['a'] | None = None",
+            filename="state_models.py",
+        ),
+    )
+
+    patches = json.loads(response)
+    assert patches == [
+        {
+            "file": "state_models.py",
+            "line_start": 1,
+            "line_end": 1,
+            "replacement": "from typing import Any\nfrom typing import Literal",
+        }
+    ]
+    fallback.complete.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_repair_types_uses_deterministic_type_fixer_patch():
     fallback = AsyncMock()
     fallback.complete.side_effect = AssertionError("fallback should not be used")
@@ -128,6 +158,75 @@ async def test_repair_types_uses_deterministic_type_fixer_patch():
 
     assert result["type_repair_count"] == 1
     assert 'return int("1")' in result["bundle"].generated_atoms
+
+
+@pytest.mark.asyncio
+async def test_repair_types_applies_state_model_patch():
+    fallback = AsyncMock()
+    fallback.complete.side_effect = AssertionError("fallback should not be used")
+    fixer = DeterministicTypeFixer(fallback)
+    llm = LLMRouter(default=fallback, overrides={INGESTER_FIX_TYPE: fixer})
+    bundle = IngestionBundle(
+        cdg=CDGExport(nodes=[], edges=[]),
+        generated_atoms="def f() -> None:\n    return None\n",
+        generated_state_models="from typing import Any\nx: Literal['a'] | None = None\n",
+    )
+    state = {
+        "bundle": bundle,
+        "mypy_errors": 'state_models.py:2: error: Name "Literal" is not defined',
+        "type_repair_count": 0,
+    }
+    config = {"configurable": {"deps": IngesterDeps(llm=llm)}}
+
+    result = await repair_types(state, config)
+
+    assert result["type_repair_count"] == 1
+    assert "from typing import Literal" in result["bundle"].generated_state_models
+    assert result["bundle"].generated_atoms == bundle.generated_atoms
+
+
+@pytest.mark.asyncio
+async def test_verify_types_prefers_bundle_checker_when_available():
+    proof_env = AsyncMock()
+    proof_env.check_generated_files.return_value = (False, "state_models.py:2: error: boom")
+    bundle = IngestionBundle(
+        cdg=CDGExport(nodes=[], edges=[]),
+        generated_atoms="def f() -> None:\n    return None\n",
+        generated_state_models="class S:\n    pass\n",
+    )
+    state = {"bundle": bundle}
+    config = {"configurable": {"deps": IngesterDeps(llm=AsyncMock(), proof_env=proof_env)}}
+
+    result = await verify_types(state, config)
+
+    assert result == {"mypy_passed": False, "mypy_errors": "state_models.py:2: error: boom"}
+    proof_env.check_generated_files.assert_awaited_once()
+    bundle_files = proof_env.check_generated_files.await_args.args[0]
+    assert bundle_files["atoms.py"] == bundle.generated_atoms
+    assert bundle_files["state_models.py"] == bundle.generated_state_models
+
+
+@pytest.mark.asyncio
+async def test_repair_types_times_out_without_telemetry(monkeypatch):
+    class _SlowLLM:
+        async def complete(self, system: str, user: str) -> str:
+            await asyncio.sleep(0.05)
+            return "[]"
+
+    monkeypatch.setenv("SCIONA_INGESTER_FIX_TYPE_TIMEOUT_S", "0.01")
+    bundle = IngestionBundle(
+        cdg=CDGExport(nodes=[], edges=[]),
+        generated_atoms="def f() -> None:\n    return None\n",
+    )
+    state = {
+        "bundle": bundle,
+        "mypy_errors": "atoms.py:1: error: synthetic",
+        "type_repair_count": 0,
+    }
+    config = {"configurable": {"deps": IngesterDeps(llm=_SlowLLM())}}
+
+    with pytest.raises(RuntimeError, match="ingester_fix_type timed out after 0.0s"):
+        await repair_types(state, config)
 
 
 def test_create_llm_router_wraps_ingester_fix_type_deterministically(monkeypatch):
