@@ -1355,6 +1355,137 @@ def _build_belief_propagation() -> SkeletonGraph:
     )
 
 
+def _build_linear_algebra() -> SkeletonGraph:
+    factorize = _node(
+        "Factorize",
+        "Decompose the matrix into factors (LU, QR, Cholesky, SVD)",
+        ConceptType.ALGEBRA,
+        inputs=[IOSpec(name="A", type_desc="ndarray")],
+        outputs=[IOSpec(name="factors", type_desc="tuple[ndarray, ...]")],
+    )
+    solve = _node(
+        "Solve/Transform",
+        "Solve the system or apply the transformation using the factors",
+        ConceptType.ALGEBRA,
+        inputs=[IOSpec(name="factors", type_desc="tuple[ndarray, ...]"),
+                IOSpec(name="b", type_desc="ndarray")],
+        outputs=[IOSpec(name="x", type_desc="ndarray")],
+    )
+    validate = _node(
+        "Validate",
+        "Check residual, orthogonality, or reconstruction accuracy",
+        ConceptType.ALGEBRA,
+        inputs=[IOSpec(name="x", type_desc="ndarray"),
+                IOSpec(name="A", type_desc="ndarray")],
+        outputs=[IOSpec(name="residual", type_desc="float")],
+    )
+    edges = [
+        _edge(factorize, solve, "factors", "factors", "tuple[ndarray, ...]"),
+        _edge(solve, validate, "x", "x", "ndarray"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.ALGEBRA,
+        name="Linear Algebra",
+        description="Factorize matrix, solve/transform, validate result",
+        template_nodes=[factorize, solve, validate],
+        template_edges=edges,
+        variants=["lu_decomposition", "qr_decomposition", "cholesky", "svd",
+                  "eigendecomposition"],
+    )
+
+
+def _build_optimization() -> SkeletonGraph:
+    initialize = _node(
+        "Initialize",
+        "Set initial parameters, learning rate, and optimizer state",
+        ConceptType.OPTIMIZATION,
+        inputs=[IOSpec(name="x0", type_desc="ndarray")],
+        outputs=[IOSpec(name="params", type_desc="ndarray")],
+    )
+    gradient = _node(
+        "Compute Gradient",
+        "Evaluate the objective gradient at current parameters",
+        ConceptType.OPTIMIZATION,
+        inputs=[IOSpec(name="params", type_desc="ndarray")],
+        outputs=[IOSpec(name="grad", type_desc="ndarray")],
+    )
+    update = _node(
+        "Update Parameters",
+        "Apply the optimization step (gradient descent, Newton, L-BFGS)",
+        ConceptType.OPTIMIZATION,
+        inputs=[IOSpec(name="params", type_desc="ndarray"),
+                IOSpec(name="grad", type_desc="ndarray")],
+        outputs=[IOSpec(name="params_new", type_desc="ndarray")],
+    )
+    converge = _node(
+        "Check Convergence",
+        "Evaluate stopping criteria (gradient norm, objective change)",
+        ConceptType.OPTIMIZATION,
+        inputs=[IOSpec(name="params_new", type_desc="ndarray")],
+        outputs=[IOSpec(name="converged", type_desc="bool")],
+    )
+    edges = [
+        _edge(initialize, gradient, "params", "params", "ndarray"),
+        _edge(gradient, update, "grad", "grad", "ndarray"),
+        _edge(update, converge, "params_new", "params_new", "ndarray"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.OPTIMIZATION,
+        name="Continuous Optimization",
+        description="Initialize, compute gradient, update parameters, check convergence",
+        template_nodes=[initialize, gradient, update, converge],
+        template_edges=edges,
+        variants=["gradient_descent", "newton_method", "lbfgs",
+                  "conjugate_gradient", "nelder_mead"],
+    )
+
+
+def _build_combinatorics() -> SkeletonGraph:
+    bound = _node(
+        "Bound",
+        "Compute upper/lower bound on the objective for the current subproblem",
+        ConceptType.COMBINATORICS,
+        inputs=[IOSpec(name="subproblem", type_desc="any")],
+        outputs=[IOSpec(name="bound", type_desc="float")],
+    )
+    branch = _node(
+        "Branch",
+        "Split the subproblem into smaller subproblems",
+        ConceptType.COMBINATORICS,
+        inputs=[IOSpec(name="subproblem", type_desc="any")],
+        outputs=[IOSpec(name="children", type_desc="list[any]")],
+    )
+    prune = _node(
+        "Prune",
+        "Eliminate subproblems that cannot improve the best known solution",
+        ConceptType.COMBINATORICS,
+        inputs=[IOSpec(name="children", type_desc="list[any]"),
+                IOSpec(name="bound", type_desc="float")],
+        outputs=[IOSpec(name="surviving", type_desc="list[any]")],
+    )
+    select = _node(
+        "Select",
+        "Choose the next subproblem to explore or return the best solution",
+        ConceptType.COMBINATORICS,
+        inputs=[IOSpec(name="surviving", type_desc="list[any]")],
+        outputs=[IOSpec(name="solution", type_desc="any")],
+    )
+    edges = [
+        _edge(bound, branch, "bound", "subproblem", "any"),
+        _edge(branch, prune, "children", "children", "list[any]"),
+        _edge(prune, select, "surviving", "surviving", "list[any]"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.COMBINATORICS,
+        name="Combinatorial Optimization",
+        description="Bound, branch, prune, select — exact/approximate discrete optimization",
+        template_nodes=[bound, branch, prune, select],
+        template_edges=edges,
+        variants=["branch_and_bound", "constraint_propagation", "sat_solver",
+                  "integer_programming"],
+    )
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -1374,6 +1505,9 @@ SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.VI_ELBO: _build_vi_advi_deterministic(),
     ConceptType.SEQUENTIAL_FILTER: _build_particle_filter(),
     ConceptType.MESSAGE_PASSING: _build_belief_propagation(),
+    ConceptType.ALGEBRA: _build_linear_algebra(),
+    ConceptType.OPTIMIZATION: _build_optimization(),
+    ConceptType.COMBINATORICS: _build_combinatorics(),
 }
 
 

@@ -79,6 +79,15 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.belief_propagation import (
         BeliefPropagationExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.linear_algebra import (
+        LinearAlgebraExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.optimization import (
+        OptimizationExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.combinatorics import (
+        CombinatoricsExpansionRuleSet,
+    )
 
     return [
         SignalEventRateExpansionRuleSet(),
@@ -102,4 +111,7 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         ParticleFilterExpansionRuleSet(),
         KalmanFilterExpansionRuleSet(),
         BeliefPropagationExpansionRuleSet(),
+        LinearAlgebraExpansionRuleSet(),
+        OptimizationExpansionRuleSet(),
+        CombinatoricsExpansionRuleSet(),
     ]

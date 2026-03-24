@@ -33,6 +33,9 @@ class TestSkeletonRegistry:
             ConceptType.VI_ELBO,
             ConceptType.SEQUENTIAL_FILTER,
             ConceptType.MESSAGE_PASSING,
+            ConceptType.ALGEBRA,
+            ConceptType.OPTIMIZATION,
+            ConceptType.COMBINATORICS,
         }
         assert set(SKELETON_TEMPLATES.keys()) == expected
 

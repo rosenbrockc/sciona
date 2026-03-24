@@ -24,6 +24,7 @@ class ConceptType(str, Enum):
     NUMBER_THEORY = "number_theory"
     COMBINATORICS = "combinatorics"
     ALGEBRA = "algebra"
+    OPTIMIZATION = "optimization"
     ANALYSIS = "analysis"
     SET_THEORY = "set_theory"
     SIGNAL_TRANSFORM = "signal_transform"

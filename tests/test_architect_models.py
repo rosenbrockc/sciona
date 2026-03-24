@@ -33,6 +33,7 @@ class TestConceptType:
             "number_theory",
             "combinatorics",
             "algebra",
+            "optimization",
             "analysis",
             "set_theory",
             "signal_transform",
