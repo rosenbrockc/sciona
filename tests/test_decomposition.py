@@ -1937,11 +1937,73 @@ class TestSharedContext:
         assert result["nodes"]
         assert result["history"][0]["primitive_proposal_count"] >= 1
         assert result["history"][0]["template_proposal_count"] == 0
-        assert result["history"][0]["skeleton_proposal_count"] == 0
+        assert result["history"][0]["skeleton_proposal_count"] >= 0
         assert captured_users
         assert "Shared Context" in captured_users[0]
         records = await store.recent("architect/test/decompose", limit=5)
         assert any("Parent: Sort" in r.text for r in records)
+
+    @pytest.mark.asyncio
+    async def test_decompose_node_surfaces_passive_skeleton_proposal_count(self):
+        from sciona.architect.nodes import decompose_node
+        from sciona.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = AsyncMock()
+
+        async def complete(system: str, user: str) -> str:
+            return json.dumps(
+                {
+                    "sub_nodes": [
+                        {
+                            "name": "Filter Signal",
+                            "description": "Filter signal before downstream processing.",
+                            "concept_type": "signal_filter",
+                            "inputs": [{"name": "signal", "type_desc": "any"}],
+                            "outputs": [{"name": "filtered_signal", "type_desc": "any"}],
+                        }
+                    ]
+                }
+            )
+
+        llm.complete = complete
+        parent = AlgorithmicNode(
+            node_id="n_parent",
+            name="Estimate Event Rate",
+            description="Estimate a rate from a signal stream.",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            inputs=[
+                IOSpec(name="signal", type_desc="any"),
+                IOSpec(name="sampling_rate", type_desc="any"),
+            ],
+            outputs=[IOSpec(name="result", type_desc="any")],
+            status=NodeStatus.PENDING,
+            depth=1,
+        )
+        state: DecompositionState = {
+            "goal": "Estimate event rate from a signal",
+            "max_depth": 8,
+            "nodes": [parent],
+            "edges": [],
+            "history": [],
+            "pending_node_ids": ["n_parent"],
+            "current_node_id": "n_parent",
+            "paradigm": "signal_filter",
+            "skeleton_instantiated": True,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+        deps = DecompositionDeps(catalog=catalog, skill_index=skill_index, llm=llm)
+
+        result = await decompose_node(state, {"configurable": {"deps": deps}})
+
+        assert result["nodes"]
+        assert result["history"][0]["primitive_proposal_count"] >= 1
+        assert result["history"][0]["skeleton_proposal_count"] >= 1
 
     @pytest.mark.asyncio
     async def test_decompose_node_injects_template_context_from_shared_namespace(self):

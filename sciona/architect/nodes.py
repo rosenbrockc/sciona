@@ -28,6 +28,7 @@ from sciona.architect.proposal_models import (
     proposal_from_primitive,
     proposal_from_template_match,
 )
+from sciona.architect.skeleton_proposals import generate_skeleton_proposals
 from sciona.architect.structural_critic import structural_critique_issues
 from sciona.architect.prompts import (
     CRITIQUE_SYSTEM,
@@ -917,6 +918,7 @@ async def decompose_node(
     primitive_proposals = [
         proposal_from_primitive(primitive) for primitive in all_prims
     ]
+    skeleton_proposals = generate_skeleton_proposals(node)
 
     # Build retry context
     retry_context = ""
@@ -967,7 +969,7 @@ async def decompose_node(
                             "selected_proposal_type": template_proposal.proposal_type.value,
                             "primitive_proposal_count": len(primitive_proposals),
                             "template_proposal_count": 1,
-                            "skeleton_proposal_count": 0,
+                            "skeleton_proposal_count": len(skeleton_proposals),
                         }
                     ],
                 }
@@ -1118,7 +1120,7 @@ async def decompose_node(
         "rewrite_actions": rewrite_actions,
         "primitive_proposal_count": len(primitive_proposals),
         "template_proposal_count": len(template_matches[:1]),
-        "skeleton_proposal_count": 0,
+        "skeleton_proposal_count": len(skeleton_proposals),
     }
 
     await _put_context(
