@@ -1938,6 +1938,12 @@ class TestSharedContext:
         assert result["history"][0]["primitive_proposal_count"] >= 1
         assert result["history"][0]["template_proposal_count"] == 0
         assert result["history"][0]["skeleton_proposal_count"] >= 0
+        assert result["history"][0]["top_ranked_proposal_type"] in {
+            "primitive",
+            "template",
+            "skeleton",
+            "",
+        }
         assert captured_users
         assert "Shared Context" in captured_users[0]
         records = await store.recent("architect/test/decompose", limit=5)
@@ -2004,6 +2010,12 @@ class TestSharedContext:
         assert result["nodes"]
         assert result["history"][0]["primitive_proposal_count"] >= 1
         assert result["history"][0]["skeleton_proposal_count"] >= 1
+        assert result["history"][0]["top_ranked_proposal_type"] in {
+            "primitive",
+            "template",
+            "skeleton",
+        }
+        assert result["history"][0]["ranked_proposal_types"]
 
     @pytest.mark.asyncio
     async def test_decompose_node_injects_template_context_from_shared_namespace(self):

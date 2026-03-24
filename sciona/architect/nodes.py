@@ -28,6 +28,7 @@ from sciona.architect.proposal_models import (
     proposal_from_primitive,
     proposal_from_template_match,
 )
+from sciona.architect.proposal_ranking import rank_proposals
 from sciona.architect.skeleton_proposals import generate_skeleton_proposals
 from sciona.architect.structural_critic import structural_critique_issues
 from sciona.architect.prompts import (
@@ -934,10 +935,18 @@ async def decompose_node(
     # Try template retriever for high-confidence instantiation (skip LLM)
     template_retriever = getattr(deps, "template_retriever", None)
     template_matches = []
+    template_proposals = []
     if template_retriever is not None:
         try:
             template_matches = await template_retriever.find_templates(
                 node, all_nodes, state["edges"]
+            )
+            template_proposals = [
+                proposal_from_template_match(match) for match in template_matches[:3]
+            ]
+            ranked_proposals = rank_proposals(
+                primitive_proposals + template_proposals + skeleton_proposals,
+                preferred_family=node.concept_type.value,
             )
             if template_matches and template_matches[0].confidence >= 0.8:
                 match = template_matches[0]
@@ -968,8 +977,22 @@ async def decompose_node(
                             "confidence": round(match.confidence, 3),
                             "selected_proposal_type": template_proposal.proposal_type.value,
                             "primitive_proposal_count": len(primitive_proposals),
-                            "template_proposal_count": 1,
+                            "template_proposal_count": len(template_proposals),
                             "skeleton_proposal_count": len(skeleton_proposals),
+                            "top_ranked_proposal_type": (
+                                ranked_proposals[0].proposal.proposal_type.value
+                                if ranked_proposals
+                                else ""
+                            ),
+                            "top_ranked_proposal_score": (
+                                round(ranked_proposals[0].score, 3)
+                                if ranked_proposals
+                                else 0.0
+                            ),
+                            "ranked_proposal_types": [
+                                scored.proposal.proposal_type.value
+                                for scored in ranked_proposals[:3]
+                            ],
                         }
                     ],
                 }
@@ -985,6 +1008,12 @@ async def decompose_node(
                 )
         except Exception:
             logger.debug("template_retriever failed in decompose_node", exc_info=True)
+            template_proposals = []
+
+    ranked_proposals = rank_proposals(
+        primitive_proposals + template_proposals + skeleton_proposals,
+        preferred_family=node.concept_type.value,
+    )
 
     # Retrieve similar decomposition examples from Memgraph
     example_decompositions = ""
@@ -1119,8 +1148,21 @@ async def decompose_node(
         "num_edges": len(new_edges),
         "rewrite_actions": rewrite_actions,
         "primitive_proposal_count": len(primitive_proposals),
-        "template_proposal_count": len(template_matches[:1]),
+        "template_proposal_count": len(template_proposals),
         "skeleton_proposal_count": len(skeleton_proposals),
+        "top_ranked_proposal_type": (
+            ranked_proposals[0].proposal.proposal_type.value
+            if ranked_proposals
+            else ""
+        ),
+        "top_ranked_proposal_score": (
+            round(ranked_proposals[0].score, 3)
+            if ranked_proposals
+            else 0.0
+        ),
+        "ranked_proposal_types": [
+            scored.proposal.proposal_type.value for scored in ranked_proposals[:3]
+        ],
     }
 
     await _put_context(
