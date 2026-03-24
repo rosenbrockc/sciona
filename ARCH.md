@@ -190,7 +190,16 @@ For non-Python sources, the emitter appends FFI stubs so generated atoms can cal
 
 ### Conceptual Dependency Agent (`sciona/architect/`) -- Round 1
 
-Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) using an iterative LangGraph cycle.
+Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG)
+using an iterative LangGraph cycle, but the live enrichment path is no longer
+just "LLM decompose, then bind leaves". The current strategy mixes:
+
+- **Skeleton bootstrap** for the root goal (`select_strategy`)
+- **Deterministic decomposition** for recognized local structures
+- **Primitive / template / skeleton proposal surfacing** for node enrichment
+- **Cross-family refinement retrieval** when verified exemplars match by IO and topology
+- **Guarded live skeleton insertion** only when a higher-complexity skeleton clears a
+  conservative margin over simpler alternatives
 
 #### Graph topology
 
@@ -204,15 +213,51 @@ select_strategy ──> decompose_node ──> critique ──> advance_node ─
                                                    decompose_node (loop)
 ```
 
+#### Node enrichment strategy
+
+`decompose_node()` now collects and ranks three candidate classes before it
+falls back to the LLM decomposition prompt:
+
+1. **Primitive proposals** from the catalog / lexical / skill retrieval
+2. **Template proposals** from verified exemplar retrieval
+3. **Skeleton proposals** from a bounded allowlist of named skeletons
+
+The current live acceptance policy is intentionally conservative:
+
+- templates can still short-circuit on high confidence
+- skeletons are only live candidates if they are the top-ranked proposal and
+  clear a fixed positive margin over the best lower-complexity alternative
+- otherwise the system keeps the existing template or LLM path
+
+This gives the Architect an explicit structural enrichment surface without
+letting larger subgraphs win cheaply.
+
+#### Cross-family behavior
+
+Cross-family reuse is now first-class in the Architect:
+
+- **Catalog binding** keeps same-family as a prior, not a gate
+- **Template retrieval** first searches same-family verified exemplars, then
+  falls back to cross-family exemplar retrieval keyed by IO shape and topology
+- **Deterministic decomposition** can emit skeleton-backed subgraphs for a node
+  whose local semantics differ from the family that seeded the parent graph
+- **Skeleton proposals** can be cross-family, but only within a tight
+  allowlist and only under the complexity-margin guard
+
 #### Key modules
 
 | Module | Role |
 |--------|------|
 | `models.py` | `AlgorithmicNode`, `DependencyEdge`, `NodeStatus`, `ConceptType`, `AlgorithmicPrimitive` |
-| `catalog.py` | `PrimitiveCatalog` -- in-memory store of known atomic operations (CLRS-30, coq-100-theorems) |
+| `catalog.py` | `PrimitiveCatalog`; cross-family primitive ranking stays eligible with same-family priors |
 | `embedder.py` | `SkillIndex` -- FAISS index over primitives for atomic-match detection |
-| `skeletons.py` | Pre-built graph templates per paradigm (D&C, DP, greedy, ...) |
-| `nodes.py` | LangGraph node functions: `select_strategy`, `decompose_node`, `critique_decomposition`, `advance_node`, `prepare_retry` |
+| `skeletons.py` | Pre-built graph templates per paradigm and named variants |
+| `proposal_models.py` | Passive `primitive`, `template`, and `skeleton` enrichment proposal models |
+| `proposal_ranking.py` | Conservative unified ranking with explicit complexity penalties |
+| `skeleton_proposals.py` | Bounded skeleton proposal generation with size and boundary checks |
+| `template_retriever.py` | Same-family retrieval first, then cross-family verified exemplar fallback |
+| `nodes.py` | LangGraph node functions plus live proposal handling in `decompose_node()` |
+| `deterministic_decompose.py` | Deterministic local decomposition, including skeleton-backed emission for recognized strategies |
 | `state.py` | `DecompositionState` (TypedDict with custom `_merge_nodes` reducer) + `DecompositionDeps` |
 | `graph.py` | `build_graph()` assembles the `StateGraph`; `DecompositionAgent` wraps it with checkpointing, time-travel (`get_state`, `get_state_history`, `fork`), and thread management |
 | `checkpointer.py` | `create_checkpointer()` async context manager -- tries `AsyncPostgresSaver`, falls back to `MemorySaver` |
@@ -371,52 +416,134 @@ ageoa (ageo-atoms)                    sciona (sciona)
 
 ### Principal Meta-Optimizer (`sciona/principal/`)
 
-Wraps the four-round pipeline in a NAS-style optimisation loop: Forward → Evaluate → Backward → Update.
+Wraps the four-round pipeline in a proposal-driven optimisation loop. The
+current Principal no longer assumes a simple "evaluate gradients, then
+time-travel" update. It now combines:
+
+- configurable objectives (`latency`, `memory`, `flop_count`, `precision`,
+  `uncertainty`, `rmse`, `mse`, `mae`, `structure`)
+- per-structure hyperparameter search via Optuna
+- live cross-family expansion through shipped expansion rule sets
+- sibling proposal comparison between expansion, local mutation, and
+  redecomposition from the same evaluated baseline
+- rollback and cached-evaluation reuse to avoid paying duplicate execution cost
 
 #### Graph topology
 
 ```
-seed ──> forward ──> evaluate ──> gradients ──> time_travel ──> forward (loop)
-                        |              |              |
-                   (pruned early)   (no grads)     (done/budget)
-                        |              |              |
-                        v              v              v
-                    time_travel       END            END
+seed ──> suggest_params ──> forward ──> evaluate ──> gradients ──> select_proposal
+                              |             |             |               |
+                         (pruned early)     |        (param loop)         |
+                              |             |             |               |
+                              v             |             +------> suggest_params
+                         time_travel <------+                             |
+                              |                                            |
+                              +--------------------> suggest_params <------+
 ```
+
+`select_proposal` compares sibling candidates from the same baseline rather
+than committing to stage-order bias. If no proposal beats the baseline, the
+loop falls back to `time_travel_update()`.
 
 #### Key modules
 
 | Module | Role |
 |--------|------|
-| `models.py` | `OptimizationMetric` (LATENCY, MEMORY, PRECISION, FLOP_COUNT), `NodeTelemetry`, `BenchmarkResult`, `NodeGradient` |
-| `evaluator.py` | `ExecutionSandbox` -- runs instrumented artifacts as subprocesses, parses `trace.jsonl` into `NodeTelemetry`, computes scalar loss |
-| `backprop.py` | `CreditAssigner` -- per-node optimisation gradients (latency %, memory %, precision via ghost-sim intervals or telemetry error expansion) |
-| `hpo.py` | `OptunaManager` -- wraps `optuna.Study`, early pruning via `GhostSimReport`, fANOVA parameter importance |
-| `graph.py` | `PrincipalState`, `PrincipalDeps`, 5 async node functions, 3 routing functions, `build_principal_graph()` |
+| `models.py` | `OptimizationMetric`, `NodeTelemetry`, `BenchmarkResult`, `NodeGradient` |
+| `metric_selection.py` | Objective resolution for `rmse`, `mae`, `mse`, `structure`, `uncertainty`, etc. |
+| `eval_spec.py` | Reference-loss configuration for benchmark-aware evaluation |
+| `evaluator.py` | `ExecutionSandbox` -- runs instrumented artifacts as subprocesses, parses `trace.jsonl`, computes scalar loss |
+| `profiler.py` | Metric-aware profiling and reporting |
+| `backprop.py` | Per-node optimisation gradients for latency / memory / uncertainty / structure |
+| `reference_attribution.py` | Loss-aware node attribution for reference metrics such as RMSE |
+| `hpo.py` | `OptunaManager` plus per-structure hyperparameter suggestion plumbing |
+| `variant_mutation.py` | Family-based variant mutation and cross-family ledger mutation |
+| `expansion.py` | `ExpansionEngine` -- runs all registered rule sets over the current CDG |
+| `expansion_rules/` | Family-specific rewrite rule sets used by the live expansion stage |
+| `structure_summary.py` | Per-trial diversity and cross-family structure summaries |
+| `graph.py` | `PrincipalState`, `PrincipalDeps`, proposal selection, rollback, reuse, and routing |
 
 #### Optimisation loop
 
-1. **seed_population** -- Optuna suggests paradigm parameters; Architect decomposes goal under a fresh thread.
-2. **execute_forward** -- Ghost simulation for early pruning (raises `TrialPrunedEarly` on structural failure or inf/NaN error bounds). If not pruned, delegates to `synthesize_fn` for the full synthesis pipeline.
-3. **evaluate_run** -- `ExecutionSandbox` runs the instrumented artifact, parses trace telemetry, computes global loss.
-4. **compute_gradients** -- `CreditAssigner` identifies the top bottleneck node by metric-specific credit assignment.
-5. **time_travel_update** -- Walks the Architect's checkpoint history, finds the checkpoint just before the bottleneck node was created, forks a new thread, injects a CONSTRAINT describing the bottleneck, and re-decomposes.
+1. **seed_population** -- build the initial CDG and seed optimisation state.
+2. **suggest_params** -- sample node-level hyperparameters for the current
+   primitive signature when tunables are available.
+3. **execute_forward** -- synthesize/export/evaluate the current CDG; early-prune
+   on structural failure when possible.
+4. **evaluate_run** -- compute scalar loss, persist trial history, structure
+   summary, and parameter assignments.
+5. **compute_gradients** -- compute node-level blame under the chosen objective.
+   For reference-loss objectives (`rmse`, `mse`, `mae`), this uses measured
+   loss-aware attribution instead of the older uncertainty-only ranking.
+6. **select_proposal** -- evaluate sibling candidates from the same baseline:
+   - **expansion** via `ExpansionEngine(default_rule_sets())`
+   - **local mutation** via family plugins and the cross-family ledger path
+   - **redecompose** via Architect checkpoint time-travel
+7. **time_travel_update** -- only used when no sibling proposal beats the
+   baseline or when the trial budget is exhausted for the current branch.
 
-#### Early pruning
+#### Shipped expansion rule families
 
-`OptunaManager.check_early_prune(ghost_report)` aborts trials when:
-- Ghost simulation ran and failed (structural mismatch)
-- Any node's precision gradient is infinite or NaN
+The live expansion engine loads all built-in rule sets from
+`sciona/principal/expansion_rules/__init__.py`. Current shipped families:
 
-This avoids expensive compilation and benchmarking for structurally broken trials.
+- `signal_event_rate`
+- `sequential_filter`
+- `mcmc`
+- `graph_traversal`
+- `dynamic_programming`
+- `greedy`
+- `divide_and_conquer`
+- `graph_optimization`
+- `sorting`
+- `string_matching`
+- `searching`
+- `geometry`
+- `number_theory`
+- `signal_transform`
+- `signal_filter`
+- `signal_detect_measure`
+- `graph_signal_processing`
+- `vi_advi`
+- `particle_filter`
+- `kalman_filter`
+- `belief_propagation`
+- `linear_algebra`
+- `optimization`
+- `combinatorics`
+- `neural_network`
+- `clustering`
+- `dimensionality_reduction`
 
-#### Precision gradients
+These rule sets are family-owned, but the expansion engine is family-agnostic:
+all diagnostics are collected together and the resulting proposal is compared
+against other sibling candidates by measured loss.
 
-Interval arithmetic in `ghost_sim.py` computes per-node error expansion (output interval width − input interval width) using known error factors for 18 common atoms (FFT, SVD, Cholesky, etc.). These feed into `CreditAssigner._gradient_precision()` as the primary signal, with telemetry `error_expansion` as fallback.
+#### Cross-family behaviour
+
+The Principal now treats cross-family structure as normal, not exceptional:
+
+- expansion rules can insert structure from any shipped family
+- local mutation can choose structurally compatible cross-family primitives
+  with a penalty, rather than banning them
+- refinement retrieval can contribute cross-family verified exemplars
+- structure summaries record diversity metrics such as family entropy,
+  distinct primitive families, and cross-family edge counts
+
+#### Safety and reuse
+
+- harmful proposal branches can be rolled back to the baseline
+- selected sibling proposals can reuse cached evaluations instead of
+  re-running immediately as the next official trial
+- optimize telemetry records proposal selection, rollback, cached reuse, and
+  skeleton-proposal statistics when present in trial history
 
 #### Assembly instrumentation
 
-The `Assembler` supports a `with_telemetry=True` flag that wraps each atomic call in a `_sciona_probe()` helper emitting `trace.jsonl` records with `node_id`, `execution_time_ms`, `peak_memory_bytes`, and `error_expansion`. The `ExecutionSandbox` parses these traces after subprocess execution.
+The `Assembler` supports a `with_telemetry=True` flag that wraps each atomic
+call in a `_sciona_probe()` helper emitting `trace.jsonl` records with
+`node_id`, `execution_time_ms`, `peak_memory_bytes`, and `error_expansion`.
+The `ExecutionSandbox` parses these traces after subprocess execution.
 
 ## Telemetry and Dashboard
 
@@ -513,8 +640,11 @@ Both commands try Postgres first (via `asyncio.run()`) and fall back to file-bas
    - Instantiates skeleton template (split / recurse / merge)
 
 3. decompose_node (iterative, per pending node):
-   - LLM decomposes into sub-nodes
-   - Catalog match -> mark ATOMIC, otherwise PENDING
+   - Surface primitive, template, and bounded skeleton proposals
+   - High-confidence template can short-circuit
+   - Skeleton can short-circuit only if it clears the complexity margin
+   - Otherwise deterministic / LLM decomposition emits sub-nodes
+   - Catalog + retrieval match -> mark ATOMIC, otherwise PENDING
 
 4. critique:
    - Depth check, IO consistency, LLM review
@@ -585,28 +715,38 @@ If step 4 fails for all candidates, `ReformulateQuery` asks the LLM to analyze t
 
 ```
 1. seed_population:
-   - Optuna suggests trial parameters
    - Architect decomposes goal under new thread_id
 
-2. execute_forward:
+2. suggest_params:
+   - Optuna samples node-level hyperparameters for the current primitive signature
+
+3. execute_forward:
    - Ghost simulation -> GhostSimReport
    - OptunaManager.check_early_prune() -- abort on structural failure / inf bounds
    - If not pruned: synthesize_fn(cdg, matches) -> ExportBundle
 
-3. evaluate_run:
+4. evaluate_run:
    - ExecutionSandbox runs instrumented artifact (subprocess)
    - Parses trace.jsonl -> NodeTelemetry per node
    - _compute_loss(telemetry, metric) -> global_loss
    - Tracks best_loss across trials
 
-4. compute_gradients:
+5. compute_gradients:
    - CreditAssigner.compute_gradients(cdg, benchmark, ghost_report, metric)
    - LATENCY/FLOP_COUNT: % of total execution time per node
    - MEMORY: % of total peak memory per node
-   - PRECISION: ghost-sim interval gradients (primary) + error_expansion (fallback)
+   - PRECISION/UNCERTAINTY: ghost-sim interval gradients or telemetry error expansion
+   - RMSE/MSE/MAE: measured reference-loss attribution
    - Returns sorted NodeGradient[] -- top = bottleneck
 
-5. time_travel_update:
+6. select_proposal:
+   - Evaluate sibling candidates from the same baseline:
+     expansion, local_mutation, redecompose
+   - Choose only measured-loss improvements
+   - Reuse cached evaluation when the chosen proposal does not require fresh param search
+
+7. time_travel_update:
+   - Used when no sibling proposal beats the baseline
    - Walk Architect checkpoint history
    - Find checkpoint before bottleneck node was created
    - architect.fork(thread_id, checkpoint_id) -> new thread
