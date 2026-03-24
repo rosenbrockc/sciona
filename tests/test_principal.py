@@ -786,32 +786,6 @@ class TestRouteAfterGradients:
         assert route_after_gradients(state) == "select_proposal"
 
 
-class TestRouteAfterExpansion:
-    def test_done(self):
-        from sciona.principal.graph import PrincipalState, route_after_expansion
-
-        state = PrincipalState(done=True)
-        assert route_after_expansion(state) == "end"
-
-    def test_max_trials_reached(self):
-        from sciona.principal.graph import PrincipalState, route_after_expansion
-
-        state = PrincipalState(max_trials=1, trial_history=[{"trial": 1}])
-        assert route_after_expansion(state) == "end"
-
-    def test_expansion_loops_to_param_search(self):
-        from sciona.principal.graph import PrincipalState, route_after_expansion
-
-        state = PrincipalState(expansion_applied=True)
-        assert route_after_expansion(state) == "suggest_params"
-
-    def test_no_expansion_continues_to_gradients(self):
-        from sciona.principal.graph import PrincipalState, route_after_expansion
-
-        state = PrincipalState(expansion_applied=False)
-        assert route_after_expansion(state) == "gradients"
-
-
 class TestRouteAfterUpdate:
     def test_done(self):
         from sciona.principal.graph import PrincipalState, route_after_update
@@ -866,6 +840,5 @@ class TestBuildPrincipalGraph:
         assert "seed" in graph.nodes
         assert "forward" in graph.nodes
         assert "evaluate" in graph.nodes
-        assert "expand" in graph.nodes
         assert "gradients" in graph.nodes
         assert "time_travel" in graph.nodes

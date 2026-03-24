@@ -191,7 +191,7 @@ class TemplateRetriever:
                     candidate_n_outputs - len(failed_node.outputs)
                 )
                 io_match = max(0.0, 1.0 - 0.15 * io_delta)
-                confidence = min(0.95, coverage * (0.75 + 0.25 * io_match))
+                confidence = min(0.95, coverage * (0.65 + 0.25 * io_match + 0.10 * concept_match))
                 if confidence >= self._confidence_threshold:
                     example = ExampleDecomposition(
                         fqn=rec.get("fqn", ""),

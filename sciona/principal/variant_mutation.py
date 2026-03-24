@@ -210,6 +210,9 @@ class LedgerVariantFamily:
         ranked: list[tuple[str, float]],
     ) -> list[tuple[str, float]]:
         """Prefer same-family primitives without forbidding cross-family swaps."""
+        finite_scores = [s for _, s in ranked if not math.isinf(s)]
+        score_range = (max(finite_scores) - min(finite_scores)) if len(finite_scores) >= 2 else 1.0
+        penalty = max(0.01, 0.05 * score_range)
         adjusted: list[tuple[str, float]] = []
         for primitive_name, score in ranked:
             primitive = self._catalog.get(primitive_name)
@@ -219,6 +222,7 @@ class LedgerVariantFamily:
             adjusted_score = _apply_family_prior_score(
                 score,
                 same_family=same_family,
+                penalty=penalty,
             )
             adjusted.append((primitive_name, adjusted_score))
         adjusted.sort(key=lambda item: -item[1])
@@ -288,10 +292,10 @@ def _is_primitive_structurally_compatible(
     return node_input_types == prim_input_types and node_output_types == prim_output_types
 
 
-def _apply_family_prior_score(score: float, *, same_family: bool) -> float:
-    """Apply a modest penalty to cross-family candidates after ledger ranking."""
+def _apply_family_prior_score(score: float, *, same_family: bool, penalty: float = 0.15) -> float:
+    """Apply a scaled penalty to cross-family candidates after ledger ranking."""
     if same_family:
         return score
     if math.isinf(score):
         return 1e6
-    return score - 0.15
+    return score - penalty

@@ -115,6 +115,7 @@ def _summarize_optimize_history(
             expansion_applied_trials += 1
         if bool(rollback.get("applied")):
             rollback_trials += 1
+        selected_proposal = str(proposal.get("selected", "") or "")
         if reused_cached_evaluation:
             cached_reuse_trials += 1
             if selected_proposal:
@@ -122,7 +123,6 @@ def _summarize_optimize_history(
         candidate_rows = proposal.get("candidates", [])
         if not isinstance(candidate_rows, list):
             candidate_rows = []
-        selected_proposal = str(proposal.get("selected", "") or "")
         baseline_loss = proposal.get("baseline_loss")
         selected_loss: float | None = None
         candidate_labels: list[str] = []
