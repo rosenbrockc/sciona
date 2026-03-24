@@ -894,6 +894,43 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
                     if row.get("proposal_improvement") is not None
                     else None
                 ),
+                "skeleton_proposal": {
+                    "target_node": str(
+                        ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("target_node", "")
+                        or ""
+                    ),
+                    "source_family": str(
+                        ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("source_family", "")
+                        or ""
+                    ),
+                    "inserted_node_count": int(
+                        ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("inserted_node_count", 0)
+                        or 0
+                    ),
+                    "inserted_edge_count": int(
+                        ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("inserted_edge_count", 0)
+                        or 0
+                    ),
+                    "complexity_penalty": (
+                        float(((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("complexity_penalty"))
+                        if ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("complexity_penalty") is not None
+                        else None
+                    ),
+                    "objective_gain": (
+                        float(((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("objective_gain"))
+                        if ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("objective_gain") is not None
+                        else None
+                    ),
+                    "accepted": bool(
+                        ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("accepted")
+                    ),
+                    "retained": bool(
+                        ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("retained")
+                    ),
+                    "reverted": bool(
+                        ((row.get("skeleton_proposal") or {}) if isinstance(row.get("skeleton_proposal"), dict) else {}).get("reverted")
+                    ),
+                },
             }
         )
     best_structure = optimize.get("best_structure", {})
@@ -936,6 +973,24 @@ def _build_optimize_summary(optimize: dict[str, Any]) -> dict[str, Any]:
             str(key): int(value or 0)
             for key, value in selected_proposal_counts.items()
         },
+        "skeleton_proposal_trials": int(
+            optimize.get("skeleton_proposal_trials", 0) or 0
+        ),
+        "accepted_skeleton_proposals": int(
+            optimize.get("accepted_skeleton_proposals", 0) or 0
+        ),
+        "rejected_skeleton_proposals": int(
+            optimize.get("rejected_skeleton_proposals", 0) or 0
+        ),
+        "mean_skeleton_complexity_penalty": float(
+            optimize.get("mean_skeleton_complexity_penalty", 0.0) or 0.0
+        ),
+        "mean_skeleton_objective_gain": float(
+            optimize.get("mean_skeleton_objective_gain", 0.0) or 0.0
+        ),
+        "skeleton_retention_rate": float(
+            optimize.get("skeleton_retention_rate", 0.0) or 0.0
+        ),
         "unique_primitive_signatures": int(
             optimize.get("unique_primitive_signatures", 0) or 0
         ),

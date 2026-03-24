@@ -848,6 +848,12 @@ class TestDashboardAPI:
                         "expansion": 1,
                         "local_mutation": 1,
                     },
+                    "skeleton_proposal_trials": 2,
+                    "accepted_skeleton_proposals": 1,
+                    "rejected_skeleton_proposals": 1,
+                    "mean_skeleton_complexity_penalty": 0.95,
+                    "mean_skeleton_objective_gain": 1.42,
+                    "skeleton_retention_rate": 1.0,
                     "unique_primitive_signatures": 2,
                     "unique_topologies": 1,
                     "expansion_rules_applied": [
@@ -903,6 +909,17 @@ class TestDashboardAPI:
                             "proposal_baseline_loss": 10.524294403000809,
                             "proposal_selected_loss": None,
                             "proposal_improvement": None,
+                            "skeleton_proposal": {
+                                "target_node": "Estimate Event Rate",
+                                "source_family": "signal_filter",
+                                "inserted_node_count": 3,
+                                "inserted_edge_count": 2,
+                                "complexity_penalty": 0.9,
+                                "objective_gain": 1.1,
+                                "accepted": False,
+                                "retained": False,
+                                "reverted": False,
+                            },
                         },
                         {
                             "trial": 3,
@@ -932,6 +949,17 @@ class TestDashboardAPI:
                             "proposal_baseline_loss": 10.524294403000809,
                             "proposal_selected_loss": 8.55304557280547,
                             "proposal_improvement": 1.9712488301953387,
+                            "skeleton_proposal": {
+                                "target_node": "Estimate Event Rate",
+                                "source_family": "sequential_filter",
+                                "inserted_node_count": 3,
+                                "inserted_edge_count": 2,
+                                "complexity_penalty": 1.0,
+                                "objective_gain": 1.74,
+                                "accepted": True,
+                                "retained": True,
+                                "reverted": False,
+                            },
                         },
                     ],
                 }
@@ -959,6 +987,12 @@ class TestDashboardAPI:
             "expansion": 1,
             "local_mutation": 1,
         }
+        assert data["optimize_summary"]["skeleton_proposal_trials"] == 2
+        assert data["optimize_summary"]["accepted_skeleton_proposals"] == 1
+        assert data["optimize_summary"]["rejected_skeleton_proposals"] == 1
+        assert data["optimize_summary"]["mean_skeleton_complexity_penalty"] == 0.95
+        assert data["optimize_summary"]["mean_skeleton_objective_gain"] == 1.42
+        assert data["optimize_summary"]["skeleton_retention_rate"] == 1.0
         assert data["optimize_summary"]["unique_primitive_signatures"] == 2
         assert data["optimize_summary"]["max_distinct_primitive_families"] == 2
         assert data["optimize_summary"]["mean_expansion_loss_delta"] == 0.732
@@ -988,9 +1022,13 @@ class TestDashboardAPI:
         assert data["optimize_summary"]["trial_rows"][1]["rollback_restored_trial"] == 2
         assert data["optimize_summary"]["trial_rows"][0]["proposal_rejected"] is True
         assert data["optimize_summary"]["trial_rows"][0]["reused_cached_evaluation"] is False
+        assert data["optimize_summary"]["trial_rows"][0]["skeleton_proposal"]["accepted"] is False
+        assert data["optimize_summary"]["trial_rows"][0]["skeleton_proposal"]["target_node"] == "Estimate Event Rate"
         assert data["optimize_summary"]["trial_rows"][1]["proposal_selected"] == "expansion"
         assert data["optimize_summary"]["trial_rows"][1]["proposal_candidate_count"] == 2
         assert data["optimize_summary"]["trial_rows"][1]["reused_cached_evaluation"] is True
+        assert data["optimize_summary"]["trial_rows"][1]["skeleton_proposal"]["accepted"] is True
+        assert data["optimize_summary"]["trial_rows"][1]["skeleton_proposal"]["retained"] is True
 
     def test_dashboard_run_includes_single_agent_summary(
         self, client, monkeypatch, tmp_path

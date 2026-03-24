@@ -789,6 +789,9 @@
           const proposalLine = optimize.proposal_selection_trials
             ? `<div class="run-meta">optimize_proposals selected=${proposalSummary || "--"} rejected=${Number(optimize.proposal_rejected_trials || 0)} gain=${Number(optimize.mean_selected_proposal_improvement || 0).toFixed(3)}</div>`
             : "";
+          const skeletonLine = optimize.skeleton_proposal_trials
+            ? `<div class="run-meta">optimize_skeletons trials=${Number(optimize.skeleton_proposal_trials || 0)} accepted=${Number(optimize.accepted_skeleton_proposals || 0)} rejected=${Number(optimize.rejected_skeleton_proposals || 0)} penalty=${Number(optimize.mean_skeleton_complexity_penalty || 0).toFixed(3)} gain=${Number(optimize.mean_skeleton_objective_gain || 0).toFixed(3)} retain=${Number(optimize.skeleton_retention_rate || 0).toFixed(2)}</div>`
+            : "";
           const reuseLine = optimize.cached_reuse_trials
             ? `<div class="run-meta">optimize_reuse reused=${Number(optimize.cached_reuse_trials || 0)} avoided=${Number(optimize.cached_reruns_avoided || 0)}</div>`
             : "";
@@ -812,6 +815,7 @@
             `<div class="run-meta">shared_ctx=${sharedContexts} searches=${sharedSearches} template_hits=${sharedTemplates} failure_hits=${sharedFailures}</div>`,
             optimizeLine,
             proposalLine,
+            skeletonLine,
             reuseLine,
             (flowPromptCallSummary ? `<div class="run-meta">flow_prompts ${flowPromptCallSummary}</div>` : ""),
             (flowPlannerToolSummary ? `<div class="run-meta">flow_tools ${flowPlannerToolSummary}</div>` : ""),
@@ -946,6 +950,11 @@
           ["opt proposal counts", Object.keys(optimize.selected_proposal_counts || {}).length
             ? Object.entries(optimize.selected_proposal_counts || {}).map(([label, count]) => `${label}=${Number(count || 0)}`).join(", ")
             : "--"],
+          ["opt skeleton trials", String(Number(optimize.skeleton_proposal_trials || 0))],
+          ["opt skeleton accept/reject", `${Number(optimize.accepted_skeleton_proposals || 0)} / ${Number(optimize.rejected_skeleton_proposals || 0)}`],
+          ["opt skeleton penalty mean", Number(optimize.mean_skeleton_complexity_penalty || 0).toFixed(3)],
+          ["opt skeleton gain mean", Number(optimize.mean_skeleton_objective_gain || 0).toFixed(3)],
+          ["opt skeleton retention", Number(optimize.skeleton_retention_rate || 0).toFixed(2)],
           ["opt proposal gain mean", Number(optimize.mean_selected_proposal_improvement || 0).toFixed(3)],
           ["opt proposal gain best", Number(optimize.best_selected_proposal_improvement || 0).toFixed(3)],
           ["opt expansion delta mean", Number(optimize.mean_expansion_loss_delta || 0).toFixed(3)],

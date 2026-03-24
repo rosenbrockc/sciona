@@ -70,6 +70,12 @@ def _summarize_optimize_history(
     cached_reuse_trials = 0
     cached_reruns_avoided = 0
     selected_proposal_counts: dict[str, int] = {}
+    skeleton_proposal_trials = 0
+    accepted_skeleton_proposals = 0
+    rejected_skeleton_proposals = 0
+    retained_skeleton_proposals = 0
+    skeleton_complexity_penalties: list[float] = []
+    skeleton_objective_gains: list[float] = []
     primitive_signatures: set[str] = set()
     topology_signatures: set[str] = set()
     expansion_rules: set[str] = set()
@@ -88,6 +94,11 @@ def _summarize_optimize_history(
         proposal = (
             entry.get("proposal_selection", {})
             if isinstance(entry.get("proposal_selection"), dict)
+            else {}
+        )
+        skeleton_meta = (
+            entry.get("skeleton_proposal", {})
+            if isinstance(entry.get("skeleton_proposal"), dict)
             else {}
         )
         params = (
@@ -177,6 +188,27 @@ def _summarize_optimize_history(
             baseline_loss = trial_loss_by_id.get(restored_trial_id)
             if baseline_loss is not None:
                 expansion_deltas.append(loss_value - baseline_loss)
+        target_node = str(skeleton_meta.get("target_node", "") or "")
+        source_family = str(skeleton_meta.get("source_family", "") or "")
+        inserted_node_count = int(skeleton_meta.get("inserted_node_count", 0) or 0)
+        inserted_edge_count = int(skeleton_meta.get("inserted_edge_count", 0) or 0)
+        complexity_penalty = skeleton_meta.get("complexity_penalty")
+        objective_gain = skeleton_meta.get("objective_gain")
+        accepted = bool(skeleton_meta.get("accepted"))
+        retained = bool(skeleton_meta.get("retained"))
+        reverted = bool(skeleton_meta.get("reverted"))
+        if target_node or source_family or inserted_node_count or inserted_edge_count:
+            skeleton_proposal_trials += 1
+            if accepted:
+                accepted_skeleton_proposals += 1
+            else:
+                rejected_skeleton_proposals += 1
+            if retained:
+                retained_skeleton_proposals += 1
+            if isinstance(complexity_penalty, (int, float)):
+                skeleton_complexity_penalties.append(float(complexity_penalty))
+            if isinstance(objective_gain, (int, float)):
+                skeleton_objective_gains.append(float(objective_gain))
         row = {
             "trial": trial_id,
             "loss": loss_value,
@@ -221,6 +253,25 @@ def _summarize_optimize_history(
                 if baseline_loss is not None and selected_loss is not None
                 else None
             ),
+            "skeleton_proposal": {
+                "target_node": target_node,
+                "source_family": source_family,
+                "inserted_node_count": inserted_node_count,
+                "inserted_edge_count": inserted_edge_count,
+                "complexity_penalty": (
+                    float(complexity_penalty)
+                    if isinstance(complexity_penalty, (int, float))
+                    else None
+                ),
+                "objective_gain": (
+                    float(objective_gain)
+                    if isinstance(objective_gain, (int, float))
+                    else None
+                ),
+                "accepted": accepted,
+                "retained": retained,
+                "reverted": reverted,
+            },
         }
         trial_rows.append(row)
         if best_entry is None or row["loss"] < float(best_entry.get("loss", float("inf"))):
@@ -258,6 +309,24 @@ def _summarize_optimize_history(
         "cached_reuse_trials": cached_reuse_trials,
         "cached_reruns_avoided": cached_reruns_avoided,
         "selected_proposal_counts": dict(sorted(selected_proposal_counts.items())),
+        "skeleton_proposal_trials": skeleton_proposal_trials,
+        "accepted_skeleton_proposals": accepted_skeleton_proposals,
+        "rejected_skeleton_proposals": rejected_skeleton_proposals,
+        "mean_skeleton_complexity_penalty": (
+            float(sum(skeleton_complexity_penalties) / len(skeleton_complexity_penalties))
+            if skeleton_complexity_penalties
+            else 0.0
+        ),
+        "mean_skeleton_objective_gain": (
+            float(sum(skeleton_objective_gains) / len(skeleton_objective_gains))
+            if skeleton_objective_gains
+            else 0.0
+        ),
+        "skeleton_retention_rate": (
+            float(retained_skeleton_proposals / accepted_skeleton_proposals)
+            if accepted_skeleton_proposals
+            else 0.0
+        ),
         "unique_primitive_signatures": len(primitive_signatures),
         "unique_topologies": len(topology_signatures),
         "expansion_rules_applied": sorted(expansion_rules),
