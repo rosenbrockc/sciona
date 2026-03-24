@@ -157,7 +157,7 @@ class AgeomConfig(BaseSettings):
     # Ingester (Round 0)
     ingester_llm_provider: str = ""  # falls back to llm_provider
     ingester_llm_model: str = ""
-    ingester_max_depth: int = 1  # max CDG depth (1 = current flat behavior)
+    ingester_max_depth: int = 12  # max CDG depth (1 = flat behavior)
     ingester_decompose_line_threshold: int = 30  # method lines triggering sub-decomposition
     ingester_parallelism: int = 1
     ingester_shared_context_enabled: bool = True

@@ -849,6 +849,117 @@ def _snake_case_id(name: str) -> str:
     return name.lower().replace(" ", "_").replace("-", "_")
 
 
+def _merge_iospec_lists(primary: list[IOSpec], secondary: list[IOSpec]) -> list[IOSpec]:
+    """Merge IOSpec lists by port name, keeping richer type/constraint details."""
+    merged: dict[str, IOSpec] = {}
+    order: list[str] = []
+    for spec in [*primary, *secondary]:
+        key = spec.name
+        if key not in merged:
+            merged[key] = spec
+            order.append(key)
+            continue
+        existing = merged[key]
+        merged[key] = IOSpec(
+            name=existing.name or spec.name,
+            type_desc=existing.type_desc or spec.type_desc,
+            constraints=existing.constraints or spec.constraints,
+        )
+    return [merged[key] for key in order]
+
+
+def _dedupe_dependency_edges(edges: list[DependencyEdge]) -> list[DependencyEdge]:
+    """Deduplicate dependency edges by full structural key."""
+    seen: set[tuple[str, str, str, str, str, str]] = set()
+    deduped: list[DependencyEdge] = []
+    for edge in edges:
+        key = (
+            edge.source_id,
+            edge.target_id,
+            edge.output_name,
+            edge.input_name,
+            edge.source_type,
+            edge.target_type,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(edge)
+    return deduped
+
+
+def _merge_macro_atoms(existing: MacroAtomSpec, incoming: MacroAtomSpec) -> MacroAtomSpec:
+    """Merge duplicate macro-atoms while preserving the richer combined spec."""
+    concept_type = existing.concept_type
+    if concept_type == ConceptType.CUSTOM and incoming.concept_type != ConceptType.CUSTOM:
+        concept_type = incoming.concept_type
+
+    description = existing.description
+    if len(incoming.description.strip()) > len(description.strip()):
+        description = incoming.description
+
+    conceptual_profile = existing.conceptual_profile or incoming.conceptual_profile
+    if (
+        existing.conceptual_profile is not None
+        and incoming.conceptual_profile is not None
+        and len(incoming.conceptual_profile.model_dump_json())
+        > len(existing.conceptual_profile.model_dump_json())
+    ):
+        conceptual_profile = incoming.conceptual_profile
+
+    return existing.model_copy(
+        update={
+            "description": description,
+            "method_names": list(
+                dict.fromkeys([*existing.method_names, *incoming.method_names])
+            ),
+            "inputs": _merge_iospec_lists(existing.inputs, incoming.inputs),
+            "outputs": _merge_iospec_lists(existing.outputs, incoming.outputs),
+            "config_params": list(
+                dict.fromkeys([*existing.config_params, *incoming.config_params])
+            ),
+            "decorators": list(
+                dict.fromkeys([*existing.decorators, *incoming.decorators])
+            ),
+            "concept_type": concept_type,
+            "is_optional": existing.is_optional or incoming.is_optional,
+            "is_opaque": existing.is_opaque or incoming.is_opaque,
+            "is_external": existing.is_external or incoming.is_external,
+            "is_stochastic": existing.is_stochastic or incoming.is_stochastic,
+            "requires_rng_key": existing.requires_rng_key or incoming.requires_rng_key,
+            "requires_autodiff": existing.requires_autodiff or incoming.requires_autodiff,
+            "autodiff_backend": existing.autodiff_backend or incoming.autodiff_backend,
+            "conceptual_profile": conceptual_profile,
+            "children": _dedupe_macro_atoms([*existing.children, *incoming.children]),
+            "sub_edges": _dedupe_dependency_edges(
+                [*existing.sub_edges, *incoming.sub_edges]
+            ),
+            "depth": min(existing.depth, incoming.depth),
+            "source_lines": max(existing.source_lines, incoming.source_lines),
+        }
+    )
+
+
+def _dedupe_macro_atoms(atoms: list[MacroAtomSpec]) -> list[MacroAtomSpec]:
+    """Deduplicate macro-atoms by canonical node id, recursively merging children."""
+    merged: dict[str, MacroAtomSpec] = {}
+    order: list[str] = []
+    for atom in atoms:
+        normalized = atom.model_copy(
+            update={
+                "children": _dedupe_macro_atoms(atom.children),
+                "sub_edges": _dedupe_dependency_edges(atom.sub_edges),
+            }
+        )
+        key = _snake_case_id(normalized.name)
+        if key not in merged:
+            merged[key] = normalized
+            order.append(key)
+            continue
+        merged[key] = _merge_macro_atoms(merged[key], normalized)
+    return [merged[key] for key in order]
+
+
 async def _decompose_single_atom(
     atom: MacroAtomSpec,
     dfg: RawDataFlowGraph,
@@ -861,6 +972,7 @@ async def _decompose_single_atom(
     shared_context_metrics: SharedContextMetrics | None = None,
     context_namespace: str = "",
     context_budget_chars: int = 900,
+    ancestor_ids: tuple[str, ...] = (),
 ) -> MacroAtomSpec:
     """Recursively decompose a single atom if it exceeds complexity thresholds."""
     if current_depth >= max_depth:
@@ -957,6 +1069,13 @@ async def _decompose_single_atom(
         return atom
 
     children, sub_edges = _parse_sub_atoms(raw, current_depth)
+    children = _dedupe_macro_atoms(children)
+    child_ids = {_snake_case_id(child.name) for child in children}
+    sub_edges = [
+        edge
+        for edge in _dedupe_dependency_edges(sub_edges)
+        if edge.source_id in child_ids and edge.target_id in child_ids
+    ]
     if not children:
         return atom
     if shared_context is not None and context_namespace:
@@ -975,7 +1094,16 @@ async def _decompose_single_atom(
 
     # Recurse into children
     recursed_children: list[MacroAtomSpec] = []
+    next_ancestor_ids = (*ancestor_ids, _snake_case_id(atom.name))
     for child in children:
+        child_id = _snake_case_id(child.name)
+        if child_id in next_ancestor_ids:
+            logger.info(
+                "Skipping duplicate/cyclic sub-atom %s under %s",
+                child.name,
+                atom.name,
+            )
+            continue
         recursed = await _decompose_single_atom(
             child,
             dfg,
@@ -988,10 +1116,16 @@ async def _decompose_single_atom(
             shared_context_metrics=shared_context_metrics,
             context_namespace=context_namespace,
             context_budget_chars=context_budget_chars,
+            ancestor_ids=next_ancestor_ids,
         )
         recursed_children.append(recursed)
 
-    return atom.model_copy(update={"children": recursed_children, "sub_edges": sub_edges})
+    return atom.model_copy(
+        update={
+            "children": _dedupe_macro_atoms(recursed_children),
+            "sub_edges": sub_edges,
+        }
+    )
 
 
 async def decompose_complex_atoms(
@@ -1052,7 +1186,7 @@ async def decompose_complex_atoms(
 
         decomposed_atoms = list(await asyncio.gather(*[_run(a) for a in plan.macro_atoms]))
 
-    new_plan = plan.model_copy(update={"macro_atoms": decomposed_atoms})
+    new_plan = plan.model_copy(update={"macro_atoms": _dedupe_macro_atoms(decomposed_atoms)})
     new_validated = validated.model_copy(update={"plan": new_plan})
     return {"validated_plan": new_validated}
 

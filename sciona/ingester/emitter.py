@@ -1087,10 +1087,24 @@ def _emit_atom_nodes(
     nodes: list[AlgorithmicNode],
     edges: list[DependencyEdge],
     depth: int,
+    seen_node_ids: set[str],
+    seen_edge_keys: set[tuple[str, str, str, str, str, str]],
 ) -> None:
     """Recursively emit CDG nodes for an atom and its children."""
     node_id = _snake_case(atom.name)
-    has_children = bool(atom.children)
+    if node_id in seen_node_ids:
+        return
+    seen_node_ids.add(node_id)
+
+    unique_children: list[MacroAtomSpec] = []
+    child_ids: set[str] = set()
+    for child in atom.children:
+        child_id = _snake_case(child.name)
+        if child_id in seen_node_ids or child_id in child_ids:
+            continue
+        child_ids.add(child_id)
+        unique_children.append(child)
+    has_children = bool(unique_children)
 
     node = AlgorithmicNode(
         node_id=node_id,
@@ -1101,7 +1115,7 @@ def _emit_atom_nodes(
         inputs=list(atom.inputs),
         outputs=list(atom.outputs),
         status=NodeStatus.DECOMPOSED if has_children else NodeStatus.ATOMIC,
-        children=[_snake_case(c.name) for c in atom.children] if has_children else [],
+        children=[_snake_case(c.name) for c in unique_children] if has_children else [],
         is_optional=atom.is_optional,
         is_opaque=atom.is_opaque,
         is_external=getattr(atom, "is_external", False),
@@ -1112,51 +1126,98 @@ def _emit_atom_nodes(
     nodes.append(node)
 
     for sub_edge in atom.sub_edges:
-        edges.append(
-            DependencyEdge(
-                source_id=_snake_case(sub_edge.source_id),
-                target_id=_snake_case(sub_edge.target_id),
-                output_name=sub_edge.output_name,
-                input_name=sub_edge.input_name,
-                source_type=sub_edge.source_type,
-                target_type=sub_edge.target_type,
-            )
+        emitted = DependencyEdge(
+            source_id=_snake_case(sub_edge.source_id),
+            target_id=_snake_case(sub_edge.target_id),
+            output_name=sub_edge.output_name,
+            input_name=sub_edge.input_name,
+            source_type=sub_edge.source_type,
+            target_type=sub_edge.target_type,
         )
+        key = (
+            emitted.source_id,
+            emitted.target_id,
+            emitted.output_name,
+            emitted.input_name,
+            emitted.source_type,
+            emitted.target_type,
+        )
+        if key in seen_edge_keys:
+            continue
+        seen_edge_keys.add(key)
+        edges.append(emitted)
 
-    for child in atom.children:
-        _emit_atom_nodes(child, node_id, nodes, edges, depth + 1)
+    for child in unique_children:
+        _emit_atom_nodes(
+            child,
+            node_id,
+            nodes,
+            edges,
+            depth + 1,
+            seen_node_ids,
+            seen_edge_keys,
+        )
 
 
 def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
     """Build a CDGExport with root DECOMPOSED node + recursive children."""
+    unique_top_level: list[MacroAtomSpec] = []
+    seen_root_children: set[str] = set()
+    for atom in plan.plan.macro_atoms:
+        node_id = _snake_case(atom.name)
+        if node_id in seen_root_children:
+            continue
+        seen_root_children.add(node_id)
+        unique_top_level.append(atom)
+
     root_node = AlgorithmicNode(
         node_id=f"{class_name}_root",
         name=class_name,
         description=f"Ingested pipeline from {class_name}",
         concept_type=ConceptType.CUSTOM,
         status=NodeStatus.DECOMPOSED,
-        children=[_snake_case(a.name) for a in plan.plan.macro_atoms],
+        children=[_snake_case(a.name) for a in unique_top_level],
         depth=0,
     )
 
     all_nodes: list[AlgorithmicNode] = [root_node]
     all_edges: list[DependencyEdge] = []
+    seen_node_ids: set[str] = set()
+    seen_edge_keys: set[tuple[str, str, str, str, str, str]] = set()
 
-    for atom in plan.plan.macro_atoms:
-        _emit_atom_nodes(atom, root_node.node_id, all_nodes, all_edges, depth=1)
+    for atom in unique_top_level:
+        _emit_atom_nodes(
+            atom,
+            root_node.node_id,
+            all_nodes,
+            all_edges,
+            depth=1,
+            seen_node_ids=seen_node_ids,
+            seen_edge_keys=seen_edge_keys,
+        )
 
     # Build typed edges from plan
     for edge_def in plan.plan.edge_definitions:
-        all_edges.append(
-            DependencyEdge(
-                source_id=_snake_case(_title_case(edge_def.source_id)),
-                target_id=_snake_case(_title_case(edge_def.target_id)),
-                output_name=edge_def.output_name,
-                input_name=edge_def.input_name,
-                source_type=edge_def.source_type,
-                target_type=edge_def.target_type,
-            )
+        emitted = DependencyEdge(
+            source_id=_snake_case(_title_case(edge_def.source_id)),
+            target_id=_snake_case(_title_case(edge_def.target_id)),
+            output_name=edge_def.output_name,
+            input_name=edge_def.input_name,
+            source_type=edge_def.source_type,
+            target_type=edge_def.target_type,
         )
+        key = (
+            emitted.source_id,
+            emitted.target_id,
+            emitted.output_name,
+            emitted.input_name,
+            emitted.source_type,
+            emitted.target_type,
+        )
+        if key in seen_edge_keys:
+            continue
+        seen_edge_keys.add(key)
+        all_edges.append(emitted)
 
     return CDGExport(
         nodes=all_nodes,

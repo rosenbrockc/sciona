@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from sciona.architect.models import ConceptType, IOSpec, NodeStatus
+from sciona.config import AgeomConfig
 from sciona.ingester.chunker import (
     ChunkerDeps,
     ChunkerState,
@@ -154,6 +155,11 @@ class TestComplexityHeuristic:
         assert is_atom_complex(atom, dfg, line_threshold=15)
 
 
+class TestIngesterDepthDefaults:
+    def test_config_default_depth_is_12(self):
+        assert AgeomConfig.model_fields["ingester_max_depth"].default == 12
+
+
 # ---------------------------------------------------------------------------
 # TestDecomposeComplexAtoms
 # ---------------------------------------------------------------------------
@@ -218,6 +224,56 @@ class TestDecomposeComplexAtoms:
         result = await decompose_complex_atoms(state, config)
         updated_plan = result["validated_plan"]
         assert len(updated_plan.plan.macro_atoms[0].children) == 0
+
+    @pytest.mark.asyncio
+    async def test_decompose_dedupes_duplicate_children(self):
+        dfg = _make_dfg(source_lines=50)
+        atom = _make_atom()
+        plan = _make_validated_plan([atom])
+
+        llm = AsyncMock()
+        llm.complete = AsyncMock(
+            return_value=json.dumps(
+                {
+                    "sub_atoms": [
+                        {
+                            "name": "Sub Step 1",
+                            "description": "first",
+                            "inputs": [{"name": "data", "type_desc": "np.ndarray", "constraints": ""}],
+                            "outputs": [{"name": "result", "type_desc": "np.ndarray", "constraints": ""}],
+                            "concept_type": "custom",
+                        },
+                        {
+                            "name": "Sub Step 1",
+                            "description": "duplicate with richer docs",
+                            "inputs": [{"name": "data", "type_desc": "np.ndarray", "constraints": "non-empty"}],
+                            "outputs": [{"name": "result", "type_desc": "np.ndarray", "constraints": "non-empty"}],
+                            "concept_type": "custom",
+                        },
+                    ],
+                    "edges": [],
+                }
+            )
+        )
+        deps = ChunkerDeps(llm=llm, max_depth=3, line_threshold=30)
+
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": plan,
+            "critique_passed": True,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_complex_atoms(state, config)
+        decomposed_atom = result["validated_plan"].plan.macro_atoms[0]
+
+        assert [child.name for child in decomposed_atom.children] == ["Sub Step 1"]
+        assert decomposed_atom.children[0].description == "duplicate with richer docs"
 
 
 # ---------------------------------------------------------------------------

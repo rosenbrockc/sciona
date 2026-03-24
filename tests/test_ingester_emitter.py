@@ -201,6 +201,25 @@ class TestBuildCDGExport:
         assert cdg.metadata["source"] == "ingester"
         assert cdg.metadata["class_name"] == "TestClass"
 
+    def test_dedupes_duplicate_top_level_nodes(self):
+        duplicate = MacroAtomSpec(
+            name="Signal Conditioner",
+            description="Duplicate node that should collapse into the first one",
+            method_names=["other_preprocess"],
+            inputs=[IOSpec(name="raw", type_desc="np.ndarray", constraints="time domain")],
+            outputs=[IOSpec(name="conditioned", type_desc="np.ndarray", constraints="time domain")],
+            concept_type=ConceptType.SIGNAL_FILTER,
+        )
+        plan = _make_plan()
+        plan.plan.macro_atoms.append(duplicate)
+
+        cdg = build_cdg_export(plan, "TestClass")
+
+        node_ids = [node.node_id for node in cdg.nodes]
+        assert node_ids.count("signal_conditioner") == 1
+        root = next(node for node in cdg.nodes if node.node_id == "TestClass_root")
+        assert root.children == ["signal_conditioner", "beat_detector"]
+
 
 # ---------------------------------------------------------------------------
 # Tests: build_match_results
