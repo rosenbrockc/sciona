@@ -2016,6 +2016,8 @@ class TestSharedContext:
             "skeleton",
         }
         assert result["history"][0]["ranked_proposal_types"]
+        assert "skeleton_acceptance_reason" in result["history"][0]
+        assert "skeleton_acceptance_margin" in result["history"][0]
 
     @pytest.mark.asyncio
     async def test_decompose_node_injects_template_context_from_shared_namespace(self):

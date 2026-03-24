@@ -25,10 +25,11 @@ from sciona.architect.deterministic_decompose import (
     build_deterministic_decomposition,
 )
 from sciona.architect.proposal_models import (
+    ProposalType,
     proposal_from_primitive,
     proposal_from_template_match,
 )
-from sciona.architect.proposal_ranking import rank_proposals
+from sciona.architect.proposal_ranking import ScoredProposal, rank_proposals
 from sciona.architect.skeleton_proposals import generate_skeleton_proposals
 from sciona.architect.structural_critic import structural_critique_issues
 from sciona.architect.prompts import (
@@ -64,6 +65,8 @@ from sciona.telemetry import (
 # ---------------------------------------------------------------------------
 # Conjugate prior/likelihood pair detection
 # ---------------------------------------------------------------------------
+
+_SKELETON_ACCEPTANCE_MARGIN = 0.15
 
 # Each entry maps a canonical pair name to recognizable keywords (in lower-case)
 # that appear in goal text or IO specifications, along with the sufficient
@@ -427,6 +430,58 @@ def _instantiate_template(
             )
 
     return new_nodes, new_edges
+
+
+def _instantiate_skeleton_for_node(
+    parent: AlgorithmicNode,
+    *,
+    skeleton_name: str,
+) -> tuple[list[AlgorithmicNode], list[DependencyEdge]]:
+    """Instantiate a named skeleton as a conservative child decomposition."""
+    skeleton = get_skeleton(parent.concept_type, variant=skeleton_name)
+    if skeleton is None:
+        raise ValueError(f"Unknown skeleton proposal: {skeleton_name}")
+
+    parent_copy = parent.model_copy()
+    parent_copy.status = NodeStatus.DECOMPOSED
+    parent_copy.children = []
+
+    child_nodes, child_edges = instantiate_skeleton(
+        skeleton,
+        parent.description or parent.name,
+        parent_id=parent.node_id,
+        base_depth=parent.depth + 1,
+    )
+    parent_copy.children.extend(child.node_id for child in child_nodes)
+    return [parent_copy, *child_nodes], child_edges
+
+
+def _select_live_skeleton_proposal(
+    ranked_proposals: list[ScoredProposal],
+) -> tuple[ScoredProposal | None, str, float]:
+    """Select a live skeleton proposal only when it clears a strict margin."""
+    if not ranked_proposals:
+        return None, "no_ranked_proposals", 0.0
+
+    top = ranked_proposals[0]
+    if top.proposal.proposal_type != ProposalType.SKELETON:
+        return None, "top_not_skeleton", 0.0
+    if top.score <= 0.0:
+        return None, "non_positive_score", 0.0
+
+    lower_complexity = [
+        candidate
+        for candidate in ranked_proposals[1:]
+        if candidate.complexity_penalty < top.complexity_penalty
+    ]
+    if not lower_complexity:
+        return top, "accepted_no_lower_complexity_alternative", 0.0
+
+    best_alternative = max(lower_complexity, key=lambda candidate: candidate.score)
+    score_margin = top.score - best_alternative.score
+    if score_margin < _SKELETON_ACCEPTANCE_MARGIN:
+        return None, "insufficient_margin_over_simpler_alternative", score_margin
+    return top, "accepted_margin_over_simpler_alternative", score_margin
 
 
 def _lexical_primitive_fallback(
@@ -944,68 +999,6 @@ async def decompose_node(
             template_proposals = [
                 proposal_from_template_match(match) for match in template_matches[:3]
             ]
-            ranked_proposals = rank_proposals(
-                primitive_proposals + template_proposals + skeleton_proposals,
-                preferred_family=node.concept_type.value,
-            )
-            if template_matches and template_matches[0].confidence >= 0.8:
-                match = template_matches[0]
-                template_proposal = proposal_from_template_match(match)
-                log_event(
-                    "architect",
-                    "decompose",
-                    "TEMPLATE_USED",
-                    payload={
-                        "node_id": node.node_id,
-                        "template_fqn": match.example.fqn,
-                        "confidence": round(match.confidence, 3),
-                        "source": match.source,
-                    },
-                )
-                # Instantiate from template
-                new_nodes, new_edges = _instantiate_template(
-                    node, match.example, all_nodes
-                )
-                return {
-                    "nodes": new_nodes,
-                    "edges": new_edges,
-                    "history": [
-                        {
-                            "step": "decompose_node",
-                            "node_id": node.node_id,
-                            "template_used": match.example.fqn,
-                            "confidence": round(match.confidence, 3),
-                            "selected_proposal_type": template_proposal.proposal_type.value,
-                            "primitive_proposal_count": len(primitive_proposals),
-                            "template_proposal_count": len(template_proposals),
-                            "skeleton_proposal_count": len(skeleton_proposals),
-                            "top_ranked_proposal_type": (
-                                ranked_proposals[0].proposal.proposal_type.value
-                                if ranked_proposals
-                                else ""
-                            ),
-                            "top_ranked_proposal_score": (
-                                round(ranked_proposals[0].score, 3)
-                                if ranked_proposals
-                                else 0.0
-                            ),
-                            "ranked_proposal_types": [
-                                scored.proposal.proposal_type.value
-                                for scored in ranked_proposals[:3]
-                            ],
-                        }
-                    ],
-                }
-            elif template_matches:
-                log_event(
-                    "architect",
-                    "decompose",
-                    "TEMPLATE_FALLBACK_TO_LLM",
-                    payload={
-                        "node_id": node.node_id,
-                        "best_confidence": round(template_matches[0].confidence, 3),
-                    },
-                )
         except Exception:
             logger.debug("template_retriever failed in decompose_node", exc_info=True)
             template_proposals = []
@@ -1014,6 +1007,118 @@ async def decompose_node(
         primitive_proposals + template_proposals + skeleton_proposals,
         preferred_family=node.concept_type.value,
     )
+    accepted_skeleton, skeleton_acceptance_reason, skeleton_margin = (
+        _select_live_skeleton_proposal(ranked_proposals)
+    )
+    if accepted_skeleton is not None:
+        skeleton_name = str(accepted_skeleton.proposal.skeleton_name or "")
+        log_event(
+            "architect",
+            "decompose",
+            "SKELETON_PROPOSAL_USED",
+            payload={
+                "node_id": node.node_id,
+                "skeleton_name": skeleton_name,
+                "score": round(accepted_skeleton.score, 3),
+                "margin": round(skeleton_margin, 3),
+                "source_family": accepted_skeleton.proposal.source_family,
+            },
+        )
+        new_nodes, new_edges = _instantiate_skeleton_for_node(
+            node,
+            skeleton_name=skeleton_name,
+        )
+        return {
+            "nodes": new_nodes,
+            "edges": new_edges,
+            "history": [
+                {
+                    "step": "decompose_node",
+                    "node_id": node.node_id,
+                    "selected_proposal_type": accepted_skeleton.proposal.proposal_type.value,
+                    "selected_skeleton_name": skeleton_name,
+                    "selected_proposal_score": round(accepted_skeleton.score, 3),
+                    "skeleton_acceptance_reason": skeleton_acceptance_reason,
+                    "skeleton_acceptance_margin": round(skeleton_margin, 3),
+                    "primitive_proposal_count": len(primitive_proposals),
+                    "template_proposal_count": len(template_proposals),
+                    "skeleton_proposal_count": len(skeleton_proposals),
+                    "top_ranked_proposal_type": (
+                        ranked_proposals[0].proposal.proposal_type.value
+                        if ranked_proposals
+                        else ""
+                    ),
+                    "top_ranked_proposal_score": (
+                        round(ranked_proposals[0].score, 3)
+                        if ranked_proposals
+                        else 0.0
+                    ),
+                    "ranked_proposal_types": [
+                        scored.proposal.proposal_type.value
+                        for scored in ranked_proposals[:3]
+                    ],
+                }
+            ],
+        }
+
+    if template_matches and template_matches[0].confidence >= 0.8:
+        match = template_matches[0]
+        template_proposal = proposal_from_template_match(match)
+        log_event(
+            "architect",
+            "decompose",
+            "TEMPLATE_USED",
+            payload={
+                "node_id": node.node_id,
+                "template_fqn": match.example.fqn,
+                "confidence": round(match.confidence, 3),
+                "source": match.source,
+            },
+        )
+        new_nodes, new_edges = _instantiate_template(node, match.example, all_nodes)
+        return {
+            "nodes": new_nodes,
+            "edges": new_edges,
+            "history": [
+                {
+                    "step": "decompose_node",
+                    "node_id": node.node_id,
+                    "template_used": match.example.fqn,
+                    "confidence": round(match.confidence, 3),
+                    "selected_proposal_type": template_proposal.proposal_type.value,
+                    "skeleton_acceptance_reason": skeleton_acceptance_reason,
+                    "skeleton_acceptance_margin": round(skeleton_margin, 3),
+                    "primitive_proposal_count": len(primitive_proposals),
+                    "template_proposal_count": len(template_proposals),
+                    "skeleton_proposal_count": len(skeleton_proposals),
+                    "top_ranked_proposal_type": (
+                        ranked_proposals[0].proposal.proposal_type.value
+                        if ranked_proposals
+                        else ""
+                    ),
+                    "top_ranked_proposal_score": (
+                        round(ranked_proposals[0].score, 3)
+                        if ranked_proposals
+                        else 0.0
+                    ),
+                    "ranked_proposal_types": [
+                        scored.proposal.proposal_type.value
+                        for scored in ranked_proposals[:3]
+                    ],
+                }
+            ],
+        }
+    if template_matches:
+        log_event(
+            "architect",
+            "decompose",
+            "TEMPLATE_FALLBACK_TO_LLM",
+            payload={
+                "node_id": node.node_id,
+                "best_confidence": round(template_matches[0].confidence, 3),
+                "skeleton_acceptance_reason": skeleton_acceptance_reason,
+            },
+        )
 
     # Retrieve similar decomposition examples from Memgraph
     example_decompositions = ""
@@ -1147,6 +1252,8 @@ async def decompose_node(
         "num_sub_nodes": len(new_nodes),
         "num_edges": len(new_edges),
         "rewrite_actions": rewrite_actions,
+        "skeleton_acceptance_reason": skeleton_acceptance_reason,
+        "skeleton_acceptance_margin": round(skeleton_margin, 3),
         "primitive_proposal_count": len(primitive_proposals),
         "template_proposal_count": len(template_proposals),
         "skeleton_proposal_count": len(skeleton_proposals),
