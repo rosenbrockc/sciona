@@ -31,6 +31,8 @@ class ConceptType(str, Enum):
     SIGNAL_FILTER = "signal_filter"
     GRAPH_SIGNAL_PROCESSING = "graph_signal_processing"
     NEURAL_NETWORK = "neural_network"
+    CLUSTERING = "clustering"
+    DIMENSIONALITY_REDUCTION = "dimensionality_reduction"
     # Bayesian / probabilistic inference
     SAMPLER = "sampler"
     LOG_PROB = "log_prob"

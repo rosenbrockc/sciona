@@ -40,6 +40,8 @@ class TestConceptType:
             "signal_filter",
             "graph_signal_processing",
             "neural_network",
+            "clustering",
+            "dimensionality_reduction",
             "sampler",
             "log_prob",
             "posterior_update",

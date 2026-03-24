@@ -36,6 +36,9 @@ class TestSkeletonRegistry:
             ConceptType.ALGEBRA,
             ConceptType.OPTIMIZATION,
             ConceptType.COMBINATORICS,
+            ConceptType.NEURAL_NETWORK,
+            ConceptType.CLUSTERING,
+            ConceptType.DIMENSIONALITY_REDUCTION,
         }
         assert set(SKELETON_TEMPLATES.keys()) == expected
 

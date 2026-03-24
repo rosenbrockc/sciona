@@ -88,6 +88,15 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.combinatorics import (
         CombinatoricsExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.neural_network import (
+        NeuralNetworkExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.clustering import (
+        ClusteringExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.dimensionality_reduction import (
+        DimensionalityReductionExpansionRuleSet,
+    )
 
     return [
         SignalEventRateExpansionRuleSet(),
@@ -114,4 +123,7 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         LinearAlgebraExpansionRuleSet(),
         OptimizationExpansionRuleSet(),
         CombinatoricsExpansionRuleSet(),
+        NeuralNetworkExpansionRuleSet(),
+        ClusteringExpansionRuleSet(),
+        DimensionalityReductionExpansionRuleSet(),
     ]

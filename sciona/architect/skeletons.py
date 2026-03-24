@@ -1486,6 +1486,129 @@ def _build_combinatorics() -> SkeletonGraph:
     )
 
 
+def _build_neural_network() -> SkeletonGraph:
+    forward = _node(
+        "Forward Pass",
+        "Compute predictions by propagating inputs through network layers",
+        ConceptType.NEURAL_NETWORK,
+        inputs=[IOSpec(name="inputs", type_desc="ndarray"),
+                IOSpec(name="weights", type_desc="list[ndarray]")],
+        outputs=[IOSpec(name="activations", type_desc="ndarray")],
+    )
+    loss = _node(
+        "Loss Computation",
+        "Compute scalar loss comparing predictions to targets",
+        ConceptType.NEURAL_NETWORK,
+        inputs=[IOSpec(name="activations", type_desc="ndarray"),
+                IOSpec(name="targets", type_desc="ndarray")],
+        outputs=[IOSpec(name="loss", type_desc="float")],
+    )
+    backward = _node(
+        "Backward Pass",
+        "Compute gradients of loss with respect to all parameters via backpropagation",
+        ConceptType.NEURAL_NETWORK,
+        inputs=[IOSpec(name="loss", type_desc="float")],
+        outputs=[IOSpec(name="gradients", type_desc="list[ndarray]")],
+    )
+    update = _node(
+        "Parameter Update",
+        "Update network weights using computed gradients",
+        ConceptType.NEURAL_NETWORK,
+        inputs=[IOSpec(name="gradients", type_desc="list[ndarray]"),
+                IOSpec(name="weights", type_desc="list[ndarray]")],
+        outputs=[IOSpec(name="weights_new", type_desc="list[ndarray]")],
+    )
+    edges = [
+        _edge(forward, loss, "activations", "activations", "ndarray"),
+        _edge(loss, backward, "loss", "loss", "float"),
+        _edge(backward, update, "gradients", "gradients", "list[ndarray]"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.NEURAL_NETWORK,
+        name="Neural Network",
+        description="Forward pass, loss computation, backward pass, parameter update",
+        template_nodes=[forward, loss, backward, update],
+        template_edges=edges,
+        variants=["mlp", "cnn", "rnn", "transformer", "autoencoder"],
+    )
+
+
+def _build_clustering() -> SkeletonGraph:
+    init = _node(
+        "Initialize Centers",
+        "Initialize cluster centers (random, k-means++, or given)",
+        ConceptType.CLUSTERING,
+        inputs=[IOSpec(name="data", type_desc="ndarray")],
+        outputs=[IOSpec(name="centers", type_desc="ndarray")],
+    )
+    assign = _node(
+        "Assign Points",
+        "Assign each data point to the nearest cluster center",
+        ConceptType.CLUSTERING,
+        inputs=[IOSpec(name="data", type_desc="ndarray"),
+                IOSpec(name="centers", type_desc="ndarray")],
+        outputs=[IOSpec(name="assignments", type_desc="ndarray")],
+    )
+    update = _node(
+        "Update Centers",
+        "Recompute cluster centers from current assignments",
+        ConceptType.CLUSTERING,
+        inputs=[IOSpec(name="data", type_desc="ndarray"),
+                IOSpec(name="assignments", type_desc="ndarray")],
+        outputs=[IOSpec(name="centers_new", type_desc="ndarray")],
+    )
+    edges = [
+        _edge(init, assign, "centers", "centers", "ndarray"),
+        _edge(assign, update, "assignments", "assignments", "ndarray"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.CLUSTERING,
+        name="Clustering",
+        description="Initialize centers, assign points, update centers — iterative refinement",
+        template_nodes=[init, assign, update],
+        template_edges=edges,
+        variants=["kmeans", "kmedoids", "em_gmm", "spectral_clustering"],
+    )
+
+
+def _build_dimensionality_reduction() -> SkeletonGraph:
+    center = _node(
+        "Center/Scale",
+        "Center and optionally scale the data matrix",
+        ConceptType.DIMENSIONALITY_REDUCTION,
+        inputs=[IOSpec(name="X", type_desc="ndarray")],
+        outputs=[IOSpec(name="X_centered", type_desc="ndarray")],
+    )
+    project = _node(
+        "Project",
+        "Project data onto lower-dimensional subspace",
+        ConceptType.DIMENSIONALITY_REDUCTION,
+        inputs=[IOSpec(name="X_centered", type_desc="ndarray")],
+        outputs=[IOSpec(name="X_projected", type_desc="ndarray"),
+                 IOSpec(name="components", type_desc="ndarray")],
+    )
+    validate = _node(
+        "Validate Reconstruction",
+        "Validate reconstruction quality and information preservation",
+        ConceptType.DIMENSIONALITY_REDUCTION,
+        inputs=[IOSpec(name="X_projected", type_desc="ndarray"),
+                IOSpec(name="components", type_desc="ndarray")],
+        outputs=[IOSpec(name="reconstruction_error", type_desc="float")],
+    )
+    edges = [
+        _edge(center, project, "X_centered", "X_centered", "ndarray"),
+        _edge(project, validate, "X_projected", "X_projected", "ndarray"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.DIMENSIONALITY_REDUCTION,
+        name="Dimensionality Reduction",
+        description="Center/scale data, project to lower dimension, validate reconstruction",
+        template_nodes=[center, project, validate],
+        template_edges=edges,
+        variants=["pca", "svd_truncated", "tsne", "umap", "kernel_pca"],
+    )
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -1508,6 +1631,9 @@ SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.ALGEBRA: _build_linear_algebra(),
     ConceptType.OPTIMIZATION: _build_optimization(),
     ConceptType.COMBINATORICS: _build_combinatorics(),
+    ConceptType.NEURAL_NETWORK: _build_neural_network(),
+    ConceptType.CLUSTERING: _build_clustering(),
+    ConceptType.DIMENSIONALITY_REDUCTION: _build_dimensionality_reduction(),
 }
 
 
