@@ -24,6 +24,10 @@ from sciona.architect.deterministic_decompose import (
     DeterministicRewriteError,
     build_deterministic_decomposition,
 )
+from sciona.architect.proposal_models import (
+    proposal_from_primitive,
+    proposal_from_template_match,
+)
 from sciona.architect.structural_critic import structural_critique_issues
 from sciona.architect.prompts import (
     CRITIQUE_SYSTEM,
@@ -910,6 +914,9 @@ async def decompose_node(
         if p.name not in seen_names:
             all_prims.append(p)
             seen_names.add(p.name)
+    primitive_proposals = [
+        proposal_from_primitive(primitive) for primitive in all_prims
+    ]
 
     # Build retry context
     retry_context = ""
@@ -924,6 +931,7 @@ async def decompose_node(
 
     # Try template retriever for high-confidence instantiation (skip LLM)
     template_retriever = getattr(deps, "template_retriever", None)
+    template_matches = []
     if template_retriever is not None:
         try:
             template_matches = await template_retriever.find_templates(
@@ -931,6 +939,7 @@ async def decompose_node(
             )
             if template_matches and template_matches[0].confidence >= 0.8:
                 match = template_matches[0]
+                template_proposal = proposal_from_template_match(match)
                 log_event(
                     "architect",
                     "decompose",
@@ -955,6 +964,10 @@ async def decompose_node(
                             "node_id": node.node_id,
                             "template_used": match.example.fqn,
                             "confidence": round(match.confidence, 3),
+                            "selected_proposal_type": template_proposal.proposal_type.value,
+                            "primitive_proposal_count": len(primitive_proposals),
+                            "template_proposal_count": 1,
+                            "skeleton_proposal_count": 0,
                         }
                     ],
                 }
@@ -1103,6 +1116,9 @@ async def decompose_node(
         "num_sub_nodes": len(new_nodes),
         "num_edges": len(new_edges),
         "rewrite_actions": rewrite_actions,
+        "primitive_proposal_count": len(primitive_proposals),
+        "template_proposal_count": len(template_matches[:1]),
+        "skeleton_proposal_count": 0,
     }
 
     await _put_context(

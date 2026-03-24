@@ -1935,6 +1935,9 @@ class TestSharedContext:
         result = await decompose_node(state, config)
 
         assert result["nodes"]
+        assert result["history"][0]["primitive_proposal_count"] >= 1
+        assert result["history"][0]["template_proposal_count"] == 0
+        assert result["history"][0]["skeleton_proposal_count"] == 0
         assert captured_users
         assert "Shared Context" in captured_users[0]
         records = await store.recent("architect/test/decompose", limit=5)
