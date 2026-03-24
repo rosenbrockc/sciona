@@ -1747,6 +1747,78 @@ def _build_randomized() -> SkeletonGraph:
     )
 
 
+def _build_information_theory() -> SkeletonGraph:
+    estimate = _node(
+        "Estimate Distribution",
+        "Estimate the underlying distribution or empirical mass function from data.",
+        ConceptType.INFORMATION_THEORY,
+        inputs=[IOSpec(name="samples", type_desc="ndarray")],
+        outputs=[IOSpec(name="probabilities", type_desc="ndarray")],
+    )
+    compute = _node(
+        "Compute Entropy/Divergence",
+        "Compute entropy, divergence, or related information-theoretic quantities.",
+        ConceptType.INFORMATION_THEORY,
+        inputs=[IOSpec(name="probabilities", type_desc="ndarray")],
+        outputs=[IOSpec(name="information_value", type_desc="float")],
+    )
+    validate = _node(
+        "Validate Bounds",
+        "Validate information-theoretic inequalities and numerical bounds.",
+        ConceptType.INFORMATION_THEORY,
+        inputs=[IOSpec(name="information_value", type_desc="float")],
+        outputs=[IOSpec(name="validated_value", type_desc="float")],
+    )
+    edges = [
+        _edge(estimate, compute, "probabilities", "probabilities", "ndarray"),
+        _edge(compute, validate, "information_value", "information_value", "float"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.INFORMATION_THEORY,
+        name="Information Theory",
+        description="Estimate distributions, compute entropy/divergence, and validate information-theoretic bounds.",
+        template_nodes=[estimate, compute, validate],
+        template_edges=edges,
+        variants=["entropy_estimation", "kl_divergence", "mutual_information", "rate_distortion"],
+    )
+
+
+def _build_compression() -> SkeletonGraph:
+    model = _node(
+        "Model Source",
+        "Model the source distribution or structure before encoding.",
+        ConceptType.COMPRESSION,
+        inputs=[IOSpec(name="symbols", type_desc="ndarray")],
+        outputs=[IOSpec(name="model", type_desc="ndarray")],
+    )
+    encode = _node(
+        "Encode",
+        "Encode the source symbols using the learned or specified source model.",
+        ConceptType.COMPRESSION,
+        inputs=[IOSpec(name="model", type_desc="ndarray")],
+        outputs=[IOSpec(name="bitstream", type_desc="ndarray")],
+    )
+    decode = _node(
+        "Decode/Verify",
+        "Decode the compressed representation and verify correctness or fidelity.",
+        ConceptType.COMPRESSION,
+        inputs=[IOSpec(name="bitstream", type_desc="ndarray")],
+        outputs=[IOSpec(name="decoded", type_desc="ndarray")],
+    )
+    edges = [
+        _edge(model, encode, "model", "model", "ndarray"),
+        _edge(encode, decode, "bitstream", "bitstream", "ndarray"),
+    ]
+    return SkeletonGraph(
+        paradigm=ConceptType.COMPRESSION,
+        name="Compression",
+        description="Model the source, encode it, then decode and verify the representation.",
+        template_nodes=[model, encode, decode],
+        template_edges=edges,
+        variants=["huffman_coding", "arithmetic_coding", "lempel_ziv", "dictionary_coding"],
+    )
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -1775,6 +1847,8 @@ SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.ODE_SOLVER: _build_ode_solver(),
     ConceptType.QUADRATURE: _build_quadrature(),
     ConceptType.RANDOMIZED: _build_randomized(),
+    ConceptType.INFORMATION_THEORY: _build_information_theory(),
+    ConceptType.COMPRESSION: _build_compression(),
 }
 
 

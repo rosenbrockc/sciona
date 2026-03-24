@@ -36,6 +36,8 @@ class ConceptType(str, Enum):
     ODE_SOLVER = "ode_solver"
     QUADRATURE = "quadrature"
     RANDOMIZED = "randomized"
+    INFORMATION_THEORY = "information_theory"
+    COMPRESSION = "compression"
     # Bayesian / probabilistic inference
     SAMPLER = "sampler"
     LOG_PROB = "log_prob"

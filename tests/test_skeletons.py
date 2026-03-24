@@ -39,6 +39,11 @@ class TestSkeletonRegistry:
             ConceptType.NEURAL_NETWORK,
             ConceptType.CLUSTERING,
             ConceptType.DIMENSIONALITY_REDUCTION,
+            ConceptType.ODE_SOLVER,
+            ConceptType.QUADRATURE,
+            ConceptType.RANDOMIZED,
+            ConceptType.INFORMATION_THEORY,
+            ConceptType.COMPRESSION,
         }
         assert set(SKELETON_TEMPLATES.keys()) == expected
 

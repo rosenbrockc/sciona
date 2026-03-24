@@ -136,7 +136,7 @@ class TestDspSkeletons:
         assert "graph_denoising" in skeleton.variants
 
     def test_total_skeleton_count(self):
-        assert len(SKELETON_TEMPLATES) == 23  # 10 original + 3 DSP + 4 Bayesian + 3 Phase1 + 3 Phase2
+        assert len(SKELETON_TEMPLATES) == 28  # prior families + Phase3 (3) + Phase4 (2)
 
 
 class TestDspContractPatterns:

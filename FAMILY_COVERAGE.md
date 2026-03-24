@@ -247,6 +247,169 @@ Runtime atoms (4):
 - `detect_dictionary_bloat` — dictionary size growth rate
 - `monitor_encoding_throughput` — symbols per operation
 
+#### Phase 4 Implementation Plan
+
+Implement sequentially: **Information Theory** → **Compression**.
+
+##### Step 1: Add the new `ConceptType` values
+
+Modify:
+- `sciona/architect/models.py`
+- `tests/test_architect_models.py`
+
+Add:
+- `INFORMATION_THEORY = "information_theory"`
+- `COMPRESSION = "compression"`
+
+Update the expected enum set in `tests/test_architect_models.py`.
+
+##### Step 2: Information Theory family
+
+Modify:
+- `sciona/architect/skeletons.py`
+- `tests/test_skeletons.py`
+- `tests/test_dsp_integration.py`
+
+Create:
+- `sciona/expansion_atoms/runtime_information_theory.py`
+- `sciona/expansion_atoms/information_theory_registry.py`
+- `sciona/principal/expansion_rules/information_theory.py`
+- `tests/test_expansion_information_theory.py`
+
+Skeleton topology (3 nodes, linear):
+```
+Estimate Distribution → Compute Entropy/Divergence → Validate Bounds
+```
+
+Suggested node names:
+- `Estimate Distribution`
+- `Compute Entropy/Divergence`
+- `Validate Bounds`
+
+Variants:
+- `entropy_estimation`
+- `kl_divergence`
+- `mutual_information`
+- `rate_distortion`
+
+Runtime atoms:
+- `check_distribution_support(probabilities) -> (zero_mass_fraction, has_full_support)`
+- `analyze_sample_sufficiency(sample_count, support_size) -> (samples_per_symbol, is_sufficient)`
+- `detect_numerical_underflow(log_probabilities) -> (underflow_fraction, is_stable)`
+- `validate_information_inequality(lhs_values, rhs_values) -> (max_violation, inequality_holds)`
+
+Diagnostic thresholds:
+- support failures when `zero_mass_fraction > 0.0`
+- sample insufficiency when `samples_per_symbol < 5.0`
+- numerical underflow when `underflow_fraction > 0.05`
+- inequality violation when `max_violation > 1e-9`
+
+Rule insertion pattern:
+- before `Compute Entropy/Divergence`: support check and sample sufficiency
+- after `Compute Entropy/Divergence`: numerical underflow detection
+- after `Validate Bounds`: information inequality validation
+
+Rule set:
+- class name: `InformationTheoryExpansionRuleSet`
+- `name = "information_theory"`
+- `domain = "information_theory"`
+
+##### Step 3: Compression family
+
+Modify:
+- `sciona/architect/skeletons.py`
+- `tests/test_skeletons.py`
+- `tests/test_dsp_integration.py`
+
+Create:
+- `sciona/expansion_atoms/runtime_compression.py`
+- `sciona/expansion_atoms/compression_registry.py`
+- `sciona/principal/expansion_rules/compression.py`
+- `tests/test_expansion_compression.py`
+
+Skeleton topology (3 nodes, pipeline):
+```
+Model Source → Encode → Decode/Verify
+```
+
+Suggested node names:
+- `Model Source`
+- `Encode`
+- `Decode/Verify`
+
+Variants:
+- `huffman_coding`
+- `arithmetic_coding`
+- `lempel_ziv`
+- `dictionary_coding`
+
+Runtime atoms:
+- `analyze_compression_ratio(original_bits, compressed_bits, entropy_bound) -> (ratio_gap, is_efficient)`
+- `validate_lossless_roundtrip(original, decoded) -> (mismatch_fraction, is_lossless)`
+- `detect_dictionary_bloat(dictionary_sizes) -> (growth_rate, is_bounded)`
+- `monitor_encoding_throughput(symbol_counts, runtimes_ms) -> (symbols_per_ms, is_fast_enough)`
+
+Diagnostic thresholds:
+- inefficient compression when `ratio_gap > 0.2`
+- lossy roundtrip when `mismatch_fraction > 0.0`
+- dictionary bloat when `growth_rate > 2.0`
+- slow throughput when `symbols_per_ms < 1e3`
+
+Rule insertion pattern:
+- before `Encode`: compression ratio analysis
+- after `Encode`: dictionary bloat detection
+- after `Decode/Verify`: lossless roundtrip validation
+- after `Decode/Verify`: throughput monitoring
+
+Rule set:
+- class name: `CompressionExpansionRuleSet`
+- `name = "compression"`
+- `domain = "compression"`
+
+##### Step 4: Register the new families
+
+Modify:
+- `sciona/principal/expansion_rules/__init__.py`
+
+Add lazy imports and append:
+- `InformationTheoryExpansionRuleSet()`
+- `CompressionExpansionRuleSet()`
+
+##### Step 5: Update shared regression counts
+
+Modify:
+- `tests/test_skeletons.py`
+- `tests/test_dsp_integration.py`
+
+Update:
+- expected `ConceptType` skeleton keys to include
+  `ConceptType.INFORMATION_THEORY` and `ConceptType.COMPRESSION`
+- total skeleton count by `+2` from the pre-Phase-4 baseline
+
+##### Step 6: Verification
+
+Run targeted tests first:
+
+```bash
+pytest -q tests/test_architect_models.py tests/test_skeletons.py tests/test_expansion_information_theory.py tests/test_expansion_compression.py
+```
+
+Then run the broader family regression slice:
+
+```bash
+pytest -q tests/test_expansion_optimization.py tests/test_expansion_linear_algebra.py tests/test_expansion_information_theory.py tests/test_expansion_compression.py
+```
+
+##### Reference pattern files
+
+Use these as the implementation templates:
+- `sciona/principal/expansion_rules/linear_algebra.py`
+- `sciona/principal/expansion_rules/optimization.py`
+- `sciona/expansion_atoms/runtime_linear_algebra.py`
+- `sciona/expansion_atoms/linear_algebra_registry.py`
+- `tests/test_expansion_linear_algebra.py`
+- `tests/test_expansion_optimization.py`
+
 ---
 
 ## Architecture & Constraints

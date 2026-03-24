@@ -97,6 +97,12 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.dimensionality_reduction import (
         DimensionalityReductionExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.information_theory import (
+        InformationTheoryExpansionRuleSet,
+    )
+    from sciona.principal.expansion_rules.compression import (
+        CompressionExpansionRuleSet,
+    )
 
     return [
         SignalEventRateExpansionRuleSet(),
@@ -126,4 +132,6 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         NeuralNetworkExpansionRuleSet(),
         ClusteringExpansionRuleSet(),
         DimensionalityReductionExpansionRuleSet(),
+        InformationTheoryExpansionRuleSet(),
+        CompressionExpansionRuleSet(),
     ]
