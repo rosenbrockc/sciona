@@ -25,14 +25,17 @@ from sciona.architect.models import ConceptType, IOSpec
 from sciona.ingester.monitor import IngestMonitor
 from sciona.ingester.models import (
     ConceptualProfile,
+    DecompositionDecision,
     DependencyEdge,
     IngestIRPlan,
+    IngestPlanGraph,
     MacroAtomSpec,
     MethodFact,
     MethodBinding,
     OperationEdge,
     OperationSpec,
     OutputBindingSpec,
+    PlannedOperationGroup,
     ProposedMacroPlan,
     RawDataFlowGraph,
     StateEffectSpec,
@@ -752,6 +755,7 @@ def _adapt_ir_to_legacy_plan(
             else _legacy_edges_from_ir(ir)
         ),
         canonical_ir=ir,
+        planning_graph=existing_plan.planning_graph,
     )
 
 
@@ -1422,6 +1426,426 @@ async def prepare_chunk_retry(
 # ---------------------------------------------------------------------------
 
 
+def _find_operation_for_atom(
+    atom: MacroAtomSpec,
+    ir: IngestIRPlan | None,
+) -> OperationSpec | None:
+    if ir is None:
+        return None
+    op_id = _snake_case_id(atom.name)
+    for operation in ir.operations:
+        if operation.operation_id == op_id:
+            return operation
+    return None
+
+
+def _methods_for_operation(
+    operation: OperationSpec,
+    dfg: RawDataFlowGraph,
+) -> list[MethodFact]:
+    by_name = {method.name: method for method in dfg.methods}
+    return [
+        by_name[binding.method_name]
+        for binding in operation.method_bindings
+        if binding.method_name in by_name
+    ]
+
+
+def _operation_complexity(
+    operation: OperationSpec,
+    dfg: RawDataFlowGraph,
+    line_threshold: int,
+) -> dict[str, Any]:
+    methods = _methods_for_operation(operation, dfg)
+    total_lines = 0
+    total_internal_calls = 0
+    has_not_implemented = False
+    unknown_count = 0
+    internal_methods = {method.name for method in dfg.methods}
+    for method in methods:
+        src = method.source_code or ""
+        total_lines += len(src.strip().splitlines()) if src.strip() else 0
+        total_internal_calls += sum(1 for call in method.calls if call in internal_methods)
+        has_not_implemented = has_not_implemented or "NotImplementedError" in src
+        unknown_count += len(method.unknown_facts)
+    for output in operation.emitted_outputs:
+        if output.binding_kind == "unknown":
+            unknown_count += 1
+    return {
+        "methods": methods,
+        "total_lines": total_lines,
+        "total_internal_calls": total_internal_calls,
+        "has_not_implemented": has_not_implemented,
+        "unknown_count": unknown_count,
+        "complex_enough": (
+            total_lines > line_threshold
+            or total_internal_calls >= 3
+            or has_not_implemented
+            or len(operation.method_bindings) > 1
+        ),
+    }
+
+
+async def _legacy_decompose_single_atom(
+    atom: MacroAtomSpec,
+    dfg: RawDataFlowGraph,
+    llm: LLMClient,
+    max_depth: int,
+    line_threshold: int,
+    current_depth: int,
+    monitor: IngestMonitor | None = None,
+    shared_context: SharedContextStore | None = None,
+    shared_context_metrics: SharedContextMetrics | None = None,
+    context_namespace: str = "",
+    context_budget_chars: int = 900,
+    ancestor_ids: tuple[str, ...] = (),
+) -> MacroAtomSpec:
+    """Backward-compatible decomposition path for plans without canonical IR."""
+    if current_depth >= max_depth:
+        return atom
+    if not is_atom_complex(atom, dfg, line_threshold):
+        return atom
+
+    source_code, internal_calls = _gather_source_for_atom(atom, dfg)
+    if not source_code.strip():
+        return atom
+
+    from sciona.ingester.control_flow_decomposer import decompose_function
+
+    primary_method = atom.method_names[0] if atom.method_names else atom.name
+    cf_result = decompose_function(source_code, primary_method)
+    if cf_result is not None and cf_result.confidence >= 0.5:
+        children = [
+            MacroAtomSpec(
+                name=sub.name,
+                description=sub.description,
+                method_names=[],
+                inputs=[IOSpec(name=name, type_desc="Any") for name in sub.inputs],
+                outputs=[IOSpec(name=name, type_desc="Any") for name in sub.outputs],
+                concept_type=atom.concept_type,
+                depth=current_depth + 1,
+                source_lines=max(0, sub.source_lines[1] - sub.source_lines[0] + 1),
+            )
+            for sub in cf_result.sub_atoms
+        ]
+        if children:
+            sub_edges = [
+                DependencyEdge(
+                    source_id=_snake_case_id(edge["from"]),
+                    target_id=_snake_case_id(edge["to"]),
+                    output_name=edge.get("data", ""),
+                    input_name=edge.get("data", ""),
+                    source_type="Any",
+                    target_type="Any",
+                )
+                for edge in cf_result.edges
+            ]
+            return atom.model_copy(
+                update={
+                    "children": _dedupe_macro_atoms(children),
+                    "sub_edges": _dedupe_dependency_edges(sub_edges),
+                }
+            )
+
+    inputs_str = ", ".join(f"{i.name}: {i.type_desc}" for i in atom.inputs) or "(none)"
+    outputs_str = ", ".join(f"{o.name}: {o.type_desc}" for o in atom.outputs) or "(none)"
+    calls_str = ", ".join(internal_calls) if internal_calls else "(none)"
+    user_prompt = DECOMPOSE_ATOM_USER.format(
+        atom_name=atom.name,
+        atom_description=atom.description,
+        current_inputs=inputs_str,
+        current_outputs=outputs_str,
+        internal_calls=calls_str,
+        source_code=source_code,
+    )
+    if shared_context is not None and context_namespace:
+        try:
+            records = await shared_context.search(
+                f"{context_namespace}/decompose",
+                f"{atom.name} {atom.description}",
+                limit=3,
+            )
+            block = format_context_block(
+                "Shared Context",
+                records,
+                max_chars=context_budget_chars,
+                metrics=shared_context_metrics,
+            )
+            if block:
+                user_prompt += f"\n\n{block}"
+        except Exception:
+            pass
+
+    try:
+        if monitor:
+            monitor.llm_start(INGESTER_DECOMPOSE)
+        response = await select_llm(llm, INGESTER_DECOMPOSE).complete(
+            DECOMPOSE_ATOM_SYSTEM, user_prompt
+        )
+    except Exception as exc:
+        if monitor:
+            monitor.llm_end(INGESTER_DECOMPOSE, ok=False, error=str(exc))
+        logger.warning("Legacy decomposition failed for %s: %s", atom.name, exc)
+        return atom
+
+    if monitor:
+        monitor.llm_end(INGESTER_DECOMPOSE, ok=True)
+    try:
+        raw = extract_json(response)
+    except Exception as exc:
+        logger.warning("Legacy decomposition JSON parse failed for %s: %s", atom.name, exc)
+        return atom
+
+    children, sub_edges = _parse_sub_atoms(raw, current_depth)
+    children = _dedupe_macro_atoms(children)
+    child_ids = {_snake_case_id(child.name) for child in children}
+    sub_edges = [
+        edge
+        for edge in _dedupe_dependency_edges(sub_edges)
+        if edge.source_id in child_ids and edge.target_id in child_ids
+    ]
+    if not children:
+        return atom
+
+    recursed_children: list[MacroAtomSpec] = []
+    next_ancestor_ids = (*ancestor_ids, _snake_case_id(atom.name))
+    for child in children:
+        child_id = _snake_case_id(child.name)
+        if child_id in next_ancestor_ids:
+            continue
+        recursed = await _legacy_decompose_single_atom(
+            child,
+            dfg,
+            llm,
+            max_depth,
+            line_threshold,
+            current_depth + 1,
+            monitor=monitor,
+            shared_context=shared_context,
+            shared_context_metrics=shared_context_metrics,
+            context_namespace=context_namespace,
+            context_budget_chars=context_budget_chars,
+            ancestor_ids=next_ancestor_ids,
+        )
+        recursed_children.append(recursed)
+
+    return atom.model_copy(
+        update={
+            "children": _dedupe_macro_atoms(recursed_children),
+            "sub_edges": sub_edges,
+        }
+    )
+
+
+def _allowed_child_input_names(atom: MacroAtomSpec, operation: OperationSpec) -> set[str]:
+    names = {spec.name for spec in atom.inputs}
+    names.update(spec.name for spec in operation.direct_inputs)
+    names.update(operation.required_state_slots)
+    names.update(effect.slot_name for effect in operation.state_effects)
+    names.update(output.output_name for output in operation.emitted_outputs)
+    names.discard("")
+    return names
+
+
+def _allowed_child_output_names(atom: MacroAtomSpec, operation: OperationSpec) -> set[str]:
+    names = {spec.name for spec in atom.outputs}
+    names.update(output.output_name for output in operation.emitted_outputs)
+    names.update(effect.slot_name for effect in operation.state_effects)
+    names.discard("")
+    return names
+
+
+def _validate_candidate_children(
+    atom: MacroAtomSpec,
+    operation: OperationSpec,
+    children: list[MacroAtomSpec],
+    sub_edges: list[DependencyEdge],
+) -> tuple[bool, str]:
+    if not children:
+        return False, "no child atoms"
+    allowed_inputs = _allowed_child_input_names(atom, operation)
+    allowed_outputs = _allowed_child_output_names(atom, operation)
+    child_ids = {
+        child.name for child in children
+    } | {_snake_case_id(child.name) for child in children}
+    if not allowed_inputs and not allowed_outputs:
+        return False, "parent operation has no allowed io evidence"
+    for child in children:
+        input_names = {spec.name for spec in child.inputs}
+        output_names = {spec.name for spec in child.outputs}
+        if not input_names.issubset(allowed_inputs):
+            return (
+                False,
+                f"{child.name}: unknown inputs {sorted(input_names - allowed_inputs)}",
+            )
+        if not output_names.issubset(allowed_outputs):
+            return (
+                False,
+                f"{child.name}: unknown outputs {sorted(output_names - allowed_outputs)}",
+            )
+    for edge in sub_edges:
+        if edge.source_id not in child_ids or edge.target_id not in child_ids:
+            return False, "sub-edge references unknown child id"
+        if edge.output_name and edge.output_name not in allowed_outputs:
+            return False, f"sub-edge output {edge.output_name} not backed by parent evidence"
+        if edge.input_name and edge.input_name not in allowed_inputs:
+            return False, f"sub-edge input {edge.input_name} not backed by parent evidence"
+    return True, ""
+
+
+def _group_for_operation(
+    operation: OperationSpec,
+    group_id: str,
+    display_name: str,
+    planner_source: str,
+) -> PlannedOperationGroup:
+    return PlannedOperationGroup(
+        group_id=group_id,
+        display_name=display_name,
+        group_role=operation.role,
+        member_operation_ids=[operation.operation_id],
+        required_state_slots=list(operation.required_state_slots),
+        emitted_outputs=list(operation.emitted_outputs),
+        planner_source=planner_source,
+        provenance=list(operation.provenance),
+    )
+
+
+def _plan_operation_decision(
+    operation: OperationSpec,
+    dfg: RawDataFlowGraph,
+    line_threshold: int,
+) -> tuple[DecompositionDecision, list[PlannedOperationGroup]]:
+    metrics = _operation_complexity(operation, dfg, line_threshold)
+    methods = metrics["methods"]
+    role = operation.role
+
+    if operation.is_opaque or operation.is_external:
+        return (
+            DecompositionDecision(
+                operation_id=operation.operation_id,
+                decision="keep_atomic",
+                reason="opaque_or_external",
+                evidence=[role],
+            ),
+            [_group_for_operation(operation, operation.operation_id, operation.display_name, "deterministic")],
+        )
+
+    if role in {"metadata", "query", "score"}:
+        return (
+            DecompositionDecision(
+                operation_id=operation.operation_id,
+                decision="keep_atomic",
+                reason="query_or_metadata_atomic",
+                evidence=[role],
+            ),
+            [_group_for_operation(operation, operation.operation_id, operation.display_name, "deterministic")],
+        )
+
+    if metrics["unknown_count"] > 0:
+        return (
+            DecompositionDecision(
+                operation_id=operation.operation_id,
+                decision="blocked_unknown",
+                reason="unknown_semantics_present",
+                evidence=[f"unknown_count={metrics['unknown_count']}"],
+            ),
+            [],
+        )
+
+    if role in {"predict", "transform"} and len(operation.method_bindings) <= 1:
+        return (
+            DecompositionDecision(
+                operation_id=operation.operation_id,
+                decision="keep_atomic",
+                reason="single_method_query_like_atomic",
+                evidence=[role],
+            ),
+            [_group_for_operation(operation, operation.operation_id, operation.display_name, "deterministic")],
+        )
+
+    if role == "state_transition" and len(operation.method_bindings) > 1:
+        groups: list[PlannedOperationGroup] = []
+        child_ids: list[str] = []
+        for binding in operation.method_bindings:
+            group_id = f"{operation.operation_id}__{_snake_case_id(binding.method_name)}"
+            child_ids.append(group_id)
+            groups.append(
+                PlannedOperationGroup(
+                    group_id=group_id,
+                    display_name=_atom_name_for_method(binding.method_name),
+                    group_role="state_transition",
+                    member_operation_ids=[operation.operation_id],
+                    required_state_slots=list(operation.required_state_slots),
+                    emitted_outputs=list(operation.emitted_outputs),
+                    planner_source="deterministic",
+                    provenance=list(binding.provenance),
+                )
+            )
+        return (
+            DecompositionDecision(
+                operation_id=operation.operation_id,
+                decision="decompose_deterministic",
+                reason="multi_method_state_transition",
+                evidence=[f"method_count={len(operation.method_bindings)}"],
+                child_group_ids=child_ids,
+            ),
+            groups,
+        )
+
+    if metrics["complex_enough"]:
+        return (
+            DecompositionDecision(
+                operation_id=operation.operation_id,
+                decision="decompose_deterministic",
+                reason="cfg_eligible_complex_operation",
+                evidence=[
+                    f"total_lines={metrics['total_lines']}",
+                    f"internal_calls={metrics['total_internal_calls']}",
+                ],
+            ),
+            [],
+        )
+
+    return (
+        DecompositionDecision(
+            operation_id=operation.operation_id,
+            decision="keep_atomic",
+            reason="semantically_atomic",
+            evidence=[role],
+        ),
+        [_group_for_operation(operation, operation.operation_id, operation.display_name, "deterministic")],
+    )
+
+
+def _build_planning_graph(
+    ir: IngestIRPlan,
+    dfg: RawDataFlowGraph,
+    line_threshold: int,
+) -> IngestPlanGraph:
+    decisions: list[DecompositionDecision] = []
+    groups: list[PlannedOperationGroup] = []
+    blocked: list[str] = []
+    for operation in ir.operations:
+        decision, op_groups = _plan_operation_decision(operation, dfg, line_threshold)
+        decisions.append(decision)
+        groups.extend(op_groups)
+        if decision.decision == "blocked_unknown":
+            blocked.append(operation.operation_id)
+    return IngestPlanGraph(
+        operation_decisions=decisions,
+        planned_groups=groups,
+        blocked_operations=blocked,
+    )
+
+
+def _attach_planning_graph(
+    plan: ProposedMacroPlan,
+    graph: IngestPlanGraph,
+) -> ProposedMacroPlan:
+    return plan.model_copy(update={"planning_graph": graph})
+
+
 def is_atom_complex(
     atom: MacroAtomSpec,
     dfg: RawDataFlowGraph,
@@ -1645,8 +2069,119 @@ def _dedupe_macro_atoms(atoms: list[MacroAtomSpec]) -> list[MacroAtomSpec]:
     return [merged[key] for key in order]
 
 
+def _deterministic_children_from_operation(
+    atom: MacroAtomSpec,
+    operation: OperationSpec,
+    dfg: RawDataFlowGraph,
+    current_depth: int,
+) -> tuple[list[MacroAtomSpec], list[DependencyEdge]]:
+    if len(operation.method_bindings) <= 1:
+        return [], []
+    by_name = {method.name: method for method in dfg.methods}
+    allowed_inputs = _allowed_child_input_names(atom, operation)
+    allowed_outputs = _allowed_child_output_names(atom, operation)
+    children: list[MacroAtomSpec] = []
+    for binding in operation.method_bindings:
+        method = by_name.get(binding.method_name)
+        if method is None:
+            continue
+        inputs = [spec for spec in _inputs_for_method(method) if spec.name in allowed_inputs]
+        outputs = [spec for spec in _outputs_for_method(method) if spec.name in allowed_outputs]
+        if not outputs and method.return_facts:
+            outputs = [IOSpec(name="result", type_desc=method.return_type or "Any")]
+            if outputs[0].name not in allowed_outputs:
+                outputs = []
+        children.append(
+            MacroAtomSpec(
+                name=_atom_name_for_method(method.name),
+                description=method.docstring or method.name.replace("_", " "),
+                method_names=[method.name],
+                inputs=inputs,
+                outputs=outputs,
+                concept_type=operation.concept_type,
+                depth=current_depth + 1,
+                source_lines=max(
+                    0,
+                    len((method.source_code or "").strip().splitlines()),
+                ),
+            )
+        )
+    if len(children) < 2:
+        return [], []
+    sub_edges = _deterministic_chunk_edges(children)
+    ok, _reason = _validate_candidate_children(atom, operation, children, sub_edges)
+    if not ok:
+        return [], []
+    return children, sub_edges
+
+
+def _cfg_children_from_operation(
+    atom: MacroAtomSpec,
+    operation: OperationSpec,
+    dfg: RawDataFlowGraph,
+    current_depth: int,
+) -> tuple[list[MacroAtomSpec], list[DependencyEdge], str]:
+    from sciona.ingester.control_flow_decomposer import decompose_function
+
+    source_code, _internal_calls = _gather_source_for_atom(atom, dfg)
+    if not source_code.strip():
+        return [], [], "no_source"
+    primary_method = atom.method_names[0] if atom.method_names else atom.name
+    cf_result = decompose_function(source_code, primary_method)
+    if cf_result is None or cf_result.confidence < 0.5:
+        return [], [], "cfg_low_confidence"
+    children: list[MacroAtomSpec] = []
+    for sub in cf_result.sub_atoms:
+        child = MacroAtomSpec(
+            name=sub.name,
+            description=sub.description,
+            method_names=[],
+            inputs=[IOSpec(name=name, type_desc="Any") for name in sub.inputs],
+            outputs=[IOSpec(name=name, type_desc="Any") for name in sub.outputs],
+            concept_type=atom.concept_type,
+            depth=current_depth + 1,
+            source_lines=max(0, sub.source_lines[1] - sub.source_lines[0] + 1),
+        )
+        children.append(child)
+    sub_edges = [
+        DependencyEdge(
+            source_id=_snake_case_id(edge["from"]),
+            target_id=_snake_case_id(edge["to"]),
+            output_name=edge.get("data", ""),
+            input_name=edge.get("data", ""),
+            source_type="Any",
+            target_type="Any",
+        )
+        for edge in cf_result.edges
+    ]
+    ok, reason = _validate_candidate_children(atom, operation, children, sub_edges)
+    if not ok:
+        return [], [], reason
+    return children, sub_edges, ""
+
+
+def _llm_fallback_allowed(
+    operation: OperationSpec,
+    dfg: RawDataFlowGraph,
+    line_threshold: int,
+) -> tuple[bool, str]:
+    metrics = _operation_complexity(operation, dfg, line_threshold)
+    if operation.role in {"metadata", "query", "score"}:
+        return False, "query_or_metadata_forbidden"
+    if operation.is_opaque or operation.is_external:
+        return False, "opaque_or_external_forbidden"
+    if not metrics["complex_enough"]:
+        return False, "not_complex_enough"
+    if metrics["unknown_count"] > 0:
+        return False, "unknown_semantics_present"
+    if any(binding.binding_kind == "unknown" for binding in operation.emitted_outputs):
+        return False, "unknown_output_binding"
+    return True, ""
+
+
 async def _decompose_single_atom(
     atom: MacroAtomSpec,
+    operation: OperationSpec | None,
     dfg: RawDataFlowGraph,
     llm: LLMClient,
     max_depth: int,
@@ -1659,49 +2194,59 @@ async def _decompose_single_atom(
     context_budget_chars: int = 900,
     ancestor_ids: tuple[str, ...] = (),
 ) -> MacroAtomSpec:
-    """Recursively decompose a single atom if it exceeds complexity thresholds."""
+    """Recursively decompose a single atom using IR-aware planning decisions."""
     if current_depth >= max_depth:
         return atom
 
-    if not is_atom_complex(atom, dfg, line_threshold):
+    if operation is None:
+        return await _legacy_decompose_single_atom(
+            atom,
+            dfg,
+            llm,
+            max_depth,
+            line_threshold,
+            current_depth,
+            monitor=monitor,
+            shared_context=shared_context,
+            shared_context_metrics=shared_context_metrics,
+            context_namespace=context_namespace,
+            context_budget_chars=context_budget_chars,
+            ancestor_ids=ancestor_ids,
+        )
+
+    decision, _groups = _plan_operation_decision(operation, dfg, line_threshold)
+    if decision.decision in {"keep_atomic", "blocked_unknown"}:
+        return atom
+
+    children, sub_edges = _deterministic_children_from_operation(
+        atom,
+        operation,
+        dfg,
+        current_depth,
+    )
+    if not children and decision.decision == "decompose_deterministic":
+        children, sub_edges, _reason = _cfg_children_from_operation(
+            atom,
+            operation,
+            dfg,
+            current_depth,
+        )
+    if children:
+        return atom.model_copy(
+            update={
+                "children": _dedupe_macro_atoms(children),
+                "sub_edges": _dedupe_dependency_edges(sub_edges),
+            }
+        )
+
+    allowed_llm, fallback_reason = _llm_fallback_allowed(operation, dfg, line_threshold)
+    if not allowed_llm:
+        logger.info("Skipping LLM decomposition for %s: %s", atom.name, fallback_reason)
         return atom
 
     source_code, internal_calls = _gather_source_for_atom(atom, dfg)
     if not source_code.strip():
         return atom
-
-    # Try deterministic control-flow decomposition first
-    from sciona.ingester.control_flow_decomposer import decompose_function
-
-    primary_method = atom.method_names[0] if atom.method_names else atom.name
-    cf_result = decompose_function(source_code, primary_method)
-    if cf_result is not None and cf_result.confidence >= 0.5:
-        children = []
-        for sub in cf_result.sub_atoms:
-            child = MacroAtomSpec(
-                name=sub.name,
-                description=sub.description,
-                method_names=[],
-                inputs=[IOSpec(name=i, type_desc="") for i in sub.inputs],
-                outputs=[IOSpec(name=o, type_desc="") for o in sub.outputs],
-                concept_type=atom.concept_type,
-                depth=current_depth + 1,
-                source_lines=list(range(sub.source_lines[0], sub.source_lines[1] + 1)),
-            )
-            children.append(child)
-        if children:
-            atom.children = children
-            atom.sub_edges = [
-                (e["from"], e["to"], e.get("data", ""))
-                for e in cf_result.edges
-            ]
-            logger.info(
-                "Deterministic CFG decomposition for %s: %d sub-atoms (confidence=%.2f)",
-                atom.name,
-                len(children),
-                cf_result.confidence,
-            )
-            return atom
 
     inputs_str = ", ".join(f"{i.name}: {i.type_desc}" for i in atom.inputs) or "(none)"
     outputs_str = ", ".join(f"{o.name}: {o.type_desc}" for o in atom.outputs) or "(none)"
@@ -1754,6 +2299,10 @@ async def _decompose_single_atom(
         return atom
 
     children, sub_edges = _parse_sub_atoms(raw, current_depth)
+    ok, reason = _validate_candidate_children(atom, operation, children, sub_edges)
+    if not ok:
+        logger.info("Rejecting LLM decomposition for %s: %s", atom.name, reason)
+        return atom
     children = _dedupe_macro_atoms(children)
     child_ids = {_snake_case_id(child.name) for child in children}
     sub_edges = [
@@ -1791,6 +2340,7 @@ async def _decompose_single_atom(
             continue
         recursed = await _decompose_single_atom(
             child,
+            None,
             dfg,
             llm,
             max_depth,
@@ -1816,28 +2366,42 @@ async def _decompose_single_atom(
 async def decompose_complex_atoms(
     state: ChunkerState, config: RunnableConfig
 ) -> dict[str, Any]:
-    """Recursively decompose complex atoms based on complexity heuristics."""
+    """Recursively decompose complex atoms based on canonical IR planning."""
     deps: ChunkerDeps = config["configurable"]["deps"]
     mon = _get_monitor(config)
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="decompose_complex_atoms")
+    max_depth = deps.max_depth
+    line_threshold = deps.line_threshold
     validated = state["validated_plan"]
     plan = validated.plan
     dfg = state["raw_dfg"]
 
-    max_depth = deps.max_depth
-    line_threshold = deps.line_threshold
-
     # At depth 1 (default), skip decomposition entirely for backward compat
-    if max_depth <= 1:
+    if max_depth <= 1 and plan.canonical_ir is None:
         return {"validated_plan": validated}
 
+    canonical_plan = plan if plan.canonical_ir is not None else _attach_canonical_ir(dfg, plan)
+    ir = canonical_plan.canonical_ir
+    if ir is None:
+        return {"validated_plan": validated}
+
+    planning_graph = _build_planning_graph(ir, dfg, line_threshold)
+    canonical_plan = _attach_planning_graph(canonical_plan, planning_graph)
+
+    if max_depth <= 1:
+        return {
+            "validated_plan": validated.model_copy(update={"plan": canonical_plan}),
+        }
+
     parallelism = max(1, deps.parallelism)
+    operations_by_id = {operation.operation_id: operation for operation in ir.operations}
     if parallelism <= 1 or len(plan.macro_atoms) <= 1:
         decomposed_atoms: list[MacroAtomSpec] = []
-        for atom in plan.macro_atoms:
+        for atom in canonical_plan.macro_atoms:
             result = await _decompose_single_atom(
                 atom,
+                operations_by_id.get(_snake_case_id(atom.name)),
                 dfg,
                 deps.llm,
                 max_depth,
@@ -1857,6 +2421,7 @@ async def decompose_complex_atoms(
             async with semaphore:
                 return await _decompose_single_atom(
                     atom,
+                    operations_by_id.get(_snake_case_id(atom.name)),
                     dfg,
                     deps.llm,
                     max_depth,
@@ -1869,10 +2434,18 @@ async def decompose_complex_atoms(
                     context_budget_chars=deps.context_budget_chars,
                 )
 
-        decomposed_atoms = list(await asyncio.gather(*[_run(a) for a in plan.macro_atoms]))
+        decomposed_atoms = list(
+            await asyncio.gather(*[_run(a) for a in canonical_plan.macro_atoms])
+        )
 
-    new_plan = plan.model_copy(update={"macro_atoms": _dedupe_macro_atoms(decomposed_atoms)})
+    new_plan = canonical_plan.model_copy(
+        update={
+            "macro_atoms": _dedupe_macro_atoms(decomposed_atoms),
+            "planning_graph": planning_graph,
+        }
+    )
     new_plan = _attach_canonical_ir(dfg, new_plan)
+    new_plan = _attach_planning_graph(new_plan, planning_graph)
     new_validated = validated.model_copy(update={"plan": new_plan})
     return {"validated_plan": new_validated}
 

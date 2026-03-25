@@ -194,6 +194,39 @@ class IngestIRPlan(BaseModel):
     lowering_version: str = "phase2_v1"
 
 
+class DecompositionDecision(BaseModel):
+    """Planner decision for one canonical IR operation."""
+
+    operation_id: str
+    decision: str = "keep_atomic"
+    planner_source: str = "deterministic"
+    reason: str = ""
+    evidence: list[str] = Field(default_factory=list)
+    child_group_ids: list[str] = Field(default_factory=list)
+
+
+class PlannedOperationGroup(BaseModel):
+    """A planned group of one or more canonical operations."""
+
+    group_id: str
+    display_name: str
+    group_role: str = "unknown"
+    member_operation_ids: list[str] = Field(default_factory=list)
+    required_state_slots: list[str] = Field(default_factory=list)
+    emitted_outputs: list[OutputBindingSpec] = Field(default_factory=list)
+    planner_source: str = "deterministic"
+    provenance: list[FactProvenance] = Field(default_factory=list)
+
+
+class IngestPlanGraph(BaseModel):
+    """Planner output over the canonical ingest IR."""
+
+    operation_decisions: list[DecompositionDecision] = Field(default_factory=list)
+    planned_groups: list[PlannedOperationGroup] = Field(default_factory=list)
+    blocked_operations: list[str] = Field(default_factory=list)
+    planner_version: str = "phase3_v1"
+
+
 class MethodFact(BaseModel):
     """Extracted facts about a single method."""
 
@@ -414,6 +447,7 @@ class ProposedMacroPlan(BaseModel):
     sub_atom_refs: list[SubAtomRef] = Field(default_factory=list)
     edge_definitions: list[DependencyEdge] = Field(default_factory=list)
     canonical_ir: IngestIRPlan | None = None
+    planning_graph: IngestPlanGraph | None = None
 
 
 class ValidatedMacroPlan(BaseModel):

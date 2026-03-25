@@ -17,10 +17,15 @@ from sciona.ingester.chunker import (
 )
 from sciona.ingester.emitter import build_cdg_export
 from sciona.ingester.models import (
+    IngestIRPlan,
     MacroAtomSpec,
     MethodFact,
+    MethodBinding,
+    OperationSpec,
+    OutputBindingSpec,
     ProposedMacroPlan,
     RawDataFlowGraph,
+    StateEffectSpec,
     ValidatedMacroPlan,
 )
 
@@ -77,6 +82,22 @@ def _make_atom(name: str = "Run Pipeline", method_names: list[str] | None = None
 def _make_validated_plan(atoms: list[MacroAtomSpec]) -> ValidatedMacroPlan:
     return ValidatedMacroPlan(
         plan=ProposedMacroPlan(macro_atoms=atoms),
+        all_attrs_accounted=True,
+    )
+
+
+def _make_ir_plan(
+    operation: OperationSpec,
+    atom: MacroAtomSpec,
+) -> ValidatedMacroPlan:
+    return ValidatedMacroPlan(
+        plan=ProposedMacroPlan(
+            macro_atoms=[atom],
+            canonical_ir=IngestIRPlan(
+                subject_name="BigClass",
+                operations=[operation],
+            ),
+        ),
         all_attrs_accounted=True,
     )
 
@@ -224,6 +245,247 @@ class TestDecomposeComplexAtoms:
         result = await decompose_complex_atoms(state, config)
         updated_plan = result["validated_plan"]
         assert len(updated_plan.plan.macro_atoms[0].children) == 0
+
+    @pytest.mark.asyncio
+    async def test_metadata_operation_stays_atomic_without_llm(self):
+        dfg = _make_dfg(source_lines=50)
+        dfg.methods[0].semantic_role = "query_or_metadata"
+        atom = _make_atom(name="Metadata View")
+        operation = OperationSpec(
+            operation_id="metadata_view",
+            display_name="Metadata View",
+            role="metadata",
+            method_bindings=[MethodBinding(method_name="run_pipeline")],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="metadata_object",
+                    source_method="run_pipeline",
+                )
+            ],
+        )
+        plan = _make_ir_plan(operation, atom)
+
+        llm = AsyncMock()
+        llm.complete = AsyncMock(return_value=_decompose_response(3))
+        deps = ChunkerDeps(llm=llm, max_depth=3, line_threshold=30)
+
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": plan,
+            "critique_passed": True,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_complex_atoms(state, config)
+        updated_plan = result["validated_plan"]
+
+        assert updated_plan.plan.macro_atoms[0].children == []
+        llm.complete.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_multi_method_state_transition_decomposes_deterministically(self):
+        dfg = RawDataFlowGraph(
+            class_name="BigClass",
+            methods=[
+                MethodFact(
+                    name="fit_prepare",
+                    params=["data"],
+                    reads=[],
+                    writes=["prepared"],
+                    semantic_role="fit_or_update",
+                    source_code="def fit_prepare(self, data):\n    self.prepared = data\n",
+                ),
+                MethodFact(
+                    name="fit_update",
+                    params=["data"],
+                    reads=["prepared"],
+                    writes=["result"],
+                    semantic_role="fit_or_update",
+                    source_code="def fit_update(self, data):\n    self.result = self.prepared\n",
+                ),
+            ],
+            all_attributes={
+                "prepared": ["write:fit_prepare", "read:fit_update"],
+                "result": ["write:fit_update"],
+            },
+        )
+        atom = _make_atom(name="Fit Pipeline", method_names=["fit_prepare", "fit_update"])
+        operation = OperationSpec(
+            operation_id="fit_pipeline",
+            display_name="Fit Pipeline",
+            role="state_transition",
+            method_bindings=[
+                MethodBinding(method_name="fit_prepare"),
+                MethodBinding(method_name="fit_update"),
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="attribute_read",
+                    source_method="fit_update",
+                    source_attr="result",
+                )
+            ],
+            state_effects=[
+                StateEffectSpec(
+                    slot_name="prepared",
+                    effect_kind="update",
+                    source_method="fit_prepare",
+                ),
+                StateEffectSpec(
+                    slot_name="result",
+                    effect_kind="update",
+                    source_method="fit_update",
+                ),
+            ],
+        )
+        plan = _make_ir_plan(operation, atom)
+
+        llm = AsyncMock()
+        llm.complete = AsyncMock(return_value=_decompose_response(2))
+        deps = ChunkerDeps(llm=llm, max_depth=3, line_threshold=30)
+
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": plan,
+            "critique_passed": True,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_complex_atoms(state, config)
+        decomposed_atom = result["validated_plan"].plan.macro_atoms[0]
+
+        assert [child.name for child in decomposed_atom.children] == [
+            "Fit Prepare",
+            "Fit Update",
+        ]
+        llm.complete.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_blocked_unknown_skips_llm(self):
+        dfg = _make_dfg(source_lines=80)
+        atom = _make_atom(name="Blocked Step")
+        operation = OperationSpec(
+            operation_id="blocked_step",
+            display_name="Blocked Step",
+            role="state_transition",
+            method_bindings=[MethodBinding(method_name="run_pipeline")],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="unknown",
+                    source_method="run_pipeline",
+                )
+            ],
+        )
+        plan = _make_ir_plan(operation, atom)
+
+        llm = AsyncMock()
+        llm.complete = AsyncMock(return_value=_decompose_response(3))
+        deps = ChunkerDeps(llm=llm, max_depth=3, line_threshold=30)
+
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": plan,
+            "critique_passed": True,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_complex_atoms(state, config)
+
+        assert result["validated_plan"].plan.macro_atoms[0].children == []
+        llm.complete.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_llm_decomposition_rejects_invented_outputs(self):
+        dfg = _make_dfg(source_lines=80)
+        atom = _make_atom(name="Fallback Step")
+        operation = OperationSpec(
+            operation_id="fallback_step",
+            display_name="Fallback Step",
+            role="unknown",
+            method_bindings=[MethodBinding(method_name="run_pipeline")],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="run_pipeline",
+                )
+            ],
+        )
+        plan = _make_ir_plan(operation, atom)
+
+        llm = AsyncMock()
+        llm.complete = AsyncMock(
+            return_value=json.dumps(
+                {
+                    "sub_atoms": [
+                        {
+                            "name": "Invented Child",
+                            "description": "bad",
+                            "inputs": [
+                                {
+                                    "name": "data",
+                                    "type_desc": "np.ndarray",
+                                    "constraints": "",
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "name": "invented",
+                                    "type_desc": "np.ndarray",
+                                    "constraints": "",
+                                }
+                            ],
+                            "concept_type": "custom",
+                        }
+                    ],
+                    "edges": [],
+                }
+            )
+        )
+        deps = ChunkerDeps(llm=llm, max_depth=3, line_threshold=30)
+
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": plan,
+            "critique_passed": True,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_complex_atoms(state, config)
+
+        assert result["validated_plan"].plan.macro_atoms[0].children == []
+        llm.complete.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_decompose_dedupes_duplicate_children(self):
