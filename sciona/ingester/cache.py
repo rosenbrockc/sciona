@@ -11,7 +11,7 @@ from sciona.architect.handoff import CDGExport
 from sciona.ingester.models import IngestionBundle
 from sciona.types import MatchResult
 
-_CACHE_VERSION = "ingest-cache-v1"
+_CACHE_VERSION = "ingest-cache-v2"
 
 
 def compute_ingest_cache_key(

@@ -108,6 +108,92 @@ class AttributeSemanticFact(BaseModel):
     provenances: list[FactProvenance] = Field(default_factory=list)
 
 
+class MethodBinding(BaseModel):
+    """Source-faithful binding between an IR operation and an upstream method."""
+
+    method_name: str
+    signature: list[ParameterFact] = Field(default_factory=list)
+    call_style: str = ""
+    return_behavior: list[ReturnFact] = Field(default_factory=list)
+    requires_instance_state: bool = False
+    provenance: list[FactProvenance] = Field(default_factory=list)
+
+
+class OutputBindingSpec(BaseModel):
+    """A concrete output emitted by an IR operation."""
+
+    output_name: str
+    type_desc: str = "Any"
+    binding_kind: str = "unknown"
+    source_method: str = ""
+    source_attr: str = ""
+    tuple_index: int | None = None
+    provenance: list[FactProvenance] = Field(default_factory=list)
+
+
+class StateSlotSpec(BaseModel):
+    """Canonical IR representation of one state slot."""
+
+    slot_name: str
+    state_kind: str = "transient"
+    type_desc: str = "Any"
+    required_before: list[str] = Field(default_factory=list)
+    written_by: list[str] = Field(default_factory=list)
+    read_by: list[str] = Field(default_factory=list)
+    source_attr: str = ""
+    provenance: list[FactProvenance] = Field(default_factory=list)
+
+
+class StateEffectSpec(BaseModel):
+    """State mutation or read-only effect performed by an operation."""
+
+    slot_name: str
+    effect_kind: str = "unknown"
+    source_method: str = ""
+    provenance: list[FactProvenance] = Field(default_factory=list)
+
+
+class OperationEdge(BaseModel):
+    """Typed edge between canonical IR operations."""
+
+    source_operation_id: str
+    target_operation_id: str
+    edge_kind: str = "data"
+    artifact_or_slot_name: str = ""
+    provenance: list[FactProvenance] = Field(default_factory=list)
+
+
+class OperationSpec(BaseModel):
+    """Canonical OO-aware ingest operation."""
+
+    operation_id: str
+    display_name: str
+    role: str = "unknown"
+    method_bindings: list[MethodBinding] = Field(default_factory=list)
+    direct_inputs: list[IOSpec] = Field(default_factory=list)
+    required_state_slots: list[str] = Field(default_factory=list)
+    emitted_outputs: list[OutputBindingSpec] = Field(default_factory=list)
+    state_effects: list[StateEffectSpec] = Field(default_factory=list)
+    concept_type: ConceptType = ConceptType.CUSTOM
+    is_optional: bool = False
+    is_opaque: bool = False
+    is_external: bool = False
+    provenance: list[FactProvenance] = Field(default_factory=list)
+
+
+class IngestIRPlan(BaseModel):
+    """Canonical ingest IR lowered from semantic facts."""
+
+    subject_name: str
+    source_language: str = "python"
+    operations: list[OperationSpec] = Field(default_factory=list)
+    state_slots: list[StateSlotSpec] = Field(default_factory=list)
+    artifacts: list[OutputBindingSpec] = Field(default_factory=list)
+    edges: list[OperationEdge] = Field(default_factory=list)
+    unknowns: list[UnknownFact] = Field(default_factory=list)
+    lowering_version: str = "phase2_v1"
+
+
 class MethodFact(BaseModel):
     """Extracted facts about a single method."""
 
@@ -327,6 +413,7 @@ class ProposedMacroPlan(BaseModel):
     state_models: list[StateModelSpec] = Field(default_factory=list)
     sub_atom_refs: list[SubAtomRef] = Field(default_factory=list)
     edge_definitions: list[DependencyEdge] = Field(default_factory=list)
+    canonical_ir: IngestIRPlan | None = None
 
 
 class ValidatedMacroPlan(BaseModel):
@@ -335,6 +422,8 @@ class ValidatedMacroPlan(BaseModel):
     plan: ProposedMacroPlan
     all_attrs_accounted: bool = False
     coverage_report: str = ""
+    ir_validated: bool = False
+    ir_coverage_report: str = ""
 
 
 # ---------------------------------------------------------------------------

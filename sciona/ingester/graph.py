@@ -298,6 +298,53 @@ def _apply_bundle_fixes(
     return bundle.model_copy(update=updates)
 
 
+def _publish_typecheck_debug_snapshot(
+    monitor: IngestMonitor | None,
+    *,
+    state: IngesterState,
+    bundle: IngestionBundle,
+    mypy_errors: str,
+) -> None:
+    """Publish emitted artifacts at the type-check failure boundary."""
+    if monitor is None:
+        return
+    try:
+        if bundle.generated_atoms:
+            monitor.stage_file("debug_atoms.py", bundle.generated_atoms)
+        if bundle.generated_state_models:
+            monitor.stage_file("debug_state_models.py", bundle.generated_state_models)
+        if bundle.generated_witnesses:
+            monitor.stage_file("debug_witnesses.py", bundle.generated_witnesses)
+        raw_dfg = state.get("raw_dfg")
+        if raw_dfg is not None:
+            monitor.stage_json("debug_raw_dfg.json", raw_dfg.model_dump(mode="json"))
+        validated_plan = state.get("validated_plan")
+        if validated_plan is not None:
+            monitor.stage_json(
+                "debug_validated_plan.json",
+                validated_plan.model_dump(mode="json"),
+            )
+            canonical_ir = getattr(validated_plan.plan, "canonical_ir", None)
+            if canonical_ir is not None:
+                monitor.stage_json(
+                    "debug_ingest_ir.json",
+                    canonical_ir.model_dump(mode="json"),
+                )
+        monitor.stage_json(
+            "debug_typecheck_state.json",
+            {
+                "mypy_passed": bool(state.get("mypy_passed", False)),
+                "ghost_passed": bool(state.get("ghost_passed", False)),
+                "type_repair_count": int(state.get("type_repair_count", 0) or 0),
+                "ghost_repair_count": int(state.get("ghost_repair_count", 0) or 0),
+                "mypy_errors": mypy_errors,
+            },
+        )
+        monitor.publish_staged()
+    except Exception as exc:
+        logger.warning("Failed to publish typecheck debug snapshot: %s", exc)
+
+
 # ---------------------------------------------------------------------------
 # Conjugate heuristics
 # ---------------------------------------------------------------------------
@@ -676,7 +723,10 @@ async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str
     try:
         bundle_files = _bundle_files(bundle)
         check_generated_files = getattr(deps.proof_env, "check_generated_files", None)
-        if callable(check_generated_files):
+        supports_multi_file_check = callable(check_generated_files) and hasattr(
+            deps.proof_env.__class__, "check_generated_files"
+        )
+        if supports_multi_file_check:
             ok, output = await check_generated_files(
                 bundle_files,
                 verify_mode="mypy",
@@ -686,15 +736,28 @@ async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str
         else:
             ok, output = await deps.proof_env.check_proof(bundle.generated_atoms, "")
         if ok:
+            bundle_update = bundle.model_copy(update={"mypy_passed": True})
             if mon:
                 mon.phase_end("verify_types", step="passed")
-            return {"mypy_passed": True, "mypy_errors": ""}
+            return {"bundle": bundle_update, "mypy_passed": True, "mypy_errors": ""}
         else:
+            _publish_typecheck_debug_snapshot(
+                mon,
+                state=state,
+                bundle=bundle,
+                mypy_errors=output,
+            )
             if mon:
                 mon.phase_end("verify_types", step="failed")
             return {"mypy_passed": False, "mypy_errors": output}
     except Exception as exc:
         logger.warning("mypy verification failed: %s", exc)
+        _publish_typecheck_debug_snapshot(
+            mon,
+            state=state,
+            bundle=bundle,
+            mypy_errors=str(exc),
+        )
         if mon:
             mon.phase_end("verify_types", step="error")
         return {"mypy_passed": False, "mypy_errors": str(exc)}
@@ -1087,6 +1150,20 @@ class IngesterAgent:
             except Exception:
                 cache_key = ""
 
+        final_state = await self.ingest_state(source_path, class_name)
+        if raise_on_error and final_state.get("error"):
+            raise RuntimeError(str(final_state["error"]))
+
+        bundle: IngestionBundle = final_state["bundle"]
+        if self._enable_cache and cache_key and not final_state.get("error"):
+            try:
+                save_ingest_cache(self._cache_dir, cache_key, bundle)
+            except Exception:
+                pass
+        return bundle
+
+    async def ingest_state(self, source_path: str, class_name: str) -> dict[str, Any]:
+        """Run the full ingester pipeline and return the terminal graph state."""
         initial_state: dict[str, Any] = {
             "source_path": source_path,
             "class_name": class_name,
@@ -1107,18 +1184,7 @@ class IngesterAgent:
         }
 
         config: dict[str, Any] = {"configurable": {"deps": self._deps}}
-
-        final_state = await self._graph.ainvoke(initial_state, config=config)
-        if raise_on_error and final_state.get("error"):
-            raise RuntimeError(str(final_state["error"]))
-
-        bundle: IngestionBundle = final_state["bundle"]
-        if self._enable_cache and cache_key and not final_state.get("error"):
-            try:
-                save_ingest_cache(self._cache_dir, cache_key, bundle)
-            except Exception:
-                pass
-        return bundle
+        return await self._graph.ainvoke(initial_state, config=config)
 
     async def ingest_procedural(
         self, source_path: str, pipeline_name: str | None = None

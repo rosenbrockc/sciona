@@ -15,10 +15,15 @@ from sciona.ingester.chunker import (
     propose_macro_atoms,
 )
 from sciona.ingester.models import (
+    AttributeSemanticFact,
+    FactProvenance,
     MacroAtomSpec,
     MethodFact,
+    ParameterFact,
     ProposedMacroPlan,
     RawDataFlowGraph,
+    ReturnFact,
+    SourceSpan,
     ValidatedMacroPlan,
 )
 
@@ -102,6 +107,117 @@ def _make_inherited_dfg() -> RawDataFlowGraph:
     dfg = _make_simple_utility_dfg()
     dfg.opaque_base_classes = ["BaseUtility"]
     return dfg
+
+
+def _make_semantic_ir_dfg() -> RawDataFlowGraph:
+    prov = FactProvenance(
+        rule_id="test",
+        span=SourceSpan(file_path="semantic.py", line_start=1, line_end=1),
+    )
+    return RawDataFlowGraph(
+        class_name="SemanticEstimator",
+        methods=[
+            MethodFact(
+                name="__init__",
+                params=["base_estimator"],
+                writes=["base_estimator"],
+                semantic_role="constructor",
+                signature=[
+                    ParameterFact(
+                        name="base_estimator",
+                        kind="positional_or_keyword",
+                        provenance=prov,
+                    )
+                ],
+                provenance=[prov],
+            ),
+            MethodFact(
+                name="fit",
+                params=["X", "y"],
+                reads=["base_estimator"],
+                writes=["calibrators", "is_fitted_"],
+                semantic_role="fit_or_update",
+                signature=[
+                    ParameterFact(name="X", provenance=prov),
+                    ParameterFact(name="y", provenance=prov),
+                ],
+                return_facts=[ReturnFact(kind="self", provenance=prov)],
+                provenance=[prov],
+            ),
+            MethodFact(
+                name="predict",
+                params=["X"],
+                reads=["calibrators"],
+                writes=["last_prediction"],
+                semantic_role="predict_or_transform",
+                signature=[ParameterFact(name="X", provenance=prov)],
+                return_facts=[ReturnFact(kind="call_result", provenance=prov)],
+                provenance=[prov],
+            ),
+            MethodFact(
+                name="get_calibrators",
+                params=[],
+                reads=["calibrators"],
+                semantic_role="query_or_metadata",
+                return_facts=[
+                    ReturnFact(
+                        kind="attribute",
+                        referenced_attrs=["calibrators"],
+                        provenance=prov,
+                    )
+                ],
+                provenance=[prov],
+            ),
+            MethodFact(
+                name="get_metadata_routing",
+                params=[],
+                semantic_role="query_or_metadata",
+                return_facts=[ReturnFact(kind="constant", provenance=prov)],
+                provenance=[prov],
+            ),
+        ],
+        all_attributes={
+            "base_estimator": ["write:__init__", "read:fit"],
+            "calibrators": ["write:fit", "read:predict", "read:get_calibrators"],
+            "is_fitted_": ["write:fit"],
+            "last_prediction": ["write:predict"],
+        },
+        attribute_facts=[
+            AttributeSemanticFact(
+                attr_name="base_estimator",
+                first_seen_in="__init__",
+                read_methods=["fit"],
+                write_methods=["__init__"],
+                is_config=True,
+                provenances=[prov],
+            ),
+            AttributeSemanticFact(
+                attr_name="calibrators",
+                first_seen_in="fit",
+                read_methods=["predict", "get_calibrators"],
+                write_methods=["fit"],
+                is_fitted=True,
+                provenances=[prov],
+            ),
+            AttributeSemanticFact(
+                attr_name="is_fitted_",
+                first_seen_in="fit",
+                write_methods=["fit"],
+                is_fitted=True,
+                provenances=[prov],
+            ),
+            AttributeSemanticFact(
+                attr_name="last_prediction",
+                first_seen_in="predict",
+                write_methods=["predict"],
+                is_derived=True,
+                provenances=[prov],
+            ),
+        ],
+        config_attributes=["base_estimator"],
+        fitted_attributes=["calibrators", "is_fitted_"],
+        derived_attributes=["last_prediction"],
+    )
 
 
 def _make_llm_response(method_names: list[str] | None = None) -> str:
@@ -318,6 +434,136 @@ class TestCriticValidate:
         assert result["critique_passed"] is False
         assert "Missing" in result["critique_reason"]
 
+    @pytest.mark.asyncio
+    async def test_validates_canonical_ir_and_role_bindings(self):
+        dfg = _make_semantic_ir_dfg()
+        plan = ProposedMacroPlan(
+            macro_atoms=[
+                MacroAtomSpec(
+                    name="Estimator Fit",
+                    method_names=["fit"],
+                    inputs=[],
+                    outputs=[],
+                ),
+                MacroAtomSpec(
+                    name="Predict",
+                    method_names=["predict"],
+                    inputs=[],
+                    outputs=[],
+                ),
+                MacroAtomSpec(
+                    name="Metadata Routing",
+                    method_names=["get_metadata_routing"],
+                    inputs=[],
+                    outputs=[],
+                ),
+                MacroAtomSpec(
+                    name="Get Calibrators",
+                    method_names=["get_calibrators"],
+                    inputs=[],
+                    outputs=[],
+                ),
+            ]
+        )
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": plan,
+            "validated_plan": ValidatedMacroPlan(plan=ProposedMacroPlan()),
+            "critique_passed": False,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": ChunkerDeps(llm=AsyncMock())}}
+
+        result = await critic_validate(state, config)
+
+        assert result["critique_passed"] is True
+        validated = result["validated_plan"]
+        assert validated.ir_validated is True
+        assert validated.plan.canonical_ir is not None
+        operation_by_id = {
+            op.operation_id: op for op in validated.plan.canonical_ir.operations
+        }
+        assert operation_by_id["estimator_fit"].role == "state_transition"
+        assert operation_by_id["predict"].role == "predict"
+        assert operation_by_id["get_calibrators"].role == "query"
+        assert operation_by_id["metadata_routing"].role == "metadata"
+
+        state_slots = {
+            slot.slot_name: slot for slot in validated.plan.canonical_ir.state_slots
+        }
+        assert state_slots["base_estimator"].state_kind == "config"
+        assert state_slots["calibrators"].state_kind == "fitted"
+        assert state_slots["last_prediction"].state_kind == "derived"
+        predict_outputs = operation_by_id["predict"].emitted_outputs
+        assert len(predict_outputs) == 1
+        assert predict_outputs[0].binding_kind == "return_value"
+        query_outputs = operation_by_id["get_calibrators"].emitted_outputs
+        assert len(query_outputs) == 1
+        assert query_outputs[0].binding_kind == "attribute_read"
+        metadata_outputs = operation_by_id["metadata_routing"].emitted_outputs
+        assert len(metadata_outputs) == 1
+        assert metadata_outputs[0].binding_kind == "metadata_object"
+
+    @pytest.mark.asyncio
+    async def test_adapter_preserves_legacy_outputs_for_emitter(self):
+        dfg = _make_semantic_ir_dfg()
+        plan = ProposedMacroPlan(
+            macro_atoms=[
+                MacroAtomSpec(
+                    name="Estimator Fit",
+                    method_names=["fit"],
+                    inputs=[],
+                    outputs=[],
+                ),
+                MacroAtomSpec(
+                    name="Predict",
+                    method_names=["predict"],
+                    inputs=[],
+                    outputs=[],
+                ),
+                MacroAtomSpec(
+                    name="Metadata Routing",
+                    method_names=["get_metadata_routing"],
+                    inputs=[],
+                    outputs=[],
+                ),
+                MacroAtomSpec(
+                    name="Get Calibrators",
+                    method_names=["get_calibrators"],
+                    inputs=[],
+                    outputs=[],
+                ),
+            ]
+        )
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": plan,
+            "validated_plan": ValidatedMacroPlan(plan=ProposedMacroPlan()),
+            "critique_passed": False,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": ChunkerDeps(llm=AsyncMock())}}
+
+        result = await critic_validate(state, config)
+        adapted_plan = result["validated_plan"].plan
+
+        predict_atom = next(atom for atom in adapted_plan.macro_atoms if atom.name == "Predict")
+        metadata_atom = next(
+            atom for atom in adapted_plan.macro_atoms if atom.name == "Metadata Routing"
+        )
+        query_atom = next(
+            atom for atom in adapted_plan.macro_atoms if atom.name == "Get Calibrators"
+        )
+        assert predict_atom.outputs[0].name == "result"
+        assert metadata_atom.outputs[0].name == "result"
+        assert query_atom.outputs[0].name == "calibrators"
+
 
 # ---------------------------------------------------------------------------
 # Tests: full chunker graph with mocked LLM
@@ -328,10 +574,18 @@ class TestChunkerGraph:
     @pytest.mark.asyncio
     async def test_end_to_end_pass(self):
         mock_llm = AsyncMock()
-        # First call: propose_macro_atoms
         mock_llm.complete.side_effect = [
             _make_llm_response(["__init__", "process"]),
-            # hoist_state (no cross-window attrs, so won't be called)
+            json.dumps(
+                {
+                    "abstract_name": "Data Processor",
+                    "conceptual_transform": "Process data",
+                    "abstract_inputs": [],
+                    "abstract_outputs": [],
+                    "algorithmic_properties": [],
+                    "cross_disciplinary_applications": [],
+                }
+            ),
         ]
 
         dfg = _make_dfg()
@@ -361,6 +615,16 @@ class TestChunkerGraph:
             _make_llm_response(["process"]),
             # Retry proposal: covers both
             _make_llm_response(["__init__", "process"]),
+            json.dumps(
+                {
+                    "abstract_name": "Data Processor",
+                    "conceptual_transform": "Process data",
+                    "abstract_inputs": [],
+                    "abstract_outputs": [],
+                    "algorithmic_properties": [],
+                    "cross_disciplinary_applications": [],
+                }
+            ),
         ]
 
         dfg = _make_dfg()

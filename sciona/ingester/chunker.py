@@ -26,10 +26,17 @@ from sciona.ingester.monitor import IngestMonitor
 from sciona.ingester.models import (
     ConceptualProfile,
     DependencyEdge,
+    IngestIRPlan,
     MacroAtomSpec,
     MethodFact,
+    MethodBinding,
+    OperationEdge,
+    OperationSpec,
+    OutputBindingSpec,
     ProposedMacroPlan,
     RawDataFlowGraph,
+    StateEffectSpec,
+    StateSlotSpec,
     StateModelSpec,
     SubAtomRef,
     ValidatedMacroPlan,
@@ -138,6 +145,689 @@ def _build_config_branches(dfg: RawDataFlowGraph) -> str:
             f"(lines {cb.lines[0]}-{cb.lines[1]})"
         )
     return "\n".join(lines)
+
+
+def _op_id(text: str) -> str:
+    return text.lower().replace(" ", "_").replace("-", "_")
+
+
+def _plan_state_model_name(subject_name: str) -> str:
+    return f"{subject_name}State"
+
+
+def _operation_role(methods: list[MethodFact]) -> str:
+    roles = [method.semantic_role for method in methods if method.semantic_role]
+    if not roles:
+        return "unknown"
+    if "constructor" in roles:
+        return "constructor"
+    if "fit_or_update" in roles:
+        return "state_transition"
+    if "predict_or_transform" in roles:
+        primary_names = " ".join(method.name.lower() for method in methods)
+        if "transform" in primary_names:
+            return "transform"
+        return "predict"
+    if "score_or_evaluate" in roles:
+        return "score"
+    if "query_or_metadata" in roles:
+        names = " ".join(method.name.lower() for method in methods)
+        if any(token in names for token in ("metadata", "tag", "routing")):
+            return "metadata"
+        return "query"
+    if all(role == "helper" for role in roles):
+        return "helper"
+    return "unknown"
+
+
+def _state_kind_for_attr(dfg: RawDataFlowGraph, attr_name: str) -> str:
+    if attr_name in set(dfg.config_attributes):
+        return "config"
+    if attr_name in set(dfg.fitted_attributes):
+        return "fitted"
+    if attr_name in set(dfg.derived_attributes):
+        return "derived"
+    return "transient"
+
+
+def _slot_type_hint(
+    attr_name: str,
+    legacy_plan: ProposedMacroPlan | None,
+) -> str:
+    if legacy_plan is None:
+        return "Any"
+    for state_model in legacy_plan.state_models:
+        for field_name, field_type in state_model.fields:
+            if field_name == attr_name and field_type:
+                return field_type
+    for atom in legacy_plan.macro_atoms:
+        for io in [*atom.inputs, *atom.outputs]:
+            if io.name == attr_name and io.type_desc:
+                return io.type_desc
+    return "Any"
+
+
+def _build_state_slots(
+    dfg: RawDataFlowGraph,
+    legacy_plan: ProposedMacroPlan | None,
+) -> list[StateSlotSpec]:
+    facts_by_attr = {fact.attr_name: fact for fact in dfg.attribute_facts}
+    attr_names = set(facts_by_attr) | set(dfg.all_attributes)
+    slots: list[StateSlotSpec] = []
+    for attr_name in sorted(attr_names):
+        fact = facts_by_attr.get(attr_name)
+        read_methods: list[str]
+        write_methods: list[str]
+        provenances = list(fact.provenances) if fact else []
+        if fact is not None:
+            read_methods = sorted(fact.read_methods)
+            write_methods = sorted(fact.write_methods)
+        else:
+            read_methods = []
+            write_methods = []
+            for access in dfg.all_attributes.get(attr_name, []):
+                prefix, _, method_name = access.partition(":")
+                if not method_name:
+                    continue
+                if prefix == "read":
+                    read_methods.append(method_name)
+                elif prefix == "write":
+                    write_methods.append(method_name)
+        slots.append(
+            StateSlotSpec(
+                slot_name=attr_name,
+                state_kind=_state_kind_for_attr(dfg, attr_name),
+                type_desc=_slot_type_hint(attr_name, legacy_plan),
+                required_before=sorted(read_methods),
+                written_by=sorted(write_methods),
+                read_by=sorted(read_methods),
+                source_attr=attr_name,
+                provenance=provenances,
+            )
+        )
+    return slots
+
+
+def _method_binding(method: MethodFact) -> MethodBinding:
+    kinds = [param.kind for param in method.signature]
+    call_style = ",".join(kinds) if kinds else ""
+    return MethodBinding(
+        method_name=method.name,
+        signature=list(method.signature),
+        call_style=call_style,
+        return_behavior=list(method.return_facts),
+        requires_instance_state=bool(method.reads or method.writes),
+        provenance=list(method.provenance),
+    )
+
+
+def _default_direct_inputs(methods: list[MethodFact]) -> list[IOSpec]:
+    seen: set[str] = set()
+    inputs: list[IOSpec] = []
+    for method in methods:
+        for param in method.signature:
+            if param.name in seen:
+                continue
+            seen.add(param.name)
+            inputs.append(
+                IOSpec(
+                    name=param.name,
+                    type_desc=param.annotation or "Any",
+                )
+            )
+    return inputs
+
+
+def _binding_from_return_fact(
+    method: MethodFact,
+    fact,
+    output_name: str,
+    type_desc: str,
+    tuple_index: int | None = None,
+) -> OutputBindingSpec:
+    method_name = method.name.lower()
+    is_metadata_method = any(token in method_name for token in ("metadata", "routing", "tag"))
+    if fact.kind == "attribute":
+        binding_kind = "attribute_read"
+    elif fact.kind == "call_result":
+        binding_kind = "metadata_object" if is_metadata_method else "return_value"
+    elif fact.kind == "tuple":
+        binding_kind = "tuple_element"
+    elif fact.kind == "self":
+        binding_kind = "self_return"
+    elif fact.kind == "constant":
+        binding_kind = "metadata_object" if is_metadata_method else "constant"
+    else:
+        binding_kind = "unknown"
+    source_attr = fact.referenced_attrs[0] if fact.referenced_attrs else ""
+    return OutputBindingSpec(
+        output_name=output_name,
+        type_desc=type_desc or "Any",
+        binding_kind=binding_kind,
+        source_method=method.name,
+        source_attr=source_attr,
+        tuple_index=tuple_index,
+        provenance=[fact.provenance],
+    )
+
+
+def _match_output_name_to_attr(output_name: str, attrs: set[str]) -> str:
+    if output_name in attrs:
+        return output_name
+    lowered = output_name.lower()
+    candidates = [
+        attr
+        for attr in attrs
+        if attr.lower() in lowered or lowered in attr.lower()
+    ]
+    if len(candidates) == 1:
+        return candidates[0]
+    return ""
+
+
+def _infer_output_bindings(
+    methods: list[MethodFact],
+    legacy_outputs: list[IOSpec],
+) -> list[OutputBindingSpec]:
+    if not methods:
+        return []
+
+    return_pairs: list[tuple[MethodFact, Any]] = []
+    for method in methods:
+        for fact in method.return_facts:
+            if fact.kind != "none":
+                return_pairs.append((method, fact))
+
+    writes = {attr for method in methods for attr in method.writes}
+    bindings: list[OutputBindingSpec] = []
+
+    if legacy_outputs:
+        for legacy_output in legacy_outputs:
+            matched_attr = _match_output_name_to_attr(legacy_output.name, writes)
+            attribute_fact = next(
+                (
+                    (method, fact)
+                    for method, fact in return_pairs
+                    if (
+                        legacy_output.name in fact.referenced_attrs
+                        or (
+                            matched_attr
+                            and matched_attr in fact.referenced_attrs
+                        )
+                    )
+                ),
+                None,
+            )
+            if matched_attr or attribute_fact is not None:
+                method_name = methods[-1].name if attribute_fact is None else attribute_fact[0].name
+                provenance = [] if attribute_fact is None else [attribute_fact[1].provenance]
+                bindings.append(
+                    OutputBindingSpec(
+                        output_name=legacy_output.name,
+                        type_desc=legacy_output.type_desc or "Any",
+                        binding_kind="attribute_read",
+                        source_method=method_name,
+                        source_attr=matched_attr or legacy_output.name,
+                        provenance=provenance,
+                    )
+                )
+                continue
+
+            tuple_outputs = [pair for pair in return_pairs if pair[1].kind == "tuple"]
+            if tuple_outputs:
+                method, fact = tuple_outputs[0]
+                index = legacy_outputs.index(legacy_output)
+                source_attr = (
+                    fact.referenced_attrs[index]
+                    if index < len(fact.referenced_attrs)
+                    else legacy_output.name
+                )
+                bindings.append(
+                    OutputBindingSpec(
+                        output_name=legacy_output.name,
+                        type_desc=legacy_output.type_desc or "Any",
+                        binding_kind="tuple_element",
+                        source_method=method.name,
+                        source_attr=source_attr,
+                        tuple_index=index,
+                        provenance=[fact.provenance],
+                    )
+                )
+                continue
+
+            return_pair = next(
+                (
+                    (method, fact)
+                    for method, fact in return_pairs
+                    if fact.kind not in {"self", "none"}
+                ),
+                None,
+            )
+            if return_pair is not None:
+                method, fact = return_pair
+                bindings.append(
+                    _binding_from_return_fact(
+                        method,
+                        fact,
+                        legacy_output.name,
+                        legacy_output.type_desc,
+                    )
+                )
+                continue
+
+            if len(writes) == 1:
+                inferred_attr = next(iter(writes))
+                bindings.append(
+                    OutputBindingSpec(
+                        output_name=legacy_output.name,
+                        type_desc=legacy_output.type_desc or "Any",
+                        binding_kind="attribute_read",
+                        source_method=methods[-1].name,
+                        source_attr=inferred_attr,
+                    )
+                )
+                continue
+
+            bindings.append(
+                OutputBindingSpec(
+                    output_name=legacy_output.name,
+                    type_desc=legacy_output.type_desc or "Any",
+                    binding_kind="unknown",
+                    source_method=methods[-1].name,
+                )
+            )
+        return bindings
+
+    for method, fact in return_pairs:
+        if fact.kind == "self":
+            continue
+        if fact.kind == "attribute":
+            attr_name = fact.referenced_attrs[0] if fact.referenced_attrs else "result"
+            bindings.append(
+                _binding_from_return_fact(method, fact, attr_name, method.return_type or "Any")
+            )
+            continue
+        if fact.kind == "tuple":
+            if fact.referenced_attrs:
+                for index, attr_name in enumerate(fact.referenced_attrs):
+                    bindings.append(
+                        OutputBindingSpec(
+                            output_name=attr_name,
+                            type_desc="Any",
+                            binding_kind="tuple_element",
+                            source_method=method.name,
+                            source_attr=attr_name,
+                            tuple_index=index,
+                            provenance=[fact.provenance],
+                        )
+                    )
+            else:
+                bindings.append(
+                    OutputBindingSpec(
+                        output_name="result",
+                        type_desc=method.return_type or "Any",
+                        binding_kind="tuple_element",
+                        source_method=method.name,
+                        provenance=[fact.provenance],
+                    )
+                )
+            continue
+        bindings.append(
+            _binding_from_return_fact(method, fact, "result", method.return_type or "Any")
+        )
+
+    if bindings:
+        return bindings
+
+    for attr_name in sorted(writes):
+        bindings.append(
+            OutputBindingSpec(
+                output_name=attr_name,
+                type_desc="Any",
+                binding_kind="attribute_read",
+                source_method=methods[-1].name,
+                source_attr=attr_name,
+            )
+        )
+    return bindings
+
+
+def _infer_state_effects(
+    methods: list[MethodFact],
+    state_slot_names: set[str],
+) -> list[StateEffectSpec]:
+    effects: list[StateEffectSpec] = []
+    for method in methods:
+        seen: set[str] = set()
+        for attr_name in [*method.reads, *method.writes]:
+            if attr_name not in state_slot_names or attr_name in seen:
+                continue
+            seen.add(attr_name)
+            if attr_name in method.writes:
+                effect_kind = "initialize" if method.semantic_role == "constructor" else "update"
+            else:
+                effect_kind = "read_only"
+            effects.append(
+                StateEffectSpec(
+                    slot_name=attr_name,
+                    effect_kind=effect_kind,
+                    source_method=method.name,
+                    provenance=list(method.provenance),
+                )
+            )
+    return effects
+
+
+def _default_operations(dfg: RawDataFlowGraph) -> list[MacroAtomSpec]:
+    if dfg.is_opaque and dfg.methods:
+        method = dfg.methods[0]
+        return [
+            MacroAtomSpec(
+                name=dfg.class_name,
+                description=method.docstring or dfg.class_name,
+                method_names=[method.name],
+                inputs=[IOSpec(name=param, type_desc="Any") for param in method.params],
+                outputs=[IOSpec(name="output", type_desc=method.return_type or "Any")],
+                concept_type=ConceptType.NEURAL_NETWORK,
+                is_opaque=True,
+            )
+        ]
+    atoms: list[MacroAtomSpec] = []
+    for method in dfg.methods:
+        if not _is_public_method_name(method.name):
+            continue
+        atoms.append(
+            MacroAtomSpec(
+                name=_atom_name_for_method(method.name),
+                description=method.docstring or method.name.replace("_", " "),
+                method_names=[method.name],
+                inputs=_default_direct_inputs([method]),
+                outputs=_outputs_for_method(method),
+                concept_type=_infer_method_concept(method),
+            )
+        )
+    return atoms
+
+
+def _build_ingest_ir(
+    dfg: RawDataFlowGraph,
+    legacy_plan: ProposedMacroPlan | None = None,
+) -> IngestIRPlan:
+    by_name = {method.name: method for method in dfg.methods}
+    state_slots = _build_state_slots(dfg, legacy_plan)
+    state_slot_names = {slot.slot_name for slot in state_slots}
+    seed_atoms = _default_operations(dfg) if legacy_plan is None else list(legacy_plan.macro_atoms)
+
+    operations: list[OperationSpec] = []
+    artifacts: list[OutputBindingSpec] = []
+    for atom in seed_atoms:
+        methods = [by_name[name] for name in atom.method_names if name in by_name]
+        if not methods:
+            continue
+        outputs = _infer_output_bindings(methods, atom.outputs)
+        operation = OperationSpec(
+            operation_id=_op_id(atom.name),
+            display_name=atom.name,
+            role=_operation_role(methods),
+            method_bindings=[_method_binding(method) for method in methods],
+            direct_inputs=list(atom.inputs) if atom.inputs else _default_direct_inputs(methods),
+            required_state_slots=sorted(
+                {
+                    attr
+                    for method in methods
+                    for attr in method.reads
+                    if attr in state_slot_names
+                }
+            ),
+            emitted_outputs=outputs,
+            state_effects=_infer_state_effects(methods, state_slot_names),
+            concept_type=atom.concept_type,
+            is_optional=atom.is_optional,
+            is_opaque=atom.is_opaque,
+            is_external=atom.is_external,
+            provenance=[prov for method in methods for prov in method.provenance],
+        )
+        operations.append(operation)
+        artifacts.extend(outputs)
+
+    edges: list[OperationEdge] = []
+    seen_edges: set[tuple[str, str, str, str]] = set()
+    if legacy_plan is not None:
+        for edge in legacy_plan.edge_definitions:
+            edge_kind = (
+                "state"
+                if edge.output_name in state_slot_names or edge.input_name in state_slot_names
+                else "data"
+            )
+            key = (edge.source_id, edge.target_id, edge_kind, edge.output_name or edge.input_name)
+            if key in seen_edges:
+                continue
+            seen_edges.add(key)
+            edges.append(
+                OperationEdge(
+                    source_operation_id=edge.source_id,
+                    target_operation_id=edge.target_id,
+                    edge_kind=edge_kind,
+                    artifact_or_slot_name=edge.output_name or edge.input_name,
+                )
+            )
+
+    for slot in state_slots:
+        for writer in slot.written_by:
+            source_operation_id = None
+            for operation in operations:
+                if writer in {binding.method_name for binding in operation.method_bindings}:
+                    source_operation_id = operation.operation_id
+                    break
+            if source_operation_id is None:
+                continue
+            for reader in slot.read_by:
+                target_operation_id = None
+                for operation in operations:
+                    if reader in {binding.method_name for binding in operation.method_bindings}:
+                        target_operation_id = operation.operation_id
+                        break
+                if target_operation_id is None or target_operation_id == source_operation_id:
+                    continue
+                key = (source_operation_id, target_operation_id, "state", slot.slot_name)
+                if key in seen_edges:
+                    continue
+                seen_edges.add(key)
+                edges.append(
+                    OperationEdge(
+                        source_operation_id=source_operation_id,
+                        target_operation_id=target_operation_id,
+                        edge_kind="state",
+                        artifact_or_slot_name=slot.slot_name,
+                        provenance=list(slot.provenance),
+                    )
+                )
+
+    return IngestIRPlan(
+        subject_name=dfg.class_name,
+        source_language=dfg.source_language,
+        operations=operations,
+        state_slots=state_slots,
+        artifacts=artifacts,
+        edges=edges,
+        unknowns=list(dfg.semantic_unknowns),
+    )
+
+
+def _legacy_outputs_from_operation(operation: OperationSpec) -> list[IOSpec]:
+    outputs: list[IOSpec] = []
+    for binding in operation.emitted_outputs:
+        if binding.binding_kind == "self_return":
+            continue
+        outputs.append(IOSpec(name=binding.output_name, type_desc=binding.type_desc))
+    return outputs
+
+
+def _legacy_state_models_from_ir(
+    ir: IngestIRPlan,
+    existing_state_models: list[StateModelSpec],
+) -> list[StateModelSpec]:
+    if existing_state_models:
+        return existing_state_models
+    slots = [
+        slot
+        for slot in ir.state_slots
+        if slot.state_kind in {"fitted", "derived", "stochastic"}
+    ]
+    if not slots:
+        return []
+    return [
+        StateModelSpec(
+            model_name=_plan_state_model_name(ir.subject_name),
+            fields=[(slot.slot_name, slot.type_desc or "Any") for slot in slots],
+            source_attrs=[slot.slot_name for slot in slots],
+            docstring=f"Legacy adapter state model for {ir.subject_name}.",
+        )
+    ]
+
+
+def _legacy_edges_from_ir(ir: IngestIRPlan) -> list[DependencyEdge]:
+    edges: list[DependencyEdge] = []
+    for edge in ir.edges:
+        if edge.edge_kind not in {"data", "state"}:
+            continue
+        edges.append(
+            DependencyEdge(
+                source_id=edge.source_operation_id,
+                target_id=edge.target_operation_id,
+                output_name=edge.artifact_or_slot_name,
+                input_name=edge.artifact_or_slot_name,
+                source_type="Any",
+                target_type="Any",
+            )
+        )
+    return edges
+
+
+def _adapt_ir_to_legacy_plan(
+    ir: IngestIRPlan,
+    existing_plan: ProposedMacroPlan | None = None,
+) -> ProposedMacroPlan:
+    existing_plan = existing_plan or ProposedMacroPlan()
+    by_op_id = {_op_id(atom.name): atom for atom in existing_plan.macro_atoms}
+    macro_atoms: list[MacroAtomSpec] = []
+    for operation in ir.operations:
+        seed = by_op_id.get(operation.operation_id)
+        macro_atoms.append(
+            MacroAtomSpec(
+                name=seed.name if seed is not None else operation.display_name,
+                description=seed.description if seed is not None else operation.display_name,
+                method_names=[binding.method_name for binding in operation.method_bindings],
+                inputs=list(seed.inputs) if seed is not None and seed.inputs else list(operation.direct_inputs),
+                outputs=(
+                    list(seed.outputs)
+                    if seed is not None and seed.outputs
+                    else _legacy_outputs_from_operation(operation)
+                ),
+                config_params=list(seed.config_params) if seed is not None else [],
+                concept_type=seed.concept_type if seed is not None else operation.concept_type,
+                decorators=list(seed.decorators) if seed is not None else [],
+                is_optional=seed.is_optional if seed is not None else operation.is_optional,
+                is_opaque=seed.is_opaque if seed is not None else operation.is_opaque,
+                is_external=seed.is_external if seed is not None else operation.is_external,
+                is_stochastic=seed.is_stochastic if seed is not None else False,
+                requires_rng_key=seed.requires_rng_key if seed is not None else False,
+                requires_autodiff=seed.requires_autodiff if seed is not None else False,
+                autodiff_backend=seed.autodiff_backend if seed is not None else "",
+                conceptual_profile=seed.conceptual_profile if seed is not None else None,
+                children=list(seed.children) if seed is not None else [],
+                sub_edges=list(seed.sub_edges) if seed is not None else [],
+                depth=seed.depth if seed is not None else 0,
+                source_lines=seed.source_lines if seed is not None else 0,
+            )
+        )
+
+    return ProposedMacroPlan(
+        macro_atoms=macro_atoms,
+        state_models=_legacy_state_models_from_ir(ir, existing_plan.state_models),
+        sub_atom_refs=list(existing_plan.sub_atom_refs),
+        edge_definitions=(
+            list(existing_plan.edge_definitions)
+            if existing_plan.edge_definitions
+            else _legacy_edges_from_ir(ir)
+        ),
+        canonical_ir=ir,
+    )
+
+
+def _attach_canonical_ir(
+    dfg: RawDataFlowGraph,
+    legacy_plan: ProposedMacroPlan,
+) -> ProposedMacroPlan:
+    ir = _build_ingest_ir(dfg, legacy_plan)
+    return _adapt_ir_to_legacy_plan(ir, existing_plan=legacy_plan)
+
+
+def _validate_canonical_ir(
+    dfg: RawDataFlowGraph,
+    ir: IngestIRPlan,
+) -> tuple[bool, str, list[str]]:
+    issues: list[str] = []
+    slot_names = {slot.slot_name for slot in ir.state_slots}
+    covered_methods = {
+        binding.method_name for operation in ir.operations for binding in operation.method_bindings
+    }
+    covered_attrs = {
+        slot.source_attr
+        for slot in ir.state_slots
+        if slot.source_attr
+        and (
+            set(slot.read_by).intersection(covered_methods)
+            or set(slot.written_by).intersection(covered_methods)
+        )
+    }
+    method_to_role = {
+        binding.method_name: operation.role
+        for operation in ir.operations
+        for binding in operation.method_bindings
+    }
+
+    for operation in ir.operations:
+        if not operation.method_bindings:
+            issues.append(f"{operation.display_name}: missing method bindings")
+        for required_slot in operation.required_state_slots:
+            if required_slot not in slot_names:
+                issues.append(f"{operation.display_name}: unknown required state slot {required_slot}")
+        if operation.role in {"query", "metadata", "score"}:
+            mutating = [
+                effect.slot_name
+                for effect in operation.state_effects
+                if effect.effect_kind in {"initialize", "update", "clear"}
+            ]
+            if mutating:
+                issues.append(
+                    f"{operation.display_name}: {operation.role} operation mutates state {sorted(mutating)}"
+                )
+        for binding in operation.emitted_outputs:
+            if not binding.source_method:
+                issues.append(f"{operation.display_name}: output {binding.output_name} missing source method")
+            if binding.binding_kind == "unknown":
+                issues.append(f"{operation.display_name}: output {binding.output_name} has unknown binding")
+            if binding.source_attr:
+                covered_attrs.add(binding.source_attr)
+
+    for slot in ir.state_slots:
+        if slot.state_kind == "transient" and slot.slot_name in set(dfg.fitted_attributes):
+            issues.append(f"{slot.slot_name}: fitted attribute downgraded to transient")
+        if slot.state_kind == "config" and slot.slot_name not in set(dfg.config_attributes):
+            attr_roles = {
+                method_to_role.get(method_name, "")
+                for method_name in [*slot.read_by, *slot.written_by]
+            }
+            if "constructor" not in attr_roles:
+                issues.append(f"{slot.slot_name}: config slot lacks constructor provenance")
+
+    missing_attrs = sorted(set(dfg.all_attributes) - covered_attrs)
+    if missing_attrs:
+        issues.append(f"Missing attributes: {missing_attrs}")
+
+    report = "All canonical IR checks passed." if not issues else "; ".join(issues)
+    return not issues, report, missing_attrs
 
 
 async def _search_context(
@@ -398,6 +1088,8 @@ def _chunk_by_method(dfg: RawDataFlowGraph) -> ProposedMacroPlan:
 
 
 def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
+    if not isinstance(raw, dict):
+        return []
     atoms = []
     for item in raw.get("macro_atoms", []):
         inputs = [
@@ -445,6 +1137,8 @@ def _parse_macro_atoms(raw: dict) -> list[MacroAtomSpec]:
 
 
 def _parse_edges(raw: dict) -> list[DependencyEdge]:
+    if not isinstance(raw, dict):
+        return []
     edges = []
     for item in raw.get("edges", []):
         edges.append(
@@ -487,10 +1181,11 @@ async def propose_macro_atoms(
             concept_type=ConceptType.NEURAL_NETWORK,
             is_opaque=True,
         )
-        return {"proposed_plan": ProposedMacroPlan(macro_atoms=[atom])}
+        plan = ProposedMacroPlan(macro_atoms=[atom])
+        return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
 
     if _is_simple_class(dfg):
-        return {"proposed_plan": _chunk_by_method(dfg)}
+        return {"proposed_plan": _attach_canonical_ir(dfg, _chunk_by_method(dfg))}
 
     retry_context = ""
     if state.get("retry_count", 0) > 0:
@@ -535,7 +1230,7 @@ async def propose_macro_atoms(
         macro_atoms=macro_atoms,
         edge_definitions=edges,
     )
-    return {"proposed_plan": plan}
+    return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
 
 
 async def flatten_config(state: ChunkerState, config: RunnableConfig) -> dict[str, Any]:
@@ -571,6 +1266,7 @@ async def flatten_config(state: ChunkerState, config: RunnableConfig) -> dict[st
         new_atoms.append(atom)
 
     updated = plan.model_copy(update={"macro_atoms": new_atoms})
+    updated = _attach_canonical_ir(dfg, updated)
     return {"proposed_plan": updated}
 
 
@@ -584,7 +1280,7 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
     plan = state["proposed_plan"]
 
     if not dfg.cross_window_attrs:
-        return {"proposed_plan": plan}
+        return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
 
     macro_plan_json = json.dumps([a.model_dump() for a in plan.macro_atoms], indent=2)
     user_prompt = HOIST_STATE_USER.format(
@@ -609,7 +1305,7 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
         raw = extract_json(response)
     except json.JSONDecodeError:
         logger.warning("Failed to parse state hoisting response")
-        return {"proposed_plan": plan}
+        return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
 
     state_models = []
     for item in raw.get("state_models", []):
@@ -631,7 +1327,7 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
         all_edges = list(updated.edge_definitions) + state_edges
         updated = updated.model_copy(update={"edge_definitions": all_edges})
 
-    return {"proposed_plan": updated}
+    return {"proposed_plan": _attach_canonical_ir(dfg, updated)}
 
 
 async def search_sub_atoms(
@@ -685,28 +1381,17 @@ async def critic_validate(
             "critique_reason": "",
         }
 
-    # Collect all attrs covered by macro-atoms
-    covered_attrs: set[str] = set()
-    for atom in plan.macro_atoms:
-        for mname in atom.method_names:
-            mf = next((m for m in dfg.methods if m.name == mname), None)
-            if mf:
-                covered_attrs.update(mf.reads)
-                covered_attrs.update(mf.writes)
+    canonical_plan = plan if plan.canonical_ir is not None else _attach_canonical_ir(dfg, plan)
+    ir = canonical_plan.canonical_ir or _build_ingest_ir(dfg, canonical_plan)
+    ok, ir_report, missing = _validate_canonical_ir(dfg, ir)
 
-    # Attrs covered by state models
-    for sm in plan.state_models:
-        covered_attrs.update(sm.source_attrs)
-
-    # Check coverage
-    all_attrs = set(dfg.all_attributes.keys())
-    missing = all_attrs - covered_attrs
-
-    if not missing:
+    if ok:
         validated = ValidatedMacroPlan(
-            plan=plan,
+            plan=canonical_plan,
             all_attrs_accounted=True,
             coverage_report="All attributes accounted for.",
+            ir_validated=True,
+            ir_coverage_report=ir_report,
         )
         return {
             "validated_plan": validated,
@@ -717,7 +1402,7 @@ async def critic_validate(
         missing_list = sorted(missing)
         return {
             "critique_passed": False,
-            "critique_reason": f"Missing attributes: {missing_list}",
+            "critique_reason": ir_report,
             "missing_attrs": missing_list,
         }
 
@@ -1187,6 +1872,7 @@ async def decompose_complex_atoms(
         decomposed_atoms = list(await asyncio.gather(*[_run(a) for a in plan.macro_atoms]))
 
     new_plan = plan.model_copy(update={"macro_atoms": _dedupe_macro_atoms(decomposed_atoms)})
+    new_plan = _attach_canonical_ir(dfg, new_plan)
     new_validated = validated.model_copy(update={"plan": new_plan})
     return {"validated_plan": new_validated}
 
@@ -1312,6 +1998,7 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
         enriched_atoms = list(await asyncio.gather(*[_run(a) for a in plan.macro_atoms]))
 
     new_plan = plan.model_copy(update={"macro_atoms": enriched_atoms})
+    new_plan = _attach_canonical_ir(state["raw_dfg"], new_plan)
     new_validated = validated.model_copy(update={"plan": new_plan})
     return {"validated_plan": new_validated}
 
