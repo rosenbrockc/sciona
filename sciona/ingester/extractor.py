@@ -8,15 +8,24 @@ config-gated branches, and the init preprocessing chain.
 from __future__ import annotations
 
 import ast
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from sciona.architect.models import DependencyEdge
 from sciona.ingester.models import (
     AttributeAccess,
+    AttributeSemanticFact,
+    CallFact,
     ConfigBranch,
+    FactProvenance,
     MethodFact,
+    ParameterFact,
     RawDataFlowGraph,
+    ReturnFact,
+    SourceSpan,
+    UnknownFact,
 )
 
 # ---------------------------------------------------------------------------
@@ -55,13 +64,21 @@ _OPAQUE_BASE_CLASSES: frozenset[str] = frozenset(
 class _SelfAccessVisitor(ast.NodeVisitor):
     """Walk a method body and collect ``self.*`` reads, writes and config branches."""
 
-    def __init__(self, method_name: str, config_attr_names: frozenset[str]) -> None:
+    def __init__(
+        self,
+        method_name: str,
+        config_attr_names: frozenset[str],
+        source_path: str,
+    ) -> None:
         self.method_name = method_name
         self.config_attr_names = config_attr_names
+        self.source_path = source_path
         self.reads: list[AttributeAccess] = []
         self.writes: list[AttributeAccess] = []
         self.calls: list[str] = []
+        self.call_facts: list[CallFact] = []
         self.config_branches: list[ConfigBranch] = []
+        self.unknown_facts: list[UnknownFact] = []
 
     # --- self.X = ... (Store context) ---
 
@@ -94,10 +111,13 @@ class _SelfAccessVisitor(ast.NodeVisitor):
     # --- self.method() calls ---
 
     def visit_Call(self, node: ast.Call) -> None:
+        callee_expression = _unparse_or_empty(node.func)
+        resolved_target = ""
         if isinstance(node.func, ast.Attribute):
             # 1. self.method() calls
             if isinstance(node.func.value, ast.Name) and node.func.value.id == "self":
                 self.calls.append(node.func.attr)
+                resolved_target = node.func.attr
 
             # 2. self.attr.mutate() calls
             # Common mutating methods
@@ -124,6 +144,58 @@ class _SelfAccessVisitor(ast.NodeVisitor):
                                 is_config=False,
                             )
                         )
+        elif isinstance(node.func, ast.Name) and node.func.id in {
+            "getattr",
+            "setattr",
+            "hasattr",
+        }:
+            if node.args and isinstance(node.args[0], ast.Name) and node.args[0].id == "self":
+                self.unknown_facts.append(
+                    UnknownFact(
+                        reason=f"dynamic_{node.func.id}",
+                        detail=_unparse_or_empty(node),
+                        provenance=_make_provenance(
+                            self.source_path,
+                            node,
+                            rule_id=f"python_ast.{node.func.id}",
+                        ),
+                    )
+                )
+
+        if any(isinstance(arg, ast.Starred) for arg in node.args) or any(
+            kw.arg is None for kw in node.keywords
+        ):
+            self.unknown_facts.append(
+                UnknownFact(
+                    reason="variadic_forwarding",
+                    detail=_unparse_or_empty(node),
+                    provenance=_make_provenance(
+                        self.source_path,
+                        node,
+                        rule_id="python_ast.variadic_forwarding",
+                    ),
+                )
+            )
+
+        self.call_facts.append(
+            CallFact(
+                callee_expression=callee_expression,
+                resolved_target=resolved_target,
+                args=[_unparse_or_empty(arg) for arg in node.args],
+                keywords=[
+                    f"{kw.arg}={_unparse_or_empty(kw.value)}"
+                    if kw.arg is not None
+                    else f"**{_unparse_or_empty(kw.value)}"
+                    for kw in node.keywords
+                ],
+                provenance=_make_provenance(
+                    self.source_path,
+                    node,
+                    rule_id="python_ast.call",
+                    evidence=callee_expression,
+                ),
+            )
+        )
         self.generic_visit(node)
 
     # --- if self.options.X branches ---
@@ -209,6 +281,319 @@ class _SelfAccessVisitor(ast.NodeVisitor):
 # ---------------------------------------------------------------------------
 
 
+@dataclass
+class _MethodExtractionResult:
+    fact: MethodFact
+    reads: list[AttributeAccess]
+    writes: list[AttributeAccess]
+    config_origin_attrs: set[str]
+
+
+def _unparse_or_empty(node: ast.AST | None) -> str:
+    if node is None:
+        return ""
+    try:
+        return ast.unparse(node)
+    except Exception:
+        return ""
+
+
+def _source_span(source_path: str, node: ast.AST | None) -> SourceSpan:
+    if node is None:
+        return SourceSpan(file_path=source_path)
+    line_start = int(getattr(node, "lineno", 0) or 0)
+    line_end = int(getattr(node, "end_lineno", line_start) or line_start)
+    col_start = int(getattr(node, "col_offset", 0) or 0)
+    col_end = int(getattr(node, "end_col_offset", col_start) or col_start)
+    return SourceSpan(
+        file_path=source_path,
+        line_start=line_start,
+        line_end=line_end,
+        col_start=col_start,
+        col_end=col_end,
+    )
+
+
+def _make_provenance(
+    source_path: str,
+    node: ast.AST | None,
+    *,
+    rule_id: str,
+    evidence: str = "",
+) -> FactProvenance:
+    return FactProvenance(
+        rule_id=rule_id,
+        span=_source_span(source_path, node),
+        evidence=evidence,
+    )
+
+
+def _return_fact_from_node(source_path: str, node: ast.Return) -> ReturnFact:
+    expr = node.value
+    expression = _unparse_or_empty(expr)
+    provenance = _make_provenance(
+        source_path,
+        node,
+        rule_id="python_ast.return",
+        evidence=expression,
+    )
+    if expr is None:
+        return ReturnFact(kind="none", expression="", provenance=provenance)
+    if isinstance(expr, ast.Constant):
+        if expr.value is None:
+            return ReturnFact(kind="none", expression="None", provenance=provenance)
+        return ReturnFact(kind="constant", expression=expression, provenance=provenance)
+    if isinstance(expr, ast.Name):
+        if expr.id == "self":
+            return ReturnFact(kind="self", expression="self", provenance=provenance)
+        return ReturnFact(
+            kind="parameter",
+            expression=expression,
+            provenance=provenance,
+        )
+    if isinstance(expr, ast.Attribute):
+        if isinstance(expr.value, ast.Name) and expr.value.id == "self":
+            return ReturnFact(
+                kind="attribute",
+                expression=expression,
+                referenced_attrs=[expr.attr],
+                provenance=provenance,
+            )
+        return ReturnFact(kind="unknown", expression=expression, provenance=provenance)
+    if isinstance(expr, ast.Call):
+        callee = _unparse_or_empty(expr.func)
+        return ReturnFact(
+            kind="call_result",
+            expression=expression,
+            referenced_callees=[callee] if callee else [],
+            provenance=provenance,
+        )
+    if isinstance(expr, ast.Tuple):
+        attrs: list[str] = []
+        callees: list[str] = []
+        for elt in expr.elts:
+            if isinstance(elt, ast.Attribute) and isinstance(elt.value, ast.Name) and elt.value.id == "self":
+                attrs.append(elt.attr)
+            elif isinstance(elt, ast.Call):
+                callee = _unparse_or_empty(elt.func)
+                if callee:
+                    callees.append(callee)
+        return ReturnFact(
+            kind="tuple",
+            expression=expression,
+            referenced_attrs=attrs,
+            referenced_callees=callees,
+            provenance=provenance,
+        )
+    return ReturnFact(kind="unknown", expression=expression, provenance=provenance)
+
+
+def _extract_return_facts(
+    method_node: ast.FunctionDef,
+    source_path: str,
+) -> tuple[list[ReturnFact], list[UnknownFact]]:
+    return_facts: list[ReturnFact] = []
+    unknowns: list[UnknownFact] = []
+    for child in ast.walk(method_node):
+        if isinstance(child, ast.Return):
+            return_facts.append(_return_fact_from_node(source_path, child))
+    kinds = {fact.kind for fact in return_facts}
+    if len(kinds) > 1:
+        unknowns.append(
+            UnknownFact(
+                reason="mixed_return_paths",
+                detail=", ".join(sorted(kinds)),
+                provenance=_make_provenance(
+                    source_path,
+                    method_node,
+                    rule_id="python_ast.return_paths",
+                ),
+            )
+        )
+    return return_facts, unknowns
+
+
+def _skip_bound_first_arg(method_node: ast.FunctionDef) -> bool:
+    if not method_node.args.args:
+        return False
+    first = method_node.args.args[0].arg
+    if first == "self":
+        return True
+    if first != "cls":
+        return False
+    decorators = {_unparse_or_empty(deco) for deco in method_node.decorator_list}
+    return "classmethod" in decorators
+
+
+def _build_signature(
+    method_node: ast.FunctionDef,
+    source_path: str,
+) -> tuple[list[str], list[ParameterFact]]:
+    args = method_node.args
+    flat_params: list[str] = []
+    signature: list[ParameterFact] = []
+    skip_first = _skip_bound_first_arg(method_node)
+    positional = list(args.posonlyargs) + list(args.args)
+    positional_defaults = [None] * (len(positional) - len(args.defaults)) + list(args.defaults)
+
+    for index, arg in enumerate(args.posonlyargs):
+        if skip_first and index == 0:
+            continue
+        default = positional_defaults[index]
+        flat_params.append(arg.arg)
+        signature.append(
+            ParameterFact(
+                name=arg.arg,
+                kind="positional_only",
+                annotation=_unparse_or_empty(arg.annotation),
+                default_expression=_unparse_or_empty(default),
+                has_default=default is not None,
+                provenance=_make_provenance(
+                    source_path,
+                    arg,
+                    rule_id="python_ast.signature.positional_only",
+                ),
+            )
+        )
+
+    offset = len(args.posonlyargs)
+    for index, arg in enumerate(args.args):
+        if skip_first and index == 0 and offset == 0:
+            continue
+        default = positional_defaults[offset + index]
+        flat_params.append(arg.arg)
+        signature.append(
+            ParameterFact(
+                name=arg.arg,
+                kind="positional_or_keyword",
+                annotation=_unparse_or_empty(arg.annotation),
+                default_expression=_unparse_or_empty(default),
+                has_default=default is not None,
+                provenance=_make_provenance(
+                    source_path,
+                    arg,
+                    rule_id="python_ast.signature.positional_or_keyword",
+                ),
+            )
+        )
+
+    if args.vararg is not None:
+        flat_params.append(args.vararg.arg)
+        signature.append(
+            ParameterFact(
+                name=args.vararg.arg,
+                kind="vararg",
+                annotation=_unparse_or_empty(args.vararg.annotation),
+                provenance=_make_provenance(
+                    source_path,
+                    args.vararg,
+                    rule_id="python_ast.signature.vararg",
+                ),
+            )
+        )
+
+    for arg, default in zip(args.kwonlyargs, args.kw_defaults):
+        flat_params.append(arg.arg)
+        signature.append(
+            ParameterFact(
+                name=arg.arg,
+                kind="keyword_only",
+                annotation=_unparse_or_empty(arg.annotation),
+                default_expression=_unparse_or_empty(default),
+                has_default=default is not None,
+                provenance=_make_provenance(
+                    source_path,
+                    arg,
+                    rule_id="python_ast.signature.keyword_only",
+                ),
+            )
+        )
+
+    if args.kwarg is not None:
+        flat_params.append(args.kwarg.arg)
+        signature.append(
+            ParameterFact(
+                name=args.kwarg.arg,
+                kind="kwarg",
+                annotation=_unparse_or_empty(args.kwarg.annotation),
+                provenance=_make_provenance(
+                    source_path,
+                    args.kwarg,
+                    rule_id="python_ast.signature.kwarg",
+                ),
+            )
+        )
+
+    return flat_params, signature
+
+
+def _config_origin_attrs(
+    method_node: ast.FunctionDef,
+    params: list[str],
+    config_attr_names: frozenset[str],
+) -> set[str]:
+    if method_node.name != "__init__":
+        return set()
+    param_names = set(params)
+    config_origin: set[str] = set()
+    for node in ast.walk(method_node):
+        if not isinstance(node, ast.Assign):
+            continue
+        value = node.value
+        for target in node.targets:
+            if not (
+                isinstance(target, ast.Attribute)
+                and isinstance(target.value, ast.Name)
+                and target.value.id == "self"
+            ):
+                continue
+            if target.attr in config_attr_names:
+                config_origin.add(target.attr)
+            elif isinstance(value, ast.Name) and value.id in param_names:
+                config_origin.add(target.attr)
+            elif (
+                isinstance(value, ast.Attribute)
+                and isinstance(value.value, ast.Name)
+                and value.value.id in param_names
+            ):
+                config_origin.add(target.attr)
+    return config_origin
+
+
+def _classify_method_role(
+    method_name: str,
+    *,
+    reads: list[str],
+    writes: list[str],
+    return_facts: list[ReturnFact],
+) -> str:
+    lower = method_name.lower()
+    if method_name == "__init__":
+        return "constructor"
+    if method_name in {"__sklearn_tags__", "get_metadata_routing"}:
+        return "query_or_metadata"
+    if lower.startswith("_"):
+        return "helper"
+    if lower.startswith("set_") and writes:
+        return "config_setter"
+    if any(token in lower for token in ("fit", "partial_fit", "update", "train", "learn")) and writes:
+        return "fit_or_update"
+    if any(token in lower for token in ("predict", "transform", "infer", "decode", "encode")):
+        return "predict_or_transform"
+    if "score" in lower or "evaluate" in lower:
+        return "score_or_evaluate"
+    if (
+        lower.startswith("get_")
+        or lower.startswith("is_")
+        or lower.startswith("has_")
+        or (return_facts and not writes)
+    ):
+        return "query_or_metadata"
+    if reads or writes:
+        return "unknown"
+    return "helper"
+
+
 def _detect_config_attr_names(cls_node: ast.ClassDef) -> frozenset[str]:
     """Heuristic: identify config containers assigned in ``__init__``.
 
@@ -234,10 +619,10 @@ def _extract_method_fact(
     method_node: ast.FunctionDef,
     config_attr_names: frozenset[str],
     source_lines: list[str],
-) -> MethodFact:
+    source_path: str,
+) -> _MethodExtractionResult:
     """Build a ``MethodFact`` from a single method AST node."""
-    # Parameters (skip 'self')
-    params = [arg.arg for arg in method_node.args.args if arg.arg != "self"]
+    params, signature = _build_signature(method_node, source_path)
 
     # Return type annotation
     return_type = ""
@@ -253,9 +638,10 @@ def _extract_method_fact(
     method_source = "\n".join(source_lines[start:end])
 
     # Walk the body for self.* accesses
-    visitor = _SelfAccessVisitor(method_node.name, config_attr_names)
+    visitor = _SelfAccessVisitor(method_node.name, config_attr_names, source_path)
     for stmt in method_node.body:
         visitor.visit(stmt)
+    return_facts, return_unknowns = _extract_return_facts(method_node, source_path)
 
     # Extract decorators
     decorators = []
@@ -265,17 +651,49 @@ def _extract_method_fact(
         except Exception:
             pass
 
-    return MethodFact(
+    reads = sorted({a.attr_name for a in visitor.reads})
+    writes = sorted({a.attr_name for a in visitor.writes})
+    config_origin_attrs = _config_origin_attrs(method_node, params, config_attr_names)
+    role = _classify_method_role(
+        method_node.name,
+        reads=reads,
+        writes=writes,
+        return_facts=return_facts,
+    )
+    fact = MethodFact(
         name=method_node.name,
         params=params,
         return_type=return_type,
         docstring=docstring,
         decorators=decorators,
-        reads=sorted({a.attr_name for a in visitor.reads}),
-        writes=sorted({a.attr_name for a in visitor.writes}),
+        reads=reads,
+        writes=writes,
         calls=sorted(set(visitor.calls)),
         config_branches=visitor.config_branches,
         source_code=method_source,
+        signature=signature,
+        return_facts=return_facts,
+        call_facts=visitor.call_facts,
+        unknown_facts=visitor.unknown_facts + return_unknowns,
+        semantic_role=role,
+        config_attributes=sorted(
+            {access.attr_name for access in visitor.reads + visitor.writes if access.is_config}
+            | config_origin_attrs
+        ),
+        provenance=[
+            _make_provenance(
+                source_path,
+                method_node,
+                rule_id="python_ast.method",
+                evidence=method_node.name,
+            )
+        ],
+    )
+    return _MethodExtractionResult(
+        fact=fact,
+        reads=visitor.reads,
+        writes=visitor.writes,
+        config_origin_attrs=config_origin_attrs,
     )
 
 
@@ -316,6 +734,132 @@ def _compute_init_chain(init_method: MethodFact | None) -> list[str]:
     if init_method is None:
         return []
     return list(init_method.writes)
+
+
+def _compute_fitted_attrs(methods: list[MethodFact]) -> set[str]:
+    attr_writers: dict[str, set[str]] = defaultdict(set)
+    attr_readers: dict[str, set[str]] = defaultdict(set)
+    roles = {mf.name: mf.semantic_role for mf in methods}
+    for mf in methods:
+        for attr in mf.writes:
+            attr_writers[attr].add(mf.name)
+        for attr in mf.reads:
+            attr_readers[attr].add(mf.name)
+
+    fitted: set[str] = set()
+    reader_roles = {"predict_or_transform", "score_or_evaluate", "query_or_metadata"}
+    for attr, writers in attr_writers.items():
+        non_init_writers = {name for name in writers if name != "__init__"}
+        if not non_init_writers:
+            continue
+        if any(roles.get(name) == "fit_or_update" for name in non_init_writers):
+            fitted.add(attr)
+            continue
+        if attr not in attr_readers:
+            continue
+        if any(roles.get(name) in reader_roles for name in attr_readers[attr]):
+            fitted.add(attr)
+    return fitted
+
+
+def _build_attribute_facts(
+    methods: list[MethodFact],
+    method_results: list[_MethodExtractionResult],
+    config_origin_attrs: set[str],
+    fitted_attrs: set[str],
+    source_path: str,
+) -> list[AttributeSemanticFact]:
+    facts: dict[str, dict[str, Any]] = {}
+    role_by_method = {mf.name: mf.semantic_role for mf in methods}
+
+    def _bucket(attr_name: str) -> dict[str, Any]:
+        bucket = facts.get(attr_name)
+        if bucket is None:
+            bucket = {
+                "read_methods": set(),
+                "write_methods": set(),
+                "provenances": [],
+                "first_seen": "",
+            }
+            facts[attr_name] = bucket
+        return bucket
+
+    for result in method_results:
+        for access in result.reads:
+            bucket = _bucket(access.attr_name)
+            bucket["read_methods"].add(access.method_name)
+            bucket["provenances"].append(
+                FactProvenance(
+                    rule_id=f"python_ast.attr_{access.access_type}",
+                    span=SourceSpan(
+                        file_path=source_path,
+                        line_start=access.line_number,
+                        line_end=access.line_number,
+                    ),
+                    evidence=f"{access.method_name}:{access.attr_name}@{access.line_number}",
+                )
+            )
+            if not bucket["first_seen"]:
+                bucket["first_seen"] = access.method_name
+        for access in result.writes:
+            bucket = _bucket(access.attr_name)
+            bucket["write_methods"].add(access.method_name)
+            bucket["provenances"].append(
+                FactProvenance(
+                    rule_id=f"python_ast.attr_{access.access_type}",
+                    span=SourceSpan(
+                        file_path=source_path,
+                        line_start=access.line_number,
+                        line_end=access.line_number,
+                    ),
+                    evidence=f"{access.method_name}:{access.attr_name}@{access.line_number}",
+                )
+            )
+            if not bucket["first_seen"]:
+                bucket["first_seen"] = access.method_name
+
+    for method in methods:
+        for attr_name in method.reads:
+            bucket = _bucket(attr_name)
+            bucket["read_methods"].add(method.name)
+            if not bucket["first_seen"]:
+                bucket["first_seen"] = method.name
+        for attr_name in method.writes:
+            bucket = _bucket(attr_name)
+            bucket["write_methods"].add(method.name)
+            if not bucket["first_seen"]:
+                bucket["first_seen"] = method.name
+
+    attribute_facts: list[AttributeSemanticFact] = []
+    for attr_name in sorted(facts):
+        bucket = facts[attr_name]
+        read_methods = sorted(bucket["read_methods"])
+        write_methods = sorted(bucket["write_methods"])
+        is_config = attr_name in config_origin_attrs or any(
+            attr_name in method.config_attributes for method in methods
+        )
+        is_fitted = attr_name in fitted_attrs
+        is_derived = bool(write_methods) and not is_config and not is_fitted
+        query_methods = {
+            name
+            for name in set(read_methods) | set(write_methods)
+            if role_by_method.get(name) == "query_or_metadata"
+        }
+        is_query_only = bool(query_methods) and set(write_methods) <= query_methods
+        attribute_facts.append(
+            AttributeSemanticFact(
+                attr_name=attr_name,
+                first_seen_in=bucket["first_seen"],
+                read_methods=read_methods,
+                write_methods=write_methods,
+                is_config=is_config,
+                is_fitted=is_fitted,
+                is_derived=is_derived,
+                is_query_only=is_query_only,
+                provenances=bucket["provenances"],
+            )
+        )
+    return attribute_facts
 
 
 # ---------------------------------------------------------------------------
@@ -433,11 +977,20 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
     config_attr_names = _detect_config_attr_names(cls_node)
 
     # Extract method facts
-    methods: list[MethodFact] = []
+    method_results: list[_MethodExtractionResult] = []
     for item in cls_node.body:
         if isinstance(item, ast.FunctionDef):
-            mf = _extract_method_fact(item, config_attr_names, source_lines)
-            methods.append(mf)
+            result = _extract_method_fact(
+                item,
+                config_attr_names,
+                source_lines,
+                source_path,
+            )
+            method_results.append(result)
+    methods = [result.fact for result in method_results]
+    config_origin_attrs = {
+        attr for result in method_results for attr in result.config_origin_attrs
+    }
 
     # Build all_attributes index: attr -> list of access types
     all_attributes: dict[str, list[str]] = {}
@@ -485,6 +1038,29 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
                         if len(new_writes) > len(mf.writes):
                             mf.writes = sorted(new_writes)
                             changed = True
+
+    fitted_attrs = _compute_fitted_attrs(methods)
+    attribute_facts = _build_attribute_facts(
+        methods,
+        method_results,
+        config_origin_attrs,
+        fitted_attrs,
+        source_path,
+    )
+    for mf in methods:
+        mf.fitted_attributes = sorted(
+            {
+                attr
+                for attr in (*mf.reads, *mf.writes)
+                if attr in fitted_attrs
+            }
+        )
+    semantic_unknowns = [
+        unknown
+        for mf in methods
+        for unknown in mf.unknown_facts
+    ]
+
     return RawDataFlowGraph(
         class_name=class_name,
         source_code=source_code,
@@ -494,6 +1070,13 @@ async def extract_data_flow(source_path: str, class_name: str) -> RawDataFlowGra
         init_chain=init_chain,
         cross_window_attrs=cross_window_attrs,
         internal_call_graph=internal_call_graph,
+        attribute_facts=attribute_facts,
+        config_attributes=sorted(config_origin_attrs),
+        fitted_attributes=sorted(fitted_attrs),
+        derived_attributes=sorted(
+            fact.attr_name for fact in attribute_facts if fact.is_derived
+        ),
+        semantic_unknowns=semantic_unknowns,
     )
 
 
@@ -702,9 +1285,10 @@ def _infer_ssa_edges(
 def _extract_function_fact(
     func_node: ast.FunctionDef,
     source_lines: list[str],
+    source_path: str,
 ) -> MethodFact:
     """Build a ``MethodFact`` from a top-level function (no ``self.*`` tracking)."""
-    params = [arg.arg for arg in func_node.args.args]
+    params, signature = _build_signature(func_node, source_path)
 
     return_type = ""
     if func_node.returns:
@@ -723,6 +1307,7 @@ def _extract_function_fact(
             decorators.append("@" + ast.unparse(deco))
         except Exception:
             pass
+    return_facts, unknown_facts = _extract_return_facts(func_node, source_path)
 
     return MethodFact(
         name=func_node.name,
@@ -731,6 +1316,23 @@ def _extract_function_fact(
         docstring=docstring,
         source_code=source_code,
         decorators=decorators,
+        signature=signature,
+        return_facts=return_facts,
+        unknown_facts=unknown_facts,
+        semantic_role=_classify_method_role(
+            func_node.name,
+            reads=[],
+            writes=[],
+            return_facts=return_facts,
+        ),
+        provenance=[
+            _make_provenance(
+                source_path,
+                func_node,
+                rule_id="python_ast.function",
+                evidence=func_node.name,
+            )
+        ],
     )
 
 
@@ -806,7 +1408,7 @@ async def extract_function_data_flow(
     for fname in sorted(reachable):
         fnode = all_func_nodes.get(fname)
         if fnode is not None:
-            methods.append(_extract_function_fact(fnode, source_lines))
+            methods.append(_extract_function_fact(fnode, source_lines, source_path))
 
     # Internal call graph (only edges between reachable functions)
     internal_call_graph: dict[str, list[str]] = {}
@@ -868,7 +1470,9 @@ async def extract_procedural_data_flow(
             func_nodes.append(node)
 
     # Build MethodFact for each function
-    methods = [_extract_function_fact(fn, source_lines) for fn in func_nodes]
+    methods = [
+        _extract_function_fact(fn, source_lines, source_path) for fn in func_nodes
+    ]
 
     # Run procedural block visitor over the entire module body
     visitor = _ProceduralBlockVisitor(known_functions)

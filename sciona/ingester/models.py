@@ -37,6 +37,77 @@ class ConfigBranch(BaseModel):
     writes: list[str] = Field(default_factory=list)
 
 
+class SourceSpan(BaseModel):
+    """Concrete source location for an extracted fact."""
+
+    file_path: str = ""
+    line_start: int = 0
+    line_end: int = 0
+    col_start: int = 0
+    col_end: int = 0
+
+
+class FactProvenance(BaseModel):
+    """Deterministic evidence supporting an extracted fact."""
+
+    rule_id: str = ""
+    span: SourceSpan = Field(default_factory=SourceSpan)
+    evidence: str = ""
+
+
+class UnknownFact(BaseModel):
+    """A place where extraction found ambiguity but refused to guess."""
+
+    reason: str
+    detail: str = ""
+    provenance: FactProvenance = Field(default_factory=FactProvenance)
+
+
+class ParameterFact(BaseModel):
+    """Exact parameter information for a callable signature."""
+
+    name: str
+    kind: str = "positional_or_keyword"
+    annotation: str = ""
+    default_expression: str = ""
+    has_default: bool = False
+    provenance: FactProvenance = Field(default_factory=FactProvenance)
+
+
+class ReturnFact(BaseModel):
+    """A normalized summary of one observed return path."""
+
+    kind: str = "unknown"
+    expression: str = ""
+    referenced_attrs: list[str] = Field(default_factory=list)
+    referenced_callees: list[str] = Field(default_factory=list)
+    provenance: FactProvenance = Field(default_factory=FactProvenance)
+
+
+class CallFact(BaseModel):
+    """One observed call site inside a method body."""
+
+    callee_expression: str = ""
+    resolved_target: str = ""
+    args: list[str] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list)
+    provenance: FactProvenance = Field(default_factory=FactProvenance)
+
+
+class AttributeSemanticFact(BaseModel):
+    """Aggregated semantic inventory for one attribute."""
+
+    attr_name: str
+    first_seen_in: str = ""
+    read_methods: list[str] = Field(default_factory=list)
+    write_methods: list[str] = Field(default_factory=list)
+    is_config: bool = False
+    is_fitted: bool = False
+    is_derived: bool = False
+    is_query_only: bool = False
+    provenances: list[FactProvenance] = Field(default_factory=list)
+
+
 class MethodFact(BaseModel):
     """Extracted facts about a single method."""
 
@@ -52,6 +123,14 @@ class MethodFact(BaseModel):
     decorators: list[str] = Field(default_factory=list)
     is_opaque: bool = False
     is_external: bool = False
+    signature: list[ParameterFact] = Field(default_factory=list)
+    return_facts: list[ReturnFact] = Field(default_factory=list)
+    call_facts: list[CallFact] = Field(default_factory=list)
+    unknown_facts: list[UnknownFact] = Field(default_factory=list)
+    semantic_role: str = ""
+    config_attributes: list[str] = Field(default_factory=list)
+    fitted_attributes: list[str] = Field(default_factory=list)
+    provenance: list[FactProvenance] = Field(default_factory=list)
     # Bayesian metadata flags (set by tree-sitter extractors)
     is_oracle: bool = False  # Implements a stateless log-density/gradient target
     is_conjugate: bool = False  # Implements an analytical conjugate update
@@ -85,6 +164,12 @@ class RawDataFlowGraph(BaseModel):
     is_opaque: bool = False
     is_external: bool = False
     opaque_base_classes: list[str] = Field(default_factory=list)
+    attribute_facts: list[AttributeSemanticFact] = Field(default_factory=list)
+    config_attributes: list[str] = Field(default_factory=list)
+    fitted_attributes: list[str] = Field(default_factory=list)
+    derived_attributes: list[str] = Field(default_factory=list)
+    semantic_unknowns: list[UnknownFact] = Field(default_factory=list)
+    semantic_fact_version: str = "phase1_v1"
 
     # Bayesian / probabilistic metadata (populated by tree-sitter extractors)
     static_shape: dict[str, str] = Field(

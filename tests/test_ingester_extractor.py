@@ -51,6 +51,54 @@ NO_TARGET_CLASS = textwrap.dedent("""\
         pass
 """)
 
+SEMANTIC_CLASS = textwrap.dedent("""\
+    class SemanticEstimator:
+        def __init__(
+            self,
+            base_estimator,
+            cv: int = 3,
+            *,
+            method: str = "sigmoid",
+            n_jobs=None,
+            **kwargs,
+        ):
+            self.base_estimator = base_estimator
+            self.cv = cv
+            self.method = method
+            self.n_jobs = n_jobs
+            self.extra = kwargs
+            self.calibrators = []
+            self.is_fitted_ = False
+
+        def fit(self, X, y, *, sample_weight=None):
+            self.calibrators = [
+                self._fit_single(X, y, sample_weight=sample_weight)
+            ]
+            self.is_fitted_ = True
+            return self
+
+        def predict(self, X):
+            return self._predict_impl(X)
+
+        def expose_state(self):
+            return self.calibrators
+
+        def get_metadata_routing(self):
+            return {"sample_weight": True}
+
+        def __sklearn_tags__(self):
+            return {"requires_fit": True}
+
+        def passthrough(self, *args, **kwargs):
+            return getattr(self, "missing_handler", None)(*args, **kwargs)
+
+        def _fit_single(self, X, y, sample_weight=None):
+            return (X, y, sample_weight)
+
+        def _predict_impl(self, X):
+            return self.calibrators[0]
+""")
+
 
 @pytest.fixture
 def simple_source(tmp_path):
@@ -70,6 +118,13 @@ def stateful_source(tmp_path):
 def no_target_source(tmp_path):
     p = tmp_path / "no_target.py"
     p.write_text(NO_TARGET_CLASS)
+    return str(p)
+
+
+@pytest.fixture
+def semantic_source(tmp_path):
+    p = tmp_path / "semantic_estimator.py"
+    p.write_text(SEMANTIC_CLASS)
     return str(p)
 
 
@@ -206,3 +261,77 @@ class TestBasicMetadata:
         dfg = await extract_data_flow(simple_source, "SimpleProcessor")
         init = next(m for m in dfg.methods if m.name == "__init__")
         assert "data" in init.params
+
+
+class TestSemanticFacts:
+    @pytest.mark.asyncio
+    async def test_exact_signature_facts(self, semantic_source):
+        dfg = await extract_data_flow(semantic_source, "SemanticEstimator")
+        init = next(m for m in dfg.methods if m.name == "__init__")
+
+        assert init.params == [
+            "base_estimator",
+            "cv",
+            "method",
+            "n_jobs",
+            "kwargs",
+        ]
+        assert [(param.name, param.kind) for param in init.signature] == [
+            ("base_estimator", "positional_or_keyword"),
+            ("cv", "positional_or_keyword"),
+            ("method", "keyword_only"),
+            ("n_jobs", "keyword_only"),
+            ("kwargs", "kwarg"),
+        ]
+        by_name = {param.name: param for param in init.signature}
+        assert by_name["cv"].annotation == "int"
+        assert by_name["cv"].default_expression == "3"
+        assert by_name["cv"].has_default is True
+        assert by_name["method"].annotation == "str"
+        assert by_name["method"].default_expression == "'sigmoid'"
+
+    @pytest.mark.asyncio
+    async def test_return_fact_classification(self, semantic_source):
+        dfg = await extract_data_flow(semantic_source, "SemanticEstimator")
+        fit = next(m for m in dfg.methods if m.name == "fit")
+        predict = next(m for m in dfg.methods if m.name == "predict")
+        expose_state = next(m for m in dfg.methods if m.name == "expose_state")
+
+        assert [fact.kind for fact in fit.return_facts] == ["self"]
+        assert [fact.kind for fact in predict.return_facts] == ["call_result"]
+        assert predict.return_facts[0].referenced_callees == ["self._predict_impl"]
+        assert [fact.kind for fact in expose_state.return_facts] == ["attribute"]
+        assert expose_state.return_facts[0].referenced_attrs == ["calibrators"]
+
+    @pytest.mark.asyncio
+    async def test_role_and_attribute_inventory(self, semantic_source):
+        dfg = await extract_data_flow(semantic_source, "SemanticEstimator")
+        by_name = {method.name: method for method in dfg.methods}
+
+        assert by_name["fit"].semantic_role == "fit_or_update"
+        assert by_name["predict"].semantic_role == "predict_or_transform"
+        assert by_name["get_metadata_routing"].semantic_role == "query_or_metadata"
+        assert by_name["__sklearn_tags__"].semantic_role == "query_or_metadata"
+        assert by_name["_fit_single"].semantic_role == "helper"
+        assert "base_estimator" in dfg.config_attributes
+        assert "cv" in dfg.config_attributes
+        assert "calibrators" in dfg.fitted_attributes
+        assert "is_fitted_" in dfg.fitted_attributes
+
+        attr_by_name = {fact.attr_name: fact for fact in dfg.attribute_facts}
+        assert attr_by_name["base_estimator"].is_config is True
+        assert attr_by_name["calibrators"].is_fitted is True
+        assert "fit" in attr_by_name["calibrators"].write_methods
+        assert "predict" in attr_by_name["calibrators"].read_methods
+
+    @pytest.mark.asyncio
+    async def test_unknown_fact_emission(self, semantic_source):
+        dfg = await extract_data_flow(semantic_source, "SemanticEstimator")
+        passthrough = next(m for m in dfg.methods if m.name == "passthrough")
+        reasons = {fact.reason for fact in passthrough.unknown_facts}
+
+        assert "dynamic_getattr" in reasons
+        assert "variadic_forwarding" in reasons
+        assert {"dynamic_getattr", "variadic_forwarding"} <= {
+            fact.reason for fact in dfg.semantic_unknowns
+        }
