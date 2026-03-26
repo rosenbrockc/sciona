@@ -532,7 +532,7 @@ def materialize_legacy_plan_views(plan: ProposedMacroPlan) -> ProposedMacroPlan:
     models.
     """
     ir = plan.canonical_ir
-    if ir is None:
+    if ir is None or not ir.operations:
         return plan
 
     by_op_id = {canonical_operation_id(atom.name): atom for atom in plan.macro_atoms}

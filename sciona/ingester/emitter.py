@@ -73,6 +73,25 @@ def _runtime_plan(plan: ValidatedMacroPlan) -> ValidatedMacroPlan:
     """Return a validated plan with explicit compatibility exports materialized."""
     return plan.model_copy(update={"plan": materialize_legacy_plan_views(plan.plan)})
 
+
+def _logical_edge_key(edge: DependencyEdge) -> tuple[str, str, str, str]:
+    """Deduplicate the same dependency edge across legacy and IR surfaces."""
+    return (
+        edge.source_id,
+        edge.target_id,
+        edge.output_name,
+        edge.input_name,
+    )
+
+
+def _transfer_edge_key(edge: DependencyEdge) -> tuple[str, str, str]:
+    """Track data movement independent of target-port renaming."""
+    return (
+        edge.source_id,
+        edge.target_id,
+        edge.output_name,
+    )
+
 # Bayesian concept types that get specialized witness templates
 _BAYESIAN_CONCEPT_TYPES = frozenset(
     {
@@ -2310,6 +2329,8 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
     all_edges: list[DependencyEdge] = []
     seen_node_ids: set[str] = set()
     seen_edge_keys: set[tuple[str, str, str, str, str, str]] = set()
+    seen_logical_edge_keys: set[tuple[str, str, str, str]] = set()
+    seen_transfer_edge_keys: set[tuple[str, str, str]] = set()
 
     for atom in unique_top_level:
         _emit_atom_nodes(
@@ -2344,6 +2365,8 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
         if key in seen_edge_keys:
             continue
         seen_edge_keys.add(key)
+        seen_logical_edge_keys.add(_logical_edge_key(emitted))
+        seen_transfer_edge_keys.add(_transfer_edge_key(emitted))
         all_edges.append(emitted)
 
     ir = plan.plan.canonical_ir
@@ -2390,9 +2413,15 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
                 emitted.source_type,
                 emitted.target_type,
             )
-            if key in seen_edge_keys:
+            if (
+                key in seen_edge_keys
+                or _logical_edge_key(emitted) in seen_logical_edge_keys
+                or _transfer_edge_key(emitted) in seen_transfer_edge_keys
+            ):
                 continue
             seen_edge_keys.add(key)
+            seen_logical_edge_keys.add(_logical_edge_key(emitted))
+            seen_transfer_edge_keys.add(_transfer_edge_key(emitted))
             all_edges.append(emitted)
 
     return CDGExport(

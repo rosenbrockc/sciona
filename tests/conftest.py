@@ -29,6 +29,23 @@ from tests.helpers.match_regression import (
 )
 
 
+def _ensure_current_event_loop() -> None:
+    """Restore pre-3.11 asyncio behavior for legacy sync fixtures."""
+    import asyncio
+
+    policy = asyncio.get_event_loop_policy()
+    try:
+        loop = policy.get_event_loop()
+        if loop.is_closed():
+            raise RuntimeError("current event loop is closed")
+    except RuntimeError:
+        policy.set_event_loop(policy.new_event_loop())
+
+
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    _ensure_current_event_loop()
+
+
 def _find_free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))

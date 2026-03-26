@@ -81,10 +81,12 @@ def generate_receipt(
 
 
 def canonicalize_receipt(receipt: ExecutionReceipt) -> bytes:
-    """Canonical JSON: sorted keys, no whitespace, UTF-8."""
+    """Canonical JSON with a stable schema-first field order."""
+    payload = receipt.model_dump()
+    canonical_payload = {"sciona_version": payload.pop("sciona_version")}
+    canonical_payload.update(dict(sorted(payload.items())))
     return json.dumps(
-        receipt.model_dump(),
-        sort_keys=True,
+        canonical_payload,
         separators=(",", ":"),
     ).encode("utf-8")
 

@@ -19,6 +19,7 @@ from sciona.architect.handoff import CDGExport
 from sciona.architect.models import NodeStatus
 from sciona.principal.atom_ledger import compute_slot_signature
 from sciona.principal.backprop import CreditAssigner
+from sciona.principal.evaluation_helpers import evaluate_bundle_for_metric
 from sciona.principal.graph_routing import (
     route_after_forward,
     route_after_gradients,
@@ -27,7 +28,7 @@ from sciona.principal.graph_routing import (
 )
 from sciona.principal.graph_types import PrincipalDeps, PrincipalState
 from sciona.principal.graph_utils import _param_signature, _structure_has_tunables
-from sciona.principal.hpo import SuggestedParams, TrialPrunedEarly
+from sciona.principal.hpo import OptunaManager, SuggestedParams, TrialPrunedEarly
 from sciona.principal.expansion import ExpansionContext, ExpansionEngine
 from sciona.principal.expansion_rules import default_rule_sets
 from sciona.principal.models import (
@@ -39,6 +40,13 @@ from sciona.principal.reference_attribution import (
     compute_reference_loss_gradients,
     is_reference_loss_objective,
 )
+from sciona.principal.proposal_helpers import (
+    build_expansion_context,
+    build_redecomposition_candidate,
+    evaluate_proposal_candidate,
+    summarize_expansion_context,
+)
+from sciona.principal.structure_summary import summarize_trial_structure
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
 from sciona.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
@@ -183,22 +191,14 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     elif state.metric == OptimizationMetric.STRUCTURE:
         benchmark = benchmark_from_ghost_report(state.ghost_report)
     else:
-        sandbox = deps.sandbox
-        if state.dataset_path.endswith((".yml", ".yaml")):
-            benchmark = await sandbox.evaluate_adapter(
-                state.export_bundle,
-                state.dataset_path,
-                state.metric,
-                varset=deps.dataset_varset,
-                evaluation_spec=deps.evaluation_spec,
-            )
-        else:
-            benchmark = await sandbox.evaluate(
-                state.export_bundle,
-                state.dataset_path,
-                state.metric,
-                evaluation_spec=deps.evaluation_spec,
-            )
+        benchmark = await evaluate_bundle_for_metric(
+            deps.sandbox,
+            state.export_bundle,
+            state.dataset_path,
+            state.metric,
+            dataset_varset=deps.dataset_varset,
+            evaluation_spec=deps.evaluation_spec,
+        )
     state.benchmark = benchmark
     state.reuse_cached_evaluation = False
 
@@ -295,164 +295,6 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     }
 
 
-def _summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
-    """Return a compact telemetry summary for the runtime expansion context."""
-    signal_data = context.signal_data or {}
-    intermediates = context.intermediates or {}
-    eval_result = context.eval_result or {}
-    return {
-        "signal_keys": sorted(signal_data.keys())[:12],
-        "intermediate_keys": sorted(intermediates.keys())[:16],
-        "has_eval_result": bool(eval_result),
-        "eval_keys": (
-            sorted(eval_result.keys())[:16]
-            if isinstance(eval_result, dict)
-            else []
-        ),
-    }
-
-
-def _build_expansion_context(state: PrincipalState) -> ExpansionContext:
-    """Construct a best-effort runtime context from the latest evaluation artifacts."""
-    artifacts = (
-        dict(state.benchmark.runtime_artifacts)
-        if state.benchmark is not None
-        else {}
-    )
-    stdout_payload = artifacts.get("stdout_payload", {})
-    eval_result: dict[str, Any]
-    if isinstance(stdout_payload, dict):
-        eval_result = dict(stdout_payload)
-    else:
-        eval_result = {}
-    if state.benchmark is not None:
-        eval_result.setdefault("global_loss", state.benchmark.global_loss)
-    intermediates = artifacts.get("intermediates", {})
-    signal_data = artifacts.get("signal_data", {})
-    if not isinstance(intermediates, dict):
-        intermediates = {}
-    if not isinstance(signal_data, dict):
-        signal_data = {}
-    return ExpansionContext(
-        intermediates=dict(intermediates),
-        eval_result=eval_result or None,
-        signal_data=dict(signal_data) or None,
-    )
-
-
-async def _build_redecomposition_candidate(
-    state: PrincipalState,
-    deps: "PrincipalDeps",
-    *,
-    bottleneck_name: str | None,
-) -> tuple[CDGExport, str] | None:
-    """Fork and re-decompose a candidate structure for the current bottleneck."""
-    if not state.bottleneck_node_id or state.cdg is None:
-        return None
-
-    history = await deps.architect.get_state_history(state.thread_id)
-    target_cp: str | None = None
-    for entry in history:
-        vals = entry.get("values", {})
-        node_ids = {n.node_id for n in vals.get("nodes", [])}
-        if state.bottleneck_node_id not in node_ids:
-            target_cp = entry.get("checkpoint_id")
-            break
-
-    if target_cp is None and history:
-        target_cp = history[-1].get("checkpoint_id")
-    if target_cp is None:
-        return None
-
-    new_thread_id = await deps.architect.fork(state.thread_id, target_cp)
-    constraint = (
-        f"The previous decomposition caused a bottleneck: "
-        f"{state.bottleneck_reason}. Re-decompose more efficiently."
-    )
-
-    if deps.atom_ledger is not None and deps.catalog is not None and state.cdg is not None:
-        bottleneck_node = next(
-            (n for n in state.cdg.nodes if n.node_id == state.bottleneck_node_id),
-            None,
-        )
-        if bottleneck_node is not None and bottleneck_node.matched_primitive:
-            node_map = {n.node_id: n for n in state.cdg.nodes}
-            parent = (
-                node_map.get(bottleneck_node.parent_id)
-                if bottleneck_node.parent_id
-                else None
-            )
-            slot = compute_slot_signature(bottleneck_node, parent)
-            same_category = [
-                p.name
-                for p in deps.catalog.search_by_category(bottleneck_node.concept_type)
-            ]
-            if len(same_category) > 1:
-                ranked = deps.atom_ledger.rank_candidates(slot, same_category)
-                top_3 = [
-                    (name, f"{score:.2f}")
-                    for name, score in ranked[:3]
-                    if score != float("inf")
-                ]
-                if top_3:
-                    constraint += (
-                        f"\nATOM RANKINGS for '{bottleneck_name}': "
-                        f"prefer {top_3}"
-                    )
-
-    constrained_goal = f"{state.goal}\n\nCONSTRAINT: {constraint}"
-    cdg = await deps.architect.decompose(constrained_goal, thread_id=new_thread_id)
-    mutation = maybe_apply_bottleneck_variant(
-        cdg,
-        bottleneck_name=bottleneck_name,
-        atom_ledger=deps.atom_ledger,
-        catalog=deps.catalog,
-    )
-    return mutation.cdg, new_thread_id
-
-
-async def _evaluate_proposal_candidate(
-    state: PrincipalState,
-    deps: "PrincipalDeps",
-    cdg: CDGExport,
-) -> tuple[float, ExportBundle | None, BenchmarkResult | None, list[Any], GhostSimReport]:
-    """Evaluate a proposal candidate without mutating trial history."""
-    match_results = deps.match_results_fn(cdg) if deps.match_results_fn else []
-    if inspect.isawaitable(match_results):
-        match_results = await match_results
-    match_results = list(match_results)
-    ghost_report = run_ghost_simulation(cdg, match_results)
-    bundle: ExportBundle | None = None
-    benchmark: BenchmarkResult | None = None
-    if deps.synthesize_fn is not None:
-        bundle = await deps.synthesize_fn(cdg, match_results)
-    if state.metric == OptimizationMetric.STRUCTURE:
-        benchmark = benchmark_from_ghost_report(ghost_report)
-    elif bundle is not None:
-        sandbox = deps.sandbox
-        if state.dataset_path.endswith((".yml", ".yaml")):
-            benchmark = await sandbox.evaluate_adapter(
-                bundle,
-                state.dataset_path,
-                state.metric,
-                varset=deps.dataset_varset,
-                evaluation_spec=deps.evaluation_spec,
-            )
-        else:
-            benchmark = await sandbox.evaluate(
-                bundle,
-                state.dataset_path,
-                state.metric,
-                evaluation_spec=deps.evaluation_spec,
-            )
-    loss = (
-        float(benchmark.global_loss)
-        if benchmark is not None
-        else float("inf")
-    )
-    return loss, bundle, benchmark, match_results, ghost_report
-
-
 async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict:
     """Compare sibling expansion and mutation proposals from the same baseline."""
     deps: PrincipalDeps = config["configurable"]["deps"]
@@ -474,10 +316,10 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
     candidates: list[dict[str, Any]] = []
 
     engine = deps.expansion_engine or ExpansionEngine(default_rule_sets())
-    context = _build_expansion_context(state)
+    context = build_expansion_context(state)
     expansion = engine.expand(baseline_cdg, context)
     if expansion.expanded:
-        loss, bundle, benchmark, match_results, ghost_report = await _evaluate_proposal_candidate(
+        loss, bundle, benchmark, match_results, ghost_report = await evaluate_proposal_candidate(
             state,
             deps,
             expansion.cdg,
@@ -510,7 +352,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         catalog=deps.catalog,
     )
     if mutation.applied:
-        loss, bundle, benchmark, match_results, ghost_report = await _evaluate_proposal_candidate(
+        loss, bundle, benchmark, match_results, ghost_report = await evaluate_proposal_candidate(
             state,
             deps,
             mutation.cdg,
@@ -545,14 +387,14 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             break
 
     if selected is None:
-        redecomposition = await _build_redecomposition_candidate(
+        redecomposition = await build_redecomposition_candidate(
             state,
             deps,
             bottleneck_name=bottleneck_name,
         )
         if redecomposition is not None:
             redecompose_cdg, redecompose_thread_id = redecomposition
-            loss, bundle, benchmark, match_results, ghost_report = await _evaluate_proposal_candidate(
+            loss, bundle, benchmark, match_results, ghost_report = await evaluate_proposal_candidate(
                 state,
                 deps,
                 redecompose_cdg,
@@ -597,7 +439,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             "diagnostic_rule_names": sorted(
                 {diag.rule_name for diag in expansion.diagnostics}
             ),
-            "context_summary": _summarize_expansion_context(context),
+            "context_summary": summarize_expansion_context(context),
         }
         state.trial_history[-1] = latest
 
@@ -752,7 +594,7 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
         (node.name for node in state.cdg.nodes if node.node_id == state.bottleneck_node_id),
         None,
     )
-    candidate = await _build_redecomposition_candidate(
+    candidate = await build_redecomposition_candidate(
         state,
         deps,
         bottleneck_name=bottleneck_name,

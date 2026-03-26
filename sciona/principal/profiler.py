@@ -6,6 +6,7 @@ import logging
 
 from sciona.architect.handoff import CDGExport
 from sciona.principal.backprop import CreditAssigner
+from sciona.principal.evaluation_helpers import evaluate_bundle_for_metric
 from sciona.principal.evaluator import ExecutionSandbox
 from sciona.principal.models import NodeGradient, OptimizationMetric
 from sciona.principal.reference_attribution import (
@@ -59,21 +60,14 @@ async def profile_algorithm_error(
             if gradients:
                 return gradients
         sandbox = ExecutionSandbox()
-        if dataset_path.endswith((".yml", ".yaml")):
-            benchmark = await sandbox.evaluate_adapter(
-                bundle,
-                dataset_path,
-                metric,
-                varset=dataset_varset,
-                evaluation_spec=evaluation_spec,
-            )
-        else:
-            benchmark = await sandbox.evaluate(
-                bundle,
-                dataset_path,
-                metric,
-                evaluation_spec=evaluation_spec,
-            )
+        benchmark = await evaluate_bundle_for_metric(
+            sandbox,
+            bundle,
+            dataset_path,
+            metric,
+            dataset_varset=dataset_varset,
+            evaluation_spec=evaluation_spec,
+        )
 
     assigner = CreditAssigner()
     gradients = assigner.compute_gradients(cdg, benchmark, ghost_report, metric)
