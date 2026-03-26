@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from sciona.commands._helpers import (
+from sciona.commands.runtime_helpers import (
     _load_architect_catalog,
     _load_skill_index_or_empty,
 )

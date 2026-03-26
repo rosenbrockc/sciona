@@ -8,9 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from sciona.commands._helpers import (
-    _parse_prompt_benchmark_provider_specs,
-)
+from sciona.commands.routing_helpers import _parse_prompt_benchmark_provider_specs
 
 
 def _benchmark_validation_metadata(summary: dict[str, object]) -> dict[str, object]:
@@ -159,7 +157,7 @@ async def _cmd_benchmark_validate(args: argparse.Namespace) -> None:
     """Run deterministic release-style benchmark validation."""
     from sciona.benchmark_validation import run_benchmark_validation
     from sciona.config import AgeomConfig
-    from sciona.commands._helpers import _shutdown_telemetry_drain
+    from sciona.commands.runtime_helpers import _shutdown_telemetry_drain
     from sciona.telemetry import configure_dashboard_output, configure_postgres_telemetry, finish_run, merge_run_metadata, start_run
 
     config = AgeomConfig()
