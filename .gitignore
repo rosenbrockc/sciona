@@ -10,6 +10,8 @@ build/
 data/
 !ageom/data/
 output/
+output/telemetry_runs/
+trace.jsonl
 ageom/static/default_cdg.json
 models/
 *.gguf
