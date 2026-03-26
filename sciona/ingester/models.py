@@ -461,6 +461,131 @@ class ValidatedMacroPlan(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Compatibility export helpers
+# ---------------------------------------------------------------------------
+
+
+def canonical_operation_id(name: str) -> str:
+    """Normalize a display name into the canonical operation id shape."""
+    return name.lower().replace(" ", "_").replace("-", "_")
+
+
+def legacy_outputs_from_operation(operation: OperationSpec) -> list[IOSpec]:
+    """Lower canonical outputs into the legacy IOSpec view."""
+    outputs: list[IOSpec] = []
+    for binding in operation.emitted_outputs:
+        if binding.binding_kind == "self_return":
+            continue
+        outputs.append(IOSpec(name=binding.output_name, type_desc=binding.type_desc))
+    return outputs
+
+
+def legacy_state_models_from_ir(
+    ir: IngestIRPlan,
+    existing_state_models: list[StateModelSpec],
+) -> list[StateModelSpec]:
+    """Build compatibility state-model exports from canonical state slots."""
+    if existing_state_models:
+        return existing_state_models
+    slots = [
+        slot
+        for slot in ir.state_slots
+        if slot.state_kind in {"fitted", "derived", "stochastic"}
+    ]
+    if not slots:
+        return []
+    return [
+        StateModelSpec(
+            model_name=f"{ir.subject_name}State",
+            fields=[(slot.slot_name, slot.type_desc or "Any") for slot in slots],
+            source_attrs=[slot.slot_name for slot in slots],
+            docstring=f"Legacy adapter state model for {ir.subject_name}.",
+        )
+    ]
+
+
+def legacy_edges_from_ir(ir: IngestIRPlan) -> list[DependencyEdge]:
+    """Build compatibility dependency edges from canonical IR edges."""
+    edges: list[DependencyEdge] = []
+    for edge in ir.edges:
+        if edge.edge_kind not in {"data", "state"}:
+            continue
+        edges.append(
+            DependencyEdge(
+                source_id=edge.source_operation_id,
+                target_id=edge.target_operation_id,
+                output_name=edge.artifact_or_slot_name,
+                input_name=edge.artifact_or_slot_name,
+                source_type="Any",
+                target_type="Any",
+            )
+        )
+    return edges
+
+
+def materialize_legacy_plan_views(plan: ProposedMacroPlan) -> ProposedMacroPlan:
+    """Explicitly materialize compatibility views from canonical runtime state.
+
+    The canonical IR and planning graph remain the runtime source of truth.
+    This helper exists only to populate legacy-compatible exports for existing
+    emitters, tests, and bundle surfaces that still expect macro-atoms or state
+    models.
+    """
+    ir = plan.canonical_ir
+    if ir is None:
+        return plan
+
+    by_op_id = {canonical_operation_id(atom.name): atom for atom in plan.macro_atoms}
+    macro_atoms: list[MacroAtomSpec] = []
+    for operation in ir.operations:
+        seed = by_op_id.get(operation.operation_id)
+        macro_atoms.append(
+            MacroAtomSpec(
+                name=seed.name if seed is not None else operation.display_name,
+                description=seed.description if seed is not None else operation.display_name,
+                method_names=[binding.method_name for binding in operation.method_bindings],
+                inputs=(
+                    list(seed.inputs)
+                    if seed is not None and seed.inputs
+                    else list(operation.direct_inputs)
+                ),
+                outputs=(
+                    list(seed.outputs)
+                    if seed is not None and seed.outputs
+                    else legacy_outputs_from_operation(operation)
+                ),
+                config_params=list(seed.config_params) if seed is not None else [],
+                concept_type=seed.concept_type if seed is not None else operation.concept_type,
+                decorators=list(seed.decorators) if seed is not None else [],
+                is_optional=seed.is_optional if seed is not None else operation.is_optional,
+                is_opaque=seed.is_opaque if seed is not None else operation.is_opaque,
+                is_external=seed.is_external if seed is not None else operation.is_external,
+                is_stochastic=seed.is_stochastic if seed is not None else False,
+                requires_rng_key=seed.requires_rng_key if seed is not None else False,
+                requires_autodiff=seed.requires_autodiff if seed is not None else False,
+                autodiff_backend=seed.autodiff_backend if seed is not None else "",
+                conceptual_profile=seed.conceptual_profile if seed is not None else None,
+                children=list(seed.children) if seed is not None else [],
+                sub_edges=list(seed.sub_edges) if seed is not None else [],
+                depth=seed.depth if seed is not None else 0,
+                source_lines=seed.source_lines if seed is not None else 0,
+            )
+        )
+
+    return plan.model_copy(
+        update={
+            "macro_atoms": macro_atoms,
+            "state_models": legacy_state_models_from_ir(ir, plan.state_models),
+            "edge_definitions": (
+                list(plan.edge_definitions)
+                if plan.edge_definitions
+                else legacy_edges_from_ir(ir)
+            ),
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
 # Final output
 # ---------------------------------------------------------------------------
 

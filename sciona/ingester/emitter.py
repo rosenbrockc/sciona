@@ -39,7 +39,9 @@ from sciona.ingester.models import (
     IngestionBundle,
     MacroAtomSpec,
     MethodBinding,
+    OperationEdge,
     OutputBindingSpec,
+    ParameterFact,
     PlannedOperationGroup,
     ProposedMacroPlan,
     RawDataFlowGraph,
@@ -48,6 +50,7 @@ from sciona.ingester.models import (
     StateSlotSpec,
     OperationSpec,
     ValidatedMacroPlan,
+    materialize_legacy_plan_views,
 )
 from sciona.ingester.prompts import (
     DRAFT_OPAQUE_WITNESS_SYSTEM,
@@ -64,6 +67,11 @@ from sciona.types import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _runtime_plan(plan: ValidatedMacroPlan) -> ValidatedMacroPlan:
+    """Return a validated plan with explicit compatibility exports materialized."""
+    return plan.model_copy(update={"plan": materialize_legacy_plan_views(plan.plan)})
 
 # Bayesian concept types that get specialized witness templates
 _BAYESIAN_CONCEPT_TYPES = frozenset(
@@ -2258,6 +2266,7 @@ def _emit_atom_nodes(
 
 def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
     """Build a CDGExport with root DECOMPOSED node + recursive children."""
+    plan = _runtime_plan(plan)
     source_language = _canonical_ir(plan).source_language if _canonical_ir(plan) else "python"
     canonical_node_meta: dict[str, dict[str, object]] = {}
     if plan.plan.canonical_ir is not None:
@@ -2425,6 +2434,7 @@ def _build_type_signature_from_iospecs(
 
 def build_sub_graphs(plan: ValidatedMacroPlan) -> dict[str, CDGExport]:
     """Build zoom-in sub-graphs from sub_atom_refs."""
+    plan = _runtime_plan(plan)
     sub_graphs: dict[str, CDGExport] = {}
 
     for atom in plan.plan.macro_atoms:
@@ -2574,6 +2584,8 @@ def build_procedural_plan(
     from ``dfg.inferred_edges`` computed by the SSA visitor.
     """
     macro_atoms: list[MacroAtomSpec] = []
+    operations: list[OperationSpec] = []
+    artifacts: list[OutputBindingSpec] = []
     for mf in dfg.methods:
         inputs = [IOSpec(name=p, type_desc="Any") for p in mf.params]
         outputs = (
@@ -2597,10 +2609,56 @@ def build_procedural_plan(
                 outputs=outputs,
             )
         )
+        emitted_outputs = [
+            OutputBindingSpec(
+                output_name=output.name,
+                type_desc=output.type_desc or "Any",
+                binding_kind="return_value",
+                source_method=mf.name,
+                provenance=list(mf.provenance),
+            )
+            for output in outputs
+        ]
+        operations.append(
+            OperationSpec(
+                operation_id=_snake_case(mf.name),
+                display_name=_title_case(mf.name),
+                role="procedural",
+                method_bindings=[
+                    MethodBinding(
+                        method_name=mf.name,
+                        signature=[ParameterFact(name=param) for param in mf.params],
+                        return_behavior=list(mf.return_facts),
+                        provenance=list(mf.provenance),
+                    )
+                ],
+                direct_inputs=inputs,
+                emitted_outputs=emitted_outputs,
+                concept_type=concept_type,
+                is_external=mf.is_external,
+                provenance=list(mf.provenance),
+            )
+        )
+        artifacts.extend(emitted_outputs)
 
     plan = ProposedMacroPlan(
         macro_atoms=macro_atoms,
         edge_definitions=list(dfg.inferred_edges),
+        canonical_ir=IngestIRPlan(
+            subject_name=pipeline_name,
+            source_language=dfg.source_language,
+            operations=operations,
+            artifacts=artifacts,
+            edges=[
+                OperationEdge(
+                    source_operation_id=edge.source_id,
+                    target_operation_id=edge.target_id,
+                    edge_kind="data",
+                    artifact_or_slot_name=edge.output_name or edge.input_name,
+                )
+                for edge in dfg.inferred_edges
+            ],
+        ),
     )
 
     return ValidatedMacroPlan(plan=plan, all_attrs_accounted=True)
@@ -2771,6 +2829,7 @@ def emit_ingestion_bundle(
     source_language: str = "python",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
+    plan = _runtime_plan(plan)
     # Conjugate updates should follow deterministic
     # data->hyperparameter update->distribution construction flow.
     plan = _linearize_conjugate_sequence(plan)

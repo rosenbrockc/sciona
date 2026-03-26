@@ -24,6 +24,7 @@ from sciona.hunter.llm import LLMClient
 from sciona.architect.models import ConceptType, IOSpec
 from sciona.ingester.monitor import IngestMonitor
 from sciona.ingester.models import (
+    canonical_operation_id,
     ConceptualProfile,
     DecompositionDecision,
     DependencyEdge,
@@ -43,6 +44,7 @@ from sciona.ingester.models import (
     StateModelSpec,
     SubAtomRef,
     ValidatedMacroPlan,
+    materialize_legacy_plan_views,
 )
 from sciona.ingester.prompts import (
     CONCEPTUAL_ABSTRACT_SYSTEM,
@@ -657,106 +659,13 @@ def _build_ingest_ir(
     )
 
 
-def _legacy_outputs_from_operation(operation: OperationSpec) -> list[IOSpec]:
-    outputs: list[IOSpec] = []
-    for binding in operation.emitted_outputs:
-        if binding.binding_kind == "self_return":
-            continue
-        outputs.append(IOSpec(name=binding.output_name, type_desc=binding.type_desc))
-    return outputs
-
-
-def _legacy_state_models_from_ir(
-    ir: IngestIRPlan,
-    existing_state_models: list[StateModelSpec],
-) -> list[StateModelSpec]:
-    if existing_state_models:
-        return existing_state_models
-    slots = [
-        slot
-        for slot in ir.state_slots
-        if slot.state_kind in {"fitted", "derived", "stochastic"}
-    ]
-    if not slots:
-        return []
-    return [
-        StateModelSpec(
-            model_name=_plan_state_model_name(ir.subject_name),
-            fields=[(slot.slot_name, slot.type_desc or "Any") for slot in slots],
-            source_attrs=[slot.slot_name for slot in slots],
-            docstring=f"Legacy adapter state model for {ir.subject_name}.",
-        )
-    ]
-
-
-def _legacy_edges_from_ir(ir: IngestIRPlan) -> list[DependencyEdge]:
-    edges: list[DependencyEdge] = []
-    for edge in ir.edges:
-        if edge.edge_kind not in {"data", "state"}:
-            continue
-        edges.append(
-            DependencyEdge(
-                source_id=edge.source_operation_id,
-                target_id=edge.target_operation_id,
-                output_name=edge.artifact_or_slot_name,
-                input_name=edge.artifact_or_slot_name,
-                source_type="Any",
-                target_type="Any",
-            )
-        )
-    return edges
-
-
 def _adapt_ir_to_legacy_plan(
     ir: IngestIRPlan,
     existing_plan: ProposedMacroPlan | None = None,
 ) -> ProposedMacroPlan:
     existing_plan = existing_plan or ProposedMacroPlan()
-    by_op_id = {_op_id(atom.name): atom for atom in existing_plan.macro_atoms}
-    macro_atoms: list[MacroAtomSpec] = []
-    for operation in ir.operations:
-        seed = by_op_id.get(operation.operation_id)
-        macro_atoms.append(
-            MacroAtomSpec(
-                name=seed.name if seed is not None else operation.display_name,
-                description=seed.description if seed is not None else operation.display_name,
-                method_names=[binding.method_name for binding in operation.method_bindings],
-                inputs=list(seed.inputs) if seed is not None and seed.inputs else list(operation.direct_inputs),
-                outputs=(
-                    list(seed.outputs)
-                    if seed is not None and seed.outputs
-                    else _legacy_outputs_from_operation(operation)
-                ),
-                config_params=list(seed.config_params) if seed is not None else [],
-                concept_type=seed.concept_type if seed is not None else operation.concept_type,
-                decorators=list(seed.decorators) if seed is not None else [],
-                is_optional=seed.is_optional if seed is not None else operation.is_optional,
-                is_opaque=seed.is_opaque if seed is not None else operation.is_opaque,
-                is_external=seed.is_external if seed is not None else operation.is_external,
-                is_stochastic=seed.is_stochastic if seed is not None else False,
-                requires_rng_key=seed.requires_rng_key if seed is not None else False,
-                requires_autodiff=seed.requires_autodiff if seed is not None else False,
-                autodiff_backend=seed.autodiff_backend if seed is not None else "",
-                conceptual_profile=seed.conceptual_profile if seed is not None else None,
-                children=list(seed.children) if seed is not None else [],
-                sub_edges=list(seed.sub_edges) if seed is not None else [],
-                depth=seed.depth if seed is not None else 0,
-                source_lines=seed.source_lines if seed is not None else 0,
-            )
-        )
-
-    return ProposedMacroPlan(
-        macro_atoms=macro_atoms,
-        state_models=_legacy_state_models_from_ir(ir, existing_plan.state_models),
-        sub_atom_refs=list(existing_plan.sub_atom_refs),
-        edge_definitions=(
-            list(existing_plan.edge_definitions)
-            if existing_plan.edge_definitions
-            else _legacy_edges_from_ir(ir)
-        ),
-        canonical_ir=ir,
-        planning_graph=existing_plan.planning_graph,
-    )
+    seeded = existing_plan.model_copy(update={"canonical_ir": ir})
+    return materialize_legacy_plan_views(seeded)
 
 
 def _attach_canonical_ir(
@@ -765,6 +674,11 @@ def _attach_canonical_ir(
 ) -> ProposedMacroPlan:
     ir = _build_ingest_ir(dfg, legacy_plan)
     return _adapt_ir_to_legacy_plan(ir, existing_plan=legacy_plan)
+
+
+def _runtime_compat_plan(plan: ProposedMacroPlan) -> ProposedMacroPlan:
+    """Return explicit compatibility exports for runtime surfaces that need them."""
+    return materialize_legacy_plan_views(plan)
 
 
 def _validate_canonical_ir(
@@ -1242,7 +1156,7 @@ async def flatten_config(state: ChunkerState, config: RunnableConfig) -> dict[st
     mon = _get_monitor(config)
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="flatten_config")
-    plan = state["proposed_plan"]
+    plan = _runtime_compat_plan(state["proposed_plan"])
     dfg = state["raw_dfg"]
 
     new_atoms = []
@@ -1281,7 +1195,7 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="hoist_state")
     dfg = state["raw_dfg"]
-    plan = state["proposed_plan"]
+    plan = _runtime_compat_plan(state["proposed_plan"])
 
     if not dfg.cross_window_attrs:
         return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
@@ -1342,7 +1256,7 @@ async def search_sub_atoms(
     mon = _get_monitor(config)
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="search_sub_atoms")
-    plan = state["proposed_plan"]
+    plan = _runtime_compat_plan(state["proposed_plan"])
 
     if deps.faiss_index is None:
         return {"proposed_plan": plan}
@@ -1432,7 +1346,7 @@ def _find_operation_for_atom(
 ) -> OperationSpec | None:
     if ir is None:
         return None
-    op_id = _snake_case_id(atom.name)
+    op_id = canonical_operation_id(atom.name)
     for operation in ir.operations:
         if operation.operation_id == op_id:
             return operation
@@ -2385,6 +2299,7 @@ async def decompose_complex_atoms(
     ir = canonical_plan.canonical_ir
     if ir is None:
         return {"validated_plan": validated}
+    runtime_plan = _runtime_compat_plan(canonical_plan)
 
     planning_graph = _build_planning_graph(ir, dfg, line_threshold)
     canonical_plan = _attach_planning_graph(canonical_plan, planning_graph)
@@ -2396,9 +2311,9 @@ async def decompose_complex_atoms(
 
     parallelism = max(1, deps.parallelism)
     operations_by_id = {operation.operation_id: operation for operation in ir.operations}
-    if parallelism <= 1 or len(plan.macro_atoms) <= 1:
+    if parallelism <= 1 or len(runtime_plan.macro_atoms) <= 1:
         decomposed_atoms: list[MacroAtomSpec] = []
-        for atom in canonical_plan.macro_atoms:
+        for atom in runtime_plan.macro_atoms:
             result = await _decompose_single_atom(
                 atom,
                 operations_by_id.get(_snake_case_id(atom.name)),
@@ -2435,7 +2350,7 @@ async def decompose_complex_atoms(
                 )
 
         decomposed_atoms = list(
-            await asyncio.gather(*[_run(a) for a in canonical_plan.macro_atoms])
+            await asyncio.gather(*[_run(a) for a in runtime_plan.macro_atoms])
         )
 
     new_plan = canonical_plan.model_copy(
@@ -2498,7 +2413,7 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="abstract_atoms")
     validated = state["validated_plan"]
-    plan = validated.plan
+    plan = _runtime_compat_plan(validated.plan)
 
     async def _abstract_one(atom: MacroAtomSpec) -> MacroAtomSpec:
         user_prompt = CONCEPTUAL_ABSTRACT_USER.format(

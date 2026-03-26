@@ -165,6 +165,21 @@ class TestSSAEdgeInference:
 
 class TestProceduralCDG:
     @pytest.mark.asyncio
+    async def test_procedural_plan_has_canonical_ir(self, script_source):
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
+        plan = build_procedural_plan(dfg, "PulsarFold")
+
+        assert plan.plan.canonical_ir is not None
+        assert plan.plan.canonical_ir.source_language == "python"
+        assert [op.operation_id for op in plan.plan.canonical_ir.operations] == [
+            "remove_baseline",
+            "fold_signal",
+            "compute_snr",
+        ]
+
+    @pytest.mark.asyncio
     async def test_cdg_has_four_nodes(self, script_source):
         dfg = await extract_procedural_data_flow(
             script_source, pipeline_name="PulsarFold"

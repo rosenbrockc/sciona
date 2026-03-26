@@ -660,6 +660,42 @@ class TestBuildCDGExport:
         assert cdg.metadata["canonical_semantics"] is True
         assert cdg.metadata["source_language"] == "python"
 
+    def test_materializes_canonical_runtime_nodes_when_legacy_atoms_are_empty(self):
+        atom = MacroAtomSpec(
+            name="Predict",
+            method_names=["predict"],
+            inputs=[IOSpec(name="features", type_desc="np.ndarray", constraints="")],
+            outputs=[IOSpec(name="predictions", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="predict",
+            display_name="Predict",
+            role="predict",
+            method_bindings=[MethodBinding(method_name="predict", signature=[ParameterFact(name="features")])],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="predictions",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="predict",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        plan = plan.model_copy(
+            update={
+                "plan": plan.plan.model_copy(update={"macro_atoms": []}),
+            }
+        )
+
+        cdg = build_cdg_export(plan, "Estimator")
+
+        node = next(item for item in cdg.nodes if item.node_id == "predict")
+        assert node.name == "Predict"
+        assert node.type_signature == "(features: np.ndarray) -> np.ndarray"
+
 
 # ---------------------------------------------------------------------------
 # Tests: build_match_results
@@ -747,3 +783,39 @@ class TestEmitIngestionBundle:
         assert len(atomic) == 2
         for node in atomic:
             assert node.type_signature != ""
+
+    def test_bundle_materializes_runtime_exports_from_canonical_plan(self):
+        atom = MacroAtomSpec(
+            name="Predict",
+            method_names=["predict"],
+            inputs=[IOSpec(name="features", type_desc="np.ndarray", constraints="")],
+            outputs=[IOSpec(name="predictions", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="predict",
+            display_name="Predict",
+            role="predict",
+            method_bindings=[MethodBinding(method_name="predict", signature=[ParameterFact(name="features")])],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="predictions",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="predict",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        plan = plan.model_copy(
+            update={
+                "plan": plan.plan.model_copy(update={"macro_atoms": []}),
+            }
+        )
+
+        bundle = emit_ingestion_bundle(plan, "Estimator")
+
+        assert "def predict(features: np.ndarray) -> np.ndarray:" in bundle.generated_atoms
+        assert any(node.node_id == "predict" for node in bundle.cdg.nodes)
+        assert len(bundle.match_results) == 1
