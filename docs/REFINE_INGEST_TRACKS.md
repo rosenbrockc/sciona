@@ -1,5 +1,8 @@
 # REFINE_INGEST Follow-Up Tracks
 
+> Archived: this planning document is historical. See `docs/REFINE_INGEST_STATUS.md` for the active references and `../ageo-atoms/REFINE_INGEST.md` for the current shared brief.
+
+
 This document groups the post-phase-12 follow-up work into execution tracks and
 spells out what can run in parallel.
 

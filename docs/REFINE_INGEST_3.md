@@ -1,5 +1,8 @@
 # REFINE_INGEST Phase 3 Implementation Plan
 
+> Archived: this planning document is historical. See `docs/REFINE_INGEST_STATUS.md` for the active references and `../ageo-atoms/REFINE_INGEST.md` for the current shared brief.
+
+
 ## Phase Goal
 
 Phase 3 replaces LLM-heavy ingest decomposition with deterministic planning

@@ -1,5 +1,8 @@
 # REFINE_INGEST Phase 14 Implementation Plan
 
+> Archived: this planning document is historical. See `docs/REFINE_INGEST_STATUS.md` for the active references and `../ageo-atoms/REFINE_INGEST.md` for the current shared brief.
+
+
 ## Phase Goal
 
 Phase 14 adds one real cache-enabled end-to-end ingest test that exercises the

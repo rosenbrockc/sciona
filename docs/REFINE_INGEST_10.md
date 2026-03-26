@@ -1,5 +1,8 @@
 # REFINE_INGEST Phase 10 Implementation Plan
 
+> Archived: this planning document is historical. See `docs/REFINE_INGEST_STATUS.md` for the active references and `../ageo-atoms/REFINE_INGEST.md` for the current shared brief.
+
+
 ## Phase Goal
 
 Phase 10 reduces the remaining legacy compatibility burden now that
