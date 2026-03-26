@@ -25,6 +25,7 @@ from sciona.ingester.models import (
     ReturnFact,
     SourceSpan,
     ValidatedMacroPlan,
+    runtime_macro_atoms,
 )
 
 # ---------------------------------------------------------------------------
@@ -567,7 +568,7 @@ class TestCriticValidate:
         assert metadata_outputs[0].binding_kind == "metadata_object"
 
     @pytest.mark.asyncio
-    async def test_adapter_preserves_legacy_outputs_for_emitter(self):
+    async def test_runtime_macro_atoms_preserve_legacy_outputs_for_emitter(self):
         dfg = _make_semantic_ir_dfg()
         plan = ProposedMacroPlan(
             macro_atoms=[
@@ -610,14 +611,17 @@ class TestCriticValidate:
         config = {"configurable": {"deps": ChunkerDeps(llm=AsyncMock())}}
 
         result = await critic_validate(state, config)
-        adapted_plan = result["validated_plan"].plan
+        validated_plan = result["validated_plan"].plan
+        assert all(not atom.outputs for atom in validated_plan.macro_atoms)
 
-        predict_atom = next(atom for atom in adapted_plan.macro_atoms if atom.name == "Predict")
+        adapted_atoms = runtime_macro_atoms(validated_plan)
+
+        predict_atom = next(atom for atom in adapted_atoms if atom.name == "Predict")
         metadata_atom = next(
-            atom for atom in adapted_plan.macro_atoms if atom.name == "Metadata Routing"
+            atom for atom in adapted_atoms if atom.name == "Metadata Routing"
         )
         query_atom = next(
-            atom for atom in adapted_plan.macro_atoms if atom.name == "Get Calibrators"
+            atom for atom in adapted_atoms if atom.name == "Get Calibrators"
         )
         assert predict_atom.outputs[0].name == "result"
         assert metadata_atom.outputs[0].name == "result"

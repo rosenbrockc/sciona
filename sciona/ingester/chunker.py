@@ -44,7 +44,9 @@ from sciona.ingester.models import (
     StateModelSpec,
     SubAtomRef,
     ValidatedMacroPlan,
-    materialize_legacy_plan_views,
+    runtime_edge_definitions,
+    runtime_macro_atoms,
+    runtime_state_models,
 )
 from sciona.ingester.prompts import (
     CONCEPTUAL_ABSTRACT_SYSTEM,
@@ -662,23 +664,34 @@ def _build_ingest_ir(
 def _adapt_ir_to_legacy_plan(
     ir: IngestIRPlan,
     existing_plan: ProposedMacroPlan | None = None,
+    *,
+    materialize_compatibility: bool = False,
 ) -> ProposedMacroPlan:
     existing_plan = existing_plan or ProposedMacroPlan()
     seeded = existing_plan.model_copy(update={"canonical_ir": ir})
-    return materialize_legacy_plan_views(seeded)
+    if materialize_compatibility:
+        return seeded.model_copy(
+            update={
+                "macro_atoms": runtime_macro_atoms(seeded),
+                "state_models": runtime_state_models(seeded),
+                "edge_definitions": runtime_edge_definitions(seeded),
+            }
+        )
+    return seeded
 
 
 def _attach_canonical_ir(
     dfg: RawDataFlowGraph,
     legacy_plan: ProposedMacroPlan,
+    *,
+    materialize_compatibility: bool = False,
 ) -> ProposedMacroPlan:
     ir = _build_ingest_ir(dfg, legacy_plan)
-    return _adapt_ir_to_legacy_plan(ir, existing_plan=legacy_plan)
-
-
-def _runtime_compat_plan(plan: ProposedMacroPlan) -> ProposedMacroPlan:
-    """Return explicit compatibility exports for runtime surfaces that need them."""
-    return materialize_legacy_plan_views(plan)
+    return _adapt_ir_to_legacy_plan(
+        ir,
+        existing_plan=legacy_plan,
+        materialize_compatibility=materialize_compatibility,
+    )
 
 
 def _validate_canonical_ir(
@@ -790,7 +803,8 @@ async def _put_context(
 
 def _compute_state_edges(
     dfg: RawDataFlowGraph,
-    plan: ProposedMacroPlan,
+    macro_atoms: list[MacroAtomSpec],
+    state_models: list[StateModelSpec],
 ) -> list[DependencyEdge]:
     """Compute deterministic state-typed edges from method read/write sets.
 
@@ -798,16 +812,16 @@ def _compute_state_edges(
     reader atom (deduplicated, self-loops excluded).  The edge type is the
     state model name (e.g. ``RollingAveragerState``).
     """
-    if not plan.state_models:
+    if not state_models:
         return []
 
-    state_model = plan.state_models[0]
+    state_model = state_models[0]
     state_model_name = state_model.model_name
     state_attrs = set(state_model.source_attrs)
 
     # Map method name -> atom snake_case id
     method_to_atom: dict[str, str] = {}
-    for atom in plan.macro_atoms:
+    for atom in macro_atoms:
         atom_id = atom.name.lower().replace(" ", "_").replace("-", "_")
         for mname in atom.method_names:
             method_to_atom[mname] = atom_id
@@ -1156,11 +1170,12 @@ async def flatten_config(state: ChunkerState, config: RunnableConfig) -> dict[st
     mon = _get_monitor(config)
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="flatten_config")
-    plan = _runtime_compat_plan(state["proposed_plan"])
+    plan = state["proposed_plan"]
     dfg = state["raw_dfg"]
+    runtime_atoms = runtime_macro_atoms(plan)
 
     new_atoms = []
-    for atom in plan.macro_atoms:
+    for atom in runtime_atoms:
         branches = []
         for mname in atom.method_names:
             mf = next((m for m in dfg.methods if m.name == mname), None)
@@ -1195,12 +1210,13 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="hoist_state")
     dfg = state["raw_dfg"]
-    plan = _runtime_compat_plan(state["proposed_plan"])
+    plan = state["proposed_plan"]
+    runtime_atoms = runtime_macro_atoms(plan)
 
     if not dfg.cross_window_attrs:
         return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
 
-    macro_plan_json = json.dumps([a.model_dump() for a in plan.macro_atoms], indent=2)
+    macro_plan_json = json.dumps([a.model_dump() for a in runtime_atoms], indent=2)
     user_prompt = HOIST_STATE_USER.format(
         cross_window_attrs=dfg.cross_window_attrs,
         macro_plan_json=macro_plan_json,
@@ -1240,9 +1256,9 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
     updated = plan.model_copy(update={"state_models": state_models})
 
     # Compute deterministic state edges and append to existing edges
-    state_edges = _compute_state_edges(dfg, updated)
+    state_edges = _compute_state_edges(dfg, runtime_atoms, state_models)
     if state_edges:
-        all_edges = list(updated.edge_definitions) + state_edges
+        all_edges = list(runtime_edge_definitions(updated)) + state_edges
         updated = updated.model_copy(update={"edge_definitions": all_edges})
 
     return {"proposed_plan": _attach_canonical_ir(dfg, updated)}
@@ -1256,13 +1272,13 @@ async def search_sub_atoms(
     mon = _get_monitor(config)
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="search_sub_atoms")
-    plan = _runtime_compat_plan(state["proposed_plan"])
+    plan = state["proposed_plan"]
 
     if deps.faiss_index is None:
         return {"proposed_plan": plan}
 
     sub_refs: list[SubAtomRef] = []
-    for atom in plan.macro_atoms:
+    for atom in runtime_macro_atoms(plan):
         results = deps.faiss_index.search_by_embedding(atom.name, k=3)
         for decl, score in results:
             if score > 0.5:
@@ -2299,7 +2315,7 @@ async def decompose_complex_atoms(
     ir = canonical_plan.canonical_ir
     if ir is None:
         return {"validated_plan": validated}
-    runtime_plan = _runtime_compat_plan(canonical_plan)
+    runtime_atoms = runtime_macro_atoms(canonical_plan)
 
     planning_graph = _build_planning_graph(ir, dfg, line_threshold)
     canonical_plan = _attach_planning_graph(canonical_plan, planning_graph)
@@ -2311,9 +2327,9 @@ async def decompose_complex_atoms(
 
     parallelism = max(1, deps.parallelism)
     operations_by_id = {operation.operation_id: operation for operation in ir.operations}
-    if parallelism <= 1 or len(runtime_plan.macro_atoms) <= 1:
+    if parallelism <= 1 or len(runtime_atoms) <= 1:
         decomposed_atoms: list[MacroAtomSpec] = []
-        for atom in runtime_plan.macro_atoms:
+        for atom in runtime_atoms:
             result = await _decompose_single_atom(
                 atom,
                 operations_by_id.get(_snake_case_id(atom.name)),
@@ -2350,7 +2366,7 @@ async def decompose_complex_atoms(
                 )
 
         decomposed_atoms = list(
-            await asyncio.gather(*[_run(a) for a in runtime_plan.macro_atoms])
+            await asyncio.gather(*[_run(a) for a in runtime_atoms])
         )
 
     new_plan = canonical_plan.model_copy(
@@ -2413,7 +2429,8 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
     if mon:
         mon.heartbeat(phase="phase2_chunk", step="abstract_atoms")
     validated = state["validated_plan"]
-    plan = _runtime_compat_plan(validated.plan)
+    plan = validated.plan
+    runtime_atoms = runtime_macro_atoms(plan)
 
     async def _abstract_one(atom: MacroAtomSpec) -> MacroAtomSpec:
         user_prompt = CONCEPTUAL_ABSTRACT_USER.format(
@@ -2474,8 +2491,8 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
         )
 
     parallelism = max(1, deps.parallelism)
-    if parallelism <= 1 or len(plan.macro_atoms) <= 1:
-        enriched_atoms = [await _abstract_one(atom) for atom in plan.macro_atoms]
+    if parallelism <= 1 or len(runtime_atoms) <= 1:
+        enriched_atoms = [await _abstract_one(atom) for atom in runtime_atoms]
     else:
         semaphore = asyncio.Semaphore(parallelism)
 
@@ -2483,7 +2500,7 @@ async def abstract_atoms(state: ChunkerState, config: RunnableConfig) -> dict[st
             async with semaphore:
                 return await _abstract_one(atom)
 
-        enriched_atoms = list(await asyncio.gather(*[_run(a) for a in plan.macro_atoms]))
+        enriched_atoms = list(await asyncio.gather(*[_run(a) for a in runtime_atoms]))
 
     new_plan = plan.model_copy(update={"macro_atoms": enriched_atoms})
     new_plan = _attach_canonical_ir(state["raw_dfg"], new_plan)

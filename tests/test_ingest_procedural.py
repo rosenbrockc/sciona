@@ -258,6 +258,29 @@ class TestProceduralBundle:
         assert ("fold_signal", "compute_snr") in edge_pairs
 
     @pytest.mark.asyncio
+    async def test_bundle_uses_canonical_edges_when_legacy_exports_are_empty(self, script_source):
+        dfg = await extract_procedural_data_flow(
+            script_source, pipeline_name="PulsarFold"
+        )
+        plan = build_procedural_plan(dfg, "PulsarFold")
+        plan = plan.model_copy(
+            update={
+                "plan": plan.plan.model_copy(
+                    update={
+                        "macro_atoms": [],
+                        "edge_definitions": [],
+                    }
+                ),
+            }
+        )
+
+        bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
+
+        edge_pairs = {(e.source_id, e.target_id) for e in bundle.cdg.edges}
+        assert ("remove_baseline", "fold_signal") in edge_pairs
+        assert ("fold_signal", "compute_snr") in edge_pairs
+
+    @pytest.mark.asyncio
     async def test_bundle_match_results_count(self, script_source):
         dfg = await extract_procedural_data_flow(
             script_source, pipeline_name="PulsarFold"

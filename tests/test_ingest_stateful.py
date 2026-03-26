@@ -21,6 +21,7 @@ import pytest
 from sciona.architect.models import ConceptType, DependencyEdge, IOSpec
 from sciona.ingester.chunker import _compute_state_edges
 from sciona.ingester.emitter import (
+    emit_ingestion_bundle,
     generate_ghost_witnesses,
     generate_stateful_wrappers,
 )
@@ -692,7 +693,7 @@ class TestStateEdges:
         """CDG should have state edge sample_accumulator -> average_computer."""
         dfg = await extract_data_flow(ra_source, "RollingAverager")
         plan = _make_stateful_plan().plan
-        edges = _compute_state_edges(dfg, plan)
+        edges = _compute_state_edges(dfg, plan.macro_atoms, plan.state_models)
 
         edge_pairs = {(e.source_id, e.target_id) for e in edges}
         assert ("sample_accumulator", "average_computer") in edge_pairs
@@ -702,7 +703,7 @@ class TestStateEdges:
         """State edges should be typed with the state model name."""
         dfg = await extract_data_flow(ra_source, "RollingAverager")
         plan = _make_stateful_plan().plan
-        edges = _compute_state_edges(dfg, plan)
+        edges = _compute_state_edges(dfg, plan.macro_atoms, plan.state_models)
 
         for edge in edges:
             assert edge.source_type == "RollingAveragerState"
@@ -713,7 +714,7 @@ class TestStateEdges:
         """State edges should not include self-loops."""
         dfg = await extract_data_flow(ra_source, "RollingAverager")
         plan = _make_stateful_plan().plan
-        edges = _compute_state_edges(dfg, plan)
+        edges = _compute_state_edges(dfg, plan.macro_atoms, plan.state_models)
 
         for edge in edges:
             assert edge.source_id != edge.target_id
@@ -798,3 +799,23 @@ class TestStatefulBundle:
         bundle = await agent.ingest(ra_source, "RollingAverager")
 
         assert "state: AbstractArray" in bundle.generated_witnesses
+
+    def test_bundle_materializes_runtime_state_from_canonical_plan(self):
+        plan = _make_canonical_stateful_plan()
+        plan = plan.model_copy(
+            update={
+                "plan": plan.plan.model_copy(
+                    update={
+                        "macro_atoms": [],
+                        "state_models": [],
+                    }
+                ),
+            }
+        )
+
+        bundle = emit_ingestion_bundle(plan, "RollingAverager")
+
+        assert "class RollingAveragerState(BaseModel):" in bundle.generated_state_models
+        assert "def average_computer(" in bundle.generated_atoms
+        assert "state: RollingAveragerState" in bundle.generated_atoms
+        assert bundle.cdg.metadata["canonical_semantics"] is True

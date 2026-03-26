@@ -50,7 +50,9 @@ from sciona.ingester.models import (
     StateSlotSpec,
     OperationSpec,
     ValidatedMacroPlan,
-    materialize_legacy_plan_views,
+    runtime_edge_definitions,
+    runtime_macro_atoms,
+    runtime_state_models,
 )
 from sciona.ingester.prompts import (
     DRAFT_OPAQUE_WITNESS_SYSTEM,
@@ -67,13 +69,6 @@ from sciona.types import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _runtime_plan(plan: ValidatedMacroPlan) -> ValidatedMacroPlan:
-    """Return a validated plan with explicit compatibility exports materialized."""
-    return plan.model_copy(update={"plan": materialize_legacy_plan_views(plan.plan)})
-
-
 def _logical_edge_key(edge: DependencyEdge) -> tuple[str, str, str, str]:
     """Deduplicate the same dependency edge across legacy and IR surfaces."""
     return (
@@ -2285,15 +2280,17 @@ def _emit_atom_nodes(
 
 def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
     """Build a CDGExport with root DECOMPOSED node + recursive children."""
-    plan = _runtime_plan(plan)
+    runtime_atoms = runtime_macro_atoms(plan.plan)
+    runtime_state = runtime_state_models(plan.plan)
+    runtime_edges = runtime_edge_definitions(plan.plan)
     source_language = _canonical_ir(plan).source_language if _canonical_ir(plan) else "python"
     canonical_node_meta: dict[str, dict[str, object]] = {}
     if plan.plan.canonical_ir is not None:
-        for atom in plan.plan.macro_atoms:
+        for atom in runtime_atoms:
             node_id = _snake_case(atom.name)
             inputs, outputs, description, type_signature, conceptual_summary = _canonical_node_iospecs(
                 atom,
-                state_models=plan.plan.state_models,
+                state_models=runtime_state,
                 plan=plan,
                 source_language=source_language,
             )
@@ -2308,7 +2305,7 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
 
     unique_top_level: list[MacroAtomSpec] = []
     seen_root_children: set[str] = set()
-    for atom in plan.plan.macro_atoms:
+    for atom in runtime_atoms:
         node_id = _snake_case(atom.name)
         if node_id in seen_root_children:
             continue
@@ -2345,7 +2342,7 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
         )
 
     # Build typed edges from plan
-    for edge_def in plan.plan.edge_definitions:
+    for edge_def in runtime_edges:
         emitted = DependencyEdge(
             source_id=_snake_case(_title_case(edge_def.source_id)),
             target_id=_snake_case(_title_case(edge_def.target_id)),
@@ -2463,10 +2460,9 @@ def _build_type_signature_from_iospecs(
 
 def build_sub_graphs(plan: ValidatedMacroPlan) -> dict[str, CDGExport]:
     """Build zoom-in sub-graphs from sub_atom_refs."""
-    plan = _runtime_plan(plan)
     sub_graphs: dict[str, CDGExport] = {}
 
-    for atom in plan.plan.macro_atoms:
+    for atom in runtime_macro_atoms(plan.plan):
         # Find sub-atom refs relevant to this macro-atom
         relevant_refs = [
             ref for ref in plan.plan.sub_atom_refs if ref.similarity_score > 0.5
@@ -2695,11 +2691,11 @@ def build_procedural_plan(
 
 def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPlan:
     """Ensure conjugate updates follow data->update->distribution edges."""
-    atoms = plan.plan.macro_atoms
+    atoms = runtime_macro_atoms(plan.plan)
     if not atoms:
         return plan
 
-    edges = list(plan.plan.edge_definitions)
+    edges = list(runtime_edge_definitions(plan.plan))
     seen = {
         (
             e.source_id,
@@ -2858,18 +2854,19 @@ def emit_ingestion_bundle(
     source_language: str = "python",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
-    plan = _runtime_plan(plan)
     # Conjugate updates should follow deterministic
     # data->hyperparameter update->distribution construction flow.
     plan = _linearize_conjugate_sequence(plan)
+    runtime_atoms = runtime_macro_atoms(plan.plan)
+    runtime_state = runtime_state_models(plan.plan)
 
     # Check for opaque atoms
-    has_opaque = any(a.is_opaque for a in plan.plan.macro_atoms)
+    has_opaque = any(a.is_opaque for a in runtime_atoms)
 
     # Generate witnesses first (need name mapping for atoms)
     witness_source, witness_names = generate_ghost_witnesses(
-        plan.plan.macro_atoms,
-        state_models=plan.plan.state_models,
+        runtime_atoms,
+        state_models=runtime_state,
         plan=plan,
     )
 
@@ -2880,7 +2877,7 @@ def emit_ingestion_bundle(
             "# Opaque DL boundaries",
             "",
         ]
-        for atom in plan.plan.macro_atoms:
+        for atom in runtime_atoms:
             if atom.is_opaque:
                 opaque_lines.append(_opaque_witness_fallback(atom))
                 opaque_lines.append("")
@@ -2889,13 +2886,13 @@ def emit_ingestion_bundle(
         witness_source += "\n".join(opaque_lines)
 
     # Generate state models
-    state_model_source = generate_state_models(plan.plan.state_models, plan=plan)
+    state_model_source = generate_state_models(runtime_state, plan=plan)
 
     # Generate atom wrappers — stateful if state models exist
-    if plan.plan.state_models:
+    if runtime_state:
         atoms_source = generate_stateful_wrappers(
-            plan.plan.macro_atoms,
-            plan.plan.state_models,
+            runtime_atoms,
+            runtime_state,
             class_name,
             witness_names,
             source_file=source_file,
@@ -2904,8 +2901,8 @@ def emit_ingestion_bundle(
         )
     else:
         atoms_source = generate_atom_wrappers(
-            plan.plan.macro_atoms,
-            plan.plan.state_models,
+            runtime_atoms,
+            runtime_state,
             witness_names,
             source_language=source_language,
             class_name=class_name,
@@ -2915,7 +2912,7 @@ def emit_ingestion_bundle(
 
     # Append FFI binding stubs for non-Python sources
     if source_language != "python":
-        ffi_source = generate_ffi_bindings(plan.plan.macro_atoms, source_language)
+        ffi_source = generate_ffi_bindings(runtime_atoms, source_language)
         atoms_source = atoms_source + "\n\n" + ffi_source
 
     # Build CDG

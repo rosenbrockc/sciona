@@ -470,6 +470,50 @@ def canonical_operation_id(name: str) -> str:
     return name.lower().replace(" ", "_").replace("-", "_")
 
 
+def legacy_macro_atoms_from_ir(
+    ir: IngestIRPlan,
+    existing_macro_atoms: list[MacroAtomSpec],
+) -> list[MacroAtomSpec]:
+    """Build compatibility macro-atoms from canonical IR operations."""
+    by_op_id = {canonical_operation_id(atom.name): atom for atom in existing_macro_atoms}
+    macro_atoms: list[MacroAtomSpec] = []
+    for operation in ir.operations:
+        seed = by_op_id.get(operation.operation_id)
+        macro_atoms.append(
+            MacroAtomSpec(
+                name=seed.name if seed is not None else operation.display_name,
+                description=seed.description if seed is not None else operation.display_name,
+                method_names=[binding.method_name for binding in operation.method_bindings],
+                inputs=(
+                    list(seed.inputs)
+                    if seed is not None and seed.inputs
+                    else list(operation.direct_inputs)
+                ),
+                outputs=(
+                    list(seed.outputs)
+                    if seed is not None and seed.outputs
+                    else legacy_outputs_from_operation(operation)
+                ),
+                config_params=list(seed.config_params) if seed is not None else [],
+                concept_type=seed.concept_type if seed is not None else operation.concept_type,
+                decorators=list(seed.decorators) if seed is not None else [],
+                is_optional=seed.is_optional if seed is not None else operation.is_optional,
+                is_opaque=seed.is_opaque if seed is not None else operation.is_opaque,
+                is_external=seed.is_external if seed is not None else operation.is_external,
+                is_stochastic=seed.is_stochastic if seed is not None else False,
+                requires_rng_key=seed.requires_rng_key if seed is not None else False,
+                requires_autodiff=seed.requires_autodiff if seed is not None else False,
+                autodiff_backend=seed.autodiff_backend if seed is not None else "",
+                conceptual_profile=seed.conceptual_profile if seed is not None else None,
+                children=list(seed.children) if seed is not None else [],
+                sub_edges=list(seed.sub_edges) if seed is not None else [],
+                depth=seed.depth if seed is not None else 0,
+                source_lines=seed.source_lines if seed is not None else 0,
+            )
+        )
+    return macro_atoms
+
+
 def legacy_outputs_from_operation(operation: OperationSpec) -> list[IOSpec]:
     """Lower canonical outputs into the legacy IOSpec view."""
     outputs: list[IOSpec] = []
@@ -523,6 +567,32 @@ def legacy_edges_from_ir(ir: IngestIRPlan) -> list[DependencyEdge]:
     return edges
 
 
+def runtime_macro_atoms(plan: ProposedMacroPlan) -> list[MacroAtomSpec]:
+    """Return macro-atoms for runtime consumers, preferring canonical IR."""
+    ir = plan.canonical_ir
+    if ir is None or not ir.operations:
+        return list(plan.macro_atoms)
+    return legacy_macro_atoms_from_ir(ir, plan.macro_atoms)
+
+
+def runtime_state_models(plan: ProposedMacroPlan) -> list[StateModelSpec]:
+    """Return state models for runtime consumers, preferring canonical IR."""
+    ir = plan.canonical_ir
+    if ir is None or not ir.operations:
+        return list(plan.state_models)
+    return legacy_state_models_from_ir(ir, plan.state_models)
+
+
+def runtime_edge_definitions(plan: ProposedMacroPlan) -> list[DependencyEdge]:
+    """Return dependency edges for runtime consumers, preserving explicit exports."""
+    ir = plan.canonical_ir
+    if ir is None or not ir.operations:
+        return list(plan.edge_definitions)
+    if plan.edge_definitions:
+        return list(plan.edge_definitions)
+    return legacy_edges_from_ir(ir)
+
+
 def materialize_legacy_plan_views(plan: ProposedMacroPlan) -> ProposedMacroPlan:
     """Explicitly materialize compatibility views from canonical runtime state.
 
@@ -535,52 +605,11 @@ def materialize_legacy_plan_views(plan: ProposedMacroPlan) -> ProposedMacroPlan:
     if ir is None or not ir.operations:
         return plan
 
-    by_op_id = {canonical_operation_id(atom.name): atom for atom in plan.macro_atoms}
-    macro_atoms: list[MacroAtomSpec] = []
-    for operation in ir.operations:
-        seed = by_op_id.get(operation.operation_id)
-        macro_atoms.append(
-            MacroAtomSpec(
-                name=seed.name if seed is not None else operation.display_name,
-                description=seed.description if seed is not None else operation.display_name,
-                method_names=[binding.method_name for binding in operation.method_bindings],
-                inputs=(
-                    list(seed.inputs)
-                    if seed is not None and seed.inputs
-                    else list(operation.direct_inputs)
-                ),
-                outputs=(
-                    list(seed.outputs)
-                    if seed is not None and seed.outputs
-                    else legacy_outputs_from_operation(operation)
-                ),
-                config_params=list(seed.config_params) if seed is not None else [],
-                concept_type=seed.concept_type if seed is not None else operation.concept_type,
-                decorators=list(seed.decorators) if seed is not None else [],
-                is_optional=seed.is_optional if seed is not None else operation.is_optional,
-                is_opaque=seed.is_opaque if seed is not None else operation.is_opaque,
-                is_external=seed.is_external if seed is not None else operation.is_external,
-                is_stochastic=seed.is_stochastic if seed is not None else False,
-                requires_rng_key=seed.requires_rng_key if seed is not None else False,
-                requires_autodiff=seed.requires_autodiff if seed is not None else False,
-                autodiff_backend=seed.autodiff_backend if seed is not None else "",
-                conceptual_profile=seed.conceptual_profile if seed is not None else None,
-                children=list(seed.children) if seed is not None else [],
-                sub_edges=list(seed.sub_edges) if seed is not None else [],
-                depth=seed.depth if seed is not None else 0,
-                source_lines=seed.source_lines if seed is not None else 0,
-            )
-        )
-
     return plan.model_copy(
         update={
-            "macro_atoms": macro_atoms,
-            "state_models": legacy_state_models_from_ir(ir, plan.state_models),
-            "edge_definitions": (
-                list(plan.edge_definitions)
-                if plan.edge_definitions
-                else legacy_edges_from_ir(ir)
-            ),
+            "macro_atoms": runtime_macro_atoms(plan),
+            "state_models": runtime_state_models(plan),
+            "edge_definitions": runtime_edge_definitions(plan),
         }
     )
 
