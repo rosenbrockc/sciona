@@ -194,6 +194,19 @@ class TestCppMethods:
         update = next(m for m in dfg.methods if m.name == "update")
         assert "this->value" in update.source_code
 
+    @pytest.mark.asyncio
+    async def test_semantic_signature_and_return_facts(self, extractor, simple_source):
+        dfg = await extractor.extract_class(simple_source, "SimpleProcessor")
+        update = next(m for m in dfg.methods if m.name == "update")
+        get_value = next(m for m in dfg.methods if m.name == "get_value")
+
+        assert [param.name for param in update.signature] == ["input"]
+        assert update.signature[0].annotation == "double"
+        assert update.semantic_role == "fit_or_update"
+        assert get_value.return_facts[0].kind == "attribute"
+        assert get_value.return_facts[0].referenced_attrs == ["value"]
+        assert get_value.semantic_role == "query_or_metadata"
+
 
 # ---------------------------------------------------------------------------
 # Tests: this->field reads/writes

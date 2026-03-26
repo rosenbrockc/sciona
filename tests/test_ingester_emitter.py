@@ -104,6 +104,7 @@ def _make_canonical_plan(
     state_models: list[StateModelSpec] | None = None,
     state_slots: list[StateSlotSpec] | None = None,
     planning_groups: list[PlannedOperationGroup] | None = None,
+    source_language: str = "python",
 ) -> ValidatedMacroPlan:
     return ValidatedMacroPlan(
         plan=ProposedMacroPlan(
@@ -111,6 +112,7 @@ def _make_canonical_plan(
             state_models=state_models or [],
             canonical_ir=IngestIRPlan(
                 subject_name="Estimator",
+                source_language=source_language,
                 operations=[operation],
                 state_slots=state_slots or [],
             ),
@@ -438,6 +440,53 @@ class TestGenerateAtomWrappers:
 
         assert 'raise NotImplementedError("Score: canonical bindings resolved 0 outputs for 1 declared outputs")' in source
         assert "obj.score = " not in source
+
+    def test_non_python_canonical_wrapper_uses_ffi_stub(self):
+        atom = MacroAtomSpec(
+            name="Integrate Step",
+            method_names=["step"],
+            inputs=[IOSpec(name="dt", type_desc="float", constraints="")],
+            outputs=[IOSpec(name="position", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="integrate_step",
+            display_name="Integrate Step",
+            role="transform",
+            method_bindings=[
+                MethodBinding(
+                    method_name="step",
+                    signature=[ParameterFact(name="dt")],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="position",
+                    type_desc="float",
+                    binding_kind="return_value",
+                    source_method="step",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(
+            atom,
+            operation=operation,
+            source_language="rust",
+        )
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            source_language="rust",
+            plan=plan,
+        )
+
+        assert "import ctypes" in source
+        assert "_ret_0 = integrate_step_ffi(dt)" in source
+        assert "return _ret_0" in source
 
 
 # ---------------------------------------------------------------------------

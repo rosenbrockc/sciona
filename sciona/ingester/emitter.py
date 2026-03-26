@@ -704,6 +704,8 @@ def _canonical_output_expression(
     binding: OutputBindingSpec,
     return_vars: dict[str, str],
     fallback_return_var: str,
+    *,
+    source_language: str = "python",
 ) -> tuple[str | None, str | None]:
     if binding.binding_kind == "self_return":
         return None, None
@@ -712,6 +714,11 @@ def _canonical_output_expression(
     if binding.binding_kind in {"return_value", "metadata_object"}:
         return source_var, None
     if binding.binding_kind == "attribute_read":
+        if source_language != "python":
+            return None, (
+                f"attribute_read binding for {binding.output_name} is unsupported for "
+                f"non-python source {source_language!r}"
+            )
         if not binding.source_attr:
             return None, f"attribute_read binding for {binding.output_name} has no source_attr"
         return f"obj.{binding.source_attr}", None
@@ -783,33 +790,52 @@ def _emit_canonical_wrapper_body(
     class_name: str,
     stateful: bool,
     state_type: str | None,
+    source_language: str,
 ) -> None:
     if not bindings:
         raise ValueError(f"{atom.name}: canonical operation has no method bindings")
 
-    lines.append(f"    obj = {class_name}.__new__({class_name})")
-
     wrapper_input_names = {spec.name for spec in wrapper_inputs}
-    for slot_name in required_slots:
-        slot = slot_map.get(slot_name)
-        if slot_name in state_model_fields and stateful:
-            lines.append(f"    obj.{slot_name} = state.{slot_name}")
-            continue
-        if slot is not None and slot.state_kind == "config" and slot_name in wrapper_input_names:
-            lines.append(f"    obj.{slot_name} = {slot_name}")
-            continue
-        raise ValueError(f"{atom.name}: no canonical source for required state slot {slot_name!r}")
+    if source_language == "python":
+        lines.append(f"    obj = {class_name}.__new__({class_name})")
+        for slot_name in required_slots:
+            slot = slot_map.get(slot_name)
+            if slot_name in state_model_fields and stateful:
+                lines.append(f"    obj.{slot_name} = state.{slot_name}")
+                continue
+            if slot is not None and slot.state_kind == "config" and slot_name in wrapper_input_names:
+                lines.append(f"    obj.{slot_name} = {slot_name}")
+                continue
+            raise ValueError(f"{atom.name}: no canonical source for required state slot {slot_name!r}")
+    elif required_slots or stateful:
+        raise ValueError(
+            f"{atom.name}: canonical non-python emission does not support required state"
+        )
 
     return_vars: dict[str, str] = {}
     available_inputs = set(wrapper_input_names)
+    expected_inputs = [spec.name for spec in wrapper_inputs]
     for index, binding in enumerate(bindings):
         call_args, error = _canonical_call_arguments(binding, available_inputs)
         if error is not None:
             raise ValueError(f"{atom.name}: {error}")
         return_var = f"_ret_{index}"
         return_vars[binding.method_name] = return_var
-        call_expr = ", ".join(call_args)
-        lines.append(f"    {return_var} = obj.{binding.method_name}({call_expr})")
+        if source_language == "python":
+            call_expr = ", ".join(call_args)
+            lines.append(f"    {return_var} = obj.{binding.method_name}({call_expr})")
+        else:
+            if len(bindings) > 1:
+                raise ValueError(
+                    f"{atom.name}: canonical non-python emission requires a single binding"
+                )
+            if call_args != expected_inputs:
+                raise ValueError(
+                    f"{atom.name}: canonical non-python emission requires direct ffi-call inputs"
+                )
+            lines.append(
+                f"    {return_var} = {_snake_case(atom.name)}_ffi({', '.join(expected_inputs)})"
+            )
 
     update_slots: list[str] = []
     for effect in effects:
@@ -834,6 +860,7 @@ def _emit_canonical_wrapper_body(
             binding,
             return_vars,
             fallback_return_var,
+            source_language=source_language,
         )
         if error is not None:
             raise ValueError(f"{atom.name}: {error}")
@@ -865,7 +892,7 @@ def _canonical_emission_context(
     plan: ValidatedMacroPlan | None,
     source_language: str,
 ) -> dict[str, object] | None:
-    if source_language != "python" or atom.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES:
+    if atom.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES:
         return None
 
     canonical_ir = _canonical_ir(plan)
@@ -1035,7 +1062,7 @@ def generate_atom_wrappers(
 ) -> str:
     """Generate ``@register_atom`` decorated function wrappers."""
     allowed_names = {spec.model_name for spec in state_models}
-    canonical_ir = _canonical_ir(plan) if source_language == "python" else None
+    canonical_ir = _canonical_ir(plan)
     lines = [
         '"""Auto-generated atom wrappers following the ageoa pattern."""',
         "",
@@ -1221,6 +1248,7 @@ def generate_atom_wrappers(
                         class_name=class_name or "object",
                         stateful=False,
                         state_type=None,
+                        source_language=source_language,
                     )
                 except ValueError as exc:
                     lines.append(f'    raise NotImplementedError("{str(exc).replace(chr(34), chr(39))}")')
@@ -1414,6 +1442,7 @@ def generate_stateful_wrappers(
                     class_name=class_name or "object",
                     stateful=True,
                     state_type=state_type,
+                    source_language=source_language,
                 )
             except ValueError as exc:
                 lines.append(f'    raise NotImplementedError("{str(exc).replace(chr(34), chr(39))}")')

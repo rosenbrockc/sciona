@@ -42,6 +42,24 @@ RUST_ORACLE_PROCEDURAL = textwrap.dedent("""\
 """)
 
 
+RUST_STATEFUL_STRUCT = textwrap.dedent("""\
+    struct Integrator {
+        position: f64,
+        velocity: f64,
+    }
+
+    impl Integrator {
+        fn step(&mut self, dt: f64) {
+            self.position = self.position + self.velocity * dt;
+        }
+
+        fn get_position(&self) -> f64 {
+            return self.position;
+        }
+    }
+""")
+
+
 @pytest.fixture
 def extractor():
     return TreeSitterExtractor(SourceLanguage.RUST)
@@ -58,6 +76,13 @@ def rust_struct_source(tmp_path):
 def rust_proc_source(tmp_path):
     p = tmp_path / "kernel.rs"
     p.write_text(RUST_ORACLE_PROCEDURAL)
+    return str(p)
+
+
+@pytest.fixture
+def rust_stateful_source(tmp_path):
+    p = tmp_path / "integrator.rs"
+    p.write_text(RUST_STATEFUL_STRUCT)
     return str(p)
 
 
@@ -107,3 +132,28 @@ class TestRustOracleSubgraph:
             e.target_id == "run_kernel" and e.output_name == "gradient"
             for e in dfg.inferred_edges
         )
+
+    @pytest.mark.asyncio
+    async def test_oracle_call_facts_are_populated(self, extractor, rust_struct_source):
+        dfg = await extractor.extract_class(rust_struct_source, "Sampler")
+        step = next(m for m in dfg.methods if m.name == "step")
+        assert {fact.resolved_target for fact in step.call_facts} >= {
+            "log_density",
+            "gradient",
+        }
+
+
+class TestRustSemanticFacts:
+    @pytest.mark.asyncio
+    async def test_signature_return_facts_and_roles(self, extractor, rust_stateful_source):
+        dfg = await extractor.extract_class(rust_stateful_source, "Integrator")
+
+        step = next(m for m in dfg.methods if m.name == "step")
+        get_position = next(m for m in dfg.methods if m.name == "get_position")
+
+        assert [param.name for param in step.signature] == ["dt"]
+        assert step.signature[0].annotation == "f64"
+        assert step.semantic_role == "fit_or_update"
+        assert get_position.return_facts[0].kind == "attribute"
+        assert get_position.return_facts[0].referenced_attrs == ["position"]
+        assert get_position.semantic_role == "query_or_metadata"

@@ -220,6 +220,65 @@ def _make_semantic_ir_dfg() -> RawDataFlowGraph:
     )
 
 
+def _make_non_python_semantic_ir_dfg() -> RawDataFlowGraph:
+    prov = FactProvenance(
+        rule_id="test",
+        span=SourceSpan(file_path="integrator.rs", line_start=1, line_end=1),
+    )
+    return RawDataFlowGraph(
+        class_name="Integrator",
+        source_language="rust",
+        methods=[
+            MethodFact(
+                name="step",
+                params=["dt"],
+                reads=["velocity"],
+                writes=["position"],
+                semantic_role="fit_or_update",
+                signature=[ParameterFact(name="dt", annotation="f64", provenance=prov)],
+                provenance=[prov],
+            ),
+            MethodFact(
+                name="get_position",
+                params=[],
+                reads=["position"],
+                semantic_role="query_or_metadata",
+                return_facts=[
+                    ReturnFact(
+                        kind="attribute",
+                        referenced_attrs=["position"],
+                        provenance=prov,
+                    )
+                ],
+                provenance=[prov],
+            ),
+        ],
+        all_attributes={
+            "velocity": ["read:step"],
+            "position": ["write:step", "read:get_position"],
+        },
+        attribute_facts=[
+            AttributeSemanticFact(
+                attr_name="position",
+                first_seen_in="step",
+                read_methods=["get_position"],
+                write_methods=["step"],
+                is_fitted=True,
+                provenances=[prov],
+            ),
+            AttributeSemanticFact(
+                attr_name="velocity",
+                first_seen_in="step",
+                read_methods=["step"],
+                is_config=True,
+                provenances=[prov],
+            ),
+        ],
+        config_attributes=["velocity"],
+        fitted_attributes=["position"],
+    )
+
+
 def _make_llm_response(method_names: list[str] | None = None) -> str:
     """Build a valid LLM JSON response for propose_macro_atoms."""
     if method_names is None:
@@ -563,6 +622,48 @@ class TestCriticValidate:
         assert predict_atom.outputs[0].name == "result"
         assert metadata_atom.outputs[0].name == "result"
         assert query_atom.outputs[0].name == "calibrators"
+
+    @pytest.mark.asyncio
+    async def test_builds_canonical_ir_for_non_python_semantic_facts(self):
+        dfg = _make_non_python_semantic_ir_dfg()
+        plan = ProposedMacroPlan(
+            macro_atoms=[
+                MacroAtomSpec(
+                    name="Integrator Step",
+                    method_names=["step"],
+                    inputs=[],
+                    outputs=[],
+                ),
+                MacroAtomSpec(
+                    name="Get Position",
+                    method_names=["get_position"],
+                    inputs=[],
+                    outputs=[],
+                ),
+            ]
+        )
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": plan,
+            "validated_plan": ValidatedMacroPlan(plan=ProposedMacroPlan()),
+            "critique_passed": False,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": ChunkerDeps(llm=AsyncMock())}}
+
+        result = await critic_validate(state, config)
+
+        assert result["critique_passed"] is True
+        ir = result["validated_plan"].plan.canonical_ir
+        assert ir is not None
+        assert ir.source_language == "rust"
+        operation_by_id = {op.operation_id: op for op in ir.operations}
+        assert operation_by_id["integrator_step"].role == "state_transition"
+        assert operation_by_id["get_position"].role == "query"
+        assert operation_by_id["get_position"].emitted_outputs[0].binding_kind == "attribute_read"
 
 
 # ---------------------------------------------------------------------------

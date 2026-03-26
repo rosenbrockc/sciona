@@ -15,7 +15,18 @@ from tree_sitter_language_pack import get_parser
 
 from sciona.architect.models import DependencyEdge
 from sciona.ingester.base_extractor import SourceLanguage
-from sciona.ingester.models import MethodFact, OracleEdge, RawDataFlowGraph
+from sciona.ingester.models import (
+    AttributeSemanticFact,
+    CallFact,
+    FactProvenance,
+    MethodFact,
+    OracleEdge,
+    ParameterFact,
+    RawDataFlowGraph,
+    ReturnFact,
+    SourceSpan,
+    UnknownFact,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -42,6 +53,345 @@ def _find_descendants(node: TSNode, type_name: str) -> list[TSNode]:
             result.append(n)
         stack.extend(n.children)
     return result
+
+
+def _ts_source_span(source_path: str, node: TSNode | None) -> SourceSpan:
+    if node is None:
+        return SourceSpan(file_path=source_path)
+    return SourceSpan(
+        file_path=source_path,
+        line_start=int(node.start_point[0]) + 1,
+        line_end=int(node.end_point[0]) + 1,
+        col_start=int(node.start_point[1]),
+        col_end=int(node.end_point[1]),
+    )
+
+
+def _ts_provenance(
+    source_path: str,
+    node: TSNode | None,
+    *,
+    rule_id: str,
+    evidence: str = "",
+) -> FactProvenance:
+    return FactProvenance(
+        rule_id=rule_id,
+        span=_ts_source_span(source_path, node),
+        evidence=evidence,
+    )
+
+
+def _signature_from_param_names(
+    source_path: str,
+    params: list[str],
+    *,
+    annotation_by_name: dict[str, str] | None = None,
+    rule_id: str,
+    param_nodes: dict[str, TSNode] | None = None,
+) -> list[ParameterFact]:
+    annotation_by_name = annotation_by_name or {}
+    param_nodes = param_nodes or {}
+    signature: list[ParameterFact] = []
+    for name in params:
+        signature.append(
+            ParameterFact(
+                name=name,
+                kind="positional_or_keyword",
+                annotation=annotation_by_name.get(name, ""),
+                provenance=_ts_provenance(
+                    source_path,
+                    param_nodes.get(name),
+                    rule_id=rule_id,
+                    evidence=name,
+                ),
+            )
+        )
+    return signature
+
+
+def _extract_call_facts(
+    source_path: str,
+    fn_node: TSNode,
+) -> list[CallFact]:
+    call_facts: list[CallFact] = []
+    for call_node in _find_descendants(fn_node, "call_expression"):
+        if not call_node.children:
+            continue
+        func_expr = call_node.children[0]
+        callee_expression = _node_text(func_expr).strip()
+        resolved_target = ""
+        if func_expr.type == "identifier":
+            resolved_target = _node_text(func_expr).strip()
+        elif func_expr.type in {"field_expression", "field_identifier"}:
+            fields = [
+                _node_text(child).strip()
+                for child in _find_descendants(func_expr, "field_identifier")
+            ]
+            identifiers = [
+                _node_text(child).strip()
+                for child in _find_descendants(func_expr, "identifier")
+            ]
+            resolved_target = (fields or identifiers or [""])[-1]
+        elif func_expr.type == "scoped_identifier":
+            identifiers = [
+                _node_text(child).strip()
+                for child in _find_descendants(func_expr, "identifier")
+            ]
+            if identifiers:
+                resolved_target = identifiers[-1]
+        call_text = _node_text(call_node).strip()
+        call_match = re.search(r"([A-Za-z_]\w*)\s*\(", call_text)
+        if call_match:
+            resolved_target = call_match.group(1)
+        if not resolved_target and callee_expression:
+            normalized = callee_expression.replace("->", ".").replace("::", ".")
+            parts = [part for part in re.split(r"[.\s]+", normalized) if part]
+            if parts:
+                resolved_target = parts[-1]
+
+        args: list[str] = []
+        keywords: list[str] = []
+        for child in call_node.children[1:]:
+            if child.type not in {"arguments", "argument_list"}:
+                continue
+            for arg in child.children:
+                if arg.type in {",", "(", ")"}:
+                    continue
+                text = _node_text(arg).strip()
+                if not text:
+                    continue
+                if "=" in text and child.type == "argument_list":
+                    keywords.append(text)
+                else:
+                    args.append(text)
+
+        call_facts.append(
+            CallFact(
+                callee_expression=callee_expression,
+                resolved_target=resolved_target,
+                args=args,
+                keywords=keywords,
+                provenance=_ts_provenance(
+                    source_path,
+                    call_node,
+                    rule_id="treesitter.call",
+                    evidence=callee_expression,
+                ),
+            )
+        )
+    return call_facts
+
+
+def _strip_return_syntax(expr: str) -> str:
+    text = expr.strip().rstrip(";").strip()
+    if text.startswith("return "):
+        text = text[len("return "):].strip()
+    return text.strip()
+
+
+def _tuple_attr_refs(expr: str) -> list[str]:
+    refs: list[str] = []
+    for match in re.finditer(r"(?:this->|self\.|[A-Za-z_]\w*\.)\s*([A-Za-z_]\w*)", expr):
+        refs.append(match.group(1))
+    return refs
+
+
+def _return_facts_for_node(
+    source_path: str,
+    fn_node: TSNode,
+    *,
+    self_names: set[str],
+    param_names: set[str],
+    known_attrs: set[str],
+) -> tuple[list[ReturnFact], list[UnknownFact]]:
+    return_facts: list[ReturnFact] = []
+    unknowns: list[UnknownFact] = []
+    return_nodes = _find_descendants(fn_node, "return_statement") + _find_descendants(
+        fn_node, "return_expression"
+    )
+    for return_node in return_nodes:
+        expr = _strip_return_syntax(_node_text(return_node))
+        provenance = _ts_provenance(
+            source_path,
+            return_node,
+            rule_id="treesitter.return",
+            evidence=expr,
+        )
+        if not expr:
+            return_facts.append(ReturnFact(kind="none", expression="", provenance=provenance))
+            continue
+        if expr in self_names or expr == "self":
+            return_facts.append(ReturnFact(kind="self", expression=expr, provenance=provenance))
+            continue
+        attr_match = re.fullmatch(
+            r"(?:this->|self\.|([A-Za-z_]\w*)\.)\s*([A-Za-z_]\w*)",
+            expr,
+        )
+        if attr_match:
+            owner = attr_match.group(1)
+            attr_name = attr_match.group(2)
+            if owner is None or owner in self_names:
+                return_facts.append(
+                    ReturnFact(
+                        kind="attribute",
+                        expression=expr,
+                        referenced_attrs=[attr_name],
+                        provenance=provenance,
+                    )
+                )
+                continue
+        if expr in param_names:
+            return_facts.append(
+                ReturnFact(kind="parameter", expression=expr, provenance=provenance)
+            )
+            continue
+        if expr.startswith("(") and expr.endswith(")") and "," in expr:
+            refs = [attr for attr in _tuple_attr_refs(expr) if attr in known_attrs]
+            return_facts.append(
+                ReturnFact(
+                    kind="tuple",
+                    expression=expr,
+                    referenced_attrs=refs,
+                    provenance=provenance,
+                )
+            )
+            continue
+        if re.match(r"^[A-Za-z_][\w:!.<>]*\s*\(", expr):
+            return_facts.append(
+                ReturnFact(kind="call_result", expression=expr, provenance=provenance)
+            )
+            continue
+        if re.match(r"^(?:[-+]?\d+(?:\.\d+)?|true|false|\".*\"|'.*')$", expr):
+            return_facts.append(
+                ReturnFact(kind="constant", expression=expr, provenance=provenance)
+            )
+            continue
+        return_facts.append(ReturnFact(kind="unknown", expression=expr, provenance=provenance))
+        unknowns.append(
+            UnknownFact(
+                reason="unclassified_return",
+                detail=expr,
+                provenance=provenance,
+            )
+        )
+    return return_facts, unknowns
+
+
+def _classify_method_role(
+    method_name: str,
+    *,
+    reads: list[str],
+    writes: list[str],
+    return_facts: list[ReturnFact],
+    is_oracle: bool = False,
+    is_conjugate: bool = False,
+) -> str:
+    lower = method_name.lower()
+    if method_name == "__init__":
+        return "constructor"
+    if lower.startswith("_"):
+        return "helper"
+    if is_oracle:
+        if writes:
+            return "fit_or_update"
+        return "query_or_metadata"
+    if is_conjugate or any(token in lower for token in ("fit", "update", "train", "step")):
+        if writes:
+            return "fit_or_update"
+    if any(token in lower for token in ("predict", "transform", "decode", "encode")):
+        return "predict_or_transform"
+    if "score" in lower or "evaluate" in lower:
+        return "score_or_evaluate"
+    if lower.startswith("get_") or lower.startswith("is_") or lower.startswith("has_"):
+        return "query_or_metadata"
+    if "metadata" in lower or "routing" in lower or "tag" in lower:
+        return "query_or_metadata"
+    if lower.startswith("set_") or lower.endswith("!"):
+        return "fit_or_update" if writes else "query_or_metadata"
+    if return_facts and not writes:
+        return "query_or_metadata"
+    if reads or writes:
+        return "unknown"
+    return "helper"
+
+
+def _compute_fitted_attrs(methods: list[MethodFact]) -> set[str]:
+    attr_writers: dict[str, set[str]] = {}
+    attr_readers: dict[str, set[str]] = {}
+    roles = {mf.name: mf.semantic_role for mf in methods}
+    for mf in methods:
+        for attr in mf.writes:
+            attr_writers.setdefault(attr, set()).add(mf.name)
+        for attr in mf.reads:
+            attr_readers.setdefault(attr, set()).add(mf.name)
+
+    fitted: set[str] = set()
+    reader_roles = {"predict_or_transform", "score_or_evaluate", "query_or_metadata"}
+    for attr, writers in attr_writers.items():
+        non_init_writers = {name for name in writers if name != "__init__"}
+        if not non_init_writers:
+            continue
+        if any(roles.get(name) == "fit_or_update" for name in non_init_writers):
+            fitted.add(attr)
+            continue
+        if any(roles.get(name) in reader_roles for name in attr_readers.get(attr, set())):
+            fitted.add(attr)
+    return fitted
+
+
+def _build_attribute_semantics(
+    methods: list[MethodFact],
+    source_path: str,
+) -> tuple[list[AttributeSemanticFact], list[str], list[str], list[str]]:
+    facts: list[AttributeSemanticFact] = []
+    all_attrs = sorted({attr for method in methods for attr in [*method.reads, *method.writes]})
+    fitted = _compute_fitted_attrs(methods)
+    config = {
+        attr
+        for method in methods
+        if method.semantic_role == "constructor"
+        for attr in method.writes
+    }
+    role_by_method = {method.name: method.semantic_role for method in methods}
+    for attr in all_attrs:
+        read_methods = sorted({method.name for method in methods if attr in method.reads})
+        write_methods = sorted({method.name for method in methods if attr in method.writes})
+        first_seen = write_methods[0] if write_methods else (read_methods[0] if read_methods else "")
+        is_config = attr in config
+        is_fitted = attr in fitted
+        is_derived = bool(write_methods) and not is_config and not is_fitted
+        query_methods = {
+            name
+            for name in set(read_methods) | set(write_methods)
+            if role_by_method.get(name) == "query_or_metadata"
+        }
+        facts.append(
+            AttributeSemanticFact(
+                attr_name=attr,
+                first_seen_in=first_seen,
+                read_methods=read_methods,
+                write_methods=write_methods,
+                is_config=is_config,
+                is_fitted=is_fitted,
+                is_derived=is_derived,
+                is_query_only=bool(query_methods) and set(write_methods) <= query_methods,
+                provenances=[
+                    _ts_provenance(
+                        source_path,
+                        None,
+                        rule_id="treesitter.attr_inventory",
+                        evidence=f"{attr}:{first_seen}",
+                    )
+                ],
+            )
+        )
+    return facts, sorted(config), sorted(fitted), sorted(
+        {fact.attr_name for fact in facts if fact.is_derived}
+    )
+
+
+def _semantic_unknowns(methods: list[MethodFact]) -> list[UnknownFact]:
+    return [unknown for method in methods for unknown in method.unknown_facts]
 
 
 # ---------------------------------------------------------------------------
@@ -394,9 +744,10 @@ def _add_edge_if_new(
 class _CppClassVisitor:
     """Extract class metadata from a ``class_specifier`` tree-sitter node."""
 
-    def __init__(self, class_node: TSNode, source_code: str) -> None:
+    def __init__(self, class_node: TSNode, source_code: str, source_path: str) -> None:
         self.class_node = class_node
         self.source_code = source_code
+        self.source_path = source_path
         self.source_lines = source_code.splitlines()
         self.class_name = ""
         self.base_classes: list[str] = []
@@ -470,6 +821,8 @@ class _CppClassVisitor:
         """Extract a method definition and track field accesses in its body."""
         method_name = ""
         params: list[str] = []
+        annotation_by_name: dict[str, str] = {}
+        param_nodes: dict[str, TSNode] = {}
         return_type = ""
 
         # Find the function declarator for name + params
@@ -479,7 +832,7 @@ class _CppClassVisitor:
                     if fc.type in ("field_identifier", "identifier"):
                         method_name = _node_text(fc)
                     elif fc.type == "parameter_list":
-                        params = self._extract_params(fc)
+                        params, annotation_by_name, param_nodes = self._extract_params(fc)
             elif child.type in (
                 "primitive_type",
                 "type_identifier",
@@ -522,28 +875,76 @@ class _CppClassVisitor:
             self._walk_body_accesses(body, reads, writes, calls)
 
         is_constructor = method_name == self.class_name
+        canonical_name = "__init__" if is_constructor else method_name
+        signature = _signature_from_param_names(
+            self.source_path,
+            params,
+            annotation_by_name=annotation_by_name,
+            rule_id="treesitter.cpp.signature",
+            param_nodes=param_nodes,
+        )
+        return_facts, unknowns = _return_facts_for_node(
+            self.source_path,
+            node,
+            self_names={"this"},
+            param_names=set(params),
+            known_attrs=self.known_fields,
+        )
 
         self.methods.append(
             MethodFact(
-                name="__init__" if is_constructor else method_name,
+                name=canonical_name,
                 params=params,
                 return_type=return_type,
                 reads=sorted(reads),
                 writes=sorted(writes),
                 calls=sorted(calls),
                 source_code=method_source,
+                signature=signature,
+                return_facts=return_facts,
+                call_facts=_extract_call_facts(self.source_path, node),
+                unknown_facts=unknowns,
+                semantic_role=_classify_method_role(
+                    canonical_name,
+                    reads=sorted(reads),
+                    writes=sorted(writes),
+                    return_facts=return_facts,
+                ),
+                provenance=[
+                    _ts_provenance(
+                        self.source_path,
+                        node,
+                        rule_id="treesitter.cpp.method",
+                        evidence=canonical_name,
+                    )
+                ],
             )
         )
 
-    def _extract_params(self, param_list: TSNode) -> list[str]:
+    def _extract_params(
+        self,
+        param_list: TSNode,
+    ) -> tuple[list[str], dict[str, str], dict[str, TSNode]]:
         """Extract parameter names from a parameter_list node."""
         params: list[str] = []
+        annotations: dict[str, str] = {}
+        param_nodes: dict[str, TSNode] = {}
         for child in param_list.children:
             if child.type == "parameter_declaration":
+                name = ""
+                annotation_parts: list[str] = []
                 for pc in child.children:
                     if pc.type == "identifier":
-                        params.append(_node_text(pc))
-        return params
+                        name = _node_text(pc)
+                        params.append(name)
+                        param_nodes[name] = pc
+                    elif pc.type not in {",", "(", ")"}:
+                        text = _node_text(pc).strip()
+                        if text and text != name:
+                            annotation_parts.append(text)
+                if name:
+                    annotations[name] = " ".join(annotation_parts).strip()
+        return params, annotations, param_nodes
 
     def _walk_body_accesses(
         self,
@@ -796,11 +1197,13 @@ class _JuliaFunctionVisitor:
         self,
         func_node: TSNode,
         source_code: str,
+        source_path: str,
         struct_names: set[str],
         struct_fields: dict[str, set[str]],
     ) -> None:
         self.func_node = func_node
         self.source_code = source_code
+        self.source_path = source_path
         self.source_lines = source_code.splitlines()
         self.struct_names = struct_names
         self.struct_fields = struct_fields
@@ -808,6 +1211,7 @@ class _JuliaFunctionVisitor:
         self.func_name = ""
         self.params: list[str] = []
         self.param_types: dict[str, str] = {}
+        self.param_nodes: dict[str, TSNode] = {}
         self.return_type = ""
         self.associated_struct: str | None = None
         self.self_param_name: str | None = None
@@ -884,6 +1288,7 @@ class _JuliaFunctionVisitor:
 
                 if param_name:
                     self.params.append(param_name)
+                    self.param_nodes[param_name] = child
                     if param_type:
                         self.param_types[param_name] = param_type
                     normalized_type = _normalize_type_name(param_type)
@@ -893,7 +1298,9 @@ class _JuliaFunctionVisitor:
                         self.self_param_name = param_name
                 first_param = False
             elif child.type == "identifier":
-                self.params.append(_node_text(child))
+                name = _node_text(child)
+                self.params.append(name)
+                self.param_nodes[name] = child
                 first_param = False
 
     def _walk_body(self, node: TSNode) -> None:
@@ -1019,7 +1426,11 @@ def _scan_cpp_oracle_edges(root: TSNode, source_code: str) -> list[OracleEdge]:
     return oracle_edges
 
 
-def _extract_cpp_functions(root: TSNode, source_code: str) -> list[MethodFact]:
+def _extract_cpp_functions(
+    root: TSNode,
+    source_code: str,
+    source_path: str,
+) -> list[MethodFact]:
     """Extract top-level function definitions from C++ source."""
     source_lines = source_code.splitlines()
     methods: list[MethodFact] = []
@@ -1053,12 +1464,42 @@ def _extract_cpp_functions(root: TSNode, source_code: str) -> list[MethodFact]:
             source = "\n".join(source_lines[start:end])
 
             if func_name:
+                signature = _signature_from_param_names(
+                    source_path,
+                    params,
+                    rule_id="treesitter.cpp.signature",
+                )
+                return_facts, unknowns = _return_facts_for_node(
+                    source_path,
+                    child,
+                    self_names=set(),
+                    param_names=set(params),
+                    known_attrs=set(),
+                )
                 methods.append(
                     MethodFact(
                         name=func_name,
                         params=params,
                         return_type=return_type,
                         source_code=source,
+                        signature=signature,
+                        return_facts=return_facts,
+                        call_facts=_extract_call_facts(source_path, child),
+                        unknown_facts=unknowns,
+                        semantic_role=_classify_method_role(
+                            func_name,
+                            reads=[],
+                            writes=[],
+                            return_facts=return_facts,
+                        ),
+                        provenance=[
+                            _ts_provenance(
+                                source_path,
+                                child,
+                                rule_id="treesitter.cpp.function",
+                                evidence=func_name,
+                            )
+                        ],
                     )
                 )
 
@@ -1177,12 +1618,15 @@ _CONJUGATE_TRAIT_BOUNDS: frozenset[str] = frozenset(
 
 
 class _RustFunctionVisitor:
-    def __init__(self, node: TSNode, source_code: str) -> None:
+    def __init__(self, node: TSNode, source_code: str, source_path: str) -> None:
         self.node = node
         self.source_code = source_code
+        self.source_path = source_path
         self.source_lines = source_code.splitlines()
         self.func_name = ""
         self.params: list[str] = []
+        self.param_types: dict[str, str] = {}
+        self.param_nodes: dict[str, TSNode] = {}
         self.return_type = ""
         self.reads: set[str] = set()
         self.writes: set[str] = set()
@@ -1195,11 +1639,23 @@ class _RustFunctionVisitor:
                 self.func_name = _node_text(child)
             elif child.type == "parameters":
                 for param in _find_children(child, "parameter"):
+                    param_name = ""
+                    annotation = ""
                     for pc in param.children:
                         if pc.type == "identifier":
-                            self.params.append(_node_text(pc))
+                            param_name = _node_text(pc)
+                            self.params.append(param_name)
+                            self.param_nodes[param_name] = pc
+                        elif pc.type not in {",", "(", ")"}:
+                            text = _node_text(pc).strip()
+                            if text and text != param_name:
+                                annotation = text
+                    if param_name and annotation:
+                        self.param_types[param_name] = annotation
             elif child.type == "type_identifier":  # Return type
                 self.return_type = _node_text(child)
+            else:
+                self._walk_body(child)
 
     def detect_trait_bounds(self, impl_node: TSNode) -> None:
         """Scan the parent impl block for trait bounds on the impl or where clause."""
@@ -1213,9 +1669,58 @@ class _RustFunctionVisitor:
                 self.is_conjugate = True
                 break
 
+    def _walk_body(self, node: TSNode) -> None:
+        if node.type == "field_expression":
+            self._check_field_access(node)
+        for child in node.children:
+            self._walk_body(child)
+
+    def _check_field_access(self, node: TSNode) -> None:
+        children = [child for child in node.children if child.type not in {".", "->"}]
+        if len(children) < 2:
+            return
+        obj_node = children[0]
+        field_node = children[-1]
+        if obj_node.type not in {"identifier", "self"}:
+            return
+        if _node_text(obj_node) != "self":
+            return
+        field_name = _node_text(field_node).strip()
+        if not field_name:
+            return
+        parent = node.parent
+        if parent is not None and parent.type in {"assignment_expression", "assignment"}:
+            lhs = parent.children[0] if parent.children else None
+            if lhs == node:
+                self.writes.add(field_name)
+                return
+        self.reads.add(field_name)
+
     def get_fact(self) -> MethodFact:
         start = self.node.start_point[0]
         end = self.node.end_point[0] + 1
+        signature = _signature_from_param_names(
+            self.source_path,
+            self.params,
+            annotation_by_name=self.param_types,
+            rule_id="treesitter.rust.signature",
+            param_nodes=self.param_nodes,
+        )
+        return_facts, unknowns = _return_facts_for_node(
+            self.source_path,
+            self.node,
+            self_names={"self"},
+            param_names=set(self.params),
+            known_attrs=set(self.reads) | set(self.writes),
+        )
+        semantic_role = _classify_method_role(
+            self.func_name,
+            reads=sorted(self.reads),
+            writes=sorted(self.writes),
+            return_facts=return_facts,
+            is_oracle=self.is_oracle,
+            is_conjugate=self.is_conjugate,
+        )
         return MethodFact(
             name=self.func_name,
             params=self.params,
@@ -1223,6 +1728,19 @@ class _RustFunctionVisitor:
             reads=sorted(self.reads),
             writes=sorted(self.writes),
             source_code="\n".join(self.source_lines[start:end]),
+            signature=signature,
+            return_facts=return_facts,
+            call_facts=_extract_call_facts(self.source_path, self.node),
+            unknown_facts=unknowns,
+            semantic_role=semantic_role,
+            provenance=[
+                _ts_provenance(
+                    self.source_path,
+                    self.node,
+                    rule_id="treesitter.rust.method",
+                    evidence=self.func_name,
+                )
+            ],
             is_oracle=self.is_oracle,
             is_conjugate=self.is_conjugate,
         )
@@ -1571,7 +2089,7 @@ class TreeSitterExtractor:
             if fn_node is None:
                 continue
             mf, sub_oracle, sub_inferred = self._build_method_fact_for_function(
-                fn_node, source_code, source_lines, fname
+                fn_node, source_code, str(path), source_lines, fname
             )
             methods.append(mf)
             oracle_edges.extend(sub_oracle)
@@ -1597,6 +2115,9 @@ class TreeSitterExtractor:
         requires_logdet_jacobian = False
         if self.language == SourceLanguage.JULIA:
             requires_logdet_jacobian = _scan_julia_bijectors(source_code)
+        attribute_facts, config_attributes, fitted_attributes, derived_attributes = (
+            _build_attribute_semantics(methods, str(path))
+        )
 
         return RawDataFlowGraph(
             class_name=function_name,
@@ -1607,6 +2128,11 @@ class TreeSitterExtractor:
             inferred_edges=inferred_edges,
             oracle_edges=oracle_edges,
             source_language=self.language.value,
+            attribute_facts=attribute_facts,
+            config_attributes=config_attributes,
+            fitted_attributes=fitted_attributes,
+            derived_attributes=derived_attributes,
+            semantic_unknowns=_semantic_unknowns(methods),
             requires_logdet_jacobian=requires_logdet_jacobian,
         )
 
@@ -1671,6 +2197,7 @@ class TreeSitterExtractor:
         self,
         fn_node: TSNode,
         source_code: str,
+        source_path: str,
         source_lines: list[str],
         func_name: str,
     ) -> tuple[MethodFact, list[OracleEdge], list[DependencyEdge]]:
@@ -1686,7 +2213,7 @@ class TreeSitterExtractor:
         callees = sorted(_extract_callees_from_body(fn_node))
 
         if self.language == SourceLanguage.RUST:
-            fv = _RustFunctionVisitor(fn_node, source_code)
+            fv = _RustFunctionVisitor(fn_node, source_code, source_path)
             fv.visit()
 
             parent = fn_node.parent
@@ -1724,7 +2251,7 @@ class TreeSitterExtractor:
 
         elif self.language == SourceLanguage.JULIA:
             struct_names: set[str] = set()
-            fv = _JuliaFunctionVisitor(fn_node, source_code, struct_names, {})
+            fv = _JuliaFunctionVisitor(fn_node, source_code, source_path, struct_names, {})
             fv.visit()
 
             dispatch_fn_keys = self._julia_dispatch_function_keys(
@@ -1743,14 +2270,48 @@ class TreeSitterExtractor:
                 oracle_edges.extend(sub_o)
                 inferred_edges.extend(sub_i)
 
+            params = list(fv.params)
+            signature = _signature_from_param_names(
+                source_path,
+                params,
+                annotation_by_name=fv.param_types,
+                rule_id="treesitter.julia.signature",
+                param_nodes=fv.param_nodes,
+            )
+            return_facts, unknowns = _return_facts_for_node(
+                source_path,
+                fn_node,
+                self_names={fv.self_param_name} if fv.self_param_name else set(),
+                param_names=set(params),
+                known_attrs=set(fv.reads) | set(fv.writes),
+            )
             fact = MethodFact(
                 name=fv.func_name or func_name,
-                params=fv.params,
+                params=params,
                 return_type=fv.return_type,
                 reads=sorted(set(fv.reads) | state_vars),
                 writes=sorted(set(fv.writes) | oracle_outputs),
                 calls=callees,
                 source_code=source,
+                signature=signature,
+                return_facts=return_facts,
+                call_facts=_extract_call_facts(source_path, fn_node),
+                unknown_facts=unknowns,
+                semantic_role=_classify_method_role(
+                    fv.func_name or func_name,
+                    reads=sorted(set(fv.reads) | state_vars),
+                    writes=sorted(set(fv.writes) | oracle_outputs),
+                    return_facts=return_facts,
+                    is_oracle=is_oracle,
+                ),
+                provenance=[
+                    _ts_provenance(
+                        source_path,
+                        fn_node,
+                        rule_id="treesitter.julia.function",
+                        evidence=fv.func_name or func_name,
+                    )
+                ],
                 is_oracle=is_oracle,
             )
             return fact, oracle_edges, inferred_edges
@@ -1773,6 +2334,8 @@ class TreeSitterExtractor:
         else:  # C++
             extracted_name = ""
             params: list[str] = []
+            param_annotations: dict[str, str] = {}
+            param_nodes: dict[str, TSNode] = {}
             return_type = ""
 
             for fc in fn_node.children:
@@ -1783,9 +2346,19 @@ class TreeSitterExtractor:
                         elif fcc.type == "parameter_list":
                             for pc in fcc.children:
                                 if pc.type == "parameter_declaration":
+                                    param_name = ""
+                                    annotation_parts: list[str] = []
                                     for pcc in pc.children:
                                         if pcc.type == "identifier":
-                                            params.append(_node_text(pcc))
+                                            param_name = _node_text(pcc)
+                                            params.append(param_name)
+                                            param_nodes[param_name] = pcc
+                                        elif pcc.type not in {",", "(", ")"}:
+                                            text = _node_text(pcc).strip()
+                                            if text and text != param_name:
+                                                annotation_parts.append(text)
+                                    if param_name:
+                                        param_annotations[param_name] = " ".join(annotation_parts).strip()
                 elif fc.type in (
                     "primitive_type",
                     "type_identifier",
@@ -1794,6 +2367,20 @@ class TreeSitterExtractor:
                     return_type = _node_text(fc)
 
             oracle_edges = _scan_cpp_oracle_edges(fn_node, source_code)
+            signature = _signature_from_param_names(
+                source_path,
+                params,
+                annotation_by_name=param_annotations,
+                rule_id="treesitter.cpp.signature",
+                param_nodes=param_nodes,
+            )
+            return_facts, unknowns = _return_facts_for_node(
+                source_path,
+                fn_node,
+                self_names=set(),
+                param_names=set(params),
+                known_attrs=set(),
+            )
 
             fact = MethodFact(
                 name=extracted_name or func_name,
@@ -1801,6 +2388,24 @@ class TreeSitterExtractor:
                 return_type=return_type,
                 calls=callees,
                 source_code=source,
+                signature=signature,
+                return_facts=return_facts,
+                call_facts=_extract_call_facts(source_path, fn_node),
+                unknown_facts=unknowns,
+                semantic_role=_classify_method_role(
+                    extracted_name or func_name,
+                    reads=[],
+                    writes=[],
+                    return_facts=return_facts,
+                ),
+                provenance=[
+                    _ts_provenance(
+                        source_path,
+                        fn_node,
+                        rule_id="treesitter.cpp.function",
+                        evidence=extracted_name or func_name,
+                    )
+                ],
             )
             return fact, oracle_edges, inferred_edges
 
@@ -1817,13 +2422,13 @@ class TreeSitterExtractor:
         root = tree.root_node
 
         if self.language == SourceLanguage.CPP:
-            return self._extract_cpp_class(root, source_code, class_name)
+            return self._extract_cpp_class(root, source_code, str(path), class_name)
         elif self.language == SourceLanguage.JULIA:
-            return self._extract_julia_struct(root, source_code, class_name)
+            return self._extract_julia_struct(root, source_code, str(path), class_name)
         elif self.language == SourceLanguage.HASKELL:
             return self._extract_haskell_class(root, source_code, class_name)
         else:
-            return self._extract_rust_struct(root, source_code, class_name)
+            return self._extract_rust_struct(root, source_code, str(path), class_name)
 
     async def extract_procedural(
         self, source_path: str, pipeline_name: str | None = None
@@ -1843,11 +2448,11 @@ class TreeSitterExtractor:
         requires_logdet_jacobian = False
 
         if self.language == SourceLanguage.CPP:
-            methods = _extract_cpp_functions(root, source_code)
+            methods = _extract_cpp_functions(root, source_code, str(path))
             oracle_edges = _scan_cpp_oracle_edges(root, source_code)
         elif self.language == SourceLanguage.JULIA:
             methods, oracle_edges, inferred_edges = (
-                self._extract_julia_functions_procedural(root, source_code)
+                self._extract_julia_functions_procedural(root, source_code, str(path))
             )
             requires_logdet_jacobian = _scan_julia_bijectors(source_code)
         elif self.language == SourceLanguage.HASKELL:
@@ -1856,7 +2461,7 @@ class TreeSitterExtractor:
             )
         else:
             methods, oracle_edges, inferred_edges = (
-                self._extract_rust_functions_procedural(root, source_code)
+                self._extract_rust_functions_procedural(root, source_code, str(path))
             )
 
         # Build all_attributes from method reads/writes
@@ -1866,6 +2471,9 @@ class TreeSitterExtractor:
                 all_attributes.setdefault(attr, []).append(f"read:{mf.name}")
             for attr in mf.writes:
                 all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
+        attribute_facts, config_attributes, fitted_attributes, derived_attributes = (
+            _build_attribute_semantics(methods, str(path))
+        )
 
         return RawDataFlowGraph(
             class_name=name,
@@ -1873,6 +2481,11 @@ class TreeSitterExtractor:
             methods=methods,
             all_attributes=all_attributes,
             source_language=self.language.value,
+            attribute_facts=attribute_facts,
+            config_attributes=config_attributes,
+            fitted_attributes=fitted_attributes,
+            derived_attributes=derived_attributes,
+            semantic_unknowns=_semantic_unknowns(methods),
             oracle_edges=oracle_edges,
             inferred_edges=inferred_edges,
             requires_logdet_jacobian=requires_logdet_jacobian,
@@ -1882,6 +2495,7 @@ class TreeSitterExtractor:
         self,
         root: TSNode,
         source_code: str,
+        source_path: str,
     ) -> tuple[list[MethodFact], list[OracleEdge], list[DependencyEdge]]:
         """Extract top-level Julia functions plus Oracle subgraph dependencies."""
         source_lines = source_code.splitlines()
@@ -1906,7 +2520,7 @@ class TreeSitterExtractor:
             if child.type != "function_definition":
                 continue
 
-            fv = _JuliaFunctionVisitor(child, source_code, struct_names, {})
+            fv = _JuliaFunctionVisitor(child, source_code, source_path, struct_names, {})
             fv.visit()
 
             # Only include free/procedural functions (exclude struct-associated methods)
@@ -1930,6 +2544,20 @@ class TreeSitterExtractor:
             start = child.start_point[0]
             end = child.end_point[0] + 1
             source = "\n".join(source_lines[start:end])
+            signature = _signature_from_param_names(
+                source_path,
+                fv.params,
+                annotation_by_name=fv.param_types,
+                rule_id="treesitter.julia.signature",
+                param_nodes=fv.param_nodes,
+            )
+            return_facts, unknowns = _return_facts_for_node(
+                source_path,
+                child,
+                self_names=set(),
+                param_names=set(fv.params),
+                known_attrs=set(fv.reads) | set(fv.writes),
+            )
             methods.append(
                 MethodFact(
                     name=fv.func_name,
@@ -1938,6 +2566,25 @@ class TreeSitterExtractor:
                     reads=sorted(set(fv.reads) | state_vars),
                     writes=sorted(set(fv.writes) | oracle_outputs),
                     source_code=source,
+                    signature=signature,
+                    return_facts=return_facts,
+                    call_facts=_extract_call_facts(source_path, child),
+                    unknown_facts=unknowns,
+                    semantic_role=_classify_method_role(
+                        fv.func_name,
+                        reads=sorted(set(fv.reads) | state_vars),
+                        writes=sorted(set(fv.writes) | oracle_outputs),
+                        return_facts=return_facts,
+                        is_oracle=is_oracle,
+                    ),
+                    provenance=[
+                        _ts_provenance(
+                            source_path,
+                            child,
+                            rule_id="treesitter.julia.function",
+                            evidence=fv.func_name,
+                        )
+                    ],
                     is_oracle=is_oracle,
                 )
             )
@@ -1947,7 +2594,7 @@ class TreeSitterExtractor:
     # --- C++ extraction ---
 
     def _extract_cpp_class(
-        self, root: TSNode, source_code: str, class_name: str
+        self, root: TSNode, source_code: str, source_path: str, class_name: str
     ) -> RawDataFlowGraph:
         """Find and extract a C++ class by name."""
         class_nodes = _find_descendants(root, "class_specifier")
@@ -1964,7 +2611,7 @@ class TreeSitterExtractor:
         if target is None:
             raise ValueError(f"Class '{class_name}' not found in source")
 
-        visitor = _CppClassVisitor(target, source_code)
+        visitor = _CppClassVisitor(target, source_code, source_path)
         visitor.visit()
 
         # Build all_attributes index
@@ -1989,6 +2636,9 @@ class TreeSitterExtractor:
 
         # Scan for kthohr/mcmc functional oracle edges
         oracle_edges = _scan_cpp_oracle_edges(target, source_code)
+        attribute_facts, config_attributes, fitted_attributes, derived_attributes = (
+            _build_attribute_semantics(visitor.methods, source_path)
+        )
 
         return RawDataFlowGraph(
             class_name=class_name,
@@ -1998,13 +2648,18 @@ class TreeSitterExtractor:
             init_chain=init_chain,
             internal_call_graph=internal_call_graph,
             source_language="cpp",
+            attribute_facts=attribute_facts,
+            config_attributes=config_attributes,
+            fitted_attributes=fitted_attributes,
+            derived_attributes=derived_attributes,
+            semantic_unknowns=_semantic_unknowns(visitor.methods),
             oracle_edges=oracle_edges,
         )
 
     # --- Julia extraction ---
 
     def _extract_julia_struct(
-        self, root: TSNode, source_code: str, struct_name: str
+        self, root: TSNode, source_code: str, source_path: str, struct_name: str
     ) -> RawDataFlowGraph:
         """Find and extract a Julia struct by name, associating methods."""
         # Collect all structs
@@ -2040,7 +2695,7 @@ class TreeSitterExtractor:
         for child in root.children:
             if child.type == "function_definition":
                 fv = _JuliaFunctionVisitor(
-                    child, source_code, struct_names, struct_fields
+                    child, source_code, source_path, struct_names, struct_fields
                 )
                 fv.visit()
                 if fv.associated_struct == struct_name:
@@ -2049,6 +2704,12 @@ class TreeSitterExtractor:
                     source = "\n".join(source_lines[start:end])
                     # Params: skip the self-like first param
                     params = fv.params[1:] if fv.params else []
+                    param_nodes = {
+                        name: node for name, node in fv.param_nodes.items() if name in params
+                    }
+                    param_types = {
+                        name: ann for name, ann in fv.param_types.items() if name in params
+                    }
                     is_oracle = self._is_julia_oracle_interface(
                         child, fv, dispatch_fn_keys
                     )
@@ -2067,6 +2728,13 @@ class TreeSitterExtractor:
                         for edge in sub_inferred_edges:
                             _add_edge_if_new(inferred_edges, seen_inferred, edge)
 
+                    return_facts, unknowns = _return_facts_for_node(
+                        source_path,
+                        child,
+                        self_names={fv.self_param_name} if fv.self_param_name else set(),
+                        param_names=set(params),
+                        known_attrs=struct_fields.get(struct_name, set()),
+                    )
                     methods.append(
                         MethodFact(
                             name=fv.func_name,
@@ -2075,6 +2743,31 @@ class TreeSitterExtractor:
                             reads=sorted(set(fv.reads) | state_vars),
                             writes=sorted(set(fv.writes) | oracle_outputs),
                             source_code=source,
+                            signature=_signature_from_param_names(
+                                source_path,
+                                params,
+                                annotation_by_name=param_types,
+                                rule_id="treesitter.julia.signature",
+                                param_nodes=param_nodes,
+                            ),
+                            return_facts=return_facts,
+                            call_facts=_extract_call_facts(source_path, child),
+                            unknown_facts=unknowns,
+                            semantic_role=_classify_method_role(
+                                fv.func_name,
+                                reads=sorted(set(fv.reads) | state_vars),
+                                writes=sorted(set(fv.writes) | oracle_outputs),
+                                return_facts=return_facts,
+                                is_oracle=is_oracle,
+                            ),
+                            provenance=[
+                                _ts_provenance(
+                                    source_path,
+                                    child,
+                                    rule_id="treesitter.julia.method",
+                                    evidence=fv.func_name,
+                                )
+                            ],
                             is_oracle=is_oracle,
                         )
                     )
@@ -2089,6 +2782,9 @@ class TreeSitterExtractor:
 
         # Detect Bijectors.jl usage (constrained variables requiring log-det Jacobian)
         requires_logdet_jacobian = _scan_julia_bijectors(source_code)
+        attribute_facts, config_attributes, fitted_attributes, derived_attributes = (
+            _build_attribute_semantics(methods, source_path)
+        )
 
         return RawDataFlowGraph(
             class_name=struct_name,
@@ -2096,6 +2792,11 @@ class TreeSitterExtractor:
             methods=methods,
             all_attributes=all_attributes,
             source_language="julia",
+            attribute_facts=attribute_facts,
+            config_attributes=config_attributes,
+            fitted_attributes=fitted_attributes,
+            derived_attributes=derived_attributes,
+            semantic_unknowns=_semantic_unknowns(methods),
             cartesian_product_fields=target_sv.cartesian_product_fields,
             requires_logdet_jacobian=requires_logdet_jacobian,
             oracle_edges=oracle_edges,
@@ -2103,7 +2804,7 @@ class TreeSitterExtractor:
         )
 
     def _extract_rust_struct(
-        self, root: TSNode, source_code: str, name: str
+        self, root: TSNode, source_code: str, source_path: str, name: str
     ) -> RawDataFlowGraph:
         struct_nodes = _find_descendants(root, "struct_item")
         target = None
@@ -2143,7 +2844,7 @@ class TreeSitterExtractor:
                     t for t in trait_bounds if t in _CONJUGATE_TRAIT_BOUNDS
                 }
                 for fn_node in _find_descendants(im, "function_item"):
-                    fv = _RustFunctionVisitor(fn_node, source_code)
+                    fv = _RustFunctionVisitor(fn_node, source_code, source_path)
                     fv.visit()
                     # Detect trait bounds from the enclosing impl block
                     fv.detect_trait_bounds(im)
@@ -2151,7 +2852,9 @@ class TreeSitterExtractor:
                         fv.is_oracle = True
                     if conjugate_traits:
                         fv.is_conjugate = True
-                    fact = fv.get_fact()
+                    fact = fv.get_fact().model_copy(
+                        update={"calls": sorted(_extract_callees_from_body(fn_node))}
+                    )
 
                     if fact.is_oracle:
                         (
@@ -2180,6 +2883,9 @@ class TreeSitterExtractor:
                 all_attributes.setdefault(attr, []).append(f"read:{mf.name}")
             for attr in mf.writes:
                 all_attributes.setdefault(attr, []).append(f"write:{mf.name}")
+        attribute_facts, config_attributes, fitted_attributes, derived_attributes = (
+            _build_attribute_semantics(methods, source_path)
+        )
 
         return RawDataFlowGraph(
             class_name=name,
@@ -2187,13 +2893,18 @@ class TreeSitterExtractor:
             methods=methods,
             all_attributes=all_attributes,
             source_language="rust",
+            attribute_facts=attribute_facts,
+            config_attributes=config_attributes,
+            fitted_attributes=fitted_attributes,
+            derived_attributes=derived_attributes,
+            semantic_unknowns=_semantic_unknowns(methods),
             static_shape=target.static_shape,
             oracle_edges=oracle_edges,
             inferred_edges=inferred_edges,
         )
 
     def _extract_rust_functions_procedural(
-        self, root: TSNode, source_code: str
+        self, root: TSNode, source_code: str, source_path: str
     ) -> tuple[list[MethodFact], list[OracleEdge], list[DependencyEdge]]:
         func_nodes = _find_descendants(root, "function_item")
         methods: list[MethodFact] = []
@@ -2202,7 +2913,7 @@ class TreeSitterExtractor:
         seen_inferred: set[tuple[str, str, str, str, str, str]] = set()
         for fn in func_nodes:
             if fn.parent and fn.parent.type == "source_file":
-                fv = _RustFunctionVisitor(fn, source_code)
+                fv = _RustFunctionVisitor(fn, source_code, source_path)
                 fv.visit()
                 fn_traits = self._rust_trait_bounds_for_node(fn)
                 oracle_traits = {t for t in fn_traits if t in _ORACLE_TRAIT_BOUNDS}
@@ -2213,7 +2924,9 @@ class TreeSitterExtractor:
                     fv.is_oracle = True
                 if conjugate_traits:
                     fv.is_conjugate = True
-                fact = fv.get_fact()
+                fact = fv.get_fact().model_copy(
+                    update={"calls": sorted(_extract_callees_from_body(fn))}
+                )
 
                 if fact.is_oracle:
                     (

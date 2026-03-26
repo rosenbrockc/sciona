@@ -254,6 +254,20 @@ class TestJuliaReturnTypes:
         # No explicit return type in source
         assert offset.return_type == ""
 
+    @pytest.mark.asyncio
+    async def test_semantic_signature_return_facts_and_roles(self, extractor, epoch_source):
+        dfg = await extractor.extract_class(epoch_source, "Epoch")
+        offset = next(m for m in dfg.methods if m.name == "offset")
+        get_dur = next(m for m in dfg.methods if m.name == "get_dur")
+        set_origin = next(m for m in dfg.methods if m.name == "set_origin!")
+
+        assert [param.name for param in offset.signature] == ["dt"]
+        assert get_dur.return_facts[0].kind == "attribute"
+        assert get_dur.return_facts[0].referenced_attrs == ["dur"]
+        assert offset.return_facts[0].kind == "call_result"
+        assert get_dur.semantic_role == "query_or_metadata"
+        assert set_origin.semantic_role == "fit_or_update"
+
 
 # ---------------------------------------------------------------------------
 # Tests: simple struct

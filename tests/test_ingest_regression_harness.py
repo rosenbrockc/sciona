@@ -141,6 +141,11 @@ def test_default_case_matrix_covers_required_families():
         "non_python_ffi",
         "procedural_ingest",
     }
+    non_python = next(case for case in cases if case.case_id == "non_python_ffi")
+    assert any(
+        expectation.check == "has_canonical_ir"
+        for expectation in non_python.semantic_expectations
+    )
 
 
 def test_summarize_monitor_trace_counts_prompt_keys_and_stalled(tmp_path):

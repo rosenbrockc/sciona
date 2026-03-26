@@ -217,15 +217,27 @@ class PosteriorAccumulator:
         IngestRegressionCase(
             case_id="non_python_ffi",
             family="non_python_ffi",
-            class_name="integrate_step",
+            class_name="Integrator",
             expected_language="rust",
             inline_source="""
-pub fn integrate_step(position: f64, velocity: f64, dt: f64) -> f64 {
-    position + velocity * dt
+pub struct Integrator {
+    position: f64,
+    velocity: f64,
+}
+
+impl Integrator {
+    pub fn step(&mut self, dt: f64) {
+        self.position = self.position + self.velocity * dt;
+    }
+
+    pub fn get_position(&self) -> f64 {
+        return self.position;
+    }
 }
 """.strip(),
             semantic_expectations=[
                 SemanticExpectation(check="source_language_equals", value="rust"),
+                SemanticExpectation(check="has_canonical_ir"),
             ],
         ),
         IngestRegressionCase(
