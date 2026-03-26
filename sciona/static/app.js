@@ -69,6 +69,7 @@
   var btnOpen = document.getElementById("btn-open");
   var btnFit = document.getElementById("btn-fit");
   var btnReset = document.getElementById("btn-reset");
+  var btnDashboard = document.getElementById("btn-dashboard");
   var layoutSelect = document.getElementById("layout-select");
   var fileInput = document.getElementById("file-input");
   var cyContainer = document.getElementById("cy-container");
@@ -168,6 +169,12 @@
   btnOpen.addEventListener("click", function () {
     fileInput.click();
   });
+
+  if (btnDashboard) {
+    btnDashboard.addEventListener("click", function () {
+      window.open("/dashboard.html", "_blank");
+    });
+  }
 
   fileInput.addEventListener("change", function () {
     if (fileInput.files.length > 0) {
