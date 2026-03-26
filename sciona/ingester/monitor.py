@@ -22,6 +22,10 @@ COMPLETED_FILE = "COMPLETED.json"
 FAILED_FILE = "FAILED.json"
 PARTIAL_DIR = ".partial"
 TRACE_FILE = "trace.jsonl"
+STATUS_SCHEMA = "sciona.ingester.monitor.status"
+MARKER_SCHEMA = "sciona.ingester.monitor.marker"
+SURFACE_SCHEMA = "sciona.ingester.monitor.surface"
+MONITOR_SCHEMA_VERSION = 1
 
 
 def _write_json_atomic(path: Path, data: dict[str, Any]) -> None:
@@ -86,6 +90,8 @@ class IngestMonitor:
 
         started = _now_ts()
         self._status = {
+            "schema": STATUS_SCHEMA,
+            "schema_version": MONITOR_SCHEMA_VERSION,
             "run_id": self.run_id,
             "state": "running",
             "phase": "startup",
@@ -173,8 +179,13 @@ class IngestMonitor:
         _write_json_atomic(
             self.completed_path,
             {
+                "schema": MARKER_SCHEMA,
+                "schema_version": MONITOR_SCHEMA_VERSION,
+                "state": "completed",
                 "run_id": self.run_id,
                 "completed_at": ended,
+                "phase": str(self._status.get("phase") or ""),
+                "error": "",
                 "summary": summary,
             },
         )
@@ -200,10 +211,14 @@ class IngestMonitor:
         )
         self._write_status()
         failure = {
+            "schema": MARKER_SCHEMA,
+            "schema_version": MONITOR_SCHEMA_VERSION,
+            "state": "failed",
             "run_id": self.run_id,
             "failed_at": ended,
             "phase": self._status.get("phase", ""),
             "error": error,
+            "summary": {},
         }
         _write_json_atomic(self.failed_path, failure)
         self.trace_event(
@@ -285,12 +300,114 @@ class IngestMonitor:
     @staticmethod
     def read_status(output_dir: str | Path) -> dict[str, Any]:
         path = Path(output_dir) / STATUS_FILE
+        return IngestMonitor._read_json_dict(path)
+
+    @staticmethod
+    def _read_json_dict(path: Path) -> dict[str, Any]:
         if not path.exists():
             return {}
         try:
-            return json.loads(path.read_text())
+            payload = json.loads(path.read_text())
+            return payload if isinstance(payload, dict) else {}
         except json.JSONDecodeError:
             return {}
+
+    @staticmethod
+    def _as_float(value: Any, *, default: float = 0.0) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _as_schema_version(value: Any) -> int:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return MONITOR_SCHEMA_VERSION
+
+    @staticmethod
+    def _normalize_status(status: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(status, dict) or not status:
+            return {}
+        summary = status.get("summary")
+        return {
+            "schema": str(status.get("schema") or STATUS_SCHEMA),
+            "schema_version": IngestMonitor._as_schema_version(status.get("schema_version")),
+            "run_id": str(status.get("run_id") or ""),
+            "state": str(status.get("state") or ""),
+            "phase": str(status.get("phase") or ""),
+            "current_step": str(status.get("current_step") or ""),
+            "source_path": str(status.get("source_path") or ""),
+            "class_name": str(status.get("class_name") or ""),
+            "procedural": bool(status.get("procedural", False)),
+            "llm_provider": str(status.get("llm_provider") or ""),
+            "llm_model": str(status.get("llm_model") or ""),
+            "max_depth": int(status.get("max_depth") or 0),
+            "started_at": IngestMonitor._as_float(status.get("started_at")),
+            "ended_at": IngestMonitor._as_float(status.get("ended_at")),
+            "last_heartbeat_at": IngestMonitor._as_float(status.get("last_heartbeat_at")),
+            "llm_call_inflight": status.get("llm_call_inflight"),
+            "error": str(status.get("error") or ""),
+            "summary": summary if isinstance(summary, dict) else {},
+        }
+
+    @staticmethod
+    def _normalize_marker(marker: dict[str, Any], *, state: str) -> dict[str, Any]:
+        if not isinstance(marker, dict) or not marker:
+            return {}
+        summary = marker.get("summary")
+        return {
+            "schema": str(marker.get("schema") or MARKER_SCHEMA),
+            "schema_version": IngestMonitor._as_schema_version(marker.get("schema_version")),
+            "state": state,
+            "run_id": str(marker.get("run_id") or ""),
+            "phase": str(marker.get("phase") or ""),
+            "completed_at": IngestMonitor._as_float(marker.get("completed_at")),
+            "failed_at": IngestMonitor._as_float(marker.get("failed_at")),
+            "error": str(marker.get("error") or ""),
+            "summary": summary if isinstance(summary, dict) else {},
+        }
+
+    @staticmethod
+    def read_completed_marker(output_dir: str | Path) -> dict[str, Any]:
+        path = Path(output_dir) / COMPLETED_FILE
+        marker = IngestMonitor._read_json_dict(path)
+        return IngestMonitor._normalize_marker(marker, state="completed")
+
+    @staticmethod
+    def read_failed_marker(output_dir: str | Path) -> dict[str, Any]:
+        path = Path(output_dir) / FAILED_FILE
+        marker = IngestMonitor._read_json_dict(path)
+        return IngestMonitor._normalize_marker(marker, state="failed")
+
+    @staticmethod
+    def read_marker(output_dir: str | Path) -> dict[str, Any]:
+        completed = IngestMonitor.read_completed_marker(output_dir)
+        if completed:
+            return completed
+        failed = IngestMonitor.read_failed_marker(output_dir)
+        if failed:
+            return failed
+        return {}
+
+    @staticmethod
+    def read_surface(
+        output_dir: str | Path, *, stale_seconds: int = 120
+    ) -> dict[str, Any]:
+        status_raw = IngestMonitor.read_status(output_dir)
+        marker = IngestMonitor.read_marker(output_dir)
+        derived_state = IngestMonitor.classify_state(status_raw, stale_seconds=stale_seconds)
+        marker_state = str(marker.get("state") or "")
+        if marker_state in {"completed", "failed"}:
+            derived_state = marker_state
+        return {
+            "schema": SURFACE_SCHEMA,
+            "schema_version": MONITOR_SCHEMA_VERSION,
+            "derived_state": derived_state,
+            "status": IngestMonitor._normalize_status(status_raw),
+            "marker": marker,
+        }
 
     @staticmethod
     def classify_state(

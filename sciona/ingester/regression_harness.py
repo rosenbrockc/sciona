@@ -68,6 +68,8 @@ class IngestRegressionResult(BaseModel):
     ghost_failure_reason: str = ""
     llm_call_count: int = 0
     llm_prompt_counts: dict[str, int] = Field(default_factory=dict)
+    cache_state: str = "unknown"
+    cache_state_source: str = ""
     runtime_ms: float = 0.0
     published_artifacts: list[str] = Field(default_factory=list)
     semantic_checks: list[SemanticCheckResult] = Field(default_factory=list)
@@ -92,6 +94,13 @@ class FamilyBreakdown(BaseModel):
     ghost_passed_cases: int = 0
     llm_call_total: int = 0
     stalled_cases: int = 0
+    cache_hit_cases: int = 0
+    cache_miss_cases: int = 0
+    cache_unknown_cases: int = 0
+    runtime_ms_total: float = 0.0
+    runtime_ms_avg: float = 0.0
+    runtime_ms_p50: float = 0.0
+    runtime_ms_max: float = 0.0
     golden_compared_cases: int = 0
     golden_mismatched_cases: int = 0
 
@@ -106,6 +115,15 @@ class IngestRegressionSummary(BaseModel):
     ghost_pass_rate: float = 0.0
     timeout_or_stall_count: int = 0
     llm_call_total: int = 0
+    cache_hit_cases: int = 0
+    cache_miss_cases: int = 0
+    cache_unknown_cases: int = 0
+    cache_observed_cases: int = 0
+    cache_hit_rate: float = 0.0
+    runtime_ms_total: float = 0.0
+    runtime_ms_avg: float = 0.0
+    runtime_ms_p50: float = 0.0
+    runtime_ms_max: float = 0.0
     semantic_check_pass_rate: float = 0.0
     golden_compared_cases: int = 0
     golden_matched_cases: int = 0
@@ -121,6 +139,10 @@ class MonitorTraceSummary(BaseModel):
     llm_prompt_counts: dict[str, int] = Field(default_factory=dict)
     timed_out_or_stalled: bool = False
     classified_state: str = "missing"
+    status_phase: str = ""
+    marker_state: str = ""
+    cache_state: str = "unknown"
+    cache_state_source: str = ""
 
 
 class NormalizedArtifactBundle(BaseModel):
@@ -619,6 +641,67 @@ def read_monitor_trace_events(output_dir: str | Path) -> list[dict[str, Any]]:
     return events
 
 
+def _normalize_cache_state(value: Any) -> str:
+    if isinstance(value, bool):
+        return "hit" if value else "miss"
+    text = str(value or "").strip().lower()
+    if text in {"hit", "cache_hit", "cached", "true", "1", "yes"}:
+        return "hit"
+    if text in {"miss", "cache_miss", "uncached", "false", "0", "no"}:
+        return "miss"
+    return "unknown"
+
+
+def _extract_cache_state_from_mapping(
+    payload: Any, *, source: str
+) -> tuple[str, str]:
+    if not isinstance(payload, dict):
+        return "unknown", ""
+
+    for key in ("cache_state", "cache_status"):
+        state = _normalize_cache_state(payload.get(key))
+        if state != "unknown":
+            return state, f"{source}.{key}"
+
+    if "cache_hit" in payload:
+        state = _normalize_cache_state(payload.get("cache_hit"))
+        if state != "unknown":
+            return state, f"{source}.cache_hit"
+
+    cache_payload = payload.get("cache")
+    if isinstance(cache_payload, dict):
+        for key in ("state", "status", "hit"):
+            state = _normalize_cache_state(cache_payload.get(key))
+            if state != "unknown":
+                return state, f"{source}.cache.{key}"
+
+    return "unknown", ""
+
+
+def _extract_cache_state_from_surface(surface: dict[str, Any]) -> tuple[str, str]:
+    candidates: list[tuple[str, Any]] = [
+        ("surface.status", surface.get("status")),
+        ("surface.status.summary", (surface.get("status") or {}).get("summary")),
+        ("surface.marker", surface.get("marker")),
+        ("surface.marker.summary", (surface.get("marker") or {}).get("summary")),
+    ]
+    for source, payload in candidates:
+        state, resolved_source = _extract_cache_state_from_mapping(payload, source=source)
+        if state != "unknown":
+            return state, resolved_source
+    return "unknown", ""
+
+
+def _p50(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(float(value) for value in values)
+    mid = len(ordered) // 2
+    if len(ordered) % 2 == 1:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
 def summarize_monitor_trace(
     output_dir: str | Path, *, stale_seconds: int = 120
 ) -> MonitorTraceSummary:
@@ -636,13 +719,22 @@ def summarize_monitor_trace(
         if prompt_key:
             prompt_counts[prompt_key] += 1
 
-    status = IngestMonitor.read_status(output_dir)
-    classified = IngestMonitor.classify_state(status, stale_seconds=stale_seconds)
+    surface = IngestMonitor.read_surface(output_dir, stale_seconds=stale_seconds)
+    status = surface.get("status", {}) if isinstance(surface, dict) else {}
+    marker = surface.get("marker", {}) if isinstance(surface, dict) else {}
+    classified = str(surface.get("derived_state") or "missing")
+    cache_state, cache_source = _extract_cache_state_from_surface(
+        surface if isinstance(surface, dict) else {}
+    )
     return MonitorTraceSummary(
         llm_call_count=sum(prompt_counts.values()),
         llm_prompt_counts=dict(sorted(prompt_counts.items())),
         timed_out_or_stalled=classified == "stalled",
         classified_state=classified,
+        status_phase=str(status.get("phase") or ""),
+        marker_state=str(marker.get("state") or ""),
+        cache_state=cache_state,
+        cache_state_source=cache_source,
     )
 
 
@@ -657,8 +749,19 @@ def summarize_ingest_regression_results(
     ghost_passed_cases = sum(1 for item in results if item.ghost_passed)
     timeout_or_stall_count = sum(1 for item in results if item.timed_out_or_stalled)
     llm_call_total = sum(item.llm_call_count for item in results)
+    runtime_values = [max(0.0, float(item.runtime_ms)) for item in results]
+    runtime_ms_total = sum(runtime_values)
+    runtime_ms_avg = (runtime_ms_total / total_cases) if total_cases else 0.0
+    runtime_ms_p50 = _p50(runtime_values)
+    runtime_ms_max = max(runtime_values, default=0.0)
     golden_compared_cases = sum(1 for item in results if item.golden_match is not None)
     golden_matched_cases = sum(1 for item in results if item.golden_match is True)
+    cache_hit_cases = sum(1 for item in results if _normalize_cache_state(item.cache_state) == "hit")
+    cache_miss_cases = sum(
+        1 for item in results if _normalize_cache_state(item.cache_state) == "miss"
+    )
+    cache_unknown_cases = total_cases - cache_hit_cases - cache_miss_cases
+    cache_observed_cases = cache_hit_cases + cache_miss_cases
 
     semantic_total = sum(len(item.semantic_checks) for item in results)
     semantic_passed = sum(
@@ -669,6 +772,7 @@ def summarize_ingest_regression_results(
     )
 
     family_breakdown: dict[str, FamilyBreakdown] = {}
+    family_runtime_values: dict[str, list[float]] = {}
     for item in results:
         family_row = family_breakdown.setdefault(item.family, FamilyBreakdown())
         family_row.total_cases += 1
@@ -677,8 +781,28 @@ def summarize_ingest_regression_results(
         family_row.ghost_passed_cases += int(item.ghost_passed)
         family_row.llm_call_total += item.llm_call_count
         family_row.stalled_cases += int(item.timed_out_or_stalled)
+        cache_state = _normalize_cache_state(item.cache_state)
+        if cache_state == "hit":
+            family_row.cache_hit_cases += 1
+        elif cache_state == "miss":
+            family_row.cache_miss_cases += 1
+        else:
+            family_row.cache_unknown_cases += 1
+        runtime_ms = max(0.0, float(item.runtime_ms))
+        family_row.runtime_ms_total += runtime_ms
+        family_runtime_values.setdefault(item.family, []).append(runtime_ms)
         family_row.golden_compared_cases += int(item.golden_match is not None)
         family_row.golden_mismatched_cases += int(item.golden_match is False)
+
+    for family, family_row in family_breakdown.items():
+        runtimes = family_runtime_values.get(family, [])
+        family_row.runtime_ms_avg = (
+            family_row.runtime_ms_total / family_row.total_cases
+            if family_row.total_cases
+            else 0.0
+        )
+        family_row.runtime_ms_p50 = _p50(runtimes)
+        family_row.runtime_ms_max = max(runtimes, default=0.0)
 
     failures: list[str] = []
     for item in results:
@@ -693,6 +817,15 @@ def summarize_ingest_regression_results(
         ghost_pass_rate=(ghost_passed_cases / total_cases) if total_cases else 0.0,
         timeout_or_stall_count=timeout_or_stall_count,
         llm_call_total=llm_call_total,
+        cache_hit_cases=cache_hit_cases,
+        cache_miss_cases=cache_miss_cases,
+        cache_unknown_cases=cache_unknown_cases,
+        cache_observed_cases=cache_observed_cases,
+        cache_hit_rate=(cache_hit_cases / cache_observed_cases) if cache_observed_cases else 0.0,
+        runtime_ms_total=runtime_ms_total,
+        runtime_ms_avg=runtime_ms_avg,
+        runtime_ms_p50=runtime_ms_p50,
+        runtime_ms_max=runtime_ms_max,
         semantic_check_pass_rate=(
             semantic_passed / semantic_total if semantic_total else 0.0
         ),
@@ -957,8 +1090,7 @@ async def run_ingest_regression_case(
 
     runtime_ms = (time.perf_counter() - started) * 1000.0
     trace_summary = summarize_monitor_trace(case_dir, stale_seconds=stale_seconds)
-    status = IngestMonitor.read_status(case_dir)
-    failed_phase = failed_phase or str(status.get("phase") or "")
+    failed_phase = failed_phase or trace_summary.status_phase
 
     semantic_checks = _evaluate_semantic_expectations(
         case,
@@ -1020,6 +1152,8 @@ async def run_ingest_regression_case(
         ghost_failure_reason=ghost_reason,
         llm_call_count=trace_summary.llm_call_count,
         llm_prompt_counts=trace_summary.llm_prompt_counts,
+        cache_state=trace_summary.cache_state,
+        cache_state_source=trace_summary.cache_state_source,
         runtime_ms=runtime_ms,
         published_artifacts=published_artifacts,
         semantic_checks=semantic_checks,

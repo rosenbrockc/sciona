@@ -297,6 +297,8 @@ def test_summarize_monitor_trace_counts_prompt_keys_and_stalled(tmp_path):
     }
     assert summary.timed_out_or_stalled is True
     assert summary.classified_state == "stalled"
+    assert summary.cache_state == "unknown"
+    assert summary.cache_state_source == ""
 
 
 def test_summary_aggregation_computes_rates():
@@ -308,6 +310,8 @@ def test_summary_aggregation_computes_rates():
             mypy_passed=True,
             ghost_passed=False,
             llm_call_count=2,
+            cache_state="hit",
+            runtime_ms=100.0,
             semantic_checks=[],
             golden_match=True,
         ),
@@ -319,6 +323,8 @@ def test_summary_aggregation_computes_rates():
             mypy_passed=False,
             ghost_passed=False,
             llm_call_count=0,
+            cache_state="miss",
+            runtime_ms=300.0,
             error="boom",
             semantic_checks=[],
             golden_match=False,
@@ -333,11 +339,44 @@ def test_summary_aggregation_computes_rates():
     assert summary.mypy_pass_rate == 0.5
     assert summary.timeout_or_stall_count == 1
     assert summary.llm_call_total == 2
+    assert summary.cache_hit_cases == 1
+    assert summary.cache_miss_cases == 1
+    assert summary.cache_unknown_cases == 0
+    assert summary.cache_observed_cases == 2
+    assert summary.cache_hit_rate == 0.5
+    assert summary.runtime_ms_total == 400.0
+    assert summary.runtime_ms_avg == 200.0
+    assert summary.runtime_ms_p50 == 200.0
+    assert summary.runtime_ms_max == 300.0
     assert summary.golden_compared_cases == 2
     assert summary.golden_matched_cases == 1
     assert summary.golden_match_rate == 0.5
     assert summary.failures == ["case_b"]
     assert summary.family_breakdown["stateful"].completed_cases == 1
+    assert summary.family_breakdown["stateful"].cache_hit_cases == 1
+    assert summary.family_breakdown["procedural"].cache_miss_cases == 1
+    assert summary.family_breakdown["stateful"].runtime_ms_total == 100.0
+    assert summary.family_breakdown["procedural"].runtime_ms_max == 300.0
+
+
+def test_summarize_monitor_trace_reads_cache_state_from_completed_marker(tmp_path):
+    mon = IngestMonitor(tmp_path, enable_trace=True)
+    mon.start(
+        source_path="src/example.py",
+        class_name="Example",
+        procedural=False,
+        llm_provider="tests",
+        llm_model="fixture",
+        max_depth=1,
+    )
+    mon.complete(summary={"cache": {"state": "hit"}})
+
+    summary = summarize_monitor_trace(tmp_path, stale_seconds=30)
+
+    assert summary.classified_state == "completed"
+    assert summary.marker_state == "completed"
+    assert summary.cache_state == "hit"
+    assert summary.cache_state_source == "surface.status.summary.cache.state"
 
 
 def test_normalize_snapshot_payload_strips_path_and_transient_noise(tmp_path):

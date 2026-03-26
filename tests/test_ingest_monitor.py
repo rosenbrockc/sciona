@@ -8,8 +8,12 @@ import time
 from sciona.ingester.monitor import (
     COMPLETED_FILE,
     FAILED_FILE,
+    MARKER_SCHEMA,
+    MONITOR_SCHEMA_VERSION,
     PARTIAL_DIR,
+    STATUS_SCHEMA,
     STATUS_FILE,
+    SURFACE_SCHEMA,
     TRACE_FILE,
     IngestMonitor,
 )
@@ -30,8 +34,14 @@ def test_monitor_complete_writes_status_marker_and_trace(tmp_path):
     mon.complete(summary={"cdg_nodes": 12, "cdg_edges": 21})
 
     status = json.loads((tmp_path / STATUS_FILE).read_text())
+    assert status["schema"] == STATUS_SCHEMA
+    assert status["schema_version"] == MONITOR_SCHEMA_VERSION
     assert status["state"] == "completed"
     assert status["summary"]["cdg_nodes"] == 12
+    completed = json.loads((tmp_path / COMPLETED_FILE).read_text())
+    assert completed["schema"] == MARKER_SCHEMA
+    assert completed["schema_version"] == MONITOR_SCHEMA_VERSION
+    assert completed["state"] == "completed"
     assert (tmp_path / COMPLETED_FILE).exists()
     assert not (tmp_path / FAILED_FILE).exists()
 
@@ -52,10 +62,15 @@ def test_monitor_fail_writes_failed_marker(tmp_path):
     mon.fail(error="boom", phase="phase2_chunk")
 
     status = json.loads((tmp_path / STATUS_FILE).read_text())
+    assert status["schema"] == STATUS_SCHEMA
+    assert status["schema_version"] == MONITOR_SCHEMA_VERSION
     assert status["state"] == "failed"
     assert status["phase"] == "phase2_chunk"
 
     failed = json.loads((tmp_path / FAILED_FILE).read_text())
+    assert failed["schema"] == MARKER_SCHEMA
+    assert failed["schema_version"] == MONITOR_SCHEMA_VERSION
+    assert failed["state"] == "failed"
     assert failed["error"] == "boom"
     assert not (tmp_path / COMPLETED_FILE).exists()
 
@@ -114,3 +129,47 @@ def test_classify_state_stalled_with_very_old_inflight():
         },
     }
     assert IngestMonitor.classify_state(status, stale_seconds=20) == "stalled"
+
+
+def test_read_marker_and_surface_for_completed_run(tmp_path):
+    mon = IngestMonitor(tmp_path, enable_trace=False)
+    mon.start(
+        source_path="src/mod.rs",
+        class_name="HMC",
+        procedural=False,
+        llm_provider="tests",
+        llm_model="fixture",
+        max_depth=2,
+    )
+    mon.complete(summary={"cache_state": "hit"})
+
+    marker = IngestMonitor.read_marker(tmp_path)
+    surface = IngestMonitor.read_surface(tmp_path, stale_seconds=30)
+
+    assert marker["state"] == "completed"
+    assert marker["summary"]["cache_state"] == "hit"
+    assert surface["schema"] == SURFACE_SCHEMA
+    assert surface["derived_state"] == "completed"
+    assert surface["marker"]["state"] == "completed"
+    assert surface["status"]["state"] == "completed"
+
+
+def test_read_marker_returns_failed_when_only_failed_exists(tmp_path):
+    mon = IngestMonitor(tmp_path, enable_trace=False)
+    mon.start(
+        source_path="src/mod.rs",
+        class_name="HMC",
+        procedural=False,
+        llm_provider="tests",
+        llm_model="fixture",
+        max_depth=2,
+    )
+    mon.fail(error="type failure", phase="verify_types")
+
+    marker = IngestMonitor.read_marker(tmp_path)
+    surface = IngestMonitor.read_surface(tmp_path, stale_seconds=30)
+
+    assert marker["state"] == "failed"
+    assert marker["phase"] == "verify_types"
+    assert marker["error"] == "type failure"
+    assert surface["derived_state"] == "failed"

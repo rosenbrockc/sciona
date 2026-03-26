@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,11 @@ from sciona.architect.handoff import CDGExport
 from sciona.ingester.models import IngestionBundle
 from sciona.types import MatchResult
 
-_CACHE_VERSION = "ingest-cache-v2"
+_CACHE_VERSION = "ingest-cache-v3"
+_CACHE_SCHEMA = "sciona.ingester.cache-envelope"
+_CACHE_SCHEMA_VERSION = 1
+_CACHE_RUNTIME_MODE = "canonical-first"
+_CACHE_PAYLOAD_KIND = "ingestion_bundle"
 
 
 def compute_ingest_cache_key(
@@ -40,7 +45,10 @@ def load_ingest_cache(cache_dir: Path, key: str) -> IngestionBundle | None:
     if not path.exists():
         return None
     try:
-        payload = json.loads(path.read_text())
+        raw = json.loads(path.read_text())
+        payload = _extract_bundle_payload(raw)
+        if payload is None:
+            return None
         return _bundle_from_payload(payload)
     except Exception:
         return None
@@ -50,9 +58,63 @@ def save_ingest_cache(cache_dir: Path, key: str, bundle: IngestionBundle) -> Pat
     """Persist an ingestion bundle cache entry and return the written path."""
     cache_dir.mkdir(parents=True, exist_ok=True)
     path = cache_dir / f"{key}.json"
-    payload = _bundle_to_payload(bundle)
-    path.write_text(json.dumps(payload, indent=2))
+    payload = _bundle_to_envelope(bundle, key=key)
+    _write_json_atomic(path, payload)
     return path
+
+
+def _write_json_atomic(path: Path, data: dict[str, Any]) -> None:
+    tmp = path.with_suffix(path.suffix + f".tmp.{uuid.uuid4().hex}")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
+    tmp.replace(path)
+
+
+def _bundle_to_envelope(bundle: IngestionBundle, *, key: str) -> dict[str, Any]:
+    payload = _bundle_to_payload(bundle)
+    cdg = payload.get("cdg", {}) if isinstance(payload.get("cdg"), dict) else {}
+    nodes = cdg.get("nodes")
+    edges = cdg.get("edges")
+    sub_graphs = payload.get("sub_graphs")
+    matches = payload.get("match_results")
+    return {
+        "schema": _CACHE_SCHEMA,
+        "schema_version": _CACHE_SCHEMA_VERSION,
+        "cache_key": key,
+        "cache_key_version": _CACHE_VERSION,
+        "runtime_mode": _CACHE_RUNTIME_MODE,
+        "payload_kind": _CACHE_PAYLOAD_KIND,
+        "payload_summary": {
+            "cdg_node_count": len(nodes) if isinstance(nodes, list) else 0,
+            "cdg_edge_count": len(edges) if isinstance(edges, list) else 0,
+            "sub_graph_count": len(sub_graphs) if isinstance(sub_graphs, dict) else 0,
+            "match_result_count": len(matches) if isinstance(matches, list) else 0,
+        },
+        "payload": payload,
+    }
+
+
+def _extract_bundle_payload(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+
+    if "schema" in raw or "schema_version" in raw or "payload" in raw:
+        schema = str(raw.get("schema") or "")
+        if schema != _CACHE_SCHEMA:
+            return None
+        try:
+            schema_version = int(raw.get("schema_version"))
+        except (TypeError, ValueError):
+            return None
+        if schema_version != _CACHE_SCHEMA_VERSION:
+            return None
+        payload_kind = str(raw.get("payload_kind") or _CACHE_PAYLOAD_KIND)
+        if payload_kind != _CACHE_PAYLOAD_KIND:
+            return None
+        payload = raw.get("payload")
+        return payload if isinstance(payload, dict) else None
+
+    # Legacy shape: the bundle payload itself is the top-level dict.
+    return raw
 
 
 def _bundle_to_payload(bundle: IngestionBundle) -> dict[str, Any]:
@@ -70,13 +132,28 @@ def _bundle_to_payload(bundle: IngestionBundle) -> dict[str, Any]:
 
 
 def _bundle_from_payload(payload: dict[str, Any]) -> IngestionBundle:
+    if not isinstance(payload, dict):
+        payload = {}
     cdg = CDGExport.model_validate(payload.get("cdg", {"nodes": [], "edges": []}))
     sub_graphs_raw = payload.get("sub_graphs", {}) or {}
-    sub_graphs = {
-        str(name): CDGExport.model_validate(data) for name, data in sub_graphs_raw.items()
-    }
+    sub_graphs: dict[str, CDGExport] = {}
+    if isinstance(sub_graphs_raw, dict):
+        for name, data in sub_graphs_raw.items():
+            try:
+                sub_graphs[str(name)] = CDGExport.model_validate(data)
+            except Exception:
+                continue
     matches_raw = payload.get("match_results", []) or []
-    match_results = [MatchResult.from_dict(item) for item in matches_raw]
+    match_results: list[MatchResult] = []
+    if isinstance(matches_raw, list):
+        for item in matches_raw:
+            if not isinstance(item, dict):
+                continue
+            try:
+                match_results.append(MatchResult.from_dict(item))
+            except Exception:
+                continue
+    ghost_sim_report = payload.get("ghost_sim_report", {}) or {}
     return IngestionBundle(
         cdg=cdg,
         sub_graphs=sub_graphs,
@@ -86,5 +163,5 @@ def _bundle_from_payload(payload: dict[str, Any]) -> IngestionBundle:
         match_results=match_results,
         mypy_passed=bool(payload.get("mypy_passed", False)),
         ghost_sim_passed=bool(payload.get("ghost_sim_passed", False)),
-        ghost_sim_report=payload.get("ghost_sim_report", {}) or {},
+        ghost_sim_report=ghost_sim_report if isinstance(ghost_sim_report, dict) else {},
     )
