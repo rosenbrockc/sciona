@@ -196,6 +196,19 @@ semantics rather than runtime noise. Stable normalization behavior includes:
   checked-in golden formats
 - textual formatting of the golden files is not itself part of the contract
 
+### Maintainer review expectations
+
+- the fast CI slice in `.github/workflows/ingest-regression.yml` is the
+  always-on gate for the curated corpus and checked-in goldens
+- the broader protected-family slice runs on schedule and manual dispatch so
+  maintainers can recheck adjacent ingest surfaces without slowing normal PRs
+- checked-in golden files should change only when canonical ingest semantics or
+  the normalized golden contract changes intentionally
+- when goldens change, review the runtime/code change and the corresponding
+  `tests/golden/ingest_regression/<case_id>/` diff together in the same PR
+- if goldens need to be refreshed intentionally, run the broader manual slice
+  before merging so wider family coverage still passes with the new snapshots
+
 ### Internal details
 
 - the specific ordering hints used by the normalizer are implementation detail
