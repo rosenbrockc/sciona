@@ -660,7 +660,7 @@ class TestBuildCDGExport:
         assert cdg.metadata["canonical_semantics"] is True
         assert cdg.metadata["source_language"] == "python"
 
-    def test_materializes_canonical_runtime_nodes_when_legacy_atoms_are_empty(self):
+    def test_canonical_cdg_uses_compat_exports_when_legacy_atoms_are_empty(self):
         atom = MacroAtomSpec(
             name="Predict",
             method_names=["predict"],
@@ -689,12 +689,14 @@ class TestBuildCDGExport:
                 "plan": plan.plan.model_copy(update={"macro_atoms": []}),
             }
         )
+        assert plan.plan.macro_atoms == []
 
         cdg = build_cdg_export(plan, "Estimator")
 
         node = next(item for item in cdg.nodes if item.node_id == "predict")
         assert node.name == "Predict"
         assert node.type_signature == "(features: np.ndarray) -> np.ndarray"
+        assert plan.plan.macro_atoms == []
 
 
 # ---------------------------------------------------------------------------
@@ -813,9 +815,11 @@ class TestEmitIngestionBundle:
                 "plan": plan.plan.model_copy(update={"macro_atoms": []}),
             }
         )
+        assert plan.plan.macro_atoms == []
 
         bundle = emit_ingestion_bundle(plan, "Estimator")
 
         assert "def predict(features: np.ndarray) -> np.ndarray:" in bundle.generated_atoms
         assert any(node.node_id == "predict" for node in bundle.cdg.nodes)
         assert len(bundle.match_results) == 1
+        assert plan.plan.macro_atoms == []

@@ -470,7 +470,7 @@ def canonical_operation_id(name: str) -> str:
     return name.lower().replace(" ", "_").replace("-", "_")
 
 
-def legacy_macro_atoms_from_ir(
+def _compat_macro_atoms_from_ir(
     ir: IngestIRPlan,
     existing_macro_atoms: list[MacroAtomSpec],
 ) -> list[MacroAtomSpec]:
@@ -492,7 +492,7 @@ def legacy_macro_atoms_from_ir(
                 outputs=(
                     list(seed.outputs)
                     if seed is not None and seed.outputs
-                    else legacy_outputs_from_operation(operation)
+                    else _compat_outputs_from_operation(operation)
                 ),
                 config_params=list(seed.config_params) if seed is not None else [],
                 concept_type=seed.concept_type if seed is not None else operation.concept_type,
@@ -514,7 +514,7 @@ def legacy_macro_atoms_from_ir(
     return macro_atoms
 
 
-def legacy_outputs_from_operation(operation: OperationSpec) -> list[IOSpec]:
+def _compat_outputs_from_operation(operation: OperationSpec) -> list[IOSpec]:
     """Lower canonical outputs into the legacy IOSpec view."""
     outputs: list[IOSpec] = []
     for binding in operation.emitted_outputs:
@@ -524,7 +524,7 @@ def legacy_outputs_from_operation(operation: OperationSpec) -> list[IOSpec]:
     return outputs
 
 
-def legacy_state_models_from_ir(
+def _compat_state_models_from_ir(
     ir: IngestIRPlan,
     existing_state_models: list[StateModelSpec],
 ) -> list[StateModelSpec]:
@@ -548,7 +548,7 @@ def legacy_state_models_from_ir(
     ]
 
 
-def legacy_edges_from_ir(ir: IngestIRPlan) -> list[DependencyEdge]:
+def _compat_edges_from_ir(ir: IngestIRPlan) -> list[DependencyEdge]:
     """Build compatibility dependency edges from canonical IR edges."""
     edges: list[DependencyEdge] = []
     for edge in ir.edges:
@@ -567,51 +567,35 @@ def legacy_edges_from_ir(ir: IngestIRPlan) -> list[DependencyEdge]:
     return edges
 
 
-def runtime_macro_atoms(plan: ProposedMacroPlan) -> list[MacroAtomSpec]:
-    """Return macro-atoms for runtime consumers, preferring canonical IR."""
+def _plan_has_canonical_operations(plan: ProposedMacroPlan) -> bool:
     ir = plan.canonical_ir
-    if ir is None or not ir.operations:
+    return ir is not None and bool(ir.operations)
+
+
+def runtime_macro_atoms(plan: ProposedMacroPlan) -> list[MacroAtomSpec]:
+    """Export compatibility macro-atoms derived from canonical runtime state."""
+    ir = plan.canonical_ir
+    if not _plan_has_canonical_operations(plan) or ir is None:
         return list(plan.macro_atoms)
-    return legacy_macro_atoms_from_ir(ir, plan.macro_atoms)
+    return _compat_macro_atoms_from_ir(ir, plan.macro_atoms)
 
 
 def runtime_state_models(plan: ProposedMacroPlan) -> list[StateModelSpec]:
-    """Return state models for runtime consumers, preferring canonical IR."""
+    """Export compatibility state-models derived from canonical runtime state."""
     ir = plan.canonical_ir
-    if ir is None or not ir.operations:
+    if not _plan_has_canonical_operations(plan) or ir is None:
         return list(plan.state_models)
-    return legacy_state_models_from_ir(ir, plan.state_models)
+    return _compat_state_models_from_ir(ir, plan.state_models)
 
 
 def runtime_edge_definitions(plan: ProposedMacroPlan) -> list[DependencyEdge]:
-    """Return dependency edges for runtime consumers, preserving explicit exports."""
+    """Export compatibility edge views derived from canonical runtime state."""
     ir = plan.canonical_ir
-    if ir is None or not ir.operations:
+    if not _plan_has_canonical_operations(plan) or ir is None:
         return list(plan.edge_definitions)
     if plan.edge_definitions:
         return list(plan.edge_definitions)
-    return legacy_edges_from_ir(ir)
-
-
-def materialize_legacy_plan_views(plan: ProposedMacroPlan) -> ProposedMacroPlan:
-    """Explicitly materialize compatibility views from canonical runtime state.
-
-    The canonical IR and planning graph remain the runtime source of truth.
-    This helper exists only to populate legacy-compatible exports for existing
-    emitters, tests, and bundle surfaces that still expect macro-atoms or state
-    models.
-    """
-    ir = plan.canonical_ir
-    if ir is None or not ir.operations:
-        return plan
-
-    return plan.model_copy(
-        update={
-            "macro_atoms": runtime_macro_atoms(plan),
-            "state_models": runtime_state_models(plan),
-            "edge_definitions": runtime_edge_definitions(plan),
-        }
-    )
+    return _compat_edges_from_ir(ir)
 
 
 # ---------------------------------------------------------------------------

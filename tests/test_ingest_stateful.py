@@ -812,6 +812,8 @@ class TestStatefulBundle:
                 ),
             }
         )
+        assert plan.plan.macro_atoms == []
+        assert plan.plan.state_models == []
 
         bundle = emit_ingestion_bundle(plan, "RollingAverager")
 
@@ -819,3 +821,5 @@ class TestStatefulBundle:
         assert "def average_computer(" in bundle.generated_atoms
         assert "state: RollingAveragerState" in bundle.generated_atoms
         assert bundle.cdg.metadata["canonical_semantics"] is True
+        assert plan.plan.macro_atoms == []
+        assert plan.plan.state_models == []

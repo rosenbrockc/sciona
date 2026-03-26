@@ -46,7 +46,6 @@ from sciona.ingester.models import (
     ValidatedMacroPlan,
     runtime_edge_definitions,
     runtime_macro_atoms,
-    runtime_state_models,
 )
 from sciona.ingester.prompts import (
     CONCEPTUAL_ABSTRACT_SYSTEM,
@@ -199,15 +198,15 @@ def _state_kind_for_attr(dfg: RawDataFlowGraph, attr_name: str) -> str:
 
 def _slot_type_hint(
     attr_name: str,
-    legacy_plan: ProposedMacroPlan | None,
+    seed_plan: ProposedMacroPlan | None,
 ) -> str:
-    if legacy_plan is None:
+    if seed_plan is None:
         return "Any"
-    for state_model in legacy_plan.state_models:
+    for state_model in seed_plan.state_models:
         for field_name, field_type in state_model.fields:
             if field_name == attr_name and field_type:
                 return field_type
-    for atom in legacy_plan.macro_atoms:
+    for atom in seed_plan.macro_atoms:
         for io in [*atom.inputs, *atom.outputs]:
             if io.name == attr_name and io.type_desc:
                 return io.type_desc
@@ -216,7 +215,7 @@ def _slot_type_hint(
 
 def _build_state_slots(
     dfg: RawDataFlowGraph,
-    legacy_plan: ProposedMacroPlan | None,
+    seed_plan: ProposedMacroPlan | None,
 ) -> list[StateSlotSpec]:
     facts_by_attr = {fact.attr_name: fact for fact in dfg.attribute_facts}
     attr_names = set(facts_by_attr) | set(dfg.all_attributes)
@@ -244,7 +243,7 @@ def _build_state_slots(
             StateSlotSpec(
                 slot_name=attr_name,
                 state_kind=_state_kind_for_attr(dfg, attr_name),
-                type_desc=_slot_type_hint(attr_name, legacy_plan),
+                type_desc=_slot_type_hint(attr_name, seed_plan),
                 required_before=sorted(read_methods),
                 written_by=sorted(write_methods),
                 read_by=sorted(read_methods),
@@ -558,12 +557,12 @@ def _default_operations(dfg: RawDataFlowGraph) -> list[MacroAtomSpec]:
 
 def _build_ingest_ir(
     dfg: RawDataFlowGraph,
-    legacy_plan: ProposedMacroPlan | None = None,
+    seed_plan: ProposedMacroPlan | None = None,
 ) -> IngestIRPlan:
     by_name = {method.name: method for method in dfg.methods}
-    state_slots = _build_state_slots(dfg, legacy_plan)
+    state_slots = _build_state_slots(dfg, seed_plan)
     state_slot_names = {slot.slot_name for slot in state_slots}
-    seed_atoms = _default_operations(dfg) if legacy_plan is None else list(legacy_plan.macro_atoms)
+    seed_atoms = _default_operations(dfg) if seed_plan is None else list(seed_plan.macro_atoms)
 
     operations: list[OperationSpec] = []
     artifacts: list[OutputBindingSpec] = []
@@ -599,8 +598,8 @@ def _build_ingest_ir(
 
     edges: list[OperationEdge] = []
     seen_edges: set[tuple[str, str, str, str]] = set()
-    if legacy_plan is not None:
-        for edge in legacy_plan.edge_definitions:
+    if seed_plan is not None:
+        for edge in seed_plan.edge_definitions:
             edge_kind = (
                 "state"
                 if edge.output_name in state_slot_names or edge.input_name in state_slot_names
@@ -661,37 +660,11 @@ def _build_ingest_ir(
     )
 
 
-def _adapt_ir_to_legacy_plan(
-    ir: IngestIRPlan,
-    existing_plan: ProposedMacroPlan | None = None,
-    *,
-    materialize_compatibility: bool = False,
-) -> ProposedMacroPlan:
-    existing_plan = existing_plan or ProposedMacroPlan()
-    seeded = existing_plan.model_copy(update={"canonical_ir": ir})
-    if materialize_compatibility:
-        return seeded.model_copy(
-            update={
-                "macro_atoms": runtime_macro_atoms(seeded),
-                "state_models": runtime_state_models(seeded),
-                "edge_definitions": runtime_edge_definitions(seeded),
-            }
-        )
-    return seeded
-
-
 def _attach_canonical_ir(
     dfg: RawDataFlowGraph,
-    legacy_plan: ProposedMacroPlan,
-    *,
-    materialize_compatibility: bool = False,
+    seed_plan: ProposedMacroPlan,
 ) -> ProposedMacroPlan:
-    ir = _build_ingest_ir(dfg, legacy_plan)
-    return _adapt_ir_to_legacy_plan(
-        ir,
-        existing_plan=legacy_plan,
-        materialize_compatibility=materialize_compatibility,
-    )
+    return seed_plan.model_copy(update={"canonical_ir": _build_ingest_ir(dfg, seed_plan)})
 
 
 def _validate_canonical_ir(
@@ -2123,12 +2096,19 @@ async def _decompose_single_atom(
     context_namespace: str = "",
     context_budget_chars: int = 900,
     ancestor_ids: tuple[str, ...] = (),
+    allow_operationless_legacy_fallback: bool = False,
 ) -> MacroAtomSpec:
     """Recursively decompose a single atom using IR-aware planning decisions."""
     if current_depth >= max_depth:
         return atom
 
     if operation is None:
+        if not allow_operationless_legacy_fallback:
+            logger.info(
+                "Skipping decomposition for %s: missing canonical operation mapping",
+                atom.name,
+            )
+            return atom
         return await _legacy_decompose_single_atom(
             atom,
             dfg,
@@ -2282,6 +2262,7 @@ async def _decompose_single_atom(
             context_namespace=context_namespace,
             context_budget_chars=context_budget_chars,
             ancestor_ids=next_ancestor_ids,
+            allow_operationless_legacy_fallback=True,
         )
         recursed_children.append(recursed)
 

@@ -69,6 +69,19 @@ from sciona.types import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _compat_plan_exports(
+    plan: ProposedMacroPlan,
+) -> tuple[list[MacroAtomSpec], list[StateModelSpec], list[DependencyEdge]]:
+    """Read-only compatibility exports derived from canonical runtime state."""
+    return (
+        runtime_macro_atoms(plan),
+        runtime_state_models(plan),
+        runtime_edge_definitions(plan),
+    )
+
+
 def _logical_edge_key(edge: DependencyEdge) -> tuple[str, str, str, str]:
     """Deduplicate the same dependency edge across legacy and IR surfaces."""
     return (
@@ -2280,17 +2293,15 @@ def _emit_atom_nodes(
 
 def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
     """Build a CDGExport with root DECOMPOSED node + recursive children."""
-    runtime_atoms = runtime_macro_atoms(plan.plan)
-    runtime_state = runtime_state_models(plan.plan)
-    runtime_edges = runtime_edge_definitions(plan.plan)
+    compat_atoms, compat_state_models, compat_edges = _compat_plan_exports(plan.plan)
     source_language = _canonical_ir(plan).source_language if _canonical_ir(plan) else "python"
     canonical_node_meta: dict[str, dict[str, object]] = {}
     if plan.plan.canonical_ir is not None:
-        for atom in runtime_atoms:
+        for atom in compat_atoms:
             node_id = _snake_case(atom.name)
             inputs, outputs, description, type_signature, conceptual_summary = _canonical_node_iospecs(
                 atom,
-                state_models=runtime_state,
+                state_models=compat_state_models,
                 plan=plan,
                 source_language=source_language,
             )
@@ -2305,7 +2316,7 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
 
     unique_top_level: list[MacroAtomSpec] = []
     seen_root_children: set[str] = set()
-    for atom in runtime_atoms:
+    for atom in compat_atoms:
         node_id = _snake_case(atom.name)
         if node_id in seen_root_children:
             continue
@@ -2342,7 +2353,7 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
         )
 
     # Build typed edges from plan
-    for edge_def in runtime_edges:
+    for edge_def in compat_edges:
         emitted = DependencyEdge(
             source_id=_snake_case(_title_case(edge_def.source_id)),
             target_id=_snake_case(_title_case(edge_def.target_id)),
@@ -2462,7 +2473,8 @@ def build_sub_graphs(plan: ValidatedMacroPlan) -> dict[str, CDGExport]:
     """Build zoom-in sub-graphs from sub_atom_refs."""
     sub_graphs: dict[str, CDGExport] = {}
 
-    for atom in runtime_macro_atoms(plan.plan):
+    compat_atoms, _compat_state_models, _compat_edges = _compat_plan_exports(plan.plan)
+    for atom in compat_atoms:
         # Find sub-atom refs relevant to this macro-atom
         relevant_refs = [
             ref for ref in plan.plan.sub_atom_refs if ref.similarity_score > 0.5
@@ -2691,11 +2703,11 @@ def build_procedural_plan(
 
 def _linearize_conjugate_sequence(plan: ValidatedMacroPlan) -> ValidatedMacroPlan:
     """Ensure conjugate updates follow data->update->distribution edges."""
-    atoms = runtime_macro_atoms(plan.plan)
+    atoms, _state_models, edges = _compat_plan_exports(plan.plan)
     if not atoms:
         return plan
 
-    edges = list(runtime_edge_definitions(plan.plan))
+    edges = list(edges)
     seen = {
         (
             e.source_id,
@@ -2857,16 +2869,15 @@ def emit_ingestion_bundle(
     # Conjugate updates should follow deterministic
     # data->hyperparameter update->distribution construction flow.
     plan = _linearize_conjugate_sequence(plan)
-    runtime_atoms = runtime_macro_atoms(plan.plan)
-    runtime_state = runtime_state_models(plan.plan)
+    compat_atoms, compat_state_models, _compat_edges = _compat_plan_exports(plan.plan)
 
     # Check for opaque atoms
-    has_opaque = any(a.is_opaque for a in runtime_atoms)
+    has_opaque = any(a.is_opaque for a in compat_atoms)
 
     # Generate witnesses first (need name mapping for atoms)
     witness_source, witness_names = generate_ghost_witnesses(
-        runtime_atoms,
-        state_models=runtime_state,
+        compat_atoms,
+        state_models=compat_state_models,
         plan=plan,
     )
 
@@ -2877,7 +2888,7 @@ def emit_ingestion_bundle(
             "# Opaque DL boundaries",
             "",
         ]
-        for atom in runtime_atoms:
+        for atom in compat_atoms:
             if atom.is_opaque:
                 opaque_lines.append(_opaque_witness_fallback(atom))
                 opaque_lines.append("")
@@ -2886,13 +2897,13 @@ def emit_ingestion_bundle(
         witness_source += "\n".join(opaque_lines)
 
     # Generate state models
-    state_model_source = generate_state_models(runtime_state, plan=plan)
+    state_model_source = generate_state_models(compat_state_models, plan=plan)
 
     # Generate atom wrappers — stateful if state models exist
-    if runtime_state:
+    if compat_state_models:
         atoms_source = generate_stateful_wrappers(
-            runtime_atoms,
-            runtime_state,
+            compat_atoms,
+            compat_state_models,
             class_name,
             witness_names,
             source_file=source_file,
@@ -2901,8 +2912,8 @@ def emit_ingestion_bundle(
         )
     else:
         atoms_source = generate_atom_wrappers(
-            runtime_atoms,
-            runtime_state,
+            compat_atoms,
+            compat_state_models,
             witness_names,
             source_language=source_language,
             class_name=class_name,
@@ -2912,7 +2923,7 @@ def emit_ingestion_bundle(
 
     # Append FFI binding stubs for non-Python sources
     if source_language != "python":
-        ffi_source = generate_ffi_bindings(runtime_atoms, source_language)
+        ffi_source = generate_ffi_bindings(compat_atoms, source_language)
         atoms_source = atoms_source + "\n\n" + ffi_source
 
     # Build CDG

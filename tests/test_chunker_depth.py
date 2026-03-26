@@ -276,6 +276,59 @@ class TestDecomposeComplexAtoms:
         assert decomposed_atom.children[0].depth == 2
 
     @pytest.mark.asyncio
+    async def test_decompose_skips_operationless_legacy_fallback_for_top_level_atoms(self):
+        dfg = _make_dfg(source_lines=50)
+        atom = _make_atom()
+        operation = OperationSpec(
+            operation_id="canonical_pipeline_op",
+            display_name="Run Pipeline",
+            role="state_transition",
+            method_bindings=[MethodBinding(method_name="run_pipeline")],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="run_pipeline",
+                )
+            ],
+            state_effects=[StateEffectSpec(slot_name="result", effect_kind="update")],
+        )
+        plan = ValidatedMacroPlan(
+            plan=ProposedMacroPlan(
+                macro_atoms=[atom],
+                canonical_ir=IngestIRPlan(
+                    subject_name="BigClass",
+                    operations=[operation],
+                ),
+            ),
+            all_attrs_accounted=True,
+        )
+
+        llm = AsyncMock()
+        llm.complete = AsyncMock(return_value=_decompose_response(2))
+        deps = ChunkerDeps(llm=llm, max_depth=3, line_threshold=30)
+
+        state: ChunkerState = {
+            "raw_dfg": dfg,
+            "proposed_plan": ProposedMacroPlan(),
+            "validated_plan": plan,
+            "critique_passed": True,
+            "critique_reason": "",
+            "retry_count": 0,
+            "missing_attrs": [],
+            "done": False,
+        }
+        config = {"configurable": {"deps": deps}}
+
+        result = await decompose_complex_atoms(state, config)
+        updated_plan = result["validated_plan"]
+
+        assert updated_plan.plan.macro_atoms[0].children == []
+        llm.complete.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_simple_atom_untouched(self):
         dfg = _make_dfg(source_lines=10)
         atom = _make_atom()

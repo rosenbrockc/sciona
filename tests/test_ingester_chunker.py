@@ -568,7 +568,7 @@ class TestCriticValidate:
         assert metadata_outputs[0].binding_kind == "metadata_object"
 
     @pytest.mark.asyncio
-    async def test_runtime_macro_atoms_preserve_legacy_outputs_for_emitter(self):
+    async def test_canonical_ir_drives_compat_outputs_when_legacy_exports_are_sparse(self):
         dfg = _make_semantic_ir_dfg()
         plan = ProposedMacroPlan(
             macro_atoms=[
@@ -613,6 +613,12 @@ class TestCriticValidate:
         result = await critic_validate(state, config)
         validated_plan = result["validated_plan"].plan
         assert all(not atom.outputs for atom in validated_plan.macro_atoms)
+        ir = validated_plan.canonical_ir
+        assert ir is not None
+        operation_by_id = {op.operation_id: op for op in ir.operations}
+        assert operation_by_id["predict"].emitted_outputs[0].output_name == "result"
+        assert operation_by_id["metadata_routing"].emitted_outputs[0].output_name == "result"
+        assert operation_by_id["get_calibrators"].emitted_outputs[0].output_name == "calibrators"
 
         adapted_atoms = runtime_macro_atoms(validated_plan)
 
@@ -626,6 +632,7 @@ class TestCriticValidate:
         assert predict_atom.outputs[0].name == "result"
         assert metadata_atom.outputs[0].name == "result"
         assert query_atom.outputs[0].name == "calibrators"
+        assert all(not atom.outputs for atom in validated_plan.macro_atoms)
 
     @pytest.mark.asyncio
     async def test_builds_canonical_ir_for_non_python_semantic_facts(self):

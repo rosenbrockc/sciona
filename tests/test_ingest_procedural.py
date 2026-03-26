@@ -273,12 +273,16 @@ class TestProceduralBundle:
                 ),
             }
         )
+        assert plan.plan.macro_atoms == []
+        assert plan.plan.edge_definitions == []
 
         bundle = emit_ingestion_bundle(plan, "PulsarFold", script_source)
 
         edge_pairs = {(e.source_id, e.target_id) for e in bundle.cdg.edges}
         assert ("remove_baseline", "fold_signal") in edge_pairs
         assert ("fold_signal", "compute_snr") in edge_pairs
+        assert plan.plan.macro_atoms == []
+        assert plan.plan.edge_definitions == []
 
     @pytest.mark.asyncio
     async def test_bundle_match_results_count(self, script_source):

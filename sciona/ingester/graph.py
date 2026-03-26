@@ -210,6 +210,29 @@ def _get_monitor(config: RunnableConfig) -> IngestMonitor | None:
     return getattr(deps, "monitor", None)
 
 
+def _emit_cache_trace(
+    monitor: IngestMonitor | None,
+    *,
+    event_type: str,
+    state: str,
+    cache_key: str = "",
+    cache_path: Path | None = None,
+) -> None:
+    if monitor is None:
+        return
+    payload: dict[str, Any] = {"cache": {"state": state}}
+    if cache_key:
+        payload["cache"]["key"] = cache_key
+    if cache_path is not None:
+        payload["cache"]["path"] = str(cache_path)
+    monitor.trace_event(
+        "ingester",
+        "cache",
+        event_type,
+        payload=payload,
+    )
+
+
 def _get_extractor(source_path: str) -> BaseExtractor:
     """Return the appropriate extractor for *source_path* based on extension.
 
@@ -1185,6 +1208,7 @@ class IngesterAgent:
             An ``IngestionBundle`` with CDG, generated source, and match results.
         """
         cache_key = ""
+        monitor = self._deps.monitor
         if self._enable_cache:
             try:
                 cache_key = compute_ingest_cache_key(
@@ -1195,7 +1219,19 @@ class IngesterAgent:
                 )
                 cached = load_ingest_cache(self._cache_dir, cache_key)
                 if cached is not None:
+                    _emit_cache_trace(
+                        monitor,
+                        event_type="CACHE_LOOKUP",
+                        state="hit",
+                        cache_key=cache_key,
+                    )
                     return cached
+                _emit_cache_trace(
+                    monitor,
+                    event_type="CACHE_LOOKUP",
+                    state="miss",
+                    cache_key=cache_key,
+                )
             except Exception:
                 cache_key = ""
 
@@ -1206,7 +1242,14 @@ class IngesterAgent:
         bundle: IngestionBundle = final_state["bundle"]
         if self._enable_cache and cache_key and not final_state.get("error"):
             try:
-                save_ingest_cache(self._cache_dir, cache_key, bundle)
+                cache_path = save_ingest_cache(self._cache_dir, cache_key, bundle)
+                _emit_cache_trace(
+                    monitor,
+                    event_type="CACHE_STORE",
+                    state="miss",
+                    cache_key=cache_key,
+                    cache_path=cache_path,
+                )
             except Exception:
                 pass
         return bundle
