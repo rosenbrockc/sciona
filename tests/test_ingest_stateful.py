@@ -27,9 +27,18 @@ from sciona.ingester.emitter import (
 from sciona.ingester.extractor import _compute_cross_window_attrs, extract_data_flow
 from sciona.ingester.graph import IngesterAgent
 from sciona.ingester.models import (
+    IngestIRPlan,
+    IngestPlanGraph,
     MacroAtomSpec,
+    MethodBinding,
+    OperationSpec,
+    OutputBindingSpec,
+    ParameterFact,
+    PlannedOperationGroup,
     ProposedMacroPlan,
+    StateEffectSpec,
     StateModelSpec,
+    StateSlotSpec,
     ValidatedMacroPlan,
 )
 
@@ -204,6 +213,68 @@ def _make_stateful_plan() -> ValidatedMacroPlan:
     )
 
 
+def _make_canonical_stateful_plan() -> ValidatedMacroPlan:
+    atom = MacroAtomSpec(
+        name="Average Computer",
+        description="Compute a rolling summary from retained state",
+        method_names=["compute_average"],
+        inputs=[IOSpec(name="window_size", type_desc="int", constraints="")],
+        outputs=[IOSpec(name="result", type_desc="float", constraints="")],
+        concept_type=ConceptType.CUSTOM,
+    )
+    state_model = StateModelSpec(
+        model_name="RollingAveragerState",
+        fields=[("buffer", "list"), ("count", "int"), ("unused", "str")],
+        source_attrs=["buffer", "count", "unused"],
+        docstring="Cross-window state for the rolling averager.",
+    )
+    operation = OperationSpec(
+        operation_id="average_computer",
+        display_name="Average Computer",
+        role="query",
+        method_bindings=[
+            MethodBinding(
+                method_name="compute_average",
+                signature=[ParameterFact(name="self")],
+            )
+        ],
+        direct_inputs=[],
+        required_state_slots=["buffer", "window_size"],
+        emitted_outputs=[
+            OutputBindingSpec(
+                output_name="result",
+                type_desc="float",
+                binding_kind="attribute_read",
+                source_method="compute_average",
+                source_attr="result",
+            )
+        ],
+        state_effects=[
+            StateEffectSpec(
+                slot_name="count",
+                effect_kind="update",
+                source_method="compute_average",
+            )
+        ],
+        concept_type=ConceptType.CUSTOM,
+    )
+    plan = ProposedMacroPlan(
+        macro_atoms=[atom],
+        state_models=[state_model],
+        canonical_ir=IngestIRPlan(
+            subject_name="RollingAverager",
+            operations=[operation],
+            state_slots=[
+                StateSlotSpec(slot_name="buffer", state_kind="fitted", type_desc="list"),
+                StateSlotSpec(slot_name="count", state_kind="fitted", type_desc="int"),
+                StateSlotSpec(slot_name="unused", state_kind="derived", type_desc="str"),
+                StateSlotSpec(slot_name="window_size", state_kind="config", type_desc="int"),
+            ],
+        ),
+    )
+    return ValidatedMacroPlan(plan=plan, all_attrs_accounted=True)
+
+
 # ---------------------------------------------------------------------------
 # Tests: Phase 1 — deterministic AST extraction of stateful class
 # ---------------------------------------------------------------------------
@@ -358,6 +429,203 @@ class TestStatefulWrapperGeneration:
             witness_names,
         )
         ast.parse(source)
+
+    def test_wrapper_imports_generated_modules_and_source_class(self, tmp_path):
+        plan = _make_stateful_plan()
+        _, witness_names = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+        )
+        source_path = tmp_path / "rolling_averager.py"
+        source_path.write_text(ROLLING_AVERAGER_SOURCE)
+        source = generate_stateful_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            "RollingAverager",
+            witness_names,
+            source_file=str(source_path),
+        )
+        assert "from state_models import RollingAveragerState" in source
+        assert (
+            "from witnesses import witness_average_computer, witness_sample_accumulator"
+            in source
+        )
+        assert "_SCIONA_SOURCE_FILE" in source
+        assert 'RollingAverager: Any = getattr(_SCIONA_SOURCE_MODULE, "RollingAverager")' in source
+
+    def test_canonical_wrapper_injects_and_extracts_only_declared_slots(self):
+        plan = _make_canonical_stateful_plan()
+        _, witness_names = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+        )
+        source = generate_stateful_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            "RollingAverager",
+            witness_names,
+            source_file="rolling_averager.py",
+            plan=plan,
+        )
+
+        assert "window_size: int, state: RollingAveragerState" in source
+        assert "obj.buffer = state.buffer" in source
+        assert "obj.window_size = window_size" in source
+        assert "obj.unused = state.unused" not in source
+        assert '"count": obj.count' in source
+        assert '"buffer": obj.buffer' not in source
+        assert 'return obj.result, new_state' in source
+
+    def test_canonical_query_wrapper_preserves_state_when_no_effects(self):
+        atom = MacroAtomSpec(
+            name="Metadata View",
+            description="Return a metadata snapshot without mutation",
+            method_names=["metadata_view"],
+            inputs=[],
+            outputs=[IOSpec(name="metadata", type_desc="dict[str, Any]", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        state_model = StateModelSpec(
+            model_name="RollingAveragerState",
+            fields=[("buffer", "list"), ("count", "int")],
+        )
+        operation = OperationSpec(
+            operation_id="metadata_view",
+            display_name="Metadata View",
+            role="metadata",
+            method_bindings=[MethodBinding(method_name="metadata_view", signature=[ParameterFact(name="self")])],
+            required_state_slots=["buffer"],
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="metadata",
+                    type_desc="dict[str, Any]",
+                    binding_kind="metadata_object",
+                    source_method="metadata_view",
+                )
+            ],
+        )
+        plan = ValidatedMacroPlan(
+            plan=ProposedMacroPlan(
+                macro_atoms=[atom],
+                state_models=[state_model],
+                canonical_ir=IngestIRPlan(
+                    subject_name="RollingAverager",
+                    operations=[operation],
+                    state_slots=[StateSlotSpec(slot_name="buffer", state_kind="fitted", type_desc="list")],
+                ),
+            ),
+            all_attrs_accounted=True,
+        )
+        _, witness_names = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+        )
+
+        source = generate_stateful_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            "RollingAverager",
+            witness_names,
+            source_file="rolling_averager.py",
+            plan=plan,
+        )
+
+        assert "obj.buffer = state.buffer" in source
+        assert "new_state = state" in source
+        assert "return _ret_0, new_state" in source
+
+    def test_canonical_planned_group_calls_only_selected_method(self):
+        atom = MacroAtomSpec(
+            name="Fit Update",
+            description="Run only the update step",
+            method_names=["fit_update"],
+            inputs=[IOSpec(name="data", type_desc="np.ndarray", constraints="")],
+            outputs=[IOSpec(name="result", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        state_model = StateModelSpec(
+            model_name="FitState",
+            fields=[("prepared", "np.ndarray")],
+        )
+        operation = OperationSpec(
+            operation_id="fit_pipeline",
+            display_name="Fit Pipeline",
+            role="state_transition",
+            method_bindings=[
+                MethodBinding(
+                    method_name="fit_prepare",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="data")],
+                ),
+                MethodBinding(
+                    method_name="fit_update",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="data")],
+                ),
+            ],
+            direct_inputs=list(atom.inputs),
+            required_state_slots=["prepared"],
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="fit_update",
+                )
+            ],
+            state_effects=[
+                StateEffectSpec(
+                    slot_name="prepared",
+                    effect_kind="update",
+                    source_method="fit_update",
+                )
+            ],
+        )
+        plan = ValidatedMacroPlan(
+            plan=ProposedMacroPlan(
+                macro_atoms=[atom],
+                state_models=[state_model],
+                canonical_ir=IngestIRPlan(
+                    subject_name="Trainer",
+                    operations=[operation],
+                    state_slots=[StateSlotSpec(slot_name="prepared", state_kind="fitted", type_desc="np.ndarray")],
+                ),
+                planning_graph=IngestPlanGraph(
+                    planned_groups=[
+                        PlannedOperationGroup(
+                            group_id="fit_pipeline__fit_update",
+                            display_name="Fit Update",
+                            group_role="state_transition",
+                            member_operation_ids=["fit_pipeline"],
+                            required_state_slots=["prepared"],
+                            emitted_outputs=[
+                                OutputBindingSpec(
+                                    output_name="result",
+                                    type_desc="np.ndarray",
+                                    binding_kind="return_value",
+                                    source_method="fit_update",
+                                )
+                            ],
+                        )
+                    ]
+                ),
+            ),
+            all_attrs_accounted=True,
+        )
+        _, witness_names = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+        )
+
+        source = generate_stateful_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            "Trainer",
+            witness_names,
+            source_file="trainer.py",
+            plan=plan,
+        )
+
+        assert "obj.fit_update(data)" in source
+        assert "obj.fit_prepare(data)" not in source
 
 
 # ---------------------------------------------------------------------------

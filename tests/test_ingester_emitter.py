@@ -15,9 +15,18 @@ from sciona.ingester.emitter import (
     generate_state_models,
 )
 from sciona.ingester.models import (
+    IngestIRPlan,
+    IngestPlanGraph,
     MacroAtomSpec,
+    MethodBinding,
+    OperationSpec,
+    OutputBindingSpec,
+    ParameterFact,
+    PlannedOperationGroup,
     ProposedMacroPlan,
+    StateEffectSpec,
     StateModelSpec,
+    StateSlotSpec,
     ValidatedMacroPlan,
 )
 
@@ -88,6 +97,33 @@ def _make_plan() -> ValidatedMacroPlan:
     )
 
 
+def _make_canonical_plan(
+    atom: MacroAtomSpec,
+    *,
+    operation: OperationSpec,
+    state_models: list[StateModelSpec] | None = None,
+    state_slots: list[StateSlotSpec] | None = None,
+    planning_groups: list[PlannedOperationGroup] | None = None,
+) -> ValidatedMacroPlan:
+    return ValidatedMacroPlan(
+        plan=ProposedMacroPlan(
+            macro_atoms=[atom],
+            state_models=state_models or [],
+            canonical_ir=IngestIRPlan(
+                subject_name="Estimator",
+                operations=[operation],
+                state_slots=state_slots or [],
+            ),
+            planning_graph=(
+                IngestPlanGraph(planned_groups=planning_groups or [])
+                if planning_groups
+                else None
+            ),
+        ),
+        all_attrs_accounted=True,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tests: generate_state_models
 # ---------------------------------------------------------------------------
@@ -112,6 +148,41 @@ class TestGenerateStateModels:
 
     def test_empty_specs(self):
         assert generate_state_models([]) == ""
+
+    def test_sanitizes_free_form_type_descriptions(self):
+        specs = [
+            StateModelSpec(
+                model_name="CalibrationState",
+                fields=[
+                    ("estimator", "Classifier or None"),
+                    ("cv", "int | CV splitter | iterable"),
+                    ("samples", "array-like"),
+                    ("models", "list[CalibratedClassifier]"),
+                    ("splits", "Iterable[tuple[array-like, array-like]]"),
+                ],
+            ),
+        ]
+        source = generate_state_models(specs)
+        ast.parse(source)
+        assert "estimator: object | None | None" in source
+        assert "cv: int | object | Iterable[Any] | None" in source
+        assert "samples: object | None" in source
+        assert "models: list[object] | None" in source
+        assert "splits: Iterable[tuple[object, object]] | None" in source
+
+    def test_imports_numpy_when_stochastic_fields_exist(self):
+        specs = [
+            StateModelSpec(
+                model_name="TraceState",
+                stochastic={
+                    "rng_field": "rng_key",
+                    "rng_type": "jax.random.KeyArray",
+                    "trace_field": "trace",
+                },
+            ),
+        ]
+        source = generate_state_models(specs)
+        assert "import numpy as np" in source
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +213,231 @@ class TestGenerateAtomWrappers:
         )
         # Must parse as valid Python
         ast.parse(source)
+
+    def test_imports_generated_modules(self):
+        plan = _make_plan()
+        _, witness_names = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+        )
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+        )
+        assert "from state_models import ProcessorState" in source
+        assert (
+            "from witnesses import witness_beat_detector, witness_signal_conditioner"
+            in source
+        )
+        assert "# mypy: disable-error-code=untyped-decorator" in source
+
+    def test_canonical_wrapper_uses_exact_signature_and_return_value(self):
+        atom = MacroAtomSpec(
+            name="Predict",
+            method_names=["predict"],
+            inputs=[
+                IOSpec(name="features", type_desc="np.ndarray", constraints=""),
+                IOSpec(name="threshold", type_desc="float", constraints=""),
+                IOSpec(name="unused", type_desc="float", constraints=""),
+            ],
+            outputs=[IOSpec(name="predictions", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="predict",
+            display_name="Predict",
+            role="predict",
+            method_bindings=[
+                MethodBinding(
+                    method_name="predict",
+                    signature=[
+                        ParameterFact(name="self"),
+                        ParameterFact(name="features"),
+                        ParameterFact(name="threshold", kind="keyword_only"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="predictions",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="predict",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert "_ret_0 = obj.predict(features, threshold=threshold)" in source
+        assert "unused" not in source.split("_ret_0 = obj.predict", 1)[1].split("\n", 1)[0]
+        assert "return _ret_0" in source
+
+    def test_canonical_wrapper_emits_tuple_and_attribute_bindings(self):
+        atom = MacroAtomSpec(
+            name="Summarize",
+            method_names=["summarize"],
+            inputs=[IOSpec(name="batch", type_desc="np.ndarray", constraints="")],
+            outputs=[
+                IOSpec(name="mean", type_desc="float", constraints=""),
+                IOSpec(name="stdev", type_desc="float", constraints=""),
+            ],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="summarize",
+            display_name="Summarize",
+            role="transform",
+            method_bindings=[
+                MethodBinding(
+                    method_name="summarize",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="batch")],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="mean",
+                    type_desc="float",
+                    binding_kind="tuple_element",
+                    source_method="summarize",
+                    tuple_index=0,
+                ),
+                OutputBindingSpec(
+                    output_name="stdev",
+                    type_desc="float",
+                    binding_kind="attribute_read",
+                    source_method="summarize",
+                    source_attr="stdev_",
+                ),
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert "return (_ret_0[0], obj.stdev_)" in source
+
+    def test_canonical_wrapper_uses_planned_group_method_selection(self):
+        atom = MacroAtomSpec(
+            name="Fit Update",
+            method_names=["fit_update"],
+            inputs=[IOSpec(name="data", type_desc="np.ndarray", constraints="")],
+            outputs=[IOSpec(name="result", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="fit_pipeline",
+            display_name="Fit Pipeline",
+            role="state_transition",
+            method_bindings=[
+                MethodBinding(
+                    method_name="fit_prepare",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="data")],
+                ),
+                MethodBinding(
+                    method_name="fit_update",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="data")],
+                ),
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="fit_update",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(
+            atom,
+            operation=operation,
+            planning_groups=[
+                PlannedOperationGroup(
+                    group_id="fit_pipeline__fit_update",
+                    display_name="Fit Update",
+                    group_role="state_transition",
+                    member_operation_ids=["fit_pipeline"],
+                    emitted_outputs=[
+                        OutputBindingSpec(
+                            output_name="result",
+                            type_desc="np.ndarray",
+                            binding_kind="return_value",
+                            source_method="fit_update",
+                        )
+                    ],
+                )
+            ],
+        )
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert "obj.fit_update(data)" in source
+        assert "obj.fit_prepare(data)" not in source
+
+    def test_canonical_wrapper_fails_closed_when_outputs_are_underspecified(self):
+        atom = MacroAtomSpec(
+            name="Score",
+            method_names=["score"],
+            inputs=[IOSpec(name="features", type_desc="np.ndarray", constraints="")],
+            outputs=[IOSpec(name="score", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="score",
+            display_name="Score",
+            role="score",
+            method_bindings=[
+                MethodBinding(
+                    method_name="score",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="features")],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert 'raise NotImplementedError("Score: canonical bindings resolved 0 outputs for 1 declared outputs")' in source
+        assert "obj.score = " not in source
 
 
 # ---------------------------------------------------------------------------
