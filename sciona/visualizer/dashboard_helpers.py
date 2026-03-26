@@ -4,98 +4,21 @@ from __future__ import annotations
 
 from typing import Any
 
-
-def _dict(value: Any) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
-
-
-def _list(value: Any) -> list[Any]:
-    return value if isinstance(value, list) else []
-
-
-def _str(value: Any, default: str = "") -> str:
-    return str(value if value is not None else default)
-
-
-def _int(value: Any, default: int = 0) -> int:
-    try:
-        return int(value if value is not None else default)
-    except Exception:
-        return default
-
-
-def _float(value: Any, default: float = 0.0) -> float:
-    try:
-        return float(value if value is not None else default)
-    except Exception:
-        return default
-
-
-def _bool(value: Any, default: bool = False) -> bool:
-    if value is None:
-        return default
-    return bool(value)
-
-
-def _transport_for_provider(provider: str) -> str:
-    lowered = provider.strip().lower()
-    if lowered.endswith("_shim"):
-        return "persistent_shim"
-    if lowered.endswith("_cli"):
-        return "legacy_cli"
-    if lowered == "llama_cpp":
-        return "local_server"
-    if lowered in {"anthropic", "codex", "openai"}:
-        return "api"
-    return "--" if not lowered else "other"
-
-
-def _merge_runs(
-    persisted: list[dict[str, Any]],
-    runtime: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    merged: dict[str, dict[str, Any]] = {}
-    for row in persisted + runtime:
-        run_id = _str(row.get("run_id", "")).strip()
-        if not run_id:
-            continue
-        current = merged.get(run_id)
-        if current is None or _float(row.get("last_update_at")) >= _float(
-            current.get("last_update_at")
-        ):
-            merged[run_id] = row
-    rows = list(merged.values())
-    rows.sort(key=lambda r: _float(r.get("last_update_at")), reverse=True)
-    return rows
-
-
-def _annotate_hang_signals(
-    run: dict[str, Any],
-    *,
-    stale_seconds: int,
-    now: float,
-) -> dict[str, Any]:
-    stages = _dict(run.get("stages"))
-    stale_stages: list[dict[str, Any]] = []
-    for stage_name, stage in stages.items():
-        if not isinstance(stage, dict) or _str(stage.get("status")) != "running":
-            continue
-        hb = _float(stage.get("last_heartbeat_at"))
-        if hb <= 0:
-            continue
-        age = max(0.0, now - hb)
-        if age >= stale_seconds:
-            stale_stages.append(
-                {
-                    "stage": stage_name,
-                    "heartbeat_age_sec": age,
-                    "message": _str(stage.get("message")),
-                }
-            )
-    out = dict(run)
-    out["stale_stages"] = stale_stages
-    out["is_hung"] = bool(stale_stages) and _str(run.get("status")) == "running"
-    return out
+from sciona.visualizer.dashboard_common import (
+    _annotate_hang_signals,
+    _bool,
+    _dict,
+    _float,
+    _int,
+    _list,
+    _merge_runs,
+    _str,
+    _transport_for_provider,
+)
+from sciona.visualizer.dashboard_event_analysis import (
+    _compute_coverage_from_dicts,
+    _compute_errors_from_dicts,
+)
 
 
 def _routing_line(routing: dict[str, Any], name: str) -> dict[str, Any]:
@@ -777,121 +700,3 @@ def _decorate_dashboard_run(
     out.update(_extract_dashboard_summaries(annotated))
     return out
 
-
-def _compute_coverage_from_dicts(
-    run_id: str, event_dicts: list[dict[str, Any]]
-) -> dict[str, Any]:
-    keys: dict[str, dict[str, Any]] = {}
-    for ev in event_dicts:
-        if ev.get("event_type") not in ("PROMPT_DISPATCH_DONE", "PROMPT_DISPATCH_ERROR"):
-            continue
-        prompt_key = ev.get("prompt_key") or "(unknown)"
-        row = keys.setdefault(
-            prompt_key,
-            {
-                "prompt_key": prompt_key,
-                "total_dispatches": 0,
-                "deterministic_count": 0,
-                "llm_fallback_count": 0,
-                "providers": set(),
-                "error_count": 0,
-                "latency_total_ms": 0.0,
-            },
-        )
-        row["total_dispatches"] += 1
-        provider = ev.get("provider") or ""
-        if provider:
-            row["providers"].add(provider)
-        payload = _dict(ev.get("payload"))
-        deterministic = (
-            provider == "deterministic"
-            or "_shim" in provider
-            or provider.endswith("_cli")
-            or payload.get("critique_source") == "deterministic"
-            or payload.get("ghost_fix_source") == "deterministic"
-            or payload.get("state_hoist_source") == "deterministic"
-            or payload.get("tactic_source") == "deterministic"
-        )
-        row["deterministic_count" if deterministic else "llm_fallback_count"] += 1
-        if ev.get("event_type") == "PROMPT_DISPATCH_ERROR":
-            row["error_count"] += 1
-        duration = ev.get("duration_ms")
-        if duration and duration > 0:
-            row["latency_total_ms"] += _float(duration)
-    prompt_keys = []
-    total_dispatches = 0
-    total_deterministic = 0
-    for row in sorted(keys.values(), key=lambda row: row["total_dispatches"], reverse=True):
-        total = row["total_dispatches"]
-        deterministic = row["deterministic_count"]
-        total_dispatches += total
-        total_deterministic += deterministic
-        prompt_keys.append(
-            {
-                "prompt_key": row["prompt_key"],
-                "total_dispatches": total,
-                "deterministic_count": deterministic,
-                "llm_fallback_count": row["llm_fallback_count"],
-                "deterministic_pct": round(deterministic / total * 100, 1) if total else 0.0,
-                "providers": sorted(row["providers"]),
-                "avg_latency_ms": round(row["latency_total_ms"] / total, 1) if total else 0.0,
-                "error_count": row["error_count"],
-            }
-        )
-    return {
-        "run_id": run_id,
-        "prompt_keys": prompt_keys,
-        "overall_deterministic_pct": round(
-            total_deterministic / total_dispatches * 100, 1
-        )
-        if total_dispatches
-        else 0.0,
-        "total_dispatches": total_dispatches,
-    }
-
-
-def _compute_errors_from_dicts(
-    run_id: str, event_dicts: list[dict[str, Any]]
-) -> dict[str, Any]:
-    dispatch_groups: dict[str, list[dict[str, Any]]] = {}
-    errors: list[dict[str, Any]] = []
-    for ev in event_dicts:
-        if ev.get("event_type") in ("PROMPT_DISPATCH_DONE", "PROMPT_DISPATCH_ERROR"):
-            key = f"{ev.get('prompt_key', '')}:{ev.get('node_id', '')}"
-            dispatch_groups.setdefault(key, []).append(ev)
-    for ev in event_dicts:
-        et = _str(ev.get("event_type"))
-        payload = _dict(ev.get("payload"))
-        if "ERROR" not in et and "FAIL" not in et and "error" not in payload:
-            continue
-        error_msg = payload.get("error") or payload.get("message") or et
-        key = f"{ev.get('prompt_key', '')}:{ev.get('node_id', '')}"
-        retry_history: list[dict[str, Any]] = []
-        for attempt_idx, attempt in enumerate(dispatch_groups.get(key, [])):
-            if _float(attempt.get("timestamp")) > _float(ev.get("timestamp")):
-                break
-            if attempt.get("event_type") == "PROMPT_DISPATCH_ERROR":
-                retry_history.append(
-                    {
-                        "attempt": attempt_idx + 1,
-                        "timestamp": attempt.get("timestamp"),
-                        "error": _dict(attempt.get("payload")).get("error", ""),
-                    }
-                )
-        errors.append(
-            {
-                "timestamp": ev.get("timestamp", 0),
-                "event_type": et,
-                "node_id": ev.get("node_id", ""),
-                "prompt_key": ev.get("prompt_key", ""),
-                "provider": ev.get("provider", ""),
-                "model": ev.get("model", ""),
-                "stage": ev.get("stage", ""),
-                "error_message": _str(error_msg),
-                "dispatch_id": ev.get("dispatch_id", ""),
-                "retry_count": len(retry_history),
-                "retry_history": retry_history,
-            }
-        )
-    errors.sort(key=lambda row: row["timestamp"])
-    return {"run_id": run_id, "error_count": len(errors), "errors": errors}
