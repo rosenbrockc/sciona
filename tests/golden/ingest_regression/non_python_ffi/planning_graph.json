@@ -1,0 +1,29 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "integrator_step"
+    },
+    {
+      "operation_id": "get_position"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Integration Group",
+      "group_id": "integration_group",
+      "member_operation_ids": [
+        "integrator_step"
+      ]
+    },
+    {
+      "display_name": "State Query Group",
+      "group_id": "state_query_group",
+      "member_operation_ids": [
+        "get_position"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}
+

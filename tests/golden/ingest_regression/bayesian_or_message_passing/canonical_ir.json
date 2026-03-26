@@ -1,0 +1,29 @@
+{
+  "artifacts": [],
+  "edges": [],
+  "lowering_version": "phase2_v1",
+  "operations": [
+    {
+      "display_name": "Posterior Update",
+      "operation_id": "posterior_update"
+    },
+    {
+      "display_name": "Posterior Mean",
+      "operation_id": "posterior_mean"
+    }
+  ],
+  "source_language": "python",
+  "state_slots": [
+    {
+      "slot_name": "alpha",
+      "state_kind": "fitted"
+    },
+    {
+      "slot_name": "beta",
+      "state_kind": "fitted"
+    }
+  ],
+  "subject_name": "PosteriorAccumulator",
+  "unknowns": []
+}
+

@@ -1,0 +1,35 @@
+{
+  "edges": [
+    {
+      "input_name": "buffer",
+      "output_name": "buffer",
+      "source_id": "update_rolling_buffer",
+      "source_type": "list",
+      "target_id": "compute_rolling_average",
+      "target_type": "list"
+    }
+  ],
+  "metadata": {
+    "goal": "rolling_stateful",
+    "num_edges": 1,
+    "num_nodes": 2,
+    "paradigm": "custom"
+  },
+  "nodes": [
+    {
+      "concept_type": "custom",
+      "description": "Update rolling state",
+      "name": "Update Rolling Buffer",
+      "node_id": "update_rolling_buffer",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Compute rolling aggregate",
+      "name": "Compute Rolling Average",
+      "node_id": "compute_rolling_average",
+      "status": "atomic"
+    }
+  ]
+}
+

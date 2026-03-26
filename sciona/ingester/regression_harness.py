@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import inspect
+import re
 import time
 from collections import Counter
 from pathlib import Path
@@ -11,8 +12,9 @@ from typing import Any, Callable
 
 from pydantic import BaseModel, Field
 
+from sciona.architect.handoff import CDGExport
 from sciona.ingester.graph import IngesterAgent
-from sciona.ingester.models import IngestionBundle
+from sciona.ingester.models import IngestIRPlan, IngestPlanGraph, IngestionBundle
 from sciona.ingester.monitor import IngestMonitor, TRACE_FILE
 
 AgentFactory = Callable[[Path, IngestMonitor, "IngestRegressionCase"], IngesterAgent]
@@ -45,6 +47,10 @@ class IngestRegressionCase(BaseModel):
     expected_language: str = "python"
     source_path: str = ""
     inline_source: str = ""
+    fixture_origin: str = ""
+    golden_case_id: str = ""
+    expected_artifacts: list[str] = Field(default_factory=list)
+    optional_artifacts: list[str] = Field(default_factory=list)
     semantic_expectations: list[SemanticExpectation] = Field(default_factory=list)
 
 
@@ -70,6 +76,11 @@ class IngestRegressionResult(BaseModel):
     source_language: str = ""
     has_canonical_ir: bool = False
     has_planning_graph: bool = False
+    compared_artifacts: list[str] = Field(default_factory=list)
+    mismatched_artifacts: list[str] = Field(default_factory=list)
+    golden_mismatch_details: dict[str, str] = Field(default_factory=dict)
+    golden_match: bool | None = None
+    has_verification_failure_artifact: bool = False
 
 
 class FamilyBreakdown(BaseModel):
@@ -81,6 +92,8 @@ class FamilyBreakdown(BaseModel):
     ghost_passed_cases: int = 0
     llm_call_total: int = 0
     stalled_cases: int = 0
+    golden_compared_cases: int = 0
+    golden_mismatched_cases: int = 0
 
 
 class IngestRegressionSummary(BaseModel):
@@ -94,6 +107,9 @@ class IngestRegressionSummary(BaseModel):
     timeout_or_stall_count: int = 0
     llm_call_total: int = 0
     semantic_check_pass_rate: float = 0.0
+    golden_compared_cases: int = 0
+    golden_matched_cases: int = 0
+    golden_match_rate: float = 0.0
     family_breakdown: dict[str, FamilyBreakdown] = Field(default_factory=dict)
     failures: list[str] = Field(default_factory=list)
 
@@ -107,6 +123,22 @@ class MonitorTraceSummary(BaseModel):
     classified_state: str = "missing"
 
 
+class NormalizedArtifactBundle(BaseModel):
+    """Normalized reviewable snapshot surfaces for one case."""
+
+    case_id: str
+    artifacts: dict[str, str] = Field(default_factory=dict)
+
+
+class GoldenArtifactComparison(BaseModel):
+    """Golden comparison result for one case."""
+
+    matched: bool = True
+    compared_artifacts: list[str] = Field(default_factory=list)
+    mismatched_artifacts: list[str] = Field(default_factory=list)
+    mismatch_details: dict[str, str] = Field(default_factory=dict)
+
+
 _SOURCE_EXTENSIONS: dict[str, str] = {
     "python": ".py",
     "rust": ".rs",
@@ -115,80 +147,115 @@ _SOURCE_EXTENSIONS: dict[str, str] = {
     "julia": ".jl",
 }
 
+_ARTIFACT_FILE_NAMES: dict[str, str] = {
+    "canonical_ir": "canonical_ir.json",
+    "planning_graph": "planning_graph.json",
+    "atoms": "atoms.py",
+    "state_models": "state_models.py",
+    "witnesses": "witnesses.py",
+    "cdg": "cdg.json",
+    "verification_failure": "verification_failure.json",
+}
 
-def default_ingest_regression_cases() -> list[IngestRegressionCase]:
-    """Return a curated matrix spanning protected ingest families."""
+_JSON_ARTIFACTS: set[str] = {
+    "canonical_ir",
+    "planning_graph",
+    "cdg",
+    "verification_failure",
+}
 
+_DEFAULT_REQUIRED_ARTIFACTS: list[str] = [
+    "canonical_ir",
+    "planning_graph",
+    "atoms",
+    "witnesses",
+    "cdg",
+]
+
+_TRANSIENT_JSON_KEYS: set[str] = {
+    "timestamp",
+    "run_id",
+    "started_at",
+    "ended_at",
+    "last_heartbeat_at",
+    "llm_call_inflight",
+}
+
+_ORDER_HINT_KEYS: tuple[str, ...] = (
+    "operation_id",
+    "group_id",
+    "node_id",
+    "slot_name",
+    "source_id",
+    "target_id",
+    "name",
+    "method_name",
+    "output_name",
+    "input_name",
+)
+
+_ABS_WIN_PATH = re.compile(r"^[A-Za-z]:[\\/]")
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _default_fixture_root() -> Path:
+    return _repo_root() / "tests" / "fixtures" / "ingest_regression"
+
+
+def _fixture_source_path(
+    fixture_root: Path,
+    *,
+    case_id: str,
+    expected_language: str,
+) -> str:
+    suffix = _SOURCE_EXTENSIONS.get(expected_language.lower(), ".txt")
+    return str((fixture_root / case_id / f"source{suffix}").resolve())
+
+
+def default_ingest_regression_cases(
+    *,
+    fixture_root: str | Path | None = None,
+) -> list[IngestRegressionCase]:
+    """Return a curated real-world matrix spanning protected families."""
+
+    root = Path(fixture_root) if fixture_root is not None else _default_fixture_root()
     return [
         IngestRegressionCase(
             case_id="sklearn_style_estimator",
             family="sklearn_estimator",
             class_name="CalibratedStyleClassifier",
             expected_language="python",
-            inline_source="""
-class CalibratedStyleClassifier:
-    def __init__(self, normalize: bool = True):
-        self.normalize = normalize
-        self.classes_ = []
-        self.scale_ = 1.0
-
-    def fit(self, x, y):
-        self.classes_ = sorted(set(y))
-        self.scale_ = len(x) or 1.0
-        return self
-
-    def predict(self, x):
-        if self.normalize:
-            return [self.classes_[0] for _ in x]
-        return [self.classes_[-1] for _ in x]
-
-    def get_metadata_routing(self):
-        return {"normalize": self.normalize}
-""".strip(),
+            source_path=_fixture_source_path(
+                root,
+                case_id="sklearn_style_estimator",
+                expected_language="python",
+            ),
+            fixture_origin="tests/test_ingest.py",
+            expected_artifacts=list(_DEFAULT_REQUIRED_ARTIFACTS),
             semantic_expectations=[
                 SemanticExpectation(check="has_canonical_ir"),
                 SemanticExpectation(check="has_planning_graph"),
-            ],
-        ),
-        IngestRegressionCase(
-            case_id="flat_scientific_function",
-            family="flat_scientific_function",
-            class_name="detrend_signal",
-            expected_language="python",
-            inline_source="""
-def detrend_signal(signal):
-    baseline = sum(signal) / len(signal)
-    return [value - baseline for value in signal]
-""".strip(),
-            semantic_expectations=[
                 SemanticExpectation(check="source_language_equals", value="python"),
             ],
         ),
         IngestRegressionCase(
             case_id="rolling_stateful_class",
             family="rolling_stateful",
-            class_name="RollingWindowAccumulator",
+            class_name="RollingAverager",
             expected_language="python",
-            inline_source="""
-class RollingWindowAccumulator:
-    def __init__(self, window_size: int = 4):
-        self.window_size = window_size
-        self.buffer = []
-        self.total = 0.0
-
-    def add(self, value: float):
-        self.buffer.append(value)
-        if len(self.buffer) > self.window_size:
-            self.buffer = self.buffer[-self.window_size:]
-        self.total = float(sum(self.buffer))
-
-    def average(self) -> float:
-        if not self.buffer:
-            return 0.0
-        return self.total / len(self.buffer)
-""".strip(),
+            source_path=_fixture_source_path(
+                root,
+                case_id="rolling_stateful_class",
+                expected_language="python",
+            ),
+            fixture_origin="tests/test_ingest_stateful.py",
+            expected_artifacts=[*list(_DEFAULT_REQUIRED_ARTIFACTS), "state_models"],
             semantic_expectations=[
                 SemanticExpectation(check="has_canonical_ir"),
+                SemanticExpectation(check="source_language_equals", value="python"),
             ],
         ),
         IngestRegressionCase(
@@ -196,22 +263,33 @@ class RollingWindowAccumulator:
             family="bayesian_or_message_passing",
             class_name="PosteriorAccumulator",
             expected_language="python",
-            inline_source="""
-class PosteriorAccumulator:
-    def __init__(self, alpha: float = 1.0, beta: float = 1.0):
-        self.alpha = alpha
-        self.beta = beta
-
-    def update(self, successes: int, failures: int):
-        self.alpha += successes
-        self.beta += failures
-        return self
-
-    def posterior_mean(self) -> float:
-        return self.alpha / (self.alpha + self.beta)
-""".strip(),
+            source_path=_fixture_source_path(
+                root,
+                case_id="bayesian_or_message_passing",
+                expected_language="python",
+            ),
+            fixture_origin="tests/test_bayesian_ingester.py",
+            expected_artifacts=list(_DEFAULT_REQUIRED_ARTIFACTS),
             semantic_expectations=[
                 SemanticExpectation(check="has_canonical_ir"),
+                SemanticExpectation(check="source_language_equals", value="python"),
+            ],
+        ),
+        IngestRegressionCase(
+            case_id="dsp_biosignal_pipeline",
+            family="dsp_biosignal",
+            class_name="ECGProcessor",
+            expected_language="python",
+            source_path=_fixture_source_path(
+                root,
+                case_id="dsp_biosignal_pipeline",
+                expected_language="python",
+            ),
+            fixture_origin="tests/test_ingest_biosppy_ecg.py",
+            expected_artifacts=[*list(_DEFAULT_REQUIRED_ARTIFACTS), "state_models"],
+            semantic_expectations=[
+                SemanticExpectation(check="has_canonical_ir"),
+                SemanticExpectation(check="source_language_equals", value="python"),
             ],
         ),
         IngestRegressionCase(
@@ -219,22 +297,13 @@ class PosteriorAccumulator:
             family="non_python_ffi",
             class_name="Integrator",
             expected_language="rust",
-            inline_source="""
-pub struct Integrator {
-    position: f64,
-    velocity: f64,
-}
-
-impl Integrator {
-    pub fn step(&mut self, dt: f64) {
-        self.position = self.position + self.velocity * dt;
-    }
-
-    pub fn get_position(&self) -> f64 {
-        return self.position;
-    }
-}
-""".strip(),
+            source_path=_fixture_source_path(
+                root,
+                case_id="non_python_ffi",
+                expected_language="rust",
+            ),
+            fixture_origin="tests/test_treesitter_rust.py",
+            expected_artifacts=list(_DEFAULT_REQUIRED_ARTIFACTS),
             semantic_expectations=[
                 SemanticExpectation(check="source_language_equals", value="rust"),
                 SemanticExpectation(check="has_canonical_ir"),
@@ -243,28 +312,290 @@ impl Integrator {
         IngestRegressionCase(
             case_id="procedural_ingest",
             family="procedural_ingest",
-            class_name="ProceduralPipeline",
+            class_name="PulsarFold",
             procedural=True,
             expected_language="python",
-            inline_source="""
-def normalize(xs):
-    baseline = sum(xs) / len(xs)
-    return [value - baseline for value in xs]
-
-
-def score(xs):
-    return max(xs) - min(xs)
-
-
-raw = [1.0, 2.0, 3.0, 4.0]
-clean = normalize(raw)
-spread = score(clean)
-""".strip(),
+            source_path=_fixture_source_path(
+                root,
+                case_id="procedural_ingest",
+                expected_language="python",
+            ),
+            fixture_origin="tests/test_ingest_procedural.py",
+            expected_artifacts=["atoms", "witnesses", "cdg"],
             semantic_expectations=[
                 SemanticExpectation(check="cdg_node_count_at_least", minimum=3),
             ],
         ),
     ]
+
+
+def _is_transient_json_key(key: str) -> bool:
+    return key in _TRANSIENT_JSON_KEYS or key.endswith("_at")
+
+
+def _normalize_source_text(source: str) -> str:
+    lines = source.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    normalized = "\n".join(line.rstrip() for line in lines).strip()
+    if not normalized:
+        return ""
+    return normalized + "\n"
+
+
+def _normalize_path_like_text(value: str, *, output_dir: Path) -> str:
+    normalized = value.replace("\\", "/")
+    case_dir = output_dir.as_posix()
+    output_root = output_dir.parent.as_posix()
+    if case_dir and case_dir in normalized:
+        normalized = normalized.replace(case_dir, "<case_output_dir>")
+    if output_root and output_root in normalized:
+        normalized = normalized.replace(output_root, "<output_root>")
+    if normalized.startswith("/"):
+        suffix = Path(normalized).name
+        return f"<abs>/{suffix}" if suffix else "<abs>"
+    if _ABS_WIN_PATH.match(normalized):
+        suffix = Path(normalized).name
+        return f"<abs>/{suffix}" if suffix else "<abs>"
+    return normalized
+
+
+def _sortable_dict_key(item: dict[str, Any]) -> str:
+    for key in _ORDER_HINT_KEYS:
+        value = item.get(key)
+        if value:
+            return f"{key}:{value}"
+    return json.dumps(item, sort_keys=True, separators=(",", ":"))
+
+
+def normalize_snapshot_payload(payload: Any, *, output_dir: str | Path) -> Any:
+    """Normalize JSON payloads so goldens capture semantics, not runtime noise."""
+
+    case_dir = Path(output_dir)
+
+    if isinstance(payload, dict):
+        normalized_items: dict[str, Any] = {}
+        for key in sorted(payload):
+            if _is_transient_json_key(key):
+                continue
+            normalized_items[key] = normalize_snapshot_payload(
+                payload[key],
+                output_dir=case_dir,
+            )
+        return normalized_items
+
+    if isinstance(payload, list):
+        normalized_items = [
+            normalize_snapshot_payload(item, output_dir=case_dir)
+            for item in payload
+        ]
+        if all(not isinstance(item, (dict, list)) for item in normalized_items):
+            return sorted(
+                normalized_items,
+                key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")),
+            )
+        if all(isinstance(item, dict) for item in normalized_items):
+            has_hints = any(
+                any(hint in item for hint in _ORDER_HINT_KEYS)
+                for item in normalized_items
+            )
+            if has_hints:
+                return sorted(normalized_items, key=_sortable_dict_key)
+        return normalized_items
+
+    if isinstance(payload, str):
+        return _normalize_path_like_text(payload, output_dir=case_dir)
+
+    return payload
+
+
+def _model_payload(value: Any) -> Any:
+    if value is None:
+        return None
+    dump = getattr(value, "model_dump", None)
+    if callable(dump):
+        return dump(mode="json")
+    return value
+
+
+def _coerce_json_artifact_payload(artifact_name: str, payload: Any) -> Any:
+    if not isinstance(payload, dict):
+        return payload
+    try:
+        if artifact_name == "canonical_ir":
+            return IngestIRPlan.model_validate(payload).model_dump(mode="json")
+        if artifact_name == "planning_graph":
+            return IngestPlanGraph.model_validate(payload).model_dump(mode="json")
+        if artifact_name == "cdg":
+            return CDGExport.model_validate(payload).model_dump(mode="json")
+    except Exception:
+        return payload
+    return payload
+
+
+def _serialize_normalized_artifact(
+    artifact_name: str,
+    payload: Any,
+    *,
+    output_dir: Path,
+) -> str:
+    if artifact_name in _JSON_ARTIFACTS:
+        if isinstance(payload, str):
+            try:
+                decoded = json.loads(payload)
+            except json.JSONDecodeError:
+                decoded = {"raw": _normalize_source_text(payload)}
+        else:
+            decoded = payload
+        decoded = _coerce_json_artifact_payload(artifact_name, decoded)
+        normalized = normalize_snapshot_payload(decoded, output_dir=output_dir)
+        return json.dumps(normalized, indent=2, sort_keys=True)
+    if not isinstance(payload, str):
+        payload = str(payload)
+    return _normalize_source_text(payload)
+
+
+def capture_normalized_artifact_bundle(
+    case: IngestRegressionCase,
+    *,
+    output_dir: str | Path,
+    bundle: IngestionBundle,
+    final_state: dict[str, Any] | None,
+) -> NormalizedArtifactBundle:
+    """Collect normalized semantic artifact snapshots for one case."""
+
+    case_output_dir = Path(output_dir)
+    artifacts: dict[str, str] = {}
+
+    validated_plan = (final_state or {}).get("validated_plan")
+    plan = getattr(validated_plan, "plan", None) if validated_plan is not None else None
+    canonical_ir = getattr(plan, "canonical_ir", None) if plan is not None else None
+    planning_graph = getattr(plan, "planning_graph", None) if plan is not None else None
+
+    if canonical_ir is not None:
+        artifacts["canonical_ir"] = _serialize_normalized_artifact(
+            "canonical_ir",
+            _model_payload(canonical_ir),
+            output_dir=case_output_dir,
+        )
+    if planning_graph is not None:
+        artifacts["planning_graph"] = _serialize_normalized_artifact(
+            "planning_graph",
+            _model_payload(planning_graph),
+            output_dir=case_output_dir,
+        )
+    if bundle.generated_atoms:
+        artifacts["atoms"] = _serialize_normalized_artifact(
+            "atoms",
+            bundle.generated_atoms,
+            output_dir=case_output_dir,
+        )
+    if bundle.generated_state_models:
+        artifacts["state_models"] = _serialize_normalized_artifact(
+            "state_models",
+            bundle.generated_state_models,
+            output_dir=case_output_dir,
+        )
+    if bundle.generated_witnesses:
+        artifacts["witnesses"] = _serialize_normalized_artifact(
+            "witnesses",
+            bundle.generated_witnesses,
+            output_dir=case_output_dir,
+        )
+    artifacts["cdg"] = _serialize_normalized_artifact(
+        "cdg",
+        _model_payload(bundle.cdg),
+        output_dir=case_output_dir,
+    )
+
+    verification_path = case_output_dir / _ARTIFACT_FILE_NAMES["verification_failure"]
+    if verification_path.exists():
+        verification_payload = json.loads(verification_path.read_text())
+        artifacts["verification_failure"] = _serialize_normalized_artifact(
+            "verification_failure",
+            verification_payload,
+            output_dir=case_output_dir,
+        )
+    elif final_state is not None and final_state.get("error"):
+        fallback_failure = {
+            "stage": str((final_state.get("failed_phase") or final_state.get("phase") or "")),
+            "reason_code": str(
+                (final_state.get("type_failure_classification") or {}).get("reason_code")
+                or (final_state.get("ghost_failure_classification") or {}).get("reason_code")
+                or "ingest_failure"
+            ),
+            "error": str(final_state.get("error") or ""),
+        }
+        artifacts["verification_failure"] = _serialize_normalized_artifact(
+            "verification_failure",
+            fallback_failure,
+            output_dir=case_output_dir,
+        )
+
+    return NormalizedArtifactBundle(
+        case_id=case.case_id,
+        artifacts=artifacts,
+    )
+
+
+def compare_case_artifacts_to_goldens(
+    case: IngestRegressionCase,
+    *,
+    observed: NormalizedArtifactBundle,
+    golden_root: str | Path,
+    output_dir: str | Path,
+) -> GoldenArtifactComparison:
+    """Compare normalized artifacts against checked-in golden files."""
+
+    case_output_dir = Path(output_dir)
+    golden_dir = Path(golden_root) / "ingest_regression" / (case.golden_case_id or case.case_id)
+    required = list(case.expected_artifacts or _DEFAULT_REQUIRED_ARTIFACTS)
+    optional = set(case.optional_artifacts)
+
+    mismatched: list[str] = []
+    mismatch_details: dict[str, str] = {}
+    compared: list[str] = []
+
+    for artifact_name in required:
+        compared.append(artifact_name)
+        file_name = _ARTIFACT_FILE_NAMES.get(artifact_name)
+        if not file_name:
+            mismatched.append(artifact_name)
+            mismatch_details[artifact_name] = "unsupported_artifact"
+            continue
+
+        observed_text = observed.artifacts.get(artifact_name)
+        golden_path = golden_dir / file_name
+        has_golden = golden_path.exists()
+
+        if observed_text is None and not has_golden and artifact_name in optional:
+            continue
+        if observed_text is None and has_golden:
+            mismatched.append(artifact_name)
+            mismatch_details[artifact_name] = "missing_observed_artifact"
+            continue
+        if observed_text is None and not has_golden:
+            mismatched.append(artifact_name)
+            mismatch_details[artifact_name] = "missing_observed_and_golden_artifact"
+            continue
+        if not has_golden:
+            mismatched.append(artifact_name)
+            mismatch_details[artifact_name] = "missing_golden_artifact"
+            continue
+
+        golden_text = _serialize_normalized_artifact(
+            artifact_name,
+            golden_path.read_text(),
+            output_dir=case_output_dir,
+        )
+        if observed_text != golden_text:
+            mismatched.append(artifact_name)
+            mismatch_details[artifact_name] = "content_mismatch"
+
+    return GoldenArtifactComparison(
+        matched=not mismatched,
+        compared_artifacts=compared,
+        mismatched_artifacts=mismatched,
+        mismatch_details=mismatch_details,
+    )
 
 
 def read_monitor_trace_events(output_dir: str | Path) -> list[dict[str, Any]]:
@@ -326,6 +657,8 @@ def summarize_ingest_regression_results(
     ghost_passed_cases = sum(1 for item in results if item.ghost_passed)
     timeout_or_stall_count = sum(1 for item in results if item.timed_out_or_stalled)
     llm_call_total = sum(item.llm_call_count for item in results)
+    golden_compared_cases = sum(1 for item in results if item.golden_match is not None)
+    golden_matched_cases = sum(1 for item in results if item.golden_match is True)
 
     semantic_total = sum(len(item.semantic_checks) for item in results)
     semantic_passed = sum(
@@ -344,8 +677,14 @@ def summarize_ingest_regression_results(
         family_row.ghost_passed_cases += int(item.ghost_passed)
         family_row.llm_call_total += item.llm_call_count
         family_row.stalled_cases += int(item.timed_out_or_stalled)
+        family_row.golden_compared_cases += int(item.golden_match is not None)
+        family_row.golden_mismatched_cases += int(item.golden_match is False)
 
-    failures = [item.case_id for item in results if not item.completed or item.error]
+    failures: list[str] = []
+    for item in results:
+        if not item.completed or item.error or item.golden_match is False:
+            failures.append(item.case_id)
+
     return IngestRegressionSummary(
         total_cases=total_cases,
         completed_cases=completed_cases,
@@ -356,6 +695,11 @@ def summarize_ingest_regression_results(
         llm_call_total=llm_call_total,
         semantic_check_pass_rate=(
             semantic_passed / semantic_total if semantic_total else 0.0
+        ),
+        golden_compared_cases=golden_compared_cases,
+        golden_matched_cases=golden_matched_cases,
+        golden_match_rate=(
+            golden_matched_cases / golden_compared_cases if golden_compared_cases else 0.0
         ),
         family_breakdown=family_breakdown,
         failures=failures,
@@ -382,7 +726,15 @@ def _stage_success_artifacts(
     monitor: IngestMonitor,
     *,
     bundle: IngestionBundle,
+    validated_plan: Any | None = None,
 ) -> list[str]:
+    plan = getattr(validated_plan, "plan", None) if validated_plan is not None else None
+    canonical_ir = getattr(plan, "canonical_ir", None) if plan is not None else None
+    planning_graph = getattr(plan, "planning_graph", None) if plan is not None else None
+    if canonical_ir is not None:
+        monitor.stage_json("canonical_ir.json", _model_payload(canonical_ir))
+    if planning_graph is not None:
+        monitor.stage_json("planning_graph.json", _model_payload(planning_graph))
     if bundle.generated_atoms:
         monitor.stage_file("atoms.py", bundle.generated_atoms)
     if bundle.generated_state_models:
@@ -420,6 +772,17 @@ def _stage_failure_artifacts(
     validated_plan = state.get("validated_plan")
     if validated_plan is not None:
         monitor.stage_json("validated_plan.json", validated_plan.model_dump(mode="json"))
+        plan = getattr(validated_plan, "plan", None)
+        if plan is not None and getattr(plan, "canonical_ir", None) is not None:
+            monitor.stage_json(
+                "canonical_ir.json",
+                _model_payload(plan.canonical_ir),
+            )
+        if plan is not None and getattr(plan, "planning_graph", None) is not None:
+            monitor.stage_json(
+                "planning_graph.json",
+                _model_payload(plan.planning_graph),
+            )
     monitor.stage_json(
         "ingest_failure_state.json",
         {
@@ -502,6 +865,7 @@ async def run_ingest_regression_case(
     output_root: str | Path,
     agent_factory: AgentFactory,
     stale_seconds: int = 120,
+    golden_root: str | Path | None = None,
 ) -> IngestRegressionResult:
     """Run one curated ingest case via the public ingester entrypoints."""
 
@@ -530,7 +894,11 @@ async def run_ingest_regression_case(
     try:
         if case.procedural:
             bundle = await agent.ingest_procedural(str(source_path), case.class_name)
-            published_artifacts = _stage_success_artifacts(monitor, bundle=bundle)
+            published_artifacts = _stage_success_artifacts(
+                monitor,
+                bundle=bundle,
+                validated_plan=None,
+            )
             source_language = case.expected_language
             monitor.complete(
                 summary={
@@ -559,7 +927,11 @@ async def run_ingest_regression_case(
                     bundle = maybe_bundle
             else:
                 bundle = final_state["bundle"]
-                published_artifacts = _stage_success_artifacts(monitor, bundle=bundle)
+                published_artifacts = _stage_success_artifacts(
+                    monitor,
+                    bundle=bundle,
+                    validated_plan=final_state.get("validated_plan"),
+                )
                 monitor.complete(
                     summary={
                         "cdg_nodes": len(bundle.cdg.nodes),
@@ -594,6 +966,25 @@ async def run_ingest_regression_case(
         final_state=final_state,
         source_language=source_language,
     )
+    normalized_bundle = capture_normalized_artifact_bundle(
+        case,
+        output_dir=case_dir,
+        bundle=bundle,
+        final_state=final_state,
+    )
+    golden_comparison = GoldenArtifactComparison(
+        matched=True,
+        compared_artifacts=[],
+        mismatched_artifacts=[],
+        mismatch_details={},
+    )
+    if golden_root is not None:
+        golden_comparison = compare_case_artifacts_to_goldens(
+            case,
+            observed=normalized_bundle,
+            golden_root=golden_root,
+            output_dir=case_dir,
+        )
     validated_plan = (final_state or {}).get("validated_plan")
     has_canonical_ir = bool(
         validated_plan is not None
@@ -637,6 +1028,13 @@ async def run_ingest_regression_case(
         source_language=source_language,
         has_canonical_ir=has_canonical_ir,
         has_planning_graph=has_planning_graph,
+        compared_artifacts=golden_comparison.compared_artifacts,
+        mismatched_artifacts=golden_comparison.mismatched_artifacts,
+        golden_mismatch_details=golden_comparison.mismatch_details,
+        golden_match=golden_comparison.matched if golden_root is not None else None,
+        has_verification_failure_artifact=(
+            "verification_failure" in normalized_bundle.artifacts
+        ),
     )
 
 
@@ -646,6 +1044,7 @@ async def run_ingest_regression_suite(
     output_root: str | Path,
     agent_factory: AgentFactory,
     stale_seconds: int = 120,
+    golden_root: str | Path | None = None,
 ) -> tuple[list[IngestRegressionResult], IngestRegressionSummary]:
     """Run a curated suite sequentially and summarize the results."""
 
@@ -657,6 +1056,7 @@ async def run_ingest_regression_suite(
                 output_root=output_root,
                 agent_factory=agent_factory,
                 stale_seconds=stale_seconds,
+                golden_root=golden_root,
             )
         )
     return results, summarize_ingest_regression_results(results)

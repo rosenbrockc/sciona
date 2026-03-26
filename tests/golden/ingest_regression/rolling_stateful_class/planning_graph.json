@@ -1,0 +1,29 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "update_rolling_buffer"
+    },
+    {
+      "operation_id": "compute_rolling_average"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Rolling Update Group",
+      "group_id": "rolling_update_group",
+      "member_operation_ids": [
+        "update_rolling_buffer"
+      ]
+    },
+    {
+      "display_name": "Rolling Aggregate Group",
+      "group_id": "rolling_aggregate_group",
+      "member_operation_ids": [
+        "compute_rolling_average"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}
+

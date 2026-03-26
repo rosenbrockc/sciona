@@ -1,0 +1,35 @@
+{
+  "edges": [
+    {
+      "input_name": "state",
+      "output_name": "state",
+      "source_id": "integrator_step",
+      "source_type": "dict",
+      "target_id": "get_position",
+      "target_type": "dict"
+    }
+  ],
+  "metadata": {
+    "goal": "non_python_ffi",
+    "num_edges": 1,
+    "num_nodes": 2,
+    "paradigm": "custom"
+  },
+  "nodes": [
+    {
+      "concept_type": "custom",
+      "description": "Advance integrator state",
+      "name": "Integrator Step",
+      "node_id": "integrator_step",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Read position from state",
+      "name": "Get Position",
+      "node_id": "get_position",
+      "status": "atomic"
+    }
+  ]
+}
+

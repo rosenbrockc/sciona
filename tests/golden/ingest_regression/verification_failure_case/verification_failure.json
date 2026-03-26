@@ -1,0 +1,6 @@
+{
+  "error": "type check failed",
+  "reason_code": "missing_annotation",
+  "stage": "verify_types"
+}
+

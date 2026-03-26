@@ -1,0 +1,16 @@
+{
+  "artifacts": [],
+  "edges": [],
+  "lowering_version": "phase2_v1",
+  "operations": [
+    {
+      "display_name": "Fit and Predict",
+      "operation_id": "fit_predict"
+    }
+  ],
+  "source_language": "python",
+  "state_slots": [],
+  "subject_name": "CalibratedStyleClassifier",
+  "unknowns": []
+}
+

@@ -1,0 +1,39 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "filter_signal"
+    },
+    {
+      "operation_id": "detect_rpeaks"
+    },
+    {
+      "operation_id": "compute_heart_rate"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Signal Preprocessing",
+      "group_id": "signal_preprocessing",
+      "member_operation_ids": [
+        "filter_signal"
+      ]
+    },
+    {
+      "display_name": "Peak Analysis",
+      "group_id": "peak_analysis",
+      "member_operation_ids": [
+        "detect_rpeaks"
+      ]
+    },
+    {
+      "display_name": "Rate Estimation",
+      "group_id": "rate_estimation",
+      "member_operation_ids": [
+        "compute_heart_rate"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}
+

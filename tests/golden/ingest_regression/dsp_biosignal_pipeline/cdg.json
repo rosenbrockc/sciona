@@ -1,0 +1,50 @@
+{
+  "edges": [
+    {
+      "input_name": "filtered",
+      "output_name": "filtered",
+      "source_id": "filter_signal",
+      "source_type": "list",
+      "target_id": "detect_rpeaks",
+      "target_type": "list"
+    },
+    {
+      "input_name": "rpeaks",
+      "output_name": "rpeaks",
+      "source_id": "detect_rpeaks",
+      "source_type": "list",
+      "target_id": "compute_heart_rate",
+      "target_type": "list"
+    }
+  ],
+  "metadata": {
+    "goal": "dsp_biosignal",
+    "num_edges": 2,
+    "num_nodes": 3,
+    "paradigm": "signal_filter"
+  },
+  "nodes": [
+    {
+      "concept_type": "signal_filter",
+      "description": "Filter ECG signal",
+      "name": "Filter Signal",
+      "node_id": "filter_signal",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Detect R peaks from filtered signal",
+      "name": "Detect R Peaks",
+      "node_id": "detect_rpeaks",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Compute heart rate from peaks",
+      "name": "Compute Heart Rate",
+      "node_id": "compute_heart_rate",
+      "status": "atomic"
+    }
+  ]
+}
+

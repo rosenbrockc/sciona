@@ -1,0 +1,35 @@
+{
+  "edges": [
+    {
+      "input_name": "posterior",
+      "output_name": "posterior",
+      "source_id": "posterior_update",
+      "source_type": "dict",
+      "target_id": "posterior_mean",
+      "target_type": "dict"
+    }
+  ],
+  "metadata": {
+    "goal": "bayesian_or_message_passing",
+    "num_edges": 1,
+    "num_nodes": 2,
+    "paradigm": "custom"
+  },
+  "nodes": [
+    {
+      "concept_type": "posterior_update",
+      "description": "Update posterior hyperparameters",
+      "name": "Posterior Update",
+      "node_id": "posterior_update",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Compute posterior mean",
+      "name": "Posterior Mean",
+      "node_id": "posterior_mean",
+      "status": "atomic"
+    }
+  ]
+}
+

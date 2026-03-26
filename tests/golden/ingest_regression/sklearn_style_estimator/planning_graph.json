@@ -1,0 +1,19 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "fit_predict"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Fit and Predict Group",
+      "group_id": "fit_predict_group",
+      "member_operation_ids": [
+        "fit_predict"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}
+

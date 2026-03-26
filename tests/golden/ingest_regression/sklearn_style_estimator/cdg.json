@@ -1,0 +1,19 @@
+{
+  "edges": [],
+  "metadata": {
+    "goal": "sklearn_estimator",
+    "num_edges": 0,
+    "num_nodes": 1,
+    "paradigm": "custom"
+  },
+  "nodes": [
+    {
+      "concept_type": "custom",
+      "description": "Sklearn style estimator wrapper",
+      "name": "Calibrated Style Classifier Atom",
+      "node_id": "fit_predict",
+      "status": "atomic"
+    }
+  ]
+}
+

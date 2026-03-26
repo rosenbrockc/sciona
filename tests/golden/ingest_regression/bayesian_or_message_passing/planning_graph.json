@@ -1,0 +1,29 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "posterior_update"
+    },
+    {
+      "operation_id": "posterior_mean"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Posterior Update Group",
+      "group_id": "posterior_update_group",
+      "member_operation_ids": [
+        "posterior_update"
+      ]
+    },
+    {
+      "display_name": "Posterior Query Group",
+      "group_id": "posterior_query_group",
+      "member_operation_ids": [
+        "posterior_mean"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}
+

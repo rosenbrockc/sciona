@@ -1,0 +1,62 @@
+{
+  "edges": [
+    {
+      "input_name": "signal",
+      "output_name": "clean",
+      "source_id": "remove_baseline",
+      "source_type": "list",
+      "target_id": "fold_signal",
+      "target_type": "list"
+    },
+    {
+      "input_name": "folded",
+      "output_name": "folded",
+      "source_id": "fold_signal",
+      "source_type": "list",
+      "target_id": "compute_snr",
+      "target_type": "list"
+    }
+  ],
+  "metadata": {
+    "goal": "procedural_ingest",
+    "num_edges": 2,
+    "num_nodes": 4,
+    "paradigm": "custom"
+  },
+  "nodes": [
+    {
+      "children": [
+        "remove_baseline",
+        "fold_signal",
+        "compute_snr"
+      ],
+      "concept_type": "custom",
+      "description": "Procedural signal processing pipeline",
+      "name": "PulsarFold",
+      "node_id": "pulsar_fold",
+      "status": "decomposed"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Remove baseline drift",
+      "name": "Remove Baseline",
+      "node_id": "remove_baseline",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Fold signal into phase bins",
+      "name": "Fold Signal",
+      "node_id": "fold_signal",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Compute signal-to-noise ratio",
+      "name": "Compute SNR",
+      "node_id": "compute_snr",
+      "status": "atomic"
+    }
+  ]
+}
+

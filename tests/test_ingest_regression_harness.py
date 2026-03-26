@@ -4,21 +4,30 @@ from __future__ import annotations
 
 import json
 import textwrap
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
 
 from sciona.ingester.graph import IngesterAgent
+from sciona.ingester.models import IngestionBundle, ValidatedMacroPlan
 from sciona.ingester.monitor import STATUS_FILE, IngestMonitor
 from sciona.ingester.regression_harness import (
     IngestRegressionCase,
     IngestRegressionResult,
+    NormalizedArtifactBundle,
     SemanticExpectation,
+    compare_case_artifacts_to_goldens,
     default_ingest_regression_cases,
+    normalize_snapshot_payload,
     run_ingest_regression_suite,
     summarize_ingest_regression_results,
     summarize_monitor_trace,
 )
+
+_FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "ingest_regression"
+_GOLDEN_ROOT = Path(__file__).resolve().parent / "golden"
 
 _ROLLING_SOURCE = textwrap.dedent("""\
     class RollingAverager:
@@ -129,23 +138,131 @@ _ABSTRACT_RESPONSE = json.dumps(
 )
 
 
+def _golden_case_dir(case_id: str) -> Path:
+    return _GOLDEN_ROOT / "ingest_regression" / case_id
+
+
+def _read_golden_json(case_id: str, name: str) -> dict:
+    return json.loads((_golden_case_dir(case_id) / name).read_text())
+
+
+def _read_golden_text(case_id: str, name: str) -> str:
+    return (_golden_case_dir(case_id) / name).read_text()
+
+
+def _bundle_from_golden(case_id: str, case_dir: Path) -> IngestionBundle:
+    cdg = _read_golden_json(case_id, "cdg.json")
+    cdg.setdefault("metadata", {})
+    cdg["metadata"]["timestamp"] = 1712345678.0
+    payload = {
+        "cdg": cdg,
+        "generated_atoms": _read_golden_text(case_id, "atoms.py"),
+        "generated_state_models": (
+            _read_golden_text(case_id, "state_models.py")
+            if (_golden_case_dir(case_id) / "state_models.py").exists()
+            else ""
+        ),
+        "generated_witnesses": _read_golden_text(case_id, "witnesses.py"),
+        "mypy_passed": True,
+        "ghost_sim_passed": True,
+    }
+    return IngestionBundle.model_validate(payload)
+
+
+def _validated_plan_from_golden(case_id: str, case_dir: Path) -> ValidatedMacroPlan:
+    canonical_ir = _read_golden_json(case_id, "canonical_ir.json")
+    canonical_ir["started_at"] = 1.0
+    canonical_ir["operations"] = list(reversed(canonical_ir.get("operations", [])))
+
+    planning_graph = _read_golden_json(case_id, "planning_graph.json")
+    planning_graph["timestamp"] = 2.0
+    planning_graph["planned_groups"] = list(
+        reversed(planning_graph.get("planned_groups", []))
+    )
+
+    return ValidatedMacroPlan.model_validate(
+        {
+            "plan": {
+                "canonical_ir": canonical_ir,
+                "planning_graph": planning_graph,
+            },
+            "all_attrs_accounted": True,
+            "coverage_report": "fixture",
+            "ir_validated": True,
+        }
+    )
+
+
+class _GoldenFixtureAgent:
+    def __init__(self, case_dir: Path, case: IngestRegressionCase):
+        self.case_dir = case_dir
+        self.case = case
+        self._deps = SimpleNamespace(proof_env=None)
+
+    async def ingest_state(self, source_path: str, class_name: str) -> dict:
+        return {
+            "bundle": _bundle_from_golden(self.case.case_id, self.case_dir),
+            "validated_plan": _validated_plan_from_golden(self.case.case_id, self.case_dir),
+            "error": "",
+            "type_failure_classification": {},
+            "ghost_failure_classification": {},
+        }
+
+    async def ingest_procedural(self, source_path: str, class_name: str) -> IngestionBundle:
+        return _bundle_from_golden(self.case.case_id, self.case_dir)
+
+
+class _FailureFixtureAgent:
+    def __init__(self):
+        self._deps = SimpleNamespace(proof_env=None)
+
+    async def ingest_state(self, source_path: str, class_name: str) -> dict:
+        return {
+            "bundle": IngestionBundle.model_validate(
+                {
+                    "cdg": {
+                        "nodes": [],
+                        "edges": [],
+                        "metadata": {"timestamp": 1234.0},
+                    },
+                    "generated_atoms": "class BrokenAtom:\n    pass\n",
+                    "generated_witnesses": "def witness_broken_atom():\n    return None\n",
+                    "mypy_passed": False,
+                    "ghost_sim_passed": False,
+                }
+            ),
+            "error": "type check failed",
+            "phase": "verify_types",
+            "type_failure_classification": {"reason_code": "missing_annotation"},
+            "ghost_failure_classification": {},
+        }
+
+    async def ingest_procedural(self, source_path: str, class_name: str) -> IngestionBundle:
+        raise AssertionError("procedural path should not be used for failure case")
+
+
 def test_default_case_matrix_covers_required_families():
-    cases = default_ingest_regression_cases()
+    cases = default_ingest_regression_cases(fixture_root=_FIXTURE_ROOT)
 
     assert len(cases) == 6
     assert {case.case_id for case in cases} == {
         "sklearn_style_estimator",
-        "flat_scientific_function",
         "rolling_stateful_class",
         "bayesian_or_message_passing",
+        "dsp_biosignal_pipeline",
         "non_python_ffi",
         "procedural_ingest",
     }
-    non_python = next(case for case in cases if case.case_id == "non_python_ffi")
-    assert any(
-        expectation.check == "has_canonical_ir"
-        for expectation in non_python.semantic_expectations
-    )
+    assert {case.family for case in cases} == {
+        "sklearn_estimator",
+        "rolling_stateful",
+        "bayesian_or_message_passing",
+        "dsp_biosignal",
+        "non_python_ffi",
+        "procedural_ingest",
+    }
+    assert all(Path(case.source_path).exists() for case in cases)
+    assert all(case.expected_artifacts for case in cases)
 
 
 def test_summarize_monitor_trace_counts_prompt_keys_and_stalled(tmp_path):
@@ -192,6 +309,7 @@ def test_summary_aggregation_computes_rates():
             ghost_passed=False,
             llm_call_count=2,
             semantic_checks=[],
+            golden_match=True,
         ),
         IngestRegressionResult(
             case_id="case_b",
@@ -203,6 +321,7 @@ def test_summary_aggregation_computes_rates():
             llm_call_count=0,
             error="boom",
             semantic_checks=[],
+            golden_match=False,
         ),
     ]
 
@@ -214,8 +333,89 @@ def test_summary_aggregation_computes_rates():
     assert summary.mypy_pass_rate == 0.5
     assert summary.timeout_or_stall_count == 1
     assert summary.llm_call_total == 2
+    assert summary.golden_compared_cases == 2
+    assert summary.golden_matched_cases == 1
+    assert summary.golden_match_rate == 0.5
     assert summary.failures == ["case_b"]
     assert summary.family_breakdown["stateful"].completed_cases == 1
+
+
+def test_normalize_snapshot_payload_strips_path_and_transient_noise(tmp_path):
+    payload = {
+        "run_id": "abc",
+        "started_at": 123.0,
+        "metadata": {
+            "timestamp": 456.0,
+            "source_path": str(tmp_path / "sources" / "example.py"),
+        },
+        "ops": [
+            {"operation_id": "b", "started_at": 99.0},
+            {"operation_id": "a"},
+        ],
+        "values": [3, 1, 2],
+    }
+
+    normalized = normalize_snapshot_payload(payload, output_dir=tmp_path)
+
+    assert "run_id" not in normalized
+    assert "started_at" not in normalized
+    assert "timestamp" not in normalized["metadata"]
+    assert normalized["metadata"]["source_path"].startswith("<case_output_dir>")
+    assert [item["operation_id"] for item in normalized["ops"]] == ["a", "b"]
+    assert normalized["values"] == [1, 2, 3]
+
+
+def test_compare_case_artifacts_to_goldens_handles_missing_optional_artifact(tmp_path):
+    case = IngestRegressionCase(
+        case_id="optional_failure_artifact",
+        family="test",
+        class_name="Dummy",
+        expected_artifacts=["verification_failure"],
+        optional_artifacts=["verification_failure"],
+    )
+    observed = NormalizedArtifactBundle(case_id=case.case_id, artifacts={})
+    comparison = compare_case_artifacts_to_goldens(
+        case,
+        observed=observed,
+        golden_root=tmp_path,
+        output_dir=tmp_path / "out",
+    )
+
+    assert comparison.matched is True
+    assert comparison.compared_artifacts == ["verification_failure"]
+    assert comparison.mismatched_artifacts == []
+
+
+def test_compare_case_artifacts_to_goldens_reports_content_mismatch(tmp_path):
+    case = IngestRegressionCase(
+        case_id="mismatch_case",
+        family="test",
+        class_name="Dummy",
+        expected_artifacts=["canonical_ir", "atoms"],
+    )
+    golden_dir = tmp_path / "ingest_regression" / case.case_id
+    golden_dir.mkdir(parents=True)
+    (golden_dir / "canonical_ir.json").write_text(json.dumps({"subject_name": "X"}))
+    (golden_dir / "atoms.py").write_text("class Atom:\n    pass\n")
+
+    observed = NormalizedArtifactBundle(
+        case_id=case.case_id,
+        artifacts={
+            "canonical_ir": json.dumps({"subject_name": "Y"}, indent=2, sort_keys=True),
+            "atoms": "class Atom:\n    pass\n",
+        },
+    )
+
+    comparison = compare_case_artifacts_to_goldens(
+        case,
+        observed=observed,
+        golden_root=tmp_path,
+        output_dir=tmp_path / "run",
+    )
+
+    assert comparison.matched is False
+    assert comparison.mismatched_artifacts == ["canonical_ir"]
+    assert comparison.mismatch_details["canonical_ir"] == "content_mismatch"
 
 
 @pytest.mark.asyncio
@@ -286,3 +486,71 @@ async def test_run_curated_suite_over_stateful_and_procedural_cases(tmp_path):
     assert procedural.llm_call_count == 0
     assert "atoms.py" in procedural.published_artifacts
     assert all(check.passed for check in procedural.semantic_checks)
+
+
+@pytest.mark.asyncio
+async def test_run_default_real_world_corpus_with_goldens(tmp_path):
+    cases = default_ingest_regression_cases(fixture_root=_FIXTURE_ROOT)
+
+    def build_agent(case_dir, monitor, case):
+        return _GoldenFixtureAgent(case_dir, case)
+
+    results, summary = await run_ingest_regression_suite(
+        cases,
+        output_root=tmp_path,
+        agent_factory=build_agent,
+        golden_root=_GOLDEN_ROOT,
+        stale_seconds=30,
+    )
+
+    assert len(results) == 6
+    assert summary.total_cases == 6
+    assert summary.completed_cases == 6
+    assert summary.golden_compared_cases == 6
+    assert summary.golden_matched_cases == 6
+    assert summary.golden_match_rate == 1.0
+    assert set(summary.family_breakdown.keys()) == {
+        "sklearn_estimator",
+        "rolling_stateful",
+        "bayesian_or_message_passing",
+        "dsp_biosignal",
+        "non_python_ffi",
+        "procedural_ingest",
+    }
+    assert all(result.golden_match is True for result in results)
+    assert all(result.mismatched_artifacts == [] for result in results)
+
+    rust_case = next(result for result in results if result.case_id == "non_python_ffi")
+    assert rust_case.source_language == "rust"
+
+
+@pytest.mark.asyncio
+async def test_failure_artifact_snapshot_participates_in_golden_compare(tmp_path):
+    case = IngestRegressionCase(
+        case_id="verification_failure_case",
+        family="failure_case",
+        class_name="BrokenEstimator",
+        expected_language="python",
+        source_path=str((_FIXTURE_ROOT / "verification_failure_case" / "source.py").resolve()),
+        expected_artifacts=["verification_failure"],
+        semantic_expectations=[],
+    )
+
+    def build_agent(case_dir, monitor, built_case):
+        return _FailureFixtureAgent()
+
+    results, summary = await run_ingest_regression_suite(
+        [case],
+        output_root=tmp_path,
+        agent_factory=build_agent,
+        golden_root=_GOLDEN_ROOT,
+        stale_seconds=30,
+    )
+
+    assert summary.total_cases == 1
+    assert summary.completed_cases == 0
+    assert summary.golden_matched_cases == 1
+    assert summary.golden_match_rate == 1.0
+    assert results[0].golden_match is True
+    assert results[0].has_verification_failure_artifact is True
+    assert results[0].mismatched_artifacts == []
