@@ -9,20 +9,25 @@ from __future__ import annotations
 import logging
 import inspect
 import uuid
-from dataclasses import dataclass, field
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 
 from sciona.architect.catalog import PrimitiveCatalog
-from sciona.architect.graph import DecompositionAgent
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import NodeStatus
-from sciona.principal.atom_ledger import AtomLedger, compute_slot_signature
+from sciona.principal.atom_ledger import compute_slot_signature
 from sciona.principal.backprop import CreditAssigner
-from sciona.principal.evaluator import ExecutionSandbox
-from sciona.principal.hpo import OptunaManager, SuggestedParams, TrialPrunedEarly
+from sciona.principal.graph_routing import (
+    route_after_forward,
+    route_after_gradients,
+    route_after_proposal,
+    route_after_update,
+)
+from sciona.principal.graph_types import PrincipalDeps, PrincipalState
+from sciona.principal.graph_utils import _param_signature, _structure_has_tunables
+from sciona.principal.hpo import SuggestedParams, TrialPrunedEarly
 from sciona.principal.expansion import ExpansionContext, ExpansionEngine
 from sciona.principal.expansion_rules import default_rule_sets
 from sciona.principal.models import (
@@ -34,65 +39,12 @@ from sciona.principal.reference_attribution import (
     compute_reference_loss_gradients,
     is_reference_loss_objective,
 )
-from sciona.principal.structure_summary import summarize_trial_structure
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
 from sciona.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from sciona.synthesizer.models import ExportBundle
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# State
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class PrincipalState:
-    """Mutable state threaded through the Principal graph."""
-
-    goal: str = ""
-    metric: OptimizationMetric = OptimizationMetric.LATENCY
-    dataset_path: str = ""
-    max_trials: int = 50
-    current_trial: int = 0
-    best_loss: float = float("inf")
-
-    # Pipeline artefacts
-    thread_id: str = ""
-    cdg: CDGExport | None = None
-    export_bundle: ExportBundle | None = None
-    ghost_report: GhostSimReport = field(default_factory=GhostSimReport)
-    benchmark: BenchmarkResult | None = None
-    match_results: list[Any] = field(default_factory=list)
-
-    # Gradient
-    top_gradient: NodeGradient | None = None
-    bottleneck_node_id: str = ""
-    bottleneck_reason: str = ""
-
-    # Hyperparameter assignments (node_id -> {param_name: value})
-    node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
-    best_node_params: dict[str, dict[str, Any]] = field(default_factory=dict)
-    param_signature: str = ""
-    hpo_trial_number: int | None = None
-    pending_param_search: bool = False
-    param_trials_remaining: int = 0
-    expansion_applied: bool = False
-    expansion_rules_applied: list[str] = field(default_factory=list)
-    selected_proposal: str = ""
-    reuse_cached_evaluation: bool = False
-
-    # Bookkeeping
-    done: bool = False
-    error: str = ""
-    trial_history: list[dict[str, Any]] = field(default_factory=list)
-
-
-# ---------------------------------------------------------------------------
-# Node functions
-# ---------------------------------------------------------------------------
 
 
 async def seed_population(state: PrincipalState, config: RunnableConfig) -> dict:
@@ -120,29 +72,6 @@ async def seed_population(state: PrincipalState, config: RunnableConfig) -> dict
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
     }
-
-
-def _param_signature(cdg: CDGExport) -> str:
-    """Return the scoped study signature for the current structure + primitives."""
-    summary = summarize_trial_structure(cdg)
-    return f"{summary.get('topo_hash', '')}:{summary.get('primitive_signature', '')}"
-
-
-def _structure_has_tunables(cdg: CDGExport, catalog: PrimitiveCatalog | None) -> bool:
-    """Return whether any atomic node in *cdg* exposes approved tunables."""
-    if catalog is None:
-        return False
-    for node in cdg.nodes:
-        if node.status != NodeStatus.ATOMIC:
-            continue
-        primitive_name = str(node.matched_primitive or "").strip()
-        if not primitive_name:
-            continue
-        primitive = catalog.get(primitive_name)
-        if primitive is not None and primitive.tunable_params:
-            return True
-    return False
-
 
 async def suggest_params(state: PrincipalState, config: RunnableConfig) -> dict:
     """Sample node-level hyperparameters for the current CDG signature."""
@@ -855,72 +784,6 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
 # ---------------------------------------------------------------------------
 # Routing
 # ---------------------------------------------------------------------------
-
-
-def route_after_gradients(state: PrincipalState) -> str:
-    """Decide whether to continue optimising or stop."""
-    if state.done:
-        return "end"
-    if len(state.trial_history) >= state.max_trials and state.current_trial > 1:
-        return "end"
-    if state.error and "pruned" not in state.error.lower():
-        return "end"
-    if state.pending_param_search and state.param_trials_remaining > 0:
-        return "suggest_params"
-    return "select_proposal"
-
-
-def route_after_proposal(state: PrincipalState) -> str:
-    """After proposal comparison, either evaluate the chosen branch or fall back."""
-    if state.done:
-        return "end"
-    if len(state.trial_history) >= state.max_trials:
-        return "end"
-    if state.selected_proposal:
-        return "suggest_params"
-    return "time_travel"
-
-
-def route_after_update(state: PrincipalState) -> str:
-    """After time-travel update, loop back or stop."""
-    if state.done:
-        return "end"
-    if len(state.trial_history) >= state.max_trials:
-        return "end"
-    return "suggest_params"
-
-
-def route_after_forward(state: PrincipalState) -> str:
-    """After forward pass, evaluate or loop back (if pruned early)."""
-    if state.done:
-        return "end"
-    if state.error:
-        # Pruned early — skip evaluation, go straight to time-travel
-        return "time_travel"
-    return "evaluate"
-
-
-# ---------------------------------------------------------------------------
-# Dependencies
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class PrincipalDeps:
-    """Injected dependencies for the Principal graph."""
-
-    architect: DecompositionAgent
-    sandbox: ExecutionSandbox
-    match_results_fn: Any = None  # Callable[[CDGExport], list[MatchResult]]
-    synthesize_fn: Any = None  # Callable[[CDGExport, list], Awaitable[ExportBundle]]
-    evaluation_spec: Any = None
-    dataset_varset: dict[str, str] | None = None
-    atom_ledger: AtomLedger | None = None
-    catalog: PrimitiveCatalog | None = None
-    hpo_manager: OptunaManager | None = None
-    param_trials_per_structure: int = 1
-    expansion_engine: ExpansionEngine | None = None
-
 
 # ---------------------------------------------------------------------------
 # Graph construction
