@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:visualizer-static": "node scripts/check_static_visualizer.mjs",
+    "test:visualizer-static": "node --test tests/static_visualizer.test.mjs",
+    "validate:visualizer-static": "npm run check:visualizer-static && npm run test:visualizer-static"
   },
   "dependencies": {
     "react": "^18.3.1",
