@@ -391,7 +391,49 @@ async def generate_opaque_witnesses(
 # ---------------------------------------------------------------------------
 
 
-def generate_state_models(specs: list[StateModelSpec]) -> str:
+def _canonical_state_model_docstrings(
+    specs: list[StateModelSpec],
+    plan: ValidatedMacroPlan | None,
+) -> dict[str, str]:
+    ir = _canonical_ir(plan)
+    if ir is None:
+        return {}
+
+    docs: dict[str, str] = {}
+    slots_by_name = {slot.slot_name: slot for slot in ir.state_slots}
+    for spec in specs:
+        slot_names = [name for name, _ in spec.fields]
+        slot_names.extend(spec.source_attrs)
+        ordered_slot_names: list[str] = []
+        for name in slot_names:
+            if name not in ordered_slot_names and name in slots_by_name:
+                ordered_slot_names.append(name)
+        if not ordered_slot_names:
+            continue
+
+        grouped: dict[str, list[str]] = {}
+        for slot_name in ordered_slot_names:
+            slot = slots_by_name[slot_name]
+            grouped.setdefault(slot.state_kind or "transient", []).append(slot_name)
+
+        phrases: list[str] = []
+        for state_kind in ("config", "fitted", "derived", "transient"):
+            names = grouped.get(state_kind, [])
+            if names:
+                phrases.append(f"{state_kind} slots: {', '.join(names)}")
+        if not phrases:
+            continue
+        docs[spec.model_name] = (
+            f"Canonical ingest state for {ir.subject_name}. " + "; ".join(phrases) + "."
+        )
+    return docs
+
+
+def generate_state_models(
+    specs: list[StateModelSpec],
+    *,
+    plan: ValidatedMacroPlan | None = None,
+) -> str:
     """Generate Pydantic BaseModel classes from state model specs.
 
     When a spec has a ``stochastic`` field, injects RNG key and MCMC trace
@@ -421,10 +463,13 @@ def generate_state_models(specs: list[StateModelSpec]) -> str:
             ]
         )
 
+    canonical_docstrings = _canonical_state_model_docstrings(specs, plan)
+
     for spec in specs:
-        if spec.docstring:
+        docstring = spec.docstring or canonical_docstrings.get(spec.model_name, "")
+        if docstring:
             lines.append(f"class {spec.model_name}(BaseModel):")
-            lines.append(f'    """{spec.docstring}"""')
+            lines.append(f'    """{docstring}"""')
         else:
             lines.append(f"class {spec.model_name}(BaseModel):")
 
@@ -774,6 +819,160 @@ def _emit_docstring(
     lines.append("    Returns:")
     lines.append(f"        {return_annotation}")
     lines.append('    """')
+
+
+def _type_desc_is_scalar(type_desc: str) -> bool:
+    normalized = (type_desc or "").strip().lower()
+    return any(
+        token in normalized
+        for token in ("float", "int", "bool", "scalar", "number")
+    )
+
+
+def _ghost_abstract_type(type_desc: str, concept_type: ConceptType) -> str:
+    if _type_desc_is_scalar(type_desc):
+        return "AbstractScalar"
+    if concept_type in {
+        ConceptType.SIGNAL_FILTER,
+        ConceptType.SIGNAL_TRANSFORM,
+        ConceptType.GRAPH_SIGNAL_PROCESSING,
+    }:
+        return "AbstractSignal"
+    return "AbstractArray"
+
+
+def _ghost_constructor_expr(abstract_type: str, first_input: str | None) -> str:
+    if abstract_type == "AbstractScalar":
+        return 'AbstractScalar(dtype="float64")'
+    if abstract_type == "AbstractSignal":
+        if first_input:
+            return (
+                f"AbstractSignal(shape={first_input}.shape, dtype={first_input}.dtype, "
+                f"sampling_rate=getattr({first_input}, 'sampling_rate', 44100.0), "
+                f"domain=getattr({first_input}, 'domain', 'time'))"
+            )
+        return 'AbstractSignal(shape=(), dtype="float64", sampling_rate=44100.0, domain="time")'
+    if first_input:
+        return f"AbstractArray(shape={first_input}.shape, dtype={first_input}.dtype)"
+    return 'AbstractArray(shape=(), dtype="float64")'
+
+
+def _canonical_witness_param_specs(
+    atom: MacroAtomSpec,
+    *,
+    state_models: list[StateModelSpec] | None,
+    plan: ValidatedMacroPlan | None,
+    source_language: str,
+) -> dict[str, object] | None:
+    canonical_context = _canonical_emission_context(
+        atom,
+        state_models=state_models or [],
+        plan=plan,
+        source_language=source_language,
+    )
+    if canonical_context is None:
+        return None
+
+    operation = canonical_context["operation"]
+    group = canonical_context["group"]
+    wrapper_inputs = canonical_context["wrapper_inputs"]
+    output_bindings = canonical_context["output_bindings"]
+    effects = canonical_context["effects"]
+
+    role = ""
+    if group is not None and group.group_role:
+        role = group.group_role
+    elif operation is not None:
+        role = operation.role
+
+    return {
+        "wrapper_inputs": wrapper_inputs,
+        "output_bindings": output_bindings,
+        "effects": effects,
+        "role": role or "unknown",
+        "display_name": (
+            group.display_name
+            if group is not None and group.display_name
+            else operation.display_name
+        ),
+    }
+
+
+def _canonical_node_iospecs(
+    atom: MacroAtomSpec,
+    *,
+    state_models: list[StateModelSpec],
+    plan: ValidatedMacroPlan,
+    source_language: str,
+) -> tuple[list[IOSpec], list[IOSpec], str, str, str]:
+    context = _canonical_emission_context(
+        atom,
+        state_models=state_models,
+        plan=plan,
+        source_language=source_language,
+    )
+    if context is None:
+        return (
+            list(atom.inputs),
+            list(atom.outputs),
+            atom.description,
+            _build_type_signature(atom),
+            "",
+        )
+
+    operation = context["operation"]
+    group = context["group"]
+    wrapper_inputs: list[IOSpec] = list(context["wrapper_inputs"])
+    output_bindings: list[OutputBindingSpec] = list(context["output_bindings"])
+    outputs_by_name = {output.name: output for output in atom.outputs}
+    outputs: list[IOSpec] = []
+    seen_output_names: set[str] = set()
+    for binding in output_bindings:
+        if binding.output_name in seen_output_names:
+            continue
+        seen_output_names.add(binding.output_name)
+        output_spec = outputs_by_name.get(binding.output_name)
+        outputs.append(
+            IOSpec(
+                name=binding.output_name,
+                type_desc=binding.type_desc or (
+                    output_spec.type_desc if output_spec is not None else "Any"
+                ),
+                constraints=(
+                    output_spec.constraints if output_spec is not None else binding.binding_kind
+                ),
+            )
+        )
+    if not outputs:
+        outputs = list(atom.outputs)
+
+    display_name = (
+        group.display_name
+        if group is not None and group.display_name
+        else operation.display_name
+    )
+    role = (
+        group.group_role
+        if group is not None and group.group_role
+        else operation.role
+    )
+    description = atom.description or display_name
+    if role and role != "unknown":
+        description = f"{description} [{role}]"
+    conceptual_summary = (
+        f"Canonical {role or 'operation'} operation via "
+        f"{', '.join(binding.method_name for binding in context['bindings'])}."
+    )
+    if group is not None and group.group_id:
+        conceptual_summary += f" Planned group: {group.group_id}."
+
+    return (
+        wrapper_inputs,
+        outputs,
+        description,
+        _build_type_signature_from_iospecs(wrapper_inputs, outputs),
+        conceptual_summary,
+    )
 
 
 def _emit_canonical_wrapper_body(
@@ -1752,6 +1951,8 @@ def _generate_message_passing_witness(
 def generate_ghost_witnesses(
     macro_atoms: list[MacroAtomSpec],
     state_models: list[StateModelSpec] | None = None,
+    *,
+    plan: ValidatedMacroPlan | None = None,
 ) -> tuple[str, dict[str, str]]:
     """Generate ghost witness functions.
 
@@ -1838,6 +2039,14 @@ def generate_ghost_witnesses(
             )
             continue
 
+        source_language = _canonical_ir(plan).source_language if _canonical_ir(plan) else "python"
+        canonical_witness = _canonical_witness_param_specs(
+            atom,
+            state_models=state_models,
+            plan=plan,
+            source_language=source_language,
+        )
+
         # Default DSP/generic witness
         is_dsp = atom.concept_type in {
             ConceptType.SIGNAL_FILTER,
@@ -1847,38 +2056,84 @@ def generate_ghost_witnesses(
         abstract_type = "AbstractSignal" if is_dsp else "AbstractArray"
 
         params = []
-        for inp in atom.inputs:
-            params.append(f"{inp.name}: {abstract_type}")
+        witness_inputs = (
+            list(canonical_witness["wrapper_inputs"])
+            if canonical_witness is not None
+            else list(atom.inputs)
+        )
+        for inp in witness_inputs:
+            param_type = (
+                _ghost_abstract_type(inp.type_desc, atom.concept_type)
+                if canonical_witness is not None
+                else abstract_type
+            )
+            params.append(f"{inp.name}: {param_type}")
         if has_state:
             params.append(f"state: {abstract_type}")
         param_str = ", ".join(params) if params else ""
 
         # Return type
+        canonical_output_types: list[str] = []
+        if canonical_witness is not None:
+            for binding in canonical_witness["output_bindings"]:
+                canonical_output_types.append(
+                    _ghost_abstract_type(binding.type_desc, atom.concept_type)
+                )
+        if not canonical_output_types and atom.outputs:
+            canonical_output_types = [abstract_type for _ in atom.outputs]
+
         if has_state:
-            if atom.outputs:
-                ret_type = f"tuple[{abstract_type}, {abstract_type}]"
-            else:
+            if not canonical_output_types:
                 ret_type = f"tuple[None, {abstract_type}]"
-        else:
-            if atom.outputs:
-                ret_type = abstract_type
+            elif len(canonical_output_types) == 1:
+                ret_type = f"tuple[{canonical_output_types[0]}, {abstract_type}]"
             else:
+                ret_type = (
+                    "tuple[tuple["
+                    + ", ".join(canonical_output_types)
+                    + f"], {abstract_type}]"
+                )
+        else:
+            if not canonical_output_types:
                 ret_type = "None"
+            elif len(canonical_output_types) == 1:
+                ret_type = canonical_output_types[0]
+            else:
+                ret_type = "tuple[" + ", ".join(canonical_output_types) + "]"
 
         lines.append(f"def {witness_name}({param_str}) -> {ret_type}:")
-        lines.append(f'    """Ghost witness for {atom.name}."""')
+        if canonical_witness is not None:
+            role = canonical_witness["role"]
+            display_name = canonical_witness["display_name"] or atom.name
+            effect_kinds = {
+                effect.effect_kind
+                for effect in canonical_witness["effects"]
+                if effect.effect_kind
+            }
+            state_note = (
+                "state-updating"
+                if effect_kinds.intersection({"initialize", "update", "clear"})
+                else "state-preserving"
+            )
+            lines.append(
+                f'    """Ghost witness for {display_name} ({role}, {state_note})."""'
+            )
+        else:
+            lines.append(f'    """Ghost witness for {atom.name}."""')
 
-        if atom.inputs and atom.outputs:
-            first_input = atom.inputs[0].name
-            lines.append(f"    result = {abstract_type}(")
-            lines.append(f"        shape={first_input}.shape,")
-            lines.append('        dtype="float64",')
-            if is_dsp:
-                lines.append(
-                    f"        sampling_rate=getattr({first_input}, 'sampling_rate', 44100.0),"
-                )
-                lines.append('        domain="time",')
-            lines.append("    )")
+        if canonical_output_types:
+            first_input = witness_inputs[0].name if witness_inputs else None
+            result_exprs = [
+                _ghost_constructor_expr(result_type, first_input)
+                for result_type in canonical_output_types
+            ]
+            if len(result_exprs) == 1:
+                lines.append(f"    result = {result_exprs[0]}")
+            else:
+                lines.append("    result = (")
+                for expr in result_exprs:
+                    lines.append(f"        {expr},")
+                lines.append("    )")
             if has_state:
                 lines.append("    return result, state")
             else:
@@ -1925,6 +2180,7 @@ def _emit_atom_nodes(
     depth: int,
     seen_node_ids: set[str],
     seen_edge_keys: set[tuple[str, str, str, str, str, str]],
+    canonical_node_meta: dict[str, dict[str, object]],
 ) -> None:
     """Recursively emit CDG nodes for an atom and its children."""
     node_id = _snake_case(atom.name)
@@ -1942,21 +2198,25 @@ def _emit_atom_nodes(
         unique_children.append(child)
     has_children = bool(unique_children)
 
+    node_meta = canonical_node_meta.get(node_id, {})
     node = AlgorithmicNode(
         node_id=node_id,
         parent_id=parent_id,
         name=atom.name,
-        description=atom.description,
+        description=node_meta.get("description", atom.description),
         concept_type=atom.concept_type,
-        inputs=list(atom.inputs),
-        outputs=list(atom.outputs),
+        inputs=list(node_meta.get("inputs", list(atom.inputs))),
+        outputs=list(node_meta.get("outputs", list(atom.outputs))),
         status=NodeStatus.DECOMPOSED if has_children else NodeStatus.ATOMIC,
         children=[_snake_case(c.name) for c in unique_children] if has_children else [],
         is_optional=atom.is_optional,
         is_opaque=atom.is_opaque,
         is_external=getattr(atom, "is_external", False),
-        type_signature=_build_type_signature(atom),
-        conceptual_summary=_profile_to_summary(atom.conceptual_profile),
+        type_signature=node_meta.get("type_signature", _build_type_signature(atom)),
+        conceptual_summary=node_meta.get(
+            "conceptual_summary", _profile_to_summary(atom.conceptual_profile)
+        ),
+        decomposition_rationale=node_meta.get("decomposition_rationale", ""),
         depth=depth,
     )
     nodes.append(node)
@@ -1992,11 +2252,32 @@ def _emit_atom_nodes(
             depth + 1,
             seen_node_ids,
             seen_edge_keys,
+            canonical_node_meta,
         )
 
 
 def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
     """Build a CDGExport with root DECOMPOSED node + recursive children."""
+    source_language = _canonical_ir(plan).source_language if _canonical_ir(plan) else "python"
+    canonical_node_meta: dict[str, dict[str, object]] = {}
+    if plan.plan.canonical_ir is not None:
+        for atom in plan.plan.macro_atoms:
+            node_id = _snake_case(atom.name)
+            inputs, outputs, description, type_signature, conceptual_summary = _canonical_node_iospecs(
+                atom,
+                state_models=plan.plan.state_models,
+                plan=plan,
+                source_language=source_language,
+            )
+            canonical_node_meta[node_id] = {
+                "inputs": inputs,
+                "outputs": outputs,
+                "description": description,
+                "type_signature": type_signature,
+                "conceptual_summary": conceptual_summary,
+                "decomposition_rationale": "canonical_ir",
+            }
+
     unique_top_level: list[MacroAtomSpec] = []
     seen_root_children: set[str] = set()
     for atom in plan.plan.macro_atoms:
@@ -2030,6 +2311,7 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
             depth=1,
             seen_node_ids=seen_node_ids,
             seen_edge_keys=seen_edge_keys,
+            canonical_node_meta=canonical_node_meta,
         )
 
     # Build typed edges from plan
@@ -2055,27 +2337,85 @@ def build_cdg_export(plan: ValidatedMacroPlan, class_name: str) -> CDGExport:
         seen_edge_keys.add(key)
         all_edges.append(emitted)
 
+    ir = plan.plan.canonical_ir
+    if ir is not None and ir.edges:
+        operation_to_node: dict[str, str] = {}
+        for atom in unique_top_level:
+            operation, group = _canonical_operation_for_atom(plan, atom)
+            node_id = _snake_case(atom.name)
+            if operation is not None:
+                operation_to_node.setdefault(operation.operation_id, node_id)
+            if group is not None:
+                operation_to_node.setdefault(group.group_id, node_id)
+        slot_map = {slot.slot_name: slot for slot in ir.state_slots}
+        artifact_map = {artifact.output_name: artifact for artifact in ir.artifacts}
+        for operation in ir.operations:
+            for output in operation.emitted_outputs:
+                artifact_map.setdefault(output.output_name, output)
+
+        for edge in ir.edges:
+            source_id = operation_to_node.get(edge.source_operation_id)
+            target_id = operation_to_node.get(edge.target_operation_id)
+            if not source_id or not target_id:
+                continue
+            artifact_name = edge.artifact_or_slot_name or edge.edge_kind
+            if edge.edge_kind == "state":
+                slot = slot_map.get(artifact_name)
+                type_desc = slot.type_desc if slot is not None else "Any"
+            else:
+                artifact = artifact_map.get(artifact_name)
+                type_desc = artifact.type_desc if artifact is not None else "Any"
+            emitted = DependencyEdge(
+                source_id=source_id,
+                target_id=target_id,
+                output_name=artifact_name,
+                input_name=artifact_name,
+                source_type=type_desc,
+                target_type=type_desc,
+            )
+            key = (
+                emitted.source_id,
+                emitted.target_id,
+                emitted.output_name,
+                emitted.input_name,
+                emitted.source_type,
+                emitted.target_type,
+            )
+            if key in seen_edge_keys:
+                continue
+            seen_edge_keys.add(key)
+            all_edges.append(emitted)
+
     return CDGExport(
         nodes=all_nodes,
         edges=all_edges,
         metadata={
             "source": "ingester",
             "class_name": class_name,
+            "source_language": source_language,
+            "canonical_semantics": plan.plan.canonical_ir is not None,
         },
     )
 
 
 def _build_type_signature(atom: MacroAtomSpec) -> str:
     """Build a Python type signature string from IOSpec."""
-    inputs = ", ".join(f"{i.name}: {i.type_desc}" for i in atom.inputs)
-    if atom.outputs:
-        if len(atom.outputs) == 1:
-            ret = atom.outputs[0].type_desc
+    return _build_type_signature_from_iospecs(atom.inputs, atom.outputs)
+
+
+def _build_type_signature_from_iospecs(
+    inputs: list[IOSpec],
+    outputs: list[IOSpec],
+) -> str:
+    inputs_sig = ", ".join(f"{i.name}: {i.type_desc}" for i in inputs)
+    if outputs:
+        if len(outputs) == 1:
+            ret = outputs[0].type_desc
         else:
-            ret = "tuple[" + ", ".join(o.type_desc for o in atom.outputs) + "]"
+            ret = "tuple[" + ", ".join(o.type_desc for o in outputs) + "]"
     else:
         ret = "None"
-    return f"({inputs}) -> {ret}"
+    return f"({inputs_sig}) -> {ret}"
 
 
 # ---------------------------------------------------------------------------
@@ -2136,6 +2476,9 @@ def build_sub_graphs(plan: ValidatedMacroPlan) -> dict[str, CDGExport]:
 def build_match_results(cdg: CDGExport, atoms_source: str) -> list[MatchResult]:
     """Build pre-filled MatchResults with verified=True for atomic leaves."""
     results = []
+    source_language = str(cdg.metadata.get("source_language") or "python")
+    source_lib = f"ingester:{source_language}"
+    canonical_semantics = bool(cdg.metadata.get("canonical_semantics"))
     for node in cdg.nodes:
         if node.status != NodeStatus.ATOMIC:
             continue
@@ -2146,7 +2489,7 @@ def build_match_results(cdg: CDGExport, atoms_source: str) -> list[MatchResult]:
             type_signature=node.type_signature,
             docstring=node.description,
             conceptual_summary=node.conceptual_summary,
-            source_lib="ingester",
+            source_lib=source_lib,
             prover=Prover.PYTHON,
             raw_code="",
         )
@@ -2165,6 +2508,11 @@ def build_match_results(cdg: CDGExport, atoms_source: str) -> list[MatchResult]:
             statement=node.type_signature,
             informal_desc=node.description,
             prover=Prover.PYTHON,
+            context={
+                "source_language": source_language,
+                "canonical_semantics": str(canonical_semantics).lower(),
+                "concept_type": node.concept_type.value,
+            },
         )
         results.append(
             MatchResult(
@@ -2434,6 +2782,7 @@ def emit_ingestion_bundle(
     witness_source, witness_names = generate_ghost_witnesses(
         plan.plan.macro_atoms,
         state_models=plan.plan.state_models,
+        plan=plan,
     )
 
     if has_opaque:
@@ -2452,7 +2801,7 @@ def emit_ingestion_bundle(
         witness_source += "\n".join(opaque_lines)
 
     # Generate state models
-    state_model_source = generate_state_models(plan.plan.state_models)
+    state_model_source = generate_state_models(plan.plan.state_models, plan=plan)
 
     # Generate atom wrappers — stateful if state models exist
     if plan.plan.state_models:

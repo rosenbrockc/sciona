@@ -660,6 +660,18 @@ class TestStatefulGhostWitnesses:
         )
         ast.parse(source)
 
+    def test_canonical_witness_uses_exact_inputs_and_marks_state_preserving(self):
+        plan = _make_canonical_stateful_plan()
+        source, _ = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+            plan=plan,
+        )
+
+        assert "def witness_average_computer(window_size: AbstractScalar, state: AbstractArray) -> tuple[AbstractScalar, AbstractArray]:" in source
+        assert "state-updating" in source
+        ast.parse(source)
+
 
 # ---------------------------------------------------------------------------
 # Tests: State edges

@@ -509,6 +509,53 @@ class TestGenerateGhostWitnesses:
         source, _ = generate_ghost_witnesses(plan.plan.macro_atoms)
         ast.parse(source)
 
+    def test_canonical_witness_uses_exact_inputs_and_scalar_types(self):
+        atom = MacroAtomSpec(
+            name="Predict",
+            method_names=["predict"],
+            inputs=[
+                IOSpec(name="features", type_desc="np.ndarray", constraints=""),
+                IOSpec(name="threshold", type_desc="float", constraints=""),
+                IOSpec(name="unused", type_desc="float", constraints=""),
+            ],
+            outputs=[IOSpec(name="predictions", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="predict",
+            display_name="Predict",
+            role="predict",
+            method_bindings=[
+                MethodBinding(
+                    method_name="predict",
+                    signature=[
+                        ParameterFact(name="self"),
+                        ParameterFact(name="features"),
+                        ParameterFact(name="threshold", kind="keyword_only"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="predictions",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="predict",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+
+        source, _ = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            plan=plan,
+        )
+
+        assert "def witness_predict(features: AbstractSignal, threshold: AbstractScalar) -> AbstractSignal:" in source
+        assert "unused" not in source
+        ast.parse(source)
+
 
 # ---------------------------------------------------------------------------
 # Tests: build_cdg_export
@@ -565,6 +612,54 @@ class TestBuildCDGExport:
         root = next(node for node in cdg.nodes if node.node_id == "TestClass_root")
         assert root.children == ["signal_conditioner", "beat_detector"]
 
+    def test_canonical_metadata_prefers_exact_signature(self):
+        atom = MacroAtomSpec(
+            name="Predict",
+            description="Return calibrated predictions",
+            method_names=["predict"],
+            inputs=[
+                IOSpec(name="features", type_desc="np.ndarray", constraints=""),
+                IOSpec(name="threshold", type_desc="float", constraints=""),
+                IOSpec(name="unused", type_desc="float", constraints=""),
+            ],
+            outputs=[IOSpec(name="predictions", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="predict",
+            display_name="Predict",
+            role="predict",
+            method_bindings=[
+                MethodBinding(
+                    method_name="predict",
+                    signature=[
+                        ParameterFact(name="self"),
+                        ParameterFact(name="features"),
+                        ParameterFact(name="threshold", kind="keyword_only"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="predictions",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="predict",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+
+        cdg = build_cdg_export(plan, "Estimator")
+
+        node = next(item for item in cdg.nodes if item.node_id == "predict")
+        assert node.type_signature == "(features: np.ndarray, threshold: float) -> np.ndarray"
+        assert "unused" not in node.type_signature
+        assert "Canonical predict operation" in node.conceptual_summary
+        assert cdg.metadata["canonical_semantics"] is True
+        assert cdg.metadata["source_language"] == "python"
+
 
 # ---------------------------------------------------------------------------
 # Tests: build_match_results
@@ -594,6 +689,37 @@ class TestBuildMatchResults:
             assert (
                 mr.verified_match.verification_level == VerificationLevel.TYPE_CHECKED
             )
+
+    def test_canonical_non_python_metadata_tracks_source_language(self):
+        atom = MacroAtomSpec(
+            name="Integrate Step",
+            method_names=["step"],
+            inputs=[IOSpec(name="dt", type_desc="float", constraints="")],
+            outputs=[IOSpec(name="position", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="integrate_step",
+            display_name="Integrate Step",
+            role="transform",
+            method_bindings=[MethodBinding(method_name="step", signature=[ParameterFact(name="dt")])],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="position",
+                    type_desc="float",
+                    binding_kind="return_value",
+                    source_method="step",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation, source_language="rust")
+        cdg = build_cdg_export(plan, "Integrator")
+        results = build_match_results(cdg, "")
+
+        assert results[0].verified_match.candidate.declaration.source_lib == "ingester:rust"
+        assert results[0].pdg_node.context["source_language"] == "rust"
+        assert results[0].pdg_node.context["canonical_semantics"] == "true"
 
 
 # ---------------------------------------------------------------------------
