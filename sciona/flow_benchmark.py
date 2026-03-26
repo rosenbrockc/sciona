@@ -16,7 +16,13 @@ from sciona.architect.catalog import PrimitiveCatalog
 from sciona.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 from sciona.hunter.graph import HunterAgent
 from sciona.orchestrator import run_orchestration
-from sciona.services import HunterService, OrchestratorService, SingleAgentPlanner
+from sciona.runtime_paths import (
+    _run_rapid_direct_match,
+    _run_structured_single_pass,
+)
+from sciona.services.hunter_service import HunterService
+from sciona.services.orchestrator_service import OrchestratorService
+from sciona.services.planner_service import SingleAgentPlanner
 from sciona.types import (
     CandidateMatch,
     Declaration,
@@ -602,8 +608,6 @@ async def _decompose_case(
 
 
 async def _run_rapid_case(case: FlowBenchmarkCase) -> FlowBenchmarkResult:
-    from sciona.cli import _run_rapid_direct_match
-
     started = time.perf_counter()
     hunter, hunter_llm, index = _make_hunter(case)
     result = await _run_rapid_direct_match(
@@ -640,8 +644,6 @@ async def _run_structured_case(
     noisy: bool = False,
     noise_seed: int | None = None,
 ) -> FlowBenchmarkResult:
-    from sciona.cli import _run_structured_single_pass
-
     started = time.perf_counter()
     cdg, architect_llm = await _decompose_case(case, noisy=noisy, noise_seed=noise_seed)
     hunter, hunter_llm, index = _make_hunter(case)

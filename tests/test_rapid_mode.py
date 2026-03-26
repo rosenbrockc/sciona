@@ -124,7 +124,7 @@ async def test_run_rapid_direct_match_wraps_failure_as_single_round():
 
     hunter = _FakeHunter()
     result = await _run_rapid_direct_match(
-        "Detect heart rate from ECG",
+        "Compute a running average for a numeric stream",
         prover=Prover.PYTHON,
         hunter=hunter,
     )

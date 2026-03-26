@@ -63,10 +63,7 @@ from sciona.commands.optimize_cmds import (  # noqa: F401
     _cmd_profile,
 )
 from sciona.commands.run_cmds import (  # noqa: F401
-    _build_rapid_direct_cdg,
     _cmd_run,
-    _run_rapid_direct_match,
-    _run_structured_single_pass,
 )
 from sciona.commands.sources_cmds import (  # noqa: F401
     _cmd_sources_list,
@@ -92,6 +89,11 @@ from sciona.commands.telemetry_cmds import (  # noqa: F401
 from sciona.commands.upsert_cmds import _cmd_upsert_cdg  # noqa: F401
 from sciona.commands.visualize_cmds import _cmd_visualize  # noqa: F401
 from sciona.principal.metric_selection import SUPPORTED_OBJECTIVES
+from sciona.runtime_paths import (  # noqa: F401
+    _build_rapid_direct_cdg,
+    _run_rapid_direct_match,
+    _run_structured_single_pass,
+)
 
 
 def main() -> None:
