@@ -11,7 +11,10 @@ import pytest
 
 from sciona.llm_router import (
     ARCHITECT_STRATEGY,
+    INGESTER_ABSTRACT,
     INGESTER_CHUNK,
+    INGESTER_DECOMPOSE,
+    INGESTER_HOIST_STATE,
     PromptKeyLLMClient,
     SYNTHESIZER_TACTIC,
     LLMRouter,
@@ -104,10 +107,15 @@ class TestLLMRouter:
 
 
 class TestSelectLLM:
-    def test_plain_llm_returned_unchanged(self):
+    def test_plain_llm_returned_unchanged_for_prompt_without_timeout(self):
         llm = _make_mock_llm("plain")
-        result = select_llm(llm, ARCHITECT_STRATEGY)
+        result = select_llm(llm, SYNTHESIZER_TACTIC)
         assert result is llm
+
+    def test_wraps_when_prompt_has_timeout_even_without_telemetry(self):
+        llm = _make_mock_llm("plain")
+        result = select_llm(llm, INGESTER_CHUNK)
+        assert isinstance(result, PromptKeyLLMClient)
 
     def test_router_delegates_to_for_prompt(self):
         default = _make_mock_llm("default")
@@ -228,6 +236,18 @@ class TestConfigPerPromptFields:
 
     def test_prompt_timeout_defaults_exist_for_ingester_fix_type(self):
         assert prompt_timeout_seconds("ingester_fix_type") == pytest.approx(60.0)
+
+    def test_prompt_timeout_defaults_exist_for_ingester_chunk(self):
+        assert prompt_timeout_seconds(INGESTER_CHUNK) == pytest.approx(120.0)
+
+    def test_prompt_timeout_defaults_exist_for_ingester_hoist_state(self):
+        assert prompt_timeout_seconds(INGESTER_HOIST_STATE) == pytest.approx(60.0)
+
+    def test_prompt_timeout_defaults_exist_for_ingester_abstract(self):
+        assert prompt_timeout_seconds(INGESTER_ABSTRACT) == pytest.approx(60.0)
+
+    def test_prompt_timeout_defaults_exist_for_ingester_decompose(self):
+        assert prompt_timeout_seconds(INGESTER_DECOMPOSE) == pytest.approx(90.0)
 
     def test_unbenchmarked_prompt_defaults_are_not_applied_implicitly(self):
         from sciona.config import AgeomConfig, prompt_override_matches_code_default, should_apply_prompt_override

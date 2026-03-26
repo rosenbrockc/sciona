@@ -8,6 +8,7 @@ different prompts in the pipeline can be dispatched to different providers
 from __future__ import annotations
 
 import asyncio
+import inspect
 import os
 import time
 from typing import Any
@@ -80,6 +81,10 @@ PROMPT_TIMEOUTS_S: dict[str, float] = {
     HUNTER_SCORE: 20.0,
     HUNTER_REFORMULATE: 30.0,
     HUNTER_ANALYZE_FAILURE: 20.0,
+    INGESTER_CHUNK: 120.0,
+    INGESTER_HOIST_STATE: 60.0,
+    INGESTER_ABSTRACT: 60.0,
+    INGESTER_DECOMPOSE: 90.0,
     INGESTER_FIX_TYPE: 60.0,
 }
 
@@ -200,9 +205,13 @@ class PromptKeyLLMClient:
         getter = getattr(self._base, "get_last_completion_metadata", None)
         if not callable(getter):
             return {}
+        if inspect.iscoroutinefunction(getter):
+            return {}
         try:
             metadata = getter()
         except Exception:
+            return {}
+        if inspect.isawaitable(metadata):
             return {}
         return metadata if isinstance(metadata, dict) else {}
 
@@ -210,9 +219,13 @@ class PromptKeyLLMClient:
         payload: dict[str, Any] = {"error_type": exc.__class__.__name__}
         getter = getattr(self._base, "get_last_error_metadata", None)
         if callable(getter):
+            if inspect.iscoroutinefunction(getter):
+                return payload
             try:
                 metadata = getter()
             except Exception:
+                metadata = {}
+            if inspect.isawaitable(metadata):
                 metadata = {}
             if isinstance(metadata, dict):
                 payload.update(metadata)
@@ -320,9 +333,9 @@ def select_llm(llm: Any, key: str) -> LLMClient:
     """
     base = llm.for_prompt(key) if isinstance(llm, LLMRouter) else llm
 
-    # Preserve historical behavior outside telemetry run scope.
-    # This keeps identity semantics used across tests/callers.
-    if not get_current_run_id():
+    # Wrap prompt clients whenever telemetry is active or a router timeout
+    # needs to be enforced for this prompt, even outside telemetry scope.
+    if not get_current_run_id() and prompt_timeout_seconds(key) is None:
         return base
 
     if isinstance(base, PromptKeyLLMClient):

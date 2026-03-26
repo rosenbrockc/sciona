@@ -125,6 +125,49 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
     )
 
     proof_env = None
+    final_state: dict[str, Any] | None = None
+
+    def _publish_partial_artifacts(state: dict[str, Any] | None) -> list[str]:
+        if not state:
+            return []
+        bundle = state.get("bundle")
+        if bundle is not None:
+            if getattr(bundle, "generated_atoms", ""):
+                monitor.stage_file("atoms.py", bundle.generated_atoms)
+            if getattr(bundle, "generated_state_models", ""):
+                monitor.stage_file("state_models.py", bundle.generated_state_models)
+            if getattr(bundle, "generated_witnesses", ""):
+                monitor.stage_file("witnesses.py", bundle.generated_witnesses)
+            if getattr(bundle, "cdg", None) is not None:
+                monitor.stage_json("cdg.json", bundle.cdg.model_dump())
+            if getattr(bundle, "match_results", None):
+                monitor.stage_json(
+                    "matches.json",
+                    [mr.to_dict() for mr in bundle.match_results],
+                )
+        raw_dfg = state.get("raw_dfg")
+        if raw_dfg is not None:
+            monitor.stage_json("raw_dfg.json", raw_dfg.model_dump(mode="json"))
+        validated_plan = state.get("validated_plan")
+        if validated_plan is not None:
+            monitor.stage_json(
+                "validated_plan.json",
+                validated_plan.model_dump(mode="json"),
+            )
+        monitor.stage_json(
+            "ingest_failure_state.json",
+            {
+                "error": state.get("error", ""),
+                "mypy_passed": bool(state.get("mypy_passed", False)),
+                "ghost_passed": bool(state.get("ghost_passed", False)),
+                "mypy_errors": state.get("mypy_errors", ""),
+                "ghost_errors": state.get("ghost_errors", ""),
+                "type_repair_count": int(state.get("type_repair_count", 0) or 0),
+                "ghost_repair_count": int(state.get("ghost_repair_count", 0) or 0),
+            },
+        )
+        return monitor.publish_staged()
+
     try:
         source_path = Path(args.source)
         if not source_path.exists():
@@ -197,9 +240,15 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         if getattr(args, "procedural", False):
             bundle = await agent.ingest_procedural(str(source_path), args.class_name)
         else:
-            bundle = await agent.ingest(
-                str(source_path), args.class_name, raise_on_error=True
-            )
+            final_state = await agent.ingest_state(str(source_path), args.class_name)
+            if final_state.get("error"):
+                published_files = _publish_partial_artifacts(final_state)
+                monitor.fail(error=str(final_state["error"]))
+                print(f"Error: {final_state['error']}", file=sys.stderr)
+                if published_files:
+                    print(f"  Partial artifacts: {output_dir}/", file=sys.stderr)
+                sys.exit(1)
+            bundle = final_state["bundle"]
 
         # Stage output files and publish atomically on successful completion.
         if bundle.generated_atoms:
@@ -244,8 +293,11 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         if getattr(args, "trace", False):
             print(f"  Trace: {output_dir / 'trace.jsonl'}")
     except Exception as exc:
+        published_files = _publish_partial_artifacts(final_state)
         monitor.fail(error=str(exc))
         print(f"Error: {exc}", file=sys.stderr)
+        if published_files:
+            print(f"Partial artifacts: {output_dir}/", file=sys.stderr)
         sys.exit(1)
     finally:
         if proof_env is not None:
