@@ -990,20 +990,27 @@
   var detailTabs = document.querySelectorAll(".detail-tab");
   var tabContents = document.querySelectorAll(".tab-content");
 
+  function activateTab(target) {
+    detailTabs.forEach(function (t) {
+      t.classList.toggle("active", t.getAttribute("data-tab") === target);
+    });
+    tabContents.forEach(function (c) {
+      c.classList.toggle("active", c.id === "tab-" + target);
+    });
+  }
+
   detailTabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
-      var target = tab.getAttribute("data-tab");
-      detailTabs.forEach(function (t) { t.classList.remove("active"); });
-      tabContents.forEach(function (c) { c.classList.remove("active"); });
-      tab.classList.add("active");
-      var content = document.getElementById("tab-" + target);
-      if (content) content.classList.add("active");
+      activateTab(tab.getAttribute("data-tab"));
     });
   });
 
   // --- Node tap / detail panel ---
 
   var selectedNodeId = null;
+  var browserControls = null;
+  var compareControls = null;
+  var isoControls = null;
 
   function onNodeTap(e) {
     var nodeData = e.target.data("_nodeData");
@@ -1011,7 +1018,7 @@
     selectedNodeId = nodeData.node_id;
     populateDetailPanel(nodeData);
     populateLineage(nodeData.node_id);
-    updateIsoButtonVisibility(nodeData);
+    if (isoControls) isoControls.updateButtonVisibility(nodeData);
     detailPanel.classList.add("visible");
   }
 
@@ -1190,603 +1197,45 @@
     renderLevel(initial, 1);
   }
 
-  // --- CDG Browser (API mode) ---
-
-  var btnBrowse = document.getElementById("btn-browse");
-  var cdgBrowser = document.getElementById("cdg-browser");
-  var btnBrowserClose = document.getElementById("btn-browser-close");
-  var browserSearch = document.getElementById("browser-search");
-  var browserList = document.getElementById("browser-list");
-  var apiAvailable = false;
-
-  function fetchCDGList(filters) {
-    var params = new URLSearchParams();
-    if (filters && filters.q) params.set("q", filters.q);
-    if (filters && filters.concept_type) params.set("concept_type", filters.concept_type);
-    if (filters && filters.status) params.set("status", filters.status);
-
-    var url = "/api/cdgs";
-    var qs = params.toString();
-    if (qs) url += "?" + qs;
-
-    return fetch(url)
-      .then(function (res) {
-        if (!res.ok) throw new Error("API error " + res.status);
-        return res.json();
-      })
-      .then(function (cdgs) {
-        apiAvailable = true;
-        btnBrowse.style.display = "";
-        renderCDGList(cdgs);
-        return cdgs;
-      })
-      .catch(function () {
-        // API not available (e.g. file:// mode or static server)
-        apiAvailable = false;
-        btnBrowse.style.display = "none";
-        cdgBrowser.classList.remove("visible");
-      });
-  }
-
-  function renderCDGList(cdgs) {
-    browserList.innerHTML = "";
-    if (cdgs.length === 0) {
-      browserList.innerHTML = '<div class="browser-empty">No CDGs found</div>';
-      return;
-    }
-
-    // Group by repo (second path segment, e.g. "advancedvi" from "ageo-atoms/advancedvi/optimize")
-    var groups = {};
-    cdgs.forEach(function (cdg) {
-      var parts = cdg.repo.split("/");
-      // 3+ segments: org/repo/cdg → group by parts[1]
-      // 2 segments: org/cdg → group by parts[1]
-      // 1 segment: group by the name itself
-      var key = parts.length >= 2 ? parts[1] : parts[0];
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(cdg);
-    });
-
-    var sortedKeys = Object.keys(groups).sort();
-    sortedKeys.forEach(function (ns) {
-      var groupEl = document.createElement("div");
-      groupEl.className = "browser-group";
-
-      var countLabel = groups[ns].length === 1
-        ? "1 CDG"
-        : groups[ns].length + " CDGs";
-      var header = document.createElement("div");
-      header.className = "browser-group-header";
-      header.innerHTML = '<span class="browser-group-arrow">&#9654;</span> ' +
-        '<span class="browser-group-name">' + ns + '</span>' +
-        '<span class="browser-group-count">' + countLabel + '</span>';
-      header.addEventListener("click", function () {
-        groupEl.classList.toggle("collapsed");
-      });
-
-      var items = document.createElement("div");
-      items.className = "browser-group-items";
-
-      groups[ns].forEach(function (cdg) {
-        var item = document.createElement("div");
-        item.className = "browser-item";
-        item.addEventListener("click", function () {
-          fetchCDG(cdg.repo);
-        });
-
-        var title = document.createElement("div");
-        title.className = "browser-item-title";
-        // Show only the CDG name, not the full repo path
-        var displayName = cdg.repo.split("/").pop();
-        title.textContent = displayName;
-
-        var meta = document.createElement("div");
-        meta.className = "browser-item-meta";
-
-        // Node count
-        var nodeCountSpan = document.createElement("span");
-        nodeCountSpan.className = "node-count";
-        nodeCountSpan.textContent = cdg.node_count + " nodes";
-        meta.appendChild(nodeCountSpan);
-
-        // Mini concept-type bar
-        if (cdg.concept_types && cdg.concept_types.length > 0) {
-          var barContainer = document.createElement("span");
-          barContainer.className = "concept-bar";
-          var familyCounts = {};
-          cdg.concept_types.forEach(function (ct) {
-            var fam = CONCEPT_FAMILY[ct] || "other";
-            familyCounts[fam] = (familyCounts[fam] || 0) + 1;
-          });
-          var total = cdg.concept_types.length;
-          Object.keys(familyCounts).forEach(function (fam) {
-            var seg = document.createElement("span");
-            seg.className = "concept-bar-seg";
-            seg.style.width = Math.max(4, Math.round(familyCounts[fam] / total * 60)) + "px";
-            seg.style.background = FAMILY_COLORS[fam].border;
-            seg.title = FAMILY_LABELS[fam] + ": " + familyCounts[fam];
-            barContainer.appendChild(seg);
-          });
-          meta.appendChild(barContainer);
-        }
-
-        item.appendChild(title);
-        item.appendChild(meta);
-        items.appendChild(item);
-      });
-
-      groupEl.appendChild(header);
-      groupEl.appendChild(items);
-      browserList.appendChild(groupEl);
-    });
-  }
-
-  function fetchCDG(repo) {
-    statusText.textContent = "Loading " + repo + "...";
-    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
-      .then(function (res) {
-        if (!res.ok) throw new Error("CDG not found");
-        return res.json();
-      })
-      .then(function (data) {
-        validateAndLoad(data);
-        cdgBrowser.classList.remove("visible");
-      })
-      .catch(function (err) {
-        statusText.textContent = "Error: " + err.message;
-      });
-  }
-
-  // Browser panel toggle
-  btnBrowse.addEventListener("click", function () {
-    cdgBrowser.classList.toggle("visible");
-    if (cdgBrowser.classList.contains("visible")) {
-      fetchCDGList({ q: browserSearch.value || undefined });
-      browserSearch.focus();
-    }
+  browserControls = window.initVisualizerBrowser({
+    conceptFamily: CONCEPT_FAMILY,
+    familyColors: FAMILY_COLORS,
+    familyLabels: FAMILY_LABELS,
+    setStatus: function (text) {
+      statusText.textContent = text;
+    },
+    validateAndLoad: validateAndLoad
   });
 
-  btnBrowserClose.addEventListener("click", function () {
-    cdgBrowser.classList.remove("visible");
+  compareControls = window.initVisualizerCompare({
+    cyContainer: cyContainer,
+    detailPanel: detailPanel,
+    getNodeColors: getNodeColors,
+    getCytoscapeStyle: getCytoscapeStyle,
+    statusShapes: STATUS_SHAPES
   });
 
-  var searchTimeout = null;
-  browserSearch.addEventListener("input", function () {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(function () {
-      fetchCDGList({ q: browserSearch.value || undefined });
-    }, 300);
+  isoControls = window.initVisualizerIsomorphism({
+    getSelectedNodeId: function () {
+      return selectedNodeId;
+    },
+    getCurrentData: function () {
+      return currentData;
+    },
+    getNodeById: function (nodeId) {
+      return nodeById[nodeId];
+    },
+    isApiAvailable: function () {
+      return browserControls && browserControls.isApiAvailable();
+    },
+    activateTab: activateTab,
+    openInCompare: function (currentRepo, matchRepo) {
+      if (compareControls) compareControls.openInCompare(currentRepo, matchRepo);
+    },
+    conceptFamily: CONCEPT_FAMILY,
+    familyColors: FAMILY_COLORS,
+    familyLabels: FAMILY_LABELS
   });
-
-  // --- Compare mode ---
-
-  var btnCompare = document.getElementById("btn-compare");
-  var compareBar = document.getElementById("compare-bar");
-  var compareContainer = document.getElementById("compare-container");
-  var compareLeftSelect = document.getElementById("compare-left-select");
-  var compareRightSelect = document.getElementById("compare-right-select");
-  var compareScore = document.getElementById("compare-score");
-  var btnCompareClose = document.getElementById("btn-compare-close");
-  var cyLeft = null;
-  var cyRight = null;
-  var compareMode = false;
-  var compareCDGList = [];
-
-  if (btnCompare) {
-    btnCompare.addEventListener("click", function () {
-      enterCompareMode();
-    });
-  }
-
-  if (btnCompareClose) {
-    btnCompareClose.addEventListener("click", function () {
-      exitCompareMode();
-    });
-  }
-
-  function enterCompareMode() {
-    compareMode = true;
-    compareBar.classList.remove("hidden");
-    compareContainer.classList.remove("hidden");
-    cyContainer.style.display = "none";
-    detailPanel.classList.remove("visible");
-
-    // Populate selects from cached CDG list
-    fetch("/api/cdgs")
-      .then(function (res) { return res.json(); })
-      .then(function (cdgs) {
-        compareCDGList = cdgs;
-        populateCompareSelects(cdgs);
-      })
-      .catch(function () {
-        compareScore.textContent = "API not available";
-      });
-  }
-
-  function exitCompareMode() {
-    compareMode = false;
-    compareBar.classList.add("hidden");
-    compareContainer.classList.add("hidden");
-    cyContainer.style.display = "";
-    if (cyLeft) { cyLeft.destroy(); cyLeft = null; }
-    if (cyRight) { cyRight.destroy(); cyRight = null; }
-    compareScore.textContent = "";
-  }
-
-  function populateCompareSelects(cdgs) {
-    [compareLeftSelect, compareRightSelect].forEach(function (sel) {
-      sel.innerHTML = '<option value="">Select CDG...</option>';
-      cdgs.forEach(function (cdg) {
-        var opt = document.createElement("option");
-        opt.value = cdg.repo;
-        opt.textContent = cdg.repo + " (" + cdg.node_count + " nodes)";
-        sel.appendChild(opt);
-      });
-    });
-  }
-
-  if (compareLeftSelect) {
-    compareLeftSelect.addEventListener("change", function () {
-      loadComparePane("left", compareLeftSelect.value);
-    });
-  }
-  if (compareRightSelect) {
-    compareRightSelect.addEventListener("change", function () {
-      loadComparePane("right", compareRightSelect.value);
-    });
-  }
-
-  function loadComparePane(side, repo) {
-    if (!repo) return;
-    var container = document.getElementById("compare-" + side);
-    fetch("/api/cdg?repo=" + encodeURIComponent(repo))
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        var cyInstance = buildCompareGraph(container, data);
-        if (side === "left") {
-          if (cyLeft) cyLeft.destroy();
-          cyLeft = cyInstance;
-        } else {
-          if (cyRight) cyRight.destroy();
-          cyRight = cyInstance;
-        }
-        updateJaccardScore();
-      });
-  }
-
-  function buildCompareGraph(container, data) {
-    var elements = [];
-    data.nodes.forEach(function (node) {
-      var conceptType = node.concept_type || "custom";
-      var colors = getNodeColors(conceptType);
-      var status = node.status || "pending";
-      var shape = STATUS_SHAPES[status] || "ellipse";
-      elements.push({
-        group: "nodes",
-        data: {
-          id: node.node_id,
-          label: node.name,
-          bgColor: colors.bg,
-          borderColor: colors.border,
-          textColor: colors.text,
-          shape: shape,
-          size: 40,
-          conceptType: conceptType
-        }
-      });
-    });
-    data.edges.forEach(function (edge, i) {
-      elements.push({
-        group: "edges",
-        data: {
-          id: "df_" + i + "_" + edge.source_id + "_" + edge.target_id,
-          source: edge.source_id,
-          target: edge.target_id,
-          edgeType: "dataflow"
-        }
-      });
-    });
-
-    return cytoscape({
-      container: container,
-      elements: elements,
-      style: getCytoscapeStyle(),
-      layout: { name: "dagre", rankDir: "TB", nodeSep: 30, rankSep: 50 },
-      wheelSensitivity: 0.3
-    });
-  }
-
-  function updateJaccardScore() {
-    if (!cyLeft || !cyRight) {
-      compareScore.textContent = "";
-      return;
-    }
-    // Compute Jaccard on concept_type multisets
-    var leftTypes = {};
-    var rightTypes = {};
-    cyLeft.nodes().forEach(function (n) {
-      var ct = n.data("conceptType") || "custom";
-      leftTypes[ct] = (leftTypes[ct] || 0) + 1;
-    });
-    cyRight.nodes().forEach(function (n) {
-      var ct = n.data("conceptType") || "custom";
-      rightTypes[ct] = (rightTypes[ct] || 0) + 1;
-    });
-
-    var allTypes = {};
-    Object.keys(leftTypes).forEach(function (k) { allTypes[k] = true; });
-    Object.keys(rightTypes).forEach(function (k) { allTypes[k] = true; });
-
-    var intersection = 0;
-    var union = 0;
-    Object.keys(allTypes).forEach(function (k) {
-      var l = leftTypes[k] || 0;
-      var r = rightTypes[k] || 0;
-      intersection += Math.min(l, r);
-      union += Math.max(l, r);
-    });
-
-    var jaccard = union > 0 ? (intersection / union) : 0;
-    compareScore.textContent = "Jaccard similarity: " + jaccard.toFixed(3);
-  }
-
-  // --- Isomorphism search ---
-
-  var btnFindIso = document.getElementById("btn-find-iso");
-  var isoModal = document.getElementById("iso-modal");
-  var isoMinSim = document.getElementById("iso-min-sim");
-  var isoSimValue = document.getElementById("iso-sim-value");
-  var isoMaxResults = document.getElementById("iso-max-results");
-  var isoCancel = document.getElementById("iso-cancel");
-  var isoSearchBtn = document.getElementById("iso-search");
-  var isoLoading = document.getElementById("iso-loading");
-  var isoEmpty = document.getElementById("iso-empty");
-  var isoResults = document.getElementById("iso-results");
-  var isoSelectedNode = null; // node data of the selected node when iso button was clicked
-
-  // Show/hide iso button based on whether node is decomposed or child of decomposed
-  function updateIsoButtonVisibility(nodeData) {
-    if (!btnFindIso || !apiAvailable) return;
-    var show = false;
-    if (nodeData) {
-      // Show if the node is decomposed, or if it has a parent (meaning the parent is decomposed)
-      var hasChildren = nodeData.children && nodeData.children.length > 0;
-      var hasParent = !!nodeData.parent_id;
-      show = hasChildren || hasParent;
-    }
-    btnFindIso.classList.toggle("visible", show);
-  }
-
-  // Slider value display
-  if (isoMinSim) {
-    isoMinSim.addEventListener("input", function () {
-      isoSimValue.textContent = parseFloat(isoMinSim.value).toFixed(2);
-    });
-  }
-
-  // Open modal
-  if (btnFindIso) {
-    btnFindIso.addEventListener("click", function () {
-      if (!selectedNodeId || !currentData) return;
-      isoSelectedNode = nodeById[selectedNodeId];
-      if (!isoSelectedNode) return;
-
-      // Configure scope radio: disable "Parent" if node is root-level decomposed
-      var parentRadio = document.querySelector('input[name="iso-scope"][value="parent"]');
-      if (parentRadio) {
-        var hasParent = !!isoSelectedNode.parent_id;
-        parentRadio.disabled = !hasParent;
-        if (!hasParent) {
-          document.querySelector('input[name="iso-scope"][value="this"]').checked = true;
-        }
-      }
-
-      isoModal.classList.remove("hidden");
-    });
-  }
-
-  // Close modal
-  if (isoCancel) {
-    isoCancel.addEventListener("click", function () {
-      isoModal.classList.add("hidden");
-    });
-  }
-
-  // Close on backdrop click
-  if (isoModal) {
-    var backdrop = isoModal.querySelector(".iso-modal-backdrop");
-    if (backdrop) {
-      backdrop.addEventListener("click", function () {
-        isoModal.classList.add("hidden");
-      });
-    }
-  }
-
-  // Search
-  if (isoSearchBtn) {
-    isoSearchBtn.addEventListener("click", function () {
-      if (!isoSelectedNode || !currentData) return;
-      isoModal.classList.add("hidden");
-
-      var scope = document.querySelector('input[name="iso-scope"]:checked').value;
-      var layers = [];
-      if (document.getElementById("iso-layer-1").checked) layers.push(1);
-      if (document.getElementById("iso-layer-2").checked) layers.push(2);
-      if (document.getElementById("iso-layer-3").checked) layers.push(3);
-
-      var repo = currentData.metadata && currentData.metadata.repo ? currentData.metadata.repo : "";
-      var nodeId = scope === "parent" && isoSelectedNode.parent_id
-        ? isoSelectedNode.parent_id
-        : isoSelectedNode.node_id;
-      var radius = scope === "parent" ? 1 : 0;
-
-      var body = {
-        repo: repo,
-        node_id: nodeId,
-        radius: radius,
-        min_jaccard: parseFloat(isoMinSim.value),
-        max_results: parseInt(isoMaxResults.value, 10) || 20,
-        layers: layers
-      };
-
-      // Switch to isomorphisms tab
-      activateTab("isomorphisms");
-
-      // Show loading
-      isoLoading.classList.remove("hidden");
-      isoEmpty.classList.add("hidden");
-      isoResults.innerHTML = "";
-
-      fetch("/api/isomorphisms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error("API error " + res.status);
-          return res.json();
-        })
-        .then(function (data) {
-          isoLoading.classList.add("hidden");
-          renderIsoResults(data);
-        })
-        .catch(function (err) {
-          isoLoading.classList.add("hidden");
-          isoResults.innerHTML = '<div class="iso-empty"><p>Error: ' + err.message + '</p></div>';
-        });
-    });
-  }
-
-  function activateTab(tabName) {
-    var tabs = document.querySelectorAll(".detail-tab");
-    var contents = document.querySelectorAll(".tab-content");
-    tabs.forEach(function (t) {
-      t.classList.toggle("active", t.getAttribute("data-tab") === tabName);
-    });
-    contents.forEach(function (c) {
-      c.classList.toggle("active", c.id === "tab-" + tabName);
-    });
-  }
-
-  function renderIsoResults(data) {
-    isoResults.innerHTML = "";
-
-    if (!data.results || data.results.length === 0) {
-      isoEmpty.classList.remove("hidden");
-      isoEmpty.innerHTML = "<p>No similar subgraphs found</p>";
-      return;
-    }
-
-    isoEmpty.classList.add("hidden");
-
-    // Query info
-    var info = document.createElement("div");
-    info.className = "iso-query-info";
-    info.textContent = "Query: " + data.query_node.name +
-      " (" + data.query_node.concept_type + ", " + data.query_node.n_children + " children)" +
-      " — " + data.results.length + " result" + (data.results.length === 1 ? "" : "s");
-    isoResults.appendChild(info);
-
-    data.results.forEach(function (result) {
-      var row = document.createElement("div");
-      row.className = "iso-result-row";
-      row.addEventListener("click", function () {
-        openIsoInCompare(result.repo);
-      });
-
-      // Top line: score bar + name + score value
-      var top = document.createElement("div");
-      top.className = "iso-result-top";
-
-      var scoreBar = document.createElement("div");
-      scoreBar.className = "iso-score-bar";
-      var scoreFill = document.createElement("div");
-      scoreFill.className = "iso-score-fill";
-      scoreFill.style.width = (result.score * 100) + "%";
-      scoreFill.style.background = scoreColor(result.score);
-      scoreBar.appendChild(scoreFill);
-      top.appendChild(scoreBar);
-
-      var name = document.createElement("span");
-      name.className = "iso-result-name";
-      name.textContent = result.name;
-      name.title = result.fqn;
-      top.appendChild(name);
-
-      var scoreText = document.createElement("span");
-      scoreText.className = "iso-result-score";
-      scoreText.textContent = result.score.toFixed(2);
-      top.appendChild(scoreText);
-
-      row.appendChild(top);
-
-      // Meta line: layer badge, repo, concept bar
-      var meta = document.createElement("div");
-      meta.className = "iso-result-meta";
-
-      var layerBadge = document.createElement("span");
-      var layerNames = { 1: "topo", 2: "struct", 3: "jaccard" };
-      var layerClasses = { 1: "iso-layer-topo", 2: "iso-layer-struct", 3: "iso-layer-jaccard" };
-      layerBadge.className = "iso-layer-badge " + (layerClasses[result.layer] || "");
-      layerBadge.textContent = layerNames[result.layer] || "?";
-      meta.appendChild(layerBadge);
-
-      var repo = document.createElement("span");
-      repo.textContent = result.repo;
-      meta.appendChild(repo);
-
-      // Mini concept bar from children_summary
-      if (result.children_summary && result.children_summary.length > 0) {
-        var conceptBar = document.createElement("span");
-        conceptBar.className = "iso-result-concepts";
-        var familyCounts = {};
-        result.children_summary.forEach(function (ct) {
-          var fam = CONCEPT_FAMILY[ct] || "other";
-          familyCounts[fam] = (familyCounts[fam] || 0) + 1;
-        });
-        var total = result.children_summary.length;
-        Object.keys(familyCounts).forEach(function (fam) {
-          var seg = document.createElement("span");
-          seg.className = "iso-concept-seg";
-          seg.style.width = Math.max(4, Math.round(familyCounts[fam] / total * 40)) + "px";
-          seg.style.background = (FAMILY_COLORS[fam] || FAMILY_COLORS.other).border;
-          seg.title = (FAMILY_LABELS[fam] || fam) + ": " + familyCounts[fam];
-          conceptBar.appendChild(seg);
-        });
-        meta.appendChild(conceptBar);
-      }
-
-      row.appendChild(meta);
-      isoResults.appendChild(row);
-    });
-  }
-
-  function scoreColor(score) {
-    if (score >= 0.8) return "#43a047";
-    if (score >= 0.5) return "#fb8c00";
-    return "#e53935";
-  }
-
-  function openIsoInCompare(matchRepo) {
-    var currentRepo = currentData && currentData.metadata ? currentData.metadata.repo : "";
-    if (!currentRepo || !matchRepo) return;
-
-    enterCompareMode();
-
-    // Wait for selects to be populated, then set values
-    var waitForSelects = setInterval(function () {
-      if (compareLeftSelect.options.length > 1) {
-        clearInterval(waitForSelects);
-        compareLeftSelect.value = currentRepo;
-        compareRightSelect.value = matchRepo;
-        loadComparePane("left", currentRepo);
-        loadComparePane("right", matchRepo);
-      }
-    }, 100);
-
-    // Safety timeout
-    setTimeout(function () { clearInterval(waitForSelects); }, 5000);
-  }
 
   // --- Animated flow direction ---
 
@@ -1802,6 +1251,6 @@
 
   // --- Init ---
 
-  fetchCDGList();
+  browserControls.fetchCDGList();
   tryLoadDefault();
 })();
