@@ -123,6 +123,28 @@ async def test_repair_ghost_uses_deterministic_fix():
     assert "return x" in result["bundle"].generated_witnesses
 
 
+@pytest.mark.asyncio
+async def test_repair_ghost_fails_fast_for_semantic_failure():
+    bundle = IngestionBundle(
+        cdg=CDGExport(nodes=[], edges=[]),
+        generated_witnesses="def witness_filter(x: AbstractArray) -> AbstractArray:\n    return x\n",
+        ghost_sim_report={
+            "error_node": "Filter",
+            "error_function": "witness_filter",
+            "error": "domain mismatch between signal and coefficients",
+        },
+    )
+    state = {
+        "bundle": bundle,
+        "ghost_repair_count": 0,
+    }
+    config = {"configurable": {"deps": IngesterDeps(llm=AsyncMock())}}
+
+    result = await repair_ghost(state, config)
+
+    assert result == {}
+
+
 def test_create_llm_router_wraps_ingester_fix_ghost_deterministically(monkeypatch):
     created: list[tuple[str, str]] = []
 

@@ -153,10 +153,60 @@ def _build_patch(source_code: str, error_line: str) -> dict[str, Any] | None:
     if fix_hint is None:
         return None
     if category == ErrorCategory.MISSING_IMPORT:
+        if fix_hint.lstrip().startswith("#"):
+            return None
         return _import_patch(source_code, fix_hint)
     if category == ErrorCategory.TYPE_MISMATCH:
         return _return_patch(source_code, error_line=error_line, fix_hint=fix_hint)
     return None
+
+
+def _dedupe_patches(patches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduped: dict[tuple[str, int, int, str], dict[str, Any]] = {}
+    for patch in patches:
+        key = (
+            str(patch.get("file", "") or ""),
+            int(patch.get("line_start", 0) or 0),
+            int(patch.get("line_end", 0) or 0),
+            str(patch.get("replacement", "") or ""),
+        )
+        deduped[key] = patch
+    return sorted(
+        deduped.values(),
+        key=lambda patch: (
+            str(patch.get("file", "") or ""),
+            -int(patch.get("line_start", 0) or 0),
+        ),
+    )
+
+
+def build_deterministic_type_fixes(
+    mypy_errors: str, source_files: dict[str, str]
+) -> list[dict[str, Any]] | None:
+    """Return deterministic bundle patches, or ``None`` if any error is unsupported."""
+    error_lines = [
+        line.strip()
+        for line in mypy_errors.splitlines()
+        if line.strip() and "error:" in line.lower()
+    ]
+    if not error_lines:
+        return None
+
+    patches: list[dict[str, Any]] = []
+    for error_line in error_lines:
+        filename = _resolve_error_filename(error_line, source_files)
+        source_code = source_files.get(filename, "")
+        if not source_code and len(source_files) == 1:
+            source_code = next(iter(source_files.values()))
+        patch = _build_patch(source_code, error_line)
+        if patch is None:
+            return None
+        patch["file"] = filename
+        patches.append(patch)
+
+    if not patches:
+        return None
+    return _dedupe_patches(patches)
 
 
 class DeterministicTypeFixer:
@@ -178,52 +228,17 @@ class DeterministicTypeFixer:
 
     async def complete(self, system: str, user: str) -> str:
         mypy_errors, source_files = _parse_fix_type_prompt(user)
-        error_lines = [
-            line.strip()
-            for line in mypy_errors.splitlines()
-            if line.strip() and "error:" in line.lower()
-        ]
-        patches: list[dict[str, Any]] = []
-        for error_line in error_lines:
-            filename = _resolve_error_filename(error_line, source_files)
-            source_code = source_files.get(filename, "")
-            if not source_code and len(source_files) == 1:
-                source_code = next(iter(source_files.values()))
-            patch = _build_patch(source_code, error_line)
-            if patch is None:
-                self._last_completion_metadata = {"type_fix_source": "fallback"}
-                self._last_error_metadata = {}
-                return await self._fallback.complete(system, user)
-            patch["file"] = filename
-            patches.append(patch)
-
-        if not patches:
+        patches = build_deterministic_type_fixes(mypy_errors, source_files)
+        if patches is None:
             self._last_completion_metadata = {"type_fix_source": "fallback"}
             self._last_error_metadata = {}
             return await self._fallback.complete(system, user)
-
-        deduped: dict[tuple[int, int, str], dict[str, Any]] = {}
-        for patch in patches:
-            key = (
-                str(patch.get("file", "") or ""),
-                int(patch.get("line_start", 0) or 0),
-                int(patch.get("line_end", 0) or 0),
-                str(patch.get("replacement", "") or ""),
-            )
-            deduped[key] = patch
-        ordered = sorted(
-            deduped.values(),
-            key=lambda patch: (
-                str(patch.get("file", "") or ""),
-                -int(patch.get("line_start", 0) or 0),
-            ),
-        )
         self._last_completion_metadata = {
             "type_fix_source": "deterministic",
-            "patch_count": len(ordered),
+            "patch_count": len(patches),
         }
         self._last_error_metadata = {}
-        return json.dumps(ordered)
+        return json.dumps(patches)
 
     async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
         return await self.complete(system, user)

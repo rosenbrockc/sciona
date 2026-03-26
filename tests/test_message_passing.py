@@ -498,8 +498,15 @@ class TestGraphRouting:
 
         bundle = IngestionBundle(
             cdg=CDGExport(nodes=[], edges=[]),
+            generated_witnesses=(
+                "def witness_filter(x: AbstractArray) -> AbstractArray:\n"
+                "    return None\n"
+            ),
             ghost_sim_report={
                 "cyclic_deadlock": False,
+                "error_node": "Filter",
+                "error_function": "witness_filter",
+                "error": "NoneType has no attribute shape",
             },
         )
         state = {
@@ -508,6 +515,32 @@ class TestGraphRouting:
             "bundle": bundle,
         }
         assert route_after_ghost(state) == "repair_ghost"
+
+    def test_route_after_ghost_semantic_failure_ends(self):
+        from sciona.ingester.graph import route_after_ghost
+        from sciona.ingester.models import IngestionBundle
+        from sciona.architect.handoff import CDGExport
+
+        bundle = IngestionBundle(
+            cdg=CDGExport(nodes=[], edges=[]),
+            generated_witnesses=(
+                "def witness_filter(x: AbstractArray) -> AbstractArray:\n"
+                "    return x\n"
+            ),
+            ghost_sim_report={
+                "cyclic_deadlock": False,
+                "error_node": "Filter",
+                "error_function": "witness_filter",
+                "error": "domain mismatch between signal and coefficients",
+            },
+        )
+        state = {
+            "ghost_passed": False,
+            "ghost_repair_count": 0,
+            "bundle": bundle,
+        }
+
+        assert route_after_ghost(state) == "end"
 
 
 # ---------------------------------------------------------------------------

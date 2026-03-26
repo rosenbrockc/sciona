@@ -237,26 +237,21 @@ class TestOptionalCDGNode:
 
 class TestMypyRepairLoop:
     @pytest.mark.asyncio
-    async def test_repair_loop_triggers_on_type_error(self, sample_source):
-        """Mock proof_env fails first, repair LLM provides fix, second check passes."""
-        # Proof environment: fail first call, pass second call
+    async def test_semantic_type_failure_does_not_enter_repair(self, sample_source):
         mock_proof_env = AsyncMock()
         mock_proof_env.prover_name = "python"
-        mock_proof_env.check_proof.side_effect = [
-            (False, "error: Incompatible return value type"),
-            (True, ""),
-        ]
+        mock_proof_env.check_proof.return_value = (
+            False,
+            'atoms.py:1: error: Too many arguments for "Estimator"',
+        )
         mock_proof_env.close.return_value = None
 
-        # LLM: chunk response, hoist response, then repair response
         mock_llm = AsyncMock()
         mock_llm.complete.side_effect = [
             _CHUNK_RESPONSE,
             _HOIST_RESPONSE,
             _ABSTRACT_RESPONSE,
             _ABSTRACT_RESPONSE,
-            _REPAIR_RESPONSE,
-            "[]",  # fallback for any further calls
         ]
 
         mock_ghost_mod = MagicMock()
@@ -265,23 +260,21 @@ class TestMypyRepairLoop:
                 passed=True, ran=True, error=""
             )
             agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
-            bundle = await agent.ingest(sample_source, "SmoothedEstimator")
+            final_state = await agent.ingest_state(sample_source, "SmoothedEstimator")
 
-        assert isinstance(bundle, IngestionBundle)
-        # Verify LLM was called at least 3 times: chunk + hoist + repair
-        assert mock_llm.complete.call_count >= 3
-        # Verify proof_env was called at least twice (fail + pass)
-        assert mock_proof_env.check_proof.call_count >= 2
+        assert final_state["type_repair_count"] == 0
+        assert final_state["type_failure_classification"]["reason_code"] == "semantic_signature"
+        assert mock_proof_env.check_proof.call_count == 1
+        assert mock_llm.complete.call_count == 4
 
     @pytest.mark.asyncio
-    async def test_repair_loop_produces_valid_bundle(self, sample_source):
-        """After repair, the final bundle should have CDG nodes."""
+    async def test_semantic_type_failure_preserves_partial_bundle(self, sample_source):
         mock_proof_env = AsyncMock()
         mock_proof_env.prover_name = "python"
-        mock_proof_env.check_proof.side_effect = [
-            (False, "error: Missing return statement"),
-            (True, ""),
-        ]
+        mock_proof_env.check_proof.return_value = (
+            False,
+            'atoms.py:1: error: Too many arguments for "Estimator"',
+        )
         mock_proof_env.close.return_value = None
 
         mock_llm = AsyncMock()
@@ -290,8 +283,6 @@ class TestMypyRepairLoop:
             _HOIST_RESPONSE,
             _ABSTRACT_RESPONSE,
             _ABSTRACT_RESPONSE,
-            _REPAIR_RESPONSE,
-            "[]",
         ]
 
         mock_ghost_mod = MagicMock()
@@ -302,7 +293,7 @@ class TestMypyRepairLoop:
             agent = IngesterAgent(llm=mock_llm, proof_env=mock_proof_env)
             bundle = await agent.ingest(sample_source, "SmoothedEstimator")
 
-        # Bundle should still have correct CDG structure
         assert len(bundle.cdg.nodes) > 0
         atomic = [n for n in bundle.cdg.nodes if n.status == NodeStatus.ATOMIC]
         assert len(atomic) == 2
+        assert mock_proof_env.check_proof.call_count == 1

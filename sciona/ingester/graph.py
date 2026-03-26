@@ -7,7 +7,6 @@ mypy type-checking and ghost simulation.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from dataclasses import dataclass
@@ -30,6 +29,8 @@ from sciona.ingester.cache import (
     save_ingest_cache,
 )
 from sciona.ingester.base_extractor import EXTENSION_MAP, BaseExtractor, SourceLanguage
+from sciona.ingester.deterministic_ghost_fixer import build_deterministic_ghost_fixes
+from sciona.ingester.deterministic_type_fixer import build_deterministic_type_fixes
 from sciona.ingester.emitter import (
     build_procedural_plan,
     emit_ingestion_bundle,
@@ -44,20 +45,16 @@ from sciona.ingester.models import (
     RawDataFlowGraph,
     ValidatedMacroPlan,
 )
+from sciona.ingester.verification_classifier import (
+    classify_ghost_failure,
+    classify_type_failure,
+)
 from sciona.ingester.prompts import (
-    FIX_GHOST_ERROR_SYSTEM,
-    FIX_GHOST_ERROR_USER,
     FIX_MESSAGE_CYCLE_SYSTEM,
     FIX_MESSAGE_CYCLE_USER,
-    FIX_TYPE_ERROR_SYSTEM,
-    FIX_TYPE_ERROR_USER,
 )
 from sciona.llm_router import (
-    INGESTER_FIX_GHOST,
     INGESTER_FIX_MESSAGE_CYCLE,
-    INGESTER_FIX_TYPE,
-    PromptKeyLLMClient,
-    prompt_timeout_seconds,
     select_llm,
 )
 from sciona.shared_context import SharedContextMetrics, SharedContextStore
@@ -161,6 +158,8 @@ class IngesterState(TypedDict):
     ghost_passed: bool
     mypy_errors: str
     ghost_errors: str
+    type_failure_classification: dict[str, Any]
+    ghost_failure_classification: dict[str, Any]
     type_repair_count: int
     ghost_repair_count: int
     done: bool
@@ -237,20 +236,6 @@ def _bundle_files(bundle: IngestionBundle) -> dict[str, str]:
     return files
 
 
-def _render_type_repair_sources(bundle: IngestionBundle) -> str:
-    """Render the generated bundle into a prompt-friendly multi-file block."""
-    blocks: list[str] = []
-    for filename, source in _bundle_files(bundle).items():
-        blocks.append(
-            f"<<FILE: {filename}>>\n"
-            "```python\n"
-            f"{source}\n"
-            "```\n"
-            "<<END FILE>>"
-        )
-    return "\n\n".join(blocks)
-
-
 def _normalize_bundle_filename(filename: str | None) -> str:
     if not filename:
         return "atoms.py"
@@ -298,14 +283,16 @@ def _apply_bundle_fixes(
     return bundle.model_copy(update=updates)
 
 
-def _publish_typecheck_debug_snapshot(
+def _publish_verification_failure_snapshot(
     monitor: IngestMonitor | None,
     *,
     state: IngesterState,
     bundle: IngestionBundle,
-    mypy_errors: str,
+    stage: str,
+    verification_errors: str,
+    classification: dict[str, Any],
 ) -> None:
-    """Publish emitted artifacts at the type-check failure boundary."""
+    """Publish emitted artifacts at a verification failure boundary."""
     if monitor is None:
         return
     try:
@@ -330,19 +317,57 @@ def _publish_typecheck_debug_snapshot(
                     "debug_ingest_ir.json",
                     canonical_ir.model_dump(mode="json"),
                 )
+            planning_graph = getattr(validated_plan.plan, "planning_graph", None)
+            if planning_graph is not None:
+                monitor.stage_json(
+                    "debug_planning_graph.json",
+                    planning_graph.model_dump(mode="json"),
+                )
         monitor.stage_json(
             "debug_typecheck_state.json",
             {
+                "stage": stage,
                 "mypy_passed": bool(state.get("mypy_passed", False)),
                 "ghost_passed": bool(state.get("ghost_passed", False)),
                 "type_repair_count": int(state.get("type_repair_count", 0) or 0),
                 "ghost_repair_count": int(state.get("ghost_repair_count", 0) or 0),
-                "mypy_errors": mypy_errors,
+                "mypy_errors": (
+                    verification_errors if stage == "verify_types" else state.get("mypy_errors", "")
+                ),
+                "ghost_errors": (
+                    verification_errors if stage == "verify_ghost" else state.get("ghost_errors", "")
+                ),
+                "type_failure_classification": (
+                    classification
+                    if stage == "verify_types"
+                    else state.get("type_failure_classification", {})
+                ),
+                "ghost_failure_classification": (
+                    classification
+                    if stage == "verify_ghost"
+                    else state.get("ghost_failure_classification", {})
+                ),
+            },
+        )
+        monitor.stage_json(
+            "verification_failure.json",
+            {
+                "stage": stage,
+                "classifier_result": classification,
+                "repairable": bool(classification.get("repairable", False)),
+                "reason_code": classification.get(
+                    "reason_code", "unknown_or_unclassified"
+                ),
+                "retry_counts": {
+                    "type_repair_count": int(state.get("type_repair_count", 0) or 0),
+                    "ghost_repair_count": int(state.get("ghost_repair_count", 0) or 0),
+                },
+                "verification_errors": verification_errors,
             },
         )
         monitor.publish_staged()
     except Exception as exc:
-        logger.warning("Failed to publish typecheck debug snapshot: %s", exc)
+        logger.warning("Failed to publish verification failure snapshot: %s", exc)
 
 
 # ---------------------------------------------------------------------------
@@ -718,10 +743,14 @@ async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str
         return {}
 
     if deps.proof_env is None:
-        return {"mypy_passed": True}
+        return {
+            "mypy_passed": True,
+            "mypy_errors": "",
+            "type_failure_classification": {},
+        }
 
+    bundle_files = _bundle_files(bundle)
     try:
-        bundle_files = _bundle_files(bundle)
         check_generated_files = getattr(deps.proof_env, "check_generated_files", None)
         supports_multi_file_check = callable(check_generated_files) and hasattr(
             deps.proof_env.__class__, "check_generated_files"
@@ -739,28 +768,47 @@ async def verify_types(state: IngesterState, config: RunnableConfig) -> dict[str
             bundle_update = bundle.model_copy(update={"mypy_passed": True})
             if mon:
                 mon.phase_end("verify_types", step="passed")
-            return {"bundle": bundle_update, "mypy_passed": True, "mypy_errors": ""}
+            return {
+                "bundle": bundle_update,
+                "mypy_passed": True,
+                "mypy_errors": "",
+                "type_failure_classification": {},
+            }
         else:
-            _publish_typecheck_debug_snapshot(
+            classification = classify_type_failure(output, source_files=bundle_files)
+            _publish_verification_failure_snapshot(
                 mon,
                 state=state,
                 bundle=bundle,
-                mypy_errors=output,
+                stage="verify_types",
+                verification_errors=output,
+                classification=classification,
             )
             if mon:
                 mon.phase_end("verify_types", step="failed")
-            return {"mypy_passed": False, "mypy_errors": output}
+            return {
+                "mypy_passed": False,
+                "mypy_errors": output,
+                "type_failure_classification": classification,
+            }
     except Exception as exc:
         logger.warning("mypy verification failed: %s", exc)
-        _publish_typecheck_debug_snapshot(
+        classification = classify_type_failure(str(exc), source_files=bundle_files)
+        _publish_verification_failure_snapshot(
             mon,
             state=state,
             bundle=bundle,
-            mypy_errors=str(exc),
+            stage="verify_types",
+            verification_errors=str(exc),
+            classification=classification,
         )
         if mon:
             mon.phase_end("verify_types", step="error")
-        return {"mypy_passed": False, "mypy_errors": str(exc)}
+        return {
+            "mypy_passed": False,
+            "mypy_errors": str(exc),
+            "type_failure_classification": classification,
+        }
 
 
 async def verify_ghost(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
@@ -795,70 +843,67 @@ async def verify_ghost(state: IngesterState, config: RunnableConfig) -> dict[str
         )
         passed = report.passed or not report.ran
         errors = report.error if not passed else ""
+        classification: dict[str, Any] = {}
+        if not passed:
+            classification = classify_ghost_failure(
+                bundle_update.ghost_sim_report,
+                witness_source=bundle.generated_witnesses,
+            )
+            _publish_verification_failure_snapshot(
+                mon,
+                state=state,
+                bundle=bundle_update,
+                stage="verify_ghost",
+                verification_errors=errors,
+                classification=classification,
+            )
         if mon:
             mon.phase_end("verify_ghost", step="passed" if passed else "failed")
         return {
             "bundle": bundle_update,
             "ghost_passed": passed,
             "ghost_errors": errors,
+            "ghost_failure_classification": classification,
         }
     except ImportError:
         if mon:
             mon.phase_end("verify_ghost", step="skipped")
-        return {"ghost_passed": True, "ghost_errors": ""}
+        return {
+            "ghost_passed": True,
+            "ghost_errors": "",
+            "ghost_failure_classification": {},
+        }
 
 
 async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
-    """LLM-assisted repair of mypy type errors."""
-    deps: IngesterDeps = config["configurable"]["deps"]
+    """Apply deterministic repairs for narrow mypy failures."""
     bundle: IngestionBundle = state["bundle"]
     mon = _get_monitor(config)
     if mon:
-        mon.phase_start("repair_types", step="llm_fix_type")
+        mon.phase_start("repair_types", step="deterministic_fix_type")
 
-    user_prompt = FIX_TYPE_ERROR_USER.format(
-        mypy_errors=state.get("mypy_errors", ""),
-        bundle_sources=_render_type_repair_sources(bundle),
+    classification = state.get("type_failure_classification") or classify_type_failure(
+        state.get("mypy_errors", ""),
+        source_files=_bundle_files(bundle),
     )
-
-    if mon:
-        mon.llm_start(INGESTER_FIX_TYPE)
-    try:
-        llm = select_llm(deps.llm, INGESTER_FIX_TYPE)
-        timeout_s = prompt_timeout_seconds(INGESTER_FIX_TYPE)
-        if timeout_s and not isinstance(llm, PromptKeyLLMClient):
-            try:
-                response = await asyncio.wait_for(
-                    llm.complete(FIX_TYPE_ERROR_SYSTEM, user_prompt),
-                    timeout=timeout_s,
-                )
-            except asyncio.TimeoutError as exc:
-                raise RuntimeError(
-                    f"{INGESTER_FIX_TYPE} timed out after {timeout_s:.1f}s"
-                ) from exc
-        else:
-            response = await llm.complete(FIX_TYPE_ERROR_SYSTEM, user_prompt)
+    if not classification.get("repairable") or classification.get("route") != "repair_types":
         if mon:
-            mon.llm_end(INGESTER_FIX_TYPE, ok=True)
-    except Exception as exc:
-        if mon:
-            mon.llm_end(INGESTER_FIX_TYPE, ok=False, error=str(exc))
-        raise
+            mon.phase_end("repair_types", step="blocked")
+        return {}
 
-    try:
-        fixes = extract_json(response)
-        if isinstance(fixes, list) and fixes:
-            updated_bundle = _apply_bundle_fixes(bundle, fixes)
-            if updated_bundle is None:
-                raise ValueError("No applicable bundle fixes returned")
+    fixes = build_deterministic_type_fixes(
+        state.get("mypy_errors", ""),
+        _bundle_files(bundle),
+    )
+    if fixes:
+        updated_bundle = _apply_bundle_fixes(bundle, fixes)
+        if updated_bundle is not None:
             if mon:
                 mon.phase_end("repair_types", step="patched")
             return {
                 "bundle": updated_bundle,
                 "type_repair_count": state.get("type_repair_count", 0) + 1,
             }
-    except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as exc:
-        logger.warning("Failed to parse type repair response: %s", exc)
 
     if mon:
         mon.phase_end("repair_types", step="done")
@@ -866,56 +911,46 @@ async def repair_types(state: IngesterState, config: RunnableConfig) -> dict[str
 
 
 async def repair_ghost(state: IngesterState, config: RunnableConfig) -> dict[str, Any]:
-    """LLM-assisted repair of ghost simulation errors."""
-    deps: IngesterDeps = config["configurable"]["deps"]
+    """Apply deterministic witness repairs for narrow ghost failures."""
     bundle: IngestionBundle = state["bundle"]
     report = bundle.ghost_sim_report
     mon = _get_monitor(config)
     if mon:
-        mon.phase_start("repair_ghost", step="llm_fix_ghost")
+        mon.phase_start("repair_ghost", step="deterministic_fix_ghost")
 
-    user_prompt = FIX_GHOST_ERROR_USER.format(
-        error_node=report.get("error_node", ""),
-        error_function=report.get("error_function", ""),
-        error_message=report.get("error", ""),
+    classification = state.get("ghost_failure_classification") or classify_ghost_failure(
+        report,
         witness_source=bundle.generated_witnesses,
     )
+    if not classification.get("repairable") or classification.get("route") != "repair_ghost":
+        if mon:
+            mon.phase_end("repair_ghost", step="blocked")
+        return {}
 
-    if mon:
-        mon.llm_start(INGESTER_FIX_GHOST)
-    try:
-        response = await select_llm(deps.llm, INGESTER_FIX_GHOST).complete(
-            FIX_GHOST_ERROR_SYSTEM, user_prompt
+    fixes = build_deterministic_ghost_fixes(
+        str(report.get("error_node", "") or ""),
+        str(report.get("error_function", "") or ""),
+        str(report.get("error", "") or ""),
+        bundle.generated_witnesses,
+    )
+    if fixes:
+        updated_witnesses = bundle.generated_witnesses
+        for fix in fixes:
+            replacement = fix.get("replacement", "")
+            if replacement:
+                updated_witnesses = replacement
+                break
+        updated_bundle = bundle.model_copy(
+            update={
+                "generated_witnesses": updated_witnesses,
+            }
         )
         if mon:
-            mon.llm_end(INGESTER_FIX_GHOST, ok=True)
-    except Exception as exc:
-        if mon:
-            mon.llm_end(INGESTER_FIX_GHOST, ok=False, error=str(exc))
-        raise
-
-    try:
-        fixes = extract_json(response)
-        if isinstance(fixes, list) and fixes:
-            updated_witnesses = bundle.generated_witnesses
-            for fix in fixes:
-                replacement = fix.get("replacement", "")
-                if replacement:
-                    updated_witnesses = replacement
-                    break
-            updated_bundle = bundle.model_copy(
-                update={
-                    "generated_witnesses": updated_witnesses,
-                }
-            )
-            if mon:
-                mon.phase_end("repair_ghost", step="patched")
-            return {
-                "bundle": updated_bundle,
-                "ghost_repair_count": state.get("ghost_repair_count", 0) + 1,
-            }
-    except (json.JSONDecodeError, KeyError) as exc:
-        logger.warning("Failed to parse ghost repair response: %s", exc)
+            mon.phase_end("repair_ghost", step="patched")
+        return {
+            "bundle": updated_bundle,
+            "ghost_repair_count": state.get("ghost_repair_count", 0) + 1,
+        }
 
     if mon:
         mon.phase_end("repair_ghost", step="done")
@@ -998,7 +1033,15 @@ async def repair_message_cycle(
 def route_after_type_check(state: IngesterState) -> str:
     if state.get("mypy_passed", False):
         return "verify_ghost"
-    if state.get("type_repair_count", 0) >= _MAX_REPAIR_RETRIES:
+    classification = state.get("type_failure_classification") or classify_type_failure(
+        state.get("mypy_errors", ""),
+        source_files=_bundle_files(state["bundle"]) if state.get("bundle") else {},
+    )
+    if (
+        state.get("type_repair_count", 0) >= _MAX_REPAIR_RETRIES
+        or not classification.get("repairable")
+        or classification.get("route") != "repair_types"
+    ):
         return "end"
     return "repair_types"
 
@@ -1006,17 +1049,23 @@ def route_after_type_check(state: IngesterState) -> str:
 def route_after_ghost(state: IngesterState) -> str:
     if state.get("ghost_passed", False):
         return "end"
-    if state.get("ghost_repair_count", 0) >= _MAX_REPAIR_RETRIES:
-        return "end"
-
-    # Check for cyclic deadlock — route to specialized repair
     bundle: IngestionBundle | None = state.get("bundle")
-    if bundle is not None:
-        report = getattr(bundle, "ghost_sim_report", None) or {}
-        if isinstance(report, dict) and report.get("cyclic_deadlock"):
-            return "repair_message_cycle"
-
-    return "repair_ghost"
+    report = getattr(bundle, "ghost_sim_report", None) or {}
+    classification = state.get("ghost_failure_classification") or classify_ghost_failure(
+        report,
+        witness_source=bundle.generated_witnesses if bundle is not None else "",
+    )
+    if (
+        state.get("ghost_repair_count", 0) >= _MAX_REPAIR_RETRIES
+        or not classification.get("repairable")
+    ):
+        return "end"
+    route = classification.get("route")
+    if route == "repair_message_cycle":
+        return "repair_message_cycle"
+    if route == "repair_ghost":
+        return "repair_ghost"
+    return "end"
 
 
 # ---------------------------------------------------------------------------
@@ -1177,6 +1226,8 @@ class IngesterAgent:
             "ghost_passed": False,
             "mypy_errors": "",
             "ghost_errors": "",
+            "type_failure_classification": {},
+            "ghost_failure_classification": {},
             "type_repair_count": 0,
             "ghost_repair_count": 0,
             "done": False,

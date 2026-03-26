@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -14,8 +13,9 @@ from sciona.ingester.deterministic_type_fixer import (
     _extract_line_number,
     _parse_fix_type_prompt,
 )
-from sciona.ingester.graph import IngesterDeps, repair_types, verify_types
+from sciona.ingester.graph import IngesterDeps, repair_types, route_after_type_check, verify_types
 from sciona.ingester.models import IngestionBundle
+from sciona.ingester.monitor import IngestMonitor
 from sciona.llm_router import INGESTER_FIX_TYPE, LLMRouter
 
 
@@ -187,8 +187,15 @@ async def test_repair_types_applies_state_model_patch():
 
 @pytest.mark.asyncio
 async def test_verify_types_prefers_bundle_checker_when_available():
-    proof_env = AsyncMock()
-    proof_env.check_generated_files.return_value = (False, "state_models.py:2: error: boom")
+    class _ProofEnv:
+        def __init__(self) -> None:
+            self.calls: list[tuple[dict[str, str], dict[str, object]]] = []
+
+        async def check_generated_files(self, bundle_files, **kwargs):
+            self.calls.append((bundle_files, kwargs))
+            return (False, "state_models.py:2: error: boom")
+
+    proof_env = _ProofEnv()
     bundle = IngestionBundle(
         cdg=CDGExport(nodes=[], edges=[]),
         generated_atoms="def f() -> None:\n    return None\n",
@@ -199,34 +206,104 @@ async def test_verify_types_prefers_bundle_checker_when_available():
 
     result = await verify_types(state, config)
 
-    assert result == {"mypy_passed": False, "mypy_errors": "state_models.py:2: error: boom"}
-    proof_env.check_generated_files.assert_awaited_once()
-    bundle_files = proof_env.check_generated_files.await_args.args[0]
+    assert result["mypy_passed"] is False
+    assert result["mypy_errors"] == "state_models.py:2: error: boom"
+    assert result["type_failure_classification"]["reason_code"] == "unknown_or_unclassified"
+    assert result["type_failure_classification"]["repairable"] is False
+    assert len(proof_env.calls) == 1
+    bundle_files = proof_env.calls[0][0]
     assert bundle_files["atoms.py"] == bundle.generated_atoms
     assert bundle_files["state_models.py"] == bundle.generated_state_models
 
 
 @pytest.mark.asyncio
-async def test_repair_types_times_out_without_telemetry(monkeypatch):
-    class _SlowLLM:
-        async def complete(self, system: str, user: str) -> str:
-            await asyncio.sleep(0.05)
-            return "[]"
+async def test_verify_types_marks_bundle_on_success():
+    class _ProofEnv:
+        async def check_generated_files(self, bundle_files, **kwargs):
+            return (True, "")
 
-    monkeypatch.setenv("SCIONA_INGESTER_FIX_TYPE_TIMEOUT_S", "0.01")
+    proof_env = _ProofEnv()
+    bundle = IngestionBundle(
+        cdg=CDGExport(nodes=[], edges=[]),
+        generated_atoms="def f() -> None:\n    return None\n",
+    )
+    state = {"bundle": bundle}
+    config = {"configurable": {"deps": IngesterDeps(llm=AsyncMock(), proof_env=proof_env)}}
+
+    result = await verify_types(state, config)
+
+    assert result["mypy_passed"] is True
+    assert result["bundle"].mypy_passed is True
+
+
+@pytest.mark.asyncio
+async def test_repair_types_fails_fast_for_semantic_signature_error():
     bundle = IngestionBundle(
         cdg=CDGExport(nodes=[], edges=[]),
         generated_atoms="def f() -> None:\n    return None\n",
     )
     state = {
         "bundle": bundle,
-        "mypy_errors": "atoms.py:1: error: synthetic",
+        "mypy_errors": 'atoms.py:1: error: Too many arguments for "f"',
         "type_repair_count": 0,
     }
-    config = {"configurable": {"deps": IngesterDeps(llm=_SlowLLM())}}
+    config = {"configurable": {"deps": IngesterDeps(llm=AsyncMock())}}
 
-    with pytest.raises(RuntimeError, match="ingester_fix_type timed out after 0.0s"):
-        await repair_types(state, config)
+    result = await repair_types(state, config)
+
+    assert result == {}
+
+
+def test_route_after_type_check_ends_for_non_repairable_semantic_failure():
+    bundle = IngestionBundle(
+        cdg=CDGExport(nodes=[], edges=[]),
+        generated_atoms="def f() -> None:\n    return None\n",
+    )
+    state = {
+        "bundle": bundle,
+        "mypy_passed": False,
+        "mypy_errors": 'atoms.py:1: error: Too many arguments for "f"',
+        "type_repair_count": 0,
+    }
+
+    assert route_after_type_check(state) == "end"
+
+
+@pytest.mark.asyncio
+async def test_verify_types_publishes_failure_classification_artifact(tmp_path):
+    class _ProofEnv:
+        async def check_generated_files(self, bundle_files, **kwargs):
+            return (False, 'atoms.py:1: error: Too many arguments for "f"')
+
+    proof_env = _ProofEnv()
+    monitor = IngestMonitor(tmp_path)
+    bundle = IngestionBundle(
+        cdg=CDGExport(nodes=[], edges=[]),
+        generated_atoms="def f() -> None:\n    return None\n",
+    )
+    state = {
+        "bundle": bundle,
+        "mypy_passed": False,
+        "ghost_passed": False,
+        "mypy_errors": "",
+        "ghost_errors": "",
+        "type_repair_count": 0,
+        "ghost_repair_count": 0,
+        "type_failure_classification": {},
+        "ghost_failure_classification": {},
+    }
+    config = {
+        "configurable": {
+            "deps": IngesterDeps(llm=AsyncMock(), proof_env=proof_env, monitor=monitor)
+        }
+    }
+
+    await verify_types(state, config)
+
+    payload = json.loads((tmp_path / "verification_failure.json").read_text())
+    assert payload["stage"] == "verify_types"
+    assert payload["reason_code"] == "semantic_signature"
+    assert payload["repairable"] is False
 
 
 def test_create_llm_router_wraps_ingester_fix_type_deterministically(monkeypatch):

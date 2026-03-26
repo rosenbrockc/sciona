@@ -165,6 +165,28 @@ def _rewrite_stub(function_name: str, error_message: str, witness_source: str) -
     return "\n".join(lines)
 
 
+def build_deterministic_ghost_fixes(
+    error_node: str,
+    error_function: str,
+    error_message: str,
+    witness_source: str,
+) -> list[dict[str, Any]] | None:
+    """Return deterministic witness rewrites, or ``None`` if unsupported."""
+    replacement = _rewrite_stub(error_function, error_message, witness_source)
+    if replacement is None:
+        return None
+    return [
+        {
+            "witness_name": error_function,
+            "fix_description": (
+                "Replace None-returning witness stub with pass-through abstract value"
+            ),
+            "replacement": replacement,
+            "error_node": error_node,
+        }
+    ]
+
+
 class DeterministicGhostFixer:
     """Deterministic ingester ghost fixer with LLM fallback."""
 
@@ -184,23 +206,20 @@ class DeterministicGhostFixer:
 
     async def complete(self, system: str, user: str) -> str:
         error_node, error_function, error_message, witness_source = _parse_fix_ghost_prompt(user)
-        replacement = _rewrite_stub(error_function, error_message, witness_source)
-        if replacement is not None:
+        fixes = build_deterministic_ghost_fixes(
+            error_node,
+            error_function,
+            error_message,
+            witness_source,
+        )
+        if fixes is not None:
             self._last_completion_metadata = {
                 "ghost_fix_source": "deterministic",
                 "ghost_fix_function": error_function,
                 "ghost_fix_node": error_node,
             }
             self._last_error_metadata = {}
-            return json.dumps(
-                [
-                    {
-                        "witness_name": error_function,
-                        "fix_description": "Replace None-returning witness stub with pass-through abstract value",
-                        "replacement": replacement,
-                    }
-                ]
-            )
+            return json.dumps(fixes)
 
         self._last_completion_metadata = {"ghost_fix_source": "fallback"}
         self._last_error_metadata = {}
