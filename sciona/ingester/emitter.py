@@ -829,6 +829,59 @@ def _canonical_call_arguments(
     return args, None
 
 
+def _binding_parameter_facts(bindings: list[MethodBinding]) -> dict[str, ParameterFact]:
+    facts: dict[str, ParameterFact] = {}
+    for binding in bindings:
+        for param in binding.signature:
+            if param.name == "self" or param.name in facts:
+                continue
+            facts[param.name] = param
+    return facts
+
+
+def _wrapper_param_declaration(
+    spec: IOSpec,
+    *,
+    allowed_names: set[str],
+    param_facts: dict[str, ParameterFact],
+) -> str:
+    annotation = _python_annotation_expr(spec.type_desc, allowed_names=allowed_names)
+    fact = param_facts.get(spec.name)
+    if fact is not None and fact.has_default and fact.kind not in {"vararg", "kwarg"}:
+        return f"{spec.name}: {annotation} = _SCIONA_UNSET"
+    return f"{spec.name}: {annotation}"
+
+
+def _wrapper_param_list(
+    wrapper_inputs: list[IOSpec],
+    *,
+    allowed_names: set[str],
+    param_facts: dict[str, ParameterFact],
+) -> list[str]:
+    params: list[str] = []
+    inserted_kwonly_barrier = False
+    seen_default = False
+    for spec in wrapper_inputs:
+        fact = param_facts.get(spec.name)
+        if (
+            not inserted_kwonly_barrier
+            and fact is not None
+            and (fact.kind == "keyword_only" or seen_default)
+        ):
+            params.append("*")
+            inserted_kwonly_barrier = True
+        params.append(
+            _wrapper_param_declaration(
+                spec,
+                allowed_names=allowed_names,
+                param_facts=param_facts,
+            )
+        )
+        if fact is not None and fact.has_default and fact.kind not in {"vararg", "kwarg"}:
+            seen_default = True
+    return params
+
+
 def _canonical_output_expression(
     binding: OutputBindingSpec,
     return_vars: dict[str, str],
@@ -1109,18 +1162,74 @@ def _emit_canonical_wrapper_body(
     available_inputs = set(wrapper_input_names)
     expected_inputs = [spec.name for spec in wrapper_inputs]
     for index, binding in enumerate(bindings):
-        call_args, error = _canonical_call_arguments(binding, available_inputs)
-        if error is not None:
-            raise ValueError(f"{atom.name}: {error}")
         return_var = f"_ret_{index}"
         return_vars[binding.method_name] = return_var
         if source_language == "python":
-            call_expr = ", ".join(call_args)
+            needs_dynamic_kwargs = any(
+                param.name != "self"
+                and param.name in available_inputs
+                and (
+                    (param.has_default and param.kind in {"positional_or_keyword", "keyword_only", ""})
+                    or param.kind == "kwarg"
+                )
+                for param in binding.signature
+            )
+            if not needs_dynamic_kwargs:
+                call_args, error = _canonical_call_arguments(binding, available_inputs)
+                if error is not None:
+                    raise ValueError(f"{atom.name}: {error}")
+                call_expr = ", ".join(call_args)
+            else:
+                positional_args: list[str] = []
+                keyword_args: list[tuple[str, str]] = []
+                conditional_keyword_params: list[str] = []
+                extra_kwarg_params: list[str] = []
+                for param in binding.signature:
+                    if param.name == "self":
+                        continue
+                    if param.name not in available_inputs:
+                        if param.has_default:
+                            continue
+                        raise ValueError(
+                            f"{atom.name}: missing required parameter {param.name!r} for {binding.method_name}"
+                        )
+                    if param.kind in {"positional_only", "positional_or_keyword", ""}:
+                        if param.has_default and param.kind != "positional_only":
+                            conditional_keyword_params.append(param.name)
+                        else:
+                            positional_args.append(param.name)
+                    elif param.kind == "keyword_only":
+                        if param.has_default:
+                            conditional_keyword_params.append(param.name)
+                        else:
+                            keyword_args.append((param.name, param.name))
+                    elif param.kind == "vararg":
+                        positional_args.append(f"*{param.name}")
+                    elif param.kind == "kwarg":
+                        extra_kwarg_params.append(param.name)
+                    else:
+                        raise ValueError(
+                            f"{atom.name}: unsupported parameter kind {param.kind!r} for {binding.method_name}"
+                        )
+                kwargs_name = f"_call_kwargs_{index}"
+                lines.append(f"    {kwargs_name}: dict[str, Any] = {{}}")
+                for key, value in keyword_args:
+                    lines.append(f'    {kwargs_name}["{key}"] = {value}')
+                for param_name in conditional_keyword_params:
+                    lines.append(f"    if {param_name} is not _SCIONA_UNSET:")
+                    lines.append(f'        {kwargs_name}["{param_name}"] = {param_name}')
+                for param_name in extra_kwarg_params:
+                    lines.append(f"    {kwargs_name}.update({param_name})")
+                call_parts = positional_args + [f"**{kwargs_name}"]
+                call_expr = ", ".join(call_parts)
             if direct_function_call:
                 lines.append(f"    {return_var} = _source_fn({call_expr})")
             else:
                 lines.append(f"    {return_var} = obj.{binding.method_name}({call_expr})")
         else:
+            call_args, error = _canonical_call_arguments(binding, available_inputs)
+            if error is not None:
+                raise ValueError(f"{atom.name}: {error}")
             if len(bindings) > 1:
                 raise ValueError(
                     f"{atom.name}: canonical non-python emission requires a single binding"
@@ -1373,6 +1482,8 @@ def generate_atom_wrappers(
         "import icontract",
         "from ageoa.ghost.registry import register_atom",
         "",
+        "_SCIONA_UNSET = object()",
+        "",
     ]
 
     if canonical_ir is not None and source_language == "python" and class_name:
@@ -1442,13 +1553,13 @@ def generate_atom_wrappers(
                 fn_name = _python_identifier(class_name)
 
         # Build parameter list
-        params = []
         wrapper_inputs = canonical_wrapper_inputs or list(atom.inputs)
-        for inp in wrapper_inputs:
-            annotation = _python_annotation_expr(
-                inp.type_desc, allowed_names=allowed_names
-            )
-            params.append(f"{inp.name}: {annotation}")
+        param_facts = _binding_parameter_facts(canonical_bindings)
+        params = _wrapper_param_list(
+            wrapper_inputs,
+            allowed_names=allowed_names,
+            param_facts=param_facts,
+        )
         param_str = ", ".join(params) if params else ""
 
         # Build return type
@@ -1495,6 +1606,9 @@ def generate_atom_wrappers(
         if not has_require:
             # Add a basic type check for each input
             for inp in wrapper_inputs:
+                fact = param_facts.get(inp.name)
+                if fact is not None and fact.has_default:
+                    continue
                 allows_none = _annotation_allows_none(inp.type_desc)
                 if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
@@ -1503,6 +1617,9 @@ def generate_atom_wrappers(
             # If still no require, add a generic one
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
                 for inp in wrapper_inputs:
+                    fact = param_facts.get(inp.name)
+                    if fact is not None and fact.has_default:
+                        continue
                     if _annotation_allows_none(inp.type_desc):
                         continue
                     lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')
@@ -1641,6 +1758,8 @@ def generate_stateful_wrappers(
         "import icontract",
         "from ageoa.ghost.registry import register_atom",
         "",
+        "_SCIONA_UNSET = object()",
+        "",
     ]
 
     if source_language == "python":
@@ -1671,17 +1790,21 @@ def generate_stateful_wrappers(
         )
 
         # Build parameter list — original params + state
-        params = []
         wrapper_inputs = (
             canonical_context["wrapper_inputs"]
             if canonical_context is not None
             else list(atom.inputs)
         )
-        for inp in wrapper_inputs:
-            annotation = _python_annotation_expr(
-                inp.type_desc, allowed_names=allowed_names
-            )
-            params.append(f"{inp.name}: {annotation}")
+        param_facts = (
+            _binding_parameter_facts(canonical_context["bindings"])
+            if canonical_context is not None
+            else {}
+        )
+        params = _wrapper_param_list(
+            wrapper_inputs,
+            allowed_names=allowed_names,
+            param_facts=param_facts,
+        )
         params.append(f"state: {state_type}")
         param_str = ", ".join(params)
 
@@ -1719,6 +1842,9 @@ def generate_stateful_wrappers(
 
         if not has_require:
             for inp in wrapper_inputs:
+                fact = param_facts.get(inp.name)
+                if fact is not None and fact.has_default:
+                    continue
                 allows_none = _annotation_allows_none(inp.type_desc)
                 if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
@@ -1726,6 +1852,9 @@ def generate_stateful_wrappers(
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, (float, int, np.number)), "{inp.name} must be numeric")')
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
                 for inp in wrapper_inputs:
+                    fact = param_facts.get(inp.name)
+                    if fact is not None and fact.has_default:
+                        continue
                     if _annotation_allows_none(inp.type_desc):
                         continue
                     lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')

@@ -309,8 +309,18 @@ class TestGenerateAtomWrappers:
                     signature=[
                         ParameterFact(name="image"),
                         ParameterFact(name="patch_size"),
-                        ParameterFact(name="max_patches", kind="keyword_only"),
-                        ParameterFact(name="random_state", kind="keyword_only"),
+                        ParameterFact(
+                            name="max_patches",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="None",
+                        ),
+                        ParameterFact(
+                            name="random_state",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="None",
+                        ),
                     ],
                 )
             ],
@@ -340,7 +350,7 @@ class TestGenerateAtomWrappers:
         assert "def extract_patches_2d(" in source
         assert "def atom_2d_patch_sampling_and_assembly(" not in source
         assert "_SCIONA_SOURCE_SYMBOL: Any = getattr(_SCIONA_SOURCE_MODULE, \"extract_patches_2d\")" in source
-        assert "_ret_0 = _source_fn(image, patch_size, max_patches=max_patches, random_state=random_state)" in source
+        assert "_ret_0 = _source_fn(image, patch_size, **_call_kwargs_0)" in source
         assert "_SCIONA_SOURCE_SYMBOL.__new__" not in source
 
     def test_canonical_function_target_returns_direct_result_when_outputs_are_underspecified(self):
@@ -457,8 +467,18 @@ class TestGenerateAtomWrappers:
                     signature=[
                         ParameterFact(name="image"),
                         ParameterFact(name="patch_size"),
-                        ParameterFact(name="max_patches", kind="keyword_only"),
-                        ParameterFact(name="random_state", kind="keyword_only"),
+                        ParameterFact(
+                            name="max_patches",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="None",
+                        ),
+                        ParameterFact(
+                            name="random_state",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="None",
+                        ),
                     ],
                 )
             ],
@@ -479,6 +499,10 @@ class TestGenerateAtomWrappers:
 
         assert '@icontract.require(lambda max_patches: max_patches is not None' not in source
         assert '@icontract.require(lambda random_state: random_state is not None' not in source
+        assert "max_patches: int | float | None = _SCIONA_UNSET" in source
+        assert "random_state: int | object | None = _SCIONA_UNSET" in source
+        assert "if max_patches is not _SCIONA_UNSET:" in source
+        assert "if random_state is not _SCIONA_UNSET:" in source
         assert "lambda result, **kwargs" not in source
 
     def test_canonical_wrapper_emits_tuple_and_attribute_bindings(self):
