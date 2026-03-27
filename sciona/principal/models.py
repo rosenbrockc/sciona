@@ -16,6 +16,7 @@ class OptimizationMetric(str, Enum):
     PRECISION = "precision"
     FLOP_COUNT = "flop_count"
     STRUCTURE = "structure"
+    CONVERGENCE = "convergence"
 
 
 class NodeTelemetry(BaseModel, frozen=True):

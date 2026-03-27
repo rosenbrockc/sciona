@@ -1819,6 +1819,64 @@ def _build_compression() -> SkeletonGraph:
     )
 
 
+def _build_fixed_point() -> SkeletonGraph:
+    """Fixed-point iteration pattern (e.g., iterative solvers, convergence loops)."""
+    root = _node(
+        "Fixed Point Root",
+        "Top-level fixed-point combinator node",
+        ConceptType.FIXED_POINT,
+        inputs=[IOSpec(name="initial_state", type_desc="any")],
+        outputs=[IOSpec(name="converged_state", type_desc="any")],
+        depth=1,
+    )
+    # Override status to DECOMPOSED for the root placeholder
+    root = root.model_copy(
+        update={"status": NodeStatus.PENDING, "fixed_point_max_iterations": 100}
+    )
+
+    body_init = _node(
+        "Body Init",
+        "Seed the iteration state",
+        ConceptType.STATE_INIT,
+        inputs=[IOSpec(name="initial_state", type_desc="any")],
+        outputs=[IOSpec(name="state", type_desc="any")],
+    )
+    body_step = _node(
+        "Body Step",
+        "Perform one iteration step",
+        ConceptType.CUSTOM,
+        inputs=[IOSpec(name="state", type_desc="any")],
+        outputs=[IOSpec(name="next_state", type_desc="any")],
+    )
+    convergence_check = _node(
+        "Convergence Check",
+        "Test stopping criterion",
+        ConceptType.CUSTOM,
+        inputs=[
+            IOSpec(name="prev_state", type_desc="any"),
+            IOSpec(name="next_state", type_desc="any"),
+        ],
+        outputs=[IOSpec(name="converged", type_desc="bool")],
+    )
+
+    edges = [
+        _edge(body_init, body_step, "state", "state", "any"),
+        _edge(body_step, convergence_check, "next_state", "next_state", "any"),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.FIXED_POINT,
+        name="Fixed Point",
+        description=(
+            "Iterative fixed-point combinator: initialise state, "
+            "apply a body step repeatedly, and check convergence."
+        ),
+        template_nodes=[root, body_init, body_step, convergence_check],
+        template_edges=edges,
+        variants=["iterative_solver", "convergence_loop", "fixed_point_combinator"],
+    )
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -1849,6 +1907,7 @@ SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.RANDOMIZED: _build_randomized(),
     ConceptType.INFORMATION_THEORY: _build_information_theory(),
     ConceptType.COMPRESSION: _build_compression(),
+    ConceptType.FIXED_POINT: _build_fixed_point(),
 }
 
 
@@ -1859,6 +1918,9 @@ NAMED_SKELETONS: dict[str, SkeletonGraph] = {
     "hmc": SKELETON_TEMPLATES[ConceptType.MCMC_KERNEL],
     "advi": SKELETON_TEMPLATES[ConceptType.VI_ELBO],
     "belief_propagation": SKELETON_TEMPLATES[ConceptType.MESSAGE_PASSING],
+    "fixed_point": SKELETON_TEMPLATES[ConceptType.FIXED_POINT],
+    "iterative_solver": SKELETON_TEMPLATES[ConceptType.FIXED_POINT],
+    "convergence_loop": SKELETON_TEMPLATES[ConceptType.FIXED_POINT],
     "signal_detect_measure": _build_signal_detect_measure(),
     "event_rate_estimation": _build_signal_detect_measure(),
     "bandpass_hr_detection": _build_signal_detect_measure(),

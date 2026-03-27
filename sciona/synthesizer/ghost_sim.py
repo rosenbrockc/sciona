@@ -25,7 +25,7 @@ from sciona.architect.models import (
     DependencyEdge,
     NodeStatus,
 )
-from sciona.synthesizer.toposort import toposort_nodes
+from sciona.synthesizer.toposort import detect_cycle_partition, toposort_nodes
 from sciona.synthesizer.uncertainty import (
     AtomUncertaintyEstimate,
     HeuristicBackend,
@@ -304,17 +304,29 @@ def _compute_precision_gradients(
     sorted_ids: list[str],
     *,
     backend: UncertaintyBackend | None = None,
+    iterations_used: int = 0,
 ) -> _PrecisionGradientResult:
     """Propagate error intervals through the CDG and return per-node expansion.
 
     Works without ageoa — purely based on IOSpec metadata and known atom
     error factors.  Returns an empty result when no nodes carry error metadata.
+
+    For nodes inside FIXED_POINT bodies, error intervals are scaled by
+    ``sqrt(iterations_used)`` to avoid overweighting iterative paths.
     """
+    import math
+
     if backend is None:
         backend = _get_default_backend()
 
     node_map: dict[str, AlgorithmicNode] = {n.node_id: n for n in cdg.nodes}
     atomic_leaves = {n.node_id for n in cdg.nodes if n.status == NodeStatus.ATOMIC}
+
+    # Identify nodes that are children of FIXED_POINT parents
+    fp_child_ids: set[str] = set()
+    for n in cdg.nodes:
+        if n.concept_type == ConceptType.FIXED_POINT and n.children:
+            fp_child_ids.update(n.children)
 
     # Build edge index: target_id -> list of incoming edges
     incoming: dict[str, list[DependencyEdge]] = {nid: [] for nid in node_map}
@@ -385,6 +397,12 @@ def _compute_precision_gradients(
 
         # Precision gradient = output width - input width
         delta = out.width - input_interval.width
+
+        # Scale FIXED_POINT body nodes by sqrt(iterations_used)
+        # to avoid overweighting iterative paths.
+        if nid in fp_child_ids and iterations_used > 1:
+            delta /= math.sqrt(iterations_used)
+
         if delta != 0.0 or input_interval.width > 0 or out.width > 0:
             result.gradients[nid] = delta
 
@@ -400,46 +418,23 @@ def _detect_message_passing_cycle(
     Returns (cycle_node_ids, is_message_passing).  If Kahn's algorithm
     completes, returns (empty set, False).  If it doesn't, collects the
     remaining nodes and checks whether ALL of them have
-    concept_type == MESSAGE_PASSING.
+    concept_type in {MESSAGE_PASSING, FIXED_POINT}.
+
+    Delegates to :func:`detect_cycle_partition` from ``toposort`` for the
+    actual partitioning logic.
     """
-    node_ids = {n.node_id for n in nodes}
-    node_map = {n.node_id: n for n in nodes}
-
-    in_degree: dict[str, int] = {nid: 0 for nid in node_ids}
-    successors: dict[str, list[str]] = {nid: [] for nid in node_ids}
-
-    for edge in edges:
-        if edge.source_id in node_ids and edge.target_id in node_ids:
-            successors[edge.source_id].append(edge.target_id)
-            in_degree[edge.target_id] += 1
-
-    queue: deque[str] = deque()
-    for nid in node_ids:
-        if in_degree[nid] == 0:
-            queue.append(nid)
-
-    visited: set[str] = set()
-    while queue:
-        nid = queue.popleft()
-        visited.add(nid)
-        for succ in successors[nid]:
-            in_degree[succ] -= 1
-            if in_degree[succ] == 0:
-                queue.append(succ)
-
-    if len(visited) == len(node_ids):
+    _acyclic, cycle_ids, is_valid = detect_cycle_partition(nodes, edges)
+    if not cycle_ids:
         return set(), False
-
-    # Remaining nodes are in the cycle
-    cycle_ids = node_ids - visited
-
-    # Check if ALL cycle nodes are MESSAGE_PASSING
+    # ``is_valid`` accepts both MESSAGE_PASSING and FIXED_POINT.
+    # For backward compat, only report True when cycle nodes are
+    # MESSAGE_PASSING (the caller handles FIXED_POINT differently).
+    node_map = {n.node_id: n for n in nodes}
     is_mp = all(
         getattr(node_map.get(nid), "concept_type", None) == ConceptType.MESSAGE_PASSING
         for nid in cycle_ids
         if nid in node_map
     )
-
     return cycle_ids, is_mp
 
 
@@ -521,6 +516,95 @@ def _simulate_message_passing_iterative(
     )
 
 
+def _simulate_fixed_point_iterative(
+    sim_nodes: list[Any],
+    initial_state: dict[str, Any],
+    max_iterations: int = 100,
+    convergence_field: str = "converged",
+    convergence_tol: float = 1e-8,
+) -> tuple[Any, int, bool, list[str]]:
+    """Run iterative fixed-point simulation.
+
+    Generalisation of :func:`_simulate_message_passing_iterative` that accepts
+    *max_iterations* and *convergence_field* from the FIXED_POINT node.
+
+    Returns (SimResult, iterations_used, deadlocked, deadlock_node_names).
+    """
+    if not _GHOST_AVAILABLE:
+        raise RuntimeError("ageoa package required for iterative simulation")
+
+    state = dict(initial_state)
+    trace: list[str] = []
+    iterations_used = 0
+
+    for iteration in range(max_iterations):
+        iterations_used = iteration + 1
+        prev_state = dict(state)
+
+        for node in sim_nodes:
+            try:
+                res = simulate_graph([node], state)
+                state.update(res.final_state)
+                if iteration == 0:
+                    trace.append(node.name)
+            except PlanError:
+                raise
+            except Exception as exc:
+                raise PlanError(
+                    node_name=node.name,
+                    function_name=node.function_name,
+                    detail=f"Fixed-point iteration error: {exc}",
+                )
+
+        # Check convergence via the configured field name
+        converged = False
+        for node in sim_nodes:
+            if node.output_name:
+                # Check exact field match
+                if convergence_field and convergence_field in node.output_name.lower():
+                    val = state.get(node.output_name)
+                    if val is True:
+                        converged = True
+                        break
+                # Legacy: "converged" substring match
+                if "converged" in node.output_name.lower():
+                    val = state.get(node.output_name)
+                    if val is True:
+                        converged = True
+                        break
+                # Tuple check for memo nodes
+                if "memo" in node.name.lower() and node.output_name:
+                    val = state.get(node.output_name)
+                    if isinstance(val, tuple) and len(val) == 2 and val[1] is True:
+                        converged = True
+                        break
+
+        if converged:
+            return (
+                SimResult(node_count=len(sim_nodes), final_state=state, trace=trace),
+                iterations_used,
+                False,
+                [],
+            )
+
+        # Deadlock detection: no state change and not converged
+        state_unchanged = all(state.get(k) is prev_state.get(k) for k in state)
+        if state_unchanged and iteration > 0:
+            raise PlanError(
+                node_name=sim_nodes[0].name if sim_nodes else "unknown",
+                function_name="fixed_point_iteration",
+                detail="Cyclic deadlock: state unchanged but convergence not reached",
+            )
+
+    # Max iterations reached — treat as convergence
+    return (
+        SimResult(node_count=len(sim_nodes), final_state=state, trace=trace),
+        iterations_used,
+        False,
+        [],
+    )
+
+
 def run_ghost_simulation(
     cdg: CDGExport,
     match_results: list[MatchResult],
@@ -550,6 +634,13 @@ def run_ghost_simulation(
     for mr in match_results:
         match_map[mr.pdg_node.predicate_id] = mr
 
+    # Detect FIXED_POINT nodes by concept_type (not just cycle detection)
+    fp_node_map: dict[str, AlgorithmicNode] = {}
+    for n in cdg.nodes:
+        if n.concept_type == ConceptType.FIXED_POINT:
+            fp_node_map[n.node_id] = n
+    is_fixed_point_graph = bool(fp_node_map)
+
     # Topological sort (needed by both precision gradients and ghost sim)
     cycle_ids: set[str] = set()
     is_message_passing_cycle = False
@@ -557,10 +648,19 @@ def run_ghost_simulation(
         sorted_ids = toposort_nodes(cdg.nodes, cdg.edges)
     except ValueError:
         # Topological sort failed — check if this is a valid factor graph cycle
-        cycle_ids, is_message_passing_cycle = _detect_message_passing_cycle(
+        # or a valid FIXED_POINT cycle
+        acyclic_sorted, cycle_ids, is_valid_cycle = detect_cycle_partition(
             cdg.nodes, cdg.edges
         )
-        if not is_message_passing_cycle:
+        # Check specifically for MESSAGE_PASSING
+        node_map_tmp = {n.node_id: n for n in cdg.nodes}
+        is_message_passing_cycle = bool(cycle_ids) and all(
+            getattr(node_map_tmp.get(nid), "concept_type", None)
+            == ConceptType.MESSAGE_PASSING
+            for nid in cycle_ids
+            if nid in node_map_tmp
+        )
+        if not is_valid_cycle:
             report.ran = True
             report.error = f"Cycle detected in non-message-passing nodes: {cycle_ids}"
             return report

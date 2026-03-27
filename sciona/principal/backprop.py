@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 from sciona.architect.handoff import CDGExport
-from sciona.architect.models import NodeStatus
+from sciona.architect.models import ConceptType, NodeStatus
 from sciona.principal.models import (
     BenchmarkResult,
     NodeGradient,
@@ -39,9 +39,11 @@ class CreditAssigner:
 
         if target in (OptimizationMetric.LATENCY, OptimizationMetric.FLOP_COUNT):
             return self._gradient_latency(
+                cdg,
                 atomic_ids,
                 node_names,
                 benchmark,
+                sim_report,
                 target,
             )
         if target == OptimizationMetric.MEMORY:
@@ -52,6 +54,14 @@ class CreditAssigner:
             )
         if target == OptimizationMetric.STRUCTURE:
             return self._gradient_structure(
+                cdg,
+                atomic_ids,
+                node_names,
+                sim_report,
+            )
+        if target == OptimizationMetric.CONVERGENCE:
+            return self._gradient_convergence(
+                cdg,
                 atomic_ids,
                 node_names,
                 sim_report,
@@ -70,16 +80,29 @@ class CreditAssigner:
 
     @staticmethod
     def _gradient_latency(
+        cdg: CDGExport,
         atomic_ids: set[str],
         node_names: dict[str, str],
         benchmark: BenchmarkResult,
+        sim_report: GhostSimReport,
         target: OptimizationMetric,
     ) -> list[NodeGradient]:
-        total_ms = sum(
-            t.execution_time_ms
-            for nid, t in benchmark.node_telemetry.items()
-            if nid in atomic_ids
-        )
+        # Identify nodes inside FIXED_POINT bodies
+        fp_child_ids: set[str] = set()
+        for n in cdg.nodes:
+            if n.concept_type == ConceptType.FIXED_POINT and n.children:
+                fp_child_ids.update(n.children)
+
+        iterations_used = sim_report.iterations_used if sim_report.iterations_used > 0 else 1
+
+        total_ms = 0.0
+        for nid, t in benchmark.node_telemetry.items():
+            if nid in atomic_ids:
+                ms = t.execution_time_ms
+                # Nodes in FIXED_POINT bodies have time multiplied by iterations
+                if nid in fp_child_ids:
+                    ms *= iterations_used
+                total_ms += ms
         if total_ms <= 0:
             return []
 
@@ -88,16 +111,22 @@ class CreditAssigner:
             tel = benchmark.node_telemetry.get(nid)
             if tel is None:
                 continue
-            pct = tel.execution_time_ms / total_ms * 100.0
+            ms = tel.execution_time_ms
+            if nid in fp_child_ids:
+                ms *= iterations_used
+            pct = ms / total_ms * 100.0
+            reason = (
+                f"Node '{node_names.get(nid, nid)}' consumed "
+                f"{pct:.1f}% of total execution time"
+            )
+            if nid in fp_child_ids:
+                reason += f" (x{iterations_used} iterations in fixed-point body)"
             gradients.append(
                 NodeGradient(
                     node_id=nid,
                     gradient_score=pct,
                     metric_type=target,
-                    bottleneck_reason=(
-                        f"Node '{node_names.get(nid, nid)}' consumed "
-                        f"{pct:.1f}% of total execution time"
-                    ),
+                    bottleneck_reason=reason,
                 )
             )
 
@@ -189,6 +218,7 @@ class CreditAssigner:
 
     @staticmethod
     def _gradient_structure(
+        cdg: CDGExport,
         atomic_ids: set[str],
         node_names: dict[str, str],
         sim_report: GhostSimReport,
@@ -220,6 +250,25 @@ class CreditAssigner:
                 reason="caused the ghost simulation to fail",
             )
 
+        # Non-converging fixed-point body signal: if the simulation used
+        # >80% of a FIXED_POINT node's max_iterations, flag all body nodes.
+        for n in cdg.nodes:
+            if (
+                n.concept_type == ConceptType.FIXED_POINT
+                and n.fixed_point_max_iterations > 0
+                and sim_report.iterations_used > 0
+            ):
+                usage_ratio = sim_report.iterations_used / n.fixed_point_max_iterations
+                if usage_ratio > 0.8:
+                    for child_id in n.children or []:
+                        child_name = node_names.get(child_id, child_id)
+                        add(
+                            child_name,
+                            1.5,
+                            "is in a non-converging fixed-point body "
+                            f"(used {sim_report.iterations_used}/{n.fixed_point_max_iterations} iterations)",
+                        )
+
         total = sum(scored.values())
         if total <= 0:
             return []
@@ -235,6 +284,67 @@ class CreditAssigner:
                     bottleneck_reason=(
                         f"Node '{node_names.get(nid, nid)}' contributed {pct:.1f}% "
                         f"of structural risk because it {reasons.get(nid, 'needs structural refinement')}"
+                    ),
+                )
+            )
+
+        gradients.sort(key=lambda g: g.gradient_score, reverse=True)
+        return gradients
+
+    @staticmethod
+    def _gradient_convergence(
+        cdg: CDGExport,
+        atomic_ids: set[str],
+        node_names: dict[str, str],
+        sim_report: GhostSimReport,
+    ) -> list[NodeGradient]:
+        """Compute convergence gradients for FIXED_POINT bodies.
+
+        Assigns higher pressure to nodes inside FIXED_POINT bodies that
+        consumed many iterations without converging.
+        """
+        if not sim_report.ran:
+            return []
+
+        # Identify FIXED_POINT body children
+        fp_child_ids: set[str] = set()
+        fp_max_iters: int = 100
+        for n in cdg.nodes:
+            if n.concept_type == ConceptType.FIXED_POINT:
+                if n.children:
+                    fp_child_ids.update(n.children)
+                if n.fixed_point_max_iterations > 0:
+                    fp_max_iters = n.fixed_point_max_iterations
+
+        if not fp_child_ids:
+            return []
+
+        iterations_used = sim_report.iterations_used or 0
+        if iterations_used <= 0:
+            return []
+
+        # Score = iterations_used / max_iterations (higher = worse convergence)
+        convergence_ratio = iterations_used / fp_max_iters
+        scored: dict[str, float] = {}
+        for nid in fp_child_ids & atomic_ids:
+            scored[nid] = convergence_ratio
+
+        total = sum(scored.values())
+        if total <= 0:
+            return []
+
+        gradients: list[NodeGradient] = []
+        for nid, raw in scored.items():
+            pct = raw / total * 100.0
+            gradients.append(
+                NodeGradient(
+                    node_id=nid,
+                    gradient_score=pct,
+                    metric_type=OptimizationMetric.CONVERGENCE,
+                    bottleneck_reason=(
+                        f"Node '{node_names.get(nid, nid)}' is in a fixed-point body "
+                        f"that used {iterations_used}/{fp_max_iters} iterations "
+                        f"({convergence_ratio:.0%} of budget)"
                     ),
                 )
             )

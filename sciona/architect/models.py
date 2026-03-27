@@ -55,6 +55,7 @@ class ConceptType(str, Enum):
     SMC_REWEIGHT = "smc_reweight"
     MESSAGE_PASSING = "message_passing"
     CONJUGATE_UPDATE = "conjugate_update"
+    FIXED_POINT = "fixed_point"
     # Data flow / orchestration
     STATE_INIT = "state_init"
     DATA_ASSEMBLY = "data_assembly"
@@ -112,6 +113,8 @@ class AlgorithmicNode(BaseModel):
     conceptual_summary: str = ""
     critic_notes: str = ""
     decomposition_rationale: str = ""
+    fixed_point_max_iterations: int = 0  # 0 means not a fixed-point node
+    fixed_point_convergence_field: str = ""  # name of output field signaling convergence
 
 
 class DependencyEdge(BaseModel):

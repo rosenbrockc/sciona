@@ -44,6 +44,7 @@ class TestSkeletonRegistry:
             ConceptType.RANDOMIZED,
             ConceptType.INFORMATION_THEORY,
             ConceptType.COMPRESSION,
+            ConceptType.FIXED_POINT,
         }
         assert set(SKELETON_TEMPLATES.keys()) == expected
 
@@ -98,6 +99,11 @@ class TestSkeletonWellFormedness:
             ConceptType.CONJUGATE_UPDATE,
         },
         ConceptType.MESSAGE_PASSING: {ConceptType.MESSAGE_PASSING},
+        ConceptType.FIXED_POINT: {
+            ConceptType.FIXED_POINT,
+            ConceptType.STATE_INIT,
+            ConceptType.CUSTOM,
+        },
     }
 
     @pytest.mark.parametrize("concept_type", list(SKELETON_TEMPLATES.keys()))

@@ -63,6 +63,7 @@ class TestConceptType:
             "smc_reweight",
             "message_passing",
             "conjugate_update",
+            "fixed_point",
             "state_init",
             "data_assembly",
             "conditional_routing",

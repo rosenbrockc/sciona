@@ -139,6 +139,7 @@ def _check_structure(
     atom_fqdns: Sequence[str],
     dependency_edges: Sequence[tuple[str, str]],
     known_atoms: frozenset[str] | None = None,
+    fixed_point_node_ids: frozenset[str] | None = None,
 ) -> list[str]:
     """Check structural validity of a CDG.
 
@@ -151,8 +152,13 @@ def _check_structure(
     known_atoms
         Set of FQDNs registered in the global registry.  If ``None``,
         skip the registry existence check.
+    fixed_point_node_ids
+        Set of node FQDNs that belong to FIXED_POINT-annotated subgraphs.
+        Cycles among these nodes are permitted and will not trigger a
+        rejection.
     """
     reasons: list[str] = []
+    _fp_ids = fixed_point_node_ids or frozenset()
 
     if known_atoms is not None:
         for fqdn in atom_fqdns:
@@ -178,7 +184,13 @@ def _check_structure(
                 queue.append(nb)
 
     if visited != len(in_degree):
-        reasons.append("Dependency graph contains a cycle")
+        # Some nodes are in a cycle — check if ALL cycle nodes are in
+        # FIXED_POINT subgraphs.
+        cycle_nodes = {
+            nid for nid, deg in in_degree.items() if deg > 0
+        }
+        if not cycle_nodes.issubset(_fp_ids):
+            reasons.append("Dependency graph contains a cycle")
 
     return reasons
 
@@ -244,6 +256,7 @@ def prescreen(
     known_atoms: frozenset[str] | None = None,
     max_nodes: int = DEFAULT_MAX_NODES,
     max_depth: int = DEFAULT_MAX_DEPTH,
+    fixed_point_node_ids: frozenset[str] | None = None,
 ) -> PreScreenResult:
     """Run the pre-screen gate on a CDG submission.
 
@@ -259,6 +272,9 @@ def prescreen(
         Maximum allowed node count.
     max_depth
         Maximum allowed DAG depth.
+    fixed_point_node_ids
+        Node FQDNs belonging to FIXED_POINT subgraphs.  Cycles among
+        these nodes are tolerated during the structural check.
 
     Returns
     -------
@@ -282,7 +298,10 @@ def prescreen(
     # Phase 2: Structural validity
     edges = dependency_edges or []
     struct_reasons = _check_structure(
-        list(atom_sources.keys()), edges, known_atoms=known_atoms
+        list(atom_sources.keys()),
+        edges,
+        known_atoms=known_atoms,
+        fixed_point_node_ids=fixed_point_node_ids,
     )
     reasons.extend(struct_reasons)
 
@@ -301,12 +320,18 @@ def prescreen(
         adjacency.setdefault(src, []).append(dst)
 
     depths: dict[str, int] = {}
+    _visiting: set[str] = set()  # cycle guard
 
     def _depth(node: str) -> int:
         if node in depths:
             return depths[node]
+        if node in _visiting:
+            # Back-edge in a cycle (allowed for FP nodes) — stop recursion
+            return 1
+        _visiting.add(node)
         children = adjacency.get(node, [])
         d = 1 + max((_depth(c) for c in children), default=0) if children else 1
+        _visiting.discard(node)
         depths[node] = d
         return d
 

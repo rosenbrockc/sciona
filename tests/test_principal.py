@@ -83,6 +83,7 @@ class TestOptimizationMetric:
         assert OptimizationMetric.PRECISION.value == "precision"
         assert OptimizationMetric.FLOP_COUNT.value == "flop_count"
         assert OptimizationMetric.STRUCTURE.value == "structure"
+        assert OptimizationMetric.CONVERGENCE.value == "convergence"
 
     def test_str_enum(self):
         assert isinstance(OptimizationMetric.LATENCY, str)

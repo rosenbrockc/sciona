@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 import ast
+import logging
 import re
 from datetime import datetime, timezone
 
+logger = logging.getLogger(__name__)
+
 from sciona.architect.handoff import CDGExport
-from sciona.architect.models import AlgorithmicNode, NodeStatus
+from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
 from sciona.synthesizer.models import AssemblyUnit, GlueEdge, SkeletonFile
-from sciona.synthesizer.toposort import toposort_nodes
+from sciona.synthesizer.toposort import (
+    detect_cycle_partition,
+    toposort_nodes,
+    toposort_with_fixed_points,
+)
 from sciona.types import MatchResult, Prover
 
 # ---------------------------------------------------------------------------
@@ -312,7 +319,38 @@ class Assembler:
             )
 
         # Topological sort for emission order
-        sorted_ids = toposort_nodes(cdg.nodes, cdg.edges)
+        cycle_node_ids: set[str] = set()
+        try:
+            sorted_ids = toposort_nodes(cdg.nodes, cdg.edges)
+        except ValueError:
+            # Cycle detected — check whether it is a valid
+            # MESSAGE_PASSING / FIXED_POINT cycle.
+            acyclic_sorted, cycle_node_ids, is_valid = detect_cycle_partition(
+                cdg.nodes, cdg.edges
+            )
+            if not is_valid:
+                raise AssemblyError(
+                    f"Cycle detected among non-iterative nodes: "
+                    f"{sorted(cycle_node_ids)}"
+                ) from None
+            # Valid cycle: emit acyclic nodes first, cyclic nodes in
+            # round-robin order at the end.
+            sorted_ids = list(acyclic_sorted) + sorted(cycle_node_ids)
+
+        # Check for FIXED_POINT subtrees (phase 3)
+        fp_node_ids: set[str] = set()
+        fp_bodies: dict[str, list[str]] = {}
+        for n in cdg.nodes:
+            if n.concept_type == ConceptType.FIXED_POINT:
+                fp_node_ids.add(n.node_id)
+        if fp_node_ids:
+            try:
+                top_order, fp_bodies = toposort_with_fixed_points(
+                    cdg.nodes, cdg.edges
+                )
+                sorted_ids = top_order
+            except ValueError:
+                logger.debug("FIXED_POINT toposort failed; using fallback order")
 
         # Reorder units by topological order
         unit_map = {u.node_id: u for u in units}
@@ -336,6 +374,8 @@ class Assembler:
                 root_nodes,
                 metadata,
                 telemetry=telemetry,
+                cycle_node_ids=cycle_node_ids,
+                fp_bodies=fp_bodies,
             )
         elif self._prover == Prover.PYTHON:
             source, sorry_count = self._emit_python(
@@ -344,6 +384,8 @@ class Assembler:
                 root_nodes,
                 metadata,
                 telemetry=telemetry,
+                cycle_node_ids=cycle_node_ids,
+                fp_bodies=fp_bodies,
             )
         else:
             source, sorry_count = self._emit_coq(
@@ -352,6 +394,8 @@ class Assembler:
                 root_nodes,
                 metadata,
                 telemetry=telemetry,
+                cycle_node_ids=cycle_node_ids,
+                fp_bodies=fp_bodies,
             )
 
         return SkeletonFile(
@@ -530,6 +574,146 @@ class Assembler:
     # Prover-specific emitters
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Cycle & FIXED_POINT loop emission helpers
+    # ------------------------------------------------------------------
+
+    def _emit_cycle_python(
+        self,
+        cycle_units: list[AssemblyUnit],
+        glue_edges: list[GlueEdge],
+    ) -> list[str]:
+        """Emit a Python while-loop around cyclic nodes in round-robin order."""
+        lines: list[str] = []
+        lines.append("    # --- Iterative message-passing loop ---")
+        lines.append("    _MAX_ITERS = 100")
+        lines.append("    _converged = False")
+        lines.append("    for _iter in range(_MAX_ITERS):")
+        for unit in cycle_units:
+            sname = sanitize_name(unit.name)
+            args: list[str] = []
+            for inp in unit.inputs:
+                edge_for_inp = next(
+                    (
+                        e
+                        for e in glue_edges
+                        if e.target_id == unit.node_id and e.input_name == inp.name
+                    ),
+                    None,
+                )
+                if edge_for_inp:
+                    src_unit = next(
+                        (u for u in cycle_units if u.node_id == edge_for_inp.source_id),
+                        None,
+                    )
+                    if src_unit:
+                        args.append(sanitize_name(src_unit.name) + "_result")
+                    else:
+                        args.append(inp.name)
+                else:
+                    args.append(inp.name)
+            args_str = ", ".join(args)
+            lines.append(f"        {sname}_result = {sname}({args_str})")
+        lines.append("        # Check convergence (convention: last node returns bool)")
+        if cycle_units:
+            last = sanitize_name(cycle_units[-1].name)
+            lines.append(f"        if {last}_result is True:")
+            lines.append("            _converged = True")
+            lines.append("            break")
+        return lines
+
+    def _emit_cycle_lean4(self, cycle_units: list[AssemblyUnit]) -> list[str]:
+        """Emit a Lean 4 sorry-guarded placeholder for cyclic nodes."""
+        lines: list[str] = []
+        lines.append("  -- Iterative message-passing cycle (placeholder)")
+        names = [sanitize_name(u.name) for u in cycle_units]
+        lines.append(f"  -- Cycle nodes: {', '.join(names)}")
+        lines.append("  sorry")
+        return lines
+
+    def _emit_cycle_coq(self, cycle_units: list[AssemblyUnit]) -> list[str]:
+        """Emit a Coq Admitted placeholder for cyclic nodes."""
+        lines: list[str] = []
+        names = [sanitize_name(u.name) for u in cycle_units]
+        lines.append(f"  (* Iterative message-passing cycle: {', '.join(names)} *)")
+        lines.append("  Admitted.")
+        return lines
+
+    def _emit_fixed_point_python(
+        self,
+        fp_node: AlgorithmicNode,
+        body_units: list[AssemblyUnit],
+        glue_edges: list[GlueEdge],
+    ) -> list[str]:
+        """Emit a Python while-loop for a FIXED_POINT node."""
+        max_iters = getattr(fp_node, "fixed_point_max_iterations", 0) or 100
+        conv_field = getattr(fp_node, "fixed_point_convergence_field", "") or "converged"
+
+        lines: list[str] = []
+        fpname = sanitize_name(fp_node.name)
+        lines.append(f"    # --- Fixed-point iteration: {fp_node.name} ---")
+        lines.append(f"    _fp_max_iters_{fpname} = {max_iters}")
+        lines.append(f"    _fp_converged_{fpname} = False")
+        lines.append(f"    for _fp_iter_{fpname} in range(_fp_max_iters_{fpname}):")
+        for unit in body_units:
+            sname = sanitize_name(unit.name)
+            args: list[str] = []
+            for inp in unit.inputs:
+                edge_for_inp = next(
+                    (
+                        e
+                        for e in glue_edges
+                        if e.target_id == unit.node_id and e.input_name == inp.name
+                    ),
+                    None,
+                )
+                if edge_for_inp:
+                    src_unit = next(
+                        (u for u in body_units if u.node_id == edge_for_inp.source_id),
+                        None,
+                    )
+                    if src_unit:
+                        args.append(sanitize_name(src_unit.name) + "_result")
+                    else:
+                        args.append(inp.name)
+                else:
+                    args.append(inp.name)
+            args_str = ", ".join(args)
+            lines.append(f"        {sname}_result = {sname}({args_str})")
+        # Convergence check
+        if body_units:
+            last = sanitize_name(body_units[-1].name)
+            lines.append(f"        if hasattr({last}_result, '{conv_field}') and {last}_result.{conv_field}:")
+            lines.append(f"            _fp_converged_{fpname} = True")
+            lines.append("            break")
+            lines.append(f"        if isinstance({last}_result, bool) and {last}_result:")
+            lines.append(f"            _fp_converged_{fpname} = True")
+            lines.append("            break")
+        return lines
+
+    def _emit_fixed_point_lean4(self, fp_node: AlgorithmicNode) -> list[str]:
+        """Emit Lean 4 Nat.rec-based fuel or sorry-guarded partial def."""
+        max_iters = getattr(fp_node, "fixed_point_max_iterations", 0) or 100
+        lines: list[str] = []
+        lines.append(f"  -- Fixed-point iteration: {fp_node.name} (fuel={max_iters})")
+        lines.append("  -- TODO: Nat.rec-based termination proof")
+        lines.append("  sorry")
+        return lines
+
+    def _emit_fixed_point_coq(self, fp_node: AlgorithmicNode) -> list[str]:
+        """Emit Coq Fixpoint with fuel nat parameter."""
+        max_iters = getattr(fp_node, "fixed_point_max_iterations", 0) or 100
+        fpname = sanitize_name(fp_node.name)
+        lines: list[str] = []
+        lines.append(f"  (* Fixed-point iteration: {fp_node.name} (fuel={max_iters}) *)")
+        lines.append(f"  (* Fixpoint {fpname}_loop (fuel : nat) := ... *)")
+        lines.append("  Admitted.")
+        return lines
+
+    # ------------------------------------------------------------------
+    # Prover-specific emitters
+    # ------------------------------------------------------------------
+
     def _emit_lean4(
         self,
         units: list[AssemblyUnit],
@@ -538,6 +722,8 @@ class Assembler:
         metadata: dict,
         *,
         telemetry: bool = False,
+        cycle_node_ids: set[str] | None = None,
+        fp_bodies: dict[str, list[str]] | None = None,
     ) -> tuple[str, int]:
         """Generate Lean 4 source. Returns (source_code, sorry_count)."""
         if telemetry:
@@ -574,6 +760,31 @@ class Assembler:
                 lines.append(f"noncomputable def {sname} := @{unit.declaration_name}")
             lines.append("")
 
+        # Emit cycle placeholder (if any)
+        _cycle_ids = cycle_node_ids or set()
+        if _cycle_ids:
+            cycle_units = [u for u in units if u.node_id in _cycle_ids]
+            if cycle_units:
+                cycle_lines = self._emit_cycle_lean4(cycle_units)
+                lines.extend(cycle_lines)
+                for line in cycle_lines:
+                    if "sorry" in line and not line.strip().startswith("--"):
+                        sorry_count += 1
+                lines.append("")
+
+        # Emit FIXED_POINT blocks
+        node_map = {n.node_id: n for n in root_nodes}
+        _fp_bodies = fp_bodies or {}
+        for fp_id, body_ids in _fp_bodies.items():
+            fp_node = node_map.get(fp_id)
+            if fp_node and fp_node.concept_type == ConceptType.FIXED_POINT:
+                fp_lines = self._emit_fixed_point_lean4(fp_node)
+                lines.extend(fp_lines)
+                for line in fp_lines:
+                    if "sorry" in line and not line.strip().startswith("--"):
+                        sorry_count += 1
+                lines.append("")
+
         # Emit composition for root/decomposed nodes
         for root in root_nodes:
             rname = sanitize_name(root.name)
@@ -600,6 +811,8 @@ class Assembler:
         metadata: dict,
         *,
         telemetry: bool = False,
+        cycle_node_ids: set[str] | None = None,
+        fp_bodies: dict[str, list[str]] | None = None,
     ) -> tuple[str, int]:
         """Generate Python source. Returns (source_code, sorry_count)."""
         lines: list[str] = []
@@ -697,6 +910,13 @@ class Assembler:
             lines.append("")
             lines.append("")
 
+        # Emit cycle while-loop (if any)
+        _cycle_ids = cycle_node_ids or set()
+        _fp_bodies = fp_bodies or {}
+        node_map_py = {n.node_id: n for n in root_nodes}
+        for n in root_nodes:
+            node_map_py[n.node_id] = n
+
         # Emit composition for root/decomposed nodes
         for root in root_nodes:
             rname = sanitize_name(root.name)
@@ -722,7 +942,43 @@ class Assembler:
             else:
                 lines.append('    """Compose the resolved child pipeline."""')
 
+            # Emit FIXED_POINT body if this root is a FIXED_POINT
+            if root.concept_type == ConceptType.FIXED_POINT and root.node_id in _fp_bodies:
+                body_ids = _fp_bodies[root.node_id]
+                body_unit_map = {u.node_id: u for u in units}
+                body_units = [body_unit_map[bid] for bid in body_ids if bid in body_unit_map]
+                if body_units:
+                    fp_lines = self._emit_fixed_point_python(root, body_units, glue_edges)
+                    lines.extend(fp_lines)
+                    if body_units:
+                        last = sanitize_name(body_units[-1].name)
+                        lines.append(f"    return {last}_result")
+                    lines.append("")
+                    lines.append("")
+                    continue
+
             composition = self._compose_python(units, glue_edges, root)
+
+            # If there are cycle nodes inside this root's children,
+            # inject a while-loop for them
+            if _cycle_ids:
+                child_ids = set(root.children) if root.children else {u.node_id for u in units}
+                root_cycle_ids = _cycle_ids & child_ids
+                if root_cycle_ids:
+                    cycle_units = [u for u in units if u.node_id in root_cycle_ids]
+                    # Emit non-cycle composition first
+                    non_cycle = [line for line in composition if not any(
+                        sanitize_name(u.name) in line for u in cycle_units
+                    )]
+                    lines.extend(non_cycle)
+                    lines.extend(self._emit_cycle_python(cycle_units, glue_edges))
+                    if cycle_units:
+                        last = sanitize_name(cycle_units[-1].name)
+                        lines.append(f"    return {last}_result")
+                    lines.append("")
+                    lines.append("")
+                    continue
+
             lines.extend(composition)
             # Count NotImplementedError stubs
             for line in composition:
@@ -741,6 +997,8 @@ class Assembler:
         metadata: dict,
         *,
         telemetry: bool = False,
+        cycle_node_ids: set[str] | None = None,
+        fp_bodies: dict[str, list[str]] | None = None,
     ) -> tuple[str, int]:
         """Generate Coq source. Returns (source_code, sorry_count)."""
         if telemetry:
@@ -773,6 +1031,31 @@ class Assembler:
             else:
                 lines.append(f"Definition {sname} := @{unit.declaration_name}.")
             lines.append("")
+
+        # Emit cycle placeholder (if any)
+        _cycle_ids = cycle_node_ids or set()
+        if _cycle_ids:
+            cycle_units = [u for u in units if u.node_id in _cycle_ids]
+            if cycle_units:
+                cycle_lines = self._emit_cycle_coq(cycle_units)
+                lines.extend(cycle_lines)
+                for line in cycle_lines:
+                    if "Admitted" in line:
+                        sorry_count += 1
+                lines.append("")
+
+        # Emit FIXED_POINT blocks
+        _fp_bodies = fp_bodies or {}
+        node_map_coq = {n.node_id: n for n in root_nodes}
+        for fp_id in _fp_bodies:
+            fp_node = node_map_coq.get(fp_id)
+            if fp_node and fp_node.concept_type == ConceptType.FIXED_POINT:
+                fp_lines = self._emit_fixed_point_coq(fp_node)
+                lines.extend(fp_lines)
+                for line in fp_lines:
+                    if "Admitted" in line:
+                        sorry_count += 1
+                lines.append("")
 
         # Emit composition for root/decomposed nodes
         for root in root_nodes:

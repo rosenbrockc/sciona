@@ -17,6 +17,7 @@ SUPPORTED_OBJECTIVES: tuple[str, ...] = (
     "mae",
     "flop_count",
     "structure",
+    "convergence",
 )
 
 
