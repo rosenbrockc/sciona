@@ -575,6 +575,7 @@ def _build_ingest_ir(
 
     operations: list[OperationSpec] = []
     artifacts: list[OutputBindingSpec] = []
+    operation_id_aliases: dict[str, str] = {}
     for atom in seed_atoms:
         methods = [by_name[name] for name in atom.method_names if name in by_name]
         if not methods:
@@ -610,24 +611,34 @@ def _build_ingest_ir(
         )
         operations.append(operation)
         artifacts.extend(outputs)
+        operation_id_aliases[atom.name] = operation.operation_id
+        operation_id_aliases[_snake_case_id(atom.name)] = operation.operation_id
+        operation_id_aliases[operation.operation_id] = operation.operation_id
 
     edges: list[OperationEdge] = []
     seen_edges: set[tuple[str, str, str, str]] = set()
     if seed_plan is not None:
         for edge in seed_plan.edge_definitions:
+            source_operation_id = operation_id_aliases.get(edge.source_id, edge.source_id)
+            target_operation_id = operation_id_aliases.get(edge.target_id, edge.target_id)
             edge_kind = (
                 "state"
                 if edge.output_name in state_slot_names or edge.input_name in state_slot_names
                 else "data"
             )
-            key = (edge.source_id, edge.target_id, edge_kind, edge.output_name or edge.input_name)
+            key = (
+                source_operation_id,
+                target_operation_id,
+                edge_kind,
+                edge.output_name or edge.input_name,
+            )
             if key in seen_edges:
                 continue
             seen_edges.add(key)
             edges.append(
                 OperationEdge(
-                    source_operation_id=edge.source_id,
-                    target_operation_id=edge.target_id,
+                    source_operation_id=source_operation_id,
+                    target_operation_id=target_operation_id,
                     edge_kind=edge_kind,
                     artifact_or_slot_name=edge.output_name or edge.input_name,
                 )
@@ -744,6 +755,25 @@ def _validate_canonical_ir(
     missing_attrs = sorted(set(dfg.all_attributes) - covered_attrs)
     if missing_attrs:
         issues.append(f"Missing attributes: {missing_attrs}")
+
+    operation_ids = {operation.operation_id for operation in ir.operations}
+    cycle_nodes = _cyclic_node_ids(
+        operation_ids,
+        [
+            (edge.source_operation_id, edge.target_operation_id)
+            for edge in ir.edges
+        ],
+    )
+    if cycle_nodes:
+        op_by_id = {operation.operation_id: operation for operation in ir.operations}
+        if not all(
+            op_by_id[op_id].concept_type == ConceptType.MESSAGE_PASSING
+            for op_id in cycle_nodes
+            if op_id in op_by_id
+        ):
+            issues.append(
+                f"Non-message-passing operation cycle: {sorted(cycle_nodes)}"
+            )
 
     report = "All canonical IR checks passed." if not issues else "; ".join(issues)
     return not issues, report, missing_attrs
@@ -1573,6 +1603,39 @@ def _allowed_child_output_names(atom: MacroAtomSpec, operation: OperationSpec) -
     return names
 
 
+def _cyclic_node_ids(
+    node_ids: set[str],
+    edges: list[DependencyEdge | tuple[str, str]],
+) -> set[str]:
+    adjacency: dict[str, set[str]] = {node_id: set() for node_id in node_ids}
+    indegree: dict[str, int] = {node_id: 0 for node_id in node_ids}
+    for edge in edges:
+        if isinstance(edge, tuple):
+            source_id, target_id = edge
+        else:
+            source_id, target_id = edge.source_id, edge.target_id
+        if source_id not in node_ids or target_id not in node_ids:
+            continue
+        if target_id in adjacency[source_id]:
+            continue
+        adjacency[source_id].add(target_id)
+        indegree[target_id] += 1
+
+    queue = [node_id for node_id, degree in indegree.items() if degree == 0]
+    processed = 0
+    while queue:
+        node_id = queue.pop()
+        processed += 1
+        for next_id in adjacency[node_id]:
+            indegree[next_id] -= 1
+            if indegree[next_id] == 0:
+                queue.append(next_id)
+
+    if processed == len(node_ids):
+        return set()
+    return {node_id for node_id, degree in indegree.items() if degree > 0}
+
+
 def _validate_candidate_children(
     atom: MacroAtomSpec,
     operation: OperationSpec,
@@ -1586,6 +1649,11 @@ def _validate_candidate_children(
     child_ids = {
         child.name for child in children
     } | {_snake_case_id(child.name) for child in children}
+    child_by_id = {
+        key: child
+        for child in children
+        for key in (child.name, _snake_case_id(child.name))
+    }
     if not allowed_inputs and not allowed_outputs:
         return False, "parent operation has no allowed io evidence"
     for child in children:
@@ -1608,6 +1676,25 @@ def _validate_candidate_children(
             return False, f"sub-edge output {edge.output_name} not backed by parent evidence"
         if edge.input_name and edge.input_name not in allowed_inputs:
             return False, f"sub-edge input {edge.input_name} not backed by parent evidence"
+        source_child = child_by_id.get(edge.source_id)
+        target_child = child_by_id.get(edge.target_id)
+        if source_child is not None and edge.output_name:
+            source_outputs = {spec.name for spec in source_child.outputs}
+            if edge.output_name not in source_outputs:
+                return (
+                    False,
+                    f"sub-edge output {edge.output_name} not declared by source child {source_child.name}",
+                )
+        if target_child is not None and edge.input_name:
+            target_inputs = {spec.name for spec in target_child.inputs}
+            if edge.input_name not in target_inputs:
+                return (
+                    False,
+                    f"sub-edge input {edge.input_name} not declared by target child {target_child.name}",
+                )
+    cycle_nodes = _cyclic_node_ids(child_ids, sub_edges)
+    if cycle_nodes:
+        return False, f"sub-edge cycle detected across {sorted(cycle_nodes)}"
     return True, ""
 
 

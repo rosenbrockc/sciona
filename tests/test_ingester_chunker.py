@@ -10,6 +10,8 @@ import pytest
 from sciona.architect.models import ConceptType
 from sciona.ingester.chunker import (
     _attach_canonical_ir,
+    _validate_candidate_children,
+    _validate_canonical_ir,
     ChunkerDeps,
     ChunkerState,
     build_chunker_graph,
@@ -19,10 +21,16 @@ from sciona.ingester.chunker import (
 from sciona.ingester.models import (
     AttributeSemanticFact,
     FactProvenance,
+    IngestIRPlan,
     IOSpec,
     MacroAtomSpec,
     MethodFact,
     ParameterFact,
+    MethodBinding,
+    DependencyEdge,
+    OperationEdge,
+    OperationSpec,
+    OutputBindingSpec,
     ProposedMacroPlan,
     RawDataFlowGraph,
     ReturnFact,
@@ -762,6 +770,249 @@ class TestCriticValidate:
         assert operation_by_id["integrator_step"].role == "state_transition"
         assert operation_by_id["get_position"].role == "query"
         assert operation_by_id["get_position"].emitted_outputs[0].binding_kind == "attribute_read"
+
+
+class TestRecursiveDecompositionValidation:
+    def test_rejects_sub_edge_that_targets_undeclared_child_input(self):
+        atom = MacroAtomSpec(
+            name="Grid Graph API Orchestration",
+            inputs=[
+                IOSpec(name="n_x", type_desc="int"),
+                IOSpec(name="n_y", type_desc="int"),
+                IOSpec(name="n_z", type_desc="int"),
+                IOSpec(name="mask", type_desc="Any"),
+            ],
+            outputs=[
+                IOSpec(name="graph_build_args", type_desc="object"),
+                IOSpec(name="graph", type_desc="object"),
+            ],
+        )
+        operation = OperationSpec(
+            operation_id="grid_graph_api_orchestration",
+            display_name=atom.name,
+            role="query",
+            method_bindings=[MethodBinding(method_name="grid_to_graph")],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="graph_build_args",
+                    type_desc="object",
+                    binding_kind="return_value",
+                    source_method="grid_to_graph",
+                ),
+                OutputBindingSpec(
+                    output_name="graph",
+                    type_desc="object",
+                    binding_kind="return_value",
+                    source_method="grid_to_graph",
+                ),
+            ],
+            concept_type=ConceptType.CONDITIONAL_ROUTING,
+        )
+        children = [
+            MacroAtomSpec(
+                name="Grid Graph API Orchestration",
+                inputs=list(atom.inputs),
+                outputs=list(atom.outputs),
+            ),
+            MacroAtomSpec(
+                name="3D Grid Graph Materialization",
+                inputs=[
+                    IOSpec(name="n_x", type_desc="int"),
+                    IOSpec(name="n_y", type_desc="int"),
+                    IOSpec(name="graph_build_args", type_desc="object"),
+                ],
+                outputs=[IOSpec(name="graph", type_desc="object")],
+            ),
+        ]
+        sub_edges = [
+            DependencyEdge(
+                source_id="grid_graph_api_orchestration",
+                target_id="3d_grid_graph_materialization",
+                output_name="graph_build_args",
+                input_name="graph_build_args",
+                source_type="object",
+                target_type="object",
+            ),
+            DependencyEdge(
+                source_id="3d_grid_graph_materialization",
+                target_id="grid_graph_api_orchestration",
+                output_name="graph",
+                input_name="graph",
+                source_type="object",
+                target_type="object",
+            ),
+        ]
+
+        ok, reason = _validate_candidate_children(atom, operation, children, sub_edges)
+
+        assert ok is False
+        assert "not declared by target child" in reason
+
+    def test_rejects_cyclic_child_sub_edges(self):
+        atom = MacroAtomSpec(
+            name="Cyclic Parent",
+            inputs=[IOSpec(name="seed", type_desc="Any")],
+            outputs=[IOSpec(name="left", type_desc="Any"), IOSpec(name="right", type_desc="Any")],
+        )
+        operation = OperationSpec(
+            operation_id="cyclic_parent",
+            display_name=atom.name,
+            role="transform",
+            method_bindings=[MethodBinding(method_name="run")],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="left",
+                    type_desc="Any",
+                    binding_kind="return_value",
+                    source_method="run",
+                ),
+                OutputBindingSpec(
+                    output_name="right",
+                    type_desc="Any",
+                    binding_kind="return_value",
+                    source_method="run",
+                ),
+            ],
+            concept_type=ConceptType.CUSTOM,
+        )
+        children = [
+            MacroAtomSpec(
+                name="Left Step",
+                inputs=[IOSpec(name="seed", type_desc="Any"), IOSpec(name="right", type_desc="Any")],
+                outputs=[IOSpec(name="left", type_desc="Any")],
+            ),
+            MacroAtomSpec(
+                name="Right Step",
+                inputs=[IOSpec(name="seed", type_desc="Any"), IOSpec(name="left", type_desc="Any")],
+                outputs=[IOSpec(name="right", type_desc="Any")],
+            ),
+        ]
+        sub_edges = [
+            DependencyEdge(
+                source_id="left_step",
+                target_id="right_step",
+                output_name="left",
+                input_name="left",
+                source_type="Any",
+                target_type="Any",
+            ),
+            DependencyEdge(
+                source_id="right_step",
+                target_id="left_step",
+                output_name="right",
+                input_name="right",
+                source_type="Any",
+                target_type="Any",
+            ),
+        ]
+
+        ok, reason = _validate_candidate_children(atom, operation, children, sub_edges)
+
+        assert ok is False
+        assert "cycle detected" in reason
+
+    def test_rejects_non_message_passing_operation_cycle_in_canonical_ir(self):
+        dfg = RawDataFlowGraph(class_name="CycleCase", methods=[], all_attributes={})
+        ir = IngestIRPlan(
+            subject_name="CycleCase",
+            operations=[
+                OperationSpec(
+                    operation_id="api",
+                    display_name="API",
+                    role="query",
+                    method_bindings=[MethodBinding(method_name="api")],
+                    emitted_outputs=[
+                        OutputBindingSpec(
+                            output_name="graph_build_args",
+                            type_desc="object",
+                            binding_kind="return_value",
+                            source_method="api",
+                        )
+                    ],
+                    concept_type=ConceptType.CONDITIONAL_ROUTING,
+                ),
+                OperationSpec(
+                    operation_id="helper",
+                    display_name="Helper",
+                    role="helper",
+                    method_bindings=[MethodBinding(method_name="helper")],
+                    emitted_outputs=[
+                        OutputBindingSpec(
+                            output_name="graph",
+                            type_desc="object",
+                            binding_kind="return_value",
+                            source_method="helper",
+                        )
+                    ],
+                    concept_type=ConceptType.DATA_ASSEMBLY,
+                ),
+            ],
+            edges=[
+                OperationEdge(
+                    source_operation_id="api",
+                    target_operation_id="helper",
+                    edge_kind="data",
+                    artifact_or_slot_name="graph_build_args",
+                ),
+                OperationEdge(
+                    source_operation_id="helper",
+                    target_operation_id="api",
+                    edge_kind="data",
+                    artifact_or_slot_name="graph",
+                ),
+            ],
+        )
+
+        ok, report, missing = _validate_canonical_ir(dfg, ir)
+
+        assert ok is False
+        assert missing == []
+        assert "Non-message-passing operation cycle" in report
+
+    def test_attach_canonical_ir_normalizes_plan_edge_ids_to_operation_ids(self):
+        dfg = RawDataFlowGraph(
+            class_name="GridCase",
+            methods=[
+                MethodFact(name="grid_to_graph", params=["n_x", "n_y"]),
+                MethodFact(name="_to_graph", params=["n_x", "n_y"]),
+            ],
+            all_attributes={},
+        )
+        plan = ProposedMacroPlan(
+            macro_atoms=[
+                MacroAtomSpec(
+                    name="Grid-To-Graph API Adapter",
+                    method_names=["grid_to_graph"],
+                    inputs=[IOSpec(name="n_x", type_desc="int"), IOSpec(name="n_y", type_desc="int")],
+                    outputs=[IOSpec(name="graph", type_desc="object")],
+                ),
+                MacroAtomSpec(
+                    name="Materialize 3D Grid Graph",
+                    method_names=["_to_graph"],
+                    inputs=[IOSpec(name="n_x", type_desc="int"), IOSpec(name="n_y", type_desc="int")],
+                    outputs=[IOSpec(name="graph", type_desc="object")],
+                ),
+            ],
+            edge_definitions=[
+                DependencyEdge(
+                    source_id="Grid-To-Graph API Adapter",
+                    target_id="Materialize 3D Grid Graph",
+                    output_name="graph",
+                    input_name="graph",
+                    source_type="object",
+                    target_type="object",
+                )
+            ],
+        )
+
+        attached = _attach_canonical_ir(dfg, plan)
+        assert attached.canonical_ir is not None
+        assert [
+            (edge.source_operation_id, edge.target_operation_id)
+            for edge in attached.canonical_ir.edges
+        ] == [("grid_to_graph_api_adapter", "materialize_3d_grid_graph")]
 
 
 # ---------------------------------------------------------------------------

@@ -147,6 +147,12 @@ Rules:
 5. If the function calls internal helpers, each major helper call can be \
    its own sub-atom.
 6. Choose concept_type from: """ + _CONCEPT_TYPE_LIST + """.
+7. The sub-atom graph MUST be acyclic. Never emit edges that create a cycle.
+8. Each final parent output should have a single owning producer sub-atom. \
+   Do not have two sibling sub-atoms both emit the same final output.
+9. Router/orchestration sub-atoms may normalize or bundle arguments, but \
+   they must not also emit the final computed artifact if a downstream helper \
+   sub-atom computes that artifact.
 
 Return valid JSON only."""
 
