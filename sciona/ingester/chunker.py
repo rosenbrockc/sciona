@@ -555,11 +555,20 @@ def _default_operations(dfg: RawDataFlowGraph) -> list[MacroAtomSpec]:
     return atoms
 
 
+def _function_target_method(dfg: RawDataFlowGraph) -> MethodFact | None:
+    """Return the explicitly requested top-level function target when present."""
+    for method in dfg.methods:
+        if method.name == dfg.class_name:
+            return method
+    return None
+
+
 def _build_ingest_ir(
     dfg: RawDataFlowGraph,
     seed_plan: ProposedMacroPlan | None = None,
 ) -> IngestIRPlan:
     by_name = {method.name: method for method in dfg.methods}
+    function_target = _function_target_method(dfg)
     state_slots = _build_state_slots(dfg, seed_plan)
     state_slot_names = {slot.slot_name for slot in state_slots}
     seed_atoms = _default_operations(dfg) if seed_plan is None else list(seed_plan.macro_atoms)
@@ -570,13 +579,19 @@ def _build_ingest_ir(
         methods = [by_name[name] for name in atom.method_names if name in by_name]
         if not methods:
             continue
-        outputs = _infer_output_bindings(methods, atom.outputs)
+        direct_inputs = list(atom.inputs) if atom.inputs else _default_direct_inputs(methods)
+        if function_target is not None and function_target.name in atom.method_names:
+            methods = [function_target]
+            direct_inputs = _default_direct_inputs([function_target])
+            outputs = _infer_output_bindings([function_target], [])
+        else:
+            outputs = _infer_output_bindings(methods, atom.outputs)
         operation = OperationSpec(
             operation_id=_op_id(atom.name),
             display_name=atom.name,
             role=_operation_role(methods),
             method_bindings=[_method_binding(method) for method in methods],
-            direct_inputs=list(atom.inputs) if atom.inputs else _default_direct_inputs(methods),
+            direct_inputs=direct_inputs,
             required_state_slots=sorted(
                 {
                     attr

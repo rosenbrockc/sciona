@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from sciona.architect.models import ConceptType
 from sciona.ingester.chunker import (
+    _attach_canonical_ir,
     ChunkerDeps,
     ChunkerState,
     build_chunker_graph,
@@ -17,6 +19,7 @@ from sciona.ingester.chunker import (
 from sciona.ingester.models import (
     AttributeSemanticFact,
     FactProvenance,
+    IOSpec,
     MacroAtomSpec,
     MethodFact,
     ParameterFact,
@@ -102,6 +105,46 @@ def _make_internal_dispatch_dfg() -> RawDataFlowGraph:
     dfg.methods[0].calls = ["score"]
     dfg.internal_call_graph = {"normalize": ["score"]}
     return dfg
+
+
+def _make_function_target_dfg() -> RawDataFlowGraph:
+    prov = FactProvenance(
+        rule_id="test",
+        span=SourceSpan(file_path="image.py", line_start=1, line_end=1),
+    )
+    return RawDataFlowGraph(
+        class_name="extract_patches_2d",
+        methods=[
+            MethodFact(
+                name="_compute_n_patches",
+                params=["i_h", "i_w", "p_h", "p_w", "max_patches"],
+                signature=[
+                    ParameterFact(name="i_h", provenance=prov),
+                    ParameterFact(name="i_w", provenance=prov),
+                    ParameterFact(name="p_h", provenance=prov),
+                    ParameterFact(name="p_w", provenance=prov),
+                    ParameterFact(name="max_patches", provenance=prov),
+                ],
+                return_facts=[ReturnFact(kind="call_result", provenance=prov)],
+                semantic_role="helper",
+                provenance=[prov],
+            ),
+            MethodFact(
+                name="extract_patches_2d",
+                params=["image", "patch_size", "max_patches", "random_state"],
+                signature=[
+                    ParameterFact(name="image", provenance=prov),
+                    ParameterFact(name="patch_size", provenance=prov),
+                    ParameterFact(name="max_patches", kind="keyword_only", provenance=prov),
+                    ParameterFact(name="random_state", kind="keyword_only", provenance=prov),
+                ],
+                return_facts=[ReturnFact(kind="call_result", provenance=prov)],
+                semantic_role="query_or_metadata",
+                provenance=[prov],
+            ),
+        ],
+        internal_call_graph={"extract_patches_2d": ["_compute_n_patches"]},
+    )
 
 
 def _make_inherited_dfg() -> RawDataFlowGraph:
@@ -408,6 +451,50 @@ class TestProposeMacroAtoms:
 
         assert result["proposed_plan"].macro_atoms[0].name == "Data Processor"
         mock_llm.complete.assert_awaited_once()
+
+    def test_function_target_canonical_ir_pins_exported_api_to_requested_symbol(self):
+        dfg = _make_function_target_dfg()
+        seed = ProposedMacroPlan(
+            macro_atoms=[
+                MacroAtomSpec(
+                    name="Sample And Extract 2D Patches",
+                    method_names=["extract_patches_2d", "_compute_n_patches"],
+                    inputs=[
+                        IOSpec(name="image", type_desc="ndarray"),
+                        IOSpec(name="patch_size", type_desc="tuple[int, int]"),
+                        IOSpec(name="max_patches", type_desc="int | float | None"),
+                        IOSpec(name="random_state", type_desc="int | object | None"),
+                    ],
+                    outputs=[
+                        IOSpec(name="patches", type_desc="ndarray"),
+                        IOSpec(name="n_patches", type_desc="int"),
+                    ],
+                    concept_type=ConceptType.CUSTOM,
+                )
+            ]
+        )
+
+        plan = _attach_canonical_ir(dfg, seed)
+        ir = plan.canonical_ir
+
+        assert ir is not None
+        assert len(ir.operations) == 1
+        operation = ir.operations[0]
+        assert [binding.method_name for binding in operation.method_bindings] == [
+            "extract_patches_2d"
+        ]
+        assert [spec.name for spec in operation.direct_inputs] == [
+            "image",
+            "patch_size",
+            "max_patches",
+            "random_state",
+        ]
+        assert [output.source_method for output in operation.emitted_outputs] == [
+            "extract_patches_2d"
+        ]
+        assert [output.binding_kind for output in operation.emitted_outputs] == [
+            "return_value"
+        ]
 
     @pytest.mark.asyncio
     async def test_complex_inheritance_falls_back_to_llm_chunking(self):

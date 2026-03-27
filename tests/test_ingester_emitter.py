@@ -286,6 +286,201 @@ class TestGenerateAtomWrappers:
         assert "unused" not in source.split("_ret_0 = obj.predict", 1)[1].split("\n", 1)[0]
         assert "return _ret_0" in source
 
+    def test_canonical_function_target_preserves_symbol_name_and_calls_source_function(self):
+        atom = MacroAtomSpec(
+            name="2D Patch Sampling And Assembly",
+            method_names=["extract_patches_2d"],
+            inputs=[
+                IOSpec(name="image", type_desc="np.ndarray", constraints=""),
+                IOSpec(name="patch_size", type_desc="tuple[int, int]", constraints=""),
+                IOSpec(name="max_patches", type_desc="int | float | None", constraints=""),
+                IOSpec(name="random_state", type_desc="int | object | None", constraints=""),
+            ],
+            outputs=[IOSpec(name="patches", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="extract_patches_2d",
+            display_name="2D Patch Sampling And Assembly",
+            role="transform",
+            method_bindings=[
+                MethodBinding(
+                    method_name="extract_patches_2d",
+                    signature=[
+                        ParameterFact(name="image"),
+                        ParameterFact(name="patch_size"),
+                        ParameterFact(name="max_patches", kind="keyword_only"),
+                        ParameterFact(name="random_state", kind="keyword_only"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="patches",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="extract_patches_2d",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="extract_patches_2d",
+            source_file="image.py",
+            plan=plan,
+        )
+
+        ast.parse(source)
+        assert "def extract_patches_2d(" in source
+        assert "def atom_2d_patch_sampling_and_assembly(" not in source
+        assert "_SCIONA_SOURCE_SYMBOL: Any = getattr(_SCIONA_SOURCE_MODULE, \"extract_patches_2d\")" in source
+        assert "_ret_0 = _source_fn(image, patch_size, max_patches=max_patches, random_state=random_state)" in source
+        assert "_SCIONA_SOURCE_SYMBOL.__new__" not in source
+
+    def test_canonical_function_target_returns_direct_result_when_outputs_are_underspecified(self):
+        atom = MacroAtomSpec(
+            name="2D Patch Sampling Assembly",
+            method_names=["extract_patches_2d"],
+            inputs=[
+                IOSpec(name="image", type_desc="np.ndarray", constraints=""),
+                IOSpec(name="patch_size", type_desc="tuple[int, int]", constraints=""),
+            ],
+            outputs=[],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="extract_patches_2d",
+            display_name="2D Patch Sampling Assembly",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="extract_patches_2d",
+                    signature=[
+                        ParameterFact(name="image"),
+                        ParameterFact(name="patch_size"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="extract_patches_2d",
+            source_file="image.py",
+            plan=plan,
+        )
+
+        ast.parse(source)
+        assert "def extract_patches_2d(image: np.ndarray, patch_size: tuple[int, int]) -> object:" in source
+        assert "return _ret_0" in source
+
+    def test_source_loader_prefers_package_imports_for_packaged_python_modules(self, tmp_path):
+        pkg_dir = tmp_path / "demo_pkg"
+        pkg_dir.mkdir()
+        (pkg_dir / "__init__.py").write_text("", encoding="utf-8")
+        source_file = pkg_dir / "image.py"
+        source_file.write_text("def extract_patches_2d(image, patch_size):\n    return image\n", encoding="utf-8")
+
+        atom = MacroAtomSpec(
+            name="Extract Patches 2D",
+            method_names=["extract_patches_2d"],
+            inputs=[
+                IOSpec(name="image", type_desc="np.ndarray", constraints=""),
+                IOSpec(name="patch_size", type_desc="tuple[int, int]", constraints=""),
+            ],
+            outputs=[],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="extract_patches_2d",
+            display_name="Extract Patches 2D",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="extract_patches_2d",
+                    signature=[
+                        ParameterFact(name="image"),
+                        ParameterFact(name="patch_size"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="extract_patches_2d",
+            source_file=str(source_file),
+            plan=plan,
+        )
+
+        assert 'importlib.import_module("demo_pkg.image")' in source
+        assert "spec_from_file_location" not in source
+
+    def test_optional_inputs_do_not_get_forced_non_null_default_contracts(self):
+        atom = MacroAtomSpec(
+            name="Extract Patches 2D",
+            method_names=["extract_patches_2d"],
+            inputs=[
+                IOSpec(name="image", type_desc="np.ndarray", constraints=""),
+                IOSpec(name="patch_size", type_desc="tuple[int, int]", constraints=""),
+                IOSpec(name="max_patches", type_desc="int | float | None", constraints=""),
+                IOSpec(name="random_state", type_desc="int | object | None", constraints=""),
+            ],
+            outputs=[],
+            concept_type=ConceptType.SIGNAL_TRANSFORM,
+        )
+        operation = OperationSpec(
+            operation_id="extract_patches_2d",
+            display_name="Extract Patches 2D",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="extract_patches_2d",
+                    signature=[
+                        ParameterFact(name="image"),
+                        ParameterFact(name="patch_size"),
+                        ParameterFact(name="max_patches", kind="keyword_only"),
+                        ParameterFact(name="random_state", kind="keyword_only"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="extract_patches_2d",
+            source_file="image.py",
+            plan=plan,
+        )
+
+        assert '@icontract.require(lambda max_patches: max_patches is not None' not in source
+        assert '@icontract.require(lambda random_state: random_state is not None' not in source
+        assert "lambda result, **kwargs" not in source
+
     def test_canonical_wrapper_emits_tuple_and_attribute_bindings(self):
         atom = MacroAtomSpec(
             name="Summarize",

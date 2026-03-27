@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import ast
 import json
+import keyword
 import re
 from pathlib import Path
 
@@ -240,10 +241,58 @@ def _python_annotation_expr(type_desc: str, *, allowed_names: set[str] | None = 
     return ast.unparse(sanitized) or "object"
 
 
-def _emit_source_class_loader(class_name: str, source_file: str) -> list[str]:
-    """Load the original Python class from a source file at runtime."""
+def _python_identifier(name: str, *, prefix: str = "atom") -> str:
+    """Convert arbitrary display text into a valid Python identifier."""
+    ident = re.sub(r"[^0-9a-zA-Z_]+", "_", _snake_case(name))
+    ident = re.sub(r"_+", "_", ident).strip("_")
+    if not ident:
+        ident = prefix
+    if ident[0].isdigit():
+        ident = f"{prefix}_{ident}"
+    if keyword.iskeyword(ident):
+        ident = f"{ident}_"
+    return ident
+
+
+def _annotation_allows_none(type_desc: str) -> bool:
+    normalized = _normalize_annotation_text(type_desc)
+    return "None" in normalized or "Optional[" in normalized
+
+
+def _source_module_import_path(source_file: str) -> str:
+    """Best-effort Python module path for a source file inside a package."""
     if not source_file:
-        return [f"{class_name}: Any = object"]
+        return ""
+    path = Path(source_file).resolve()
+    if path.suffix != ".py":
+        return ""
+
+    module_parts: list[str] = []
+    if path.stem != "__init__":
+        module_parts.append(path.stem)
+
+    parent = path.parent
+    while (parent / "__init__.py").exists():
+        module_parts.append(parent.name)
+        parent = parent.parent
+
+    if len(module_parts) < 2:
+        return ""
+    return ".".join(reversed(module_parts))
+
+
+def _emit_source_class_loader(class_name: str, source_file: str) -> list[str]:
+    """Load the original Python class or function from a source file at runtime."""
+    if not source_file:
+        return ["_SCIONA_SOURCE_SYMBOL: Any = object"]
+    module_name = _source_module_import_path(source_file)
+    if module_name:
+        return [
+            "import importlib",
+            "",
+            f'_SCIONA_SOURCE_MODULE = importlib.import_module("{module_name}")',
+            f'_SCIONA_SOURCE_SYMBOL: Any = getattr(_SCIONA_SOURCE_MODULE, "{class_name}")',
+        ]
     path_literal = repr(str(Path(source_file).resolve()))
     return [
         "import importlib.util",
@@ -254,7 +303,7 @@ def _emit_source_class_loader(class_name: str, source_file: str) -> list[str]:
         '    raise ImportError(f"Unable to load source module from {_SCIONA_SOURCE_FILE}")',
         "_SCIONA_SOURCE_MODULE = importlib.util.module_from_spec(_SCIONA_SOURCE_SPEC)",
         "_SCIONA_SOURCE_SPEC.loader.exec_module(_SCIONA_SOURCE_MODULE)",
-        f'{class_name}: Any = getattr(_SCIONA_SOURCE_MODULE, "{class_name}")',
+        f'_SCIONA_SOURCE_SYMBOL: Any = getattr(_SCIONA_SOURCE_MODULE, "{class_name}")',
     ]
 
 
@@ -1030,17 +1079,27 @@ def _emit_canonical_wrapper_body(
         raise ValueError(f"{atom.name}: canonical operation has no method bindings")
 
     wrapper_input_names = {spec.name for spec in wrapper_inputs}
+    direct_function_call = (
+        source_language == "python"
+        and not stateful
+        and len(bindings) == 1
+        and not required_slots
+        and bindings[0].method_name == class_name
+    )
     if source_language == "python":
-        lines.append(f"    obj = {class_name}.__new__({class_name})")
-        for slot_name in required_slots:
-            slot = slot_map.get(slot_name)
-            if slot_name in state_model_fields and stateful:
-                lines.append(f"    obj.{slot_name} = state.{slot_name}")
-                continue
-            if slot is not None and slot.state_kind == "config" and slot_name in wrapper_input_names:
-                lines.append(f"    obj.{slot_name} = {slot_name}")
-                continue
-            raise ValueError(f"{atom.name}: no canonical source for required state slot {slot_name!r}")
+        if direct_function_call:
+            lines.append("    _source_fn = _SCIONA_SOURCE_SYMBOL")
+        else:
+            lines.append("    obj = _SCIONA_SOURCE_SYMBOL.__new__(_SCIONA_SOURCE_SYMBOL)")
+            for slot_name in required_slots:
+                slot = slot_map.get(slot_name)
+                if slot_name in state_model_fields and stateful:
+                    lines.append(f"    obj.{slot_name} = state.{slot_name}")
+                    continue
+                if slot is not None and slot.state_kind == "config" and slot_name in wrapper_input_names:
+                    lines.append(f"    obj.{slot_name} = {slot_name}")
+                    continue
+                raise ValueError(f"{atom.name}: no canonical source for required state slot {slot_name!r}")
     elif required_slots or stateful:
         raise ValueError(
             f"{atom.name}: canonical non-python emission does not support required state"
@@ -1057,7 +1116,10 @@ def _emit_canonical_wrapper_body(
         return_vars[binding.method_name] = return_var
         if source_language == "python":
             call_expr = ", ".join(call_args)
-            lines.append(f"    {return_var} = obj.{binding.method_name}({call_expr})")
+            if direct_function_call:
+                lines.append(f"    {return_var} = _source_fn({call_expr})")
+            else:
+                lines.append(f"    {return_var} = obj.{binding.method_name}({call_expr})")
         else:
             if len(bindings) > 1:
                 raise ValueError(
@@ -1101,13 +1163,14 @@ def _emit_canonical_wrapper_body(
         if expression is not None:
             value_expressions.append(expression)
 
-    if atom.outputs and len(value_expressions) != len(atom.outputs):
+    expected_output_count = len(output_bindings) if direct_function_call else len(atom.outputs)
+    if expected_output_count and len(value_expressions) != expected_output_count:
         raise ValueError(
-            f"{atom.name}: canonical bindings resolved {len(value_expressions)} outputs for {len(atom.outputs)} declared outputs"
+            f"{atom.name}: canonical bindings resolved {len(value_expressions)} outputs for {expected_output_count} declared outputs"
         )
 
     if not value_expressions:
-        result_expr = "None"
+        result_expr = fallback_return_var if direct_function_call else "None"
     elif len(value_expressions) == 1:
         result_expr = value_expressions[0]
     else:
@@ -1352,7 +1415,7 @@ def generate_atom_wrappers(
         )
 
     for atom in macro_atoms:
-        fn_name = _snake_case(atom.name)
+        fn_name = _python_identifier(atom.name)
         witness_fn = witness_names.get(atom.name, f"witness_{fn_name}")
 
         canonical_context = _canonical_emission_context(
@@ -1370,6 +1433,13 @@ def generate_atom_wrappers(
             canonical_bindings = canonical_context["bindings"]
             canonical_outputs = canonical_context["output_bindings"]
             canonical_wrapper_inputs = canonical_context["wrapper_inputs"]
+            if (
+                source_language == "python"
+                and class_name
+                and len(canonical_bindings) == 1
+                and canonical_bindings[0].method_name == class_name
+            ):
+                fn_name = _python_identifier(class_name)
 
         # Build parameter list
         params = []
@@ -1388,6 +1458,14 @@ def generate_atom_wrappers(
                 canonical_outputs,
                 allowed_names=allowed_names,
             )
+            if (
+                ret_type == "None"
+                and source_language == "python"
+                and class_name
+                and len(canonical_bindings) == 1
+                and canonical_bindings[0].method_name == class_name
+            ):
+                ret_type = "object"
         elif atom.outputs:
             if len(atom.outputs) == 1:
                 ret_type = _python_annotation_expr(
@@ -1417,21 +1495,24 @@ def generate_atom_wrappers(
         if not has_require:
             # Add a basic type check for each input
             for inp in wrapper_inputs:
-                if "np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc:
+                allows_none = _annotation_allows_none(inp.type_desc)
+                if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
-                elif "float" in inp.type_desc:
+                elif "float" in inp.type_desc and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, (float, int, np.number)), "{inp.name} must be numeric")')
             # If still no require, add a generic one
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
                 for inp in wrapper_inputs:
+                    if _annotation_allows_none(inp.type_desc):
+                        continue
                     lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')
 
         if not has_ensure:
             if atom.outputs:
                 if len(atom.outputs) == 1:
-                    lines.append(f'@icontract.ensure(lambda result, **kwargs: result is not None, "{atom.name} output must not be None")')
+                    lines.append(f'@icontract.ensure(lambda result: result is not None, "{atom.name} output must not be None")')
                 else:
-                    lines.append(f'@icontract.ensure(lambda result, **kwargs: all(r is not None for r in result), "{atom.name} all outputs must not be None")')
+                    lines.append(f'@icontract.ensure(lambda result: all(r is not None for r in result), "{atom.name} all outputs must not be None")')
 
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
 
@@ -1580,7 +1661,7 @@ def generate_stateful_wrappers(
         lines.append("")
 
     for atom in macro_atoms:
-        fn_name = _snake_case(atom.name)
+        fn_name = _python_identifier(atom.name)
         witness_fn = witness_names.get(atom.name, f"witness_{fn_name}")
         canonical_context = _canonical_emission_context(
             atom,
@@ -1638,20 +1719,23 @@ def generate_stateful_wrappers(
 
         if not has_require:
             for inp in wrapper_inputs:
-                if "np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc:
+                allows_none = _annotation_allows_none(inp.type_desc)
+                if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
-                elif "float" in inp.type_desc:
+                elif "float" in inp.type_desc and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, (float, int, np.number)), "{inp.name} must be numeric")')
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
                 for inp in wrapper_inputs:
+                    if _annotation_allows_none(inp.type_desc):
+                        continue
                     lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')
 
         if not has_ensure:
             if atom.outputs:
                 if len(atom.outputs) == 1:
-                    lines.append(f'@icontract.ensure(lambda result, **kwargs: result is not None, "{atom.name} output must not be None")')
+                    lines.append(f'@icontract.ensure(lambda result: result is not None, "{atom.name} output must not be None")')
                 else:
-                    lines.append(f'@icontract.ensure(lambda result, **kwargs: all(r is not None for r in result), "{atom.name} all outputs must not be None")')
+                    lines.append(f'@icontract.ensure(lambda result: all(r is not None for r in result), "{atom.name} all outputs must not be None")')
 
         lines.append(f"def {fn_name}({param_str}) -> {ret_type}:")
 
@@ -1703,7 +1787,7 @@ def generate_stateful_wrappers(
             lines.append('    """')
 
             # Instantiate via __new__
-            lines.append(f"    obj = {class_name}.__new__({class_name})")
+            lines.append("    obj = _SCIONA_SOURCE_SYMBOL.__new__(_SCIONA_SOURCE_SYMBOL)")
 
             # Inject ALL state fields
             for field_name, _ in state_model.fields:
