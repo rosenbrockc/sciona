@@ -1151,6 +1151,7 @@ def _canonical_witness_param_specs(
         "wrapper_inputs": wrapper_inputs,
         "output_bindings": output_bindings,
         "effects": effects,
+        "param_facts": _binding_parameter_facts(canonical_context["bindings"]),
         "role": role or "unknown",
         "display_name": (
             group.display_name
@@ -1158,6 +1159,43 @@ def _canonical_witness_param_specs(
             else operation.display_name
         ),
     }
+
+
+def _witness_param_type(
+    spec: IOSpec,
+    *,
+    param_fact: ParameterFact | None,
+    concept_type: ConceptType,
+) -> str:
+    type_desc = spec.type_desc
+    if (not type_desc or type_desc in {"Any", "object"}) and param_fact is not None and param_fact.annotation:
+        type_desc = param_fact.annotation
+    abstract_type = _ghost_abstract_type(type_desc, concept_type)
+    if param_fact is None:
+        return abstract_type
+    if param_fact.kind == "vararg":
+        return f"tuple[{abstract_type}, ...]"
+    if param_fact.kind == "kwarg":
+        value_type = (
+            "AbstractScalar"
+            if not type_desc or type_desc in {"Any", "object"}
+            else abstract_type
+        )
+        return f"dict[str, {value_type}]"
+    return abstract_type
+
+
+def _witness_primary_input_name(
+    witness_inputs: list[IOSpec],
+    *,
+    param_facts: dict[str, ParameterFact],
+) -> str | None:
+    for inp in witness_inputs:
+        fact = param_facts.get(inp.name)
+        if fact is not None and fact.kind in {"vararg", "kwarg"}:
+            continue
+        return inp.name
+    return witness_inputs[0].name if witness_inputs else None
 
 
 def _canonical_node_iospecs(
@@ -2429,9 +2467,18 @@ def generate_ghost_witnesses(
             if canonical_witness is not None
             else list(atom.inputs)
         )
+        witness_param_facts = (
+            dict(canonical_witness["param_facts"])
+            if canonical_witness is not None
+            else {}
+        )
         for inp in witness_inputs:
             param_type = (
-                _ghost_abstract_type(inp.type_desc, atom.concept_type)
+                _witness_param_type(
+                    inp,
+                    param_fact=witness_param_facts.get(inp.name),
+                    concept_type=atom.concept_type,
+                )
                 if canonical_witness is not None
                 else abstract_type
             )
@@ -2490,7 +2537,10 @@ def generate_ghost_witnesses(
             lines.append(f'    """Ghost witness for {atom.name}."""')
 
         if canonical_output_types:
-            first_input = witness_inputs[0].name if witness_inputs else None
+            first_input = _witness_primary_input_name(
+                witness_inputs,
+                param_facts=witness_param_facts,
+            )
             result_exprs = [
                 _ghost_constructor_expr(result_type, first_input)
                 for result_type in canonical_output_types

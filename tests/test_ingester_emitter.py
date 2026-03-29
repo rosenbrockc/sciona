@@ -1056,6 +1056,65 @@ class TestGenerateGhostWitnesses:
         assert "unused" not in source
         ast.parse(source)
 
+    def test_canonical_witness_uses_conservative_variadic_surrogates(self):
+        atom = MacroAtomSpec(
+            name="Aggregate",
+            method_names=["aggregate"],
+            inputs=[
+                IOSpec(name="head", type_desc="float", constraints=""),
+                IOSpec(name="args", type_desc="tuple[float, ...]", constraints=""),
+                IOSpec(name="scale", type_desc="float", constraints=""),
+                IOSpec(name="kwargs", type_desc="Mapping[str, Any]", constraints=""),
+            ],
+            outputs=[IOSpec(name="result", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="aggregate",
+            display_name="Aggregate",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="aggregate",
+                    signature=[
+                        ParameterFact(name="head", annotation="float"),
+                        ParameterFact(name="args", annotation="float", kind="vararg"),
+                        ParameterFact(
+                            name="scale",
+                            annotation="float",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="1.0",
+                        ),
+                        ParameterFact(name="kwargs", annotation="Any", kind="kwarg"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="float",
+                    binding_kind="return_value",
+                    source_method="aggregate",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+
+        source, _ = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            plan=plan,
+        )
+
+        assert (
+            "def witness_aggregate(head: AbstractScalar, args: tuple[AbstractScalar, ...], scale: AbstractScalar, kwargs: dict[str, AbstractArray]) -> AbstractScalar:"
+            in source
+        )
+        assert "args: AbstractScalar" not in source
+        assert "kwargs: AbstractScalar" not in source
+        ast.parse(source)
+
 
 # ---------------------------------------------------------------------------
 # Tests: build_cdg_export
