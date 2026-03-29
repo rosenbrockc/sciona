@@ -971,6 +971,17 @@ def _wrapper_param_list(
     return params
 
 
+def _skip_default_contract(
+    spec: IOSpec,
+    fact: ParameterFact | None,
+) -> bool:
+    if fact is None:
+        return False
+    if fact.has_default:
+        return True
+    return fact.kind in {"vararg", "kwarg"}
+
+
 def _canonical_output_expression(
     binding: OutputBindingSpec,
     return_vars: dict[str, str],
@@ -1716,7 +1727,7 @@ def generate_atom_wrappers(
             # Add a basic type check for each input
             for inp in wrapper_inputs:
                 fact = param_facts.get(inp.name)
-                if fact is not None and fact.has_default:
+                if _skip_default_contract(inp, fact):
                     continue
                 allows_none = _annotation_allows_none(inp.type_desc)
                 if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
@@ -1727,7 +1738,7 @@ def generate_atom_wrappers(
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
                 for inp in wrapper_inputs:
                     fact = param_facts.get(inp.name)
-                    if fact is not None and fact.has_default:
+                    if _skip_default_contract(inp, fact):
                         continue
                     if _annotation_allows_none(inp.type_desc):
                         continue
@@ -1952,7 +1963,7 @@ def generate_stateful_wrappers(
         if not has_require:
             for inp in wrapper_inputs:
                 fact = param_facts.get(inp.name)
-                if fact is not None and fact.has_default:
+                if _skip_default_contract(inp, fact):
                     continue
                 allows_none = _annotation_allows_none(inp.type_desc)
                 if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
@@ -1962,7 +1973,7 @@ def generate_stateful_wrappers(
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
                 for inp in wrapper_inputs:
                     fact = param_facts.get(inp.name)
-                    if fact is not None and fact.has_default:
+                    if _skip_default_contract(inp, fact):
                         continue
                     if _annotation_allows_none(inp.type_desc):
                         continue

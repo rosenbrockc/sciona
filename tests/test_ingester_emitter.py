@@ -202,6 +202,7 @@ class TestGenerateAtomWrappers:
             witness_names,
         )
         assert "@register_atom" in source
+        assert '@register_atom("witness_' not in source
         assert "signal_conditioner" in source
         assert "beat_detector" in source
 
@@ -623,6 +624,8 @@ class TestGenerateAtomWrappers:
         assert "def aggregate(head: float, *args: float, scale: float = _SCIONA_UNSET, **kwargs: Any) -> float:" in source
         assert "_ret_0 = obj.aggregate(head, *args, **_call_kwargs_0)" in source
         assert "_call_kwargs_0.update(kwargs)" in source
+        assert "lambda args: isinstance(args, (float, int, np.number))" not in source
+        assert "lambda kwargs: isinstance(kwargs, (float, int, np.number))" not in source
 
     def test_canonical_wrapper_preserves_positional_only_parameters(self):
         atom = MacroAtomSpec(
