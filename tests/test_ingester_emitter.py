@@ -505,6 +505,189 @@ class TestGenerateAtomWrappers:
         assert "if random_state is not _SCIONA_UNSET:" in source
         assert "lambda result, **kwargs" not in source
 
+    def test_canonical_wrapper_signature_follows_binding_order_not_iospec_order(self):
+        atom = MacroAtomSpec(
+            name="Reorder",
+            method_names=["reorder"],
+            inputs=[
+                IOSpec(name="beta", type_desc="float", constraints=""),
+                IOSpec(name="alpha", type_desc="float", constraints=""),
+                IOSpec(name="unused", type_desc="float", constraints=""),
+            ],
+            outputs=[IOSpec(name="result", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="reorder",
+            display_name="Reorder",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="reorder",
+                    signature=[
+                        ParameterFact(name="self"),
+                        ParameterFact(name="alpha", annotation="float"),
+                        ParameterFact(
+                            name="beta",
+                            annotation="float",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="0.5",
+                        ),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="float",
+                    binding_kind="return_value",
+                    source_method="reorder",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert "def reorder(alpha: float, *, beta: float = _SCIONA_UNSET) -> float:" in source
+        assert "unused" not in source.split("def reorder(", 1)[1].split(")", 1)[0]
+
+    def test_canonical_wrapper_preserves_varargs_and_kwargs_in_public_signature(self):
+        atom = MacroAtomSpec(
+            name="Aggregate",
+            method_names=["aggregate"],
+            inputs=[
+                IOSpec(name="head", type_desc="float", constraints=""),
+                IOSpec(name="args", type_desc="tuple[float, ...]", constraints=""),
+                IOSpec(name="scale", type_desc="float", constraints=""),
+                IOSpec(name="kwargs", type_desc="Mapping[str, Any]", constraints=""),
+            ],
+            outputs=[IOSpec(name="result", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="aggregate",
+            display_name="Aggregate",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="aggregate",
+                    signature=[
+                        ParameterFact(name="self"),
+                        ParameterFact(name="head", annotation="float"),
+                        ParameterFact(name="args", annotation="float", kind="vararg"),
+                        ParameterFact(
+                            name="scale",
+                            annotation="float",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="1.0",
+                        ),
+                        ParameterFact(name="kwargs", annotation="Any", kind="kwarg"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="float",
+                    binding_kind="return_value",
+                    source_method="aggregate",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        ast.parse(source)
+        assert "def aggregate(head: float, *args: float, scale: float = _SCIONA_UNSET, **kwargs: Any) -> float:" in source
+        assert "_ret_0 = obj.aggregate(head, *args, **_call_kwargs_0)" in source
+        assert "_call_kwargs_0.update(kwargs)" in source
+
+    def test_canonical_wrapper_preserves_positional_only_parameters(self):
+        atom = MacroAtomSpec(
+            name="Solve",
+            method_names=["solve"],
+            inputs=[
+                IOSpec(name="lhs", type_desc="float", constraints=""),
+                IOSpec(name="rhs", type_desc="float", constraints=""),
+                IOSpec(name="scale", type_desc="float", constraints=""),
+            ],
+            outputs=[IOSpec(name="result", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="solve",
+            display_name="Solve",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="solve",
+                    signature=[
+                        ParameterFact(name="lhs", annotation="float", kind="positional_only"),
+                        ParameterFact(
+                            name="rhs",
+                            annotation="float",
+                            kind="positional_only",
+                            has_default=True,
+                            default_expression="0.0",
+                        ),
+                        ParameterFact(
+                            name="scale",
+                            annotation="float",
+                            kind="keyword_only",
+                            has_default=True,
+                            default_expression="1.0",
+                        ),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="float",
+                    binding_kind="return_value",
+                    source_method="solve",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="solve",
+            source_file="solver.py",
+            plan=plan,
+        )
+
+        ast.parse(source)
+        assert "def solve(lhs: float, rhs: float = 0.0, /, *, scale: float = _SCIONA_UNSET) -> float:" in source
+        assert "_ret_0 = _source_fn(lhs, rhs, **_call_kwargs_0)" in source
+
     def test_canonical_wrapper_emits_tuple_and_attribute_bindings(self):
         atom = MacroAtomSpec(
             name="Summarize",
@@ -659,6 +842,101 @@ class TestGenerateAtomWrappers:
 
         assert 'raise NotImplementedError("Score: canonical bindings resolved 0 outputs for 1 declared outputs")' in source
         assert "obj.score = " not in source
+
+    def test_canonical_wrapper_treats_single_unknown_output_as_passthrough(self):
+        atom = MacroAtomSpec(
+            name="Aggregate",
+            method_names=["aggregate"],
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray", constraints="")],
+            outputs=[IOSpec(name="result", type_desc="float", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="aggregate",
+            display_name="Aggregate",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="aggregate",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="signal")],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="float",
+                    binding_kind="unknown",
+                    source_method="aggregate",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert "_ret_0 = obj.aggregate(signal)" in source
+        assert "return _ret_0" in source
+        assert "unsupported binding kind 'unknown'" not in source
+
+    def test_canonical_wrapper_keeps_multi_output_unknown_bindings_fail_closed(self):
+        atom = MacroAtomSpec(
+            name="Split",
+            method_names=["split"],
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray", constraints="")],
+            outputs=[
+                IOSpec(name="left", type_desc="float", constraints=""),
+                IOSpec(name="right", type_desc="float", constraints=""),
+            ],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="split",
+            display_name="Split",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="split",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="signal")],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="left",
+                    type_desc="float",
+                    binding_kind="unknown",
+                    source_method="split",
+                ),
+                OutputBindingSpec(
+                    output_name="right",
+                    type_desc="float",
+                    binding_kind="unknown",
+                    source_method="split",
+                ),
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert "unsupported binding kind 'unknown' for left" in source
 
     def test_non_python_canonical_wrapper_uses_ffi_stub(self):
         atom = MacroAtomSpec(

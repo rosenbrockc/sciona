@@ -801,6 +801,68 @@ def _canonical_wrapper_inputs(
     return filtered_inputs
 
 
+def _binding_param_iospec(
+    param: ParameterFact,
+    *,
+    base_specs_by_name: dict[str, IOSpec],
+) -> IOSpec:
+    spec = base_specs_by_name.get(param.name)
+    if spec is None:
+        return IOSpec(
+            name=param.name,
+            type_desc=param.annotation or "Any",
+            constraints="",
+        )
+    type_desc = spec.type_desc or param.annotation or "Any"
+    if type_desc in {"Any", "object"} and param.annotation:
+        type_desc = param.annotation
+    return IOSpec(
+        name=spec.name,
+        type_desc=type_desc,
+        constraints=spec.constraints,
+    )
+
+
+def _binding_driven_wrapper_inputs(
+    *,
+    base_inputs: list[IOSpec],
+    bindings: list[MethodBinding],
+    required_slots: list[str],
+    slot_map: dict[str, StateSlotSpec],
+    state_model_fields: dict[str, str],
+) -> list[IOSpec]:
+    base_specs_by_name = {spec.name: spec for spec in base_inputs}
+    wrapper_inputs: list[IOSpec] = []
+    wrapper_input_names: set[str] = set()
+
+    for binding in bindings:
+        for param in binding.signature:
+            if param.name == "self" or param.name in wrapper_input_names:
+                continue
+            wrapper_inputs.append(
+                _binding_param_iospec(param, base_specs_by_name=base_specs_by_name)
+            )
+            wrapper_input_names.add(param.name)
+
+    if not wrapper_inputs:
+        for spec in base_inputs:
+            if spec.name in wrapper_input_names:
+                continue
+            wrapper_inputs.append(spec)
+            wrapper_input_names.add(spec.name)
+
+    for slot_name in required_slots:
+        slot = slot_map.get(slot_name)
+        if slot is None or slot.state_kind != "config":
+            continue
+        if slot_name in wrapper_input_names or slot_name in state_model_fields:
+            continue
+        wrapper_inputs.append(IOSpec(name=slot_name, type_desc=slot.type_desc or "Any"))
+        wrapper_input_names.add(slot_name)
+
+    return wrapper_inputs
+
+
 def _canonical_call_arguments(
     binding: MethodBinding,
     available_inputs: set[str],
@@ -845,11 +907,26 @@ def _wrapper_param_declaration(
     allowed_names: set[str],
     param_facts: dict[str, ParameterFact],
 ) -> str:
-    annotation = _python_annotation_expr(spec.type_desc, allowed_names=allowed_names)
     fact = param_facts.get(spec.name)
-    if fact is not None and fact.has_default and fact.kind not in {"vararg", "kwarg"}:
-        return f"{spec.name}: {annotation} = _SCIONA_UNSET"
-    return f"{spec.name}: {annotation}"
+    type_desc = spec.type_desc
+    if fact is not None and fact.kind in {"vararg", "kwarg"} and fact.annotation:
+        type_desc = fact.annotation
+    elif (not type_desc or type_desc in {"Any", "object"}) and fact is not None and fact.annotation:
+        type_desc = fact.annotation
+    annotation = _python_annotation_expr(type_desc, allowed_names=allowed_names)
+
+    prefix = ""
+    if fact is not None and fact.kind == "vararg":
+        prefix = "*"
+    elif fact is not None and fact.kind == "kwarg":
+        prefix = "**"
+
+    if fact is not None and fact.has_default:
+        if fact.kind == "positional_only" and fact.default_expression:
+            return f"{prefix}{spec.name}: {annotation} = {fact.default_expression}"
+        if fact.kind not in {"vararg", "kwarg"}:
+            return f"{prefix}{spec.name}: {annotation} = _SCIONA_UNSET"
+    return f"{prefix}{spec.name}: {annotation}"
 
 
 def _wrapper_param_list(
@@ -861,11 +938,17 @@ def _wrapper_param_list(
     params: list[str] = []
     inserted_kwonly_barrier = False
     seen_default = False
+    needs_posonly_terminator = False
     for spec in wrapper_inputs:
         fact = param_facts.get(spec.name)
+        kind = fact.kind if fact is not None and fact.kind else "positional_or_keyword"
+        if needs_posonly_terminator and kind != "positional_only":
+            params.append("/")
+            needs_posonly_terminator = False
         if (
             not inserted_kwonly_barrier
             and fact is not None
+            and fact.kind != "vararg"
             and (fact.kind == "keyword_only" or seen_default)
         ):
             params.append("*")
@@ -877,8 +960,14 @@ def _wrapper_param_list(
                 param_facts=param_facts,
             )
         )
-        if fact is not None and fact.has_default and fact.kind not in {"vararg", "kwarg"}:
+        if kind == "positional_only":
+            needs_posonly_terminator = True
+        if kind == "vararg":
+            inserted_kwonly_barrier = True
+        if fact is not None and fact.has_default and fact.kind in {"positional_or_keyword", "keyword_only", ""}:
             seen_default = True
+    if needs_posonly_terminator:
+        params.append("/")
     return params
 
 
@@ -913,6 +1002,31 @@ def _canonical_output_expression(
             return None, f"constant binding for {binding.output_name} has no literal expression"
         return binding.source_attr, None
     return None, f"unsupported binding kind {binding.binding_kind!r} for {binding.output_name}"
+
+
+def _normalize_output_bindings(
+    atom: MacroAtomSpec,
+    output_bindings: list[OutputBindingSpec],
+) -> list[OutputBindingSpec]:
+    if len(output_bindings) != 1:
+        return output_bindings
+    binding = output_bindings[0]
+    if (
+        binding.binding_kind == "unknown"
+        and not binding.source_attr
+        and binding.tuple_index is None
+        and len(atom.outputs) <= 1
+    ):
+        return [
+            OutputBindingSpec(
+                output_name=binding.output_name,
+                type_desc=binding.type_desc,
+                binding_kind="return_value",
+                source_method=binding.source_method,
+                provenance=list(binding.provenance),
+            )
+        ]
+    return output_bindings
 
 
 def _canonical_return_annotation(
@@ -1130,6 +1244,7 @@ def _emit_canonical_wrapper_body(
 ) -> None:
     if not bindings:
         raise ValueError(f"{atom.name}: canonical operation has no method bindings")
+    output_bindings = _normalize_output_bindings(atom, output_bindings)
 
     wrapper_input_names = {spec.name for spec in wrapper_inputs}
     direct_function_call = (
@@ -1424,24 +1539,18 @@ def _canonical_emission_context(
     if not base_inputs:
         base_inputs = list(atom.inputs)
 
-    wrapper_inputs: list[IOSpec] = []
-    wrapper_input_names: set[str] = set()
-    for spec in base_inputs:
-        if binding_param_names and spec.name not in binding_param_names:
-            continue
-        if spec.name in wrapper_input_names:
-            continue
-        wrapper_inputs.append(spec)
-        wrapper_input_names.add(spec.name)
-
-    for slot_name in required_slots:
-        slot = slot_map.get(slot_name)
-        if slot is None or slot.state_kind != "config":
-            continue
-        if slot_name in wrapper_input_names or slot_name in state_model_fields:
-            continue
-        wrapper_inputs.append(IOSpec(name=slot_name, type_desc=slot.type_desc or "Any"))
-        wrapper_input_names.add(slot_name)
+    filtered_base_inputs = [
+        spec
+        for spec in base_inputs
+        if not binding_param_names or spec.name in binding_param_names
+    ]
+    wrapper_inputs = _binding_driven_wrapper_inputs(
+        base_inputs=filtered_base_inputs,
+        bindings=bindings,
+        required_slots=required_slots,
+        slot_map=slot_map,
+        state_model_fields=state_model_fields,
+    )
 
     return {
         "canonical_ir": canonical_ir,

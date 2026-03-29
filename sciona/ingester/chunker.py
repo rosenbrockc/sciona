@@ -317,6 +317,11 @@ def _binding_from_return_fact(
     )
 
 
+def _is_metadata_method(method_name: str) -> bool:
+    lowered = method_name.lower()
+    return any(token in lowered for token in ("metadata", "routing", "tag"))
+
+
 def _match_output_name_to_attr(output_name: str, attrs: set[str]) -> str:
     if output_name in attrs:
         return output_name
@@ -411,6 +416,21 @@ def _infer_output_bindings(
             )
             if return_pair is not None:
                 method, fact = return_pair
+                if len(legacy_outputs) == 1 and fact.kind == "unknown":
+                    bindings.append(
+                        OutputBindingSpec(
+                            output_name=legacy_output.name,
+                            type_desc=legacy_output.type_desc or "Any",
+                            binding_kind=(
+                                "metadata_object"
+                                if _is_metadata_method(method.name)
+                                else "return_value"
+                            ),
+                            source_method=method.name,
+                            provenance=[fact.provenance],
+                        )
+                    )
+                    continue
                 bindings.append(
                     _binding_from_return_fact(
                         method,
@@ -477,6 +497,21 @@ def _infer_output_bindings(
                         provenance=[fact.provenance],
                     )
                 )
+            continue
+        if fact.kind == "unknown":
+            bindings.append(
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc=method.return_type or "Any",
+                    binding_kind=(
+                        "metadata_object"
+                        if _is_metadata_method(method.name)
+                        else "return_value"
+                    ),
+                    source_method=method.name,
+                    provenance=[fact.provenance],
+                )
+            )
             continue
         bindings.append(
             _binding_from_return_fact(method, fact, "result", method.return_type or "Any")

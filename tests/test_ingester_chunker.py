@@ -155,6 +155,29 @@ def _make_function_target_dfg() -> RawDataFlowGraph:
     )
 
 
+def _make_unknown_return_dfg(*, metadata: bool = False) -> RawDataFlowGraph:
+    prov = FactProvenance(
+        rule_id="test",
+        span=SourceSpan(file_path="demo.py", line_start=1, line_end=1),
+    )
+    method_name = "get_metadata_routing" if metadata else "aggregate"
+    return RawDataFlowGraph(
+        class_name=method_name,
+        methods=[
+            MethodFact(
+                name=method_name,
+                params=["signal"],
+                signature=[ParameterFact(name="signal", provenance=prov)],
+                return_type="float",
+                return_facts=[ReturnFact(kind="unknown", provenance=prov)],
+                semantic_role="query_or_metadata",
+                provenance=[prov],
+            ),
+        ],
+        internal_call_graph={},
+    )
+
+
 def _make_inherited_dfg() -> RawDataFlowGraph:
     dfg = _make_simple_utility_dfg()
     dfg.opaque_base_classes = ["BaseUtility"]
@@ -503,6 +526,29 @@ class TestProposeMacroAtoms:
         assert [output.binding_kind for output in operation.emitted_outputs] == [
             "return_value"
         ]
+
+    def test_unknown_single_output_return_falls_back_to_passthrough_binding(self):
+        dfg = _make_unknown_return_dfg()
+        seed = ProposedMacroPlan(
+            macro_atoms=[
+                MacroAtomSpec(
+                    name="Aggregate",
+                    method_names=["aggregate"],
+                    inputs=[IOSpec(name="signal", type_desc="ndarray")],
+                    outputs=[IOSpec(name="result", type_desc="float")],
+                    concept_type=ConceptType.CUSTOM,
+                )
+            ]
+        )
+
+        plan = _attach_canonical_ir(dfg, seed)
+        ir = plan.canonical_ir
+
+        assert ir is not None
+        operation = ir.operations[0]
+        assert len(operation.emitted_outputs) == 1
+        assert operation.emitted_outputs[0].binding_kind == "return_value"
+        assert operation.emitted_outputs[0].output_name == "result"
 
     @pytest.mark.asyncio
     async def test_complex_inheritance_falls_back_to_llm_chunking(self):
