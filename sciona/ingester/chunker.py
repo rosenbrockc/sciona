@@ -57,6 +57,7 @@ from sciona.ingester.prompts import (
     SEMANTIC_CHUNK_SYSTEM,
     SEMANTIC_CHUNK_USER,
 )
+from sciona.ingester.return_shapes import resolve_structured_return_bindings
 from sciona.llm_router import (
     INGESTER_ABSTRACT,
     INGESTER_CHUNK,
@@ -337,11 +338,20 @@ def _match_output_name_to_attr(output_name: str, attrs: set[str]) -> str:
 
 
 def _infer_output_bindings(
+    subject_name: str,
     methods: list[MethodFact],
     legacy_outputs: list[IOSpec],
 ) -> list[OutputBindingSpec]:
     if not methods:
         return []
+
+    structured_bindings = resolve_structured_return_bindings(
+        subject_name=subject_name,
+        methods=methods,
+        legacy_outputs=legacy_outputs,
+    )
+    if structured_bindings is not None:
+        return structured_bindings
 
     return_pairs: list[tuple[MethodFact, Any]] = []
     for method in methods:
@@ -619,9 +629,9 @@ def _build_ingest_ir(
         if function_target is not None and function_target.name in atom.method_names:
             methods = [function_target]
             direct_inputs = _default_direct_inputs([function_target])
-            outputs = _infer_output_bindings([function_target], [])
+            outputs = _infer_output_bindings(dfg.class_name, [function_target], [])
         else:
-            outputs = _infer_output_bindings(methods, atom.outputs)
+            outputs = _infer_output_bindings(dfg.class_name, methods, atom.outputs)
         operation = OperationSpec(
             operation_id=_op_id(atom.name),
             display_name=atom.name,

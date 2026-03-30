@@ -1008,6 +1008,10 @@ def _canonical_output_expression(
         if binding.tuple_index is None:
             return None, f"tuple_element binding for {binding.output_name} has no tuple_index"
         return f"{source_var}[{binding.tuple_index}]", None
+    if binding.binding_kind == "dict_field":
+        if not binding.source_attr:
+            return None, f"dict_field binding for {binding.output_name} has no field key"
+        return f"{source_var}[{binding.source_attr!r}]", None
     if binding.binding_kind == "constant":
         if not binding.source_attr:
             return None, f"constant binding for {binding.output_name} has no literal expression"
