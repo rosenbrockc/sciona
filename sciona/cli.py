@@ -636,6 +636,16 @@ def main() -> None:
         help="Output directory for generated files",
     )
     ingest_parser.add_argument(
+        "--output-scope",
+        dest="output_scope",
+        choices=["symbol", "family"],
+        default=None,
+        help=(
+            "Publication scope for the output directory "
+            "(default: infer from output path)"
+        ),
+    )
+    ingest_parser.add_argument(
         "--llm-provider",
         choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,

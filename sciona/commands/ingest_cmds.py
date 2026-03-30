@@ -21,6 +21,29 @@ from sciona.commands._helpers import (
     _warm_llm_if_supported,
     _write_shared_context_metrics_file,
 )
+from sciona.ingester.monitor import (
+    OUTPUT_SCOPE_FAMILY,
+    OUTPUT_SCOPE_SYMBOL,
+    OUTPUT_SCOPE_VALUES,
+    STANDARD_ARTIFACT_SURFACE,
+)
+
+
+def _resolve_output_scope(
+    args: argparse.Namespace,
+    *,
+    output_dir: Path,
+) -> tuple[str, str]:
+    raw_scope = str(getattr(args, "output_scope", "") or "").strip().lower()
+    if raw_scope:
+        if raw_scope not in OUTPUT_SCOPE_VALUES:
+            valid = ", ".join(sorted(OUTPUT_SCOPE_VALUES))
+            raise ValueError(f"invalid output scope '{raw_scope}'; expected one of: {valid}")
+        return raw_scope, "argument"
+
+    if getattr(args, "output", None) and output_dir.name != args.class_name:
+        return OUTPUT_SCOPE_FAMILY, "inferred_from_output_dir"
+    return OUTPUT_SCOPE_SYMBOL, "default_symbol"
 
 
 def _cmd_ingest_status(args: argparse.Namespace) -> None:
@@ -53,10 +76,13 @@ def _cmd_ingest_status(args: argparse.Namespace) -> None:
     else:
         phase = str(status.get("phase", "")) if status else ""
         step = str(status.get("current_step", "")) if status else ""
+        output_scope = str(status.get("output_scope", "")) if status else ""
         last_heartbeat = float(status.get("last_heartbeat_at") or 0.0) if status else 0.0
         heartbeat_age = max(0.0, time.time() - last_heartbeat) if last_heartbeat else 0.0
         print(f"state={derived_state}")
         print(f"output={output_dir}")
+        if output_scope:
+            print(f"output_scope={output_scope}")
         if phase:
             print(f"phase={phase}")
         if step:
@@ -95,6 +121,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     output_dir = Path(args.output) if args.output else Path("output") / args.class_name
+    output_scope, output_scope_source = _resolve_output_scope(args, output_dir=output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     _print_mode_summary("ingest", mode_settings)
 
@@ -122,6 +149,8 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         llm_provider=llm_provider,
         llm_model=llm_model,
         max_depth=int(config.ingester_max_depth),
+        output_scope=output_scope,
+        output_scope_source=output_scope_source,
     )
 
     proof_env = None
@@ -166,7 +195,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
                 "ghost_repair_count": int(state.get("ghost_repair_count", 0) or 0),
             },
         )
-        return monitor.publish_staged()
+        return monitor.publish_staged(artifact_surface=STANDARD_ARTIFACT_SURFACE)
 
     try:
         source_path = Path(args.source)
@@ -263,14 +292,20 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             matches_data = [mr.to_dict() for mr in bundle.match_results]
             monitor.stage_json("matches.json", matches_data)
 
-        published_files = monitor.publish_staged()
+        published_files = monitor.publish_staged(
+            artifact_surface=STANDARD_ARTIFACT_SURFACE
+        )
         summary = {
             "cdg_nodes": len(bundle.cdg.nodes),
             "cdg_edges": len(bundle.cdg.edges),
             "matches": len(bundle.match_results),
             "mypy_passed": bool(bundle.mypy_passed),
             "ghost_sim_passed": bool(bundle.ghost_sim_passed),
+            "output_dir": str(output_dir),
+            "output_scope": output_scope,
+            "output_scope_source": output_scope_source,
             "published_files": published_files,
+            "publication": monitor.publication_summary(),
         }
         monitor.complete(summary=summary)
 
@@ -280,6 +315,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         print(f"  mypy passed: {bundle.mypy_passed}")
         print(f"  Ghost sim passed: {bundle.ghost_sim_passed}")
         print(f"  Output: {output_dir}/")
+        print(f"  Output scope: {output_scope} ({output_scope_source})")
         print(f"  Status: {output_dir / '.ingest_status.json'}")
         print(f"  Marker: {output_dir / 'COMPLETED.json'}")
         _print_shared_context_metrics("ingester", shared_context_metrics)

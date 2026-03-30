@@ -26,6 +26,16 @@ STATUS_SCHEMA = "sciona.ingester.monitor.status"
 MARKER_SCHEMA = "sciona.ingester.monitor.marker"
 SURFACE_SCHEMA = "sciona.ingester.monitor.surface"
 MONITOR_SCHEMA_VERSION = 1
+OUTPUT_SCOPE_SYMBOL = "symbol"
+OUTPUT_SCOPE_FAMILY = "family"
+OUTPUT_SCOPE_VALUES = frozenset({OUTPUT_SCOPE_SYMBOL, OUTPUT_SCOPE_FAMILY})
+STANDARD_ARTIFACT_SURFACE = (
+    "atoms.py",
+    "state_models.py",
+    "witnesses.py",
+    "cdg.json",
+    "matches.json",
+)
 
 
 def _write_json_atomic(path: Path, data: dict[str, Any]) -> None:
@@ -41,6 +51,13 @@ def _now_ts() -> float:
 
 def _fmt_ts(ts: float) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
+
+
+def _normalize_output_scope(value: Any) -> str:
+    scope = str(value or OUTPUT_SCOPE_SYMBOL).strip().lower()
+    if scope in OUTPUT_SCOPE_VALUES:
+        return scope
+    return OUTPUT_SCOPE_SYMBOL
 
 
 class IngestMonitor:
@@ -77,6 +94,8 @@ class IngestMonitor:
         llm_provider: str,
         llm_model: str,
         max_depth: int,
+        output_scope: str = OUTPUT_SCOPE_SYMBOL,
+        output_scope_source: str = "default",
     ) -> None:
         if self.completed_path.exists():
             self.completed_path.unlink()
@@ -89,6 +108,7 @@ class IngestMonitor:
             self.trace_path.unlink()
 
         started = _now_ts()
+        normalized_scope = _normalize_output_scope(output_scope)
         self._status = {
             "schema": STATUS_SCHEMA,
             "schema_version": MONITOR_SCHEMA_VERSION,
@@ -102,6 +122,17 @@ class IngestMonitor:
             "llm_provider": llm_provider,
             "llm_model": llm_model,
             "max_depth": max_depth,
+            "output_dir": str(self.output_dir),
+            "output_scope": normalized_scope,
+            "output_scope_source": str(output_scope_source or "default"),
+            "publication": {
+                "target_dir": str(self.output_dir),
+                "target_basename": self.output_dir.name,
+                "scope": normalized_scope,
+                "expected_artifacts": list(STANDARD_ARTIFACT_SURFACE),
+                "published_files": [],
+                "missing_artifacts": list(STANDARD_ARTIFACT_SURFACE),
+            },
             "started_at": started,
             "last_heartbeat_at": started,
             "llm_call_inflight": None,
@@ -185,6 +216,8 @@ class IngestMonitor:
                 "run_id": self.run_id,
                 "completed_at": ended,
                 "phase": str(self._status.get("phase") or ""),
+                "output_dir": str(self.output_dir),
+                "output_scope": _normalize_output_scope(self._status.get("output_scope")),
                 "error": "",
                 "summary": summary,
             },
@@ -217,6 +250,8 @@ class IngestMonitor:
             "run_id": self.run_id,
             "failed_at": ended,
             "phase": self._status.get("phase", ""),
+            "output_dir": str(self.output_dir),
+            "output_scope": _normalize_output_scope(self._status.get("output_scope")),
             "error": error,
             "summary": {},
         }
@@ -240,7 +275,11 @@ class IngestMonitor:
         path.write_text(json.dumps(data, indent=2, default=str))
         return path
 
-    def publish_staged(self) -> list[str]:
+    def publish_staged(
+        self,
+        *,
+        artifact_surface: tuple[str, ...] | list[str] | None = None,
+    ) -> list[str]:
         self.partial_dir.mkdir(parents=True, exist_ok=True)
         published: list[str] = []
         for path in sorted(self.partial_dir.iterdir()):
@@ -250,7 +289,35 @@ class IngestMonitor:
             os.replace(path, target)
             published.append(path.name)
         shutil.rmtree(self.partial_dir, ignore_errors=True)
+        expected_artifacts = list(artifact_surface or STANDARD_ARTIFACT_SURFACE)
+        has_status = bool(self._status)
+        publication = {
+            "target_dir": str(self.output_dir),
+            "target_basename": self.output_dir.name,
+            "scope": _normalize_output_scope(self._status.get("output_scope")),
+            "expected_artifacts": expected_artifacts,
+            "published_files": published,
+            "missing_artifacts": [
+                name for name in expected_artifacts if name not in published
+            ],
+        }
+        self._status["publication"] = publication
+        if has_status:
+            self._status["last_heartbeat_at"] = _now_ts()
+            self._write_status()
+            self.trace_event(
+                "ingester",
+                self._status.get("phase", ""),
+                "PUBLISH_STAGED",
+                payload=publication,
+            )
         return published
+
+    def publication_summary(self) -> dict[str, Any]:
+        publication = self._status.get("publication")
+        if isinstance(publication, dict):
+            return dict(publication)
+        return {}
 
     def trace_event(
         self,
@@ -344,6 +411,14 @@ class IngestMonitor:
             "llm_provider": str(status.get("llm_provider") or ""),
             "llm_model": str(status.get("llm_model") or ""),
             "max_depth": int(status.get("max_depth") or 0),
+            "output_dir": str(status.get("output_dir") or ""),
+            "output_scope": _normalize_output_scope(status.get("output_scope")),
+            "output_scope_source": str(status.get("output_scope_source") or ""),
+            "publication": (
+                status.get("publication")
+                if isinstance(status.get("publication"), dict)
+                else {}
+            ),
             "started_at": IngestMonitor._as_float(status.get("started_at")),
             "ended_at": IngestMonitor._as_float(status.get("ended_at")),
             "last_heartbeat_at": IngestMonitor._as_float(status.get("last_heartbeat_at")),
@@ -363,6 +438,8 @@ class IngestMonitor:
             "state": state,
             "run_id": str(marker.get("run_id") or ""),
             "phase": str(marker.get("phase") or ""),
+            "output_dir": str(marker.get("output_dir") or ""),
+            "output_scope": _normalize_output_scope(marker.get("output_scope")),
             "completed_at": IngestMonitor._as_float(marker.get("completed_at")),
             "failed_at": IngestMonitor._as_float(marker.get("failed_at")),
             "error": str(marker.get("error") or ""),

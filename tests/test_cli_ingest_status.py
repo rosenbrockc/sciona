@@ -36,6 +36,7 @@ def test_ingest_status_completed_marker_overrides_running(tmp_path, capsys):
         json.dumps(
             {
                 "state": "running",
+                "output_scope": "family",
                 "phase": "phase2_chunk",
                 "current_step": "propose_macro_atoms",
                 "last_heartbeat_at": time.time(),
@@ -47,6 +48,7 @@ def test_ingest_status_completed_marker_overrides_running(tmp_path, capsys):
     _cmd_ingest_status(_args(tmp_path))
     out = capsys.readouterr().out
     assert "state=completed" in out
+    assert "output_scope=family" in out
 
 
 def test_ingest_status_failed_marker_returns_exit_two(tmp_path):
@@ -85,6 +87,7 @@ def test_ingest_status_json_output(tmp_path, capsys):
         json.dumps(
             {
                 "state": "running",
+                "output_scope": "family",
                 "phase": "phase3_emit",
                 "current_step": "emit",
                 "last_heartbeat_at": time.time(),
@@ -94,4 +97,5 @@ def test_ingest_status_json_output(tmp_path, capsys):
     _cmd_ingest_status(_args(tmp_path, json_mode=True))
     payload = json.loads(capsys.readouterr().out)
     assert payload["derived_state"] == "running"
+    assert payload["status"]["output_scope"] == "family"
     assert payload["status"]["phase"] == "phase3_emit"

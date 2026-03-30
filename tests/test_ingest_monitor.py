@@ -10,7 +10,9 @@ from sciona.ingester.monitor import (
     FAILED_FILE,
     MARKER_SCHEMA,
     MONITOR_SCHEMA_VERSION,
+    OUTPUT_SCOPE_FAMILY,
     PARTIAL_DIR,
+    STANDARD_ARTIFACT_SURFACE,
     STATUS_SCHEMA,
     STATUS_FILE,
     SURFACE_SCHEMA,
@@ -28,6 +30,8 @@ def test_monitor_complete_writes_status_marker_and_trace(tmp_path):
         llm_provider="codex_cli",
         llm_model="gpt-5.3-codex",
         max_depth=12,
+        output_scope=OUTPUT_SCOPE_FAMILY,
+        output_scope_source="argument",
     )
     mon.phase_start("phase1_extract", step="extract")
     mon.phase_end("phase1_extract", step="ok")
@@ -37,11 +41,13 @@ def test_monitor_complete_writes_status_marker_and_trace(tmp_path):
     assert status["schema"] == STATUS_SCHEMA
     assert status["schema_version"] == MONITOR_SCHEMA_VERSION
     assert status["state"] == "completed"
+    assert status["output_scope"] == OUTPUT_SCOPE_FAMILY
     assert status["summary"]["cdg_nodes"] == 12
     completed = json.loads((tmp_path / COMPLETED_FILE).read_text())
     assert completed["schema"] == MARKER_SCHEMA
     assert completed["schema_version"] == MONITOR_SCHEMA_VERSION
     assert completed["state"] == "completed"
+    assert completed["output_scope"] == OUTPUT_SCOPE_FAMILY
     assert (tmp_path / COMPLETED_FILE).exists()
     assert not (tmp_path / FAILED_FILE).exists()
 
@@ -84,16 +90,27 @@ def test_monitor_stage_and_publish(tmp_path):
         llm_provider="codex_cli",
         llm_model="gpt-5.3-codex",
         max_depth=1,
+        output_scope=OUTPUT_SCOPE_FAMILY,
+        output_scope_source="argument",
     )
 
     mon.stage_file("atoms.py", "print('ok')\n")
     mon.stage_json("cdg.json", {"nodes": [], "edges": []})
-    published = mon.publish_staged()
+    published = mon.publish_staged(artifact_surface=STANDARD_ARTIFACT_SURFACE)
 
     assert published == ["atoms.py", "cdg.json"]
     assert (tmp_path / "atoms.py").exists()
     assert (tmp_path / "cdg.json").exists()
     assert not (tmp_path / PARTIAL_DIR).exists()
+    publication = mon.publication_summary()
+    assert publication["scope"] == OUTPUT_SCOPE_FAMILY
+    assert publication["target_basename"] == tmp_path.name
+    assert publication["published_files"] == ["atoms.py", "cdg.json"]
+    assert publication["missing_artifacts"] == [
+        "state_models.py",
+        "witnesses.py",
+        "matches.json",
+    ]
 
 
 def test_classify_state_stalled_without_inflight():
