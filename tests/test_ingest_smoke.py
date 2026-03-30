@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from sciona.commands.ingest_cmds import _cmd_ingest
+from sciona.ingester.smoke import run_smoke_validation
 
 
 class _FakeEnv:
@@ -142,6 +143,66 @@ async def _run_ingest(
     return output_dir
 
 
+def _write_staged_atoms(
+    tmp_path: Path,
+    *,
+    generated_atoms: str,
+) -> Path:
+    staged_dir = tmp_path / "staged"
+    staged_dir.mkdir(parents=True, exist_ok=True)
+    (staged_dir / "atoms.py").write_text(generated_atoms, encoding="utf-8")
+    return staged_dir
+
+
+def test_run_smoke_validation_grouped_images_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "def grid_to_graph(n_x, n_y, n_z=1, **kwargs):\n"
+            "    if n_x is None:\n"
+            "        raise TypeError('n_x')\n"
+            "    node_count = int(n_x) * int(n_y) * int(n_z)\n"
+            "    return np.zeros((node_count, node_count))\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="images",
+        target_symbol="grid_to_graph",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "sklearn.images.grid_to_graph.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
+def test_run_smoke_validation_fft_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "def fft(x):\n"
+            "    if x is None:\n"
+            "        raise TypeError('x')\n"
+            "    return np.fft.fft(x)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="signal_helpers",
+        target_symbol="fft",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "numerical.fft.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
 @pytest.mark.asyncio
 async def test_smoke_validation_not_applicable_allows_publication(monkeypatch, tmp_path: Path):
     output_dir = await _run_ingest(
@@ -167,12 +228,14 @@ async def test_smoke_validation_pass_allows_publication(monkeypatch, tmp_path: P
     output_dir = await _run_ingest(
         monkeypatch,
         tmp_path,
-        class_name="safe_grouped_atom",
+        class_name="grid_to_graph",
         generated_atoms=(
-            "def safe_grouped_atom(x):\n"
-            "    if not isinstance(x, int):\n"
-            "        raise TypeError('x')\n"
-            "    return x + 1\n"
+            "import numpy as np\n"
+            "def grid_to_graph(n_x, n_y, n_z=1, **kwargs):\n"
+            "    if n_x is None:\n"
+            "        raise TypeError('n_x')\n"
+            "    node_count = int(n_x) * int(n_y) * int(n_z)\n"
+            "    return np.zeros((node_count, node_count))\n"
         ),
     )
 
@@ -189,8 +252,10 @@ async def test_smoke_validation_fail_blocks_publication(monkeypatch, tmp_path: P
     _patch_ingest_runtime(monkeypatch, tmp_path)
     _FakeAgent.bundle = _FakeBundle(
         generated_atoms=(
-            "def safe_grouped_atom(x):\n"
-            "    return x\n"
+            "import numpy as np\n"
+            "def grid_to_graph(n_x, n_y, n_z=1, **kwargs):\n"
+            "    node_count = 3\n"
+            "    return np.zeros((node_count, node_count))\n"
         )
     )
     source_path = tmp_path / "source.py"
@@ -201,7 +266,7 @@ async def test_smoke_validation_fail_blocks_publication(monkeypatch, tmp_path: P
         await _cmd_ingest(
             argparse.Namespace(
                 source=str(source_path),
-                class_name="safe_grouped_atom",
+                class_name="grid_to_graph",
                 output=str(output_dir),
                 output_scope="family",
                 llm_provider=None,
