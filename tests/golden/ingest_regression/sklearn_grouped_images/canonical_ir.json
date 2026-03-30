@@ -1,0 +1,27 @@
+{
+  "artifacts": [],
+  "edges": [],
+  "lowering_version": "phase2_v1",
+  "operations": [
+    {
+      "display_name": "Extract Patches 2D",
+      "operation_id": "extract_patches_2d"
+    },
+    {
+      "display_name": "Reconstruct From Patches 2D",
+      "operation_id": "reconstruct_from_patches_2d"
+    },
+    {
+      "display_name": "Image To Graph",
+      "operation_id": "img_to_graph"
+    },
+    {
+      "display_name": "Grid To Graph",
+      "operation_id": "grid_to_graph"
+    }
+  ],
+  "source_language": "python",
+  "state_slots": [],
+  "subject_name": "grid_to_graph",
+  "unknowns": []
+}

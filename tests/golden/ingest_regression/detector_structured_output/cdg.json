@@ -1,0 +1,18 @@
+{
+  "edges": [],
+  "metadata": {
+    "goal": "detector_structured_output",
+    "num_edges": 0,
+    "num_nodes": 1,
+    "paradigm": "custom"
+  },
+  "nodes": [
+    {
+      "concept_type": "custom",
+      "description": "Detector-style wrapper that returns structured peak metadata.",
+      "name": "Peak Detector Atom",
+      "node_id": "detect_peaks",
+      "status": "atomic"
+    }
+  ]
+}

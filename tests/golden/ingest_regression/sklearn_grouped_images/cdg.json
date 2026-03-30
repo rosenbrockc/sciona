@@ -1,0 +1,48 @@
+{
+  "edges": [
+    {
+      "input_name": "patches",
+      "output_name": "patches",
+      "source_id": "extract_patches_2d",
+      "source_type": "ndarray",
+      "target_id": "reconstruct_from_patches_2d",
+      "target_type": "ndarray"
+    }
+  ],
+  "metadata": {
+    "goal": "sklearn_grouped_images",
+    "num_edges": 1,
+    "num_nodes": 4,
+    "paradigm": "grouped_family"
+  },
+  "nodes": [
+    {
+      "concept_type": "custom",
+      "description": "Extract 2D patches from an image.",
+      "name": "Extract Patches 2D",
+      "node_id": "extract_patches_2d",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Reconstruct an image from patches.",
+      "name": "Reconstruct From Patches 2D",
+      "node_id": "reconstruct_from_patches_2d",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Project image pixels into a graph representation.",
+      "name": "Image To Graph",
+      "node_id": "img_to_graph",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Project grid coordinates into a graph representation.",
+      "name": "Grid To Graph",
+      "node_id": "grid_to_graph",
+      "status": "atomic"
+    }
+  ]
+}

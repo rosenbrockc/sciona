@@ -15,7 +15,11 @@ from pydantic import BaseModel, Field
 from sciona.architect.handoff import CDGExport
 from sciona.ingester.graph import IngesterAgent
 from sciona.ingester.models import IngestIRPlan, IngestPlanGraph, IngestionBundle
-from sciona.ingester.monitor import IngestMonitor, TRACE_FILE
+from sciona.ingester.monitor import (
+    IngestMonitor,
+    OUTPUT_SCOPE_SYMBOL,
+    TRACE_FILE,
+)
 
 AgentFactory = Callable[[Path, IngestMonitor, "IngestRegressionCase"], IngesterAgent]
 
@@ -43,6 +47,7 @@ class IngestRegressionCase(BaseModel):
     case_id: str
     family: str
     class_name: str
+    output_scope: str = OUTPUT_SCOPE_SYMBOL
     procedural: bool = False
     expected_language: str = "python"
     source_path: str = ""
@@ -281,6 +286,29 @@ def default_ingest_regression_cases(
             ],
         ),
         IngestRegressionCase(
+            case_id="sklearn_grouped_images",
+            family="sklearn_grouped_images",
+            class_name="grid_to_graph",
+            output_scope="family",
+            expected_language="python",
+            source_path=_fixture_source_path(
+                root,
+                case_id="sklearn_grouped_images",
+                expected_language="python",
+            ),
+            fixture_origin="INGESTER_ROLLOUT_WORKSTREAM2_PLAN.md",
+            expected_artifacts=list(_DEFAULT_REQUIRED_ARTIFACTS),
+            semantic_expectations=[
+                SemanticExpectation(check="has_canonical_ir"),
+                SemanticExpectation(check="source_language_equals", value="python"),
+                SemanticExpectation(check="generated_atoms_contains", value="def grid_to_graph"),
+                SemanticExpectation(
+                    check="generated_atoms_contains",
+                    value="def extract_patches_2d",
+                ),
+            ],
+        ),
+        IngestRegressionCase(
             case_id="bayesian_or_message_passing",
             family="bayesian_or_message_passing",
             class_name="PosteriorAccumulator",
@@ -295,6 +323,25 @@ def default_ingest_regression_cases(
             semantic_expectations=[
                 SemanticExpectation(check="has_canonical_ir"),
                 SemanticExpectation(check="source_language_equals", value="python"),
+            ],
+        ),
+        IngestRegressionCase(
+            case_id="detector_structured_output",
+            family="detector_structured_output",
+            class_name="PeakDetector",
+            expected_language="python",
+            source_path=_fixture_source_path(
+                root,
+                case_id="detector_structured_output",
+                expected_language="python",
+            ),
+            fixture_origin="INGESTER_ROLLOUT_WORKSTREAM2_PLAN.md",
+            expected_artifacts=list(_DEFAULT_REQUIRED_ARTIFACTS),
+            semantic_expectations=[
+                SemanticExpectation(check="has_canonical_ir"),
+                SemanticExpectation(check="source_language_equals", value="python"),
+                SemanticExpectation(check="generated_atoms_contains", value='"rpeaks"'),
+                SemanticExpectation(check="generated_atoms_contains", value='"quality"'),
             ],
         ),
         IngestRegressionCase(
@@ -1013,6 +1060,7 @@ async def run_ingest_regression_case(
         llm_provider="regression_harness",
         llm_model="deterministic_fixture",
         max_depth=1,
+        output_scope=case.output_scope,
     )
 
     started = time.perf_counter()

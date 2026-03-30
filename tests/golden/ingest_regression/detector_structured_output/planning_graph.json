@@ -1,0 +1,18 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "detect_peaks"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Peak Detection",
+      "group_id": "peak_detection",
+      "member_operation_ids": [
+        "detect_peaks"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}

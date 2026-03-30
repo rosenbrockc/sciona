@@ -1,0 +1,36 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "extract_patches_2d"
+    },
+    {
+      "operation_id": "reconstruct_from_patches_2d"
+    },
+    {
+      "operation_id": "img_to_graph"
+    },
+    {
+      "operation_id": "grid_to_graph"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Image Patch Helpers",
+      "group_id": "image_patch_helpers",
+      "member_operation_ids": [
+        "extract_patches_2d",
+        "reconstruct_from_patches_2d"
+      ]
+    },
+    {
+      "display_name": "Graph Projection Helpers",
+      "group_id": "graph_projection_helpers",
+      "member_operation_ids": [
+        "img_to_graph",
+        "grid_to_graph"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}
