@@ -229,10 +229,12 @@ class IngestMonitor:
             payload=summary,
         )
 
-    def fail(self, *, error: str, phase: str = "") -> None:
+    def fail(self, *, error: str, phase: str = "", summary: dict[str, Any] | None = None) -> None:
         ended = _now_ts()
         if phase:
             self._status["phase"] = phase
+        if summary is not None:
+            self._status["summary"] = summary
         self._status.update(
             {
                 "state": "failed",
@@ -243,6 +245,8 @@ class IngestMonitor:
             }
         )
         self._write_status()
+        summary = self._status.get("summary")
+        normalized_summary = summary if isinstance(summary, dict) else {}
         failure = {
             "schema": MARKER_SCHEMA,
             "schema_version": MONITOR_SCHEMA_VERSION,
@@ -253,7 +257,7 @@ class IngestMonitor:
             "output_dir": str(self.output_dir),
             "output_scope": _normalize_output_scope(self._status.get("output_scope")),
             "error": error,
-            "summary": {},
+            "summary": normalized_summary,
         }
         _write_json_atomic(self.failed_path, failure)
         self.trace_event(
@@ -318,6 +322,17 @@ class IngestMonitor:
         if isinstance(publication, dict):
             return dict(publication)
         return {}
+
+    def record_smoke_validation(self, result: dict[str, Any]) -> None:
+        self._status["smoke_validation"] = result if isinstance(result, dict) else {}
+        self._status["last_heartbeat_at"] = _now_ts()
+        self._write_status()
+        self.trace_event(
+            "ingester",
+            self._status.get("phase", ""),
+            "SMOKE_VALIDATION",
+            payload=self._status["smoke_validation"],
+        )
 
     def trace_event(
         self,
@@ -417,6 +432,11 @@ class IngestMonitor:
             "publication": (
                 status.get("publication")
                 if isinstance(status.get("publication"), dict)
+                else {}
+            ),
+            "smoke_validation": (
+                status.get("smoke_validation")
+                if isinstance(status.get("smoke_validation"), dict)
                 else {}
             ),
             "started_at": IngestMonitor._as_float(status.get("started_at")),

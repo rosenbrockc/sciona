@@ -27,6 +27,10 @@ from sciona.ingester.monitor import (
     OUTPUT_SCOPE_VALUES,
     STANDARD_ARTIFACT_SURFACE,
 )
+from sciona.ingester.smoke import (
+    SMOKE_STATUS_FAIL,
+    run_smoke_validation,
+)
 
 
 def _resolve_output_scope(
@@ -292,6 +296,32 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             matches_data = [mr.to_dict() for mr in bundle.match_results]
             monitor.stage_json("matches.json", matches_data)
 
+        smoke_validation = run_smoke_validation(
+            monitor.partial_dir,
+            package_basename=output_dir.name,
+            target_symbol=args.class_name,
+        )
+        monitor.record_smoke_validation(smoke_validation)
+        if smoke_validation.get("status") == SMOKE_STATUS_FAIL:
+            failure_summary = {
+                "output_dir": str(output_dir),
+                "output_scope": output_scope,
+                "output_scope_source": output_scope_source,
+                "published_files": [],
+                "publication": monitor.publication_summary(),
+                "smoke_validation": smoke_validation,
+            }
+            monitor.fail(
+                error=f"smoke validation failed: {smoke_validation.get('message', '')}",
+                phase="phase5_smoke",
+                summary=failure_summary,
+            )
+            print(
+                f"Error: smoke validation failed for {args.class_name}: "
+                f"{smoke_validation.get('message', '')}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         published_files = monitor.publish_staged(
             artifact_surface=STANDARD_ARTIFACT_SURFACE
         )
@@ -306,6 +336,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             "output_scope_source": output_scope_source,
             "published_files": published_files,
             "publication": monitor.publication_summary(),
+            "smoke_validation": smoke_validation,
         }
         monitor.complete(summary=summary)
 
@@ -316,6 +347,10 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         print(f"  Ghost sim passed: {bundle.ghost_sim_passed}")
         print(f"  Output: {output_dir}/")
         print(f"  Output scope: {output_scope} ({output_scope_source})")
+        print(
+            "  Smoke validation: "
+            f"{smoke_validation.get('status', 'unknown')}"
+        )
         print(f"  Status: {output_dir / '.ingest_status.json'}")
         print(f"  Marker: {output_dir / 'COMPLETED.json'}")
         _print_shared_context_metrics("ingester", shared_context_metrics)
