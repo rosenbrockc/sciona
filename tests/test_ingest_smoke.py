@@ -120,12 +120,13 @@ async def _run_ingest(
     *,
     class_name: str,
     generated_atoms: str,
+    output_parts: tuple[str, ...] = ("sklearn", "images"),
 ):
     _patch_ingest_runtime(monkeypatch, tmp_path)
     _FakeAgent.bundle = _FakeBundle(generated_atoms=generated_atoms)
     source_path = tmp_path / "source.py"
     source_path.write_text("def stub():\n    return None\n", encoding="utf-8")
-    output_dir = tmp_path / "sklearn" / "images"
+    output_dir = tmp_path.joinpath(*output_parts)
     args = argparse.Namespace(
         source=str(source_path),
         class_name=class_name,
@@ -203,6 +204,103 @@ def test_run_smoke_validation_fft_passes(tmp_path: Path):
     assert result["details"]["negative_case"]["status"] == "pass"
 
 
+def test_run_smoke_validation_hamilton_segmentation_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "def hamilton_segmentation(signal, sampling_rate):\n"
+            "    if signal is None:\n"
+            "        raise TypeError('signal')\n"
+            "    if not isinstance(sampling_rate, (int, float)):\n"
+            "        raise TypeError('sampling_rate')\n"
+            "    return np.array([300, 800, 1300, 1800], dtype=int)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="ecg_detectors",
+        target_symbol="hamilton_segmentation",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "biosppy.ecg.hamilton_segmentation.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
+def test_run_smoke_validation_detect_signal_onsets_elgendi2013_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "def detect_signal_onsets_elgendi2013(signal, sampling_rate, peakwindow, beatwindow, beatoffset, mindelay):\n"
+            "    if not isinstance(sampling_rate, (int, float)):\n"
+            "        raise TypeError('sampling_rate')\n"
+            "    return np.array([50, 150, 250, 350, 450, 550], dtype=int)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="ppg_detectors",
+        target_symbol="detect_signal_onsets_elgendi2013",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "biosppy.ppg.detect_signal_onsets_elgendi2013.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
+def test_run_smoke_validation_threshold_based_onset_detection_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "def threshold_based_onset_detection(signal, rest, sampling_rate, threshold, active_state_duration):\n"
+            "    if signal is None:\n"
+            "        raise TypeError('signal')\n"
+            "    return np.array([], dtype=int)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="emg_detectors",
+        target_symbol="threshold_based_onset_detection",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "biosppy.emg.threshold_based_onset_detection.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
+def test_run_smoke_validation_hamilton_segmenter_fails_when_negative_path_does_not_raise(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "def hamilton_segmenter(signal, sampling_rate):\n"
+            "    return np.array([300, 800, 1300], dtype=int)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="ecg_detectors",
+        target_symbol="hamilton_segmenter",
+    )
+
+    assert result["status"] == "fail"
+    assert result["probe_id"] == "biosppy.ecg.hamilton_segmenter.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "fail"
+    assert result["details"]["negative_case"]["message"] == "negative-path probe did not raise"
+
+
 @pytest.mark.asyncio
 async def test_smoke_validation_not_applicable_allows_publication(monkeypatch, tmp_path: Path):
     output_dir = await _run_ingest(
@@ -245,6 +343,76 @@ async def test_smoke_validation_pass_allows_publication(monkeypatch, tmp_path: P
     assert status["smoke_validation"]["status"] == "pass"
     assert completed["summary"]["smoke_validation"]["status"] == "pass"
     assert (output_dir / "atoms.py").exists()
+
+
+@pytest.mark.asyncio
+async def test_smoke_validation_detector_pass_allows_publication(monkeypatch, tmp_path: Path):
+    output_dir = await _run_ingest(
+        monkeypatch,
+        tmp_path,
+        class_name="hamilton_segmentation",
+        generated_atoms=(
+            "import numpy as np\n"
+            "def hamilton_segmentation(signal, sampling_rate):\n"
+            "    if signal is None:\n"
+            "        raise TypeError('signal')\n"
+            "    if not isinstance(sampling_rate, (int, float)):\n"
+            "        raise TypeError('sampling_rate')\n"
+            "    return np.array([300, 800, 1300, 1800], dtype=int)\n"
+        ),
+        output_parts=("ageoa", "biosppy", "ecg_detectors"),
+    )
+
+    status = json.loads((output_dir / ".ingest_status.json").read_text(encoding="utf-8"))
+    completed = json.loads((output_dir / "COMPLETED.json").read_text(encoding="utf-8"))
+
+    assert status["smoke_validation"]["status"] == "pass"
+    assert status["smoke_validation"]["probe_id"] == "biosppy.ecg.hamilton_segmentation.basic"
+    assert completed["summary"]["smoke_validation"]["status"] == "pass"
+    assert (output_dir / "atoms.py").exists()
+
+
+@pytest.mark.asyncio
+async def test_smoke_validation_detector_fail_blocks_publication(monkeypatch, tmp_path: Path):
+    _patch_ingest_runtime(monkeypatch, tmp_path)
+    _FakeAgent.bundle = _FakeBundle(
+        generated_atoms=(
+            "import numpy as np\n"
+            "def hamilton_segmentation(signal, sampling_rate):\n"
+            "    return np.array([300, 800, 1300, 1800], dtype=int)\n"
+        )
+    )
+    source_path = tmp_path / "source.py"
+    source_path.write_text("def stub():\n    return None\n", encoding="utf-8")
+    output_dir = tmp_path / "ageoa" / "biosppy" / "ecg_detectors"
+
+    with pytest.raises(SystemExit) as excinfo:
+        await _cmd_ingest(
+            argparse.Namespace(
+                source=str(source_path),
+                class_name="hamilton_segmentation",
+                output=str(output_dir),
+                output_scope="family",
+                llm_provider=None,
+                llm_model=None,
+                procedural=False,
+                trace=False,
+                monitor=False,
+                stale_seconds=120,
+                mode=None,
+            )
+        )
+
+    assert excinfo.value.code == 1
+    status = json.loads((output_dir / ".ingest_status.json").read_text(encoding="utf-8"))
+    failed = json.loads((output_dir / "FAILED.json").read_text(encoding="utf-8"))
+
+    assert status["state"] == "failed"
+    assert status["smoke_validation"]["status"] == "fail"
+    assert status["smoke_validation"]["probe_id"] == "biosppy.ecg.hamilton_segmentation.basic"
+    assert failed["summary"]["smoke_validation"]["status"] == "fail"
+    assert failed["summary"]["published_files"] == []
+    assert not (output_dir / "atoms.py").exists()
 
 
 @pytest.mark.asyncio

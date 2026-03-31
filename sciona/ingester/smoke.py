@@ -230,6 +230,94 @@ def _validate_fft_output(result: Any) -> tuple[bool, str, dict[str, Any]]:
     )
 
 
+def _validate_monotonic_index_array(
+    *,
+    allow_empty: bool = False,
+    max_value: int | None = None,
+) -> Callable[[Any], tuple[bool, str, dict[str, Any]]]:
+    def _validator(result: Any) -> tuple[bool, str, dict[str, Any]]:
+        import numpy as np
+
+        array = np.asarray(result)
+        if array.ndim != 1:
+            return (
+                False,
+                "expected a one-dimensional index array",
+                {
+                    "observed_shape": list(array.shape),
+                    "observed_dtype": str(array.dtype),
+                },
+            )
+
+        length = int(array.shape[0])
+        monotonic = length <= 1 or bool(np.all(np.diff(array) >= 0))
+        nonempty = allow_empty or length > 0
+        within_bounds = True
+        if max_value is not None and length > 0:
+            within_bounds = bool(np.min(array) >= 0 and np.max(array) <= max_value)
+
+        ok = monotonic and nonempty and within_bounds
+        if ok:
+            if allow_empty:
+                message = "positive-path onset indices look structurally valid"
+            else:
+                message = "positive-path peak indices look structurally valid"
+        elif not nonempty:
+            message = "expected a non-empty monotonic index array"
+        elif not monotonic:
+            message = "expected monotonic index output"
+        else:
+            message = f"expected index output within [0, {max_value}]"
+
+        return (
+            ok,
+            message,
+            {
+                "observed_shape": list(array.shape),
+                "observed_dtype": str(array.dtype),
+                "observed_count": length,
+            },
+        )
+
+    return _validator
+
+
+def _synthetic_ecg_signal() -> tuple[Any, float]:
+    import numpy as np
+
+    sampling_rate = 1000.0
+    time = np.linspace(0.0, 2.0, int(2.0 * sampling_rate), endpoint=False)
+    signal = 0.02 * np.sin(2 * np.pi * 5 * time)
+    for center in (0.3, 0.8, 1.3, 1.8):
+        signal += np.exp(-((time - center) ** 2) / (2 * (0.01 ** 2)))
+    return signal, sampling_rate
+
+
+def _synthetic_ppg_signal() -> tuple[Any, float]:
+    import numpy as np
+
+    sampling_rate = 100.0
+    time = np.linspace(0.0, 10.0, int(10.0 * sampling_rate), endpoint=False)
+    signal = np.zeros_like(time)
+    for center in np.arange(0.5, 10.0, 1.0):
+        signal += np.exp(-((time - center) ** 2) / (2 * (0.03 ** 2)))
+    return signal, sampling_rate
+
+
+def _synthetic_emg_signal() -> tuple[Any, Any, float]:
+    import numpy as np
+
+    sampling_rate = 1000.0
+    time = np.linspace(0.0, 2.0, int(2.0 * sampling_rate), endpoint=False)
+    rest = 0.01 * np.sin(
+        2 * np.pi * 10 * np.linspace(0.0, 0.4, int(0.4 * sampling_rate), endpoint=False)
+    )
+    signal = 0.01 * np.sin(2 * np.pi * 10 * time)
+    signal[700:1100] += 0.5 * np.sin(np.linspace(0.0, np.pi, 400))
+    signal[1300:1600] += 0.7 * np.sin(np.linspace(0.0, np.pi, 300))
+    return signal, rest, sampling_rate
+
+
 def _run_extract_patches_2d_probe(fn: Callable[..., Any]) -> dict[str, Any]:
     import numpy as np
 
@@ -343,6 +431,150 @@ def _run_fft_probe(fn: Callable[..., Any]) -> dict[str, Any]:
     )
 
 
+def _run_hamilton_segmentation_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    signal, sampling_rate = _synthetic_ecg_signal()
+
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(signal, sampling_rate),
+        validator=_validate_monotonic_index_array(max_value=len(signal) - 1),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, sampling_rate),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "biosppy.ecg.hamilton_segmentation.basic",
+        "hamilton_segmentation",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_hamilton_segmenter_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    signal, sampling_rate = _synthetic_ecg_signal()
+
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(signal, sampling_rate),
+        validator=_validate_monotonic_index_array(max_value=len(signal) - 1),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(signal, "bad"),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "biosppy.ecg.hamilton_segmenter.basic",
+        "hamilton_segmenter",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_detect_signal_onsets_elgendi2013_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    signal, sampling_rate = _synthetic_ppg_signal()
+
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(signal, sampling_rate, 0.111, 0.667, 0.02, 0.3),
+        validator=_validate_monotonic_index_array(max_value=len(signal) - 1),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(signal, "bad", 0.111, 0.667, 0.02, 0.3),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "biosppy.ppg.detect_signal_onsets_elgendi2013.basic",
+        "detect_signal_onsets_elgendi2013",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_detectonsetevents_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    signal, sampling_rate = _synthetic_ppg_signal()
+
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(signal, sampling_rate, 0.2, 4, 60.0, 0.3, 180.0),
+        validator=_validate_monotonic_index_array(max_value=len(signal) - 1),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, sampling_rate, 0.2, 4, 60.0, 0.3, 180.0),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "biosppy.ppg.detectonsetevents.basic",
+        "detectonsetevents",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_detect_onsets_with_rest_aware_thresholds_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    signal, rest, sampling_rate = _synthetic_emg_signal()
+
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(signal, rest, sampling_rate, 20, 10, 1.0, 0.5),
+        validator=_validate_monotonic_index_array(
+            allow_empty=True,
+            max_value=len(signal) - 1,
+        ),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, rest, sampling_rate, 20, 10, 1.0, 0.5),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "biosppy.emg.detect_onsets_with_rest_aware_thresholds.basic",
+        "detect_onsets_with_rest_aware_thresholds",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_threshold_based_onset_detection_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    signal, rest, sampling_rate = _synthetic_emg_signal()
+
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(signal, rest, sampling_rate, 1.0, 0.05),
+        validator=_validate_monotonic_index_array(
+            allow_empty=True,
+            max_value=len(signal) - 1,
+        ),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, rest, sampling_rate, 1.0, 0.05),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "biosppy.emg.threshold_based_onset_detection.basic",
+        "threshold_based_onset_detection",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
 ALLOWLISTED_SMOKE_PROBES: tuple[SmokeProbe, ...] = (
     SmokeProbe(
         probe_id="sklearn.images.extract_patches_2d.basic",
@@ -372,6 +604,42 @@ ALLOWLISTED_SMOKE_PROBES: tuple[SmokeProbe, ...] = (
         probe_id="numerical.fft.basic",
         target_symbol="fft",
         runner=_run_fft_probe,
+    ),
+    SmokeProbe(
+        probe_id="biosppy.ecg.hamilton_segmentation.basic",
+        target_symbol="hamilton_segmentation",
+        package_basenames=("ecg_detectors",),
+        runner=_run_hamilton_segmentation_probe,
+    ),
+    SmokeProbe(
+        probe_id="biosppy.ecg.hamilton_segmenter.basic",
+        target_symbol="hamilton_segmenter",
+        package_basenames=("ecg_detectors",),
+        runner=_run_hamilton_segmenter_probe,
+    ),
+    SmokeProbe(
+        probe_id="biosppy.ppg.detect_signal_onsets_elgendi2013.basic",
+        target_symbol="detect_signal_onsets_elgendi2013",
+        package_basenames=("ppg_detectors",),
+        runner=_run_detect_signal_onsets_elgendi2013_probe,
+    ),
+    SmokeProbe(
+        probe_id="biosppy.ppg.detectonsetevents.basic",
+        target_symbol="detectonsetevents",
+        package_basenames=("ppg_detectors",),
+        runner=_run_detectonsetevents_probe,
+    ),
+    SmokeProbe(
+        probe_id="biosppy.emg.detect_onsets_with_rest_aware_thresholds.basic",
+        target_symbol="detect_onsets_with_rest_aware_thresholds",
+        package_basenames=("emg_detectors",),
+        runner=_run_detect_onsets_with_rest_aware_thresholds_probe,
+    ),
+    SmokeProbe(
+        probe_id="biosppy.emg.threshold_based_onset_detection.basic",
+        target_symbol="threshold_based_onset_detection",
+        package_basenames=("emg_detectors",),
+        runner=_run_threshold_based_onset_detection_probe,
     ),
 )
 
