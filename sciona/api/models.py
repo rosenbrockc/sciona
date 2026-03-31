@@ -24,6 +24,7 @@ class DeviceFlowResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    refresh_token: str = ""
     expires_in: int
 
 
@@ -38,6 +39,7 @@ class UserResponse(BaseModel):
     display_name: str
     avatar_url: str
     identity_tier: str
+    effective_tier: str = "general"
     reputation_score: int
     created_at: datetime
 

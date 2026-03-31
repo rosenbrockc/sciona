@@ -1,14 +1,16 @@
-"""GitHub OAuth device flow + JWT issuance."""
+"""Authentication endpoints for the platform API."""
 
 from __future__ import annotations
 
 import os
 import time
+from datetime import datetime, timezone
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
-from sciona.api.deps import UserRow, require_auth
+from sciona.api.deps import UserProfile, get_supabase, require_auth, use_supabase_auth
 from sciona.api.models import (
     DeviceFlowResponse,
     PendingResponse,
@@ -23,9 +25,75 @@ GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
 GITHUB_USER_URL = "https://api.github.com/user"
 
 
+def _request_supabase(request: Request) -> Any | None:
+    state = getattr(request.app, "state", None)
+    if state is None:
+        return None
+    return getattr(state, "supabase_admin", None) or getattr(state, "supabase", None)
+
+
+def _attr_or_key(obj: Any, name: str, default: Any = None) -> Any:
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+def _token_response_from_session(session_response: Any) -> TokenResponse | None:
+    session = _attr_or_key(session_response, "session")
+    if session is None:
+        data = _attr_or_key(session_response, "data")
+        session = _attr_or_key(data, "session")
+    if session is None:
+        return None
+
+    access_token = _attr_or_key(session, "access_token")
+    if not access_token:
+        return None
+
+    refresh_token = _attr_or_key(session, "refresh_token", "")
+    expires_in = _attr_or_key(session, "expires_in")
+    if expires_in is None:
+        expires_at = _attr_or_key(session, "expires_at")
+        if expires_at is not None:
+            expires_in = max(int(float(expires_at) - time.time()), 0)
+    if expires_in is None:
+        expires_in = 30 * 24 * 3600
+
+    return TokenResponse(
+        access_token=str(access_token),
+        refresh_token=str(refresh_token or ""),
+        expires_in=int(expires_in),
+    )
+
+
+@router.get("/auth/login")
+async def login_redirect(supabase=Depends(get_supabase)) -> dict[str, str]:
+    """Return a Supabase GitHub OAuth URL for browser-based login."""
+    redirect_to = os.environ.get(
+        "SCIONA_SUPABASE_REDIRECT_URL",
+        os.environ.get("SUPABASE_REDIRECT_URL", "http://localhost:5173/auth/callback"),
+    )
+    try:
+        response = await supabase.auth.sign_in_with_oauth(
+            {"provider": "github", "options": {"redirect_to": redirect_to}}
+        )
+    except Exception as exc:
+        raise HTTPException(503, "Supabase OAuth is not available") from exc
+
+    url = _attr_or_key(response, "url")
+    if not url:
+        data = _attr_or_key(response, "data")
+        url = _attr_or_key(data, "url")
+    if not url:
+        raise HTTPException(500, "Supabase OAuth URL not returned")
+    return {"url": str(url)}
+
+
 @router.get("/auth/github/device")
 async def github_device_start() -> DeviceFlowResponse:
-    """Start GitHub device flow (returns device_code, user_code, verification_uri)."""
+    """Start the legacy GitHub device flow used by the CLI."""
     try:
         import httpx
     except ImportError:
@@ -54,18 +122,19 @@ async def github_device_start() -> DeviceFlowResponse:
 
 
 @router.post("/auth/github/device/poll")
-async def github_device_poll(device_code: str) -> TokenResponse | PendingResponse:
-    """Poll for device flow completion. Returns JWT on success or pending status."""
+async def github_device_poll(
+    device_code: str,
+    request: Request,
+) -> TokenResponse | PendingResponse:
+    """Poll the device flow and return a Supabase or legacy session token."""
     try:
         import httpx
     except ImportError:
         raise HTTPException(503, "httpx not installed")
 
     client_id = os.environ.get("GITHUB_OAUTH_CLIENT_ID", "")
-    client_secret = os.environ.get("GITHUB_OAUTH_CLIENT_SECRET", "")
 
     async with httpx.AsyncClient() as client:
-        # Exchange device code for GitHub access token
         resp = await client.post(
             GITHUB_TOKEN_URL,
             data={
@@ -89,7 +158,6 @@ async def github_device_poll(device_code: str) -> TokenResponse | PendingRespons
 
     github_token = data["access_token"]
 
-    # Fetch GitHub user profile
     try:
         import httpx as httpx_mod
     except ImportError:
@@ -106,33 +174,44 @@ async def github_device_poll(device_code: str) -> TokenResponse | PendingRespons
         user_resp.raise_for_status()
         gh_user = user_resp.json()
 
-    # Upsert user and issue JWT
-    jwt_token = await _upsert_user_and_issue_jwt(gh_user)
+    if use_supabase_auth():
+        supabase = _request_supabase(request)
+        if supabase is not None:
+            try:
+                session_response = await supabase.auth.sign_in_with_id_token(
+                    {"provider": "github", "token": github_token}
+                )
+            except Exception:
+                session_response = None
+            token_response = _token_response_from_session(session_response)
+            if token_response is not None:
+                return token_response
 
+    jwt_token = await _upsert_user_and_issue_jwt(gh_user)
     return TokenResponse(
         access_token=jwt_token,
-        expires_in=30 * 24 * 3600,  # 30 days
+        refresh_token="",
+        expires_in=30 * 24 * 3600,
     )
 
 
 @router.get("/auth/me")
-async def get_me(user: UserRow = Depends(require_auth)) -> UserResponse:
-    """Return current authenticated user."""
-    from datetime import datetime, timezone
-
+async def get_me(user: UserProfile = Depends(require_auth)) -> UserResponse:
+    """Return the current authenticated user."""
     return UserResponse(
-        user_id=UUID(user.user_id),
+        user_id=UUID(str(user.user_id)),
         github_login=user.github_login,
         display_name=user.display_name,
         avatar_url=user.avatar_url,
         identity_tier=user.identity_tier,
+        effective_tier=user.effective_tier,
         reputation_score=0,
         created_at=datetime.now(timezone.utc),
     )
 
 
-async def _upsert_user_and_issue_jwt(gh_user: dict) -> str:
-    """Upsert the GitHub user into the database and return a signed JWT."""
+async def _upsert_user_and_issue_jwt(gh_user: dict[str, Any]) -> str:
+    """Upsert the GitHub user into the legacy JWT identity flow."""
     try:
         import jwt as pyjwt
     except ImportError:

@@ -2,20 +2,71 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+logger = logging.getLogger(__name__)
+
+
+def _first_env(*names: str) -> str:
+    for name in names:
+        value = os.environ.get(name, "")
+        if value:
+            return value
+    return ""
+
+
+async def _create_supabase_client(url: str, key: str):
+    try:
+        from supabase import acreate_client
+    except ImportError:
+        logger.warning("supabase package is not installed")
+        return None
+
+    try:
+        return await acreate_client(url, key)
+    except Exception:
+        logger.exception("Failed to initialise Supabase client")
+        return None
+
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     """Initialise database pool and graph driver on startup."""
     db_pool = None
+    supabase_public = None
+    supabase_admin = None
+    supabase_db_pool = None
     graph_driver = None
 
-    # PostgreSQL
+    supabase_url = _first_env("SCIONA_SUPABASE_URL", "SUPABASE_URL")
+    anon_key = _first_env(
+        "SCIONA_SUPABASE_ANON_KEY",
+        "SUPABASE_ANON_KEY",
+    )
+    service_key = _first_env(
+        "SCIONA_SUPABASE_SERVICE_ROLE_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SCIONA_SUPABASE_SERVICE_KEY",
+        "SUPABASE_SERVICE_KEY",
+    )
+
+    if supabase_url and anon_key:
+        supabase_public = await _create_supabase_client(supabase_url, anon_key)
+    if supabase_url and service_key:
+        supabase_admin = await _create_supabase_client(supabase_url, service_key)
+    if supabase_public is None and supabase_admin is not None:
+        supabase_public = supabase_admin
+
+    if supabase_public is not None:
+        app.state.supabase = supabase_public
+    if supabase_admin is not None:
+        app.state.supabase_admin = supabase_admin
+
     postgres_uri = os.environ.get("SCIONA_POSTGRES_URI", "")
     if postgres_uri:
         try:
@@ -25,13 +76,32 @@ async def _lifespan(app: FastAPI):
                 postgres_uri,
                 min_size=2,
                 max_size=10,
-                statement_cache_size=0,  # Supabase PgBouncer compat
+                statement_cache_size=0,
             )
             app.state.db_pool = db_pool
         except Exception:
+            logger.exception("Failed to initialise asyncpg pool")
             db_pool = None
 
-    # Memgraph
+    supabase_postgres_uri = _first_env(
+        "SCIONA_SUPABASE_POSTGRES_URI",
+        "SUPABASE_POSTGRES_URI",
+    )
+    if supabase_postgres_uri:
+        try:
+            import asyncpg
+
+            supabase_db_pool = await asyncpg.create_pool(
+                supabase_postgres_uri,
+                min_size=2,
+                max_size=10,
+                statement_cache_size=0,
+            )
+            app.state.supabase_db_pool = supabase_db_pool
+        except Exception:
+            logger.exception("Failed to initialise Supabase asyncpg pool")
+            supabase_db_pool = None
+
     memgraph_uri = os.environ.get("SCIONA_MEMGRAPH_URI", "")
     if memgraph_uri:
         try:
@@ -40,6 +110,7 @@ async def _lifespan(app: FastAPI):
             graph_driver = AsyncGraphDatabase.driver(memgraph_uri, auth=None)
             app.state.graph_driver = graph_driver
         except Exception:
+            logger.exception("Failed to initialise graph driver")
             graph_driver = None
 
     yield
@@ -47,6 +118,11 @@ async def _lifespan(app: FastAPI):
     if graph_driver is not None:
         try:
             await graph_driver.close()
+        except Exception:
+            pass
+    if supabase_db_pool is not None:
+        try:
+            await supabase_db_pool.close()
         except Exception:
             pass
     if db_pool is not None:
@@ -67,9 +143,9 @@ def create_app() -> FastAPI:
     from sciona.api.routers.auth import router as auth_router
     from sciona.api.routers.bounty import router as bounty_router
     from sciona.api.routers.catalog import router as catalog_router
+    from sciona.api.routers.dashboard import router as dashboard_router
     from sciona.api.routers.registry import router as registry_router
     from sciona.api.routers.verification import router as verification_router
-    from sciona.api.routers.dashboard import router as dashboard_router
 
     application.add_middleware(
         CORSMiddleware,

@@ -3,42 +3,53 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
+from sciona.api.snapshot import fetch_manifest_data, generate_manifest_sqlite
+
 
 async def _cmd_catalog_sync(args: argparse.Namespace) -> None:
-    """Download latest manifest.sqlite from the platform."""
-    try:
-        import httpx
-    except ImportError:
-        print("Error: httpx is required. Install with: pip install httpx", file=sys.stderr)
-        sys.exit(1)
+    """Build the local manifest.sqlite from Supabase data."""
 
     from sciona.commands.login_cmds import _load_token
 
     token, default_api_url = _load_token()
-    api_url = (args.api_url or default_api_url or "https://api.sciona.dev").rstrip("/")
+    supabase_url = (
+        os.environ.get("SUPABASE_URL")
+        or os.environ.get("SCIONA_SUPABASE_URL")
+        or getattr(args, "api_url", None)
+        or default_api_url
+        or ""
+    ).rstrip("/")
+    if not supabase_url:
+        print(
+            "Error: SUPABASE_URL is not configured.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     output_path = Path(args.output) if args.output else Path.home() / ".sciona" / "manifest.sqlite"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    headers = {}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            f"{api_url}/catalog/manifest",
-            headers=headers,
-            follow_redirects=True,
+    access_token = (
+        os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        or os.environ.get("SUPABASE_ANON_KEY")
+        or token
+    )
+    if not access_token:
+        print(
+            "Error: no Supabase token configured. Set SUPABASE_SERVICE_ROLE_KEY, "
+            "SUPABASE_ANON_KEY, or run `sciona login`.",
+            file=sys.stderr,
         )
-        if resp.status_code == 404:
-            print("No manifest available on the platform yet.", file=sys.stderr)
-            sys.exit(1)
-        if resp.status_code != 200:
-            print(f"Error: {resp.status_code} {resp.text}", file=sys.stderr)
-            sys.exit(1)
+        sys.exit(1)
 
-        output_path.write_bytes(resp.content)
-        print(f"Manifest downloaded to {output_path}")
+    manifest_data = await fetch_manifest_data(
+        supabase_url,
+        access_token,
+    )
+    con = generate_manifest_sqlite(manifest_data, output_path=output_path)
+    con.close()
+    print(f"Manifest written to {output_path}")

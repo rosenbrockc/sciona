@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from sciona.api import deps as api_deps
 from sciona.api.bounty_state import (
     InvalidTransition,
     compute_cancellation_fee,
     validate_transition,
 )
-from sciona.api.deps import UserRow, get_db, require_auth
 from sciona.api.models import (
     BountyCancelResponse,
     BountyCreateRequest,
@@ -25,22 +26,78 @@ from sciona.api.models import (
     UpdateTargetRequest,
 )
 
+UserRow = getattr(api_deps, "UserProfile", None) or api_deps.UserRow
+get_db = api_deps.get_db
+require_auth = api_deps.require_auth
+
 router = APIRouter()
+
+
+async def _get_supabase(request: Request) -> Any | None:
+    if not api_deps.use_supabase_db():
+        return None
+    return getattr(request.app.state, "supabase", None)
+
+
+def _first_row(data: Any) -> dict[str, Any] | None:
+    if data is None:
+        return None
+    if isinstance(data, list):
+        return data[0] if data else None
+    if isinstance(data, dict):
+        return data
+    return None
+
+
+def _json_obj(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        import json
+
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, dict) else {}
+    return value
 
 
 @router.post("")
 async def create_bounty(
     body: BountyCreateRequest,
     user: UserRow = Depends(require_auth),
+    supabase=Depends(_get_supabase),
     db=Depends(get_db),
 ) -> BountyResponse:
     """Create a draft bounty."""
+    user_id = str(user.user_id)
+    if supabase is not None:
+        result = await (
+            supabase.table("bounties")
+            .insert(
+                {
+                    "principal_id": user_id,
+                    "title": body.title,
+                    "escrow_amount": body.escrow_amount,
+                    "deadline": body.deadline,
+                    "tier": body.tier,
+                    "config_yml": body.config_yml,
+                    "flare_payload": body.flare_payload,
+                }
+            )
+            .execute()
+        )
+        created = _first_row(result.data)
+        if not created:
+            raise HTTPException(500, "Failed to create bounty")
+        return _bounty_response(created)
+
     row = await db.fetchrow(
         """INSERT INTO bounties
            (principal_id, title, escrow_amount, deadline, tier, config_yml, flare_payload)
            VALUES ($1::uuid, $2, $3, $4, $5, $6::jsonb, $7::jsonb)
            RETURNING *""",
-        user.user_id,
+        user_id,
         body.title,
         body.escrow_amount,
         body.deadline,
@@ -56,15 +113,14 @@ async def create_bounty(
 async def fund_bounty(
     bounty_id: UUID,
     user: UserRow = Depends(require_auth),
+    supabase=Depends(_get_supabase),
     db=Depends(get_db),
 ) -> BountyFundResponse:
     """Fund a bounty (transitions draft -> open)."""
-    row = await db.fetchrow(
-        "SELECT * FROM bounties WHERE bounty_id = $1", bounty_id
-    )
+    row = await _fetch_bounty(bounty_id, supabase=supabase, db=db)
     if not row:
         raise HTTPException(404, "Bounty not found")
-    if str(row["principal_id"]) != user.user_id:
+    if str(row["principal_id"]) != str(user.user_id):
         raise HTTPException(403, "Only the bounty creator can fund it")
 
     try:
@@ -72,13 +128,20 @@ async def fund_bounty(
     except InvalidTransition as e:
         raise HTTPException(409, str(e))
 
-    await db.execute(
-        "UPDATE bounties SET status = $1, updated_at = now() WHERE bounty_id = $2",
-        new_status,
-        bounty_id,
-    )
+    if supabase is not None:
+        await (
+            supabase.table("bounties")
+            .update({"status": new_status})
+            .eq("bounty_id", str(bounty_id))
+            .execute()
+        )
+    else:
+        await db.execute(
+            "UPDATE bounties SET status = $1, updated_at = now() WHERE bounty_id = $2",
+            new_status,
+            bounty_id,
+        )
 
-    # TODO: create Stripe checkout session and return checkout_url
     return BountyFundResponse(
         bounty_id=bounty_id,
         status=new_status,
@@ -91,29 +154,65 @@ async def submit_to_bounty(
     bounty_id: UUID,
     body: SubmissionRequest,
     user: UserRow = Depends(require_auth),
+    supabase=Depends(_get_supabase),
     db=Depends(get_db),
 ) -> SubmissionResponse:
     """Submit a CDG solution with signed receipt."""
-    import json
-
-    row = await db.fetchrow(
-        "SELECT * FROM bounties WHERE bounty_id = $1", bounty_id
-    )
+    row = await _fetch_bounty(bounty_id, supabase=supabase, db=db)
     if not row:
         raise HTTPException(404, "Bounty not found")
 
-    # Transition open -> submitted on first submission; stay submitted on subsequent
     if row["status"] == "open":
         try:
             validate_transition(row["status"], "submit")
         except InvalidTransition as e:
             raise HTTPException(409, str(e))
-        await db.execute(
-            "UPDATE bounties SET status = 'submitted', updated_at = now() WHERE bounty_id = $1",
-            bounty_id,
-        )
+        if supabase is not None:
+            await (
+                supabase.table("bounties")
+                .update({"status": "submitted"})
+                .eq("bounty_id", str(bounty_id))
+                .execute()
+            )
+        else:
+            await db.execute(
+                "UPDATE bounties SET status = 'submitted', updated_at = now() WHERE bounty_id = $1",
+                bounty_id,
+            )
     elif row["status"] != "submitted":
         raise HTTPException(409, f"Cannot submit to bounty in {row['status']!r} state")
+
+    if supabase is not None:
+        sub_result = await (
+            supabase.table("submissions")
+            .insert(
+                {
+                    "bounty_id": str(bounty_id),
+                    "architect_id": str(user.user_id),
+                    "cdg_hash": body.cdg_hash,
+                    "atom_versions": body.atom_versions,
+                    "receipt_s3": "",
+                    "receipt_json": body.receipt_json,
+                    "claimed_metric_name": body.claimed_metric_name,
+                    "claimed_metric_value": body.claimed_metric_value,
+                }
+            )
+            .execute()
+        )
+        created = _first_row(sub_result.data)
+        if not created:
+            raise HTTPException(500, "Failed to create submission")
+        sub_row = await (
+            supabase.table("submissions")
+            .select("submission_id, bounty_id, verification_status, submitted_at")
+            .eq("submission_id", created["submission_id"])
+            .maybe_single()
+            .execute()
+        )
+        row = _first_row(sub_row.data) or created
+        return SubmissionResponse(**dict(row))
+
+    import json
 
     sub_row = await db.fetchrow(
         """INSERT INTO submissions
@@ -137,21 +236,29 @@ async def submit_to_bounty(
 async def cancel_bounty(
     bounty_id: UUID,
     user: UserRow = Depends(require_auth),
+    supabase=Depends(_get_supabase),
     db=Depends(get_db),
 ) -> BountyCancelResponse:
     """Cancel a bounty (with fee per design decision 4.13)."""
-    row = await db.fetchrow(
-        "SELECT * FROM bounties WHERE bounty_id = $1", bounty_id
-    )
+    row = await _fetch_bounty(bounty_id, supabase=supabase, db=db)
     if not row:
         raise HTTPException(404, "Bounty not found")
-    if str(row["principal_id"]) != user.user_id:
+    if str(row["principal_id"]) != str(user.user_id):
         raise HTTPException(403, "Only the bounty creator can cancel it")
 
-    has_submissions = await db.fetchval(
-        "SELECT EXISTS(SELECT 1 FROM submissions WHERE bounty_id = $1)",
-        bounty_id,
-    )
+    if supabase is not None:
+        submissions_result = await (
+            supabase.table("submissions")
+            .select("submission_id", count="exact")
+            .eq("bounty_id", str(bounty_id))
+            .execute()
+        )
+        has_submissions = bool(submissions_result.count or submissions_result.data)
+    else:
+        has_submissions = await db.fetchval(
+            "SELECT EXISTS(SELECT 1 FROM submissions WHERE bounty_id = $1)",
+            bounty_id,
+        )
 
     try:
         action = "cancel_open" if row["status"] == "open" else "cancel_draft"
@@ -164,14 +271,22 @@ async def cancel_bounty(
     except InvalidTransition as e:
         raise HTTPException(409, str(e))
 
-    await db.execute(
-        """UPDATE bounties
-           SET status = $1, cancellation_fee = $2, updated_at = now()
-           WHERE bounty_id = $3""",
-        new_status,
-        float(fee),
-        bounty_id,
-    )
+    if supabase is not None:
+        await (
+            supabase.table("bounties")
+            .update({"status": new_status, "cancellation_fee": float(fee)})
+            .eq("bounty_id", str(bounty_id))
+            .execute()
+        )
+    else:
+        await db.execute(
+            """UPDATE bounties
+               SET status = $1, cancellation_fee = $2, updated_at = now()
+               WHERE bounty_id = $3""",
+            new_status,
+            float(fee),
+            bounty_id,
+        )
 
     return BountyCancelResponse(
         bounty_id=bounty_id,
@@ -185,23 +300,32 @@ async def update_target(
     bounty_id: UUID,
     body: UpdateTargetRequest,
     user: UserRow = Depends(require_auth),
+    supabase=Depends(_get_supabase),
     db=Depends(get_db),
 ) -> BountyResponse:
     """Principal updates minimum metric target between verifications."""
-    row = await db.fetchrow(
-        "SELECT * FROM bounties WHERE bounty_id = $1", bounty_id
-    )
+    row = await _fetch_bounty(bounty_id, supabase=supabase, db=db)
     if not row:
         raise HTTPException(404, "Bounty not found")
-    if str(row["principal_id"]) != user.user_id:
+    if str(row["principal_id"]) != str(user.user_id):
         raise HTTPException(403, "Only the bounty creator can update the target")
     if row["status"] not in ("open", "submitted"):
         raise HTTPException(409, "Can only update target for open/submitted bounties")
 
-    import json
-
-    config = json.loads(row["config_yml"]) if row["config_yml"] else {}
+    config = _json_obj(row["config_yml"])
     config["min_metric_value"] = body.min_metric_value
+
+    if supabase is not None:
+        await (
+            supabase.table("bounties")
+            .update({"config_yml": config})
+            .eq("bounty_id", str(bounty_id))
+            .execute()
+        )
+        updated = await _fetch_bounty(bounty_id, supabase=supabase, db=db)
+        return _bounty_response(updated)
+
+    import json
 
     await db.execute(
         "UPDATE bounties SET config_yml = $1::jsonb, updated_at = now() WHERE bounty_id = $2",
@@ -216,11 +340,13 @@ async def update_target(
 
 
 @router.get("/{bounty_id}")
-async def get_bounty(bounty_id: UUID, db=Depends(get_db)) -> BountyResponse:
+async def get_bounty(
+    bounty_id: UUID,
+    supabase=Depends(_get_supabase),
+    db=Depends(get_db),
+) -> BountyResponse:
     """Get bounty details including submission count and status."""
-    row = await db.fetchrow(
-        "SELECT * FROM bounties WHERE bounty_id = $1", bounty_id
-    )
+    row = await _fetch_bounty(bounty_id, supabase=supabase, db=db)
     if not row:
         raise HTTPException(404, "Bounty not found")
     return _bounty_response(row, db=db, bounty_id=bounty_id)
@@ -232,11 +358,42 @@ async def list_bounties(
     domain_tag: str | None = None,
     limit: int = Query(default=50, le=200),
     offset: int = 0,
+    supabase=Depends(_get_supabase),
     db=Depends(get_db),
 ) -> PaginatedResponse:
     """List bounties with optional filters."""
+    limit = int(getattr(limit, "default", limit))
+    offset = int(getattr(offset, "default", offset))
+
+    if supabase is not None:
+        query = supabase.table("bounties").select(
+            "bounty_id, title, escrow_amount, status, deadline, tier, created_at",
+            count="exact",
+        )
+        if status:
+            query = query.eq("status", status)
+        # Domain tags are not stored on bounties in the current schema; keep the
+        # parameter for API compatibility but do not filter on it here.
+        result = await query.order("created_at", desc=True).range(
+            offset, offset + limit - 1
+        ).execute()
+        rows = result.data or []
+        total = int(result.count or len(rows))
+        items = [
+            BountySummaryResponse(
+                bounty_id=r["bounty_id"],
+                title=r["title"],
+                escrow_amount=float(r["escrow_amount"]),
+                status=r["status"],
+                deadline=r["deadline"],
+                tier=r["tier"],
+            )
+            for r in rows
+        ]
+        return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
+
     conditions = ["1=1"]
-    params: list = []
+    params: list[Any] = []
     idx = 1
 
     if status:
@@ -292,3 +449,21 @@ def _bounty_response(row, *, db=None, bounty_id=None) -> BountyResponse:
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
+
+
+async def _fetch_bounty(
+    bounty_id: UUID,
+    *,
+    supabase=None,
+    db=None,
+) -> dict[str, Any] | None:
+    if supabase is not None:
+        result = await (
+            supabase.table("bounties")
+            .select("*")
+            .eq("bounty_id", str(bounty_id))
+            .maybe_single()
+            .execute()
+        )
+        return _first_row(result.data)
+    return await db.fetchrow("SELECT * FROM bounties WHERE bounty_id = $1", bounty_id)
