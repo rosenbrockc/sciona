@@ -646,6 +646,15 @@ def main() -> None:
         ),
     )
     ingest_parser.add_argument(
+        "--allow-family-replace",
+        action="store_true",
+        default=False,
+        help=(
+            "Allow replacing an existing family-scope output directory "
+            "that already contains published canonical artifacts"
+        ),
+    )
+    ingest_parser.add_argument(
         "--llm-provider",
         choices=["anthropic", "codex", "llama_cpp", "claude_cli", "codex_cli", "gemini_cli", "claude_shim", "codex_shim", "gemini_shim"],
         default=None,

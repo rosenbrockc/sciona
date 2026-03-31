@@ -36,6 +36,8 @@ STANDARD_ARTIFACT_SURFACE = (
     "cdg.json",
     "matches.json",
 )
+FAMILY_PUBLICATION_FRESH = "fresh_family_publish"
+FAMILY_PUBLICATION_REPLACE = "family_replace"
 
 
 def _write_json_atomic(path: Path, data: dict[str, Any]) -> None:
@@ -58,6 +60,43 @@ def _normalize_output_scope(value: Any) -> str:
     if scope in OUTPUT_SCOPE_VALUES:
         return scope
     return OUTPUT_SCOPE_SYMBOL
+
+
+def _publication_payload(
+    *,
+    output_dir: Path,
+    scope: str,
+    expected_artifacts: list[str],
+    published_files: list[str],
+    existing_family_artifacts: list[str] | None = None,
+    allow_family_replace: bool = False,
+) -> dict[str, Any]:
+    normalized_scope = _normalize_output_scope(scope)
+    publication = {
+        "target_dir": str(output_dir),
+        "target_basename": output_dir.name,
+        "scope": normalized_scope,
+        "expected_artifacts": list(expected_artifacts),
+        "published_files": list(published_files),
+        "missing_artifacts": [
+            name for name in expected_artifacts if name not in published_files
+        ],
+    }
+    if normalized_scope == OUTPUT_SCOPE_FAMILY:
+        existing = sorted(set(existing_family_artifacts or []))
+        publication.update(
+            {
+                "existing_family_output": bool(existing),
+                "existing_family_artifacts": existing,
+                "allow_family_replace": bool(allow_family_replace),
+                "family_publication_mode": (
+                    FAMILY_PUBLICATION_REPLACE
+                    if existing
+                    else FAMILY_PUBLICATION_FRESH
+                ),
+            }
+        )
+    return publication
 
 
 class IngestMonitor:
@@ -96,6 +135,8 @@ class IngestMonitor:
         max_depth: int,
         output_scope: str = OUTPUT_SCOPE_SYMBOL,
         output_scope_source: str = "default",
+        existing_family_artifacts: list[str] | None = None,
+        allow_family_replace: bool = False,
     ) -> None:
         if self.completed_path.exists():
             self.completed_path.unlink()
@@ -125,14 +166,14 @@ class IngestMonitor:
             "output_dir": str(self.output_dir),
             "output_scope": normalized_scope,
             "output_scope_source": str(output_scope_source or "default"),
-            "publication": {
-                "target_dir": str(self.output_dir),
-                "target_basename": self.output_dir.name,
-                "scope": normalized_scope,
-                "expected_artifacts": list(STANDARD_ARTIFACT_SURFACE),
-                "published_files": [],
-                "missing_artifacts": list(STANDARD_ARTIFACT_SURFACE),
-            },
+            "publication": _publication_payload(
+                output_dir=self.output_dir,
+                scope=normalized_scope,
+                expected_artifacts=list(STANDARD_ARTIFACT_SURFACE),
+                published_files=[],
+                existing_family_artifacts=existing_family_artifacts,
+                allow_family_replace=allow_family_replace,
+            ),
             "started_at": started,
             "last_heartbeat_at": started,
             "llm_call_inflight": None,
@@ -295,16 +336,21 @@ class IngestMonitor:
         shutil.rmtree(self.partial_dir, ignore_errors=True)
         expected_artifacts = list(artifact_surface or STANDARD_ARTIFACT_SURFACE)
         has_status = bool(self._status)
-        publication = {
-            "target_dir": str(self.output_dir),
-            "target_basename": self.output_dir.name,
-            "scope": _normalize_output_scope(self._status.get("output_scope")),
-            "expected_artifacts": expected_artifacts,
-            "published_files": published,
-            "missing_artifacts": [
-                name for name in expected_artifacts if name not in published
-            ],
-        }
+        previous_publication = (
+            self._status.get("publication")
+            if isinstance(self._status.get("publication"), dict)
+            else {}
+        )
+        publication = _publication_payload(
+            output_dir=self.output_dir,
+            scope=_normalize_output_scope(self._status.get("output_scope")),
+            expected_artifacts=expected_artifacts,
+            published_files=published,
+            existing_family_artifacts=(
+                list(previous_publication.get("existing_family_artifacts") or [])
+            ),
+            allow_family_replace=bool(previous_publication.get("allow_family_replace", False)),
+        )
         self._status["publication"] = publication
         if has_status:
             self._status["last_heartbeat_at"] = _now_ts()

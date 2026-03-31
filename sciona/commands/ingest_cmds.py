@@ -50,6 +50,14 @@ def _resolve_output_scope(
     return OUTPUT_SCOPE_SYMBOL, "default_symbol"
 
 
+def _existing_family_artifacts(output_dir: Path) -> list[str]:
+    return [
+        name
+        for name in STANDARD_ARTIFACT_SURFACE
+        if (output_dir / name).is_file()
+    ]
+
+
 def _cmd_ingest_status(args: argparse.Namespace) -> None:
     """Inspect ingestion monitor status and return meaningful exit codes."""
     from sciona.ingester.monitor import COMPLETED_FILE, FAILED_FILE, IngestMonitor
@@ -126,6 +134,12 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     output_dir = Path(args.output) if args.output else Path("output") / args.class_name
     output_scope, output_scope_source = _resolve_output_scope(args, output_dir=output_dir)
+    allow_family_replace = bool(getattr(args, "allow_family_replace", False))
+    existing_family_artifacts = (
+        _existing_family_artifacts(output_dir)
+        if output_scope == OUTPUT_SCOPE_FAMILY
+        else []
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     _print_mode_summary("ingest", mode_settings)
 
@@ -155,6 +169,8 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         max_depth=int(config.ingester_max_depth),
         output_scope=output_scope,
         output_scope_source=output_scope_source,
+        existing_family_artifacts=existing_family_artifacts,
+        allow_family_replace=allow_family_replace,
     )
 
     proof_env = None
@@ -205,6 +221,27 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         source_path = Path(args.source)
         if not source_path.exists():
             raise FileNotFoundError(f"source file not found: {source_path}")
+        if output_scope == OUTPUT_SCOPE_FAMILY and existing_family_artifacts and not allow_family_replace:
+            existing_list = ", ".join(existing_family_artifacts)
+            error = (
+                "grouped family output already contains canonical published artifacts: "
+                f"{existing_list}. Re-run with --allow-family-replace to replace "
+                "the existing family output."
+            )
+            failure_summary = {
+                "output_dir": str(output_dir),
+                "output_scope": output_scope,
+                "output_scope_source": output_scope_source,
+                "published_files": [],
+                "publication": monitor.publication_summary(),
+            }
+            monitor.fail(
+                error=error,
+                phase="phase0_family_replace_guard",
+                summary=failure_summary,
+            )
+            print(f"Error: {error}", file=sys.stderr)
+            sys.exit(1)
 
         # Set up LLM
         from sciona.llm_router import (
@@ -334,6 +371,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             "output_dir": str(output_dir),
             "output_scope": output_scope,
             "output_scope_source": output_scope_source,
+            "allow_family_replace": allow_family_replace,
             "published_files": published_files,
             "publication": monitor.publication_summary(),
             "smoke_validation": smoke_validation,
