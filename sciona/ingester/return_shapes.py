@@ -42,6 +42,22 @@ _STRUCTURED_RETURN_ALLOWLIST: tuple[StructuredReturnShape, ...] = (
             ),
         ),
     ),
+    StructuredReturnShape(
+        subject_name="OnsetDetector",
+        source_method="detect_events",
+        fields=(
+            StructuredReturnField(
+                output_name="onsets",
+                field_key="onsets",
+                type_desc="list[int]",
+            ),
+            StructuredReturnField(
+                output_name="confidence",
+                field_key="confidence",
+                type_desc="float",
+            ),
+        ),
+    ),
 )
 
 
