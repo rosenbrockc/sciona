@@ -1,0 +1,41 @@
+{
+  "edges": [
+    {
+      "input_name": "seconds",
+      "output_name": "seconds",
+      "source_id": "offset_tt2tdb",
+      "source_type": "float",
+      "target_id": "tt2tdb_offset",
+      "target_type": "float"
+    }
+  ],
+  "metadata": {
+    "goal": "tempo_grouped_offsets",
+    "num_edges": 1,
+    "num_nodes": 3,
+    "paradigm": "grouped_family"
+  },
+  "nodes": [
+    {
+      "concept_type": "custom",
+      "description": "Compute a compact TT to TDB offset approximation.",
+      "name": "Offset Tt2Tdb",
+      "node_id": "offset_tt2tdb",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Compute a higher-order TT to TDB offset approximation.",
+      "name": "Offset Tt2Tdbh",
+      "node_id": "offset_tt2tdbh",
+      "status": "atomic"
+    },
+    {
+      "concept_type": "custom",
+      "description": "Apply the grouped TT to TDB offset helper to scalar or list inputs.",
+      "name": "Tt2Tdb Offset",
+      "node_id": "tt2tdb_offset",
+      "status": "atomic"
+    }
+  ]
+}

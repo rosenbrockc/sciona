@@ -1,0 +1,23 @@
+{
+  "artifacts": [],
+  "edges": [],
+  "lowering_version": "phase3_v1",
+  "operations": [
+    {
+      "display_name": "Offset Tt2Tdb",
+      "operation_id": "offset_tt2tdb"
+    },
+    {
+      "display_name": "Offset Tt2Tdbh",
+      "operation_id": "offset_tt2tdbh"
+    },
+    {
+      "display_name": "Tt2Tdb Offset",
+      "operation_id": "tt2tdb_offset"
+    }
+  ],
+  "source_language": "python",
+  "state_slots": [],
+  "subject_name": "tt2tdb_offset",
+  "unknowns": []
+}

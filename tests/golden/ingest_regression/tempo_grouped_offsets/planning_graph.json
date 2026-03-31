@@ -1,0 +1,26 @@
+{
+  "blocked_operations": [],
+  "operation_decisions": [
+    {
+      "operation_id": "offset_tt2tdb"
+    },
+    {
+      "operation_id": "offset_tt2tdbh"
+    },
+    {
+      "operation_id": "tt2tdb_offset"
+    }
+  ],
+  "planned_groups": [
+    {
+      "display_name": "Tempo Offset Helpers",
+      "group_id": "tempo_offset_helpers",
+      "member_operation_ids": [
+        "offset_tt2tdb",
+        "offset_tt2tdbh",
+        "tt2tdb_offset"
+      ]
+    }
+  ],
+  "planner_version": "phase3_v1"
+}

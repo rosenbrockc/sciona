@@ -17,6 +17,7 @@ from sciona.ingester.graph import IngesterAgent
 from sciona.ingester.models import IngestIRPlan, IngestPlanGraph, IngestionBundle
 from sciona.ingester.monitor import (
     IngestMonitor,
+    OUTPUT_SCOPE_FAMILY,
     OUTPUT_SCOPE_SYMBOL,
     TRACE_FILE,
 )
@@ -289,7 +290,7 @@ def default_ingest_regression_cases(
             case_id="sklearn_grouped_images",
             family="sklearn_grouped_images",
             class_name="grid_to_graph",
-            output_scope="family",
+            output_scope=OUTPUT_SCOPE_FAMILY,
             expected_language="python",
             source_path=_fixture_source_path(
                 root,
@@ -306,6 +307,26 @@ def default_ingest_regression_cases(
                     check="generated_atoms_contains",
                     value="def extract_patches_2d",
                 ),
+            ],
+        ),
+        IngestRegressionCase(
+            case_id="tempo_grouped_offsets",
+            family="tempo_grouped_offsets",
+            class_name="tt2tdb_offset",
+            output_scope=OUTPUT_SCOPE_FAMILY,
+            expected_language="python",
+            source_path=_fixture_source_path(
+                root,
+                case_id="tempo_grouped_offsets",
+                expected_language="python",
+            ),
+            fixture_origin="INGESTER_GAP_PHASE3_PLAN.md",
+            expected_artifacts=list(_DEFAULT_REQUIRED_ARTIFACTS),
+            semantic_expectations=[
+                SemanticExpectation(check="has_canonical_ir"),
+                SemanticExpectation(check="source_language_equals", value="python"),
+                SemanticExpectation(check="generated_atoms_contains", value="def offset_tt2tdb"),
+                SemanticExpectation(check="generated_atoms_contains", value="def tt2tdb_offset"),
             ],
         ),
         IngestRegressionCase(

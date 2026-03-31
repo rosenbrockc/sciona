@@ -244,10 +244,11 @@ class _FailureFixtureAgent:
 def test_default_case_matrix_covers_required_families():
     cases = default_ingest_regression_cases(fixture_root=_FIXTURE_ROOT)
 
-    assert len(cases) == 8
+    assert len(cases) == 9
     assert {case.case_id for case in cases} == {
         "sklearn_style_estimator",
         "sklearn_grouped_images",
+        "tempo_grouped_offsets",
         "rolling_stateful_class",
         "bayesian_or_message_passing",
         "detector_structured_output",
@@ -258,6 +259,7 @@ def test_default_case_matrix_covers_required_families():
     assert {case.family for case in cases} == {
         "sklearn_estimator",
         "sklearn_grouped_images",
+        "tempo_grouped_offsets",
         "rolling_stateful",
         "bayesian_or_message_passing",
         "detector_structured_output",
@@ -267,8 +269,15 @@ def test_default_case_matrix_covers_required_families():
     }
     assert all(Path(case.source_path).exists() for case in cases)
     assert all(case.expected_artifacts for case in cases)
-    grouped_case = next(case for case in cases if case.case_id == "sklearn_grouped_images")
-    assert grouped_case.output_scope == "family"
+    grouped_case_ids = {
+        case.case_id
+        for case in cases
+        if case.output_scope == "family"
+    }
+    assert grouped_case_ids == {
+        "sklearn_grouped_images",
+        "tempo_grouped_offsets",
+    }
 
 
 def test_summarize_monitor_trace_counts_prompt_keys_and_stalled(tmp_path):
@@ -548,15 +557,16 @@ async def test_run_default_real_world_corpus_with_goldens(tmp_path):
         stale_seconds=30,
     )
 
-    assert len(results) == 8
-    assert summary.total_cases == 8
-    assert summary.completed_cases == 8
-    assert summary.golden_compared_cases == 8
-    assert summary.golden_matched_cases == 8
+    assert len(results) == 9
+    assert summary.total_cases == 9
+    assert summary.completed_cases == 9
+    assert summary.golden_compared_cases == 9
+    assert summary.golden_matched_cases == 9
     assert summary.golden_match_rate == 1.0
     assert set(summary.family_breakdown.keys()) == {
         "sklearn_estimator",
         "sklearn_grouped_images",
+        "tempo_grouped_offsets",
         "rolling_stateful",
         "bayesian_or_message_passing",
         "detector_structured_output",
