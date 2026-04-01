@@ -1946,7 +1946,16 @@ def _build_map_over() -> SkeletonGraph:
 
 
 def _build_baseline_analysis() -> SkeletonGraph:
-    """Multi-scale temporal baseline analysis pipeline."""
+    """Multi-scale temporal baseline analysis pipeline.
+
+    Topology mirrors happyml HPYBaselineComponent execution:
+
+    Per-window (MAP body):
+        Mask -> Resample -> Scale -> Per-Window Fit -> Output Transform
+
+    Post-window (top-level):
+        Qualify Events -> Pad -> Normalize -> Combine -> Regionize
+    """
     acquire = _node(
         "Acquire Data",
         "Load or receive input time-series data",
@@ -1954,53 +1963,102 @@ def _build_baseline_analysis() -> SkeletonGraph:
         inputs=[IOSpec(name="source", type_desc="HPYBaselineTimeSeries")],
         outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
     )
-    preprocess = _node(
-        "Preprocess",
-        "Apply mask, resample, and scale steps to raw signal",
+
+    mask = _node(
+        "Mask",
+        "Apply zeroing/masking to window data",
         ConceptType.BASELINE_ANALYSIS,
-        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
-        outputs=[IOSpec(name="prepared", type_desc="np.ndarray")],
+        inputs=[IOSpec(name="window", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="masked", type_desc="np.ndarray")],
+    )
+    resample = _node(
+        "Resample",
+        "Resample or aggregate signal to anchor sample rate",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="masked", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="resampled", type_desc="np.ndarray")],
+    )
+    scale = _node(
+        "Scale",
+        "Normalize signal magnitude within each window",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="resampled", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="scaled", type_desc="np.ndarray")],
+    )
+    per_window_fit = _node(
+        "Per-Window Fit",
+        "Run non-linear curve fitting on each window",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="scaled", type_desc="np.ndarray")],
+        outputs=[
+            IOSpec(
+                name="fit_internals",
+                type_desc="HPYBaselineFitStackInternals",
+            )
+        ],
+    )
+    output_transform = _node(
+        "Output Transform",
+        "Convert per-window fit results into onset arrays",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[
+            IOSpec(
+                name="fit_internals",
+                type_desc="HPYBaselineFitStackInternals",
+            )
+        ],
+        outputs=[IOSpec(name="onsets", type_desc="np.ndarray")],
     )
     windowed_analysis = _node(
         "Windowed Analysis",
-        "Apply MAP-over-windows to run body pipeline on each window",
+        "Sliding window iteration over input signal; body runs per window",
         ConceptType.MAP_OVER,
-        inputs=[IOSpec(name="prepared", type_desc="np.ndarray")],
-        outputs=[IOSpec(name="window_results", type_desc="list[any]")],
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="accumulated_onsets", type_desc="list[np.ndarray]")],
     )
     windowed_analysis = windowed_analysis.model_copy(
-        update={"map_window_size": 1024, "map_hop_size": 512}
+        update={
+            "map_window_size": 1024,
+            "map_hop_size": 512,
+            "children": [
+                mask.node_id,
+                resample.node_id,
+                scale.node_id,
+                per_window_fit.node_id,
+                output_transform.node_id,
+            ],
+        }
     )
-    fit = _node(
-        "Fit",
-        "FitStack state machine: ONSET→CENTER→OFFSET detection",
+    qualify_events = _node(
+        "Qualify Events",
+        "FitStack.qualify(): process accumulated fits through the ONSET->CENTER->OFFSET state machine",
         ConceptType.BASELINE_ANALYSIS,
-        inputs=[IOSpec(name="window_results", type_desc="list[any]")],
-        outputs=[IOSpec(name="fit_result", type_desc="HPYBaselineFitResult")],
+        inputs=[IOSpec(name="accumulated_onsets", type_desc="list[np.ndarray]")],
+        outputs=[IOSpec(name="probability", type_desc="np.ndarray")],
     )
-    fit = fit.model_copy(
+    qualify_events = qualify_events.model_copy(
         update={
             "is_opaque": True,
             "matched_primitive": "baseline_fit_stack",
         }
     )
-    output_transform = _node(
-        "Output Transform",
-        "Apply nonzero, clip-shift, or function transform to fit output",
+    pad = _node(
+        "Pad",
+        "Apply left and right padding around onsets to build a probability vector",
         ConceptType.BASELINE_ANALYSIS,
-        inputs=[IOSpec(name="fit_result", type_desc="HPYBaselineFitResult")],
-        outputs=[IOSpec(name="transformed", type_desc="np.ndarray")],
+        inputs=[IOSpec(name="probability", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="padded", type_desc="np.ndarray")],
     )
     normalize = _node(
         "Normalize",
-        "Normalize output via max, constant, or quantile method",
+        "Normalize per-component probability to [0, 1] via max, constant, or quantile method",
         ConceptType.BASELINE_ANALYSIS,
-        inputs=[IOSpec(name="transformed", type_desc="np.ndarray")],
+        inputs=[IOSpec(name="padded", type_desc="np.ndarray")],
         outputs=[IOSpec(name="normalized", type_desc="np.ndarray")],
     )
     combine = _node(
         "Combine",
-        "Combine multiple component outputs (product, convolution, coherence)",
+        "Combine multiple component outputs across components",
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="normalized", type_desc="np.ndarray")],
         outputs=[IOSpec(name="combined", type_desc="np.ndarray")],
@@ -2013,18 +2071,29 @@ def _build_baseline_analysis() -> SkeletonGraph:
         outputs=[IOSpec(name="regions", type_desc="list[tuple[int,int]]")],
     )
 
-    edges = [
-        _edge(acquire, preprocess, "signal", "signal", "np.ndarray"),
-        _edge(preprocess, windowed_analysis, "prepared", "prepared", "np.ndarray"),
+    body_edges = [
+        _edge(mask, resample, "masked", "masked", "np.ndarray"),
+        _edge(resample, scale, "resampled", "resampled", "np.ndarray"),
+        _edge(scale, per_window_fit, "scaled", "scaled", "np.ndarray"),
+        _edge(
+            per_window_fit,
+            output_transform,
+            "fit_internals",
+            "fit_internals",
+            "HPYBaselineFitStackInternals",
+        ),
+    ]
+    top_edges = [
+        _edge(acquire, windowed_analysis, "signal", "signal", "np.ndarray"),
         _edge(
             windowed_analysis,
-            fit,
-            "window_results",
-            "window_results",
-            "list[any]",
+            qualify_events,
+            "accumulated_onsets",
+            "accumulated_onsets",
+            "list[np.ndarray]",
         ),
-        _edge(fit, output_transform, "fit_result", "fit_result", "HPYBaselineFitResult"),
-        _edge(output_transform, normalize, "transformed", "transformed", "np.ndarray"),
+        _edge(qualify_events, pad, "probability", "probability", "np.ndarray"),
+        _edge(pad, normalize, "padded", "padded", "np.ndarray"),
         _edge(normalize, combine, "normalized", "normalized", "np.ndarray"),
         _edge(combine, regionize, "combined", "combined", "np.ndarray"),
     ]
@@ -2033,21 +2102,25 @@ def _build_baseline_analysis() -> SkeletonGraph:
         paradigm=ConceptType.BASELINE_ANALYSIS,
         name="Baseline Analysis",
         description=(
-            "Multi-scale temporal event detection: acquire signal, preprocess, "
-            "apply windowed analysis via MAP combinator, fit state machine, "
-            "transform, normalize, combine components, and regionize."
+            "Multi-scale temporal event detection: acquire signal, apply a "
+            "per-window step pipeline via MAP combinator, qualify events, "
+            "pad, normalize per component, combine components, and regionize."
         ),
         template_nodes=[
             acquire,
-            preprocess,
             windowed_analysis,
-            fit,
+            mask,
+            resample,
+            scale,
+            per_window_fit,
             output_transform,
+            qualify_events,
+            pad,
             normalize,
             combine,
             regionize,
         ],
-        template_edges=edges,
+        template_edges=body_edges + top_edges,
         variants=[
             "physiological_baseline",
             "multi_component_detection",
@@ -2147,11 +2220,11 @@ def instantiate_skeleton(
     nodes: list[AlgorithmicNode] = []
 
     for tpl_node in skeleton.template_nodes:
-        new_id = f"{tpl_node.node_id}_{uuid.uuid4().hex[:8]}"
-        id_map[tpl_node.node_id] = new_id
+        id_map[tpl_node.node_id] = f"{tpl_node.node_id}_{uuid.uuid4().hex[:8]}"
 
+    for tpl_node in skeleton.template_nodes:
         node = AlgorithmicNode(
-            node_id=new_id,
+            node_id=id_map[tpl_node.node_id],
             parent_id=parent_id,
             name=tpl_node.name,
             description=f"[{goal_desc}] {tpl_node.description}",
@@ -2173,6 +2246,11 @@ def instantiate_skeleton(
                 "conceptual_summary": tpl_node.conceptual_summary,
                 "critic_notes": tpl_node.critic_notes,
                 "decomposition_rationale": tpl_node.decomposition_rationale,
+                "children": [
+                    id_map[child_id]
+                    for child_id in tpl_node.children
+                    if child_id in id_map
+                ],
                 "fixed_point_max_iterations": tpl_node.fixed_point_max_iterations,
                 "fixed_point_convergence_field": tpl_node.fixed_point_convergence_field,
                 "map_window_size": tpl_node.map_window_size,
@@ -2241,8 +2319,8 @@ def instantiate_baseline_multi_component(
 ) -> tuple[list[AlgorithmicNode], list[DependencyEdge]]:
     """Instantiate a multi-component baseline analysis CDG.
 
-    Creates N copies of the per-component pipeline (Preprocess through
-    Normalize) and wires all into a shared Acquire, Combine, and Regionize.
+    Creates N copies of the per-component pipeline and wires all into a
+    shared Acquire, Combine, and Regionize.
     """
     if n_components < 1:
         raise ValueError("n_components must be >= 1")
@@ -2260,10 +2338,14 @@ def instantiate_baseline_multi_component(
     name_to_template = {node.name: node for node in skeleton.template_nodes}
     required_names = [
         "Acquire Data",
-        "Preprocess",
         "Windowed Analysis",
-        "Fit",
+        "Mask",
+        "Resample",
+        "Scale",
+        "Per-Window Fit",
         "Output Transform",
+        "Qualify Events",
+        "Pad",
         "Normalize",
         "Combine",
         "Regionize",
@@ -2297,11 +2379,22 @@ def instantiate_baseline_multi_component(
     nodes: list[AlgorithmicNode] = [shared_acquire]
     edges: list[DependencyEdge] = []
     chain_names = [
-        "Preprocess",
         "Windowed Analysis",
-        "Fit",
+        "Mask",
+        "Resample",
+        "Scale",
+        "Per-Window Fit",
         "Output Transform",
+        "Qualify Events",
+        "Pad",
         "Normalize",
+    ]
+    map_body_names = [
+        "Mask",
+        "Resample",
+        "Scale",
+        "Per-Window Fit",
+        "Output Transform",
     ]
 
     for component_index in range(n_components):
@@ -2317,6 +2410,16 @@ def instantiate_baseline_multi_component(
             )
             component_nodes[name] = component_node
             nodes.append(component_node)
+        component_nodes["Windowed Analysis"] = component_nodes[
+            "Windowed Analysis"
+        ].model_copy(
+            update={
+                "children": [
+                    component_nodes[name].node_id for name in map_body_names
+                ]
+            }
+        )
+        nodes[-len(chain_names)] = component_nodes["Windowed Analysis"]
 
         for tpl_edge in skeleton.template_edges:
             source_name = tpl_name_by_id[tpl_edge.source_id]

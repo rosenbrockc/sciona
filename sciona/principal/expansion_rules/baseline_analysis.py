@@ -1,15 +1,13 @@
 """Expansion rules for the Baseline Analysis family.
 
-Baseline analysis skeleton topology (8 nodes, linear pipeline):
+Corrected baseline analysis topology:
 
-    Acquire Data -> Preprocess -> Windowed Analysis -> Fit ->
-    Output Transform -> Normalize -> Combine -> Regionize
+    Acquire Data -> Windowed Analysis(MAP) -> Qualify Events ->
+    Pad -> Normalize -> Combine -> Regionize
 
-Expansion insertion points:
-  - After Fit: onset coverage check
-  - After Output Transform: padding saturation detection
-  - After Normalize: normalization clipping monitoring
-  - After Combine: component balance validation
+The MAP body contains the per-window step pipeline:
+
+    Mask -> Resample -> Scale -> Per-Window Fit -> Output Transform
 """
 
 from __future__ import annotations
@@ -27,15 +25,15 @@ from sciona.principal.expansion import ExpansionContext, ExpansionDiagnostic
 
 _DOMAIN = "baseline_analysis"
 
-_FIT = "Fit"
-_OUTPUT_TRANSFORM = "Output Transform"
+_QUALIFY_EVENTS = "Qualify Events"
+_PAD = "Pad"
 _NORMALIZE = "Normalize"
 _COMBINE = "Combine"
 _REGIONIZE = "Regionize"
 
-_FIT_EDGE = "fit->transform"
-_TRANSFORM_EDGE = "transform->normalize"
-_NORMALIZE_EDGE = "normalize->combine"
+_QUALIFY_PAD_EDGE = "qualify->pad"
+_PAD_NORMALIZE_EDGE = "pad->normalize"
+_NORMALIZE_COMBINE_EDGE = "normalize->combine"
 
 
 def _node(
@@ -79,10 +77,10 @@ def _edge(
     )
 
 
-def _fit_node(node_id: str = "fit") -> AlgorithmicNode:
+def _qualify_node(node_id: str = "qualify") -> AlgorithmicNode:
     return _node(
         node_id,
-        _FIT,
+        _QUALIFY_EVENTS,
         ConceptType.BASELINE_ANALYSIS,
         matched_primitive="baseline_fit_stack",
     )
@@ -93,10 +91,10 @@ def _baseline_node(node_id: str, name: str) -> AlgorithmicNode:
 
 
 def _build_insert_onset_coverage_check() -> RewriteRule:
-    fit = _fit_node()
-    sink = _baseline_node("sink", _OUTPUT_TRANSFORM)
-    lhs = CDGExport(nodes=[fit, sink], edges=[_edge("fit", "sink")])
-    interface = CDGExport(nodes=[fit, sink], edges=[])
+    qualify = _qualify_node()
+    pad = _baseline_node("pad", _PAD)
+    lhs = CDGExport(nodes=[qualify, pad], edges=[_edge("qualify", "pad")])
+    interface = CDGExport(nodes=[qualify, pad], edges=[])
 
     onset = _node(
         "onset",
@@ -115,32 +113,32 @@ def _build_insert_onset_coverage_check() -> RewriteRule:
         type_signature="list, int -> tuple[float, bool]",
     )
     rhs = CDGExport(
-        nodes=[fit, onset, sink],
-        edges=[_edge("fit", "onset"), _edge("onset", "sink")],
+        nodes=[qualify, onset, pad],
+        edges=[_edge("qualify", "onset"), _edge("onset", "pad")],
     )
 
     return RewriteRule(
-        name="insert_onset_coverage_check_after_fit",
+        name="insert_onset_coverage_check_after_qualify",
         lhs=lhs,
         rhs=rhs,
         interface=interface,
-        l_morphism=Morphism(node_map={"fit": "fit", "sink": "sink"}, edge_map={}),
-        r_morphism=Morphism(node_map={"fit": "fit", "sink": "sink"}, edge_map={}),
+        l_morphism=Morphism(node_map={"qualify": "qualify", "pad": "pad"}, edge_map={}),
+        r_morphism=Morphism(node_map={"qualify": "qualify", "pad": "pad"}, edge_map={}),
         priority=3,
     )
 
 
 def _build_insert_padding_saturation() -> RewriteRule:
-    fit = _fit_node()
-    transform = _baseline_node("transform", _OUTPUT_TRANSFORM)
+    qualify = _qualify_node()
+    pad = _baseline_node("pad", _PAD)
     normalize = _baseline_node("normalize", _NORMALIZE)
     lhs = CDGExport(
-        nodes=[fit, transform, normalize],
-        edges=[_edge("fit", "transform"), _edge("transform", "normalize")],
+        nodes=[qualify, pad, normalize],
+        edges=[_edge("qualify", "pad"), _edge("pad", "normalize")],
     )
     interface = CDGExport(
-        nodes=[fit, transform, normalize],
-        edges=[_edge("fit", "transform")],
+        nodes=[qualify, pad, normalize],
+        edges=[_edge("qualify", "pad")],
     )
 
     padding = _node(
@@ -160,55 +158,58 @@ def _build_insert_padding_saturation() -> RewriteRule:
         type_signature="ndarray, int -> tuple[float, bool]",
     )
     rhs = CDGExport(
-        nodes=[fit, transform, padding, normalize],
+        nodes=[qualify, pad, padding, normalize],
         edges=[
-            _edge("fit", "transform"),
-            _edge("transform", "padding"),
+            _edge("qualify", "pad"),
+            _edge("pad", "padding"),
             _edge("padding", "normalize"),
         ],
     )
 
     return RewriteRule(
-        name="insert_padding_saturation_after_transform",
+        name="insert_padding_saturation_after_pad",
         lhs=lhs,
         rhs=rhs,
         interface=interface,
         l_morphism=Morphism(
             node_map={
-                "fit": "fit",
-                "transform": "transform",
+                "qualify": "qualify",
+                "pad": "pad",
                 "normalize": "normalize",
             },
-            edge_map={_FIT_EDGE: _FIT_EDGE},
+            edge_map={_QUALIFY_PAD_EDGE: _QUALIFY_PAD_EDGE},
         ),
         r_morphism=Morphism(
             node_map={
-                "fit": "fit",
-                "transform": "transform",
+                "qualify": "qualify",
+                "pad": "pad",
                 "normalize": "normalize",
             },
-            edge_map={_FIT_EDGE: _FIT_EDGE},
+            edge_map={_QUALIFY_PAD_EDGE: _QUALIFY_PAD_EDGE},
         ),
         priority=2,
     )
 
 
 def _build_insert_normalization_clipping() -> RewriteRule:
-    fit = _fit_node()
-    transform = _baseline_node("transform", _OUTPUT_TRANSFORM)
+    qualify = _qualify_node()
+    pad = _baseline_node("pad", _PAD)
     normalize = _baseline_node("normalize", _NORMALIZE)
     combine = _baseline_node("combine", _COMBINE)
     lhs = CDGExport(
-        nodes=[fit, transform, normalize, combine],
+        nodes=[qualify, pad, normalize, combine],
         edges=[
-            _edge("fit", "transform"),
-            _edge("transform", "normalize"),
+            _edge("qualify", "pad"),
+            _edge("pad", "normalize"),
             _edge("normalize", "combine"),
         ],
     )
     interface = CDGExport(
-        nodes=[fit, transform, normalize, combine],
-        edges=[_edge("fit", "transform"), _edge("transform", "normalize")],
+        nodes=[qualify, pad, normalize, combine],
+        edges=[
+            _edge("qualify", "pad"),
+            _edge("pad", "normalize"),
+        ],
     )
 
     clipping = _node(
@@ -225,10 +226,10 @@ def _build_insert_normalization_clipping() -> RewriteRule:
         type_signature="ndarray -> tuple[float, bool]",
     )
     rhs = CDGExport(
-        nodes=[fit, transform, normalize, clipping, combine],
+        nodes=[qualify, pad, normalize, clipping, combine],
         edges=[
-            _edge("fit", "transform"),
-            _edge("transform", "normalize"),
+            _edge("qualify", "pad"),
+            _edge("pad", "normalize"),
             _edge("normalize", "clipping"),
             _edge("clipping", "combine"),
         ],
@@ -241,26 +242,26 @@ def _build_insert_normalization_clipping() -> RewriteRule:
         interface=interface,
         l_morphism=Morphism(
             node_map={
-                "fit": "fit",
-                "transform": "transform",
+                "qualify": "qualify",
+                "pad": "pad",
                 "normalize": "normalize",
                 "combine": "combine",
             },
             edge_map={
-                _FIT_EDGE: _FIT_EDGE,
-                _TRANSFORM_EDGE: _TRANSFORM_EDGE,
+                _QUALIFY_PAD_EDGE: _QUALIFY_PAD_EDGE,
+                _PAD_NORMALIZE_EDGE: _PAD_NORMALIZE_EDGE,
             },
         ),
         r_morphism=Morphism(
             node_map={
-                "fit": "fit",
-                "transform": "transform",
+                "qualify": "qualify",
+                "pad": "pad",
                 "normalize": "normalize",
                 "combine": "combine",
             },
             edge_map={
-                _FIT_EDGE: _FIT_EDGE,
-                _TRANSFORM_EDGE: _TRANSFORM_EDGE,
+                _QUALIFY_PAD_EDGE: _QUALIFY_PAD_EDGE,
+                _PAD_NORMALIZE_EDGE: _PAD_NORMALIZE_EDGE,
             },
         ),
         priority=2,
@@ -268,25 +269,25 @@ def _build_insert_normalization_clipping() -> RewriteRule:
 
 
 def _build_insert_component_balance() -> RewriteRule:
-    fit = _fit_node()
-    transform = _baseline_node("transform", _OUTPUT_TRANSFORM)
+    qualify = _qualify_node()
+    pad = _baseline_node("pad", _PAD)
     normalize = _baseline_node("normalize", _NORMALIZE)
     combine = _baseline_node("combine", _COMBINE)
     regionize = _baseline_node("regionize", _REGIONIZE)
     lhs = CDGExport(
-        nodes=[fit, transform, normalize, combine, regionize],
+        nodes=[qualify, pad, normalize, combine, regionize],
         edges=[
-            _edge("fit", "transform"),
-            _edge("transform", "normalize"),
+            _edge("qualify", "pad"),
+            _edge("pad", "normalize"),
             _edge("normalize", "combine"),
             _edge("combine", "regionize"),
         ],
     )
     interface = CDGExport(
-        nodes=[fit, transform, normalize, combine, regionize],
+        nodes=[qualify, pad, normalize, combine, regionize],
         edges=[
-            _edge("fit", "transform"),
-            _edge("transform", "normalize"),
+            _edge("qualify", "pad"),
+            _edge("pad", "normalize"),
             _edge("normalize", "combine"),
         ],
     )
@@ -305,10 +306,10 @@ def _build_insert_component_balance() -> RewriteRule:
         type_signature="list[ndarray] -> tuple[float, bool]",
     )
     rhs = CDGExport(
-        nodes=[fit, transform, normalize, combine, balance, regionize],
+        nodes=[qualify, pad, normalize, combine, balance, regionize],
         edges=[
-            _edge("fit", "transform"),
-            _edge("transform", "normalize"),
+            _edge("qualify", "pad"),
+            _edge("pad", "normalize"),
             _edge("normalize", "combine"),
             _edge("combine", "balance"),
             _edge("balance", "regionize"),
@@ -322,30 +323,30 @@ def _build_insert_component_balance() -> RewriteRule:
         interface=interface,
         l_morphism=Morphism(
             node_map={
-                "fit": "fit",
-                "transform": "transform",
+                "qualify": "qualify",
+                "pad": "pad",
                 "normalize": "normalize",
                 "combine": "combine",
                 "regionize": "regionize",
             },
             edge_map={
-                _FIT_EDGE: _FIT_EDGE,
-                _TRANSFORM_EDGE: _TRANSFORM_EDGE,
-                _NORMALIZE_EDGE: _NORMALIZE_EDGE,
+                _QUALIFY_PAD_EDGE: _QUALIFY_PAD_EDGE,
+                _PAD_NORMALIZE_EDGE: _PAD_NORMALIZE_EDGE,
+                _NORMALIZE_COMBINE_EDGE: _NORMALIZE_COMBINE_EDGE,
             },
         ),
         r_morphism=Morphism(
             node_map={
-                "fit": "fit",
-                "transform": "transform",
+                "qualify": "qualify",
+                "pad": "pad",
                 "normalize": "normalize",
                 "combine": "combine",
                 "regionize": "regionize",
             },
             edge_map={
-                _FIT_EDGE: _FIT_EDGE,
-                _TRANSFORM_EDGE: _TRANSFORM_EDGE,
-                _NORMALIZE_EDGE: _NORMALIZE_EDGE,
+                _QUALIFY_PAD_EDGE: _QUALIFY_PAD_EDGE,
+                _PAD_NORMALIZE_EDGE: _PAD_NORMALIZE_EDGE,
+                _NORMALIZE_COMBINE_EDGE: _NORMALIZE_COMBINE_EDGE,
             },
         ),
         priority=1,
@@ -367,7 +368,7 @@ def _diagnose_onset_coverage(
     if density < 1e-4:
         severity = min(1.0, max(0.0, (1e-4 - density) / 1e-4))
         return ExpansionDiagnostic(
-            rule_name="insert_onset_coverage_check_after_fit",
+            rule_name="insert_onset_coverage_check_after_qualify",
             severity=severity,
             evidence=f"Onset density {density:.2e} below 1e-4 threshold",
             metric_name="onset_density",
@@ -393,7 +394,7 @@ def _diagnose_padding_saturation(
     if fraction > 0.5:
         severity = min(1.0, max(0.0, (fraction - 0.5) / 0.5))
         return ExpansionDiagnostic(
-            rule_name="insert_padding_saturation_after_transform",
+            rule_name="insert_padding_saturation_after_pad",
             severity=severity,
             evidence=f"Padding fraction {fraction:.2%} exceeds 50% threshold",
             metric_name="padding_overlap_fraction",

@@ -28,6 +28,8 @@ class TestBaselineMultiComponent:
 
         assert len(nodes) == len(nodes_ref)
         assert len(edges) == len(edges_ref)
+        assert len(nodes) == 12
+        assert len(edges) == 10
 
     def test_two_components_have_expected_counts(self):
         skeleton = _baseline_skeleton()
@@ -37,8 +39,8 @@ class TestBaselineMultiComponent:
             2,
         )
 
-        assert len(nodes) == 13
-        assert len(edges) == 13
+        assert len(nodes) == 21
+        assert len(edges) == 19
 
         node_ids = {node.node_id for node in nodes}
         assert len(node_ids) == len(nodes)
@@ -53,8 +55,8 @@ class TestBaselineMultiComponent:
             3,
         )
 
-        assert len(nodes) == 18
-        assert len(edges) == 19
+        assert len(nodes) == 30
+        assert len(edges) == 28
 
         node_ids = {node.node_id for node in nodes}
         assert all(edge.source_id in node_ids for edge in edges)
@@ -105,10 +107,14 @@ class TestBaselineMultiComponent:
 
         for idx in range(1, 4):
             suffix = f" (Component {idx})"
-            assert f"Preprocess{suffix}" in names
             assert f"Windowed Analysis{suffix}" in names
-            assert f"Fit{suffix}" in names
+            assert f"Mask{suffix}" in names
+            assert f"Resample{suffix}" in names
+            assert f"Scale{suffix}" in names
+            assert f"Per-Window Fit{suffix}" in names
             assert f"Output Transform{suffix}" in names
+            assert f"Qualify Events{suffix}" in names
+            assert f"Pad{suffix}" in names
             assert f"Normalize{suffix}" in names
 
     def test_goal_in_all_descriptions(self):
@@ -126,9 +132,11 @@ class TestBaselineMultiComponent:
             2,
         )
 
-        windowed = next(node for node in nodes if node.name == "Windowed Analysis (Component 1)")
-        fit = next(node for node in nodes if node.name == "Fit (Component 1)")
+        nodes_by_name = {node.name: node for node in nodes}
+        windowed = nodes_by_name["Windowed Analysis (Component 1)"]
+        qualify = nodes_by_name["Qualify Events (Component 1)"]
         assert windowed.map_window_size == 1024
         assert windowed.map_hop_size == 512
-        assert fit.is_opaque is True
-        assert fit.matched_primitive == "baseline_fit_stack"
+        assert len(windowed.children) == 5
+        assert qualify.is_opaque is True
+        assert qualify.matched_primitive == "baseline_fit_stack"
