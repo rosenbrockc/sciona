@@ -1202,7 +1202,7 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
     (
         AlgorithmicPrimitive(
             name="baseline_fit_stack",
-            source="happyml-baseline",
+            source="sciona-builtins",
             category=ConceptType.BASELINE_ANALYSIS,
             description=(
                 "FitStack state machine for temporal event detection. "
@@ -1211,9 +1211,9 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
             ),
             inputs=[IOSpec(name="window_results", type_desc="list[any]")],
             outputs=[
-                IOSpec(name="fit_result", type_desc="HPYBaselineFitResult"),
+                IOSpec(name="fit_result", type_desc="BaselineFitResult"),
             ],
-            type_signature="list[any] -> HPYBaselineFitResult",
+            type_signature="list[any] -> BaselineFitResult",
             tunable_params=[
                 PrimitiveParamSpec(
                     name="onset_threshold",
@@ -1222,7 +1222,7 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
                     min_value=0.0,
                     max_value=1.0,
                     semantic_role="Detection sensitivity",
-                    range_source="happyml-baseline",
+                    range_source="sciona-builtins",
                 ),
                 PrimitiveParamSpec(
                     name="center_hold_samples",
@@ -1231,7 +1231,7 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
                     min_value=1,
                     max_value=1000,
                     semantic_role="Minimum event duration",
-                    range_source="happyml-baseline",
+                    range_source="sciona-builtins",
                 ),
                 PrimitiveParamSpec(
                     name="offset_decay_rate",
@@ -1241,7 +1241,7 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
                     max_value=1.0,
                     log_scale=True,
                     semantic_role="Offset exponential decay rate",
-                    range_source="happyml-baseline",
+                    range_source="sciona-builtins",
                 ),
                 PrimitiveParamSpec(
                     name="min_event_gap",
@@ -1250,7 +1250,7 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
                     min_value=1,
                     max_value=500,
                     semantic_role="Minimum gap between detected events",
-                    range_source="happyml-baseline",
+                    range_source="sciona-builtins",
                 ),
             ],
             param_status=ParamStatus.APPROVED,
@@ -1259,6 +1259,7 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
             "fit stack",
             "baseline fit stack",
             "baseline fitting state machine",
+            "fit state machine",
         ],
     ),
 ]

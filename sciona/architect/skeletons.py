@@ -28,6 +28,7 @@ def _node(
     depth: int = 1,
     parallelizable: bool = False,
     matched_primitive: str | None = None,
+    status: NodeStatus = NodeStatus.PENDING,
 ) -> AlgorithmicNode:
     """Helper to build a template node."""
     return AlgorithmicNode(
@@ -38,7 +39,7 @@ def _node(
         inputs=inputs or [],
         outputs=outputs or [],
         depth=depth,
-        status=NodeStatus.PENDING,
+        status=status,
         parallelizable=parallelizable,
         matched_primitive=matched_primitive,
     )
@@ -1948,7 +1949,7 @@ def _build_map_over() -> SkeletonGraph:
 def _build_baseline_analysis() -> SkeletonGraph:
     """Multi-scale temporal baseline analysis pipeline.
 
-    Topology mirrors happyml HPYBaselineComponent execution:
+    Topology mirrors the canonical baseline component execution:
 
     Per-window (MAP body):
         Mask -> Resample -> Scale -> Per-Window Fit -> Output Transform
@@ -1960,7 +1961,7 @@ def _build_baseline_analysis() -> SkeletonGraph:
         "Acquire Data",
         "Load or receive input time-series data",
         ConceptType.BASELINE_ANALYSIS,
-        inputs=[IOSpec(name="source", type_desc="HPYBaselineTimeSeries")],
+        inputs=[IOSpec(name="source", type_desc="BaselineTimeSeries")],
         outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
     )
 
@@ -1970,6 +1971,8 @@ def _build_baseline_analysis() -> SkeletonGraph:
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="window", type_desc="np.ndarray")],
         outputs=[IOSpec(name="masked", type_desc="np.ndarray")],
+        matched_primitive="baseline_mask",
+        status=NodeStatus.ATOMIC,
     )
     resample = _node(
         "Resample",
@@ -1977,6 +1980,8 @@ def _build_baseline_analysis() -> SkeletonGraph:
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="masked", type_desc="np.ndarray")],
         outputs=[IOSpec(name="resampled", type_desc="np.ndarray")],
+        matched_primitive="baseline_resample",
+        status=NodeStatus.ATOMIC,
     )
     scale = _node(
         "Scale",
@@ -1984,6 +1989,8 @@ def _build_baseline_analysis() -> SkeletonGraph:
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="resampled", type_desc="np.ndarray")],
         outputs=[IOSpec(name="scaled", type_desc="np.ndarray")],
+        matched_primitive="baseline_scale_constant",
+        status=NodeStatus.ATOMIC,
     )
     per_window_fit = _node(
         "Per-Window Fit",
@@ -1993,9 +2000,11 @@ def _build_baseline_analysis() -> SkeletonGraph:
         outputs=[
             IOSpec(
                 name="fit_internals",
-                type_desc="HPYBaselineFitStackInternals",
+                type_desc="BaselineFitStackInternals",
             )
         ],
+        matched_primitive="baseline_fit_exp_rise",
+        status=NodeStatus.ATOMIC,
     )
     output_transform = _node(
         "Output Transform",
@@ -2004,10 +2013,12 @@ def _build_baseline_analysis() -> SkeletonGraph:
         inputs=[
             IOSpec(
                 name="fit_internals",
-                type_desc="HPYBaselineFitStackInternals",
+                type_desc="BaselineFitStackInternals",
             )
         ],
         outputs=[IOSpec(name="onsets", type_desc="np.ndarray")],
+        matched_primitive="baseline_output_nonzero",
+        status=NodeStatus.ATOMIC,
     )
     windowed_analysis = _node(
         "Windowed Analysis",
@@ -2048,6 +2059,8 @@ def _build_baseline_analysis() -> SkeletonGraph:
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="probability", type_desc="np.ndarray")],
         outputs=[IOSpec(name="padded", type_desc="np.ndarray")],
+        matched_primitive="baseline_pad_constant",
+        status=NodeStatus.ATOMIC,
     )
     normalize = _node(
         "Normalize",
@@ -2055,6 +2068,8 @@ def _build_baseline_analysis() -> SkeletonGraph:
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="padded", type_desc="np.ndarray")],
         outputs=[IOSpec(name="normalized", type_desc="np.ndarray")],
+        matched_primitive="baseline_normalize_max",
+        status=NodeStatus.ATOMIC,
     )
     combine = _node(
         "Combine",
@@ -2062,6 +2077,8 @@ def _build_baseline_analysis() -> SkeletonGraph:
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="normalized", type_desc="np.ndarray")],
         outputs=[IOSpec(name="combined", type_desc="np.ndarray")],
+        matched_primitive="baseline_combine_product",
+        status=NodeStatus.ATOMIC,
     )
     regionize = _node(
         "Regionize",
@@ -2069,6 +2086,8 @@ def _build_baseline_analysis() -> SkeletonGraph:
         ConceptType.BASELINE_ANALYSIS,
         inputs=[IOSpec(name="combined", type_desc="np.ndarray")],
         outputs=[IOSpec(name="regions", type_desc="list[tuple[int,int]]")],
+        matched_primitive="baseline_regionize",
+        status=NodeStatus.ATOMIC,
     )
 
     body_edges = [
@@ -2080,7 +2099,7 @@ def _build_baseline_analysis() -> SkeletonGraph:
             output_transform,
             "fit_internals",
             "fit_internals",
-            "HPYBaselineFitStackInternals",
+            "BaselineFitStackInternals",
         ),
     ]
     top_edges = [
@@ -2232,7 +2251,7 @@ def instantiate_skeleton(
             inputs=tpl_node.inputs,
             outputs=tpl_node.outputs,
             matched_primitive=tpl_node.matched_primitive,
-            status=NodeStatus.PENDING,
+            status=tpl_node.status,
             depth=base_depth + tpl_node.depth,
             parallelizable=tpl_node.parallelizable,
         )

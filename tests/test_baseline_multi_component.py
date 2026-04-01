@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sciona.architect.models import ConceptType
+from sciona.architect.models import ConceptType, NodeStatus
 from sciona.architect.skeletons import (
     get_skeleton,
     instantiate_baseline_multi_component,
@@ -140,3 +140,16 @@ class TestBaselineMultiComponent:
         assert len(windowed.children) == 5
         assert qualify.is_opaque is True
         assert qualify.matched_primitive == "baseline_fit_stack"
+        assert qualify.status == NodeStatus.PENDING
+
+        mask = nodes_by_name["Mask (Component 1)"]
+        assert mask.matched_primitive == "baseline_mask"
+        assert mask.status == NodeStatus.ATOMIC
+
+        pad = nodes_by_name["Pad (Component 1)"]
+        assert pad.matched_primitive == "baseline_pad_constant"
+        assert pad.status == NodeStatus.ATOMIC
+
+        normalize = nodes_by_name["Normalize (Component 1)"]
+        assert normalize.matched_primitive == "baseline_normalize_max"
+        assert normalize.status == NodeStatus.ATOMIC

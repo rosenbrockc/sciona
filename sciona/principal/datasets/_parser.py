@@ -1,7 +1,7 @@
-"""Minimal standalone copies of parser functions/classes from hpy-parser.
+"""Minimal standalone copies of parser helper functions and classes.
 
 This module eliminates the dependency on ``sciona.datasets.parser`` (the
-``hpy-parser`` / ``hpyparser`` package) by bundling only the exact
+external parser package) by bundling only the exact
 functions and classes that ``sciona.principal.datasets`` actually uses.
 """
 
@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# From hpyparser/utils.py
+# Vendored utility helpers
 # ---------------------------------------------------------------------------
 
 IMPORT_CACHE = {}
@@ -226,7 +226,7 @@ def execute_any_transform(spec: dict, value, meta: dict = None):
 
 
 # ---------------------------------------------------------------------------
-# From hpyparser/filtering.py
+# Vendored filtering helpers
 # ---------------------------------------------------------------------------
 
 DEFAULT_ACC_FS = 26.0
@@ -370,7 +370,7 @@ def find_time_edge(t: np.ndarray, ts: float, left: bool = False) -> int:
 
 
 # ---------------------------------------------------------------------------
-# From hpyparser/base.py
+# Vendored base-model helpers
 # ---------------------------------------------------------------------------
 
 SUPERFRAME_REVERSE_MAP = {

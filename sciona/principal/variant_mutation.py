@@ -13,6 +13,10 @@ from sciona.expansion_atoms.signal_event_rate_registry import (
     SIGNAL_EVENT_RATE_DECLARATIONS,
     next_signal_event_rate_variant,
 )
+from sciona.expansion_atoms.baseline_steps_registry import (
+    BASELINE_STEPS_DECLARATIONS,
+    next_baseline_analysis_variant,
+)
 
 if TYPE_CHECKING:
     from sciona.architect.catalog import PrimitiveCatalog
@@ -119,8 +123,69 @@ class SignalEventRateVariantFamily:
         )
 
 
+class BaselineAnalysisVariantFamily:
+    """Curated variants for baseline analysis processing atoms."""
+
+    name = "baseline_analysis"
+
+    _ANCHORS = set(BASELINE_STEPS_DECLARATIONS.keys())
+
+    def matches(self, cdg: CDGExport) -> bool:
+        atomic_nodes = [node for node in cdg.nodes if node.status == NodeStatus.ATOMIC]
+        if not atomic_nodes:
+            return False
+        return any(
+            str(node.matched_primitive or "") in self._ANCHORS
+            for node in atomic_nodes
+        )
+
+    def mutate(
+        self,
+        cdg: CDGExport,
+        *,
+        bottleneck_name: str | None,
+    ) -> VariantMutationResult:
+        if not bottleneck_name or not self.matches(cdg):
+            return VariantMutationResult(cdg=cdg, applied=False)
+
+        updated_nodes = []
+        variant_name: str | None = None
+        changed = False
+        for node in cdg.nodes:
+            if node.status != NodeStatus.ATOMIC or node.name != bottleneck_name:
+                updated_nodes.append(node)
+                continue
+            current = str(node.matched_primitive or "")
+            candidate = next_baseline_analysis_variant(current)
+            if not candidate:
+                updated_nodes.append(node)
+                continue
+            updated_nodes.append(
+                node.model_copy(update={"matched_primitive": candidate})
+            )
+            changed = True
+            variant_name = candidate
+
+        if not changed:
+            return VariantMutationResult(
+                cdg=cdg,
+                applied=False,
+                family=self.name,
+                allow_redecompose=False,
+            )
+
+        return VariantMutationResult(
+            cdg=cdg.model_copy(update={"nodes": updated_nodes}),
+            applied=True,
+            family=self.name,
+            variant_name=variant_name,
+            allow_redecompose=False,
+        )
+
+
 VARIANT_FAMILIES: tuple[VariantFamily, ...] = (
     SignalEventRateVariantFamily(),
+    BaselineAnalysisVariantFamily(),
 )
 
 

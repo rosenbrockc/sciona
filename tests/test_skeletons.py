@@ -132,9 +132,23 @@ class TestSkeletonWellFormedness:
     def test_all_nodes_pending(self, concept_type):
         skel = SKELETON_TEMPLATES[concept_type]
         for node in skel.template_nodes:
-            assert (
-                node.status == NodeStatus.PENDING
-            ), f"Template node {node.name} should be PENDING, got {node.status}"
+            if concept_type == ConceptType.BASELINE_ANALYSIS:
+                if node.name == "Qualify Events":
+                    assert (
+                        node.status == NodeStatus.PENDING
+                    ), f"Baseline node {node.name} should stay PENDING, got {node.status}"
+                elif node.matched_primitive:
+                    assert (
+                        node.status == NodeStatus.ATOMIC
+                    ), f"Baseline node {node.name} should be ATOMIC, got {node.status}"
+                else:
+                    assert (
+                        node.status == NodeStatus.PENDING
+                    ), f"Baseline node {node.name} should be PENDING, got {node.status}"
+            else:
+                assert (
+                    node.status == NodeStatus.PENDING
+                ), f"Template node {node.name} should be PENDING, got {node.status}"
 
     @pytest.mark.parametrize("concept_type", list(SKELETON_TEMPLATES.keys()))
     def test_has_description_and_name(self, concept_type):
