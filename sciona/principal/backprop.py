@@ -269,6 +269,26 @@ class CreditAssigner:
                             f"(used {sim_report.iterations_used}/{n.fixed_point_max_iterations} iterations)",
                         )
 
+        for n in cdg.nodes:
+            if (
+                n.concept_type == ConceptType.MAP_OVER
+                and n.map_window_size > 0
+                and n.map_hop_size > 0
+                and sim_report.signal_length > 0
+                and sim_report.signal_length >= n.map_window_size
+            ):
+                n_windows = (
+                    (sim_report.signal_length - n.map_window_size) // n.map_hop_size + 1
+                )
+                if n_windows > 100:
+                    for child_id in n.children or []:
+                        child_name = node_names.get(child_id, child_id)
+                        add(
+                            child_name,
+                            1.2,
+                            f"is in a high-window-count MAP body ({n_windows} windows)",
+                        )
+
         total = sum(scored.values())
         if total <= 0:
             return []

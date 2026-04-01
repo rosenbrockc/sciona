@@ -337,20 +337,22 @@ class Assembler:
             # round-robin order at the end.
             sorted_ids = list(acyclic_sorted) + sorted(cycle_node_ids)
 
-        # Check for FIXED_POINT subtrees (phase 3)
-        fp_node_ids: set[str] = set()
-        fp_bodies: dict[str, list[str]] = {}
+        # Check for combinator subtrees (FIXED_POINT / MAP_OVER)
+        combinator_node_ids: set[str] = set()
+        combinator_bodies: dict[str, list[str]] = {}
         for n in cdg.nodes:
-            if n.concept_type == ConceptType.FIXED_POINT:
-                fp_node_ids.add(n.node_id)
-        if fp_node_ids:
+            if n.concept_type in {ConceptType.FIXED_POINT, ConceptType.MAP_OVER}:
+                combinator_node_ids.add(n.node_id)
+        if combinator_node_ids:
             try:
-                top_order, fp_bodies = toposort_with_fixed_points(
+                top_order, combinator_bodies = toposort_with_fixed_points(
                     cdg.nodes, cdg.edges
                 )
-                sorted_ids = top_order
+                sorted_ids = list(top_order)
+                for combinator_id in top_order:
+                    sorted_ids.extend(combinator_bodies.get(combinator_id, []))
             except ValueError:
-                logger.debug("FIXED_POINT toposort failed; using fallback order")
+                logger.debug("Combinator toposort failed; using fallback order")
 
         # Reorder units by topological order
         unit_map = {u.node_id: u for u in units}
@@ -375,7 +377,7 @@ class Assembler:
                 metadata,
                 telemetry=telemetry,
                 cycle_node_ids=cycle_node_ids,
-                fp_bodies=fp_bodies,
+                fp_bodies=combinator_bodies,
             )
         elif self._prover == Prover.PYTHON:
             source, sorry_count = self._emit_python(
@@ -385,7 +387,7 @@ class Assembler:
                 metadata,
                 telemetry=telemetry,
                 cycle_node_ids=cycle_node_ids,
-                fp_bodies=fp_bodies,
+                fp_bodies=combinator_bodies,
             )
         else:
             source, sorry_count = self._emit_coq(
@@ -395,7 +397,7 @@ class Assembler:
                 metadata,
                 telemetry=telemetry,
                 cycle_node_ids=cycle_node_ids,
-                fp_bodies=fp_bodies,
+                fp_bodies=combinator_bodies,
             )
 
         return SkeletonFile(
@@ -710,6 +712,87 @@ class Assembler:
         lines.append("  Admitted.")
         return lines
 
+    def _emit_map_over_python(
+        self,
+        map_node: AlgorithmicNode,
+        body_units: list[AssemblyUnit],
+        glue_edges: list[GlueEdge],
+    ) -> list[str]:
+        """Emit a Python for-loop over sliding windows for a MAP_OVER node."""
+        window_size = getattr(map_node, "map_window_size", 0) or 1024
+        hop_size = getattr(map_node, "map_hop_size", 0) or window_size
+
+        lines: list[str] = []
+        mname = sanitize_name(map_node.name)
+        lines.append(f"    # --- MAP over windows: {map_node.name} ---")
+        lines.append(f"    _map_window_{mname} = {window_size}")
+        lines.append(f"    _map_hop_{mname} = {hop_size}")
+        lines.append(f"    _map_results_{mname} = []")
+        lines.append(
+            f"    for _win_start_{mname} in range("
+            f"0, len(signal) - _map_window_{mname} + 1, _map_hop_{mname}):"
+        )
+        lines.append(
+            f"        _window_{mname} = signal["
+            f"_win_start_{mname}:_win_start_{mname} + _map_window_{mname}]"
+        )
+
+        for unit in body_units:
+            sname = sanitize_name(unit.name)
+            args: list[str] = []
+            for inp in unit.inputs:
+                if inp.name == "signal":
+                    args.append("_window_" + mname)
+                    continue
+                if inp.name == "window":
+                    args.append("_window_" + mname)
+                    continue
+                edge_for_inp = next(
+                    (
+                        e
+                        for e in glue_edges
+                        if e.target_id == unit.node_id and e.input_name == inp.name
+                    ),
+                    None,
+                )
+                if edge_for_inp:
+                    src_unit = next(
+                        (u for u in body_units if u.node_id == edge_for_inp.source_id),
+                        None,
+                    )
+                    if src_unit:
+                        args.append(sanitize_name(src_unit.name) + "_result")
+                    else:
+                        args.append(inp.name)
+                else:
+                    args.append(inp.name)
+            args_str = ", ".join(args)
+            lines.append(f"        {sname}_result = {sname}({args_str})")
+
+        if body_units:
+            last = sanitize_name(body_units[-1].name)
+            lines.append(f"        _map_results_{mname}.append({last}_result)")
+
+        lines.append(f"    return _map_results_{mname}")
+        return lines
+
+    def _emit_map_over_lean4(self, map_node: AlgorithmicNode) -> list[str]:
+        """Emit a Lean 4 placeholder for a MAP_OVER node."""
+        return [
+            f"  -- MAP over windows: {map_node.name}",
+            "  -- TODO: List.map-based proof obligation",
+            "  sorry",
+        ]
+
+    def _emit_map_over_coq(self, map_node: AlgorithmicNode) -> list[str]:
+        """Emit a Coq placeholder for a MAP_OVER node."""
+        mname = sanitize_name(map_node.name)
+        return [
+            f"  (* MAP over windows: {map_node.name} *)",
+            f"  (* map {mname}_body (windows signal) *)",
+            "  Admitted.",
+        ]
+
     # ------------------------------------------------------------------
     # Prover-specific emitters
     # ------------------------------------------------------------------
@@ -777,10 +860,19 @@ class Assembler:
         _fp_bodies = fp_bodies or {}
         for fp_id, body_ids in _fp_bodies.items():
             fp_node = node_map.get(fp_id)
-            if fp_node and fp_node.concept_type == ConceptType.FIXED_POINT:
+            if fp_node is None:
+                continue
+            if fp_node.concept_type == ConceptType.FIXED_POINT:
                 fp_lines = self._emit_fixed_point_lean4(fp_node)
                 lines.extend(fp_lines)
                 for line in fp_lines:
+                    if "sorry" in line and not line.strip().startswith("--"):
+                        sorry_count += 1
+                lines.append("")
+            elif fp_node.concept_type == ConceptType.MAP_OVER:
+                map_lines = self._emit_map_over_lean4(fp_node)
+                lines.extend(map_lines)
+                for line in map_lines:
                     if "sorry" in line and not line.strip().startswith("--"):
                         sorry_count += 1
                 lines.append("")
@@ -957,6 +1049,17 @@ class Assembler:
                     lines.append("")
                     continue
 
+            if root.concept_type == ConceptType.MAP_OVER and root.node_id in _fp_bodies:
+                body_ids = _fp_bodies[root.node_id]
+                body_unit_map = {u.node_id: u for u in units}
+                body_units = [body_unit_map[bid] for bid in body_ids if bid in body_unit_map]
+                if body_units:
+                    map_lines = self._emit_map_over_python(root, body_units, glue_edges)
+                    lines.extend(map_lines)
+                    lines.append("")
+                    lines.append("")
+                    continue
+
             composition = self._compose_python(units, glue_edges, root)
 
             # If there are cycle nodes inside this root's children,
@@ -1049,10 +1152,19 @@ class Assembler:
         node_map_coq = {n.node_id: n for n in root_nodes}
         for fp_id in _fp_bodies:
             fp_node = node_map_coq.get(fp_id)
-            if fp_node and fp_node.concept_type == ConceptType.FIXED_POINT:
+            if fp_node is None:
+                continue
+            if fp_node.concept_type == ConceptType.FIXED_POINT:
                 fp_lines = self._emit_fixed_point_coq(fp_node)
                 lines.extend(fp_lines)
                 for line in fp_lines:
+                    if "Admitted" in line:
+                        sorry_count += 1
+                lines.append("")
+            elif fp_node.concept_type == ConceptType.MAP_OVER:
+                map_lines = self._emit_map_over_coq(fp_node)
+                lines.extend(map_lines)
+                for line in map_lines:
                     if "Admitted" in line:
                         sorry_count += 1
                 lines.append("")

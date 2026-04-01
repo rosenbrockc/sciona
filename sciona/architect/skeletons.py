@@ -1877,6 +1877,186 @@ def _build_fixed_point() -> SkeletonGraph:
     )
 
 
+def _build_map_over() -> SkeletonGraph:
+    """MAP combinator: slice input into windows and process each slice."""
+    root = _node(
+        "MAP Root",
+        "Top-level MAP combinator node",
+        ConceptType.MAP_OVER,
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="results", type_desc="list[any]")],
+        depth=1,
+    )
+    root = root.model_copy(
+        update={"map_window_size": 1024, "map_hop_size": 512}
+    )
+
+    window_slicer = _node(
+        "Window Slicer",
+        "Produce overlapping windows from the input signal",
+        ConceptType.MAP_OVER,
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="window", type_desc="np.ndarray")],
+    )
+    body_init = _node(
+        "Body Init",
+        "Initialize per-window processing state",
+        ConceptType.STATE_INIT,
+        inputs=[IOSpec(name="window", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="state", type_desc="any")],
+    )
+    body_process = _node(
+        "Body Process",
+        "Process a single window",
+        ConceptType.CUSTOM,
+        inputs=[IOSpec(name="state", type_desc="any")],
+        outputs=[IOSpec(name="result", type_desc="any")],
+    )
+    collect_results = _node(
+        "Collect Results",
+        "Aggregate per-window results into final output",
+        ConceptType.CUSTOM,
+        inputs=[IOSpec(name="result", type_desc="any")],
+        outputs=[IOSpec(name="results", type_desc="list[any]")],
+    )
+
+    edges = [
+        _edge(window_slicer, body_init, "window", "window", "np.ndarray"),
+        _edge(body_init, body_process, "state", "state", "any"),
+        _edge(body_process, collect_results, "result", "result", "any"),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.MAP_OVER,
+        name="MAP Over",
+        description=(
+            "MAP combinator: slice input into windows, apply a body "
+            "subgraph to each window, collect results."
+        ),
+        template_nodes=[
+            root,
+            window_slicer,
+            body_init,
+            body_process,
+            collect_results,
+        ],
+        template_edges=edges,
+        variants=["sliding_window", "chunked_map", "strided_apply"],
+    )
+
+
+def _build_baseline_analysis() -> SkeletonGraph:
+    """Multi-scale temporal baseline analysis pipeline."""
+    acquire = _node(
+        "Acquire Data",
+        "Load or receive input time-series data",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="source", type_desc="HPYBaselineTimeSeries")],
+        outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+    )
+    preprocess = _node(
+        "Preprocess",
+        "Apply mask, resample, and scale steps to raw signal",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="prepared", type_desc="np.ndarray")],
+    )
+    windowed_analysis = _node(
+        "Windowed Analysis",
+        "Apply MAP-over-windows to run body pipeline on each window",
+        ConceptType.MAP_OVER,
+        inputs=[IOSpec(name="prepared", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="window_results", type_desc="list[any]")],
+    )
+    windowed_analysis = windowed_analysis.model_copy(
+        update={"map_window_size": 1024, "map_hop_size": 512}
+    )
+    fit = _node(
+        "Fit",
+        "FitStack state machine: ONSET→CENTER→OFFSET detection",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="window_results", type_desc="list[any]")],
+        outputs=[IOSpec(name="fit_result", type_desc="HPYBaselineFitResult")],
+    )
+    fit = fit.model_copy(
+        update={
+            "is_opaque": True,
+            "matched_primitive": "baseline_fit_stack",
+        }
+    )
+    output_transform = _node(
+        "Output Transform",
+        "Apply nonzero, clip-shift, or function transform to fit output",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="fit_result", type_desc="HPYBaselineFitResult")],
+        outputs=[IOSpec(name="transformed", type_desc="np.ndarray")],
+    )
+    normalize = _node(
+        "Normalize",
+        "Normalize output via max, constant, or quantile method",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="transformed", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="normalized", type_desc="np.ndarray")],
+    )
+    combine = _node(
+        "Combine",
+        "Combine multiple component outputs (product, convolution, coherence)",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="normalized", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="combined", type_desc="np.ndarray")],
+    )
+    regionize = _node(
+        "Regionize",
+        "Threshold combined signal into discrete event regions",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[IOSpec(name="combined", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="regions", type_desc="list[tuple[int,int]]")],
+    )
+
+    edges = [
+        _edge(acquire, preprocess, "signal", "signal", "np.ndarray"),
+        _edge(preprocess, windowed_analysis, "prepared", "prepared", "np.ndarray"),
+        _edge(
+            windowed_analysis,
+            fit,
+            "window_results",
+            "window_results",
+            "list[any]",
+        ),
+        _edge(fit, output_transform, "fit_result", "fit_result", "HPYBaselineFitResult"),
+        _edge(output_transform, normalize, "transformed", "transformed", "np.ndarray"),
+        _edge(normalize, combine, "normalized", "normalized", "np.ndarray"),
+        _edge(combine, regionize, "combined", "combined", "np.ndarray"),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.BASELINE_ANALYSIS,
+        name="Baseline Analysis",
+        description=(
+            "Multi-scale temporal event detection: acquire signal, preprocess, "
+            "apply windowed analysis via MAP combinator, fit state machine, "
+            "transform, normalize, combine components, and regionize."
+        ),
+        template_nodes=[
+            acquire,
+            preprocess,
+            windowed_analysis,
+            fit,
+            output_transform,
+            normalize,
+            combine,
+            regionize,
+        ],
+        template_edges=edges,
+        variants=[
+            "physiological_baseline",
+            "multi_component_detection",
+            "temporal_event_extraction",
+            "sliding_window_fit",
+        ],
+    )
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -1908,6 +2088,8 @@ SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.INFORMATION_THEORY: _build_information_theory(),
     ConceptType.COMPRESSION: _build_compression(),
     ConceptType.FIXED_POINT: _build_fixed_point(),
+    ConceptType.MAP_OVER: _build_map_over(),
+    ConceptType.BASELINE_ANALYSIS: _build_baseline_analysis(),
 }
 
 
@@ -1921,6 +2103,8 @@ NAMED_SKELETONS: dict[str, SkeletonGraph] = {
     "fixed_point": SKELETON_TEMPLATES[ConceptType.FIXED_POINT],
     "iterative_solver": SKELETON_TEMPLATES[ConceptType.FIXED_POINT],
     "convergence_loop": SKELETON_TEMPLATES[ConceptType.FIXED_POINT],
+    "map_over": SKELETON_TEMPLATES[ConceptType.MAP_OVER],
+    "sliding_window": SKELETON_TEMPLATES[ConceptType.MAP_OVER],
     "signal_detect_measure": _build_signal_detect_measure(),
     "event_rate_estimation": _build_signal_detect_measure(),
     "bandpass_hr_detection": _build_signal_detect_measure(),
@@ -1979,6 +2163,22 @@ def instantiate_skeleton(
             depth=base_depth + tpl_node.depth,
             parallelizable=tpl_node.parallelizable,
         )
+        node = node.model_copy(
+            update={
+                "is_opaque": tpl_node.is_opaque,
+                "type_signature": tpl_node.type_signature,
+                "matched_primitive": tpl_node.matched_primitive,
+                "primitive_binding_confidence": tpl_node.primitive_binding_confidence,
+                "primitive_binding_source": tpl_node.primitive_binding_source,
+                "conceptual_summary": tpl_node.conceptual_summary,
+                "critic_notes": tpl_node.critic_notes,
+                "decomposition_rationale": tpl_node.decomposition_rationale,
+                "fixed_point_max_iterations": tpl_node.fixed_point_max_iterations,
+                "fixed_point_convergence_field": tpl_node.fixed_point_convergence_field,
+                "map_window_size": tpl_node.map_window_size,
+                "map_hop_size": tpl_node.map_hop_size,
+            }
+        )
         nodes.append(node)
 
     # Remap edges
@@ -1994,5 +2194,175 @@ def instantiate_skeleton(
             requires_glue=tpl_edge.requires_glue,
         )
         edges.append(edge)
+
+    return nodes, edges
+
+
+def _clone_template_node(
+    tpl_node: AlgorithmicNode,
+    goal_desc: str,
+    *,
+    parent_id: str | None,
+    base_depth: int,
+    name: str | None = None,
+) -> AlgorithmicNode:
+    """Clone a template node with a fresh ID and goal-prefixed description."""
+    return tpl_node.model_copy(
+        deep=True,
+        update={
+            "node_id": f"{tpl_node.node_id}_{uuid.uuid4().hex[:8]}",
+            "parent_id": parent_id,
+            "name": name or tpl_node.name,
+            "description": f"[{goal_desc}] {tpl_node.description}",
+            "depth": base_depth + tpl_node.depth,
+        },
+    )
+
+
+def _remap_template_edge(
+    tpl_edge: DependencyEdge,
+    *,
+    source_id: str,
+    target_id: str,
+) -> DependencyEdge:
+    """Clone a template edge while swapping in fresh endpoint IDs."""
+    return tpl_edge.model_copy(
+        update={"source_id": source_id, "target_id": target_id}
+    )
+
+
+def instantiate_baseline_multi_component(
+    skeleton: SkeletonGraph,
+    goal: str,
+    n_components: int,
+    *,
+    parent_id: str | None = None,
+    base_depth: int = 0,
+) -> tuple[list[AlgorithmicNode], list[DependencyEdge]]:
+    """Instantiate a multi-component baseline analysis CDG.
+
+    Creates N copies of the per-component pipeline (Preprocess through
+    Normalize) and wires all into a shared Acquire, Combine, and Regionize.
+    """
+    if n_components < 1:
+        raise ValueError("n_components must be >= 1")
+    if skeleton.paradigm != ConceptType.BASELINE_ANALYSIS:
+        raise ValueError("baseline multi-component instantiation requires BASELINE_ANALYSIS")
+
+    if n_components == 1:
+        return instantiate_skeleton(
+            skeleton,
+            goal,
+            parent_id=parent_id,
+            base_depth=base_depth,
+        )
+
+    name_to_template = {node.name: node for node in skeleton.template_nodes}
+    required_names = [
+        "Acquire Data",
+        "Preprocess",
+        "Windowed Analysis",
+        "Fit",
+        "Output Transform",
+        "Normalize",
+        "Combine",
+        "Regionize",
+    ]
+    missing = [name for name in required_names if name not in name_to_template]
+    if missing:
+        raise ValueError(
+            "baseline skeleton is missing required nodes: " + ", ".join(missing)
+        )
+
+    tpl_name_by_id = {node.node_id: node.name for node in skeleton.template_nodes}
+    shared_acquire = _clone_template_node(
+        name_to_template["Acquire Data"],
+        goal,
+        parent_id=parent_id,
+        base_depth=base_depth,
+    )
+    shared_combine = _clone_template_node(
+        name_to_template["Combine"],
+        goal,
+        parent_id=parent_id,
+        base_depth=base_depth,
+    )
+    shared_regionize = _clone_template_node(
+        name_to_template["Regionize"],
+        goal,
+        parent_id=parent_id,
+        base_depth=base_depth,
+    )
+
+    nodes: list[AlgorithmicNode] = [shared_acquire]
+    edges: list[DependencyEdge] = []
+    chain_names = [
+        "Preprocess",
+        "Windowed Analysis",
+        "Fit",
+        "Output Transform",
+        "Normalize",
+    ]
+
+    for component_index in range(n_components):
+        suffix = f" (Component {component_index + 1})"
+        component_nodes: dict[str, AlgorithmicNode] = {}
+        for name in chain_names:
+            component_node = _clone_template_node(
+                name_to_template[name],
+                goal,
+                parent_id=parent_id,
+                base_depth=base_depth,
+                name=f"{name}{suffix}",
+            )
+            component_nodes[name] = component_node
+            nodes.append(component_node)
+
+        for tpl_edge in skeleton.template_edges:
+            source_name = tpl_name_by_id[tpl_edge.source_id]
+            target_name = tpl_name_by_id[tpl_edge.target_id]
+
+            if source_name == "Combine" and target_name == "Regionize":
+                continue
+
+            source_node = shared_acquire if source_name == "Acquire Data" else (
+                shared_combine if source_name == "Combine" else component_nodes.get(source_name)
+            )
+            target_node = shared_regionize if target_name == "Regionize" else (
+                shared_combine if target_name == "Combine" else component_nodes.get(target_name)
+            )
+
+            if source_node is None or target_node is None:
+                raise ValueError(
+                    f"cannot map baseline edge {source_name!r} -> {target_name!r}"
+                )
+
+            edges.append(
+                _remap_template_edge(
+                    tpl_edge,
+                    source_id=source_node.node_id,
+                    target_id=target_node.node_id,
+                )
+            )
+
+    nodes.extend([shared_combine, shared_regionize])
+    combine_regionize_edge = next(
+        (
+            edge
+            for edge in skeleton.template_edges
+            if tpl_name_by_id[edge.source_id] == "Combine"
+            and tpl_name_by_id[edge.target_id] == "Regionize"
+        ),
+        None,
+    )
+    if combine_regionize_edge is None:
+        raise ValueError("baseline skeleton is missing Combine -> Regionize edge")
+    edges.append(
+        _remap_template_edge(
+            combine_regionize_edge,
+            source_id=shared_combine.node_id,
+            target_id=shared_regionize.node_id,
+        )
+    )
 
     return nodes, edges

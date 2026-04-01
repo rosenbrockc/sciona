@@ -6,6 +6,8 @@ from collections import deque
 
 from sciona.architect.models import AlgorithmicNode, ConceptType, DependencyEdge
 
+_COMBINATOR_TYPES = {ConceptType.FIXED_POINT, ConceptType.MAP_OVER}
+
 
 def toposort_nodes(
     nodes: list[AlgorithmicNode],
@@ -109,62 +111,64 @@ def detect_cycle_partition(
     return acyclic, cycle_ids, is_valid
 
 
-def toposort_with_fixed_points(
+def toposort_with_combinators(
     nodes: list[AlgorithmicNode],
     edges: list[DependencyEdge],
 ) -> tuple[list[str], dict[str, list[str]]]:
-    """Topological sort that treats FIXED_POINT subtrees as opaque.
+    """Topological sort that treats combinator subtrees as opaque.
 
-    1. Identifies FIXED_POINT nodes and their children.
-    2. Topologically sorts each FIXED_POINT body independently (must be
+    1. Identifies combinator nodes and their children.
+    2. Topologically sorts each combinator body independently (must be
        acyclic internally).
-    3. Topologically sorts the top-level graph treating FIXED_POINT nodes
+    3. Topologically sorts the top-level graph treating combinator nodes
        as atomic (opaque).
 
     Returns:
-        (top_level_order, fixed_point_bodies)
+        (top_level_order, combinator_bodies)
 
         *top_level_order* — node IDs in topological order at the top level.
-        FIXED_POINT parent nodes appear as single entries.
-        *fixed_point_bodies* — mapping from FIXED_POINT node_id to the
+        Combinator parent nodes appear as single entries.
+        *combinator_bodies* — mapping from combinator node_id to the
         topologically sorted list of child IDs.
     """
     node_map = {n.node_id: n for n in nodes}
 
-    # Identify FIXED_POINT nodes and their children
-    fp_nodes: dict[str, AlgorithmicNode] = {}
-    fp_children: dict[str, set[str]] = {}
+    # Identify combinator nodes and their children.
+    combinator_children: dict[str, set[str]] = {}
     for n in nodes:
-        if n.concept_type == ConceptType.FIXED_POINT:
-            fp_nodes[n.node_id] = n
-            fp_children[n.node_id] = set(n.children) if n.children else set()
+        if n.concept_type in _COMBINATOR_TYPES:
+            combinator_children[n.node_id] = set(n.children) if n.children else set()
 
-    # Flatten all children belonging to any fixed-point
-    all_fp_child_ids: set[str] = set()
-    for children in fp_children.values():
-        all_fp_child_ids |= children
+    all_combinator_child_ids: set[str] = set()
+    for children in combinator_children.values():
+        all_combinator_child_ids |= children
 
-    # Sort each FIXED_POINT body independently
-    fixed_point_bodies: dict[str, list[str]] = {}
-    for fp_id, child_ids in fp_children.items():
+    combinator_bodies: dict[str, list[str]] = {}
+    for combinator_id, child_ids in combinator_children.items():
         body_nodes = [node_map[cid] for cid in child_ids if cid in node_map]
-        # Edges internal to the body
         body_edges = [
             e for e in edges
             if e.source_id in child_ids and e.target_id in child_ids
         ]
         if body_nodes:
-            fixed_point_bodies[fp_id] = toposort_nodes(body_nodes, body_edges)
+            combinator_bodies[combinator_id] = toposort_nodes(body_nodes, body_edges)
         else:
-            fixed_point_bodies[fp_id] = []
+            combinator_bodies[combinator_id] = []
 
-    # Top-level sort: exclude FP children (they are inside opaque FP nodes)
-    top_nodes = [n for n in nodes if n.node_id not in all_fp_child_ids]
+    top_nodes = [n for n in nodes if n.node_id not in all_combinator_child_ids]
     top_edges = [
         e for e in edges
-        if e.source_id not in all_fp_child_ids
-        and e.target_id not in all_fp_child_ids
+        if e.source_id not in all_combinator_child_ids
+        and e.target_id not in all_combinator_child_ids
     ]
     top_order = toposort_nodes(top_nodes, top_edges)
 
-    return top_order, fixed_point_bodies
+    return top_order, combinator_bodies
+
+
+def toposort_with_fixed_points(
+    nodes: list[AlgorithmicNode],
+    edges: list[DependencyEdge],
+) -> tuple[list[str], dict[str, list[str]]]:
+    """Backward-compatible alias for combinator-aware toposort."""
+    return toposort_with_combinators(nodes, edges)

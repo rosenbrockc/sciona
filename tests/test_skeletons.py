@@ -45,6 +45,8 @@ class TestSkeletonRegistry:
             ConceptType.INFORMATION_THEORY,
             ConceptType.COMPRESSION,
             ConceptType.FIXED_POINT,
+            ConceptType.MAP_OVER,
+            ConceptType.BASELINE_ANALYSIS,
         }
         assert set(SKELETON_TEMPLATES.keys()) == expected
 
@@ -103,6 +105,15 @@ class TestSkeletonWellFormedness:
             ConceptType.FIXED_POINT,
             ConceptType.STATE_INIT,
             ConceptType.CUSTOM,
+        },
+        ConceptType.MAP_OVER: {
+            ConceptType.MAP_OVER,
+            ConceptType.STATE_INIT,
+            ConceptType.CUSTOM,
+        },
+        ConceptType.BASELINE_ANALYSIS: {
+            ConceptType.BASELINE_ANALYSIS,
+            ConceptType.MAP_OVER,
         },
     }
 

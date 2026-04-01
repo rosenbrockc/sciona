@@ -97,6 +97,8 @@ class GhostSimReport:
     """Node names involved in the deadlocked cycle."""
     iterations_used: int = 0
     """Number of message-passing iterations before convergence/deadlock."""
+    signal_length: int = 0
+    """Input signal length when structural heuristics need window-count context."""
 
 
 def _extract_atom_name(declaration_name: str) -> str:

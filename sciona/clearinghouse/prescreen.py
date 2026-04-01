@@ -153,9 +153,9 @@ def _check_structure(
         Set of FQDNs registered in the global registry.  If ``None``,
         skip the registry existence check.
     fixed_point_node_ids
-        Set of node FQDNs that belong to FIXED_POINT-annotated subgraphs.
+        Set of node FQDNs that belong to tolerated combinator subgraphs.
         Cycles among these nodes are permitted and will not trigger a
-        rejection.
+        rejection. The historical parameter name remains for compatibility.
     """
     reasons: list[str] = []
     _fp_ids = fixed_point_node_ids or frozenset()
@@ -273,8 +273,9 @@ def prescreen(
     max_depth
         Maximum allowed DAG depth.
     fixed_point_node_ids
-        Node FQDNs belonging to FIXED_POINT subgraphs.  Cycles among
-        these nodes are tolerated during the structural check.
+        Node FQDNs belonging to tolerated combinator subgraphs. Cycles
+        among these nodes are tolerated during the structural check. The
+        historical parameter name remains for compatibility.
 
     Returns
     -------

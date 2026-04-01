@@ -64,6 +64,8 @@ class TestConceptType:
             "message_passing",
             "conjugate_update",
             "fixed_point",
+            "map_over",
+            "baseline_analysis",
             "state_init",
             "data_assembly",
             "conditional_routing",

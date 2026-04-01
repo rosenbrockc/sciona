@@ -56,6 +56,8 @@ class ConceptType(str, Enum):
     MESSAGE_PASSING = "message_passing"
     CONJUGATE_UPDATE = "conjugate_update"
     FIXED_POINT = "fixed_point"
+    MAP_OVER = "map_over"
+    BASELINE_ANALYSIS = "baseline_analysis"
     # Data flow / orchestration
     STATE_INIT = "state_init"
     DATA_ASSEMBLY = "data_assembly"
@@ -115,6 +117,8 @@ class AlgorithmicNode(BaseModel):
     decomposition_rationale: str = ""
     fixed_point_max_iterations: int = 0  # 0 means not a fixed-point node
     fixed_point_convergence_field: str = ""  # name of output field signaling convergence
+    map_window_size: int = 0  # 0 means not a MAP node; >0 = window length
+    map_hop_size: int = 0  # 0 means not a MAP node; >0 = hop between windows
 
 
 class DependencyEdge(BaseModel):

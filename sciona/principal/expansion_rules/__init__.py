@@ -79,6 +79,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.belief_propagation import (
         BeliefPropagationExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.baseline_analysis import (
+        BaselineAnalysisExpansionRuleSet,
+    )
     from sciona.principal.expansion_rules.linear_algebra import (
         LinearAlgebraExpansionRuleSet,
     )
@@ -135,6 +138,7 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         ParticleFilterExpansionRuleSet(),
         KalmanFilterExpansionRuleSet(),
         BeliefPropagationExpansionRuleSet(),
+        BaselineAnalysisExpansionRuleSet(),
         LinearAlgebraExpansionRuleSet(),
         OptimizationExpansionRuleSet(),
         CombinatoricsExpansionRuleSet(),
