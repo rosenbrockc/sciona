@@ -54,6 +54,9 @@
 ## CDG Expansion
 - [project_cdg_expansion.md](project_cdg_expansion.md) -- Formal analysis of topology expansion mechanism (DPO-based, beyond node swaps)
 
+## Acyclicity Analysis
+- See [project_acyclicity_analysis.md](project_acyclicity_analysis.md) for formal analysis of 7 DAG invariants, the MESSAGE_PASSING exception gap, and FixedPoint combinator recommendation
+
 ## Algorithmic Commons Foundation
 - See [project_algorithmic_commons.md](project_algorithmic_commons.md) for formal analysis of the 6-component marketplace architecture
 - Key risk: AST fingerprint 64-bit truncation insufficient at registry scale; Shapley tractable via DAG closed-form; gradient scores leak in Dead-End Flare

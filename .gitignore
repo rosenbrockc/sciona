@@ -16,3 +16,17 @@ ageom/static/default_cdg.json
 models/
 *.gguf
 .env
+
+# Keep curated Claude agent docs and memory, ignore local state.
+.claude/*
+!.claude/agent-memory/
+!.claude/agent-memory/**
+!.claude/agents/
+!.claude/agents/**
+.claude/settings.local.json
+.claude/projects/
+.claude/worktrees/
+
+# Ignore local Supabase CLI scratch state.
+supabase/.branches/
+supabase/.temp/
