@@ -166,7 +166,7 @@ async def test_publish_atom_supabase() -> None:
     )
     user = SimpleNamespace(user_id=user_id)
 
-    result = await registry.publish_atom(body, user=user, supabase=client, db=None)
+    result = await registry.publish_atom(body, user=user, supabase=client)
 
     assert result.atom_id == atom_id
     assert result.version_id == version_id
@@ -209,7 +209,6 @@ async def test_list_bounties_supabase() -> None:
         status="open",
         limit=50,
         supabase=client,
-        db=None,
     )
 
     assert result.total == 1
@@ -233,20 +232,69 @@ async def test_catalog_search_supabase_uses_phase6_rpc(monkeypatch) -> None:
                     "fqdn": "pkg.filter",
                     "technical_description": "Filter signal",
                     "domain_tags": ["signal"],
+                    "overall_verdict": "trusted",
+                    "risk_tier": "low",
+                    "trust_readiness": "ready",
                 }
             ]
         )
 
-    monkeypatch.setenv("SCIONA_USE_SUPABASE_DB", "1")
     client = FakeSupabaseClient(table_handler=table_handler, rpc_handler=rpc_handler)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(supabase=client)))
 
     result = await catalog.catalog_search(
-        request=request,
         q="kalman filter",
         domain_tag="signal",
         limit=10,
-        db=None,
+        supabase=client,
+    )
+
+    assert [entry.fqdn for entry in result] == ["pkg.filter"]
+    assert result[0].overall_verdict == "trusted"
+    assert result[0].risk_tier == "low"
+    assert result[0].trust_readiness == "ready"
+    assert rpc_calls == [
+        (
+            "search_atoms_hybrid",
+            {
+                "query_text": "kalman filter",
+                "mode": "fts",
+                "result_limit": 10,
+                "result_offset": 0,
+            },
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_catalog_search_supabase_falls_back_to_served_view() -> None:
+    rpc_calls: list[tuple[str, dict[str, Any]]] = []
+
+    def table_handler(query: FakeQuery) -> FakeResult:
+        assert query.name == "catalog_atoms_served"
+        return FakeResult(
+            data=[
+                {
+                    "fqdn": "pkg.filter",
+                    "technical_description": "Filter signal",
+                    "domain_tags": ["signal"],
+                    "overall_verdict": "trusted",
+                    "risk_tier": "low",
+                    "trust_readiness": "ready",
+                }
+            ]
+        )
+
+    def rpc_handler(query: FakeRpcQuery) -> FakeResult:
+        rpc_calls.append((query.name, query.params))
+        raise RuntimeError("rpc unavailable")
+
+    client = FakeSupabaseClient(table_handler=table_handler, rpc_handler=rpc_handler)
+
+    result = await catalog.catalog_search(
+        q="kalman filter",
+        domain_tag=None,
+        limit=10,
+        supabase=client,
     )
 
     assert [entry.fqdn for entry in result] == ["pkg.filter"]
@@ -301,7 +349,7 @@ async def test_create_bounty_supabase() -> None:
     )
     user = SimpleNamespace(user_id=user_id)
 
-    result = await bounty.create_bounty(body, user=user, supabase=client, db=None)
+    result = await bounty.create_bounty(body, user=user, supabase=client)
 
     assert result.bounty_id == bounty_id
     assert str(result.principal_id) == user_id
@@ -344,7 +392,7 @@ async def test_cancel_bounty_supabase() -> None:
     client = FakeSupabaseClient(handler)
     user = SimpleNamespace(user_id=user_id)
 
-    result = await bounty.cancel_bounty(bounty_id, user=user, supabase=client, db=None)
+    result = await bounty.cancel_bounty(bounty_id, user=user, supabase=client)
 
     assert result.status == "cancelled"
     assert result.cancellation_fee == 2.5
@@ -378,9 +426,7 @@ async def test_submission_status_supabase() -> None:
         raise AssertionError(query.name)
 
     client = FakeSupabaseClient(handler)
-    result = await verification.get_submission_status(
-        submission_id, supabase=client, db=None
-    )
+    result = await verification.get_submission_status(submission_id, supabase=client)
 
     assert result["submission_id"] == str(submission_id)
     assert result["verification_status"] == "pending"
@@ -483,13 +529,13 @@ async def test_originator_impact_supabase() -> None:
     client = FakeSupabaseClient(table_handler, rpc_handler=rpc_handler)
 
     impact = await dashboard.get_originator_impact(
-        originator_id, supabase=client, db=None
+        originator_id, supabase=client
     )
     assert impact["originator_id"] == str(originator_id)
     assert impact["total_bounty_value"] == 30.0
 
     benchmarks = await dashboard.get_atom_benchmarks(
-        "pkg.filter", supabase=client, db=None
+        "pkg.filter", supabase=client
     )
     assert benchmarks[0]["benchmark_id"] == "signal_v1"
 
@@ -497,7 +543,6 @@ async def test_originator_impact_supabase() -> None:
         bounty_id=_uuid("99999999-9999-9999-9999-999999999999"),
         limit=50,
         supabase=client,
-        db=None,
     )
     assert leaderboard.total == 1
     assert leaderboard.items[0].submission_id == "sub-1"

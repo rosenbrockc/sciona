@@ -210,26 +210,27 @@ async def test_catalog_sync_builds_manifest_locally(monkeypatch, tmp_path: Path,
     assert "Manifest written to" in captured.out
 
 
-class _FakeDB:
+class _FakeSupabase:
     def __init__(self, value):
         self.value = value
 
-    async def fetchval(self, query: str, fqdn: str):
-        assert "get_atom_document" in query
-        return self.value
+    def rpc(self, name: str, payload: dict[str, str]):
+        assert name == "get_atom_document"
+        return SimpleNamespace(execute=self._execute)
+
+    async def _execute(self):
+        return SimpleNamespace(data=self.value)
 
 
 @pytest.mark.asyncio
 async def test_get_atom_document_returns_rpc_payload():
     payload = {"atom": {"fqdn": "pkg.filter"}}
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(supabase=None)))
-    result = await get_atom_document(request, "pkg.filter", db=_FakeDB(payload))
+    result = await get_atom_document("pkg.filter", supabase=_FakeSupabase(payload))
     assert result == payload
 
 
 @pytest.mark.asyncio
 async def test_get_atom_document_raises_for_missing_atom():
     with pytest.raises(HTTPException) as excinfo:
-        request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(supabase=None)))
-        await get_atom_document(request, "pkg.missing", db=_FakeDB(None))
+        await get_atom_document("pkg.missing", supabase=_FakeSupabase(None))
     assert excinfo.value.status_code == 404

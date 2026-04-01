@@ -192,6 +192,9 @@ class CatalogEntry(BaseModel):
     domain_tags: list[str] = Field(default_factory=list)
     latest_semver: str = ""
     status: str = "approved"
+    overall_verdict: str = ""
+    risk_tier: str = ""
+    trust_readiness: str = ""
 
 
 # ---------------------------------------------------------------------------

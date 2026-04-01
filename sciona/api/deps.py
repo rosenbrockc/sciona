@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import os
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 bearer_scheme = HTTPBearer()
 
@@ -23,87 +23,14 @@ class UserProfile(BaseModel):
     email: str = ""
     identity_tier: str = "contributor"
     effective_tier: str = "general"
+    reputation_score: int = 0
     is_blacklisted: bool = False
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
 
 UserRow = UserProfile
-
-
-def use_supabase_auth() -> bool:
-    """Return whether Supabase Auth should be used for request auth."""
-    return os.environ.get("SCIONA_USE_SUPABASE_AUTH", "0") == "1"
-
-
-def use_supabase_db() -> bool:
-    """Return whether Supabase-backed database code paths are enabled."""
-    return os.environ.get("SCIONA_USE_SUPABASE_DB", "0") == "1"
-
-
-def dual_write_enabled() -> bool:
-    """Return whether legacy writes should be mirrored to Supabase PG."""
-    return os.environ.get("SCIONA_DUAL_WRITE", "0") == "1"
-
-
-def _read_source(router_name: str | None = None) -> str:
-    """Resolve the current read source for the router-specific cutover flag."""
-    if router_name:
-        override = os.environ.get(
-            f"SCIONA_READ_SOURCE_{router_name.upper()}",
-            "",
-        ).strip()
-        if override:
-            return override
-    return os.environ.get("SCIONA_READ_SOURCE", "pg").strip() or "pg"
-
-
-def _get_jwt_public_key() -> str:
-    """Load the JWT public key from environment or file."""
-    key = os.environ.get("SCIONA_JWT_PUBLIC_KEY", "")
-    if key:
-        return key
-    key_path = os.environ.get("SCIONA_JWT_PUBLIC_KEY_PATH", "")
-    if key_path and os.path.exists(key_path):
-        with open(key_path) as f:
-            return f.read()
-    return ""
-
-
-async def get_db(request: Request) -> Any:
-    """Yield a connection from the asyncpg pool.
-
-    The pool is stored on ``request.app.state.db_pool`` and initialised
-    during the FastAPI lifespan.
-    """
-    pool = getattr(request.app.state, "db_pool", None)
-    if pool is None:
-        raise HTTPException(503, "Database not available")
-    mirror_pool = getattr(request.app.state, "supabase_db_pool", None)
-    async with pool.acquire() as conn:
-        if dual_write_enabled() and mirror_pool is not None:
-            from sciona.api.dual_write import DualWriteConnection
-
-            async with mirror_pool.acquire() as mirror_conn:
-                yield DualWriteConnection(conn, mirror_conn)
-            return
-        yield conn
-
-
-async def get_read_db(
-    request: Request,
-    router_name: str | None = None,
-) -> Any:
-    """Yield the configured read connection for phased read cutover."""
-    source = _read_source(router_name)
-    if source == "supabase":
-        pool = getattr(request.app.state, "supabase_db_pool", None)
-        if pool is None:
-            raise HTTPException(503, "Supabase read pool not available")
-    else:
-        pool = getattr(request.app.state, "db_pool", None)
-        if pool is None:
-            raise HTTPException(503, "Database not available")
-    async with pool.acquire() as conn:
-        yield conn
 
 
 async def get_supabase(request: Request) -> Any:
@@ -121,9 +48,7 @@ async def require_auth(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> UserProfile:
     """Validate the configured auth token and return the user profile."""
-    if use_supabase_auth():
-        return await _require_auth_supabase(request, credentials)
-    return await _require_auth_legacy(request, credentials)
+    return await _require_auth_supabase(request, credentials)
 
 
 async def _require_auth_supabase(
@@ -156,43 +81,3 @@ async def _require_auth_supabase(
         raise HTTPException(403, "Account suspended")
 
     return UserProfile(**data)
-
-
-async def _require_auth_legacy(
-    request: Request,
-    credentials: HTTPAuthorizationCredentials,
-) -> UserProfile:
-    """Decode and validate the legacy platform JWT."""
-    try:
-        import jwt as pyjwt
-    except ImportError:
-        raise HTTPException(503, "PyJWT not installed")
-
-    public_key = _get_jwt_public_key()
-    if not public_key:
-        raise HTTPException(503, "JWT public key not configured")
-
-    token = credentials.credentials
-    try:
-        payload = pyjwt.decode(token, public_key, algorithms=["RS256"])
-    except pyjwt.ExpiredSignatureError:
-        raise HTTPException(401, "Token expired — run `sciona login`")
-    except pyjwt.InvalidTokenError:
-        raise HTTPException(401, "Invalid token")
-
-    db = getattr(request.app.state, "db_pool", None)
-    if db is None:
-        raise HTTPException(503, "Database not available")
-
-    async with db.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT * FROM users WHERE user_id = $1::uuid",
-            payload["sub"],
-        )
-
-    if not row:
-        raise HTTPException(401, "User not found")
-    if row["is_blacklisted"]:
-        raise HTTPException(403, "Account suspended")
-
-    return UserProfile(**dict(row))

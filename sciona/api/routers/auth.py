@@ -10,7 +10,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from sciona.api.deps import UserProfile, get_supabase, require_auth, use_supabase_auth
+from sciona.api.deps import UserProfile, require_auth
 from sciona.api.models import (
     DeviceFlowResponse,
     PendingResponse,
@@ -29,7 +29,7 @@ def _request_supabase(request: Request) -> Any | None:
     state = getattr(request.app, "state", None)
     if state is None:
         return None
-    return getattr(state, "supabase_admin", None) or getattr(state, "supabase", None)
+    return getattr(state, "supabase", None) or getattr(state, "supabase_admin", None)
 
 
 def _attr_or_key(obj: Any, name: str, default: Any = None) -> Any:
@@ -69,8 +69,11 @@ def _token_response_from_session(session_response: Any) -> TokenResponse | None:
 
 
 @router.get("/auth/login")
-async def login_redirect(supabase=Depends(get_supabase)) -> dict[str, str]:
+async def login_redirect(request: Request) -> dict[str, str]:
     """Return a Supabase GitHub OAuth URL for browser-based login."""
+    supabase = _request_supabase(request)
+    if supabase is None:
+        raise HTTPException(503, "Supabase OAuth is not available")
     redirect_to = os.environ.get(
         "SCIONA_SUPABASE_REDIRECT_URL",
         os.environ.get("SUPABASE_REDIRECT_URL", "http://localhost:5173/auth/callback"),
@@ -126,7 +129,7 @@ async def github_device_poll(
     device_code: str,
     request: Request,
 ) -> TokenResponse | PendingResponse:
-    """Poll the device flow and return a Supabase or legacy session token."""
+    """Poll the device flow and return a Supabase session token."""
     try:
         import httpx
     except ImportError:
@@ -172,27 +175,23 @@ async def github_device_poll(
             },
         )
         user_resp.raise_for_status()
-        gh_user = user_resp.json()
+        user_resp.json()
 
-    if use_supabase_auth():
-        supabase = _request_supabase(request)
-        if supabase is not None:
-            try:
-                session_response = await supabase.auth.sign_in_with_id_token(
-                    {"provider": "github", "token": github_token}
-                )
-            except Exception:
-                session_response = None
-            token_response = _token_response_from_session(session_response)
-            if token_response is not None:
-                return token_response
+    supabase = _request_supabase(request)
+    if supabase is None:
+        raise HTTPException(503, "Supabase Auth is not available")
 
-    jwt_token = await _upsert_user_and_issue_jwt(gh_user)
-    return TokenResponse(
-        access_token=jwt_token,
-        refresh_token="",
-        expires_in=30 * 24 * 3600,
-    )
+    try:
+        session_response = await supabase.auth.sign_in_with_id_token(
+            {"provider": "github", "token": github_token}
+        )
+    except Exception as exc:
+        raise HTTPException(503, "Supabase device login failed") from exc
+
+    token_response = _token_response_from_session(session_response)
+    if token_response is None:
+        raise HTTPException(503, "Supabase session was not returned")
+    return token_response
 
 
 @router.get("/auth/me")
@@ -205,35 +204,6 @@ async def get_me(user: UserProfile = Depends(require_auth)) -> UserResponse:
         avatar_url=user.avatar_url,
         identity_tier=user.identity_tier,
         effective_tier=user.effective_tier,
-        reputation_score=0,
-        created_at=datetime.now(timezone.utc),
+        reputation_score=user.reputation_score,
+        created_at=user.created_at,
     )
-
-
-async def _upsert_user_and_issue_jwt(gh_user: dict[str, Any]) -> str:
-    """Upsert the GitHub user into the legacy JWT identity flow."""
-    try:
-        import jwt as pyjwt
-    except ImportError:
-        raise HTTPException(503, "PyJWT not installed")
-
-    private_key = os.environ.get("SCIONA_JWT_PRIVATE_KEY", "")
-    if not private_key:
-        key_path = os.environ.get("SCIONA_JWT_PRIVATE_KEY_PATH", "")
-        if key_path and os.path.exists(key_path):
-            with open(key_path) as f:
-                private_key = f.read()
-    if not private_key:
-        raise HTTPException(503, "JWT private key not configured")
-
-    now = int(time.time())
-    payload = {
-        "sub": str(gh_user.get("id", "")),
-        "ghid": gh_user.get("id", 0),
-        "login": gh_user.get("login", ""),
-        "tier": "contributor",
-        "iat": now,
-        "exp": now + 30 * 24 * 3600,
-    }
-
-    return pyjwt.encode(payload, private_key, algorithm="RS256")

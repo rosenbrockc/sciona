@@ -60,10 +60,8 @@ visualizer = [
 api = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "asyncpg>=0.29",
     "supabase>=2.0",
     "openai>=1.0.0",
-    "pyjwt[crypto]>=2.8",
     "httpx>=0.27",
     "boto3>=1.34",
     "stripe>=7.0",
@@ -74,6 +72,7 @@ synthesizer = [
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
+    "asyncpg>=0.29",
     "mypy>=1.0",
 ]
 all = [
@@ -98,6 +97,7 @@ filterwarnings = [
 ]
 markers = [
     "slow: marks tests as slow (require model downloads)",
+    "supabase_local: exercises migrations against a local Supabase stack",
     "match_regression_deterministic: deterministic Hunter regression suite using fixture-backed cases",
     "match_regression_live: live Hunter regression suite using a local llama server",
 ]

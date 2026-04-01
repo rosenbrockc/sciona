@@ -36,11 +36,9 @@ async def _create_supabase_client(url: str, key: str):
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    """Initialise database pool and graph driver on startup."""
-    db_pool = None
+    """Initialise Supabase clients and the graph driver on startup."""
     supabase_public = None
     supabase_admin = None
-    supabase_db_pool = None
     graph_driver = None
 
     supabase_url = _first_env("SCIONA_SUPABASE_URL", "SUPABASE_URL")
@@ -67,41 +65,6 @@ async def _lifespan(app: FastAPI):
     if supabase_admin is not None:
         app.state.supabase_admin = supabase_admin
 
-    postgres_uri = os.environ.get("SCIONA_POSTGRES_URI", "")
-    if postgres_uri:
-        try:
-            import asyncpg
-
-            db_pool = await asyncpg.create_pool(
-                postgres_uri,
-                min_size=2,
-                max_size=10,
-                statement_cache_size=0,
-            )
-            app.state.db_pool = db_pool
-        except Exception:
-            logger.exception("Failed to initialise asyncpg pool")
-            db_pool = None
-
-    supabase_postgres_uri = _first_env(
-        "SCIONA_SUPABASE_POSTGRES_URI",
-        "SUPABASE_POSTGRES_URI",
-    )
-    if supabase_postgres_uri:
-        try:
-            import asyncpg
-
-            supabase_db_pool = await asyncpg.create_pool(
-                supabase_postgres_uri,
-                min_size=2,
-                max_size=10,
-                statement_cache_size=0,
-            )
-            app.state.supabase_db_pool = supabase_db_pool
-        except Exception:
-            logger.exception("Failed to initialise Supabase asyncpg pool")
-            supabase_db_pool = None
-
     memgraph_uri = os.environ.get("SCIONA_MEMGRAPH_URI", "")
     if memgraph_uri:
         try:
@@ -118,16 +81,6 @@ async def _lifespan(app: FastAPI):
     if graph_driver is not None:
         try:
             await graph_driver.close()
-        except Exception:
-            pass
-    if supabase_db_pool is not None:
-        try:
-            await supabase_db_pool.close()
-        except Exception:
-            pass
-    if db_pool is not None:
-        try:
-            await db_pool.close()
         except Exception:
             pass
 
