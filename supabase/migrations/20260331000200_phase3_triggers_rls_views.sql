@@ -178,11 +178,11 @@ SET search_path = ''
 AS $$
     SELECT CASE
         WHEN payload IS NULL THEN FALSE
-        WHEN jsonb_typeof(payload) = 'object' THEN payload ? target_fqdn
-        WHEN jsonb_typeof(payload) = 'array' THEN EXISTS (
+        WHEN pg_catalog.jsonb_typeof(payload) = 'object' THEN payload ? target_fqdn
+        WHEN pg_catalog.jsonb_typeof(payload) = 'array' THEN EXISTS (
             SELECT 1
-            FROM jsonb_array_elements(payload) AS elem(value)
-            WHERE elem.value = to_jsonb(target_fqdn)
+            FROM pg_catalog.jsonb_array_elements(payload) AS elem(value)
+            WHERE elem.value = pg_catalog.to_jsonb(target_fqdn)
                OR elem.value->>'fqdn' = target_fqdn
                OR elem.value->>'atom_fqdn' = target_fqdn
         )
@@ -199,8 +199,11 @@ SET search_path = ''
 AS $$
     SELECT CASE
         WHEN payload IS NULL THEN 0
-        WHEN jsonb_typeof(payload) = 'object' THEN jsonb_object_length(payload)
-        WHEN jsonb_typeof(payload) = 'array' THEN jsonb_array_length(payload)
+        WHEN pg_catalog.jsonb_typeof(payload) = 'object' THEN (
+            SELECT pg_catalog.count(*)
+            FROM pg_catalog.jsonb_object_keys(payload) AS obj(key)
+        )::INTEGER
+        WHEN pg_catalog.jsonb_typeof(payload) = 'array' THEN pg_catalog.jsonb_array_length(payload)
         ELSE 0
     END;
 $$;
@@ -213,7 +216,6 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created;
 
 DROP TRIGGER IF EXISTS trg_publishable_io_specs ON public.atom_io_specs;
 CREATE TRIGGER trg_publishable_io_specs

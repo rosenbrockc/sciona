@@ -29,6 +29,21 @@ from tests.helpers.match_regression import (
 )
 
 
+def _run_subprocess(
+    cmd: list[str],
+    *,
+    cwd: Path,
+    timeout: float = 300.0,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        cwd=str(cwd),
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+    )
+
+
 def _ensure_current_event_loop() -> None:
     """Restore pre-3.11 asyncio behavior for legacy sync fixtures."""
     import asyncio
@@ -65,6 +80,35 @@ def _check_llama_ready(base_url: str) -> bool:
     return False
 
 
+def _http_ready(url: str) -> bool:
+    try:
+        with urllib.request.urlopen(url, timeout=2.0) as response:
+            return response.status == 200
+    except (urllib.error.URLError, TimeoutError, ConnectionError):
+        return False
+
+
+def _wait_for_supabase_ready(
+    repo_root: Path,
+    *,
+    timeout: float = 240.0,
+) -> subprocess.CompletedProcess[str] | None:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        status = _run_subprocess(
+            ["supabase", "status", "-o", "env"],
+            cwd=repo_root,
+            timeout=60.0,
+        )
+        if status.returncode == 0:
+            parsed = _parse_env_lines(status.stdout)
+            api_url = _pick_env_var(parsed, "API_URL", "SUPABASE_URL")
+            if api_url and _http_ready(f"{api_url}/rest/v1/"):
+                return status
+        time.sleep(2.0)
+    return None
+
+
 def _terminate_process(proc: subprocess.Popen[str]) -> None:
     if proc.poll() is not None:
         return
@@ -87,6 +131,123 @@ def _terminate_process(proc: subprocess.Popen[str]) -> None:
 @pytest.fixture(scope="session")
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def _docker_available() -> bool:
+    result = subprocess.run(
+        ["docker", "ps"],
+        text=True,
+        capture_output=True,
+        timeout=10.0,
+    )
+    return result.returncode == 0
+
+
+def _parse_env_lines(output: str) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if not line or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        parsed[key.strip()] = value.strip().strip('"').strip("'")
+    return parsed
+
+
+def _pick_env_var(parsed: dict[str, str], *names: str) -> str:
+    for name in names:
+        value = parsed.get(name, "")
+        if value:
+            return value
+    return ""
+
+
+def _supabase_project_id(repo_root: Path) -> str:
+    config_path = repo_root / "supabase" / "config.toml"
+    if not config_path.exists():
+        return "sciona"
+    for raw_line in config_path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line.startswith("project_id"):
+            continue
+        _, _, value = line.partition("=")
+        project_id = value.strip().strip('"').strip("'")
+        return project_id or "sciona"
+    return "sciona"
+
+
+@pytest.fixture(scope="session")
+def supabase_local_env(repo_root: Path) -> Iterator[dict[str, str]]:
+    if os.environ.get("SCIONA_TEST_SUPABASE_LOCAL", "0") != "1":
+        pytest.skip("Set SCIONA_TEST_SUPABASE_LOCAL=1 to enable local Supabase tests")
+    if not _docker_available():
+        pytest.skip("Docker is not available for local Supabase tests")
+
+    project_id = _supabase_project_id(repo_root)
+    started_here = False
+    status = _run_subprocess(
+        ["supabase", "status", "-o", "env"],
+        cwd=repo_root,
+        timeout=60.0,
+    )
+    if status.returncode != 0:
+        start = _run_subprocess(
+            ["supabase", "start", "--ignore-health-check", "--yes"],
+            cwd=repo_root,
+            timeout=1200.0,
+        )
+        if start.returncode != 0:
+            pytest.skip(
+                "Unable to start local Supabase stack:\n"
+                f"stdout:\n{start.stdout}\n\nstderr:\n{start.stderr}"
+            )
+        started_here = True
+
+    if os.environ.get("SCIONA_TEST_SUPABASE_RESET_LOCAL", "0") == "1":
+        reset = _run_subprocess(
+            ["supabase", "db", "reset", "--local", "--no-seed", "--yes"],
+            cwd=repo_root,
+            timeout=1200.0,
+        )
+        recovered_status = _wait_for_supabase_ready(repo_root)
+        if recovered_status is None:
+            pytest.fail(
+                "Local Supabase reset failed to recover:\n"
+                f"stdout:\n{reset.stdout}\n\nstderr:\n{reset.stderr}"
+            )
+        status = recovered_status
+
+    parsed = _parse_env_lines(status.stdout)
+    api_url = _pick_env_var(parsed, "API_URL", "SUPABASE_URL")
+    anon_key = _pick_env_var(parsed, "ANON_KEY", "SUPABASE_ANON_KEY")
+    service_role_key = _pick_env_var(
+        parsed,
+        "SERVICE_ROLE_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+    )
+    db_url = _pick_env_var(
+        parsed,
+        "DB_URL",
+        "POSTGRES_URL",
+        "SUPABASE_DB_URL",
+    )
+    if not (api_url and anon_key and service_role_key and db_url):
+        pytest.fail(f"Incomplete local Supabase status output: {parsed!r}")
+
+    try:
+        yield {
+            "api_url": api_url,
+            "anon_key": anon_key,
+            "service_role_key": service_role_key,
+            "db_url": db_url,
+        }
+    finally:
+        if started_here:
+            _run_subprocess(
+                ["supabase", "stop", "--project-id", project_id],
+                cwd=repo_root,
+                timeout=300.0,
+            )
 
 
 @pytest.fixture(scope="session")

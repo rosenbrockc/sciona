@@ -1,8 +1,8 @@
-# Local Supabase CLI configuration for the Ageo Matcher migration work.
+# Local Supabase CLI configuration for the Sciona migration work.
 # Secret material stays in environment variables or in the linked Supabase
 # project metadata and is intentionally not committed here.
 
-project_id = "ageo-matcher"
+project_id = "sciona"
 
 [api]
 enabled = true

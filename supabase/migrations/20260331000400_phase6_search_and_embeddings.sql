@@ -292,12 +292,12 @@ BEGIN
         ci.overall_verdict,
         ci.risk_tier,
         ci.trust_readiness,
-        1 - (ae.embedding <=> query_embedding) AS similarity
+        1 - (ae.embedding OPERATOR(extensions.<=>) query_embedding) AS similarity
     FROM public.atom_embeddings ae
     JOIN public.catalog_atoms_served ci
       ON ci.atom_id = ae.atom_id
-    WHERE 1 - (ae.embedding <=> query_embedding) >= similarity_threshold
-    ORDER BY ae.embedding <=> query_embedding, ci.fqdn
+    WHERE 1 - (ae.embedding OPERATOR(extensions.<=>) query_embedding) >= similarity_threshold
+    ORDER BY ae.embedding OPERATOR(extensions.<=>) query_embedding, ci.fqdn
     LIMIT result_limit
     OFFSET result_offset;
 END;
@@ -433,13 +433,13 @@ BEGIN
         SELECT
             ae.atom_id,
             ROW_NUMBER() OVER (
-                ORDER BY ae.embedding <=> query_embedding, ci.fqdn
+                ORDER BY ae.embedding OPERATOR(extensions.<=>) query_embedding, ci.fqdn
             ) AS vec_row_rank,
-            1 - (ae.embedding <=> query_embedding) AS vec_similarity
+            1 - (ae.embedding OPERATOR(extensions.<=>) query_embedding) AS vec_similarity
         FROM public.atom_embeddings ae
         JOIN public.catalog_atoms_served ci
           ON ci.atom_id = ae.atom_id
-        WHERE 1 - (ae.embedding <=> query_embedding) >= similarity_threshold
+        WHERE 1 - (ae.embedding OPERATOR(extensions.<=>) query_embedding) >= similarity_threshold
     ),
     combined AS (
         SELECT
