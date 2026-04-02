@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from datetime import datetime, timezone
@@ -19,6 +20,7 @@ from sciona.api.models import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 GITHUB_DEVICE_URL = "https://github.com/login/device/code"
 GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
@@ -38,6 +40,30 @@ def _attr_or_key(obj: Any, name: str, default: Any = None) -> Any:
     if isinstance(obj, dict):
         return obj.get(name, default)
     return getattr(obj, name, default)
+
+
+def _current_span():
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        return None
+    try:
+        return trace.get_current_span()
+    except Exception:
+        return None
+
+
+def _annotate_span(**attributes: Any) -> None:
+    span = _current_span()
+    if span is None:
+        return
+    for key, value in attributes.items():
+        if value is None:
+            continue
+        try:
+            span.set_attribute(key, value)
+        except Exception:
+            logger.debug("Failed to set span attribute %s", key, exc_info=True)
 
 
 def _token_response_from_session(session_response: Any) -> TokenResponse | None:
@@ -71,6 +97,7 @@ def _token_response_from_session(session_response: Any) -> TokenResponse | None:
 @router.get("/auth/login")
 async def login_redirect(request: Request) -> dict[str, str]:
     """Return a Supabase GitHub OAuth URL for browser-based login."""
+    _annotate_span(**{"auth.flow": "supabase_oauth", "auth.provider": "github"})
     supabase = _request_supabase(request)
     if supabase is None:
         raise HTTPException(503, "Supabase OAuth is not available")
@@ -97,6 +124,7 @@ async def login_redirect(request: Request) -> dict[str, str]:
 @router.get("/auth/github/device")
 async def github_device_start() -> DeviceFlowResponse:
     """Start the legacy GitHub device flow used by the CLI."""
+    _annotate_span(**{"auth.flow": "github_device"})
     try:
         import httpx
     except ImportError:
@@ -130,6 +158,12 @@ async def github_device_poll(
     request: Request,
 ) -> TokenResponse | PendingResponse:
     """Poll the device flow and return a Supabase session token."""
+    _annotate_span(
+        **{
+            "auth.flow": "github_device",
+            "auth.device_code_present": bool(device_code),
+        }
+    )
     try:
         import httpx
     except ImportError:
@@ -197,6 +231,7 @@ async def github_device_poll(
 @router.get("/auth/me")
 async def get_me(user: UserProfile = Depends(require_auth)) -> UserResponse:
     """Return the current authenticated user."""
+    _annotate_span(**{"auth.flow": "me", "user.id": str(user.user_id)})
     return UserResponse(
         user_id=UUID(str(user.user_id)),
         github_login=user.github_login,

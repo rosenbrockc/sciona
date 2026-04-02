@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from sciona.api.models import PaginatedResponse
 from sciona.clearinghouse.models import LeaderboardEntry
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _first_row(data: Any) -> dict[str, Any] | None:
@@ -24,12 +26,42 @@ def _first_row(data: Any) -> dict[str, Any] | None:
     return None
 
 
+def _current_span():
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        return None
+    try:
+        return trace.get_current_span()
+    except Exception:
+        return None
+
+
+def _annotate_span(**attributes: Any) -> None:
+    span = _current_span()
+    if span is None:
+        return
+    for key, value in attributes.items():
+        if value is None:
+            continue
+        try:
+            span.set_attribute(key, value)
+        except Exception:
+            logger.debug("Failed to set span attribute %s", key, exc_info=True)
+
+
 @router.get("/submissions/{submission_id}/status")
 async def get_submission_status(
     submission_id: UUID,
     supabase=Depends(api_deps.get_supabase),
 ) -> dict:
     """Poll verification progress for a submission."""
+    _annotate_span(
+        **{
+            "verification.action": "status_poll",
+            "submission.id": str(submission_id),
+        }
+    )
     submission_result = await (
         supabase.table("submissions")
         .select("*")
@@ -40,6 +72,7 @@ async def get_submission_status(
     submission = _first_row(submission_result.data)
     if not submission:
         raise HTTPException(404, "Submission not found")
+    _annotate_span(**{"bounty.id": str(submission.get("bounty_id", ""))})
 
     runs_result = await (
         supabase.table("verification_runs")
@@ -63,6 +96,14 @@ async def get_leaderboard(
     supabase=Depends(api_deps.get_supabase),
 ) -> PaginatedResponse:
     """Current ranking of verified submissions for a bounty."""
+    _annotate_span(
+        **{
+            "verification.action": "leaderboard",
+            "bounty.id": str(bounty_id),
+            "verification.limit": limit,
+            "verification.offset": offset,
+        }
+    )
     limit = int(getattr(limit, "default", limit))
     offset = int(getattr(offset, "default", offset))
 
@@ -106,6 +147,7 @@ async def get_settlement(
     supabase=Depends(api_deps.get_supabase),
 ) -> dict:
     """Retrieve settlement details for a settled bounty."""
+    _annotate_span(**{"verification.action": "settlement", "bounty.id": str(bounty_id)})
     bounty_result = await (
         supabase.table("bounties")
         .select("*")

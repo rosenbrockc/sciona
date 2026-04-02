@@ -65,6 +65,12 @@ api = [
     "httpx>=0.27",
     "boto3>=1.34",
     "stripe>=7.0",
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-instrumentation-fastapi>=0.45b0",
+    "opentelemetry-instrumentation-httpx>=0.45b0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+    "sentry-sdk[fastapi]>=2.0",
 ]
 synthesizer = [
     "sciona[hunter]",

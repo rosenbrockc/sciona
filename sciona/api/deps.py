@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
@@ -9,6 +10,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
 bearer_scheme = HTTPBearer()
 
 
@@ -31,6 +33,30 @@ class UserProfile(BaseModel):
 
 
 UserRow = UserProfile
+
+
+def _current_span():
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        return None
+    try:
+        return trace.get_current_span()
+    except Exception:
+        return None
+
+
+def _annotate_span(**attributes: Any) -> None:
+    span = _current_span()
+    if span is None:
+        return
+    for key, value in attributes.items():
+        if value is None:
+            continue
+        try:
+            span.set_attribute(key, value)
+        except Exception:
+            logger.debug("Failed to set span attribute %s", key, exc_info=True)
 
 
 async def get_supabase(request: Request) -> Any:
@@ -79,5 +105,15 @@ async def _require_auth_supabase(
         raise HTTPException(401, "User profile not found")
     if data.get("is_blacklisted"):
         raise HTTPException(403, "Account suspended")
+
+    _annotate_span(
+        **{
+            "auth.provider": "supabase",
+            "user.id": str(data.get("user_id", "")),
+            "user.identity_tier": str(data.get("identity_tier", "")),
+            "user.effective_tier": str(data.get("effective_tier", "")),
+            "user.blacklisted": bool(data.get("is_blacklisted", False)),
+        }
+    )
 
     return UserProfile(**data)

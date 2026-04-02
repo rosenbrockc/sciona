@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -30,6 +31,7 @@ UserRow = getattr(api_deps, "UserProfile", None) or api_deps.UserRow
 require_auth = api_deps.require_auth
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _first_row(data: Any) -> dict[str, Any] | None:
@@ -55,6 +57,30 @@ def _json_obj(value: Any) -> dict[str, Any]:
     return value
 
 
+def _current_span():
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        return None
+    try:
+        return trace.get_current_span()
+    except Exception:
+        return None
+
+
+def _annotate_span(**attributes: Any) -> None:
+    span = _current_span()
+    if span is None:
+        return
+    for key, value in attributes.items():
+        if value is None:
+            continue
+        try:
+            span.set_attribute(key, value)
+        except Exception:
+            logger.debug("Failed to set span attribute %s", key, exc_info=True)
+
+
 @router.post("")
 async def create_bounty(
     body: BountyCreateRequest,
@@ -63,6 +89,13 @@ async def create_bounty(
 ) -> BountyResponse:
     """Create a draft bounty."""
     user_id = str(user.user_id)
+    _annotate_span(
+        **{
+            "bounty.action": "create",
+            "bounty.principal_id": user_id,
+            "bounty.tier": body.tier,
+        }
+    )
     result = await (
         supabase.table("bounties")
         .insert(
@@ -91,6 +124,13 @@ async def fund_bounty(
     supabase=Depends(api_deps.get_supabase),
 ) -> BountyFundResponse:
     """Fund a bounty (transitions draft -> open)."""
+    _annotate_span(
+        **{
+            "bounty.action": "fund",
+            "bounty.id": str(bounty_id),
+            "user.id": str(user.user_id),
+        }
+    )
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
@@ -124,6 +164,13 @@ async def submit_to_bounty(
     supabase=Depends(api_deps.get_supabase),
 ) -> SubmissionResponse:
     """Submit a CDG solution with signed receipt."""
+    _annotate_span(
+        **{
+            "bounty.action": "submit",
+            "bounty.id": str(bounty_id),
+            "user.id": str(user.user_id),
+        }
+    )
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
@@ -179,6 +226,13 @@ async def cancel_bounty(
     supabase=Depends(api_deps.get_supabase),
 ) -> BountyCancelResponse:
     """Cancel a bounty (with fee per design decision 4.13)."""
+    _annotate_span(
+        **{
+            "bounty.action": "cancel",
+            "bounty.id": str(bounty_id),
+            "user.id": str(user.user_id),
+        }
+    )
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
@@ -226,6 +280,13 @@ async def update_target(
     supabase=Depends(api_deps.get_supabase),
 ) -> BountyResponse:
     """Principal updates minimum metric target between verifications."""
+    _annotate_span(
+        **{
+            "bounty.action": "update_target",
+            "bounty.id": str(bounty_id),
+            "user.id": str(user.user_id),
+        }
+    )
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
@@ -253,6 +314,7 @@ async def get_bounty(
     supabase=Depends(api_deps.get_supabase),
 ) -> BountyResponse:
     """Get bounty details including submission count and status."""
+    _annotate_span(**{"bounty.action": "get", "bounty.id": str(bounty_id)})
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
@@ -268,6 +330,15 @@ async def list_bounties(
     supabase=Depends(api_deps.get_supabase),
 ) -> PaginatedResponse:
     """List bounties with optional filters."""
+    _annotate_span(
+        **{
+            "bounty.action": "list",
+            "bounty.status": status,
+            "bounty.domain_tag": domain_tag,
+            "bounty.limit": limit,
+            "bounty.offset": offset,
+        }
+    )
     limit = int(getattr(limit, "default", limit))
     offset = int(getattr(offset, "default", offset))
 
