@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -12,6 +13,8 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 bearer_scheme = HTTPBearer()
+AUTHENTIK_URL = os.environ.get("AUTHENTIK_URL", "")
+AUTHENTIK_OIDC_SLUG = os.environ.get("AUTHENTIK_OIDC_SLUG", "sciona-platform")
 
 
 class UserProfile(BaseModel):
@@ -69,12 +72,22 @@ async def get_supabase(request: Request) -> Any:
     return client
 
 
+async def get_temporal(request: Request) -> Any | None:
+    """Return the configured Temporal client, if one is available."""
+    return getattr(request.app.state, "temporal", None)
+
+
 async def require_auth(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> UserProfile:
     """Validate the configured auth token and return the user profile."""
-    return await _require_auth_supabase(request, credentials)
+    try:
+        return await _require_auth_supabase(request, credentials)
+    except HTTPException as exc:
+        if exc.status_code == 403 or not AUTHENTIK_URL:
+            raise
+        return await _require_auth_oidc(request, credentials, AUTHENTIK_URL)
 
 
 async def _require_auth_supabase(
@@ -105,10 +118,69 @@ async def _require_auth_supabase(
         raise HTTPException(401, "User profile not found")
     if data.get("is_blacklisted"):
         raise HTTPException(403, "Account suspended")
+    if not data.get("scim_active", True):
+        raise HTTPException(403, "Account deactivated by organization")
 
     _annotate_span(
         **{
             "auth.provider": "supabase",
+            "user.id": str(data.get("user_id", "")),
+            "user.identity_tier": str(data.get("identity_tier", "")),
+            "user.effective_tier": str(data.get("effective_tier", "")),
+            "user.blacklisted": bool(data.get("is_blacklisted", False)),
+        }
+    )
+
+    return UserProfile(**data)
+
+
+async def _require_auth_oidc(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials,
+    authentik_url: str,
+) -> UserProfile:
+    """Validate an Authentik OIDC access token via the userinfo endpoint."""
+    try:
+        import httpx
+    except ImportError:
+        raise HTTPException(503, "httpx not installed")
+
+    token = credentials.credentials
+    userinfo_url = f"{authentik_url.rstrip('/')}/application/o/{AUTHENTIK_OIDC_SLUG}/userinfo/"
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            userinfo_url,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(401, "Invalid or expired token")
+
+    userinfo = resp.json()
+    oidc_sub = str(userinfo.get("sub", "")).strip()
+    if not oidc_sub:
+        raise HTTPException(401, "Invalid token: no subject")
+
+    supabase = await get_supabase(request)
+    result = (
+        await supabase.table("users")
+        .select("*")
+        .eq("oidc_sub", oidc_sub)
+        .maybe_single()
+        .execute()
+    )
+    data = getattr(result, "data", None)
+    if not data:
+        raise HTTPException(401, "User profile not found")
+    if data.get("is_blacklisted"):
+        raise HTTPException(403, "Account suspended")
+    if not data.get("scim_active", True):
+        raise HTTPException(403, "Account deactivated by organization")
+
+    _annotate_span(
+        **{
+            "auth.provider": "authentik",
             "user.id": str(data.get("user_id", "")),
             "user.identity_tier": str(data.get("identity_tier", "")),
             "user.effective_tier": str(data.get("effective_tier", "")),

@@ -25,9 +25,9 @@ export default function Home() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Bounties Settled" value={stats.total_bounties_settled} />
-        <StatCard label="Escrow Distributed" value={`$${stats.total_escrow_distributed.toLocaleString()}`} />
+        <StatCard label="Escrow Value" value={`$${stats.total_escrow_value.toLocaleString()}`} />
         <StatCard label="Compute Preserved" value={`${(stats.estimated_tokens_saved / 1e9).toFixed(1)}B tokens`} sub={`$${stats.estimated_cost_saved_usd.toLocaleString()} saved`} />
-        <StatCard label="Cross-Discipline Atoms" value={stats.cross_discipline_atoms} />
+        <StatCard label="Active Leaders" value={leaders.length} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,12 +37,31 @@ async def _create_supabase_client(url: str, key: str):
         return None
 
 
+async def _create_temporal_client(address: str) -> Any | None:
+    """Create an optional Temporal client, returning ``None`` on failure."""
+    if not address:
+        return None
+
+    try:
+        from temporalio.client import Client as TemporalClient
+    except ImportError:
+        logger.info("temporalio package is not installed")
+        return None
+
+    try:
+        return await TemporalClient.connect(address)
+    except Exception:
+        logger.exception("Failed to initialise Temporal client")
+        return None
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     """Initialise Supabase clients and the graph driver on startup."""
     supabase_public = None
     supabase_admin = None
     graph_driver = None
+    temporal_client = None
 
     supabase_url = _first_env("SCIONA_SUPABASE_URL", "SUPABASE_URL")
     anon_key = _first_env(
@@ -78,11 +98,21 @@ async def _lifespan(app: FastAPI):
             logger.exception("Failed to initialise graph driver")
             graph_driver = None
 
+    temporal_address = os.environ.get("TEMPORAL_ADDRESS", "localhost:7233")
+    temporal_client = await _create_temporal_client(temporal_address)
+    if temporal_client is not None:
+        app.state.temporal = temporal_client
+
     yield
 
     if graph_driver is not None:
         try:
             await graph_driver.close()
+        except Exception:
+            pass
+    if temporal_client is not None:
+        try:
+            await temporal_client.close()
         except Exception:
             pass
 
@@ -100,6 +130,7 @@ def create_app() -> FastAPI:
     from sciona.api.routers.catalog import router as catalog_router
     from sciona.api.routers.dashboard import router as dashboard_router
     from sciona.api.routers.registry import router as registry_router
+    from sciona.api.routers.scim import router as scim_router
     from sciona.api.routers.verification import router as verification_router
 
     application.add_middleware(
@@ -115,6 +146,7 @@ def create_app() -> FastAPI:
     application.include_router(catalog_router, prefix="/catalog", tags=["catalog"])
     application.include_router(verification_router, tags=["verification"])
     application.include_router(dashboard_router, tags=["dashboard"])
+    application.include_router(scim_router, tags=["scim"])
 
     setup_telemetry(application)
 

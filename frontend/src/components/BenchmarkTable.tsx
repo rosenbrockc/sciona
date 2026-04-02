@@ -19,7 +19,7 @@ export default function BenchmarkTable({ records }: { records: BenchmarkRecord[]
             <td className="py-2 pr-4 font-mono">{r.metric_name}</td>
             <td className="py-2 pr-4 font-mono">{r.metric_value.toFixed(3)}</td>
             <td className="py-2 pr-4">{r.dataset_tag}</td>
-            <td className="py-2 text-muted">{r.recorded_at}</td>
+            <td className="py-2 text-muted">{r.measured_at}</td>
           </tr>
         ))}
       </tbody>

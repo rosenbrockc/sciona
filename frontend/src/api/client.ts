@@ -1,57 +1,128 @@
-import { mockApi } from "./mock";
 import type {
-  BountyResponse,
-  BountySummaryResponse,
   AtomDetailResponse,
   AtomSummaryResponse,
   AtomVersionResponse,
+  BenchmarkRecord,
+  BountyResponse,
+  BountySummaryResponse,
+  ComputePreserved,
   LeaderboardEntry,
   OriginatorImpact,
-  ComputePreserved,
-  BenchmarkRecord,
-  SubmissionLeaderboardEntry,
-  SettlementInfo,
   PaginatedResponse,
+  SettlementInfo,
+  SubmissionLeaderboardEntry,
+  TokenResponse,
+  UserProfile,
+  WorkflowStatus,
 } from "./types";
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false";
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const ACCESS_TOKEN_KEY = "sciona_access_token";
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+function getStoredAccessToken(): string | null {
+  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  const token = getStoredAccessToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers,
+  });
+  if (!res.ok) {
+    throw new Error(`API ${res.status}: ${path}`);
+  }
   return res.json() as Promise<T>;
 }
 
+async function requestText(path: string, init?: RequestInit): Promise<string> {
+  const headers = new Headers(init?.headers);
+  const token = getStoredAccessToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers,
+  });
+  if (!res.ok) {
+    throw new Error(`API ${res.status}: ${path}`);
+  }
+  return res.text();
+}
+
+function withQuery(
+  path: string,
+  params: Record<string, string | number | undefined>,
+): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === "") {
+      continue;
+    }
+    query.set(key, String(value));
+  }
+  const suffix = query.toString();
+  return suffix ? `${path}?${suffix}` : path;
+}
+
 export const api = {
+  async getAuthLoginUrl(): Promise<string> {
+    const data = await request<{ url: string }>("/auth/login");
+    return data.url;
+  },
+
+  async exchangeEnterpriseCallback(
+    code: string,
+    state: string,
+  ): Promise<TokenResponse> {
+    return request<TokenResponse>(
+      withQuery("/auth/enterprise/callback", { code, state }),
+    );
+  },
+
+  async getMe(): Promise<UserProfile> {
+    return request<UserProfile>("/auth/me");
+  },
+
   async getBounties(params?: {
     status?: string;
     domain_tag?: string;
     limit?: number;
     offset?: number;
   }): Promise<PaginatedResponse<BountySummaryResponse>> {
-    if (USE_MOCK) return mockApi.getBounties(params);
-    const qs = new URLSearchParams();
-    if (params?.status) qs.set("status", params.status);
-    if (params?.domain_tag) qs.set("domain_tag", params.domain_tag);
-    if (params?.limit) qs.set("limit", String(params.limit));
-    if (params?.offset) qs.set("offset", String(params.offset));
-    return get(`/bounties?${qs}`);
+    return request<PaginatedResponse<BountySummaryResponse>>(
+      withQuery("/bounties", {
+        status: params?.status,
+        domain_tag: params?.domain_tag,
+        limit: params?.limit,
+        offset: params?.offset,
+      }),
+    );
   },
 
   async getBounty(id: string): Promise<BountyResponse> {
-    if (USE_MOCK) return mockApi.getBounty(id)!;
-    return get(`/bounties/${id}`);
+    return request<BountyResponse>(`/bounties/${id}`);
   },
 
-  async getBountyLeaderboard(id: string): Promise<SubmissionLeaderboardEntry[]> {
-    if (USE_MOCK) return mockApi.getBountyLeaderboard(id);
-    return get(`/bounties/${id}/leaderboard`);
+  async getBountyLeaderboard(
+    id: string,
+  ): Promise<PaginatedResponse<SubmissionLeaderboardEntry>> {
+    return request<PaginatedResponse<SubmissionLeaderboardEntry>>(
+      `/bounties/${id}/leaderboard`,
+    );
   },
 
   async getBountySettlement(id: string): Promise<SettlementInfo> {
-    if (USE_MOCK) return mockApi.getBountySettlement(id);
-    return get(`/bounties/${id}/settlement`);
+    return request<SettlementInfo>(`/bounties/${id}/settlement`);
+  },
+
+  async getSubmissionStatus(submissionId: string): Promise<WorkflowStatus> {
+    return request<WorkflowStatus>(`/submissions/${submissionId}/status`);
   },
 
   async getAtoms(params?: {
@@ -60,49 +131,50 @@ export const api = {
     limit?: number;
     offset?: number;
   }): Promise<PaginatedResponse<AtomSummaryResponse>> {
-    if (USE_MOCK) return mockApi.getAtoms(params);
-    const qs = new URLSearchParams();
-    if (params?.search) qs.set("q", params.search);
-    if (params?.domain_tag) qs.set("domain_tag", params.domain_tag);
-    if (params?.limit) qs.set("limit", String(params.limit));
-    if (params?.offset) qs.set("offset", String(params.offset));
-    return get(`/atoms?${qs}`);
+    return request<PaginatedResponse<AtomSummaryResponse>>(
+      withQuery("/atoms", {
+        q: params?.search,
+        domain_tag: params?.domain_tag,
+        limit: params?.limit,
+        offset: params?.offset,
+      }),
+    );
   },
 
   async getAtom(fqdn: string): Promise<AtomDetailResponse> {
-    if (USE_MOCK) return mockApi.getAtom(fqdn);
-    return get(`/atoms/${fqdn}`);
+    return request<AtomDetailResponse>(`/atoms/${fqdn}`);
   },
 
   async getAtomVersions(fqdn: string): Promise<AtomVersionResponse[]> {
-    if (USE_MOCK) return mockApi.getAtomVersions(fqdn);
-    return get(`/atoms/${fqdn}/versions`);
+    return request<AtomVersionResponse[]>(`/atoms/${fqdn}/versions`);
   },
 
   async getAtomBenchmarks(fqdn: string): Promise<BenchmarkRecord[]> {
-    if (USE_MOCK) return mockApi.getAtomBenchmarks(fqdn);
-    return get(`/dashboard/atom/${fqdn}/benchmarks`);
+    return request<BenchmarkRecord[]>(`/dashboard/atom/${fqdn}/benchmarks`);
   },
 
   async getAtomBibtex(fqdn: string): Promise<string> {
-    if (USE_MOCK) return mockApi.getAtomBibtex(fqdn);
-    const res = await fetch(`${API_BASE}/dashboard/atom/${fqdn}/bibtex`);
-    return res.text();
+    const response = await request<{ fqdn: string; bibtex: string }>(
+      `/dashboard/atom/${fqdn}/bibtex`,
+    );
+    return response.bibtex;
   },
 
   async getLeaderboard(limit?: number): Promise<LeaderboardEntry[]> {
-    if (USE_MOCK) return mockApi.getLeaderboard(limit);
-    const qs = limit ? `?limit=${limit}` : "";
-    return get(`/dashboard/leaderboard${qs}`);
+    return request<LeaderboardEntry[]>(
+      withQuery("/dashboard/leaderboard", { limit }),
+    );
   },
 
   async getComputePreserved(): Promise<ComputePreserved> {
-    if (USE_MOCK) return mockApi.getComputePreserved();
-    return get("/dashboard/compute-preserved");
+    return request<ComputePreserved>("/dashboard/compute-preserved");
   },
 
   async getOriginatorImpact(id: string): Promise<OriginatorImpact> {
-    if (USE_MOCK) return mockApi.getOriginatorImpact(id);
-    return get(`/dashboard/originator/${id}/impact`);
+    return request<OriginatorImpact>(`/dashboard/originator/${id}/impact`);
+  },
+
+  async fetchRawBibtex(fqdn: string): Promise<string> {
+    return requestText(`/dashboard/atom/${fqdn}/bibtex`);
   },
 };

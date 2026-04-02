@@ -41,7 +41,7 @@ export default function AtomDetail() {
           ))}
         </div>
         <p className="text-muted text-sm mt-2">
-          Authors: {atom.authors.join(", ")}
+          Owner: {atom.owner_github_login || "unknown"}
         </p>
       </div>
 
@@ -60,9 +60,9 @@ export default function AtomDetail() {
           <tbody>
             {versions.map((v) => (
               <tr key={v.version_id} className="border-b border-border/50">
-                <td className="py-2 pr-4 font-mono">{v.version}</td>
+                <td className="py-2 pr-4 font-mono">{v.semver}</td>
                 <td className="py-2 pr-4 font-mono text-xs text-muted">{v.fingerprint}</td>
-                <td className="py-2 pr-4 text-muted">{v.published_at}</td>
+                <td className="py-2 pr-4 text-muted">{v.created_at}</td>
                 <td className="py-2">
                   {v.is_latest && (
                     <span className="px-2 py-0.5 bg-ok/20 text-ok rounded text-xs">latest</span>

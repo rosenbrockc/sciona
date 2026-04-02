@@ -166,43 +166,47 @@ def test_generate_manifest_sqlite_preserves_benchmark_id(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_catalog_sync_builds_manifest_locally(monkeypatch, tmp_path: Path, capsys):
-    data = {
-        "atoms": [{"atom_id": "a1", "fqdn": "pkg.filter", "status": "approved"}],
-        "hyperparams": [],
-        "benchmarks": [
-            {
-                "atom_fqdn": "pkg.filter",
-                "content_hash": "abc123",
-                "benchmark_name": "signal_v1",
-                "metric_name": "loss",
-                "metric_value": 0.42,
-                "dataset_tag": "v1",
-                "measured_at": "2026-03-31T00:00:00Z",
-            }
-        ],
-        "rollups": [],
-        "descriptions": [],
-    }
-
-    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
-    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-role-token")
-    monkeypatch.setattr("sciona.commands.login_cmds._load_token", lambda: ("", ""))
-
-    called = {}
-
-    async def fake_fetch_manifest_data(base_url, access_token, **kwargs):
-        called["base_url"] = base_url
-        called["access_token"] = access_token
-        return data
-
-    monkeypatch.setattr("sciona.commands.catalog_cmds.fetch_manifest_data", fake_fetch_manifest_data)
-
+async def test_catalog_sync_downloads_manifest_sqlite(monkeypatch, tmp_path: Path, capsys):
     output = tmp_path / "manifest.sqlite"
-    await _cmd_catalog_sync(argparse.Namespace(output=str(output), api_url=None))
+    source = tmp_path / "source.sqlite"
+    con = generate_manifest_sqlite(
+        {
+            "atoms": [{"atom_id": "a1", "fqdn": "pkg.filter", "status": "approved"}],
+            "hyperparams": [],
+            "benchmarks": [
+                {
+                    "atom_fqdn": "pkg.filter",
+                    "content_hash": "abc123",
+                    "benchmark_name": "signal_v1",
+                    "metric_name": "loss",
+                    "metric_value": 0.42,
+                    "dataset_tag": "v1",
+                    "measured_at": "2026-03-31T00:00:00Z",
+                }
+            ],
+            "rollups": [],
+            "descriptions": [],
+        },
+        output_path=source,
+    )
+    con.close()
 
-    assert called["base_url"] == "https://example.supabase.co"
-    assert called["access_token"] == "service-role-token"
+    captured_url: dict[str, str] = {}
+
+    async def fake_download_manifest_bytes(manifest_url: str) -> bytes:
+        captured_url["value"] = manifest_url
+        return source.read_bytes()
+
+    monkeypatch.setattr(
+        "sciona.commands.catalog_cmds._download_manifest_bytes",
+        fake_download_manifest_bytes,
+    )
+
+    await _cmd_catalog_sync(
+        argparse.Namespace(output=str(output), api_url=None, manifest_url="https://bucket.example/manifests/manifest.sqlite")
+    )
+
+    assert captured_url["value"] == "https://bucket.example/manifests/manifest.sqlite"
     assert output.exists()
     assert load_benchmarks_sqlite(output)["pkg.filter"][0].benchmark_id == "signal_v1"
 

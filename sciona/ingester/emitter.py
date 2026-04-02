@@ -284,14 +284,18 @@ def _source_module_import_path(source_file: str) -> str:
 def _emit_source_class_loader(class_name: str, source_file: str) -> list[str]:
     """Load the original Python class or function from a source file at runtime."""
     if not source_file:
-        return ["_SCIONA_SOURCE_SYMBOL: Any = object"]
+        return [
+            f"{class_name}: Any = object",
+            f"_SCIONA_SOURCE_SYMBOL: Any = {class_name}",
+        ]
     module_name = _source_module_import_path(source_file)
     if module_name:
         return [
             "import importlib",
             "",
             f'_SCIONA_SOURCE_MODULE = importlib.import_module("{module_name}")',
-            f'_SCIONA_SOURCE_SYMBOL: Any = getattr(_SCIONA_SOURCE_MODULE, "{class_name}")',
+            f'{class_name}: Any = getattr(_SCIONA_SOURCE_MODULE, "{class_name}")',
+            f"_SCIONA_SOURCE_SYMBOL: Any = {class_name}",
         ]
     path_literal = repr(str(Path(source_file).resolve()))
     return [
@@ -303,7 +307,8 @@ def _emit_source_class_loader(class_name: str, source_file: str) -> list[str]:
         '    raise ImportError(f"Unable to load source module from {_SCIONA_SOURCE_FILE}")',
         "_SCIONA_SOURCE_MODULE = importlib.util.module_from_spec(_SCIONA_SOURCE_SPEC)",
         "_SCIONA_SOURCE_SPEC.loader.exec_module(_SCIONA_SOURCE_MODULE)",
-        f'_SCIONA_SOURCE_SYMBOL: Any = getattr(_SCIONA_SOURCE_MODULE, "{class_name}")',
+        f'{class_name}: Any = getattr(_SCIONA_SOURCE_MODULE, "{class_name}")',
+        f"_SCIONA_SOURCE_SYMBOL: Any = {class_name}",
     ]
 
 
@@ -1311,7 +1316,7 @@ def _emit_canonical_wrapper_body(
         if direct_function_call:
             lines.append("    _source_fn = _SCIONA_SOURCE_SYMBOL")
         else:
-            lines.append("    obj = _SCIONA_SOURCE_SYMBOL.__new__(_SCIONA_SOURCE_SYMBOL)")
+            lines.append(f"    obj = {class_name}.__new__({class_name})")
             for slot_name in required_slots:
                 slot = slot_map.get(slot_name)
                 if slot_name in state_model_fields and stateful:
@@ -2078,7 +2083,7 @@ def generate_stateful_wrappers(
             lines.append('    """')
 
             # Instantiate via __new__
-            lines.append("    obj = _SCIONA_SOURCE_SYMBOL.__new__(_SCIONA_SOURCE_SYMBOL)")
+            lines.append(f"    obj = {class_name}.__new__({class_name})")
 
             # Inject ALL state fields
             for field_name, _ in state_model.fields:

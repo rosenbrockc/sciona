@@ -5,7 +5,7 @@ import type { BountySummaryResponse } from "../api/types";
 import StatusBadge from "../components/StatusBadge";
 import Pagination from "../components/Pagination";
 
-const STATUSES = ["all", "open", "active", "verification", "settled", "cancelled"];
+const STATUSES = ["all", "draft", "open", "submitted", "settled", "cancelled", "expired"];
 const LIMIT = 10;
 
 export default function BountyList() {

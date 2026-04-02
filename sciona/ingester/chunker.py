@@ -689,36 +689,36 @@ def _build_ingest_ir(
                 )
             )
 
+    method_to_operation_id: dict[str, str] = {}
+    for operation in operations:
+        for binding in operation.method_bindings:
+            method_to_operation_id[binding.method_name] = operation.operation_id
+
     for slot in state_slots:
-        for writer in slot.written_by:
-            source_operation_id = None
-            for operation in operations:
-                if writer in {binding.method_name for binding in operation.method_bindings}:
-                    source_operation_id = operation.operation_id
-                    break
-            if source_operation_id is None:
+        writers = set(slot.written_by)
+        readers = set(slot.read_by)
+        last_writer: str | None = None
+        for method in dfg.methods:
+            if method.name == "__init__":
                 continue
-            for reader in slot.read_by:
-                target_operation_id = None
-                for operation in operations:
-                    if reader in {binding.method_name for binding in operation.method_bindings}:
-                        target_operation_id = operation.operation_id
-                        break
-                if target_operation_id is None or target_operation_id == source_operation_id:
-                    continue
-                key = (source_operation_id, target_operation_id, "state", slot.slot_name)
-                if key in seen_edges:
-                    continue
-                seen_edges.add(key)
-                edges.append(
-                    OperationEdge(
-                        source_operation_id=source_operation_id,
-                        target_operation_id=target_operation_id,
-                        edge_kind="state",
-                        artifact_or_slot_name=slot.slot_name,
-                        provenance=list(slot.provenance),
+            operation_id = method_to_operation_id.get(method.name)
+            if operation_id is None:
+                continue
+            if method.name in readers and last_writer and last_writer != operation_id:
+                key = (last_writer, operation_id, "state", slot.slot_name)
+                if key not in seen_edges:
+                    seen_edges.add(key)
+                    edges.append(
+                        OperationEdge(
+                            source_operation_id=last_writer,
+                            target_operation_id=operation_id,
+                            edge_kind="state",
+                            artifact_or_slot_name=slot.slot_name,
+                            provenance=list(slot.provenance),
+                        )
                     )
-                )
+            if method.name in writers:
+                last_writer = operation_id
 
     return IngestIRPlan(
         subject_name=dfg.class_name,
@@ -889,46 +889,35 @@ def _compute_state_edges(
         for mname in atom.method_names:
             method_to_atom[mname] = atom_id
 
-    # For each method, check if it reads/writes state attrs
-    writers: dict[str, set[str]] = {}  # attr -> set of atom_ids
-    readers: dict[str, set[str]] = {}  # attr -> set of atom_ids
-
-    for mf in dfg.methods:
-        if mf.name == "__init__":
-            continue
-        atom_id = method_to_atom.get(mf.name)
-        if atom_id is None:
-            continue
-        for attr in mf.writes:
-            if attr in state_attrs:
-                writers.setdefault(attr, set()).add(atom_id)
-        for attr in mf.reads:
-            if attr in state_attrs:
-                readers.setdefault(attr, set()).add(atom_id)
-
-    # Build edges: writer -> reader for each attr
     seen: set[tuple[str, str]] = set()
     edges: list[DependencyEdge] = []
 
     for attr in state_attrs:
-        for w in writers.get(attr, set()):
-            for r in readers.get(attr, set()):
-                if w == r:
-                    continue
-                key = (w, r)
-                if key in seen:
-                    continue
-                seen.add(key)
-                edges.append(
-                    DependencyEdge(
-                        source_id=w,
-                        target_id=r,
-                        output_name=attr,
-                        input_name=attr,
-                        source_type=state_model_name,
-                        target_type=state_model_name,
+        last_writer: str | None = None
+        for mf in dfg.methods:
+            if mf.name == "__init__":
+                continue
+            atom_id = method_to_atom.get(mf.name)
+            if atom_id is None:
+                continue
+
+            if attr in mf.reads and last_writer and last_writer != atom_id:
+                key = (last_writer, atom_id)
+                if key not in seen:
+                    seen.add(key)
+                    edges.append(
+                        DependencyEdge(
+                            source_id=last_writer,
+                            target_id=atom_id,
+                            output_name=attr,
+                            input_name=attr,
+                            source_type=state_model_name,
+                            target_type=state_model_name,
+                        )
                     )
-                )
+
+            if attr in mf.writes:
+                last_writer = atom_id
 
     return edges
 
@@ -1302,6 +1291,12 @@ async def hoist_state(state: ChunkerState, config: RunnableConfig) -> dict[str, 
         raw = extract_json(response)
     except json.JSONDecodeError:
         logger.warning("Failed to parse state hoisting response")
+        return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
+
+    if isinstance(raw, list):
+        raw = {"state_models": raw}
+    elif not isinstance(raw, dict):
+        logger.warning("Unexpected state hoisting response shape: %s", type(raw).__name__)
         return {"proposed_plan": _attach_canonical_ir(dfg, plan)}
 
     state_models = []

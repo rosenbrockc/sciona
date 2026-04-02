@@ -1,129 +1,214 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { BountyResponse, SubmissionLeaderboardEntry, SettlementInfo } from "../api/types";
-import StatusBadge from "../components/StatusBadge";
+import type {
+  BountyResponse,
+  SettlementInfo,
+  SubmissionLeaderboardEntry,
+  WorkflowStatus,
+} from "../api/types";
 import StatCard from "../components/StatCard";
+import StatusBadge from "../components/StatusBadge";
 
 export default function BountyDetail() {
   const { id } = useParams<{ id: string }>();
   const [bounty, setBounty] = useState<BountyResponse | null>(null);
-  const [leaderboard, setLeaderboard] = useState<SubmissionLeaderboardEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<SubmissionLeaderboardEntry[]>(
+    [],
+  );
   const [settlement, setSettlement] = useState<SettlementInfo | null>(null);
+  const [workflowStatuses, setWorkflowStatuses] = useState<
+    Record<string, WorkflowStatus>
+  >({});
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     api.getBounty(id).then(setBounty);
-    api.getBountyLeaderboard(id).then(setLeaderboard);
+    api.getBountyLeaderboard(id).then((response) => {
+      setLeaderboard(response.items);
+    });
     api.getBountySettlement(id).then(setSettlement).catch(() => {});
   }, [id]);
 
-  if (!bounty) return <p className="text-muted">Loading...</p>;
+  useEffect(() => {
+    if (!leaderboard.length) {
+      return;
+    }
 
-  const budgetPct = bounty.verification_budget_total
-    ? Math.round((bounty.verification_budget_used / bounty.verification_budget_total) * 100)
+    let cancelled = false;
+
+    async function loadStatuses() {
+      const entries = await Promise.all(
+        leaderboard.map(async (entry) => {
+          try {
+            const status = await api.getSubmissionStatus(entry.submission_id);
+            return [entry.submission_id, status] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (cancelled) {
+        return;
+      }
+      setWorkflowStatuses(
+        Object.fromEntries(
+          entries.filter(
+            (entry): entry is readonly [string, WorkflowStatus] =>
+              entry !== null,
+          ),
+        ),
+      );
+    }
+
+    void loadStatuses();
+    const timer = window.setInterval(() => {
+      void loadStatuses();
+    }, 10000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [leaderboard]);
+
+  if (!bounty) {
+    return <p className="text-muted">Loading...</p>;
+  }
+
+  const budgetPct = bounty.verification_budget
+    ? Math.round(
+        (bounty.verifications_used / bounty.verification_budget) * 100,
+      )
     : 0;
 
   return (
     <div className="space-y-8">
       <div>
-        <div className="flex items-center gap-3 mb-2">
+        <div className="mb-2 flex items-center gap-3">
           <h2 className="text-xl font-bold">{bounty.title}</h2>
           <StatusBadge status={bounty.status} />
         </div>
         <p className="text-muted text-sm font-mono">{bounty.bounty_id}</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Escrow" value={`$${bounty.escrow_amount.toLocaleString()}`} />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Escrow"
+          value={`$${bounty.escrow_amount.toLocaleString()}`}
+        />
         <StatCard label="Tier" value={bounty.tier} />
-        <StatCard label="Deadline" value={bounty.deadline} />
+        <StatCard label="Deadline" value={bounty.deadline ?? "none"} />
         <StatCard label="Created" value={bounty.created_at} />
       </div>
 
-      {/* Tags */}
-      <div className="flex gap-2">
-        {bounty.domain_tags.map((t) => (
-          <span key={t} className="px-3 py-1 bg-panel-soft rounded-full text-xs text-muted border border-border">
-            {t}
-          </span>
-        ))}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Principal" value={bounty.principal_id} />
+        <StatCard label="Submissions" value={bounty.submission_count} />
+        <StatCard
+          label="Verifications"
+          value={`${bounty.verifications_used}/${bounty.verification_budget}`}
+        />
+        <StatCard label="Updated" value={bounty.updated_at} />
       </div>
 
-      {/* Verification budget */}
-      <div className="bg-panel border border-border rounded-lg p-5">
-        <h3 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">Verification Budget</h3>
+      <div className="rounded-lg border border-border bg-panel p-5">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+          Verification Budget
+        </h3>
         <div className="flex items-center gap-4">
-          <div className="flex-1 h-2 bg-panel-soft rounded-full overflow-hidden">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-panel-soft">
             <div
-              className="h-full bg-accent rounded-full transition-all"
+              className="h-full rounded-full bg-accent transition-all"
               style={{ width: `${budgetPct}%` }}
             />
           </div>
-          <span className="text-sm text-muted font-mono">
-            {bounty.verification_budget_used}/{bounty.verification_budget_total}
+          <span className="text-sm font-mono text-muted">
+            {bounty.verifications_used}/{bounty.verification_budget}
           </span>
         </div>
       </div>
 
-      {/* Submission leaderboard */}
-      {leaderboard.length > 0 && (
-        <div className="bg-panel border border-border rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-muted uppercase tracking-wide mb-4">Submission Leaderboard</h3>
+      {leaderboard.length > 0 ? (
+        <div className="rounded-lg border border-border bg-panel p-5">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
+            Submission Leaderboard
+          </h3>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-muted border-b border-border">
+              <tr className="border-b border-border text-left text-muted">
                 <th className="pb-2 pr-4">#</th>
                 <th className="pb-2 pr-4">Architect</th>
                 <th className="pb-2 pr-4">Metrics</th>
-                <th className="pb-2">Verified</th>
+                <th className="pb-2 pr-4">Verified</th>
+                <th className="pb-2">Workflow</th>
               </tr>
             </thead>
             <tbody>
-              {leaderboard.map((s) => (
-                <tr key={s.submission_id} className="border-b border-border/50">
-                  <td className="py-2 pr-4 text-muted">{s.rank}</td>
-                  <td className="py-2 pr-4 text-accent">{s.architect_id}</td>
+              {leaderboard.map((submission) => (
+                <tr
+                  key={submission.submission_id}
+                  className="border-b border-border/50"
+                >
+                  <td className="py-2 pr-4 text-muted">{submission.rank}</td>
+                  <td className="py-2 pr-4 text-accent">
+                    {submission.architect_id}
+                  </td>
                   <td className="py-2 pr-4 font-mono text-xs">
-                    {Object.entries(s.metric_values)
-                      .map(([k, v]) => `${k}: ${v}`)
+                    {Object.entries(submission.metric_values)
+                      .map(([key, value]) => `${key}: ${value}`)
                       .join(", ")}
                   </td>
-                  <td className="py-2 text-muted">{s.verified_at}</td>
+                  <td className="py-2 pr-4 text-muted">
+                    {submission.verified_at}
+                  </td>
+                  <td className="py-2 text-muted">
+                    {workflowStatuses[submission.submission_id]
+                      ?.verification_status ?? "verified"}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
 
-      {/* Settlement */}
-      {settlement && settlement.status === "settled" && (
-        <div className="bg-panel border border-border rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-muted uppercase tracking-wide mb-4">Settlement Breakdown</h3>
-          <p className="text-sm text-muted mb-3">
-            Winning submission: <span className="font-mono text-accent">{settlement.winning_submission_id}</span>
-          </p>
+      {settlement && settlement.status === "settled" ? (
+        <div className="rounded-lg border border-border bg-panel p-5">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
+            Settlement Breakdown
+          </h3>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-muted border-b border-border">
+              <tr className="border-b border-border text-left text-muted">
                 <th className="pb-2 pr-4">Recipient</th>
                 <th className="pb-2 pr-4">Role</th>
-                <th className="pb-2">Amount</th>
+                <th className="pb-2 pr-4">Amount</th>
+                <th className="pb-2">Trace</th>
               </tr>
             </thead>
             <tbody>
-              {settlement.payouts.map((p) => (
-                <tr key={p.recipient_id} className="border-b border-border/50">
-                  <td className="py-2 pr-4 font-mono">{p.recipient_id}</td>
-                  <td className="py-2 pr-4">{p.role}</td>
-                  <td className="py-2 font-mono">${p.amount.toLocaleString()}</td>
+              {settlement.payouts.map((payout) => (
+                <tr
+                  key={`${payout.recipient_id}-${payout.role}`}
+                  className="border-b border-border/50"
+                >
+                  <td className="py-2 pr-4 font-mono">{payout.recipient_id}</td>
+                  <td className="py-2 pr-4">{payout.role}</td>
+                  <td className="py-2 pr-4 font-mono">
+                    ${payout.amount.toLocaleString()}
+                  </td>
+                  <td className="py-2 text-muted">
+                    {payout.atom_fqdn || payout.cdg_hash || "n/a"}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

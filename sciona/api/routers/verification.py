@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sciona.api import deps as api_deps
 from sciona.api.models import PaginatedResponse
 from sciona.clearinghouse.models import LeaderboardEntry
+from sciona.workflows import BountyWorkflow
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ def _annotate_span(**attributes: Any) -> None:
 @router.get("/submissions/{submission_id}/status")
 async def get_submission_status(
     submission_id: UUID,
+    temporal=Depends(api_deps.get_temporal),
     supabase=Depends(api_deps.get_supabase),
 ) -> dict:
     """Poll verification progress for a submission."""
@@ -72,7 +74,20 @@ async def get_submission_status(
     submission = _first_row(submission_result.data)
     if not submission:
         raise HTTPException(404, "Submission not found")
-    _annotate_span(**{"bounty.id": str(submission.get("bounty_id", ""))})
+    bounty_id = str(submission.get("bounty_id", ""))
+    _annotate_span(**{"bounty.id": bounty_id})
+
+    workflow_status = None
+    if temporal is not None and bounty_id:
+        try:
+            handle = temporal.get_workflow_handle(f"bounty-{bounty_id}")
+            workflow_status = await handle.query(BountyWorkflow.get_status)
+        except Exception:
+            logger.debug(
+                "Temporal workflow query failed for submission %s",
+                submission_id,
+                exc_info=True,
+            )
 
     runs_result = await (
         supabase.table("verification_runs")
@@ -83,7 +98,7 @@ async def get_submission_status(
     )
     return {
         "submission_id": str(submission_id),
-        "verification_status": submission["verification_status"],
+        "verification_status": str(workflow_status or submission["verification_status"]),
         "runs": runs_result.data or [],
     }
 

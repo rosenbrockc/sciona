@@ -349,7 +349,12 @@ async def test_create_bounty_supabase() -> None:
     )
     user = SimpleNamespace(user_id=user_id)
 
-    result = await bounty.create_bounty(body, user=user, supabase=client)
+    result = await bounty.create_bounty(
+        body,
+        user=user,
+        temporal=None,
+        supabase=client,
+    )
 
     assert result.bounty_id == bounty_id
     assert str(result.principal_id) == user_id
@@ -392,7 +397,12 @@ async def test_cancel_bounty_supabase() -> None:
     client = FakeSupabaseClient(handler)
     user = SimpleNamespace(user_id=user_id)
 
-    result = await bounty.cancel_bounty(bounty_id, user=user, supabase=client)
+    result = await bounty.cancel_bounty(
+        bounty_id,
+        user=user,
+        temporal=None,
+        supabase=client,
+    )
 
     assert result.status == "cancelled"
     assert result.cancellation_fee == 2.5
@@ -426,7 +436,11 @@ async def test_submission_status_supabase() -> None:
         raise AssertionError(query.name)
 
     client = FakeSupabaseClient(handler)
-    result = await verification.get_submission_status(submission_id, supabase=client)
+    result = await verification.get_submission_status(
+        submission_id,
+        temporal=None,
+        supabase=client,
+    )
 
     assert result["submission_id"] == str(submission_id)
     assert result["verification_status"] == "pending"

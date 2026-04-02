@@ -34,13 +34,8 @@ export default function ESGDashboard() {
         />
         <StatCard
           label="Escrow Distributed"
-          value={`$${stats.total_escrow_distributed.toLocaleString()}`}
+          value={`$${stats.total_escrow_value.toLocaleString()}`}
           sub="Total payouts to contributors"
-        />
-        <StatCard
-          label="Cross-Discipline Atoms"
-          value={stats.cross_discipline_atoms}
-          sub="Atoms used across multiple domains"
         />
       </div>
 
@@ -68,11 +63,11 @@ export default function ESGDashboard() {
           Social Impact
         </h3>
         <p className="text-gray-300 text-sm leading-relaxed">
-          {stats.total_escrow_distributed.toLocaleString()} USD has been distributed
-          to {stats.total_bounties_settled} bounty contributors through Shapley-value
-          fair allocation. {stats.cross_discipline_atoms} atoms are actively used
-          across multiple research disciplines, fostering cross-pollination between
-          fields.
+          {stats.total_escrow_value.toLocaleString()} USD has been distributed
+          across {stats.total_bounties_settled} settled bounty cycles through
+          Shapley-value fair allocation. The platform continues to preserve
+          compute by reusing vetted building blocks instead of duplicating
+          training work.
         </p>
       </div>
     </div>

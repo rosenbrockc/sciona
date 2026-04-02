@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -15,6 +16,7 @@ from sciona.api.bounty_state import (
     compute_cancellation_fee,
     validate_transition,
 )
+from sciona.api.policy import PolicyDenied, require_policy
 from sciona.api.models import (
     BountyCancelResponse,
     BountyCreateRequest,
@@ -26,6 +28,7 @@ from sciona.api.models import (
     SubmissionResponse,
     UpdateTargetRequest,
 )
+from sciona.workflows import BountyWorkflow, BountyWorkflowInput
 
 UserRow = getattr(api_deps, "UserProfile", None) or api_deps.UserRow
 require_auth = api_deps.require_auth
@@ -57,6 +60,44 @@ def _json_obj(value: Any) -> dict[str, Any]:
     return value
 
 
+def _opa_input(
+    user: UserRow,
+    bounty: dict[str, Any] | None = None,
+    submission: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the OPA input document from the caller and optional payloads."""
+    doc: dict[str, Any] = {
+        "user": {
+            "user_id": str(getattr(user, "user_id", "")),
+            "identity_tier": getattr(user, "identity_tier", "contributor"),
+            "effective_tier": getattr(user, "effective_tier", "general"),
+            "is_blacklisted": bool(getattr(user, "is_blacklisted", False)),
+            "reputation_score": int(getattr(user, "reputation_score", 0)),
+        }
+    }
+    if bounty is not None:
+        doc["bounty"] = {
+            "bounty_id": str(bounty.get("bounty_id", "")),
+            "principal_id": str(bounty.get("principal_id", "")),
+            "status": str(bounty.get("status", "")),
+            "escrow_amount": float(bounty.get("escrow_amount", 0)),
+            "tier": str(bounty.get("tier", "standard")),
+        }
+    if submission is not None:
+        doc["submission"] = {
+            "receipt_json": submission.get("receipt_json", {}),
+            "receipt_s3": submission.get("receipt_s3", ""),
+        }
+    return doc
+
+
+async def _enforce(package: str, rule: str, input_data: dict[str, Any]) -> None:
+    try:
+        await require_policy(package, rule, input_data)
+    except PolicyDenied as exc:
+        raise HTTPException(403, f"Policy denied: {exc}") from exc
+
+
 def _current_span():
     try:
         from opentelemetry import trace
@@ -85,9 +126,11 @@ def _annotate_span(**attributes: Any) -> None:
 async def create_bounty(
     body: BountyCreateRequest,
     user: UserRow = Depends(require_auth),
+    temporal=Depends(api_deps.get_temporal),
     supabase=Depends(api_deps.get_supabase),
 ) -> BountyResponse:
     """Create a draft bounty."""
+    await _enforce("bounty", "allow_create", _opa_input(user))
     user_id = str(user.user_id)
     _annotate_span(
         **{
@@ -114,6 +157,13 @@ async def create_bounty(
     created = _first_row(result.data)
     if not created:
         raise HTTPException(500, "Failed to create bounty")
+    await _start_bounty_workflow(
+        temporal,
+        bounty_id=created["bounty_id"],
+        principal_id=user_id,
+        escrow_amount=float(created["escrow_amount"]),
+        deadline=body.deadline,
+    )
     return _bounty_response(created)
 
 
@@ -121,6 +171,7 @@ async def create_bounty(
 async def fund_bounty(
     bounty_id: UUID,
     user: UserRow = Depends(require_auth),
+    temporal=Depends(api_deps.get_temporal),
     supabase=Depends(api_deps.get_supabase),
 ) -> BountyFundResponse:
     """Fund a bounty (transitions draft -> open)."""
@@ -134,8 +185,7 @@ async def fund_bounty(
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
-    if str(row["principal_id"]) != str(user.user_id):
-        raise HTTPException(403, "Only the bounty creator can fund it")
+    await _enforce("bounty", "allow_fund", _opa_input(user, row))
 
     try:
         new_status = validate_transition(row["status"], "fund")
@@ -147,6 +197,12 @@ async def fund_bounty(
         .update({"status": new_status})
         .eq("bounty_id", str(bounty_id))
         .execute()
+    )
+    await _signal_bounty_workflow(
+        temporal,
+        bounty_id=bounty_id,
+        signal_name="fund",
+        stripe_payment_id="",
     )
 
     return BountyFundResponse(
@@ -161,6 +217,7 @@ async def submit_to_bounty(
     bounty_id: UUID,
     body: SubmissionRequest,
     user: UserRow = Depends(require_auth),
+    temporal=Depends(api_deps.get_temporal),
     supabase=Depends(api_deps.get_supabase),
 ) -> SubmissionResponse:
     """Submit a CDG solution with signed receipt."""
@@ -174,6 +231,16 @@ async def submit_to_bounty(
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
+    await _enforce("bounty", "allow_submit", _opa_input(user, row))
+    await _enforce(
+        "submission",
+        "allow",
+        _opa_input(
+            user,
+            row,
+            {"receipt_json": body.receipt_json, "receipt_s3": ""},
+        ),
+    )
 
     if row["status"] == "open":
         try:
@@ -216,6 +283,13 @@ async def submit_to_bounty(
         .execute()
     )
     row = _first_row(sub_row.data) or created
+    await _signal_bounty_workflow(
+        temporal,
+        bounty_id=bounty_id,
+        signal_name="submit",
+        submission_id=str(row["submission_id"]),
+        architect_id=str(user.user_id),
+    )
     return SubmissionResponse(**dict(row))
 
 
@@ -223,6 +297,7 @@ async def submit_to_bounty(
 async def cancel_bounty(
     bounty_id: UUID,
     user: UserRow = Depends(require_auth),
+    temporal=Depends(api_deps.get_temporal),
     supabase=Depends(api_deps.get_supabase),
 ) -> BountyCancelResponse:
     """Cancel a bounty (with fee per design decision 4.13)."""
@@ -236,8 +311,7 @@ async def cancel_bounty(
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
-    if str(row["principal_id"]) != str(user.user_id):
-        raise HTTPException(403, "Only the bounty creator can cancel it")
+    await _enforce("bounty", "allow_cancel", _opa_input(user, row))
 
     submissions_result = await (
         supabase.table("submissions")
@@ -263,6 +337,11 @@ async def cancel_bounty(
         .update({"status": new_status, "cancellation_fee": float(fee)})
         .eq("bounty_id", str(bounty_id))
         .execute()
+    )
+    await _signal_bounty_workflow(
+        temporal,
+        bounty_id=bounty_id,
+        signal_name="cancel",
     )
 
     return BountyCancelResponse(
@@ -290,8 +369,7 @@ async def update_target(
     row = await _fetch_bounty(bounty_id, supabase=supabase)
     if not row:
         raise HTTPException(404, "Bounty not found")
-    if str(row["principal_id"]) != str(user.user_id):
-        raise HTTPException(403, "Only the bounty creator can update the target")
+    await _enforce("bounty", "allow_update_target", _opa_input(user, row))
     if row["status"] not in ("open", "submitted"):
         raise HTTPException(409, "Can only update target for open/submitted bounties")
 
@@ -386,6 +464,69 @@ def _bounty_response(row, *, bounty_id=None) -> BountyResponse:
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
+
+
+def _workflow_id(bounty_id: UUID | str) -> str:
+    return f"bounty-{bounty_id}"
+
+
+async def _start_bounty_workflow(
+    temporal: Any | None,
+    *,
+    bounty_id: UUID | str,
+    principal_id: str,
+    escrow_amount: float,
+    deadline: datetime | None,
+) -> None:
+    if temporal is None:
+        return
+    try:
+        deadline_seconds = 0
+        if deadline is not None:
+            deadline_utc = (
+                deadline if deadline.tzinfo is not None else deadline.replace(tzinfo=timezone.utc)
+            )
+            deadline_seconds = max(
+                int((deadline_utc - datetime.now(timezone.utc)).total_seconds()),
+                0,
+            )
+        await temporal.start_workflow(
+            BountyWorkflow.run,
+            args=[
+                BountyWorkflowInput(
+                    bounty_id=str(bounty_id),
+                    escrow_amount=float(escrow_amount),
+                    principal_id=principal_id,
+                    deadline_seconds=deadline_seconds,
+                )
+            ],
+            id=_workflow_id(bounty_id),
+            task_queue="bounty-lifecycle",
+        )
+    except Exception:
+        logger.debug("Temporal workflow start failed for bounty %s", bounty_id, exc_info=True)
+
+
+async def _signal_bounty_workflow(
+    temporal: Any | None,
+    *,
+    bounty_id: UUID | str,
+    signal_name: str,
+    **payload: Any,
+) -> None:
+    if temporal is None:
+        return
+    try:
+        handle = temporal.get_workflow_handle(_workflow_id(bounty_id))
+        signal = getattr(BountyWorkflow, signal_name)
+        await handle.signal(signal, **payload)
+    except Exception:
+        logger.debug(
+            "Temporal workflow signal failed for bounty %s (%s)",
+            bounty_id,
+            signal_name,
+            exc_info=True,
+        )
 
 
 async def _fetch_bounty(

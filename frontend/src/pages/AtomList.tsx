@@ -65,7 +65,9 @@ export default function AtomList() {
                   </span>
                 ))}
               </div>
-              <span className="text-xs font-mono text-muted">v{a.latest_version}</span>
+              <span className="text-xs font-mono text-muted">
+                {a.latest_semver ? `v${a.latest_semver}` : a.status}
+              </span>
             </div>
           </Link>
         ))}

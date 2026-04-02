@@ -4,6 +4,10 @@
 
 Given a predicate like `forall n m : Nat, n + m = m + n`, AGEO-Matcher searches a proof library, ranks candidates, and verifies matches through the compiler -- returning `Nat.add_comm` with a machine-checked proof that the types unify. For Python targets, it verifies that matched functions are importable, callable, and have compatible signatures.
 
+The product website, API, Docker stack, Supabase project, and deployment assets
+are being split into the sibling repository `../sciona-infra`. This repository
+is the core algorithm-generation and tooling package.
+
 ## Why not just use an LLM?
 
 Strong LLMs already handle simple coding tasks well. This system targets a narrower, more defensible niche:
@@ -69,6 +73,9 @@ pip install -e ".[ghost]"
 pip install -e ".[all]"
 ```
 
+For website/API/infra development, use the sibling `sciona-infra` repository
+rather than installing platform dependencies here.
+
 ### External requirements
 
 - **Lean 4**: Install [elan](https://github.com/leanprover/elan) and run `lean-explore data fetch` for Mathlib data
@@ -111,10 +118,9 @@ CLI flags override `.env` when provided. See `sciona/config.py` for all options.
 
 ### PostgreSQL setup (optional)
 
-PostgreSQL is used for Architect checkpoint persistence, shared context, and pipeline telemetry. The included `docker-compose.yml` provides a ready-to-use instance:
+PostgreSQL is used for Architect checkpoint persistence, shared context, and pipeline telemetry. Use any local Postgres instance, or reuse the Docker assets from the sibling `sciona-infra` repository:
 
 ```bash
-docker compose up -d postgres
 # Default URI: postgresql://sciona:sciona_dev@localhost:5433/sciona_architect
 ```
 
@@ -206,7 +212,7 @@ sciona/
   config.py         AgeomConfig (pydantic-settings, reads .env)
   telemetry.py      Pipeline events, run snapshots, live SSE subscribers
   telemetry_store.py  PostgresTelemetryStore + TelemetryDrain (async Postgres persistence)
-  visualizer_api.py FastAPI server (CDG visualizer + telemetry dashboard)
+  visualizer_api.py FastAPI server for the core CDG visualizer + telemetry dashboard
   cli.py            CLI entrypoint (decompose, history, match, index, assemble, optimize)
   architect/        Round 1 -- Conceptual Dependency Agent
     models.py         CDG node/edge Pydantic models, ConceptType enum (incl. DSP types)

@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
+
+DEFAULT_PLATFORM_API_URL = "https://api.sciona.dev"
 
 
 def _get_config_path() -> Path:
@@ -44,6 +47,34 @@ def _load_token() -> tuple[str, str]:
         return "", ""
 
 
+def _resolve_api_url(
+    *,
+    explicit_api_url: str | None = None,
+    stored_api_url: str | None = None,
+) -> str:
+    """Resolve the platform API URL from flags, env, stored config, or DOMAIN."""
+    if explicit_api_url:
+        return explicit_api_url.rstrip("/")
+
+    env_api_url = os.environ.get("SCIONA_API_URL", "").strip()
+    if env_api_url:
+        return env_api_url.rstrip("/")
+
+    domain = (
+        os.environ.get("SCIONA_DOMAIN", "").strip()
+        or os.environ.get("DOMAIN", "").strip()
+    )
+    if domain:
+        if "://" in domain:
+            return domain.rstrip("/")
+        return f"https://api.{domain}".rstrip("/")
+
+    if stored_api_url:
+        return stored_api_url.rstrip("/")
+
+    return DEFAULT_PLATFORM_API_URL
+
+
 async def _cmd_login(args: argparse.Namespace) -> None:
     """Authenticate with the SCIONA platform via GitHub device flow."""
     try:
@@ -52,7 +83,7 @@ async def _cmd_login(args: argparse.Namespace) -> None:
         print("Error: httpx is required for login. Install with: pip install httpx", file=sys.stderr)
         sys.exit(1)
 
-    api_url = (args.api_url or "https://api.sciona.dev").rstrip("/")
+    api_url = _resolve_api_url(explicit_api_url=args.api_url)
 
     async with httpx.AsyncClient() as client:
         # Start device flow
