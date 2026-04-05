@@ -230,6 +230,26 @@ def _validate_fft_output(result: Any) -> tuple[bool, str, dict[str, Any]]:
     )
 
 
+def _validate_numeric_offset(result: Any) -> tuple[bool, str, dict[str, Any]]:
+    try:
+        value = float(result)
+    except Exception:
+        return (
+            False,
+            "expected a numeric leap-second offset result",
+            {"observed_type": type(result).__name__},
+        )
+
+    ok = value > 32.0
+    return (
+        ok,
+        "positive-path offset result looks numerically valid"
+        if ok
+        else "expected a plausible UTC/TAI offset greater than 32 seconds",
+        {"observed_value": value},
+    )
+
+
 def _validate_monotonic_index_array(
     *,
     allow_empty: bool = False,
@@ -431,6 +451,29 @@ def _run_fft_probe(fn: Callable[..., Any]) -> dict[str, Any]:
     )
 
 
+def _run_utc_to_tai_leap_second_kernel_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(100.0,),
+        kwargs={"leap_seconds": 37.0},
+        validator=_validate_numeric_offset,
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None,),
+        kwargs={"leap_seconds": 37.0},
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "tempo_jl.offsets.utc_to_tai_leap_second_kernel.basic",
+        "utc_to_tai_leap_second_kernel",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
 def _run_hamilton_segmentation_probe(fn: Callable[..., Any]) -> dict[str, Any]:
     signal, sampling_rate = _synthetic_ecg_signal()
 
@@ -604,6 +647,12 @@ ALLOWLISTED_SMOKE_PROBES: tuple[SmokeProbe, ...] = (
         probe_id="numerical.fft.basic",
         target_symbol="fft",
         runner=_run_fft_probe,
+    ),
+    SmokeProbe(
+        probe_id="tempo_jl.offsets.utc_to_tai_leap_second_kernel.basic",
+        target_symbol="utc_to_tai_leap_second_kernel",
+        package_basenames=("offsets",),
+        runner=_run_utc_to_tai_leap_second_kernel_probe,
     ),
     SmokeProbe(
         probe_id="biosppy.ecg.hamilton_segmentation.basic",

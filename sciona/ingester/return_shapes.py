@@ -58,6 +58,22 @@ _STRUCTURED_RETURN_ALLOWLIST: tuple[StructuredReturnShape, ...] = (
             ),
         ),
     ),
+    StructuredReturnShape(
+        subject_name="SQIDetector",
+        source_method="evaluate",
+        fields=(
+            StructuredReturnField(
+                output_name="accepted",
+                field_key="accepted",
+                type_desc="bool",
+            ),
+            StructuredReturnField(
+                output_name="quality",
+                field_key="quality",
+                type_desc="float",
+            ),
+        ),
+    ),
 )
 
 

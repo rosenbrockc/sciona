@@ -350,7 +350,7 @@ class TestGenerateAtomWrappers:
         ast.parse(source)
         assert "def extract_patches_2d(" in source
         assert "def atom_2d_patch_sampling_and_assembly(" not in source
-        assert "_SCIONA_SOURCE_SYMBOL: Any = getattr(_SCIONA_SOURCE_MODULE, \"extract_patches_2d\")" in source
+        assert "_SCIONA_SOURCE_SYMBOL: Any = extract_patches_2d" in source
         assert "_ret_0 = _source_fn(image, patch_size, **_call_kwargs_0)" in source
         assert "_SCIONA_SOURCE_SYMBOL.__new__" not in source
 
@@ -505,6 +505,103 @@ class TestGenerateAtomWrappers:
         assert "if max_patches is not _SCIONA_UNSET:" in source
         assert "if random_state is not _SCIONA_UNSET:" in source
         assert "lambda result, **kwargs" not in source
+
+    def test_canonical_wrapper_emits_callable_contract_for_oracle_inputs(self):
+        atom = MacroAtomSpec(
+            name="Optimize",
+            method_names=["optimize"],
+            inputs=[
+                IOSpec(name="objective", type_desc="Callable[[np.ndarray], float]", constraints="callable objective"),
+                IOSpec(name="initial", type_desc="np.ndarray", constraints="array-like initial state"),
+            ],
+            outputs=[IOSpec(name="result", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="optimize",
+            display_name="Optimize",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="optimize",
+                    signature=[
+                        ParameterFact(name="self"),
+                        ParameterFact(name="objective", annotation="Callable[[np.ndarray], float]"),
+                        ParameterFact(name="initial", annotation="np.ndarray"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="optimize",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert '@icontract.require(lambda objective: callable(objective), "objective must be callable")' in source
+
+    def test_canonical_wrapper_uses_array_like_contract_for_array_normalizing_inputs(self):
+        atom = MacroAtomSpec(
+            name="Normalize",
+            method_names=["normalize"],
+            inputs=[IOSpec(name="samples", type_desc="array-like", constraints="array-like samples")],
+            outputs=[IOSpec(name="result", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        operation = OperationSpec(
+            operation_id="normalize",
+            display_name="Normalize",
+            role="query",
+            method_bindings=[
+                MethodBinding(
+                    method_name="normalize",
+                    signature=[
+                        ParameterFact(name="self"),
+                        ParameterFact(name="samples", annotation="array-like"),
+                    ],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="normalize",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(atom, operation=operation)
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            class_name="Estimator",
+            source_file="estimator.py",
+            plan=plan,
+        )
+
+        assert (
+            '@icontract.require(lambda samples: hasattr(samples, "__array__") or isinstance(samples, (np.ndarray, list, tuple)), "samples must be array-like")'
+            in source
+        )
 
     def test_canonical_wrapper_signature_follows_binding_order_not_iospec_order(self):
         atom = MacroAtomSpec(
@@ -1008,6 +1105,8 @@ class TestGenerateGhostWitnesses:
         plan = _make_plan()
         source, _ = generate_ghost_witnesses(plan.plan.macro_atoms)
         ast.parse(source)
+        assert "@dataclass" in source
+        assert "_ghost_abstract = None" in source
 
     def test_canonical_witness_uses_exact_inputs_and_scalar_types(self):
         atom = MacroAtomSpec(
@@ -1114,6 +1213,62 @@ class TestGenerateGhostWitnesses:
         assert "args: AbstractScalar" not in source
         assert "kwargs: AbstractScalar" not in source
         ast.parse(source)
+
+    def test_canonical_state_transition_witness_uses_mapping_state_surrogate(self):
+        atom = MacroAtomSpec(
+            name="Fit Update",
+            method_names=["fit_update"],
+            inputs=[IOSpec(name="data", type_desc="np.ndarray", constraints="")],
+            outputs=[IOSpec(name="result", type_desc="np.ndarray", constraints="")],
+            concept_type=ConceptType.CUSTOM,
+        )
+        state_model = StateModelSpec(
+            model_name="FitState",
+            fields=[("prepared", "np.ndarray")],
+        )
+        operation = OperationSpec(
+            operation_id="fit_pipeline",
+            display_name="Fit Pipeline",
+            role="state_transition",
+            method_bindings=[
+                MethodBinding(
+                    method_name="fit_update",
+                    signature=[ParameterFact(name="self"), ParameterFact(name="data")],
+                )
+            ],
+            direct_inputs=list(atom.inputs),
+            emitted_outputs=[
+                OutputBindingSpec(
+                    output_name="result",
+                    type_desc="np.ndarray",
+                    binding_kind="return_value",
+                    source_method="fit_update",
+                )
+            ],
+            state_effects=[
+                StateEffectSpec(
+                    slot_name="prepared",
+                    effect_kind="update",
+                    source_method="fit_update",
+                )
+            ],
+        )
+        plan = _make_canonical_plan(
+            atom,
+            operation=operation,
+            state_models=[state_model],
+        )
+
+        source, _ = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+            plan=plan,
+        )
+
+        assert (
+            "def witness_fit_update(data: AbstractArray, state: dict[str, AbstractArray]) -> tuple[AbstractArray, dict[str, AbstractArray]]:"
+            in source
+        )
 
 
 # ---------------------------------------------------------------------------

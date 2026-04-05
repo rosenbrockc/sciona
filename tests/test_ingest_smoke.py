@@ -204,6 +204,29 @@ def test_run_smoke_validation_fft_passes(tmp_path: Path):
     assert result["details"]["negative_case"]["status"] == "pass"
 
 
+def test_run_smoke_validation_grouped_tempo_offsets_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "def utc_to_tai_leap_second_kernel(seconds, leap_seconds=37.0):\n"
+            "    if seconds is None:\n"
+            "        raise TypeError('seconds')\n"
+            "    return float(seconds) + float(leap_seconds)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="offsets",
+        target_symbol="utc_to_tai_leap_second_kernel",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "tempo_jl.offsets.utc_to_tai_leap_second_kernel.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
 def test_run_smoke_validation_hamilton_segmentation_passes(tmp_path: Path):
     staged_dir = _write_staged_atoms(
         tmp_path,
@@ -318,6 +341,29 @@ async def test_smoke_validation_not_applicable_allows_publication(monkeypatch, t
 
     assert status["smoke_validation"]["status"] == "not_applicable"
     assert completed["summary"]["smoke_validation"]["status"] == "not_applicable"
+
+
+@pytest.mark.asyncio
+async def test_grouped_tempo_offsets_smoke_validation_passes_during_ingest(monkeypatch, tmp_path: Path):
+    output_dir = await _run_ingest(
+        monkeypatch,
+        tmp_path,
+        class_name="utc_to_tai_leap_second_kernel",
+        generated_atoms=(
+            "def utc_to_tai_leap_second_kernel(seconds, leap_seconds=37.0):\n"
+            "    if seconds is None:\n"
+            "        raise TypeError('seconds')\n"
+            "    return float(seconds) + float(leap_seconds)\n"
+        ),
+        output_parts=("tempo_jl", "offsets"),
+    )
+
+    status = json.loads((output_dir / ".ingest_status.json").read_text(encoding="utf-8"))
+    completed = json.loads((output_dir / "COMPLETED.json").read_text(encoding="utf-8"))
+
+    assert status["smoke_validation"]["status"] == "pass"
+    assert status["smoke_validation"]["probe_id"] == "tempo_jl.offsets.utc_to_tai_leap_second_kernel.basic"
+    assert completed["summary"]["smoke_validation"]["status"] == "pass"
     assert (output_dir / "atoms.py").exists()
 
 

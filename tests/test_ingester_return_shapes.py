@@ -37,6 +37,10 @@ def _detect_events_method() -> MethodFact:
     return _method_fact("detect_events")
 
 
+def _evaluate_method() -> MethodFact:
+    return _method_fact("evaluate")
+
+
 def _method_fact(name: str) -> MethodFact:
     prov = _provenance()
     return MethodFact(
@@ -57,6 +61,7 @@ def _structured_outputs(*names: str) -> list[IOSpec]:
         "quality": IOSpec(name="quality", type_desc="float"),
         "onsets": IOSpec(name="onsets", type_desc="list[int]"),
         "confidence": IOSpec(name="confidence", type_desc="float"),
+        "accepted": IOSpec(name="accepted", type_desc="bool"),
         "count": IOSpec(name="count", type_desc="int"),
     }
     return [by_name[name] for name in names]
@@ -142,6 +147,31 @@ def test_chunker_preserves_conservative_fallback_for_non_allowlisted_onset_subje
 
     assert [binding.binding_kind for binding in bindings] == ["unknown", "unknown"]
     assert [binding.output_name for binding in bindings] == ["onsets", "confidence"]
+
+
+def test_return_shape_helper_resolves_allowlisted_sqi_detector_case():
+    bindings = resolve_structured_return_bindings(
+        subject_name="SQIDetector",
+        methods=[_evaluate_method()],
+        legacy_outputs=_structured_outputs("accepted", "quality"),
+    )
+
+    assert bindings is not None
+    assert [binding.output_name for binding in bindings] == ["accepted", "quality"]
+    assert [binding.binding_kind for binding in bindings] == ["dict_field", "dict_field"]
+    assert [binding.source_attr for binding in bindings] == ["accepted", "quality"]
+
+
+def test_chunker_uses_allowlisted_dict_field_bindings_for_sqi_detector_case():
+    bindings = _infer_output_bindings(
+        "SQIDetector",
+        [_evaluate_method()],
+        _structured_outputs("accepted", "quality"),
+    )
+
+    assert [binding.binding_kind for binding in bindings] == ["dict_field", "dict_field"]
+    assert [binding.output_name for binding in bindings] == ["accepted", "quality"]
+    assert [binding.source_method for binding in bindings] == ["evaluate", "evaluate"]
 
 
 def test_emitter_renders_dict_field_extraction_for_allowlisted_case():
@@ -274,3 +304,69 @@ def test_emitter_renders_dict_field_extraction_for_allowlisted_onset_case():
     assert "_ret_0 = obj.detect_events(signal)" in source
     assert "['onsets']" in source
     assert "['confidence']" in source
+
+
+def test_emitter_renders_dict_field_extraction_for_allowlisted_sqi_case():
+    atom = MacroAtomSpec(
+        name="SQI Detector",
+        method_names=["evaluate"],
+        inputs=[IOSpec(name="signal", type_desc="list[float]")],
+        outputs=_structured_outputs("accepted", "quality"),
+        concept_type=ConceptType.CUSTOM,
+    )
+    operation = OperationSpec(
+        operation_id="evaluate",
+        display_name="SQI Detector",
+        role="query",
+        method_bindings=[
+            MethodBinding(
+                method_name="evaluate",
+                signature=[
+                    ParameterFact(name="self", provenance=_provenance()),
+                    ParameterFact(name="signal", provenance=_provenance()),
+                ],
+            )
+        ],
+        direct_inputs=list(atom.inputs),
+        emitted_outputs=[
+            OutputBindingSpec(
+                output_name="accepted",
+                type_desc="bool",
+                binding_kind="dict_field",
+                source_method="evaluate",
+                source_attr="accepted",
+            ),
+            OutputBindingSpec(
+                output_name="quality",
+                type_desc="float",
+                binding_kind="dict_field",
+                source_method="evaluate",
+                source_attr="quality",
+            ),
+        ],
+    )
+    plan = ValidatedMacroPlan(
+        plan=ProposedMacroPlan(
+            macro_atoms=[atom],
+            canonical_ir=IngestIRPlan(
+                subject_name="SQIDetector",
+                source_language="python",
+                operations=[operation],
+            ),
+        ),
+        all_attrs_accounted=True,
+    )
+    _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+
+    source = generate_atom_wrappers(
+        plan.plan.macro_atoms,
+        plan.plan.state_models,
+        witness_names,
+        class_name="SQIDetector",
+        source_file="detector.py",
+        plan=plan,
+    )
+
+    assert "_ret_0 = obj.evaluate(signal)" in source
+    assert "['accepted']" in source
+    assert "['quality']" in source

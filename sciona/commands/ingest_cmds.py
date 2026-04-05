@@ -135,6 +135,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
     output_dir = Path(args.output) if args.output else Path("output") / args.class_name
     output_scope, output_scope_source = _resolve_output_scope(args, output_dir=output_dir)
     allow_family_replace = bool(getattr(args, "allow_family_replace", False))
+    allow_family_merge = bool(getattr(args, "allow_family_merge", False))
     existing_family_artifacts = (
         _existing_family_artifacts(output_dir)
         if output_scope == OUTPUT_SCOPE_FAMILY
@@ -171,6 +172,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         output_scope_source=output_scope_source,
         existing_family_artifacts=existing_family_artifacts,
         allow_family_replace=allow_family_replace,
+        allow_family_merge=allow_family_merge,
     )
 
     proof_env = None
@@ -221,12 +223,36 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
         source_path = Path(args.source)
         if not source_path.exists():
             raise FileNotFoundError(f"source file not found: {source_path}")
-        if output_scope == OUTPUT_SCOPE_FAMILY and existing_family_artifacts and not allow_family_replace:
+        if allow_family_replace and allow_family_merge:
+            error = (
+                "--allow-family-replace and --allow-family-merge are mutually exclusive; "
+                "pick one grouped publication mode."
+            )
+            failure_summary = {
+                "output_dir": str(output_dir),
+                "output_scope": output_scope,
+                "output_scope_source": output_scope_source,
+                "published_files": [],
+                "publication": monitor.publication_summary(),
+            }
+            monitor.fail(
+                error=error,
+                phase="phase0_family_publication_mode_guard",
+                summary=failure_summary,
+            )
+            print(f"Error: {error}", file=sys.stderr)
+            sys.exit(1)
+        if (
+            output_scope == OUTPUT_SCOPE_FAMILY
+            and existing_family_artifacts
+            and not (allow_family_replace or allow_family_merge)
+        ):
             existing_list = ", ".join(existing_family_artifacts)
             error = (
                 "grouped family output already contains canonical published artifacts: "
                 f"{existing_list}. Re-run with --allow-family-replace to replace "
-                "the existing family output."
+                "the existing family output, or --allow-family-merge to publish "
+                "only the staged family artifacts into the existing output."
             )
             failure_summary = {
                 "output_dir": str(output_dir),
@@ -372,6 +398,7 @@ async def _cmd_ingest(args: argparse.Namespace) -> None:
             "output_scope": output_scope,
             "output_scope_source": output_scope_source,
             "allow_family_replace": allow_family_replace,
+            "allow_family_merge": allow_family_merge,
             "published_files": published_files,
             "publication": monitor.publication_summary(),
             "smoke_validation": smoke_validation,

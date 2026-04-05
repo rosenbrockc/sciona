@@ -38,6 +38,7 @@ STANDARD_ARTIFACT_SURFACE = (
 )
 FAMILY_PUBLICATION_FRESH = "fresh_family_publish"
 FAMILY_PUBLICATION_REPLACE = "family_replace"
+FAMILY_PUBLICATION_MERGE = "family_merge"
 
 
 def _write_json_atomic(path: Path, data: dict[str, Any]) -> None:
@@ -70,6 +71,7 @@ def _publication_payload(
     published_files: list[str],
     existing_family_artifacts: list[str] | None = None,
     allow_family_replace: bool = False,
+    allow_family_merge: bool = False,
 ) -> dict[str, Any]:
     normalized_scope = _normalize_output_scope(scope)
     publication = {
@@ -89,8 +91,13 @@ def _publication_payload(
                 "existing_family_output": bool(existing),
                 "existing_family_artifacts": existing,
                 "allow_family_replace": bool(allow_family_replace),
+                "allow_family_merge": bool(allow_family_merge),
                 "family_publication_mode": (
                     FAMILY_PUBLICATION_REPLACE
+                    if existing and allow_family_replace
+                    else FAMILY_PUBLICATION_MERGE
+                    if existing and allow_family_merge
+                    else FAMILY_PUBLICATION_REPLACE
                     if existing
                     else FAMILY_PUBLICATION_FRESH
                 ),
@@ -137,6 +144,7 @@ class IngestMonitor:
         output_scope_source: str = "default",
         existing_family_artifacts: list[str] | None = None,
         allow_family_replace: bool = False,
+        allow_family_merge: bool = False,
     ) -> None:
         if self.completed_path.exists():
             self.completed_path.unlink()
@@ -173,6 +181,7 @@ class IngestMonitor:
                 published_files=[],
                 existing_family_artifacts=existing_family_artifacts,
                 allow_family_replace=allow_family_replace,
+                allow_family_merge=allow_family_merge,
             ),
             "started_at": started,
             "last_heartbeat_at": started,
@@ -350,6 +359,7 @@ class IngestMonitor:
                 list(previous_publication.get("existing_family_artifacts") or [])
             ),
             allow_family_replace=bool(previous_publication.get("allow_family_replace", False)),
+            allow_family_merge=bool(previous_publication.get("allow_family_merge", False)),
         )
         self._status["publication"] = publication
         if has_status:

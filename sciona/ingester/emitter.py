@@ -12,6 +12,7 @@ import ast
 import json
 import keyword
 import re
+import importlib
 from pathlib import Path
 
 from sciona.json_utils import extract_json
@@ -154,6 +155,17 @@ _BARE_GENERIC_REPLACEMENTS = {
     "Sequence": "Sequence[Any]",
 }
 
+_GHOST_ABSTRACT_FALLBACKS = frozenset(
+    {
+        "AbstractSignal",
+        "AbstractArray",
+        "AbstractScalar",
+        "AbstractDistribution",
+        "AbstractMCMCTrace",
+        "AbstractRNGState",
+    }
+)
+
 
 def _normalize_annotation_text(type_desc: str) -> str:
     """Normalize free-form type text into a Python-like expression."""
@@ -257,6 +269,143 @@ def _python_identifier(name: str, *, prefix: str = "atom") -> str:
 def _annotation_allows_none(type_desc: str) -> bool:
     normalized = _normalize_annotation_text(type_desc)
     return "None" in normalized or "Optional[" in normalized
+
+
+def _effective_type_desc(spec: IOSpec, fact: ParameterFact | None) -> str:
+    """Return the most faithful type description available for a wrapper input."""
+    type_desc = spec.type_desc
+    if fact is not None and fact.annotation:
+        if fact.kind in {"vararg", "kwarg"}:
+            return fact.annotation
+        if not type_desc or type_desc in {"Any", "object"}:
+            return fact.annotation
+    return type_desc or "Any"
+
+
+def _type_desc_is_callable(type_desc: str) -> bool:
+    normalized = _normalize_annotation_text(type_desc).lower()
+    return "callable" in normalized
+
+
+def _type_desc_is_array_like(type_desc: str, constraints: str = "") -> bool:
+    normalized = _normalize_annotation_text(type_desc).lower()
+    constraint_text = (constraints or "").lower()
+    return any(
+        token in normalized or token in constraint_text
+        for token in (
+            "ndarray",
+            "array",
+            "arraylike",
+            "array-like",
+            "sequence[",
+            "iterable[",
+            "list[",
+            "tuple[",
+        )
+    )
+
+
+def _state_witness_type(
+    *,
+    role: str,
+    effects: list[StateEffectSpec],
+    concept_type: ConceptType,
+) -> str:
+    """Return a conservative witness type for explicit state parameters."""
+    if concept_type in _MESSAGE_PASSING_CONCEPT_TYPES:
+        return "dict[str, AbstractArray]"
+    effect_kinds = {effect.effect_kind for effect in effects if effect.effect_kind}
+    if role == "state_transition" or effect_kinds.intersection({"initialize", "clear"}):
+        return "dict[str, AbstractArray]"
+    return "AbstractArray"
+
+
+def _available_ghost_abstract_names() -> set[str]:
+    """Return the real exported ghost abstract names when discoverable."""
+    try:
+        module = importlib.import_module("ageoa.ghost.abstract")
+        return {name for name in dir(module) if not name.startswith("_")}
+    except Exception:
+        pass
+
+    sibling_abstract = (
+        Path(__file__).resolve().parents[3] / "ageo-atoms" / "ageoa" / "ghost" / "abstract.py"
+    )
+    if sibling_abstract.exists():
+        try:
+            tree = ast.parse(sibling_abstract.read_text(encoding="utf-8"))
+            return {
+                node.name
+                for node in tree.body
+                if isinstance(node, ast.ClassDef) and node.name.startswith("Abstract")
+            }
+        except Exception:
+            pass
+    return set(_GHOST_ABSTRACT_FALLBACKS)
+
+
+def _emit_ghost_import_preamble(*, requested_names: set[str]) -> list[str]:
+    """Emit a ghost import preamble that validates names against the real surface."""
+    available = _available_ghost_abstract_names()
+    lines = [
+        "from dataclasses import dataclass",
+        "",
+        "try:",
+        "    import ageoa.ghost.abstract as _ghost_abstract",
+        "except ImportError:",
+        "    _ghost_abstract = None",
+        "",
+        "@dataclass",
+        "class _ScionaGhostArrayFallback:",
+        '    shape: tuple = ()',
+        '    dtype: str = "float64"',
+        "",
+        "@dataclass",
+        "class _ScionaGhostSignalFallback(_ScionaGhostArrayFallback):",
+        "    sampling_rate: float = 44100.0",
+        '    domain: str = "time"',
+        "",
+        "@dataclass",
+        "class _ScionaGhostScalarFallback:",
+        '    dtype: str = "float64"',
+        "",
+    ]
+
+    if "AbstractArray" in requested_names:
+        if "AbstractArray" in available:
+            lines.append('AbstractArray = getattr(_ghost_abstract, "AbstractArray", _ScionaGhostArrayFallback)')
+        else:
+            lines.append("AbstractArray = _ScionaGhostArrayFallback")
+    if "AbstractSignal" in requested_names:
+        if "AbstractSignal" in available:
+            lines.append('AbstractSignal = getattr(_ghost_abstract, "AbstractSignal", _ScionaGhostSignalFallback)')
+        else:
+            lines.append("AbstractSignal = _ScionaGhostSignalFallback")
+    if "AbstractScalar" in requested_names:
+        if "AbstractScalar" in available:
+            lines.append('AbstractScalar = getattr(_ghost_abstract, "AbstractScalar", _ScionaGhostScalarFallback)')
+        else:
+            lines.append("AbstractScalar = _ScionaGhostScalarFallback")
+    if "AbstractDistribution" in requested_names:
+        fallback = "AbstractArray" if "AbstractArray" in requested_names else "_ScionaGhostArrayFallback"
+        if "AbstractDistribution" in available:
+            lines.append(f'AbstractDistribution = getattr(_ghost_abstract, "AbstractDistribution", {fallback})')
+        else:
+            lines.append(f"AbstractDistribution = {fallback}")
+    if "AbstractMCMCTrace" in requested_names:
+        fallback = "AbstractArray" if "AbstractArray" in requested_names else "_ScionaGhostArrayFallback"
+        if "AbstractMCMCTrace" in available:
+            lines.append(f'AbstractMCMCTrace = getattr(_ghost_abstract, "AbstractMCMCTrace", {fallback})')
+        else:
+            lines.append(f"AbstractMCMCTrace = {fallback}")
+    if "AbstractRNGState" in requested_names:
+        fallback = "AbstractArray" if "AbstractArray" in requested_names else "_ScionaGhostArrayFallback"
+        if "AbstractRNGState" in available:
+            lines.append(f'AbstractRNGState = getattr(_ghost_abstract, "AbstractRNGState", {fallback})')
+        else:
+            lines.append(f"AbstractRNGState = {fallback}")
+    lines.extend(["", ""])
+    return lines
 
 
 def _source_module_import_path(source_file: str) -> str:
@@ -1176,21 +1325,14 @@ def _witness_param_type(
     param_fact: ParameterFact | None,
     concept_type: ConceptType,
 ) -> str:
-    type_desc = spec.type_desc
-    if (not type_desc or type_desc in {"Any", "object"}) and param_fact is not None and param_fact.annotation:
-        type_desc = param_fact.annotation
+    type_desc = _effective_type_desc(spec, param_fact)
     abstract_type = _ghost_abstract_type(type_desc, concept_type)
     if param_fact is None:
         return abstract_type
     if param_fact.kind == "vararg":
         return f"tuple[{abstract_type}, ...]"
     if param_fact.kind == "kwarg":
-        value_type = (
-            "AbstractScalar"
-            if not type_desc or type_desc in {"Any", "object"}
-            else abstract_type
-        )
-        return f"dict[str, {value_type}]"
+        return "dict[str, AbstractArray]"
     return abstract_type
 
 
@@ -1776,10 +1918,15 @@ def generate_atom_wrappers(
                 fact = param_facts.get(inp.name)
                 if _skip_default_contract(inp, fact):
                     continue
-                allows_none = _annotation_allows_none(inp.type_desc)
-                if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
-                    lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
-                elif "float" in inp.type_desc and not allows_none:
+                contract_type_desc = _effective_type_desc(inp, fact)
+                allows_none = _annotation_allows_none(contract_type_desc)
+                if _type_desc_is_callable(contract_type_desc) and not allows_none:
+                    lines.append(f'@icontract.require(lambda {inp.name}: callable({inp.name}), "{inp.name} must be callable")')
+                elif _type_desc_is_array_like(contract_type_desc, inp.constraints) and not allows_none:
+                    lines.append(
+                        f'@icontract.require(lambda {inp.name}: hasattr({inp.name}, "__array__") or isinstance({inp.name}, (np.ndarray, list, tuple)), "{inp.name} must be array-like")'
+                    )
+                elif _type_desc_is_scalar(contract_type_desc) and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, (float, int, np.number)), "{inp.name} must be numeric")')
             # If still no require, add a generic one
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
@@ -1787,7 +1934,7 @@ def generate_atom_wrappers(
                     fact = param_facts.get(inp.name)
                     if _skip_default_contract(inp, fact):
                         continue
-                    if _annotation_allows_none(inp.type_desc):
+                    if _annotation_allows_none(_effective_type_desc(inp, fact)):
                         continue
                     lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')
 
@@ -2012,17 +2159,22 @@ def generate_stateful_wrappers(
                 fact = param_facts.get(inp.name)
                 if _skip_default_contract(inp, fact):
                     continue
-                allows_none = _annotation_allows_none(inp.type_desc)
-                if ("np.ndarray" in inp.type_desc or "AbstractArray" in inp.type_desc) and not allows_none:
-                    lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, np.ndarray), "{inp.name} must be a numpy array")')
-                elif "float" in inp.type_desc and not allows_none:
+                contract_type_desc = _effective_type_desc(inp, fact)
+                allows_none = _annotation_allows_none(contract_type_desc)
+                if _type_desc_is_callable(contract_type_desc) and not allows_none:
+                    lines.append(f'@icontract.require(lambda {inp.name}: callable({inp.name}), "{inp.name} must be callable")')
+                elif _type_desc_is_array_like(contract_type_desc, inp.constraints) and not allows_none:
+                    lines.append(
+                        f'@icontract.require(lambda {inp.name}: hasattr({inp.name}, "__array__") or isinstance({inp.name}, (np.ndarray, list, tuple)), "{inp.name} must be array-like")'
+                    )
+                elif _type_desc_is_scalar(contract_type_desc) and not allows_none:
                     lines.append(f'@icontract.require(lambda {inp.name}: isinstance({inp.name}, (float, int, np.number)), "{inp.name} must be numeric")')
             if not any("@icontract.require" in d for d in lines[-len(wrapper_inputs)-1:]):
                 for inp in wrapper_inputs:
                     fact = param_facts.get(inp.name)
                     if _skip_default_contract(inp, fact):
                         continue
-                    if _annotation_allows_none(inp.type_desc):
+                    if _annotation_allows_none(_effective_type_desc(inp, fact)):
                         continue
                     lines.append(f'@icontract.require(lambda {inp.name}: {inp.name} is not None, "{inp.name} cannot be None")')
 
@@ -2374,9 +2526,10 @@ def generate_ghost_witnesses(
     Returns (source_code, name_mapping) where name_mapping maps
     atom name -> witness function name.
 
-    When *state_models* is non-empty, each witness gains a
-    ``state: AbstractSignal`` parameter and returns
-    ``tuple[AbstractSignal, AbstractSignal]`` (result, state pass-through).
+    When *state_models* is non-empty, each witness gains a state parameter and
+    returns ``tuple[result, state]``. Query/state-preserving witnesses use an
+    opaque ``AbstractArray`` state surface, while explicit state-transition
+    witnesses upgrade to a conservative ``dict[str, AbstractArray]`` surrogate.
 
     Bayesian atoms (concept_type in SAMPLER, LOG_PROB, POSTERIOR_UPDATE,
     VARIATIONAL_INFERENCE, PRIOR_INIT) get specialized witnesses that use
@@ -2388,35 +2541,19 @@ def generate_ghost_witnesses(
     has_message_passing = any(
         a.concept_type in _MESSAGE_PASSING_CONCEPT_TYPES for a in macro_atoms
     )
+    requested_names = {"AbstractSignal", "AbstractArray", "AbstractScalar"}
+    if has_bayesian:
+        requested_names.add("AbstractDistribution")
+    if has_sampler:
+        requested_names.update({"AbstractMCMCTrace", "AbstractRNGState"})
 
     lines = [
         '"""Auto-generated ghost witness functions for abstract simulation."""',
         "",
         "from __future__ import annotations",
         "",
-        "try:",
-        "    from ageoa.ghost.abstract import AbstractSignal, AbstractArray, AbstractScalar",
     ]
-    if has_bayesian:
-        lines.extend(
-            [
-                "    from ageoa.ghost.abstract import AbstractDistribution",
-            ]
-        )
-    if has_sampler:
-        lines.extend(
-            [
-                "    from ageoa.ghost.abstract import AbstractMCMCTrace",
-                "    from ageoa.ghost.abstract import AbstractRNGState",
-            ]
-        )
-    lines.extend(
-        [
-            "except ImportError:",
-            "    pass",
-            "",
-        ]
-    )
+    lines.extend(_emit_ghost_import_preamble(requested_names=requested_names))
 
     # Memoization cache preamble for message-passing witnesses
     if has_message_passing:
@@ -2481,6 +2618,13 @@ def generate_ghost_witnesses(
             if canonical_witness is not None
             else {}
         )
+        state_param_type = abstract_type
+        if has_state and canonical_witness is not None:
+            state_param_type = _state_witness_type(
+                role=canonical_witness["role"],
+                effects=canonical_witness["effects"],
+                concept_type=atom.concept_type,
+            )
         for inp in witness_inputs:
             param_type = (
                 _witness_param_type(
@@ -2493,7 +2637,7 @@ def generate_ghost_witnesses(
             )
             params.append(f"{inp.name}: {param_type}")
         if has_state:
-            params.append(f"state: {abstract_type}")
+            params.append(f"state: {state_param_type}")
         param_str = ", ".join(params) if params else ""
 
         # Return type
@@ -2508,14 +2652,14 @@ def generate_ghost_witnesses(
 
         if has_state:
             if not canonical_output_types:
-                ret_type = f"tuple[None, {abstract_type}]"
+                ret_type = f"tuple[None, {state_param_type}]"
             elif len(canonical_output_types) == 1:
-                ret_type = f"tuple[{canonical_output_types[0]}, {abstract_type}]"
+                ret_type = f"tuple[{canonical_output_types[0]}, {state_param_type}]"
             else:
                 ret_type = (
                     "tuple[tuple["
                     + ", ".join(canonical_output_types)
-                    + f"], {abstract_type}]"
+                    + f"], {state_param_type}]"
                 )
         else:
             if not canonical_output_types:

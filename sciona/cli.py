@@ -645,13 +645,23 @@ def main() -> None:
             "(default: infer from output path)"
         ),
     )
-    ingest_parser.add_argument(
+    family_publish_group = ingest_parser.add_mutually_exclusive_group()
+    family_publish_group.add_argument(
         "--allow-family-replace",
         action="store_true",
         default=False,
         help=(
             "Allow replacing an existing family-scope output directory "
             "that already contains published canonical artifacts"
+        ),
+    )
+    family_publish_group.add_argument(
+        "--allow-family-merge",
+        action="store_true",
+        default=False,
+        help=(
+            "Allow merging newly staged family artifacts into an existing "
+            "family-scope output directory without replacing untouched files"
         ),
     )
     ingest_parser.add_argument(

@@ -166,6 +166,35 @@ def test_cli_ingest_parser_accepts_allow_family_replace(monkeypatch):
     assert getattr(captured[0], "allow_family_replace") is True
 
 
+def test_cli_ingest_parser_accepts_allow_family_merge(monkeypatch):
+    captured: list[object] = []
+
+    monkeypatch.setattr(
+        cli_module,
+        "_run_async_command",
+        lambda payload: captured.append(payload),
+    )
+    monkeypatch.setattr(cli_module, "_cmd_ingest", lambda args: args)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "sciona",
+            "ingest",
+            "source.py",
+            "--class",
+            "PatchExtractor",
+            "--output-scope",
+            "family",
+            "--allow-family-merge",
+        ],
+    )
+
+    cli_module.main()
+
+    assert len(captured) == 1
+    assert getattr(captured[0], "allow_family_merge") is True
+
+
 @pytest.mark.asyncio
 async def test_cmd_ingest_records_grouped_output_scope_for_non_symbol_dir(
     monkeypatch,
@@ -188,6 +217,7 @@ async def test_cmd_ingest_records_grouped_output_scope_for_non_symbol_dir(
             output=str(output_dir),
             output_scope="family",
             allow_family_replace=False,
+            allow_family_merge=False,
             llm_provider=None,
             llm_model=None,
             procedural=False,
@@ -207,6 +237,7 @@ async def test_cmd_ingest_records_grouped_output_scope_for_non_symbol_dir(
     assert status["publication"]["existing_family_output"] is False
     assert status["publication"]["existing_family_artifacts"] == []
     assert status["publication"]["allow_family_replace"] is False
+    assert status["publication"]["allow_family_merge"] is False
     assert status["publication"]["family_publication_mode"] == "fresh_family_publish"
     assert status["publication"]["published_files"] == [
         "atoms.py",
@@ -216,6 +247,7 @@ async def test_cmd_ingest_records_grouped_output_scope_for_non_symbol_dir(
     assert completed["output_scope"] == "family"
     assert completed["summary"]["output_dir"] == str(output_dir)
     assert completed["summary"]["allow_family_replace"] is False
+    assert completed["summary"]["allow_family_merge"] is False
     assert completed["summary"]["publication"]["family_publication_mode"] == "fresh_family_publish"
     assert completed["summary"]["publication"]["missing_artifacts"] == [
         "state_models.py",
@@ -246,6 +278,7 @@ async def test_cmd_ingest_grouped_family_replace_fails_by_default(
                 output=str(output_dir),
                 output_scope="family",
                 allow_family_replace=False,
+                allow_family_merge=False,
                 llm_provider=None,
                 llm_model=None,
                 procedural=False,
@@ -265,8 +298,10 @@ async def test_cmd_ingest_grouped_family_replace_fails_by_default(
     assert status["publication"]["existing_family_output"] is True
     assert status["publication"]["existing_family_artifacts"] == ["atoms.py"]
     assert status["publication"]["allow_family_replace"] is False
+    assert status["publication"]["allow_family_merge"] is False
     assert status["publication"]["family_publication_mode"] == "family_replace"
     assert "--allow-family-replace" in failed["error"]
+    assert "--allow-family-merge" in failed["error"]
     assert failed["summary"]["published_files"] == []
     assert failed["summary"]["publication"]["existing_family_artifacts"] == ["atoms.py"]
     assert (output_dir / "atoms.py").read_text(encoding="utf-8") == (
@@ -293,6 +328,7 @@ async def test_cmd_ingest_grouped_family_replace_succeeds_with_explicit_flag(
             output=str(output_dir),
             output_scope="family",
             allow_family_replace=True,
+            allow_family_merge=False,
             llm_provider=None,
             llm_model=None,
             procedural=False,
@@ -310,10 +346,62 @@ async def test_cmd_ingest_grouped_family_replace_succeeds_with_explicit_flag(
     assert status["publication"]["existing_family_output"] is True
     assert status["publication"]["existing_family_artifacts"] == ["atoms.py"]
     assert status["publication"]["allow_family_replace"] is True
+    assert status["publication"]["allow_family_merge"] is False
     assert status["publication"]["family_publication_mode"] == "family_replace"
     assert completed["summary"]["allow_family_replace"] is True
+    assert completed["summary"]["allow_family_merge"] is False
     assert completed["summary"]["publication"]["existing_family_artifacts"] == ["atoms.py"]
     assert completed["summary"]["publication"]["family_publication_mode"] == "family_replace"
     assert (output_dir / "atoms.py").read_text(encoding="utf-8") == (
         "def grouped_atom():\n    return 'ok'\n"
+    )
+
+
+@pytest.mark.asyncio
+async def test_cmd_ingest_grouped_family_merge_preserves_unstaged_artifacts(
+    monkeypatch,
+    tmp_path: Path,
+):
+    source_path = tmp_path / "offset_source.py"
+    source_path.write_text("def tt2tdb_offset(seconds):\n    return seconds\n", encoding="utf-8")
+    output_dir = tmp_path / "tempo_jl" / "offsets"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "atoms.py").write_text("def old_grouped_atom():\n    return 'old'\n", encoding="utf-8")
+    (output_dir / "state_models.py").write_text("class LegacyState:\n    pass\n", encoding="utf-8")
+    _patch_ingest_runtime(monkeypatch, tmp_path)
+
+    await _cmd_ingest(
+        argparse.Namespace(
+            source=str(source_path),
+            class_name="tt2tdb_offset",
+            output=str(output_dir),
+            output_scope="family",
+            allow_family_replace=False,
+            allow_family_merge=True,
+            llm_provider=None,
+            llm_model=None,
+            procedural=False,
+            trace=False,
+            monitor=False,
+            stale_seconds=120,
+            mode=None,
+        )
+    )
+
+    status = json.loads((output_dir / ".ingest_status.json").read_text(encoding="utf-8"))
+    completed = json.loads((output_dir / "COMPLETED.json").read_text(encoding="utf-8"))
+
+    assert status["state"] == "completed"
+    assert status["publication"]["existing_family_output"] is True
+    assert status["publication"]["existing_family_artifacts"] == ["atoms.py", "state_models.py"]
+    assert status["publication"]["allow_family_replace"] is False
+    assert status["publication"]["allow_family_merge"] is True
+    assert status["publication"]["family_publication_mode"] == "family_merge"
+    assert completed["summary"]["allow_family_merge"] is True
+    assert completed["summary"]["publication"]["family_publication_mode"] == "family_merge"
+    assert (output_dir / "atoms.py").read_text(encoding="utf-8") == (
+        "def grouped_atom():\n    return 'ok'\n"
+    )
+    assert (output_dir / "state_models.py").read_text(encoding="utf-8") == (
+        "class LegacyState:\n    pass\n"
     )
