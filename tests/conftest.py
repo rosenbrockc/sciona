@@ -22,11 +22,15 @@ from typing import Iterator
 
 import pytest
 
+from sciona.julia_runtime import configure_juliacall_env
 from tests.helpers.match_regression import (
     MatchCase,
     build_ageo_atoms_declarations,
     load_match_cases,
 )
+
+
+configure_juliacall_env()
 
 
 def _run_subprocess(

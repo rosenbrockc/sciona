@@ -32,10 +32,12 @@ from sciona.synthesizer.uncertainty import (
     UncertaintyBackend,
 )
 from sciona.types import MatchResult
+from sciona.julia_runtime import configure_juliacall_env
 
 logger = logging.getLogger(__name__)
 
 try:
+    configure_juliacall_env()
     from ageoa.ghost.simulator import SimNode, SimResult, simulate_graph, PlanError
     from ageoa.ghost.abstract import (
         AbstractDistribution,

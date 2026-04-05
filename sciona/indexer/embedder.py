@@ -7,6 +7,7 @@ import warnings
 
 import numpy as np
 
+from sciona.julia_runtime import configure_juliacall_env
 from sciona.types import Declaration
 
 DEFAULT_EMBEDDING_BACKEND = "fastembed"
@@ -85,6 +86,7 @@ def _prefer_juliacall_before_torch() -> None:
     juliacall first when available. Failures here should not block embedding.
     """
     try:
+        configure_juliacall_env()
         import juliacall  # noqa: F401
     except Exception:
         return
