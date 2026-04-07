@@ -251,6 +251,7 @@ def summarize_events(
         outlier_fraction = 0.0
     summary = {
         "count": float(arr.size),
+        "duration_seconds": float(duration) if duration is not None else 0.0,
         "density_per_minute": density,
         "interval_median_samples": interval_median,
         "interval_mad_samples": interval_mad,

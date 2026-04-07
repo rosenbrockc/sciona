@@ -29,6 +29,15 @@ def route_after_proposal(state: PrincipalState) -> str:
     return "time_travel"
 
 
+def route_after_admissibility(state: PrincipalState) -> str:
+    """After admissibility, either refine immediately or continue to gradients."""
+    if state.done:
+        return "end"
+    if state.admissibility_hard_rejected or state.admissibility_requires_refinement:
+        return "select_proposal"
+    return "gradients"
+
+
 def route_after_update(state: PrincipalState) -> str:
     """After time-travel update, loop back or stop."""
     if state.done:

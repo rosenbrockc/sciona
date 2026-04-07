@@ -21,6 +21,7 @@ from sciona.principal.atom_ledger import compute_slot_signature
 from sciona.principal.backprop import CreditAssigner
 from sciona.principal.evaluation_helpers import evaluate_bundle_for_metric
 from sciona.principal.graph_routing import (
+    route_after_admissibility,
     route_after_forward,
     route_after_gradients,
     route_after_proposal,
@@ -28,6 +29,10 @@ from sciona.principal.graph_routing import (
 )
 from sciona.principal.graph_types import PrincipalDeps, PrincipalState
 from sciona.principal.graph_utils import _param_signature, _structure_has_tunables
+from sciona.principal.admissibility import (
+    build_admissibility_context,
+    default_admissibility_evaluator,
+)
 from sciona.principal.hpo import OptunaManager, SuggestedParams, TrialPrunedEarly
 from sciona.principal.expansion import ExpansionContext, ExpansionEngine
 from sciona.principal.expansion_rules import default_rule_sets
@@ -299,6 +304,15 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
                 "applied_assets": [],
                 "context_summary": {},
             },
+            "admissibility": {
+                "hard_rejected": False,
+                "routed_to_refinement": False,
+                "decision_count": 0,
+                "hard_reject_rule_ids": [],
+                "warning_rule_ids": [],
+                "refinement_rule_ids": [],
+                "decisions": [],
+            },
             "rollback": {
                 "applied": False,
                 "reason": "",
@@ -328,19 +342,98 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
     }
 
 
+async def check_admissibility(state: PrincipalState, config: RunnableConfig) -> dict:
+    """Evaluate deterministic admissibility and persist the decision."""
+    deps: PrincipalDeps = config["configurable"]["deps"]
+    if state.cdg is None or state.benchmark is None:
+        return {}
+
+    context = build_admissibility_context(
+        cdg=state.cdg,
+        planning_artifact=state.planning_artifact,
+        runtime_artifacts=getattr(state.benchmark, "runtime_artifacts", {}) or {},
+        family=(
+            state.planning_artifact.get("family_hint", "")
+            if isinstance(state.planning_artifact, dict)
+            else ""
+        ),
+    )
+    evaluator = deps.admissibility_evaluator or default_admissibility_evaluator(
+        family=context.family
+    )
+    report = evaluator.evaluate(context)
+    summary = report.summary()
+    summary["family"] = context.family
+    summary["runtime_context"] = dict(context.runtime_context)
+    summary["telemetry"] = dict(context.telemetry)
+
+    if state.trial_history:
+        latest = dict(state.trial_history[-1])
+        latest["admissibility"] = summary
+        state.trial_history[-1] = latest
+
+    state.admissibility_summary = summary
+    state.admissibility_hard_rejected = report.hard_rejected
+    state.admissibility_requires_refinement = report.routed_to_refinement
+
+    logger.info(
+        "Trial %d admissibility: %d decision(s), hard_rejected=%s, routed_to_refinement=%s",
+        state.current_trial,
+        len(report.decisions),
+        report.hard_rejected,
+        report.routed_to_refinement,
+    )
+
+    return {
+        "trial_history": state.trial_history,
+        "admissibility_summary": summary,
+        "admissibility_hard_rejected": report.hard_rejected,
+        "admissibility_requires_refinement": report.routed_to_refinement,
+    }
+
+
 async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict:
     """Compare sibling expansion and mutation proposals from the same baseline."""
     deps: PrincipalDeps = config["configurable"]["deps"]
-    if (
-        state.cdg is None
-        or state.benchmark is None
-        or not state.bottleneck_node_id
-    ):
+    hard_rejected = state.admissibility_hard_rejected
+    refinement_routed = hard_rejected or state.admissibility_requires_refinement
+    if state.cdg is None or state.benchmark is None:
+        state.selected_proposal = ""
+        return {"selected_proposal": ""}
+    if not state.bottleneck_node_id and not refinement_routed:
         state.selected_proposal = ""
         return {"selected_proposal": ""}
 
     baseline_cdg = state.cdg.model_copy(deep=True)
     baseline_loss = float(state.benchmark.global_loss)
+    if hard_rejected:
+        if state.trial_history:
+            latest = dict(state.trial_history[-1])
+            latest["proposal_selection"] = {
+                "baseline_loss": baseline_loss,
+                "candidates": [],
+                "selected": "",
+                "skipped_due_to_admissibility": True,
+                "skip_reason": "hard_reject",
+                "hard_reject_rule_ids": list(
+                    state.admissibility_summary.get("hard_reject_rule_ids", [])
+                ),
+            }
+            state.trial_history[-1] = latest
+        state.selected_proposal = ""
+        state.reuse_cached_evaluation = False
+        logger.info(
+            "Trial %d skipping proposal generation after hard admissibility reject.",
+            state.current_trial,
+        )
+        return {
+            "selected_proposal": "",
+            "trial_history": state.trial_history,
+            "expansion_applied": False,
+            "expansion_rules_applied": [],
+            "reuse_cached_evaluation": False,
+        }
+
     bottleneck_name = next(
         (node.name for node in baseline_cdg.nodes if node.node_id == state.bottleneck_node_id),
         None,
@@ -386,7 +479,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         atom_ledger=deps.atom_ledger,
         catalog=deps.catalog,
     )
-    if mutation.applied:
+    if state.bottleneck_node_id and mutation.applied:
         loss, bundle, benchmark, match_results, ghost_report = await evaluate_proposal_candidate(
             state,
             deps,
@@ -421,7 +514,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             selected = candidate
             break
 
-    if selected is None:
+    if selected is None and state.bottleneck_node_id:
         redecomposition = await build_redecomposition_candidate(
             state,
             deps,
@@ -705,6 +798,7 @@ def build_principal_graph() -> StateGraph:
     graph.add_node("suggest_params", suggest_params)
     graph.add_node("forward", execute_forward)
     graph.add_node("evaluate", evaluate_run)
+    graph.add_node("admissibility", check_admissibility)
     graph.add_node("gradients", compute_gradients)
     graph.add_node("select_proposal", select_proposal)
     graph.add_node("time_travel", time_travel_update)
@@ -717,7 +811,12 @@ def build_principal_graph() -> StateGraph:
         route_after_forward,
         {"evaluate": "evaluate", "time_travel": "time_travel", "end": END},
     )
-    graph.add_edge("evaluate", "gradients")
+    graph.add_edge("evaluate", "admissibility")
+    graph.add_conditional_edges(
+        "admissibility",
+        route_after_admissibility,
+        {"gradients": "gradients", "select_proposal": "select_proposal", "end": END},
+    )
     graph.add_conditional_edges(
         "gradients",
         route_after_gradients,

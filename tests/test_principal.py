@@ -840,6 +840,193 @@ class TestPrincipalState:
         assert planning_summary["paradigm"] == "signal_detect_measure"
         assert planning_summary["constraint_count"] >= 1
 
+    @pytest.mark.asyncio
+    async def test_check_admissibility_records_structured_summary(self):
+        from sciona.principal.graph import PrincipalState, check_admissibility
+
+        planning_artifact = build_planning_artifact(
+            goal="Estimate event rate from a signal",
+            thread_id="thread-1",
+            paradigm="signal_event_rate",
+            family_hint="signal_event_rate",
+            root_inputs=[
+                IOSpec(name="signal", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            root_outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+        ).model_dump(mode="json")
+
+        root = AlgorithmicNode(
+            node_id="root",
+            name="Root",
+            description="Root waveform-to-rate pipeline",
+            concept_type=ConceptType.ANALYSIS,
+            status=NodeStatus.DECOMPOSED,
+            children=["filt", "rate"],
+            inputs=[
+                IOSpec(name="signal", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+        )
+        filt = AlgorithmicNode(
+            node_id="filt",
+            parent_id="root",
+            name="Filter",
+            description="Filter signal",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            status=NodeStatus.ATOMIC,
+            matched_primitive="filter_signal_for_detection",
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        )
+        rate = AlgorithmicNode(
+            node_id="rate",
+            parent_id="root",
+            name="Rate",
+            description="Compute rate",
+            concept_type=ConceptType.ANALYSIS,
+            status=NodeStatus.ATOMIC,
+            matched_primitive="compute_event_rate",
+            inputs=[IOSpec(name="events", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+        )
+        state = PrincipalState(
+            goal="Estimate event rate from a signal",
+            current_trial=1,
+            cdg=CDGExport(
+                nodes=[root, filt, rate],
+                edges=[],
+                planning_artifact=planning_artifact,
+            ),
+            planning_artifact=planning_artifact,
+            benchmark=BenchmarkResult(
+                global_loss=10.0,
+                runtime_artifacts={
+                    "signal_data": {"signal": [0.0] * 1280, "sampling_rate": 128.0},
+                    "intermediates": {"events": [10, 20, 30]},
+                },
+            ),
+            trial_history=[{"trial": 1, "admissibility": {}}],
+        )
+
+        result = await check_admissibility(
+            state,
+            {"configurable": {"deps": SimpleNamespace(admissibility_evaluator=None)}},
+        )
+
+        assert result["admissibility_summary"]["decision_count"] >= 1
+        assert result["admissibility_hard_rejected"] is True
+        assert state.trial_history[0]["admissibility"]["hard_rejected"] is True
+        assert state.trial_history[0]["admissibility"]["decisions"]
+        assert state.trial_history[0]["admissibility"]["family"] == "signal_event_rate"
+        assert state.trial_history[0]["admissibility"]["runtime_context"]["sampling_rate"] == 128.0
+        assert state.trial_history[0]["admissibility"]["telemetry"]["events"]["count"] == 3.0
+
+    @pytest.mark.asyncio
+    async def test_select_proposal_skips_generation_after_hard_reject(self):
+        from sciona.principal.graph import PrincipalState, check_admissibility, select_proposal
+
+        class _SentinelExpansionEngine:
+            def __init__(self) -> None:
+                self.call_count = 0
+
+            def expand(self, cdg, context):
+                self.call_count += 1
+                raise AssertionError("expansion should not run after a hard reject")
+
+        planning_artifact = build_planning_artifact(
+            goal="Estimate event rate from a signal",
+            thread_id="thread-1",
+            paradigm="signal_event_rate",
+            family_hint="signal_event_rate",
+            root_inputs=[
+                IOSpec(name="signal", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            root_outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+        ).model_dump(mode="json")
+
+        root = AlgorithmicNode(
+            node_id="root",
+            name="Root",
+            description="Root waveform-to-rate pipeline",
+            concept_type=ConceptType.ANALYSIS,
+            status=NodeStatus.DECOMPOSED,
+            children=["filt", "rate"],
+            inputs=[
+                IOSpec(name="signal", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+        )
+        filt = AlgorithmicNode(
+            node_id="filt",
+            parent_id="root",
+            name="Filter",
+            description="Filter signal",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            status=NodeStatus.ATOMIC,
+            matched_primitive="filter_signal_for_detection",
+            inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        )
+        rate = AlgorithmicNode(
+            node_id="rate",
+            parent_id="root",
+            name="Rate",
+            description="Compute rate",
+            concept_type=ConceptType.ANALYSIS,
+            status=NodeStatus.ATOMIC,
+            matched_primitive="compute_event_rate",
+            inputs=[IOSpec(name="events", type_desc="np.ndarray")],
+            outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+        )
+        state = PrincipalState(
+            goal="Estimate event rate from a signal",
+            current_trial=1,
+            cdg=CDGExport(
+                nodes=[root, filt, rate],
+                edges=[],
+                planning_artifact=planning_artifact,
+            ),
+            planning_artifact=planning_artifact,
+            benchmark=BenchmarkResult(
+                global_loss=10.0,
+                runtime_artifacts={
+                    "signal_data": {"signal": [0.0] * 1280, "sampling_rate": 128.0},
+                    "intermediates": {"events": [10, 20, 30]},
+                },
+            ),
+            trial_history=[{"trial": 1, "admissibility": {}, "expansion": {"applied": False}}],
+        )
+
+        await check_admissibility(
+            state,
+            {"configurable": {"deps": SimpleNamespace(admissibility_evaluator=None)}},
+        )
+
+        engine = _SentinelExpansionEngine()
+        result = await select_proposal(
+            state,
+            {
+                "configurable": {
+                    "deps": SimpleNamespace(
+                        expansion_engine=engine,
+                        atom_ledger=None,
+                        catalog=None,
+                    )
+                }
+            },
+        )
+
+        assert result["selected_proposal"] == ""
+        assert engine.call_count == 0
+        proposal = state.trial_history[0]["proposal_selection"]
+        assert proposal["skipped_due_to_admissibility"] is True
+        assert proposal["skip_reason"] == "hard_reject"
+        assert proposal["hard_reject_rule_ids"] == ["minimum_event_density"]
+
 
 class TestRouteAfterGradients:
     def test_done(self):
@@ -875,6 +1062,36 @@ class TestRouteAfterGradients:
 
         state = PrincipalState()
         assert route_after_gradients(state) == "select_proposal"
+
+
+class TestRouteAfterAdmissibility:
+    def test_done(self):
+        from sciona.principal.graph import PrincipalState
+        from sciona.principal.graph_routing import route_after_admissibility
+
+        state = PrincipalState(done=True)
+        assert route_after_admissibility(state) == "end"
+
+    def test_refinement_route_skips_gradients(self):
+        from sciona.principal.graph import PrincipalState
+        from sciona.principal.graph_routing import route_after_admissibility
+
+        state = PrincipalState(admissibility_requires_refinement=True)
+        assert route_after_admissibility(state) == "select_proposal"
+
+    def test_hard_reject_skips_gradients(self):
+        from sciona.principal.graph import PrincipalState
+        from sciona.principal.graph_routing import route_after_admissibility
+
+        state = PrincipalState(admissibility_hard_rejected=True)
+        assert route_after_admissibility(state) == "select_proposal"
+
+    def test_normal_continues_to_gradients(self):
+        from sciona.principal.graph import PrincipalState
+        from sciona.principal.graph_routing import route_after_admissibility
+
+        state = PrincipalState()
+        assert route_after_admissibility(state) == "gradients"
 
 
 class TestRouteAfterUpdate:
@@ -971,5 +1188,6 @@ class TestBuildPrincipalGraph:
         assert "seed" in graph.nodes
         assert "forward" in graph.nodes
         assert "evaluate" in graph.nodes
+        assert "admissibility" in graph.nodes
         assert "gradients" in graph.nodes
         assert "time_travel" in graph.nodes

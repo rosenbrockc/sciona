@@ -6,11 +6,19 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol, runtime_checkable
 
+from sciona.architect.handoff import CDGExport
 from sciona.architect.semantic_graph import (
     SemanticBoundaryKind,
     SemanticCDG,
     SemanticDataKind,
     SemanticLossClass,
+    project_semantic_cdg,
+)
+from sciona.principal.runtime_context import (
+    resolve_canonical_runtime_context,
+    summarize_events,
+    summarize_runtime_context,
+    summarize_waveform,
 )
 
 
@@ -92,12 +100,31 @@ class AdmissibilityReport:
             if decision.disposition == AdmissibilityDisposition.SOFT_WARN
         )
 
+    def decision_payloads(self) -> list[dict[str, Any]]:
+        """Serialize per-rule decisions for runtime artifacts and trial history."""
+        return [
+            {
+                "rule_id": decision.rule_id,
+                "disposition": decision.disposition.value,
+                "summary": decision.summary,
+                "severity": decision.severity,
+                "evidence": decision.evidence,
+                "metric_name": decision.metric_name,
+                "observed_value": decision.observed_value,
+                "threshold": decision.threshold,
+                "family": decision.family,
+                "suggested_refinement": decision.suggested_refinement,
+            }
+            for decision in self.decisions
+        ]
+
     def summary(self) -> dict[str, Any]:
         """Serialize a compact structured summary for later trial-history wiring."""
         return {
             "hard_rejected": self.hard_rejected,
             "routed_to_refinement": self.routed_to_refinement,
             "decision_count": len(self.decisions),
+            "decisions": self.decision_payloads(),
             "hard_reject_rule_ids": [
                 decision.rule_id
                 for decision in self.decisions
@@ -303,3 +330,131 @@ class AdmissibilityEvaluator:
             decisions.extend(rule.evaluate(context))
         decisions.sort(key=lambda decision: (-decision.severity, decision.rule_id))
         return AdmissibilityReport(decisions=tuple(decisions))
+
+
+def infer_admissibility_family(
+    planning_artifact: dict[str, Any] | None,
+    *,
+    fallback: str = "",
+) -> str:
+    """Resolve a family hint from planning metadata when available."""
+    artifact = planning_artifact or {}
+    if hasattr(artifact, "model_dump"):
+        artifact = artifact.model_dump(mode="json")
+    if not isinstance(artifact, dict):
+        return fallback
+    for key in ("family_hint", "paradigm"):
+        value = str(artifact.get(key, "")).strip()
+        if value:
+            return value
+    return fallback
+
+
+def build_admissibility_context(
+    *,
+    cdg: CDGExport,
+    planning_artifact: dict[str, Any] | None,
+    runtime_artifacts: dict[str, Any] | None,
+    family: str = "",
+) -> AdmissibilityContext:
+    """Build a cheap, deterministic admissibility context from runtime artifacts."""
+    artifacts = runtime_artifacts if isinstance(runtime_artifacts, dict) else {}
+    signal_data = (
+        dict(artifacts.get("signal_data", {}))
+        if isinstance(artifacts.get("signal_data", {}), dict)
+        else {}
+    )
+    intermediates = (
+        dict(artifacts.get("intermediates", {}))
+        if isinstance(artifacts.get("intermediates", {}), dict)
+        else {}
+    )
+
+    canonical = resolve_canonical_runtime_context(signal_data)
+    runtime_context = summarize_runtime_context(canonical)
+    telemetry: dict[str, Any] = {}
+
+    sampling_rate: float | None = None
+    sampling_ref = canonical.canonical_inputs.get("sampling_rate")
+    if sampling_ref is not None:
+        raw_value = signal_data.get(sampling_ref.raw_key)
+        try:
+            sampling_rate = float(raw_value)
+            runtime_context["sampling_rate"] = sampling_rate
+        except Exception:
+            sampling_rate = None
+
+    signal_ref = canonical.canonical_inputs.get("signal")
+    if signal_ref is not None:
+        signal_values = signal_data.get(signal_ref.raw_key)
+        if signal_values is not None:
+            telemetry["signal"] = summarize_waveform(signal_values)
+            runtime_context["signal"] = signal_ref.raw_key
+
+    events = intermediates.get("events")
+    if events is not None:
+        duration_seconds: float | None = None
+        if signal_ref is not None and sampling_rate and sampling_rate > 0:
+            signal_values = signal_data.get(signal_ref.raw_key)
+            try:
+                duration_seconds = float(len(signal_values)) / float(sampling_rate)
+            except Exception:
+                duration_seconds = None
+        telemetry["events"] = summarize_events(
+            events,
+            sampling_rate=sampling_rate,
+            duration_seconds=duration_seconds,
+        )
+        if duration_seconds is not None:
+            telemetry["events"]["duration_seconds"] = duration_seconds
+
+    return AdmissibilityContext(
+        planning_artifact=planning_artifact,
+        semantic_cdg=project_semantic_cdg(cdg),
+        telemetry=telemetry,
+        runtime_context=runtime_context,
+        family=family or infer_admissibility_family(planning_artifact),
+    )
+
+
+def default_admissibility_rules(*, family: str = "") -> list[AdmissibilityRule]:
+    """Return the default deterministic admissibility bundle for a family."""
+    rules: list[AdmissibilityRule] = [RootBoundaryLossRule()]
+
+    family_key = family.strip().lower()
+    if family_key in {"signal_event_rate", "signal_detect_measure"}:
+        rules.extend(
+            [
+                RequiredRuntimeKeysRule(
+                    ["sampling_rate"],
+                    rule_id="needs_sampling_rate",
+                ),
+                MinimumCountPerDurationRule(
+                    count_metric="events.count",
+                    duration_metric="events.duration_seconds",
+                    min_per_minute=20.0,
+                    rule_id="minimum_event_density",
+                ),
+                ThresholdMetricRule(
+                    rule_id="unstable_event_intervals",
+                    metric_name="events.outlier_fraction",
+                    threshold=0.15,
+                    disposition=AdmissibilityDisposition.ROUTE_TO_REFINEMENT,
+                    summary=(
+                        "Detected event intervals are unstable enough to require refinement."
+                    ),
+                    suggested_refinement="insert_outlier_rejection_after_detection",
+                ),
+            ]
+        )
+    return rules
+
+
+def default_admissibility_evaluator(*, family: str = "") -> AdmissibilityEvaluator:
+    """Construct the default admissibility evaluator for a family."""
+    return AdmissibilityEvaluator(default_admissibility_rules(family=family))
+
+
+def default_structural_admissibility_evaluator() -> AdmissibilityEvaluator:
+    """Return the cheap admissibility bundle safe before synthesis/evaluation."""
+    return AdmissibilityEvaluator([RootBoundaryLossRule()])

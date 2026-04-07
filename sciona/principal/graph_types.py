@@ -9,6 +9,7 @@ from sciona.architect.catalog import PrimitiveCatalog
 from sciona.architect.graph import DecompositionAgent
 from sciona.architect.handoff import CDGExport
 from sciona.principal.atom_ledger import AtomLedger
+from sciona.principal.admissibility import AdmissibilityEvaluator
 from sciona.principal.evaluator import ExecutionSandbox
 from sciona.principal.expansion import ExpansionEngine
 from sciona.principal.hpo import OptunaManager
@@ -53,6 +54,9 @@ class PrincipalState:
     expansion_rules_applied: list[str] = field(default_factory=list)
     selected_proposal: str = ""
     reuse_cached_evaluation: bool = False
+    admissibility_summary: dict[str, Any] = field(default_factory=dict)
+    admissibility_requires_refinement: bool = False
+    admissibility_hard_rejected: bool = False
 
     # Bookkeeping
     done: bool = False
@@ -75,3 +79,4 @@ class PrincipalDeps:
     hpo_manager: OptunaManager | None = None
     param_trials_per_structure: int = 1
     expansion_engine: ExpansionEngine | None = None
+    admissibility_evaluator: AdmissibilityEvaluator | None = None

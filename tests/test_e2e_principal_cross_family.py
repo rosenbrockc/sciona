@@ -27,6 +27,13 @@ from sciona.principal.expansion import ExpansionDiagnostic, ExpansionResult
 from sciona.principal.graph import PrincipalDeps, PrincipalState, build_principal_graph
 from sciona.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
 from sciona.principal.atom_ledger import AtomLedger, compute_slot_signature
+from sciona.principal.admissibility import (
+    AdmissibilityContext,
+    AdmissibilityDecision,
+    AdmissibilityDisposition,
+    AdmissibilityEvaluator,
+    AdmissibilityReport,
+)
 from sciona.synthesizer.models import ExportBundle
 
 
@@ -324,6 +331,31 @@ class _SingleShotExpansionEngine:
         )
 
 
+class _RouteToRefinementEvaluator(AdmissibilityEvaluator):
+    def __init__(self) -> None:
+        self.call_count = 0
+        super().__init__([])
+
+    def evaluate(self, context: AdmissibilityContext) -> AdmissibilityReport:
+        self.call_count += 1
+        return AdmissibilityReport(
+            decisions=(
+                AdmissibilityDecision(
+                    rule_id="unstable_event_intervals",
+                    disposition=AdmissibilityDisposition.ROUTE_TO_REFINEMENT,
+                    summary="Detected intervals are unstable enough to require refinement.",
+                    severity=0.8,
+                    evidence="Synthetic refinement-routing test evidence.",
+                    metric_name="events.outlier_fraction",
+                    observed_value=0.42,
+                    threshold=0.15,
+                    family="signal_event_rate",
+                    suggested_refinement="inject_signal_quality_gate",
+                ),
+            )
+        )
+
+
 def _mock_match_results_fn(cdg: CDGExport) -> list:
     return []
 
@@ -408,6 +440,56 @@ class TestPrincipalCrossFamilyExpansionE2E:
         assert structure["cross_family_node_count"] == 2
         assert structure["family_entropy"] > 0.0
         assert state.best_loss == 60.0
+
+
+@pytest.fixture(scope="module")
+def principal_admissibility_refinement_result():
+    async def _run():
+        architect = _SingleShotArchitect()
+        sandbox = _ExpansionAwareSandbox()
+        expansion_engine = _SingleShotExpansionEngine()
+        admissibility = _RouteToRefinementEvaluator()
+        deps = PrincipalDeps(
+            architect=architect,
+            sandbox=sandbox,
+            match_results_fn=_mock_match_results_fn,
+            synthesize_fn=_mock_synthesize_fn,
+            catalog=_build_catalog(),
+            expansion_engine=expansion_engine,
+            admissibility_evaluator=admissibility,
+        )
+        graph = build_principal_graph()
+        compiled = graph.compile()
+        initial_state = PrincipalState(
+            goal="Improve a signal-analysis pipeline with quality control",
+            metric=OptimizationMetric.LATENCY,
+            max_trials=2,
+        )
+        config = {"configurable": {"deps": deps}}
+        result = await compiled.ainvoke(initial_state, config=config)
+        state = PrincipalState(**result) if isinstance(result, dict) else result
+        return state, sandbox, architect, expansion_engine, admissibility
+
+    return asyncio.get_event_loop().run_until_complete(_run())
+
+
+class TestPrincipalAdmissibilityRefinementE2E:
+    def test_admissibility_routes_directly_to_refinement(
+        self, principal_admissibility_refinement_result
+    ):
+        state, sandbox, architect, expansion_engine, admissibility = (
+            principal_admissibility_refinement_result
+        )
+        assert len(state.trial_history) == 2
+        assert sandbox.call_count == 2
+        assert len(architect.decompose_calls) == 1
+        assert expansion_engine.call_count >= 1
+        assert admissibility.call_count >= 1
+        assert state.bottleneck_node_id == ""
+        assert state.trial_history[0]["admissibility"]["routed_to_refinement"] is True
+        assert (
+            state.trial_history[0]["proposal_selection"]["selected"] == "expansion"
+        )
 
 
 @pytest.fixture(scope="module")
