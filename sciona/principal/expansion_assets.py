@@ -6,9 +6,12 @@ import json
 from dataclasses import replace
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import AliasChoices, BaseModel, Field
 
+from sciona.architect.handoff import CDGExport
+from sciona.architect.semantic_graph import project_semantic_cdg
 from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
@@ -32,13 +35,16 @@ class ExpansionTriggerAsset(BaseModel):
     """Structured trigger metadata for one expansion operation."""
 
     metric_name: str = ""
-    comparison: str = Field(
+    comparison: Literal["gt", "gte", "lt", "lte", "eq"] = Field(
         default="gt",
         validation_alias=AliasChoices("comparison", "comparator"),
     )
     threshold: float = 0.0
     required_signal_keys: list[str] = Field(default_factory=list)
     required_intermediate_keys: list[str] = Field(default_factory=list)
+    required_primitives: list[str] = Field(default_factory=list)
+    required_root_inputs: list[str] = Field(default_factory=list)
+    required_adjacencies: list[tuple[str, str]] = Field(default_factory=list)
     required_planning_constraint_categories: list[str] = Field(
         default_factory=list,
         validation_alias=AliasChoices(
@@ -184,6 +190,7 @@ def _planning_constraint_categories(context: ExpansionContext) -> set[str]:
 
 def _operation_matches(
     operation: ExpansionOperationAsset,
+    cdg: CDGExport,
     context: ExpansionContext,
 ) -> bool:
     if any(
@@ -204,6 +211,39 @@ def _operation_matches(
         }
         if not required.issubset(categories):
             return False
+    if operation.trigger.required_primitives:
+        primitives = {
+            str(getattr(node, "matched_primitive", "") or "")
+            for node in cdg.nodes
+        }
+        required = {primitive for primitive in operation.trigger.required_primitives}
+        if not required.issubset(primitives):
+            return False
+    if operation.trigger.required_root_inputs or operation.trigger.required_adjacencies:
+        semantic = project_semantic_cdg(cdg)
+        if operation.trigger.required_root_inputs:
+            for root_input in operation.trigger.required_root_inputs:
+                if not semantic.find_root_input_consumers(root_input):
+                    return False
+        if operation.trigger.required_adjacencies:
+            primitive_by_node = {
+                node.node_id: str(getattr(node, "matched_primitive", "") or "")
+                for node in cdg.nodes
+            }
+            observed = {
+                (
+                    primitive_by_node.get(edge.source_id, ""),
+                    primitive_by_node.get(edge.target_id, ""),
+                )
+                for edge in semantic.edges
+                if edge.source_id in primitive_by_node and edge.target_id in primitive_by_node
+            }
+            required_pairs = {
+                (str(source), str(target))
+                for source, target in operation.trigger.required_adjacencies
+            }
+            if not required_pairs.issubset(observed):
+                return False
     return True
 
 
@@ -224,7 +264,7 @@ class AssetBackedExpansionRuleSet:
             if operation is None:
                 enriched.append(diagnostic)
                 continue
-            if not _operation_matches(operation, context):
+            if not _operation_matches(operation, cdg, context):
                 continue
             summary = expansion_asset_summary(self._asset, operation)
             enriched.append(

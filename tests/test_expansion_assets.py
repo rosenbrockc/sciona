@@ -18,6 +18,8 @@ from sciona.principal.expansion import (
     ExpansionEngine,
 )
 from sciona.principal.expansion_assets import (
+    AssetBackedExpansionRuleSet,
+    ExpansionFamilyAsset,
     asset_backed_rule_sets,
     load_local_expansion_assets_by_family,
 )
@@ -52,6 +54,57 @@ def _signal_rate_cdg() -> CDGExport:
             DependencyEdge(
                 source_id="src",
                 target_id="filt",
+                output_name="signal",
+                input_name="signal",
+                source_type="np.ndarray",
+                target_type="np.ndarray",
+            )
+        ],
+    )
+
+
+def _root_boundary_signal_rate_cdg() -> CDGExport:
+    root = AlgorithmicNode(
+        node_id="root",
+        name="Root",
+        description="top level signal pipeline",
+        concept_type=ConceptType.ANALYSIS,
+        status=NodeStatus.DECOMPOSED,
+        children=["filt", "det"],
+        outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+        inputs=[
+            IOSpec(name="signal", type_desc="np.ndarray"),
+            IOSpec(name="sampling_rate", type_desc="float"),
+        ],
+    )
+    filt = AlgorithmicNode(
+        node_id="filt",
+        parent_id="root",
+        name="Filter",
+        description="filter signal",
+        concept_type=ConceptType.SIGNAL_FILTER,
+        status=NodeStatus.ATOMIC,
+        matched_primitive="filter_signal_for_detection",
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+    )
+    detect = AlgorithmicNode(
+        node_id="det",
+        parent_id="root",
+        name="Detect",
+        description="detect events",
+        concept_type=ConceptType.DATA_EXTRACTION,
+        status=NodeStatus.ATOMIC,
+        matched_primitive="detect_peaks_in_signal",
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+    )
+    return CDGExport(
+        nodes=[root, filt, detect],
+        edges=[
+            DependencyEdge(
+                source_id="filt",
+                target_id="det",
                 output_name="signal",
                 input_name="signal",
                 source_type="np.ndarray",
@@ -169,3 +222,74 @@ class TestExpansionAssets:
         assert diagnostics
         assert diagnostics[0].asset_id == "family.signal_event_rate.expansions.v1"
         assert diagnostics[0].asset_operation == "insert_jump_removal_before_filter"
+
+    def test_asset_wrapper_can_require_root_boundaries_and_adjacencies(self):
+        class _StubRuleSet:
+            name = "synthetic_boundary"
+            domain = "signal_processing"
+
+            def diagnose(self, cdg, context):
+                return [
+                    ExpansionDiagnostic(
+                        rule_name="boundary_rule",
+                        severity=0.9,
+                        evidence="synthetic boundary evidence",
+                        metric_name="boundary_metric",
+                        metric_value=1.0,
+                        threshold=0.1,
+                    )
+                ]
+
+            def rules(self):
+                return []
+
+        asset = ExpansionFamilyAsset.model_validate(
+            {
+                "asset_id": "family.synthetic_boundary.expansions.v1",
+                "asset_version": "phase4.v1",
+                "family": "synthetic_boundary",
+                "domain": "signal_processing",
+                "name": "Synthetic Boundary Expansion Inventory",
+                "summary": "Synthetic asset for boundary-aware applicability tests.",
+                "operations": [
+                    {
+                        "rule_name": "boundary_rule",
+                        "name": "Boundary Rule",
+                        "intent": "Require semantic boundary applicability.",
+                        "dejargonized_summary": "Only apply when a root signal boundary feeds a filter that feeds a detector.",
+                        "trigger": {
+                            "metric_name": "boundary_metric",
+                            "comparison": "gt",
+                            "threshold": 0.1,
+                            "required_root_inputs": ["signal"],
+                            "required_primitives": [
+                                "filter_signal_for_detection",
+                                "detect_peaks_in_signal",
+                            ],
+                            "required_adjacencies": [
+                                ["filter_signal_for_detection", "detect_peaks_in_signal"]
+                            ],
+                        },
+                    }
+                ],
+                "audit": {
+                    "review_status": "transitional",
+                    "source_kind": "local_asset",
+                    "dejargonized_summary": "Synthetic boundary asset.",
+                    "references": [{"title": "Synthetic boundary reference"}],
+                },
+            }
+        )
+        rule_set = AssetBackedExpansionRuleSet(_StubRuleSet(), asset)
+
+        diagnostics = rule_set.diagnose(
+            _root_boundary_signal_rate_cdg(),
+            ExpansionContext(
+                signal_data={"signal": np.zeros(32, dtype=float)},
+                planning_artifact={"planning_constraints": [{"category": "loss"}]},
+            ),
+        )
+
+        assert diagnostics
+        assert diagnostics[0].asset_id == "family.synthetic_boundary.expansions.v1"
+        assert diagnostics[0].asset_operation == "boundary_rule"
