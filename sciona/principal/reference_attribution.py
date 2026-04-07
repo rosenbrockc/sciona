@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import json
 import sys
 from contextlib import contextmanager
 from pathlib import Path
@@ -14,6 +15,7 @@ import numpy as np
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import NodeStatus
 from sciona.principal.eval_spec import compute_evaluation_payload, load_evaluation_spec
+from sciona.principal.evaluator import _build_runtime_artifacts, _collect_signal_data_from_frames
 from sciona.principal.models import NodeGradient, OptimizationMetric
 from sciona.synthesizer.models import ExportBundle
 
@@ -82,6 +84,38 @@ async def compute_reference_loss_gradients(
         )
         flat_inputs = pipeline_mod._flatten_inputs(group_frames)
         baseline_result = pipeline_mod.run_pipeline(entrypoint=entrypoint, **group_frames)
+        try:
+            signal_data = (
+                _collect_signal_data_from_frames(group_frames)
+                if isinstance(group_frames, dict)
+                else {}
+            )
+            if not signal_data and isinstance(flat_inputs, dict):
+                signal_data = _collect_signal_data_from_runtime_inputs(flat_inputs)
+        except Exception:
+            signal_data = {}
+        runtime_artifacts = _build_runtime_artifacts(
+            trace_path=bundle.output_dir / "trace.jsonl",
+            stdout_payload=baseline_result if isinstance(baseline_result, dict) else None,
+            signal_data=signal_data,
+        )
+        profile_artifacts = {
+            key: runtime_artifacts[key]
+            for key in (
+                "trace_path",
+                "runtime_context",
+                "canonical_runtime_context",
+                "telemetry_summary",
+            )
+            if key in runtime_artifacts
+        }
+        if profile_artifacts:
+            try:
+                (bundle.output_dir / "profile_runtime_artifacts.json").write_text(
+                    json.dumps(profile_artifacts, indent=2)
+                )
+            except Exception:
+                pass
         baseline_payload = compute_evaluation_payload(baseline_result, flat_inputs, spec)
         baseline_loss = float(baseline_payload["loss"])
 
@@ -211,6 +245,22 @@ def _extract_traced_node_functions(atoms_mod: Any) -> dict[str, str]:
                 mapping[node_id] = node.name
                 break
     return mapping
+
+
+def _collect_signal_data_from_runtime_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Collect array-like runtime inputs when no grouped frames are available."""
+    signal_data: dict[str, Any] = {}
+    for raw_key, raw_value in inputs.items():
+        key = str(raw_key)
+        lowered = key.lower()
+        if "reference" in lowered or lowered.startswith("target"):
+            continue
+        if isinstance(raw_value, (list, tuple, np.ndarray)):
+            signal_data[key] = raw_value
+            continue
+        if np.isscalar(raw_value):
+            signal_data[key] = raw_value
+    return signal_data
 
 
 def _perturb_value(value: Any) -> Any:

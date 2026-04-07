@@ -49,7 +49,19 @@ async def profile_algorithm_error(
     if metric == OptimizationMetric.STRUCTURE:
         benchmark = benchmark_from_ghost_report(ghost_report)
     else:
+        benchmark = None
         if is_reference_loss_objective(metric, evaluation_spec)[0] is not None:
+            # Run the normal evaluator once so profiling emits the same runtime
+            # evidence contract as the benchmark path before counterfactual
+            # attribution takes over.
+            benchmark = await evaluate_bundle_for_metric(
+                ExecutionSandbox(),
+                bundle,
+                dataset_path,
+                metric,
+                dataset_varset=dataset_varset,
+                evaluation_spec=evaluation_spec,
+            )
             gradients = await compute_reference_loss_gradients(
                 cdg,
                 bundle,
@@ -59,15 +71,16 @@ async def profile_algorithm_error(
             )
             if gradients:
                 return gradients
-        sandbox = ExecutionSandbox()
-        benchmark = await evaluate_bundle_for_metric(
-            sandbox,
-            bundle,
-            dataset_path,
-            metric,
-            dataset_varset=dataset_varset,
-            evaluation_spec=evaluation_spec,
-        )
+        if benchmark is None:
+            sandbox = ExecutionSandbox()
+            benchmark = await evaluate_bundle_for_metric(
+                sandbox,
+                bundle,
+                dataset_path,
+                metric,
+                dataset_varset=dataset_varset,
+                evaluation_spec=evaluation_spec,
+            )
 
     assigner = CreditAssigner()
     gradients = assigner.compute_gradients(cdg, benchmark, ghost_report, metric)

@@ -11,6 +11,7 @@ import sys
 from typing import Any
 
 from sciona.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
+from sciona.principal.runtime_context import summarize_runtime_evidence
 from sciona.synthesizer.models import ExportBundle
 
 logger = logging.getLogger(__name__)
@@ -428,12 +429,17 @@ def _build_runtime_artifacts(
 ) -> dict[str, Any]:
     """Assemble best-effort runtime artifacts for downstream expansion."""
     artifacts: dict[str, Any] = {"trace_path": str(trace_path)}
+    outputs: dict[str, Any] = {}
+    intermediates: dict[str, Any] = {}
     if stdout_payload:
         artifacts["stdout_payload"] = stdout_payload
-        intermediates = stdout_payload.get("intermediates", {})
-        if isinstance(intermediates, dict):
-            artifacts["intermediates"] = dict(intermediates)
-        outputs = stdout_payload.get("outputs")
+        stdout_intermediates = stdout_payload.get("intermediates", {})
+        if isinstance(stdout_intermediates, dict):
+            intermediates = dict(stdout_intermediates)
+            artifacts["intermediates"] = dict(stdout_intermediates)
+        raw_outputs = stdout_payload.get("outputs")
+        if isinstance(raw_outputs, dict):
+            outputs = dict(raw_outputs)
         if isinstance(outputs, dict):
             merged = dict(artifacts.get("intermediates", {}))
             for key, value in outputs.items():
@@ -442,7 +448,34 @@ def _build_runtime_artifacts(
             artifacts["intermediates"] = merged
     if signal_data:
         artifacts["signal_data"] = dict(signal_data)
+    evidence = summarize_runtime_evidence(
+        dict(signal_data or {}),
+        intermediates=intermediates,
+        outputs=outputs,
+    )
+    artifacts.update(evidence)
+    _persist_runtime_evidence(trace_path, evidence)
     return artifacts
+
+
+def _persist_runtime_evidence(trace_path: Path, evidence: dict[str, Any]) -> None:
+    """Persist the compact runtime evidence contract beside the trace file."""
+    try:
+        payload = {
+            "trace_path": str(trace_path),
+            "runtime_context": evidence.get("runtime_context", {}),
+            "canonical_runtime_context": evidence.get("canonical_runtime_context", {}),
+            "telemetry_summary": evidence.get("telemetry_summary", {}),
+        }
+        (trace_path.parent / "runtime_evidence.json").write_text(
+            json.dumps(payload, indent=2, sort_keys=True)
+        )
+    except Exception:
+        logger.debug(
+            "Failed to persist runtime evidence beside %s",
+            trace_path,
+            exc_info=True,
+        )
 
 
 def _load_signal_data_from_dataset_path(dataset_path: str) -> dict[str, Any]:

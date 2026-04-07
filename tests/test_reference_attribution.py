@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 
 from sciona.architect.handoff import CDGExport
@@ -111,3 +112,15 @@ def test_reference_loss_gradients_use_counterfactual_rmse(tmp_path: Path) -> Non
     assert gradients
     assert {gradient.node_id for gradient in gradients} == {"node_a", "node_b"}
     assert all("rmse" in gradient.bottleneck_reason for gradient in gradients)
+    runtime_artifacts = json.loads(
+        (export_dir / "profile_runtime_artifacts.json").read_text()
+    )
+    assert "runtime_context" in runtime_artifacts
+    assert "canonical_runtime_context" in runtime_artifacts
+    assert "telemetry_summary" in runtime_artifacts
+    assert (
+        runtime_artifacts["canonical_runtime_context"]["canonical_inputs"]["signal"][
+            "raw_key"
+        ]
+        == "signal"
+    )

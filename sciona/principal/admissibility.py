@@ -370,29 +370,42 @@ def build_admissibility_context(
         else {}
     )
 
+    stored_runtime_context = artifacts.get("runtime_context", {})
+    runtime_context = (
+        dict(stored_runtime_context)
+        if isinstance(stored_runtime_context, dict)
+        else {}
+    )
+    stored_summary = artifacts.get("telemetry_summary", {})
+    telemetry = dict(stored_summary) if isinstance(stored_summary, dict) else {}
     canonical = resolve_canonical_runtime_context(signal_data)
-    runtime_context = summarize_runtime_context(canonical)
-    telemetry: dict[str, Any] = {}
+    if not runtime_context:
+        runtime_context = summarize_runtime_context(canonical)
 
     sampling_rate: float | None = None
-    sampling_ref = canonical.canonical_inputs.get("sampling_rate")
-    if sampling_ref is not None:
-        raw_value = signal_data.get(sampling_ref.raw_key)
-        try:
-            sampling_rate = float(raw_value)
-            runtime_context["sampling_rate"] = sampling_rate
-        except Exception:
-            sampling_rate = None
+    if isinstance(runtime_context.get("sampling_rate"), (int, float)):
+        sampling_rate = float(runtime_context["sampling_rate"])
+    else:
+        sampling_ref = canonical.canonical_inputs.get("sampling_rate")
+        if sampling_ref is not None:
+            raw_value = signal_data.get(sampling_ref.raw_key)
+            try:
+                sampling_rate = float(raw_value)
+                runtime_context["sampling_rate"] = sampling_rate
+            except Exception:
+                sampling_rate = None
 
     signal_ref = canonical.canonical_inputs.get("signal")
-    if signal_ref is not None:
+    if signal_ref is not None and "signal" not in telemetry:
         signal_values = signal_data.get(signal_ref.raw_key)
         if signal_values is not None:
             telemetry["signal"] = summarize_waveform(signal_values)
             runtime_context["signal"] = signal_ref.raw_key
+    elif signal_ref is not None:
+        runtime_context.setdefault("signal", signal_ref.raw_key)
 
     events = intermediates.get("events")
-    if events is not None:
+    if events is not None and "events" not in telemetry:
         duration_seconds: float | None = None
         if signal_ref is not None and sampling_rate and sampling_rate > 0:
             signal_values = signal_data.get(signal_ref.raw_key)
@@ -407,6 +420,10 @@ def build_admissibility_context(
         )
         if duration_seconds is not None:
             telemetry["events"]["duration_seconds"] = duration_seconds
+    elif "events" in telemetry:
+        duration_seconds = telemetry["events"].get("duration_seconds")
+        if duration_seconds is not None and not isinstance(duration_seconds, (int, float)):
+            telemetry["events"].pop("duration_seconds", None)
 
     return AdmissibilityContext(
         planning_artifact=planning_artifact,
