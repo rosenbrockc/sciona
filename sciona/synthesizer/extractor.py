@@ -87,6 +87,21 @@ def _collect_dotted_call_modules(source: str) -> list[str]:
     except SyntaxError:
         return []
 
+    imported_roots: set[str] = set()
+    for node in ast.walk(module):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = (alias.asname or alias.name.split(".", 1)[0]).strip()
+                if root:
+                    imported_roots.add(root)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                imported_roots.add(node.module.split(".", 1)[0].strip())
+            for alias in node.names:
+                root = (alias.asname or alias.name).split(".", 1)[0].strip()
+                if root:
+                    imported_roots.add(root)
+
     modules: set[str] = set()
     for node in ast.walk(module):
         if not isinstance(node, ast.Call):
@@ -99,6 +114,8 @@ def _collect_dotted_call_modules(source: str) -> list[str]:
         if not isinstance(func, ast.Name):
             continue
         parts.append(func.id)
+        if func.id not in imported_roots:
+            continue
         qualname = ".".join(reversed(parts))
         if qualname.count(".") < 2:
             continue

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import ast
 import json
+import sys
+import types
 from unittest.mock import AsyncMock
 
 import pytest
@@ -473,9 +475,217 @@ class TestAssembler:
         skeleton = assembler.assemble(cdg, matches)
 
         ast.parse(skeleton.source_code)
+        assert "import ageoa.pronto.blip_filter.atoms" in skeleton.source_code
         assert "spec: " in skeleton.source_code
         assert "filter specification" in skeleton.source_code
         assert "filter coefficients" in skeleton.source_code
+
+    def test_python_emitter_binds_runtime_call_to_actual_signature(self):
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Filter ECG",
+                description="Filter ECG signal",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.DECOMPOSED,
+                children=["leaf"],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="leaf",
+                parent_id="root",
+                name="Bandpass Filter",
+                description="Apply ECG bandpass filter",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="bandpass_filter",
+                type_signature="signal -> filtered",
+                inputs=[
+                    IOSpec(name="signal", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+                depth=1,
+            ),
+        ]
+        cdg = CDGExport(nodes=nodes, edges=[], metadata={"goal": "Filter ECG"})
+        decl = Declaration(
+            name="fake_runtime.bandpass_filter",
+            type_signature="(signal: np.ndarray) -> np.ndarray",
+            prover=Prover.PYTHON,
+        )
+        candidate = CandidateMatch(
+            declaration=decl, score=0.95, retrieval_method="embedding"
+        )
+        verified = VerificationResult(candidate=candidate, verified=True)
+        matches = [
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="leaf", statement=decl.type_signature),
+                verified_match=verified,
+                all_candidates=[candidate],
+                all_verifications=[verified],
+            )
+        ]
+
+        calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+        module = types.ModuleType("fake_runtime")
+
+        def bandpass_filter(signal):
+            calls.append(((signal,), {}))
+            return signal
+
+        module.bandpass_filter = bandpass_filter
+        sys.modules["fake_runtime"] = module
+        try:
+            skeleton = Assembler(Prover.PYTHON).assemble(cdg, matches)
+            namespace: dict[str, object] = {}
+            exec(skeleton.source_code, namespace)
+            fn = namespace["bandpass_filter"]
+            result = fn("waveform", 256.0)
+        finally:
+            sys.modules.pop("fake_runtime", None)
+
+        assert result == "waveform"
+        assert calls == [(("waveform",), {})]
+
+    def test_python_emitter_preserves_keyword_only_runtime_parameters(self):
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Compute HR",
+                description="Compute heart rate",
+                concept_type=ConceptType.ANALYSIS,
+                status=NodeStatus.DECOMPOSED,
+                children=["leaf"],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="leaf",
+                parent_id="root",
+                name="Compute Event Rate",
+                description="Compute heart rate from peaks",
+                concept_type=ConceptType.ANALYSIS,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="heart_rate_computation",
+                type_signature="rpeaks -> rate",
+                inputs=[
+                    IOSpec(name="rpeaks", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+                depth=1,
+            ),
+        ]
+        cdg = CDGExport(nodes=nodes, edges=[], metadata={"goal": "Compute HR"})
+        decl = Declaration(
+            name="fake_runtime.heart_rate_computation",
+            type_signature="(rpeaks: np.ndarray, state: ECGPipelineState) -> tuple[tuple[np.ndarray, np.ndarray], ECGPipelineState]",
+            prover=Prover.PYTHON,
+        )
+        candidate = CandidateMatch(
+            declaration=decl, score=0.95, retrieval_method="embedding"
+        )
+        verified = VerificationResult(candidate=candidate, verified=True)
+        matches = [
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="leaf", statement=decl.type_signature),
+                verified_match=verified,
+                all_candidates=[candidate],
+                all_verifications=[verified],
+            )
+        ]
+
+        calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+        module = types.ModuleType("fake_runtime")
+
+        def heart_rate_computation(rpeaks, *, sampling_rate=1.0):
+            calls.append(((rpeaks,), {"sampling_rate": sampling_rate}))
+            return ("idx", "rate")
+
+        module.heart_rate_computation = heart_rate_computation
+        sys.modules["fake_runtime"] = module
+        try:
+            skeleton = Assembler(Prover.PYTHON).assemble(cdg, matches)
+            namespace: dict[str, object] = {}
+            exec(skeleton.source_code, namespace)
+            fn = namespace["compute_event_rate"]
+            result = fn("peaks", 256.0)
+        finally:
+            sys.modules.pop("fake_runtime", None)
+
+        assert result == ("idx", "rate")
+        assert calls == [(("peaks",), {"sampling_rate": 256.0})]
+
+    def test_python_emitter_falls_back_to_input_order_for_alias_params(self):
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Detect Peaks",
+                description="Detect peaks from conditioned signal",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.DECOMPOSED,
+                children=["leaf"],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="leaf",
+                parent_id="root",
+                name="Detect Peaks In Signal",
+                description="Detect ECG peaks",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="r_peak_detection",
+                type_signature="conditioned_signal -> peaks",
+                inputs=[
+                    IOSpec(name="conditioned_signal", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="peaks", type_desc="np.ndarray")],
+                depth=1,
+            ),
+        ]
+        cdg = CDGExport(nodes=nodes, edges=[], metadata={"goal": "Detect Peaks"})
+        decl = Declaration(
+            name="fake_runtime.r_peak_detection",
+            type_signature="(filtered: np.ndarray) -> np.ndarray",
+            prover=Prover.PYTHON,
+        )
+        candidate = CandidateMatch(
+            declaration=decl, score=0.95, retrieval_method="embedding"
+        )
+        verified = VerificationResult(candidate=candidate, verified=True)
+        matches = [
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="leaf", statement=decl.type_signature),
+                verified_match=verified,
+                all_candidates=[candidate],
+                all_verifications=[verified],
+            )
+        ]
+
+        calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+        module = types.ModuleType("fake_runtime")
+
+        def r_peak_detection(filtered):
+            calls.append(((filtered,), {}))
+            return "peaks"
+
+        module.r_peak_detection = r_peak_detection
+        sys.modules["fake_runtime"] = module
+        try:
+            skeleton = Assembler(Prover.PYTHON).assemble(cdg, matches)
+            namespace: dict[str, object] = {}
+            exec(skeleton.source_code, namespace)
+            fn = namespace["detect_peaks_in_signal"]
+            result = fn("conditioned", 256.0)
+        finally:
+            sys.modules.pop("fake_runtime", None)
+
+        assert result == "peaks"
+        assert calls == [(("conditioned",), {})]
 
 
 # ---------------------------------------------------------------------------

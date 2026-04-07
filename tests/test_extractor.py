@@ -295,6 +295,15 @@ class TestCertificate:
         )
         assert _collect_dotted_call_modules(source) == ["sciona.expansion_atoms.runtime_signal_event_rate"]
 
+    def test_collect_dotted_call_modules_ignores_local_helper_chains(self):
+        source = (
+            "import inspect\n"
+            "def foo(fn):\n"
+            "    signature = inspect.signature(fn)\n"
+            "    return [param.name for param in signature.parameters.values()]\n"
+        )
+        assert _collect_dotted_call_modules(source) == []
+
     def test_generate_pipeline_py_is_typed(self):
         pipeline = generate_pipeline_py([])
         assert "from typing import Any" in pipeline

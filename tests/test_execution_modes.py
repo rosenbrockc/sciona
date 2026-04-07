@@ -117,3 +117,11 @@ def test_rapid_mode_suppresses_round_defaults_but_keeps_explicit_round_override(
 
 def test_run_cmds_imports_signal_event_rate_scaffold_helper():
     assert hasattr(run_cmds, "_is_signal_event_rate_scaffold")
+
+
+def test_config_can_disable_curated_signal_event_rate_shortcuts(monkeypatch):
+    monkeypatch.setenv("SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS", "true")
+
+    config = AgeomConfig()
+
+    assert config.disable_curated_signal_event_rate_shortcuts is True

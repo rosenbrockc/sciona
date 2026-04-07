@@ -369,13 +369,21 @@ async def _match_results_for_optimize(
     prover: Any,
     hunter: Any,
     llm: Any,
+    allow_curated_signal_event_rate_shortcut: bool = True,
 ) -> list[Any]:
     from sciona.commands.run_cmds import _is_signal_event_rate_scaffold, _run_structured_single_pass
     from sciona.orchestrator import run_orchestration
 
     if mode in {"structured", "verified", "rapid"}:
-        if mode != "verified" or _is_signal_event_rate_scaffold(cdg):
-            result = await _run_structured_single_pass(cdg, prover=prover, hunter=hunter)
+        if mode != "verified" or (
+            allow_curated_signal_event_rate_shortcut and _is_signal_event_rate_scaffold(cdg)
+        ):
+            result = await _run_structured_single_pass(
+                cdg,
+                prover=prover,
+                hunter=hunter,
+                allow_curated_signal_event_rate_shortcut=allow_curated_signal_event_rate_shortcut,
+            )
         else:
             result = await run_orchestration(
                 cdg,
@@ -496,6 +504,9 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
 
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
+    allow_curated_signal_event_rate_shortcut = (
+        not config.disable_curated_signal_event_rate_shortcuts
+    )
     prover = Prover(args.prover)
     _print_mode_summary("optimize", mode_settings)
 
@@ -716,6 +727,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                         prover=prover,
                         hunter=hunter,
                         llm=llm,
+                        allow_curated_signal_event_rate_shortcut=allow_curated_signal_event_rate_shortcut,
                     ),
                     synthesize_fn=_trial_synthesizer,
                     evaluation_spec=evaluation_spec,

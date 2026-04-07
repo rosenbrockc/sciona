@@ -100,6 +100,13 @@ if [[ "$(printf '%s' "${E2E_GENERIC_ONLY:-}" | tr '[:upper:]' '[:lower:]')" == "
     info "Generic-only mode: SCIONA_DISABLE_PHRASE_RULES=1"
 fi
 
+# E2E runs should exercise the full atom framework rather than the curated
+# signal-event-rate shortcut scaffold.
+export SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS="${E2E_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS:-1}"
+if [[ "$(printf '%s' "$SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS" | tr '[:upper:]' '[:lower:]')" == "1" || "$(printf '%s' "$SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+    info "Full-framework mode: SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS=1"
+fi
+
 # Force FAISS semantic index — the default retrieval policy degrades to
 # lexical when catalog confidence is < 0.70 (medium band), which prevents
 # the benchmark from exercising the full semantic search pipeline.
@@ -110,7 +117,19 @@ INCLUDE_SYNTHESIS="${E2E_INCLUDE_SYNTHESIS:-false}"
 SYNTH_TIMEOUT_S="${E2E_SYNTH_TIMEOUT_S:-240}"
 EXPORT_TIMEOUT_S="${E2E_EXPORT_TIMEOUT_S:-120}"
 PROFILE_TIMEOUT_S="${E2E_PROFILE_TIMEOUT_S:-180}"
-PROFILE_DATASET="${E2E_PROFILE_DATASET:-$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/sciona.yml}"
+DEFAULT_PROFILE_DATASET="$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/sciona.yml"
+if [ ! -f "$DEFAULT_PROFILE_DATASET" ]; then
+    for candidate in \
+        "$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/ageom.yml" \
+        "$HOME/.happy/resources/synced/hpy-templated-datasets/NIGHTCAP/adapter.yml"
+    do
+        if [ -f "$candidate" ]; then
+            DEFAULT_PROFILE_DATASET="$candidate"
+            break
+        fi
+    done
+fi
+PROFILE_DATASET="${E2E_PROFILE_DATASET:-$DEFAULT_PROFILE_DATASET}"
 PROFILE_DATASET_VARS="${E2E_PROFILE_DATASET_VARS:-}"
 if [ -z "$PROFILE_DATASET_VARS" ] && [ -f "$PROFILE_DATASET" ] && rg -Fq '$(tracker)' "$PROFILE_DATASET"; then
     PROFILE_DATASET_VARS="tracker=single"

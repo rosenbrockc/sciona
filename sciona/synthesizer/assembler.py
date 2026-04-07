@@ -924,16 +924,16 @@ class Assembler:
 
         # Imports
         lines.append("import icontract")
+        lines.append("import inspect")
 
         # Infer imports from declaration names
-        imports_seen: set[str] = {"icontract"}
+        imports_seen: set[str] = {"icontract", "inspect"}
         for unit in units:
             if "." in unit.declaration_name:
                 module = unit.declaration_name.rsplit(".", 1)[0]
-                top_level = module.split(".")[0]
-                if top_level not in imports_seen:
-                    imports_seen.add(top_level)
-                    lines.append(f"import {top_level}")
+                if module not in imports_seen:
+                    imports_seen.add(module)
+                    lines.append(f"import {module}")
 
         # Common scientific imports if not already present
         for pkg in ("numpy", "scipy"):
@@ -960,6 +960,42 @@ class Assembler:
             lines.extend(_PYTHON_PARAMS_HARNESS)
             lines.append("")
 
+        lines.append("def _sciona_call(fn, ordered_names=(), **available):")
+        lines.append('    """Bind available scaffold values to the runtime callable signature."""')
+        lines.append("    signature = inspect.signature(fn)")
+        lines.append("    ordered_pool = [(name, available[name]) for name in ordered_names if name in available]")
+        lines.append("    used_names = set()")
+        lines.append("    positional_args = []")
+        lines.append("    keyword_args = {}")
+        lines.append("    for param in signature.parameters.values():")
+        lines.append(
+            "        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):"
+        )
+        lines.append("            continue")
+        lines.append("        if param.name in available:")
+        lines.append("            value = available[param.name]")
+        lines.append("            used_names.add(param.name)")
+        lines.append("        elif param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):")
+        lines.append("            fallback = None")
+        lines.append("            for name, candidate in ordered_pool:")
+        lines.append("                if name in used_names:")
+        lines.append("                    continue")
+        lines.append("                fallback = (name, candidate)")
+        lines.append("                break")
+        lines.append("            if fallback is None:")
+        lines.append("                continue")
+        lines.append("            used_names.add(fallback[0])")
+        lines.append("            value = fallback[1]")
+        lines.append("        else:")
+        lines.append("            continue")
+        lines.append(
+            "        if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):"
+        )
+        lines.append("            positional_args.append(value)")
+        lines.append("        else:")
+        lines.append("            keyword_args[param.name] = value")
+        lines.append("    return fn(*positional_args, **keyword_args)")
+        lines.append("")
         lines.append("")
 
         # Emit atomic leaf definitions
@@ -986,12 +1022,25 @@ class Assembler:
             if unit.type_signature:
                 lines.append(f'    """Type: {unit.type_signature}"""')
 
-            arg_str = ", ".join(inp.name for inp in unit.inputs)
+            ordered_names_expr = repr(tuple(inp.name for inp in unit.inputs))
+            available_args = ", ".join(f"{inp.name}={inp.name}" for inp in unit.inputs)
             if unit.tunable_param_names:
-                params_expr = f"**_SCIONA_PARAMS.get({unit.node_id!r}, {{}})"
-                call_expr = f"{unit.declaration_name}({arg_str}, {params_expr})"
+                params_expr = f"_SCIONA_PARAMS.get({unit.node_id!r}, {{}})"
+                if available_args:
+                    call_expr = (
+                        f"_sciona_call({unit.declaration_name}, {ordered_names_expr}, {available_args}, **{params_expr})"
+                    )
+                else:
+                    call_expr = (
+                        f"_sciona_call({unit.declaration_name}, {ordered_names_expr}, **{params_expr})"
+                    )
             else:
-                call_expr = f"{unit.declaration_name}({arg_str})"
+                if available_args:
+                    call_expr = (
+                        f"_sciona_call({unit.declaration_name}, {ordered_names_expr}, {available_args})"
+                    )
+                else:
+                    call_expr = f"_sciona_call({unit.declaration_name}, {ordered_names_expr})"
 
             if telemetry:
                 lines.append(

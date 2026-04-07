@@ -176,10 +176,11 @@ async def _run_rapid_direct_match(
     *,
     prover: Prover,
     hunter: Any,
+    allow_curated_signal_event_rate_shortcut: bool = True,
 ) -> OrchestratorResult:
     """Run the rapid-mode direct Hunter path and wrap it in an orchestration result."""
     service = HunterService(hunter)
-    if _matches_signal_event_rate_goal(goal):
+    if allow_curated_signal_event_rate_shortcut and _matches_signal_event_rate_goal(goal):
         from sciona.telemetry import log_event as _log_event
 
         _log_event(
@@ -227,9 +228,10 @@ async def _run_structured_single_pass(
     *,
     prover: Prover,
     hunter: Any,
+    allow_curated_signal_event_rate_shortcut: bool = True,
 ) -> OrchestratorResult:
     """Run one Hunter pass over decomposed leaves without orchestration refinement."""
-    if _is_signal_event_rate_scaffold(cdg):
+    if allow_curated_signal_event_rate_shortcut and _is_signal_event_rate_scaffold(cdg):
         match_results = _build_signal_event_rate_match_results(cdg, prover)
         return OrchestratorResult(
             cdg=cdg,

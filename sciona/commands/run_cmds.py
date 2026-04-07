@@ -181,6 +181,9 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     hunter_shared_metrics = None
     result = None
     planner_result = None
+    allow_curated_signal_event_rate_shortcut = (
+        not config.disable_curated_signal_event_rate_shortcuts
+    )
     try:
         with telemetry_scope(run_id=telemetry_run_id):
             update_stage(stage="setup", status="running", message="loading dependencies")
@@ -429,6 +432,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                             args.goal,
                             prover=prover,
                             hunter=hunter,
+                            allow_curated_signal_event_rate_shortcut=allow_curated_signal_event_rate_shortcut,
                         )
                 elif mode_settings.mode == "single_agent":
                     print("Running single-agent planner...")
@@ -468,6 +472,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                             cdg,
                             prover=prover,
                             hunter=hunter,
+                            allow_curated_signal_event_rate_shortcut=allow_curated_signal_event_rate_shortcut,
                         )
                     update_stage(
                         stage="structured_match",
@@ -475,12 +480,16 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                         total=len(result.match_results),
                     )
                 else:
-                    if _is_signal_event_rate_scaffold(cdg):
+                    if (
+                        allow_curated_signal_event_rate_shortcut
+                        and _is_signal_event_rate_scaffold(cdg)
+                    ):
                         print("Running verified curated signal event-rate matching...")
                         result = await _run_structured_single_pass(
                             cdg,
                             prover=prover,
                             hunter=hunter,
+                            allow_curated_signal_event_rate_shortcut=True,
                         )
                         update_stage(
                             stage="structured_match",
