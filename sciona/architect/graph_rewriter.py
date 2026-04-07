@@ -89,6 +89,7 @@ class RewriteRule:
 
     priority: int = 0
     anchor_type: str | None = None  # optimisation hint: only match at these primitives
+    semantic_apply: Callable[[CDGExport], GraphState[CDGExport]] | None = None
 
 
 class GraphState(Generic[G]):
@@ -155,6 +156,14 @@ class GraphRewriter:
         """Apply a single DPO rule to *graph*.  Returns success or failure."""
         match = self._find_match(rule, graph)
         if not match:
+            if rule.semantic_apply is not None:
+                semantic_result = rule.semantic_apply(graph)
+                if not semantic_result.is_failure:
+                    return semantic_result
+                return GraphState.failure(
+                    f"Rule '{rule.name}' found no match and semantic fallback failed: "
+                    f"{semantic_result.error}"
+                )
             return GraphState.failure(f"Rule '{rule.name}' found no match.")
 
         if not self._check_gluing_condition(rule, match, graph):
@@ -401,11 +410,32 @@ class GraphRewriter:
 
         # Append new nodes to the context graph.
         new_nodes = list(context_graph.nodes)
+        parent_children: dict[str, set[str]] = {
+            node.node_id: set(node.children) for node in context_graph.nodes
+        }
         for node in rule.rhs.nodes:
             if node.node_id in rk_r_node_ids:
-                new_nodes.append(
-                    node.model_copy(update={"node_id": r_to_g[node.node_id]})
+                parent_id = self._infer_parent_id(
+                    rhs_node_id=node.node_id,
+                    rule=rule,
+                    r_to_g=r_to_g,
+                    context_graph=context_graph,
                 )
+                depth = self._infer_depth(
+                    rhs_node_id=node.node_id,
+                    rule=rule,
+                    r_to_g=r_to_g,
+                    context_graph=context_graph,
+                )
+                update = {"node_id": r_to_g[node.node_id]}
+                if parent_id is not None:
+                    update["parent_id"] = parent_id
+                if depth is not None:
+                    update["depth"] = depth
+                appended = node.model_copy(update=update)
+                new_nodes.append(appended)
+                if parent_id:
+                    parent_children.setdefault(parent_id, set()).add(appended.node_id)
 
         # R \ K edges: edges in R whose keys are NOT in r_morphism's image.
         k_edge_images_in_r = set(rule.r_morphism.edge_map.values())
@@ -422,6 +452,69 @@ class GraphRewriter:
                     )
                 )
 
-        return context_graph.model_copy(
-            update={"nodes": new_nodes, "edges": new_edges}
-        )
+        finalized_nodes: list[AlgorithmicNode] = []
+        for node in new_nodes:
+            children = parent_children.get(node.node_id)
+            if children is not None and set(node.children) != children:
+                finalized_nodes.append(
+                    node.model_copy(update={"children": sorted(children)})
+                )
+            else:
+                finalized_nodes.append(node)
+
+        return context_graph.model_copy(update={"nodes": finalized_nodes, "edges": new_edges})
+
+    def _infer_parent_id(
+        self,
+        *,
+        rhs_node_id: str,
+        rule: RewriteRule,
+        r_to_g: dict[str, str],
+        context_graph: CDGExport,
+    ) -> str | None:
+        parent_ids: set[str] = set()
+        for edge in rule.rhs.edges:
+            neighbor_id: str | None = None
+            if edge.source_id == rhs_node_id and edge.target_id in r_to_g:
+                neighbor_id = r_to_g[edge.target_id]
+            elif edge.target_id == rhs_node_id and edge.source_id in r_to_g:
+                neighbor_id = r_to_g[edge.source_id]
+            if neighbor_id is None:
+                continue
+            neighbor = next(
+                (node for node in context_graph.nodes if node.node_id == neighbor_id),
+                None,
+            )
+            if neighbor is None:
+                continue
+            if neighbor.parent_id:
+                parent_ids.add(neighbor.parent_id)
+        if len(parent_ids) == 1:
+            return next(iter(parent_ids))
+        return None
+
+    def _infer_depth(
+        self,
+        *,
+        rhs_node_id: str,
+        rule: RewriteRule,
+        r_to_g: dict[str, str],
+        context_graph: CDGExport,
+    ) -> int | None:
+        depths: list[int] = []
+        for edge in rule.rhs.edges:
+            neighbor_id: str | None = None
+            if edge.source_id == rhs_node_id and edge.target_id in r_to_g:
+                neighbor_id = r_to_g[edge.target_id]
+            elif edge.target_id == rhs_node_id and edge.source_id in r_to_g:
+                neighbor_id = r_to_g[edge.source_id]
+            if neighbor_id is None:
+                continue
+            neighbor = next(
+                (node for node in context_graph.nodes if node.node_id == neighbor_id),
+                None,
+            )
+            if neighbor is None:
+                continue
+            depths.append(neighbor.depth)
+        return min(depths) if depths else None

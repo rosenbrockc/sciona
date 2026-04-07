@@ -22,6 +22,7 @@ from sciona.architect.models import (
     IOSpec,
     NodeStatus,
 )
+from sciona.architect.semantic_rewrites import build_boundary_interposition_callback
 from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
@@ -160,6 +161,13 @@ def _build_insert_jump_removal_before_filter() -> RewriteRule:
         r_morphism=Morphism(node_map={"src": "src", "filt": "filt"}, edge_map={}),
         priority=2,
         anchor_type="filter_signal_for_detection",
+        semantic_apply=build_boundary_interposition_callback(
+            target_primitive="filter_signal_for_detection",
+            boundary_input_name="signal",
+            insert_node=jump_r,
+            target_input_name="signal",
+            insert_output_name="signal",
+        ),
     )
 
 
@@ -205,6 +213,13 @@ def _build_insert_sqi_before_filter() -> RewriteRule:
         r_morphism=Morphism(node_map={"src": "src", "filt": "filt"}, edge_map={}),
         priority=1,
         anchor_type="filter_signal_for_detection",
+        semantic_apply=build_boundary_interposition_callback(
+            target_primitive="filter_signal_for_detection",
+            boundary_input_name="signal",
+            insert_node=sqi_r,
+            target_input_name="signal",
+            insert_output_name="signal",
+        ),
     )
 
 

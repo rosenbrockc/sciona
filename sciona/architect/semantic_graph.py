@@ -148,6 +148,34 @@ def _infer_data_kind(*tokens: str) -> SemanticDataKind:
     return SemanticDataKind.GENERIC
 
 
+def _node_output_kinds(node: AlgorithmicNode) -> set[SemanticDataKind]:
+    return {
+        _infer_data_kind(port.name, port.type_desc)
+        for port in node.outputs
+    } or {SemanticDataKind.GENERIC}
+
+
+def _edge_loss_class(
+    source_kind: SemanticDataKind,
+    consumer_node: AlgorithmicNode,
+) -> SemanticLossClass:
+    output_kinds = _node_output_kinds(consumer_node)
+    if (
+        source_kind == SemanticDataKind.WAVEFORM
+        and (
+            SemanticDataKind.EVENT_SEQUENCE in output_kinds
+            or SemanticDataKind.RATE_SERIES in output_kinds
+        )
+    ):
+        return SemanticLossClass.LOSSY
+    if (
+        source_kind == SemanticDataKind.EVENT_SEQUENCE
+        and SemanticDataKind.RATE_SERIES in output_kinds
+    ):
+        return SemanticLossClass.LOSSY
+    return SemanticLossClass.PRESERVING
+
+
 def _incoming_index(cdg: CDGExport) -> set[tuple[str, str]]:
     return {(edge.target_id, edge.input_name) for edge in cdg.edges}
 
@@ -174,7 +202,15 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                 edge.source_type,
                 edge.target_type,
             ),
-            loss_class=SemanticLossClass.PRESERVING,
+            loss_class=_edge_loss_class(
+                _infer_data_kind(
+                    edge.output_name,
+                    edge.input_name,
+                    edge.source_type,
+                    edge.target_type,
+                ),
+                node_map[edge.target_id],
+            ),
             provenance=SemanticEdgeProvenance.DECLARED_EDGE,
         )
         for edge in cdg.edges
@@ -183,9 +219,7 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
 
     roots = [node for node in cdg.nodes if node.parent_id is None]
     for root in roots:
-        scope_ids = set(root.children) if root.children else {
-            node.node_id for node in cdg.nodes if node.node_id != root.node_id
-        }
+        scope_ids = set(root.children) if root.children else {root.node_id}
 
         for port in root.inputs:
             boundary = SemanticBoundaryPort(
@@ -220,7 +254,15 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                                 port.type_desc,
                                 node_input.type_desc,
                             ),
-                            loss_class=SemanticLossClass.PRESERVING,
+                            loss_class=_edge_loss_class(
+                                _infer_data_kind(
+                                    port.name,
+                                    node_input.name,
+                                    port.type_desc,
+                                    node_input.type_desc,
+                                ),
+                                node,
+                            ),
                             provenance=SemanticEdgeProvenance.ROOT_CONTRACT,
                         )
                     )

@@ -270,6 +270,80 @@ class TestSignalEventRateExpansion:
             ],
         )
 
+    def _root_boundary_pipeline_cdg(self):
+        return _cdg(
+            [
+                AlgorithmicNode(
+                    node_id="root",
+                    name="ECG HR",
+                    description="Top-level ECG HR pipeline",
+                    concept_type=ConceptType.ANALYSIS,
+                    status=NodeStatus.DECOMPOSED,
+                    children=["filt", "det", "rate"],
+                    depth=0,
+                    inputs=[
+                        IOSpec(name="signal", type_desc="np.ndarray"),
+                        IOSpec(name="sampling_rate", type_desc="float"),
+                    ],
+                    outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+                ),
+                AlgorithmicNode(
+                    node_id="filt",
+                    parent_id="root",
+                    name="Filter Signal",
+                    description="Condition the signal",
+                    concept_type=ConceptType.SIGNAL_FILTER,
+                    status=NodeStatus.ATOMIC,
+                    matched_primitive="filter_signal_for_detection",
+                    depth=1,
+                    inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+                    outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+                ),
+                AlgorithmicNode(
+                    node_id="det",
+                    parent_id="root",
+                    name="Detect Peaks",
+                    description="Detect peaks",
+                    concept_type=ConceptType.DATA_EXTRACTION,
+                    status=NodeStatus.ATOMIC,
+                    matched_primitive="detect_peaks_in_signal",
+                    depth=1,
+                    inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+                    outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+                ),
+                AlgorithmicNode(
+                    node_id="rate",
+                    parent_id="root",
+                    name="Compute Event Rate",
+                    description="Compute rate",
+                    concept_type=ConceptType.ANALYSIS,
+                    status=NodeStatus.ATOMIC,
+                    matched_primitive="compute_event_rate",
+                    depth=1,
+                    inputs=[IOSpec(name="events", type_desc="np.ndarray")],
+                    outputs=[IOSpec(name="rate", type_desc="np.ndarray")],
+                ),
+            ],
+            [
+                DependencyEdge(
+                    source_id="filt",
+                    target_id="det",
+                    output_name="signal",
+                    input_name="signal",
+                    source_type="np.ndarray",
+                    target_type="np.ndarray",
+                ),
+                DependencyEdge(
+                    source_id="det",
+                    target_id="rate",
+                    output_name="events",
+                    input_name="events",
+                    source_type="np.ndarray",
+                    target_type="np.ndarray",
+                ),
+            ],
+        )
+
     def test_jump_removal_rule_applies(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
             SignalEventRateExpansionRuleSet,
@@ -288,6 +362,29 @@ class TestSignalEventRateExpansion:
         prims = {n.matched_primitive for n in g.nodes if n.matched_primitive}
         assert "remove_signal_jumps" in prims
         assert len(g.nodes) == 5  # original 4 + jump removal
+
+    def test_jump_removal_rule_applies_without_explicit_source_node(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        rules_by_name = {r.name: r for r in rs.rules()}
+        rule = rules_by_name["insert_jump_removal_before_filter"]
+
+        rw = GraphRewriter()
+        cdg = self._root_boundary_pipeline_cdg()
+        result = rw.apply_rule(rule, cdg)
+        assert not result.is_failure
+
+        g = result.unwrap()
+        prims = {n.matched_primitive for n in g.nodes if n.matched_primitive}
+        assert "remove_signal_jumps" in prims
+        filter_incoming = [
+            edge for edge in g.edges if edge.target_id == "filt" and edge.input_name == "signal"
+        ]
+        assert len(filter_incoming) == 1
+        assert filter_incoming[0].source_id != "filt"
 
     def test_sqi_rule_applies(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
@@ -430,3 +527,37 @@ class TestSignalEventRateExpansion:
             "reject_outlier_intervals",
         }
         assert len(expansion_atoms) >= 1
+
+    def test_boundary_aware_expansion_integration(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        engine = ExpansionEngine([rs])
+
+        rng = np.random.default_rng(42)
+        signal = rng.standard_normal(5000)
+        for i in range(10):
+            signal[500 * (i + 1) :] += 50.0
+
+        result = engine.expand(
+            self._root_boundary_pipeline_cdg(),
+            ExpansionContext(signal_data={"signal": signal, "sampling_rate": 500.0}),
+        )
+
+        assert result.expanded
+        jump = next(
+            node
+            for node in result.cdg.nodes
+            if node.matched_primitive == "remove_signal_jumps"
+        )
+        root = next(node for node in result.cdg.nodes if node.node_id == "root")
+        assert jump.parent_id == "root"
+        assert jump.node_id in root.children
+        assert any(
+            edge.source_id == jump.node_id
+            and edge.target_id == "filt"
+            and edge.input_name == "signal"
+            for edge in result.cdg.edges
+        )

@@ -76,6 +76,9 @@ class IOSpec(BaseModel):
     name: str
     type_desc: str  # e.g., "list[int]", "Graph", "nat -> nat -> Prop"
     constraints: str = ""  # e.g., "sorted", "non-empty", "n > 0"
+    data_kind: str = ""
+    time_basis: str = ""
+    provenance: str = ""
     required: bool = True
     default_value_repr: str = ""
 
@@ -89,6 +92,14 @@ class NodeStatus(str, Enum):
     REJECTED = "rejected"  # Critic rejected this decomposition
     HIGH_RISK = "high_risk"  # Requires novel proof, flagged by Critic
     BLOCKED = "blocked"  # Decomposition terminated without a valid handoff
+
+
+class BoundaryKind(str, Enum):
+    """Whether a node represents a semantic graph boundary."""
+
+    NONE = "none"
+    ROOT_INPUT = "root_input"
+    ROOT_OUTPUT = "root_output"
 
 
 class AlgorithmicNode(BaseModel):
@@ -119,6 +130,16 @@ class AlgorithmicNode(BaseModel):
     fixed_point_convergence_field: str = ""  # name of output field signaling convergence
     map_window_size: int = 0  # 0 means not a MAP node; >0 = window length
     map_hop_size: int = 0  # 0 means not a MAP node; >0 = hop between windows
+    boundary_kind: BoundaryKind = BoundaryKind.NONE
+    boundary_port_name: str = ""
+
+
+class EdgeLossClass(str, Enum):
+    """Semantic information-loss classification for a data-flow edge."""
+
+    PRESERVING = "preserving"
+    LOSSY_ALLOWED = "lossy_allowed"
+    IRREVERSIBLE = "irreversible"
 
 
 class DependencyEdge(BaseModel):
@@ -131,6 +152,11 @@ class DependencyEdge(BaseModel):
     source_type: str  # type of the data flowing
     target_type: str  # expected type at target
     requires_glue: bool = False  # True if types don't match
+    data_kind: str = ""
+    provenance: str = ""
+    time_basis: str = ""
+    loss_class: EdgeLossClass = EdgeLossClass.PRESERVING
+    alignment_expectation: str = ""
 
 
 class SkeletonGraph(BaseModel):

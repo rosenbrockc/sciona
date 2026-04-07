@@ -19,6 +19,15 @@ from sciona.architect.semantic_graph import (
     insert_node_before_root_input_consumer,
     project_semantic_cdg,
 )
+from sciona.synthesizer.assembler import Assembler
+from sciona.types import (
+    CandidateMatch,
+    Declaration,
+    MatchResult,
+    PDGNode,
+    Prover,
+    VerificationResult,
+)
 from sciona.principal.expansion_rules.signal_event_rate import (
     _build_insert_jump_removal_before_filter,
 )
@@ -115,6 +124,27 @@ def _jump_removal_node() -> AlgorithmicNode:
             IOSpec(name="sampling_rate", type_desc="float"),
         ],
         outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+    )
+
+
+def _match_result(node: AlgorithmicNode) -> MatchResult:
+    type_sig = node.type_signature or "np.ndarray -> np.ndarray"
+    decl = Declaration(
+        name=node.matched_primitive or node.name,
+        type_signature=type_sig,
+        prover=Prover.PYTHON,
+    )
+    candidate = CandidateMatch(
+        declaration=decl,
+        score=0.99,
+        retrieval_method="test",
+    )
+    verification = VerificationResult(candidate=candidate, verified=True)
+    return MatchResult(
+        pdg_node=PDGNode(predicate_id=node.node_id, statement=type_sig),
+        verified_match=verification,
+        all_candidates=[candidate],
+        all_verifications=[verification],
     )
 
 
@@ -226,3 +256,28 @@ def test_boundary_interposer_helper_lowers_root_input_rewrite_without_fake_sourc
 
     assert jump.parent_id == "root"
     assert jump.node_id in root.children
+
+
+def test_boundary_rewrite_lowering_preserves_assembler_visibility() -> None:
+    rewritten = insert_node_before_root_input_consumer(
+        _root_boundary_signal_rate_cdg(),
+        root_input_name="signal",
+        target_primitive="filter_signal_for_detection",
+        inserted_node=_jump_removal_node(),
+    )
+    matches = [
+        _match_result(node)
+        for node in rewritten.nodes
+        if node.status == NodeStatus.ATOMIC and node.matched_primitive
+    ]
+
+    skeleton = Assembler(Prover.PYTHON).assemble(rewritten, matches)
+    unit_ids = {unit.node_id for unit in skeleton.units}
+    jump = next(
+        node
+        for node in rewritten.nodes
+        if node.matched_primitive == "remove_signal_jumps"
+    )
+
+    assert jump.node_id in unit_ids
+    assert "remove_signal_jumps" in skeleton.source_code
