@@ -31,8 +31,12 @@ class ExecutionSandbox:
     ``trace.jsonl`` file emitted by the ``@sciona_probe`` instrumentation.
     """
 
-    def __init__(self, *, timeout_s: float = _DEFAULT_TIMEOUT_S) -> None:
-        self._timeout_s = timeout_s
+    def __init__(self, *, timeout_s: float | None = None) -> None:
+        self._timeout_s = (
+            float(os.environ.get("SCIONA_EVALUATOR_TIMEOUT_S", str(_DEFAULT_TIMEOUT_S)))
+            if timeout_s is None
+            else timeout_s
+        )
         self._python_executable = (
             os.environ.get("SCIONA_PYTHON_PATH")
             or sys.executable

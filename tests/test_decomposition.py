@@ -1030,6 +1030,7 @@ class TestSelectStrategy:
         result = await select_strategy(state, {"configurable": {"deps": deps}})
 
         assert result["skeleton_asset"]["asset_id"] == "signal_detect_measure"
+        assert result["planning_artifact"]["family_hint"] == "signal_detect_measure"
         assert result["planning_artifact"]["skeleton_intent"]["asset"]["asset_version"] == "phase2.v1"
         assert result["planning_artifact"]["skeleton_intent"]["asset"]["source_kind"] == "local_asset"
         assert result["skeleton_instantiated"] is True

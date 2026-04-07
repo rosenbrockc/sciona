@@ -224,6 +224,7 @@ async def _cmd_match(args: argparse.Namespace) -> None:
                     query_batch_size=config.hunter_query_batch_size,
                     top_k_per_query=config.hunter_top_k_per_query,
                     max_candidates_total=config.hunter_max_candidates_total,
+                    live_catalog=catalog,
                     shared_context=shared_context,
                     shared_context_metrics=shared_context_metrics,
                     context_namespace="hunter",

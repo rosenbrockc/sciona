@@ -6,6 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from sciona.architect.catalog import PrimitiveCatalog
+from sciona.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 from sciona.shared_context import InMemorySharedContextStore
 from sciona.shared_context import SharedContextMetrics
 from sciona.hunter.state import HunterState
@@ -167,6 +169,287 @@ class TestHunterHappyPath:
         assert metrics["verified_matches"] == 1
         assert metrics["query_count"] == 1
         assert metrics["last_verified_candidate"] == "Nat.add_comm"
+
+    @pytest.mark.asyncio
+    async def test_deterministic_candidate_prior_can_override_bad_llm_ranking(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_detect",
+            statement="Detect peaks in ECG signal",
+            informal_desc="Find R-peaks in a conditioned ECG waveform",
+            prover=Prover.PYTHON,
+        )
+        pronto = Declaration(
+            name="ageoa.pronto.blip_filter.atoms.r_peak_detection",
+            type_signature="(filtered: np.ndarray) -> np.ndarray",
+            source_lib="ageoa.pronto.blip_filter.atoms",
+            docstring="Detect peaks in a filtered signal.",
+            prover=Prover.PYTHON,
+        )
+        biosppy = Declaration(
+            name="ageoa.biosppy.ecg.r_peak_detection",
+            type_signature="(filtered: np.ndarray) -> np.ndarray",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Detect R-peaks in an ECG waveform.",
+            prover=Prover.PYTHON,
+        )
+
+        index = _make_mock_index([pronto, biosppy])
+        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.r_peak_detection"})
+        llm = _make_mock_llm(rank_response="[0, 1]")
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert (
+            result.verified_match.candidate.declaration.name
+            == "ageoa.biosppy.ecg.r_peak_detection"
+        )
+
+    @pytest.mark.asyncio
+    async def test_live_catalog_reconciles_stale_ageoa_declarations(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_detect",
+            statement="Detect peaks in ECG signal",
+            informal_desc="Find R-peaks in a conditioned ECG waveform",
+            prover=Prover.PYTHON,
+        )
+        stale_dead = Declaration(
+            name="ageoa.biosppy.ecg_hamilton.atoms.hamilton_segmentation",
+            type_signature="(signal: np.ndarray, sampling_rate: int) -> np.ndarray",
+            source_lib="ageoa.biosppy.ecg_hamilton.atoms",
+            docstring="Dead stale declaration from an old index snapshot.",
+            prover=Prover.PYTHON,
+        )
+        stale_live = Declaration(
+            name="ageoa.biosppy.ecg.r_peak_detection",
+            type_signature="(filtered: np.ndarray, state: ECGPipelineState) -> tuple[np.ndarray, ECGPipelineState]",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Old stateful ECG declaration.",
+            prover=Prover.PYTHON,
+        )
+
+        catalog = PrimitiveCatalog()
+        catalog.add(
+            AlgorithmicPrimitive(
+                name="r_peak_detection",
+                source="ageo-atoms",
+                category=ConceptType.ANALYSIS,
+                description="Detect R-peaks from a filtered ECG waveform using the sampling rate.",
+                inputs=[
+                    IOSpec(name="filtered", type_desc="np.ndarray"),
+                    IOSpec(
+                        name="sampling_rate",
+                        type_desc="float",
+                        required=False,
+                        default_value_repr="1000.0",
+                    ),
+                ],
+                outputs=[IOSpec(name="rpeaks", type_desc="np.ndarray")],
+                type_signature="(filtered: np.ndarray, sampling_rate: float? = 1000.0) -> np.ndarray",
+            )
+        )
+
+        index = _make_mock_index([stale_dead, stale_live])
+        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.r_peak_detection"})
+        llm = _make_mock_llm(rank_response="[0]")
+
+        agent = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            max_iterations=1,
+            live_catalog=catalog,
+        )
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert [c.declaration.name for c in result.all_candidates] == [
+            "ageoa.biosppy.ecg.r_peak_detection"
+        ]
+        assert result.verified_match is not None
+        assert "sampling_rate" in result.verified_match.candidate.declaration.type_signature
+
+    @pytest.mark.asyncio
+    async def test_stage_prior_penalizes_rate_atom_on_detect_leaf(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_detect",
+            statement="Detect salient peaks or events in the conditioned ECG signal.",
+            informal_desc="Find R-peaks from a filtered ECG waveform.",
+            prover=Prover.PYTHON,
+            context={"matched_primitive": "detect_peaks_in_signal"},
+        )
+        detector = Declaration(
+            name="ageoa.biosppy.ecg.r_peak_detection",
+            type_signature="(filtered: np.ndarray, sampling_rate: float) -> np.ndarray",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Detect R-peaks in a filtered ECG waveform.",
+            prover=Prover.PYTHON,
+        )
+        rate = Declaration(
+            name="ageoa.biosppy.ecg.heart_rate_computation",
+            type_signature="(rpeaks: np.ndarray, sampling_rate: float) -> tuple[np.ndarray, np.ndarray]",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Compute heart rate from R-peak intervals.",
+            prover=Prover.PYTHON,
+        )
+
+        index = _make_mock_index([rate, detector])
+        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.r_peak_detection"})
+        llm = _make_mock_llm(rank_response="[0, 1]")
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert result.verified_match.candidate.declaration.name == detector.name
+
+    @pytest.mark.asyncio
+    async def test_stage_prior_penalizes_filter_atom_on_detect_leaf(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_detect",
+            statement="Detect salient peaks or events in the conditioned ECG signal.",
+            informal_desc="Find R-peaks from a filtered ECG waveform.",
+            prover=Prover.PYTHON,
+            context={"matched_primitive": "detect_peaks_in_signal"},
+        )
+        detector = Declaration(
+            name="ageoa.pronto.blip_filter.atoms.r_peak_detection",
+            type_signature="(filtered: np.ndarray) -> np.ndarray",
+            source_lib="ageoa.pronto.blip_filter.atoms",
+            docstring="Detect R-peaks in a filtered ECG waveform.",
+            prover=Prover.PYTHON,
+        )
+        filt = Declaration(
+            name="ageoa.pronto.blip_filter.atoms.bandpass_filter",
+            type_signature="(signal: np.ndarray) -> np.ndarray",
+            source_lib="ageoa.pronto.blip_filter.atoms",
+            docstring="Apply bandpass filtering to an ECG signal.",
+            prover=Prover.PYTHON,
+        )
+
+        index = _make_mock_index([filt, detector])
+        oracle = _make_mock_oracle({"ageoa.pronto.blip_filter.atoms.r_peak_detection"})
+        llm = _make_mock_llm(rank_response="[0, 1]")
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert result.verified_match.candidate.declaration.name == detector.name
+
+    def test_stage_inference_treats_compute_event_rate_as_rate_leaf(self):
+        from sciona.hunter.nodes import _infer_stage_tokens
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_rate",
+            statement="Compute a target rate or cadence from inter-event intervals.",
+            informal_desc="Estimate heart rate from detected events.",
+            prover=Prover.PYTHON,
+            context={"matched_primitive": "compute_event_rate"},
+        )
+
+        stage, _ = _infer_stage_tokens(pdg_node)
+        assert stage == "rate"
+
+    def test_stage_inference_treats_filter_signal_for_detection_as_filter_leaf(self):
+        from sciona.hunter.nodes import _infer_stage_tokens
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_filter",
+            statement="Filter or denoise the raw signal into a conditioned waveform for downstream event extraction.",
+            informal_desc="Prepare the ECG waveform for downstream peak detection.",
+            prover=Prover.PYTHON,
+            context={"matched_primitive": "filter_signal_for_detection"},
+        )
+
+        stage, _ = _infer_stage_tokens(pdg_node)
+        assert stage == "filter"
+
+    @pytest.mark.asyncio
+    async def test_stage_prior_prefers_rate_atom_over_template_atom_on_rate_leaf(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_rate",
+            statement="Compute a target rate or cadence from inter-event intervals.",
+            informal_desc="Estimate heart rate from detected events.",
+            prover=Prover.PYTHON,
+            context={"matched_primitive": "compute_event_rate"},
+        )
+        template = Declaration(
+            name="ageoa.biosppy.ecg.template_extraction",
+            type_signature="(filtered: np.ndarray, rpeaks: np.ndarray) -> tuple[np.ndarray, np.ndarray]",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Extract individual heartbeat waveform templates around each R-peak.",
+            prover=Prover.PYTHON,
+        )
+        rate = Declaration(
+            name="ageoa.biosppy.ecg.heart_rate_computation",
+            type_signature="(rpeaks: np.ndarray, sampling_rate: float) -> tuple[np.ndarray, np.ndarray]",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Compute heart rate from R-peak intervals.",
+            prover=Prover.PYTHON,
+        )
+
+        index = _make_mock_index([template, rate])
+        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.heart_rate_computation"})
+        llm = _make_mock_llm(rank_response="[0, 1]")
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert result.verified_match.candidate.declaration.name == rate.name
+
+    @pytest.mark.asyncio
+    async def test_stage_prior_prefers_filter_atom_over_template_atom_on_filter_leaf(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_filter",
+            statement="Filter or denoise the raw signal into a conditioned waveform for downstream event extraction.",
+            informal_desc="Prepare the ECG waveform for downstream peak detection.",
+            prover=Prover.PYTHON,
+            context={"matched_primitive": "filter_signal_for_detection"},
+        )
+        template = Declaration(
+            name="ageoa.biosppy.ecg.template_extraction",
+            type_signature="(filtered: np.ndarray, rpeaks: np.ndarray) -> tuple[np.ndarray, np.ndarray]",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Extract individual heartbeat waveform templates around each R-peak.",
+            prover=Prover.PYTHON,
+        )
+        filt = Declaration(
+            name="ageoa.biosppy.ecg.bandpass_filter",
+            type_signature="(signal: np.ndarray) -> np.ndarray",
+            source_lib="ageoa.biosppy.ecg",
+            docstring="Apply FIR bandpass filtering to an ECG waveform.",
+            prover=Prover.PYTHON,
+        )
+
+        index = _make_mock_index([template, filt])
+        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.bandpass_filter"})
+        llm = _make_mock_llm(rank_response="[0, 1]")
+
+        agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert result.verified_match.candidate.declaration.name == filt.name
 
 
 class TestHunterRefinement:

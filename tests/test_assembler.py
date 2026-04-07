@@ -687,6 +687,130 @@ class TestAssembler:
         assert result == "peaks"
         assert calls == [(("conditioned",), {})]
 
+    def test_python_emitter_maps_keyword_aliases_for_signal_and_events(self):
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Heart Rate",
+                description="Estimate heart rate from conditioned signal and events",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.DECOMPOSED,
+                children=["detect", "rate"],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="detect",
+                parent_id="root",
+                name="Detect Peaks In Signal",
+                description="Detect ECG peaks",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="r_peak_detection",
+                type_signature="conditioned_signal -> events",
+                inputs=[
+                    IOSpec(name="conditioned_signal", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+                depth=1,
+            ),
+            AlgorithmicNode(
+                node_id="rate",
+                parent_id="root",
+                name="Compute Event Rate",
+                description="Compute rate from events",
+                concept_type=ConceptType.ANALYSIS,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="heart_rate_computation",
+                type_signature="events -> rate",
+                inputs=[
+                    IOSpec(name="events", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+                depth=1,
+            ),
+        ]
+        cdg = CDGExport(
+            nodes=nodes,
+            edges=[
+                DependencyEdge(
+                    source_id="detect",
+                    target_id="rate",
+                    output_name="events",
+                    input_name="events",
+                    source_type="np.ndarray",
+                    target_type="np.ndarray",
+                )
+            ],
+            metadata={"goal": "Heart Rate"},
+        )
+        detect_decl = Declaration(
+            name="fake_runtime.detect_impl",
+            type_signature="(filtered: np.ndarray, *, sampling_rate: float) -> np.ndarray",
+            prover=Prover.PYTHON,
+        )
+        rate_decl = Declaration(
+            name="fake_runtime.rate_impl",
+            type_signature="(rpeaks: np.ndarray, *, sampling_rate: float) -> tuple[np.ndarray, np.ndarray]",
+            prover=Prover.PYTHON,
+        )
+        detect_candidate = CandidateMatch(
+            declaration=detect_decl,
+            score=0.95,
+            retrieval_method="embedding",
+        )
+        rate_candidate = CandidateMatch(
+            declaration=rate_decl,
+            score=0.94,
+            retrieval_method="embedding",
+        )
+        detect_verified = VerificationResult(candidate=detect_candidate, verified=True)
+        rate_verified = VerificationResult(candidate=rate_candidate, verified=True)
+        matches = [
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="detect", statement=detect_decl.type_signature),
+                verified_match=detect_verified,
+                all_candidates=[detect_candidate],
+                all_verifications=[detect_verified],
+            ),
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="rate", statement=rate_decl.type_signature),
+                verified_match=rate_verified,
+                all_candidates=[rate_candidate],
+                all_verifications=[rate_verified],
+            ),
+        ]
+
+        calls: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+        module = types.ModuleType("fake_runtime")
+
+        def detect_impl(filtered, *, sampling_rate):
+            calls.append(("detect", (filtered,), {"sampling_rate": sampling_rate}))
+            return "peaks"
+
+        def rate_impl(rpeaks, *, sampling_rate):
+            calls.append(("rate", (rpeaks,), {"sampling_rate": sampling_rate}))
+            return ("idx", "hr")
+
+        module.detect_impl = detect_impl
+        module.rate_impl = rate_impl
+        sys.modules["fake_runtime"] = module
+        try:
+            skeleton = Assembler(Prover.PYTHON).assemble(cdg, matches)
+            namespace: dict[str, object] = {}
+            exec(skeleton.source_code, namespace)
+            detected = namespace["detect_peaks_in_signal"]("conditioned", 256.0)
+            result = namespace["compute_event_rate"](detected, 256.0)
+        finally:
+            sys.modules.pop("fake_runtime", None)
+
+        assert result == ("idx", "hr")
+        assert calls == [
+            ("detect", ("conditioned",), {"sampling_rate": 256.0}),
+            ("rate", ("peaks",), {"sampling_rate": 256.0}),
+        ]
+
 
 # ---------------------------------------------------------------------------
 # TestSkeletonCompiler

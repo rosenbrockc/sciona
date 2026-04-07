@@ -18,6 +18,8 @@ from sciona.synthesizer.ghost_sim import (
     _compute_precision_gradients,
     _extract_atom_name,
     _build_abstract_value,
+    _declared_param_names,
+    _parse_raw_code_param_names,
     _GHOST_AVAILABLE,
     run_ghost_simulation,
 )
@@ -73,6 +75,38 @@ class TestExtractAtomName:
             _extract_atom_name("scipy.sparse.csgraph.graph_laplacian")
             == "graph_laplacian"
         )
+
+
+class TestGhostSignatureParsing:
+    def test_parse_raw_code_param_names_ignores_state_and_defaults(self):
+        raw_code = """
+@register_atom(witness_r_peak_detection)
+def r_peak_detection(filtered: np.ndarray, sampling_rate: float = 1000.0, state: ECGPipelineState | None = None) -> np.ndarray:
+    return filtered
+"""
+        assert _parse_raw_code_param_names(raw_code) == ["filtered", "sampling_rate"]
+
+    def test_declared_param_names_fall_back_to_raw_code_when_type_signature_is_unlabeled(self):
+        decl = Declaration(
+            name="ageoa.biosppy.ecg.r_peak_detection",
+            type_signature="np.ndarray, float -> np.ndarray",
+            raw_code="""
+@register_atom(witness_r_peak_detection)
+def r_peak_detection(filtered: np.ndarray, sampling_rate: float = 1000.0, state: ECGPipelineState | None = None) -> np.ndarray:
+    return filtered
+""",
+            prover=Prover.PYTHON,
+        )
+        candidate = CandidateMatch(declaration=decl, score=0.9, retrieval_method="test")
+        vr = VerificationResult(candidate=candidate, verified=True)
+        match = MatchResult(
+            pdg_node=PDGNode(predicate_id="detect_node", statement=""),
+            verified_match=vr,
+            all_candidates=[candidate],
+            all_verifications=[vr],
+        )
+
+        assert _declared_param_names(match) == {"filtered", "sampling_rate"}
 
 
 # ---------------------------------------------------------------------------

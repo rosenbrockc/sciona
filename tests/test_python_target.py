@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import ast
 import textwrap
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -311,6 +312,53 @@ class TestPythonEnvironment:
         with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
             success, output = await env.check_term("42", "int")
             assert success is True
+
+        await env.close()
+
+    @pytest.mark.asyncio
+    async def test_check_term_sets_juliacall_bypass_env(self):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (b"OK\n", b"")
+        mock_proc.returncode = 0
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_proc) as create_proc:
+            success, _output = await env.check_term("pkg.fn", "(x: int) -> int")
+            assert success is True
+            child_env = create_proc.await_args.kwargs["env"]
+            assert child_env["PYTHON_JULIACALL_INIT"] == "no"
+
+        await env.close()
+
+    @pytest.mark.asyncio
+    async def test_check_term_import_timeout_returns_failure(self):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+        env._import_timeout_s = 0.01
+
+        class _SlowProc:
+            def __init__(self) -> None:
+                self.returncode = None
+                self.killed = False
+
+            async def communicate(self):
+                await asyncio.sleep(0.05)
+                return (b"", b"")
+
+            def kill(self) -> None:
+                self.killed = True
+
+        slow_proc = _SlowProc()
+
+        with patch("asyncio.create_subprocess_exec", return_value=slow_proc):
+            success, output = await env.check_term("pkg.fn", "(x: int) -> int")
+            assert success is False
+            assert "timed out" in output
+            assert slow_proc.killed is True
 
         await env.close()
 

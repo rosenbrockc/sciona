@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 import shutil
 import tempfile
@@ -54,6 +55,9 @@ class PythonEnvironment:
         self._python_path = python_path
         self._verify_mode = verify_mode
         self._tmpdir = tempfile.mkdtemp(prefix="sciona_python_")
+        self._import_timeout_s = float(
+            os.environ.get("SCIONA_PYTHON_IMPORT_TIMEOUT_S", "20")
+        )
 
     @property
     def prover_name(self) -> str:
@@ -98,16 +102,34 @@ class PythonEnvironment:
             ])
         lines.append('print("OK")')
         code = "\n".join(lines) + "\n"
+        env = dict(os.environ)
+        env.setdefault("PYTHON_JULIACALL_INIT", "no")
 
         try:
             proc = await asyncio.create_subprocess_exec(
                 self._python_path,
                 "-c",
                 code,
+                env=env,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await proc.communicate()
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(),
+                    timeout=self._import_timeout_s,
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                stdout, stderr = await proc.communicate()
+                raw = stdout.decode() + stderr.decode()
+                if raw.strip():
+                    raw = raw.strip() + "\n"
+                raw += (
+                    "python import verification timed out "
+                    f"after {self._import_timeout_s:.1f}s"
+                )
+                return False, raw
             raw = stdout.decode() + stderr.decode()
             if proc.returncode == 0:
                 return True, raw.strip()

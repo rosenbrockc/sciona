@@ -95,25 +95,29 @@ class TestVerificationOracleImpl:
         assert "type mismatch" in result.error_message
 
     @pytest.mark.asyncio
-    async def test_verify_candidates_short_circuits(self, pdg_node):
+    async def test_verify_candidates_checks_full_batch(self, pdg_node):
         from sciona.judge.checker import VerificationOracleImpl
 
         mock_lean = AsyncMock()
-        # First fails, second succeeds
-        mock_lean.check_term = AsyncMock(side_effect=[(False, "error"), (True, "ok")])
+        mock_lean.check_term = AsyncMock(
+            side_effect=[(False, "error"), (True, "ok"), (False, "late error")]
+        )
         oracle = VerificationOracleImpl(lean_env=mock_lean)
 
         decl1 = Declaration(name="wrong", type_signature="Bool", prover=Prover.LEAN4)
         decl2 = Declaration(name="right", type_signature="correct", prover=Prover.LEAN4)
+        decl3 = Declaration(name="later", type_signature="correct", prover=Prover.LEAN4)
         candidates = [
             CandidateMatch(declaration=decl1, score=0.8, retrieval_method="embedding"),
             CandidateMatch(declaration=decl2, score=0.9, retrieval_method="embedding"),
+            CandidateMatch(declaration=decl3, score=0.7, retrieval_method="embedding"),
         ]
 
         results = await oracle.verify_candidates(pdg_node, candidates)
-        assert len(results) == 2
+        assert len(results) == 3
         assert results[0].verified is False
         assert results[1].verified is True
+        assert results[2].verified is False
 
     @pytest.mark.asyncio
     async def test_no_lean_env_raises(self, pdg_node, candidate):

@@ -698,6 +698,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                     query_batch_size=config.hunter_query_batch_size,
                     top_k_per_query=config.hunter_top_k_per_query,
                     max_candidates_total=config.hunter_max_candidates_total,
+                    live_catalog=catalog,
                 )
 
                 trial_counter = {"value": 0}

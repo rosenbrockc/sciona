@@ -414,6 +414,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                     query_batch_size=config.hunter_query_batch_size,
                     top_k_per_query=config.hunter_top_k_per_query,
                     max_candidates_total=config.hunter_max_candidates_total,
+                    live_catalog=catalog,
                     shared_context=hunter_shared_context,
                     shared_context_metrics=hunter_shared_metrics,
                     context_namespace="hunter",

@@ -105,13 +105,11 @@ class VerificationOracleImpl:
     async def verify_candidates(
         self, pdg_node: PDGNode, candidates: list[CandidateMatch]
     ) -> list[VerificationResult]:
-        """Verify multiple candidates, short-circuiting on first verified match."""
+        """Verify multiple candidates in order."""
         results: list[VerificationResult] = []
         for candidate in candidates:
             result = await self.verify_candidate(pdg_node, candidate)
             results.append(result)
-            if result.verified:
-                break
         return results
 
     async def verify_candidates_parallel(

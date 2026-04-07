@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic_graph import Graph
 
+from sciona.architect.catalog import PrimitiveCatalog
 from sciona.hunter.deps import HunterDeps
 from sciona.hunter.llm import LLMClient
 from sciona.hunter.nodes import (
@@ -42,6 +43,7 @@ class HunterAgent:
         query_batch_size: int = 40,
         top_k_per_query: int = 50,
         max_candidates_total: int = 3000,
+        live_catalog: PrimitiveCatalog | None = None,
         shared_context: SharedContextStore | None = None,
         shared_context_metrics: SharedContextMetrics | None = None,
         context_namespace: str = "hunter",
@@ -52,6 +54,7 @@ class HunterAgent:
             index=index,
             oracle=oracle,
             llm=llm,
+            live_catalog=live_catalog,
             shared_context=shared_context,
             shared_context_metrics=shared_context_metrics,
         )

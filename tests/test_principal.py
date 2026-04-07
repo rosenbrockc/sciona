@@ -377,6 +377,14 @@ class TestMetricSelection:
 
 
 class TestExecutionSandbox:
+    def test_default_timeout_reads_environment(self, monkeypatch):
+        from sciona.principal.evaluator import ExecutionSandbox
+
+        monkeypatch.setenv("SCIONA_EVALUATOR_TIMEOUT_S", "321")
+        sandbox = ExecutionSandbox()
+
+        assert sandbox._timeout_s == pytest.approx(321.0)
+
     def test_evaluate_supports_relative_artifact_paths(self, tmp_path: Path, monkeypatch):
         from sciona.principal.evaluator import ExecutionSandbox
         from sciona.synthesizer.models import ExportBundle

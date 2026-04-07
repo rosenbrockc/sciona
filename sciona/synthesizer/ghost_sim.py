@@ -115,6 +115,85 @@ def _extract_atom_name(declaration_name: str) -> str:
     return declaration_name.rsplit(".", 1)[-1]
 
 
+_ALIAS_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("signal", "conditioned_signal", "filtered", "filtered_signal", "waveform"),
+    ("events", "rpeaks", "peaks", "beats", "onsets"),
+    ("rate", "heart_rate", "bpm"),
+)
+
+
+def _aliases_for(name: str) -> tuple[str, ...]:
+    lowered = str(name).strip().lower()
+    for group in _ALIAS_GROUPS:
+        if lowered in group:
+            return group
+    return (lowered,)
+
+
+def _parse_signature_param_names(type_signature: str) -> list[str]:
+    match = re.match(r"\(([^)]*)\)", str(type_signature or "").strip())
+    if match is None:
+        return []
+    params = match.group(1).strip()
+    if not params:
+        return []
+    names: list[str] = []
+    for raw in params.split(","):
+        chunk = raw.strip()
+        if not chunk:
+            continue
+        name = chunk.split(":", 1)[0].strip().lstrip("*")
+        if name:
+            names.append(name)
+    return names
+
+
+def _parse_raw_code_param_names(raw_code: str) -> list[str]:
+    match = re.search(
+        r"def\s+\w+\s*\((.*?)\)\s*(?:->[^:]+)?\s*:",
+        str(raw_code or ""),
+        re.DOTALL,
+    )
+    if match is None:
+        return []
+    params = match.group(1).strip()
+    if not params:
+        return []
+    names: list[str] = []
+    for raw in params.split(","):
+        chunk = raw.strip()
+        if not chunk:
+            continue
+        name = chunk.split(":", 1)[0].split("=", 1)[0].strip().lstrip("*")
+        if not name or name in {"self", "cls", "state"}:
+            continue
+        names.append(name)
+    return names
+
+
+def _declared_param_names(match_result: MatchResult) -> set[str]:
+    verified = match_result.verified_match
+    if verified is None:
+        return set()
+    declaration = verified.candidate.declaration
+    names = _parse_signature_param_names(declaration.type_signature)
+    if not names:
+        names = _parse_raw_code_param_names(declaration.raw_code)
+    return set(names)
+
+
+def _resolve_signature_param_name(port_name: str, declared_names: set[str]) -> str:
+    if not declared_names:
+        return port_name
+    lowered_map = {str(name).lower(): name for name in declared_names}
+    if port_name.lower() in lowered_map:
+        return lowered_map[port_name.lower()]
+    for alias in _aliases_for(port_name):
+        if alias in lowered_map:
+            return lowered_map[alias]
+    return port_name
+
+
 def _build_abstract_value(type_desc: str, constraints: str) -> Any:
     """Build an abstract value from IOSpec metadata.
 
@@ -785,26 +864,32 @@ def run_ghost_simulation(
     for nid in simulable_nodes:
         node = node_map[nid]
         in_edges = incoming_edges.get(nid, [])
+        mr = match_map[nid]
+        declared_param_names = _declared_param_names(mr)
 
         # Map incoming edges to state keys
         edge_inputs: dict[str, str] = {}
         for edge in in_edges:
             if edge.source_id in atomic_leaves:
                 state_key = f"{edge.source_id}:{edge.output_name}"
-                edge_inputs[edge.input_name] = state_key
+                target_name = _resolve_signature_param_name(
+                    edge.input_name,
+                    declared_param_names,
+                )
+                edge_inputs[target_name] = state_key
 
         # For inputs not covered by edges from simulable nodes, create initial state
         for inp in node.inputs:
-            if inp.name not in edge_inputs:
-                state_key = f"root:{nid}:{inp.name}"
-                edge_inputs[inp.name] = state_key
+            target_name = _resolve_signature_param_name(inp.name, declared_param_names)
+            if target_name not in edge_inputs:
+                state_key = f"root:{nid}:{target_name}"
+                edge_inputs[target_name] = state_key
                 if state_key not in initial_state:
                     initial_state[state_key] = _build_initial_value(
                         inp.name, inp.type_desc, inp.constraints
                     )
 
         # Build SimNode
-        mr = match_map[nid]
         atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
 
         output_name = ""

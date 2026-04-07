@@ -9,9 +9,11 @@ Graph topology:
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
+from sciona.architect.models import AlgorithmicPrimitive
 from sciona.json_utils import extract_json
 
 from pydantic_graph import BaseNode, End, GraphRunContext
@@ -35,7 +37,7 @@ from sciona.llm_router import (
 )
 from sciona.shared_context import format_context_block
 from sciona.telemetry import increment_run_metadata_counter, merge_run_metadata
-from sciona.types import CandidateMatch, MatchResult
+from sciona.types import CandidateMatch, Declaration, MatchResult, Prover
 
 _INT_ARRAY_GBNF = r"""
 root ::= ws "[" ws int_list? ws "]" ws
@@ -54,6 +56,402 @@ escape ::= ["\\/bfnrt] | "u" hex hex hex hex
 hex ::= [0-9a-fA-F]
 ws ::= [ \t\n\r]*
 """
+
+
+def _tokenize_candidate_text(text: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9_]+", text.lower())
+        if len(token) >= 2
+    }
+
+
+def _ordered_query_tokens(text: str) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for token in re.findall(r"[a-z0-9_]+", text.lower()):
+        if len(token) < 2 or token in seen:
+            continue
+        seen.add(token)
+        ordered.append(token)
+    return ordered
+
+
+_QUERY_STOPWORDS = {
+    "from",
+    "into",
+    "the",
+    "and",
+    "or",
+    "raw",
+    "target",
+    "salient",
+    "conditioned",
+    "compute",
+    "signal",
+    "events",
+    "event",
+}
+
+
+def _auxiliary_queries(pdg_node) -> list[str]:
+    matched_primitive = str((pdg_node.context or {}).get("matched_primitive", "") or "")
+    if not matched_primitive:
+        return []
+    matched_query = matched_primitive.replace("_", " ").strip()
+    ordered = _ordered_query_tokens(
+        " ".join([str(pdg_node.statement or ""), str(pdg_node.informal_desc or "")])
+    )
+    salient = [token for token in ordered if token not in _QUERY_STOPWORDS][:6]
+    queries = [matched_query]
+    if salient:
+        queries.append(" ".join([matched_query, *salient]))
+    return [query for query in queries if query]
+
+
+_STAGE_POSITIVE_TOKENS: dict[str, set[str]] = {
+    "filter": {
+        "filter",
+        "filtered",
+        "bandpass",
+        "denoise",
+        "denoising",
+        "smooth",
+        "smoothing",
+        "condition",
+        "conditioned",
+        "preprocess",
+        "clean",
+    },
+    "detect": {
+        "detect",
+        "detection",
+        "peak",
+        "peaks",
+        "r_peak",
+        "rpeaks",
+        "onset",
+        "onsets",
+        "beat",
+        "beats",
+        "qrs",
+        "segment",
+        "segmenter",
+        "segmentation",
+        "hamilton",
+        "christov",
+        "engzee",
+        "ssf",
+    },
+    "rate": {
+        "compute",
+        "computation",
+        "rate",
+        "heart_rate",
+        "bpm",
+        "cadence",
+        "interval",
+        "intervals",
+        "rr",
+        "ibi",
+        "hr",
+    },
+}
+
+
+def _choose_stage_from_hits(tokens: set[str]) -> str | None:
+    if not tokens:
+        return None
+    stage_hits = {
+        stage_name: len(tokens & stage_tokens)
+        for stage_name, stage_tokens in _STAGE_POSITIVE_TOKENS.items()
+    }
+    best_stage = max(
+        stage_hits,
+        key=lambda stage_name: (
+            stage_hits[stage_name],
+            1 if stage_name == "rate" else 0,
+            1 if stage_name == "filter" else 0,
+            1 if stage_name == "detect" else 0,
+        ),
+    )
+    if stage_hits[best_stage] <= 0:
+        return None
+    return best_stage
+
+
+def _leading_stage_hint(text: str) -> str | None:
+    ordered = _ordered_query_tokens(text.replace("_", " "))
+    if not ordered:
+        return None
+    first = ordered[0]
+    if first in {"compute", "estimate", "measure"}:
+        return "rate"
+    if first in {"filter", "denoise", "condition", "preprocess", "clean"}:
+        return "filter"
+    if first in {"detect", "find", "segment", "extract"}:
+        return "detect"
+    return None
+
+
+def _infer_stage_tokens(pdg_node) -> tuple[str | None, set[str]]:
+    matched_primitive = str((pdg_node.context or {}).get("matched_primitive", "") or "")
+    matched_tokens = _tokenize_candidate_text(matched_primitive.replace("_", " "))
+    tokens = _tokenize_candidate_text(
+        " ".join(
+            [
+                str(pdg_node.statement or ""),
+                str(pdg_node.informal_desc or ""),
+                matched_primitive.replace("_", " "),
+            ]
+        )
+    )
+
+    leading_stage = _leading_stage_hint(matched_primitive)
+    if leading_stage is not None:
+        return leading_stage, tokens
+
+    matched_stage = _choose_stage_from_hits(matched_tokens)
+    if matched_stage is not None:
+        return matched_stage, tokens
+    return _choose_stage_from_hits(tokens), tokens
+
+
+def _stage_alignment_bonus(pdg_node, candidate_tokens: set[str]) -> float:
+    stage, node_tokens = _infer_stage_tokens(pdg_node)
+    if stage is None:
+        return 0.0
+    positive = _STAGE_POSITIVE_TOKENS[stage]
+    overlap = candidate_tokens & positive
+    if not overlap:
+        return 0.0
+
+    bonus = 1.0 + min(1.2, 0.35 * len(overlap))
+    if (node_tokens & {"peak", "peaks", "r_peak", "rpeaks"}) and (
+        candidate_tokens & {"r_peak", "rpeaks", "qrs", "peak", "peaks"}
+    ):
+        bonus += 0.4
+    return min(2.2, bonus)
+
+
+def _cross_stage_penalty(pdg_node, candidate_tokens: set[str]) -> float:
+    stage, _ = _infer_stage_tokens(pdg_node)
+    if stage is None:
+        return 0.0
+    stage_hits = {
+        stage_name: len(candidate_tokens & tokens)
+        for stage_name, tokens in _STAGE_POSITIVE_TOKENS.items()
+    }
+    target_hits = stage_hits.get(stage, 0)
+    best_stage = max(stage_hits, key=stage_hits.get)
+    best_hits = stage_hits[best_stage]
+    if best_hits == 0:
+        return 0.0
+    if best_stage != stage and target_hits == 0:
+        return min(2.2, 1.4 + 0.35 * best_hits)
+    if best_stage != stage and best_hits > target_hits:
+        return min(1.8, 0.8 + 0.35 * (best_hits - target_hits))
+    penalties = 0.0
+    for other_stage, hits in stage_hits.items():
+        if other_stage == stage or hits <= 0:
+            continue
+        penalties += 0.3 * hits
+    return min(1.2, penalties)
+
+
+def _candidate_prior_bonus(
+    pdg_node,
+    candidate: CandidateMatch,
+) -> float:
+    """Compute a small deterministic lexical prior for semantic fit."""
+    goal_text = " ".join(
+        [
+            str(pdg_node.statement or ""),
+            str(pdg_node.informal_desc or ""),
+            " ".join(f"{key} {value}" for key, value in sorted((pdg_node.context or {}).items())),
+        ]
+    )
+    goal_tokens = _tokenize_candidate_text(goal_text)
+    if not goal_tokens:
+        return 0.0
+
+    declaration = candidate.declaration
+    candidate_text = " ".join(
+        [
+            declaration.name,
+            declaration.source_lib,
+            declaration.type_signature,
+            declaration.docstring,
+        ]
+    )
+    candidate_tokens = _tokenize_candidate_text(candidate_text)
+    if not candidate_tokens:
+        return 0.0
+
+    overlap = goal_tokens & candidate_tokens
+    if not overlap:
+        return 0.0
+
+    bonus = min(0.18, 0.03 * len(overlap))
+    modality_tokens = {"ecg", "ppg", "eeg", "emg", "heart_rate", "r_peak", "rpeaks"}
+    if overlap & modality_tokens:
+        bonus += 0.04
+    namespace_tokens = _tokenize_candidate_text(
+        f"{declaration.name} {declaration.source_lib}"
+    )
+    active_modality = None
+    for modality in ("ecg", "ppg", "eeg", "emg", "pcg"):
+        if modality in goal_tokens and modality in namespace_tokens:
+            active_modality = modality
+            bonus += 0.7
+            break
+        if modality in goal_tokens:
+            active_modality = modality
+    if active_modality is not None:
+        for other_modality in ("ecg", "ppg", "eeg", "emg", "pcg"):
+            if other_modality == active_modality:
+                continue
+            if other_modality in namespace_tokens:
+                bonus -= 4.0
+                break
+    stage, _ = _infer_stage_tokens(pdg_node)
+    if (
+        active_modality is not None
+        and active_modality in namespace_tokens
+        and stage in _STAGE_POSITIVE_TOKENS
+        and candidate_tokens & _STAGE_POSITIVE_TOKENS[stage]
+    ):
+        bonus += 0.8
+    sampled_signal_tokens = {
+        "signal",
+        "waveform",
+        "ecg",
+        "ppg",
+        "eeg",
+        "emg",
+        "peak",
+        "peaks",
+        "event",
+        "events",
+        "heart",
+        "rate",
+    }
+    if "sampling_rate" in candidate_tokens and goal_tokens & sampled_signal_tokens:
+        bonus += 0.06
+    bonus += _stage_alignment_bonus(pdg_node, candidate_tokens)
+    bonus -= _cross_stage_penalty(pdg_node, candidate_tokens)
+    return max(-0.5, min(2.4, bonus))
+
+
+def _declaration_from_primitive(
+    primitive: AlgorithmicPrimitive,
+    *,
+    name: str,
+    source_lib: str,
+    prover: Prover,
+    raw_code: str = "",
+    conceptual_summary: str = "",
+) -> Declaration:
+    return Declaration(
+        name=name,
+        type_signature=primitive.type_signature,
+        docstring=primitive.description,
+        conceptual_summary=conceptual_summary,
+        source_lib=source_lib,
+        prover=prover,
+        raw_code=raw_code,
+    )
+
+
+def _resolve_live_primitive(
+    deps: HunterDeps,
+    declaration: Declaration,
+) -> AlgorithmicPrimitive | None:
+    catalog = deps.live_catalog
+    if catalog is None:
+        return None
+
+    candidates = [
+        declaration.name,
+        declaration.source_lib,
+    ]
+    name_parts = [part for part in declaration.name.split(".") if part]
+    for start in range(1, len(name_parts)):
+        candidates.append(".".join(name_parts[start:]))
+    source_parts = [part for part in declaration.source_lib.split(".") if part]
+    for start in range(1, len(source_parts)):
+        candidates.append(".".join(source_parts[start:]))
+
+    seen: set[str] = set()
+    for key in candidates:
+        normalized = key.strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        primitive = catalog.get(normalized)
+        if primitive is not None:
+            return primitive
+    return None
+
+
+def _canonicalize_candidate_match(
+    deps: HunterDeps,
+    candidate: CandidateMatch,
+) -> CandidateMatch | None:
+    catalog = deps.live_catalog
+    if catalog is None:
+        return candidate
+
+    declaration = candidate.declaration
+    primitive = _resolve_live_primitive(deps, declaration)
+    if primitive is not None:
+        return CandidateMatch(
+            declaration=_declaration_from_primitive(
+                primitive,
+                name=declaration.name,
+                source_lib=declaration.source_lib or primitive.source,
+                prover=declaration.prover,
+                raw_code=declaration.raw_code,
+                conceptual_summary=declaration.conceptual_summary,
+            ),
+            score=candidate.score,
+            retrieval_method=candidate.retrieval_method,
+        )
+
+    if declaration.name.startswith("ageoa."):
+        return None
+    return candidate
+
+
+def _canonicalize_candidates(
+    deps: HunterDeps,
+    candidates: list[CandidateMatch],
+) -> list[CandidateMatch]:
+    normalized: dict[str, CandidateMatch] = {}
+    for candidate in candidates:
+        canonical = _canonicalize_candidate_match(deps, candidate)
+        if canonical is None:
+            continue
+        name = canonical.declaration.name
+        incumbent = normalized.get(name)
+        if incumbent is None or canonical.score > incumbent.score:
+            normalized[name] = canonical
+    return list(normalized.values())
+
+
+def _apply_deterministic_candidate_priors(
+    pdg_node,
+    candidates: list[CandidateMatch],
+) -> list[CandidateMatch]:
+    """Stably rerank candidates with deterministic lexical priors."""
+    indexed = list(enumerate(candidates))
+    indexed.sort(
+        key=lambda item: (
+            -(item[1].score + _candidate_prior_bonus(pdg_node, item[1])),
+            item[0],
+        )
+    )
+    return [candidate for _, candidate in indexed]
 
 
 async def _complete_with_optional_grammar(
@@ -146,9 +544,15 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
 
         # In speculative-local mode, flood retrieval with a batch of queries.
         queries_to_use = [query]
+        for extra_query in _auxiliary_queries(node):
+            if extra_query not in queries_to_use:
+                queries_to_use.append(extra_query)
         embedding_k = state.search_k
         if state.mode == "speculative_local":
             queries_to_use = state.queries_tried[-state.query_batch_size :]
+            for extra_query in _auxiliary_queries(node):
+                if extra_query not in queries_to_use:
+                    queries_to_use.append(extra_query)
             embedding_k = state.top_k_per_query
 
         embedding_results = []
@@ -158,29 +562,47 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
         # Type search
         type_results = deps.index.search_by_type(node.statement, k=state.search_k)
 
-        # Merge and deduplicate
-        seen_names: set[str] = {c.declaration.name for c in state.candidates_found}
-        new_candidates: list[CandidateMatch] = []
+        candidate_pool = {
+            candidate.declaration.name: candidate for candidate in state.candidates_found
+        }
 
         for decl, score in embedding_results:
-            if decl.name not in seen_names:
-                seen_names.add(decl.name)
-                new_candidates.append(
-                    CandidateMatch(
-                        declaration=decl, score=score, retrieval_method="embedding"
-                    )
-                )
+            candidate = _canonicalize_candidate_match(
+                deps,
+                CandidateMatch(
+                    declaration=decl,
+                    score=score,
+                    retrieval_method="embedding",
+                ),
+            )
+            if candidate is None:
+                continue
+            incumbent = candidate_pool.get(candidate.declaration.name)
+            if incumbent is None or candidate.score > incumbent.score:
+                candidate_pool[candidate.declaration.name] = candidate
 
         for decl in type_results:
-            if decl.name not in seen_names:
-                seen_names.add(decl.name)
-                new_candidates.append(
-                    CandidateMatch(
-                        declaration=decl, score=0.0, retrieval_method="type_search"
-                    )
-                )
+            candidate = _canonicalize_candidate_match(
+                deps,
+                CandidateMatch(
+                    declaration=decl,
+                    score=0.0,
+                    retrieval_method="type_search",
+                ),
+            )
+            if candidate is None:
+                continue
+            incumbent = candidate_pool.get(candidate.declaration.name)
+            if incumbent is None or candidate.score > incumbent.score:
+                candidate_pool[candidate.declaration.name] = candidate
 
-        state.candidates_found.extend(new_candidates)
+        new_candidates = [
+            candidate
+            for name, candidate in candidate_pool.items()
+            if name not in {c.declaration.name for c in state.candidates_found}
+        ]
+        state.candidates_found = list(candidate_pool.values())
+        state.candidates_found = _canonicalize_candidates(deps, state.candidates_found)
         if (
             state.max_candidates_total > 0
             and len(state.candidates_found) > state.max_candidates_total
@@ -282,6 +704,11 @@ class RankCandidates(BaseNode[HunterState, HunterDeps, MatchResult]):
         except (json.JSONDecodeError, Exception):
             # If LLM ranking fails, keep original order
             pass
+
+        state.candidates_found = _apply_deterministic_candidate_priors(
+            state.pdg_node,
+            state.candidates_found,
+        )
 
         return VerifyTopK()
 

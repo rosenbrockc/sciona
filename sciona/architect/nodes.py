@@ -71,6 +71,28 @@ from sciona.telemetry import (
     update_stage,
 )
 
+
+def _resolve_family_hint(
+    *,
+    paradigm: ConceptType,
+    variant_hint: str,
+    skeleton_asset: dict[str, Any] | None,
+) -> str:
+    """Resolve the planning family hint from the selected skeleton identity."""
+    asset_summary = skeleton_asset_summary(skeleton_asset)
+    family = str(asset_summary.get("family", "")).strip()
+    if family:
+        return family
+
+    normalized_variant = str(variant_hint or "").strip().lower()
+    if normalized_variant in {
+        "signal_detect_measure",
+        "event_rate_estimation",
+        "bandpass_hr_detection",
+    }:
+        return "signal_detect_measure"
+    return paradigm.value
+
 # ---------------------------------------------------------------------------
 # Conjugate prior/likelihood pair detection
 # ---------------------------------------------------------------------------
@@ -959,11 +981,16 @@ async def select_strategy(
     pending = [n.node_id for n in nodes if n.status == NodeStatus.PENDING]
 
     current_node_id = pending[0] if pending else ""
+    family_hint = _resolve_family_hint(
+        paradigm=paradigm,
+        variant_hint=variant_hint,
+        skeleton_asset=skeleton_asset,
+    )
     planning_artifact = build_planning_artifact(
         goal=goal,
         thread_id=str(config.get("configurable", {}).get("thread_id", "")),
         paradigm=paradigm.value,
-        family_hint=paradigm.value,
+        family_hint=family_hint,
         strategy_rationale=str(parsed.get("rationale", "") if parsed else ""),
         variant_hint=variant_hint,
         skeleton_instantiated=skeleton_instantiated,
