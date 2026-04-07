@@ -10,6 +10,11 @@ import uuid
 
 from sciona.architect.models import (
     AlgorithmicNode,
+    BaselineAnalyzerSpec,
+    BaselineComponentShape,
+    BaselinePredictorAliasSpec,
+    BaselineStageSpec,
+    BaselineWindowSpec,
     ConceptType,
     DependencyEdge,
     IOSpec,
@@ -2326,6 +2331,384 @@ def _remap_template_edge(
     return tpl_edge.model_copy(
         update={"source_id": source_id, "target_id": target_id}
     )
+
+
+def _port_type(ports: list[IOSpec], default_name: str, default_type: str) -> tuple[str, str]:
+    """Extract a single port signature from a node or stage spec."""
+    if not ports:
+        return default_name, default_type
+    return ports[0].name, ports[0].type_desc
+
+
+def _baseline_stage_ports(stage: BaselineStageSpec) -> tuple[str, str, str, str]:
+    """Return canonical edge metadata for a baseline stage spec."""
+    return (
+        stage.input_name,
+        stage.input_type,
+        stage.output_name,
+        stage.output_type,
+    )
+
+
+def _build_baseline_stage_node(
+    skeleton: SkeletonGraph,
+    stage: BaselineStageSpec,
+    goal_desc: str,
+    *,
+    parent_id: str | None,
+    base_depth: int,
+    name: str,
+) -> AlgorithmicNode:
+    """Instantiate a baseline stage node, cloning a template when available."""
+    template_name = stage.template_name or stage.name
+    template = next(
+        (node for node in skeleton.template_nodes if node.name == template_name),
+        None,
+    )
+    if template is not None:
+        node = _clone_template_node(
+            template,
+            goal_desc,
+            parent_id=parent_id,
+            base_depth=base_depth,
+            name=name,
+        )
+    else:
+        node = AlgorithmicNode(
+            node_id=f"baseline_stage_{uuid.uuid4().hex[:8]}",
+            parent_id=parent_id,
+            name=name,
+            description=f"[{goal_desc}] {stage.description or stage.name}",
+            concept_type=stage.concept_type,
+            depth=base_depth + 1,
+        )
+
+    return node.model_copy(
+        update={
+            "description": f"[{goal_desc}] {stage.description or stage.name}",
+            "concept_type": stage.concept_type,
+            "inputs": [IOSpec(name=stage.input_name, type_desc=stage.input_type)],
+            "outputs": [IOSpec(name=stage.output_name, type_desc=stage.output_type)],
+            "matched_primitive": stage.matched_primitive,
+            "status": stage.status,
+            "is_opaque": stage.is_opaque,
+            "is_optional": stage.is_optional,
+        }
+    )
+
+
+def _build_windowed_component_node(
+    skeleton: SkeletonGraph,
+    window: BaselineWindowSpec,
+    goal_desc: str,
+    *,
+    parent_id: str | None,
+    base_depth: int,
+    name: str,
+) -> AlgorithmicNode:
+    """Instantiate a windowed-analysis node for a component."""
+    template = next(
+        (node for node in skeleton.template_nodes if node.name == "Windowed Analysis"),
+        None,
+    )
+    if template is not None:
+        node = _clone_template_node(
+            template,
+            goal_desc,
+            parent_id=parent_id,
+            base_depth=base_depth,
+            name=name,
+        )
+    else:
+        node = AlgorithmicNode(
+            node_id=f"baseline_windowed_{uuid.uuid4().hex[:8]}",
+            parent_id=parent_id,
+            name=name,
+            description=f"[{goal_desc}] {window.description}",
+            concept_type=ConceptType.MAP_OVER,
+            depth=base_depth + 1,
+        )
+
+    return node.model_copy(
+        update={
+            "description": f"[{goal_desc}] {window.description}",
+            "concept_type": ConceptType.MAP_OVER,
+            "inputs": [IOSpec(name=window.input_name, type_desc=window.input_type)],
+            "outputs": [IOSpec(name=window.output_name, type_desc=window.output_type)],
+            "map_window_size": window.size,
+            "map_hop_size": window.hop,
+        }
+    )
+
+
+def _build_predictor_alias_node(
+    alias: BaselinePredictorAliasSpec,
+    goal_desc: str,
+    *,
+    parent_id: str | None,
+    base_depth: int,
+    source_type: str,
+) -> AlgorithmicNode:
+    """Create a leaf node that exposes a component output under an alias."""
+    name = alias.name or f"Predictor Alias: {alias.alias}"
+    return AlgorithmicNode(
+        node_id=f"baseline_predictor_alias_{uuid.uuid4().hex[:8]}",
+        parent_id=parent_id,
+        name=name,
+        description=f"[{goal_desc}] {alias.description or f'Expose predictor alias {alias.alias}.'}",
+        concept_type=ConceptType.DATA_EXTRACTION,
+        inputs=[IOSpec(name="source", type_desc=source_type)],
+        outputs=[IOSpec(name="prediction", type_desc=source_type)],
+        status=NodeStatus.ATOMIC,
+        depth=base_depth + 1,
+    )
+
+
+def instantiate_baseline_analyzer(
+    skeleton: SkeletonGraph,
+    goal: str,
+    spec: BaselineAnalyzerSpec,
+    *,
+    parent_id: str | None = None,
+    base_depth: int = 0,
+) -> tuple[list[AlgorithmicNode], list[DependencyEdge]]:
+    """Instantiate a heterogeneous baseline analyzer assembly."""
+    if skeleton.paradigm != ConceptType.BASELINE_ANALYSIS:
+        raise ValueError("baseline analyzer instantiation requires BASELINE_ANALYSIS")
+
+    acquire_template = next(
+        (node for node in skeleton.template_nodes if node.name == "Acquire Data"),
+        None,
+    )
+    if acquire_template is None:
+        raise ValueError("baseline skeleton is missing required node: Acquire Data")
+
+    acquire = _clone_template_node(
+        acquire_template,
+        goal,
+        parent_id=parent_id,
+        base_depth=base_depth,
+    )
+    nodes: list[AlgorithmicNode] = [acquire]
+    edges: list[DependencyEdge] = []
+
+    preprocessor_nodes: dict[str, AlgorithmicNode] = {}
+    upstream_node = acquire
+    upstream_output_name, upstream_output_type = _port_type(
+        acquire.outputs,
+        "signal",
+        "np.ndarray",
+    )
+    for stage in spec.preprocessors:
+        node = _build_baseline_stage_node(
+            skeleton,
+            stage,
+            goal,
+            parent_id=parent_id,
+            base_depth=base_depth,
+            name=stage.name,
+        )
+        nodes.append(node)
+        edges.append(
+            DependencyEdge(
+                source_id=upstream_node.node_id,
+                target_id=node.node_id,
+                output_name=upstream_output_name,
+                input_name=stage.input_name,
+                source_type=upstream_output_type,
+                target_type=stage.input_type,
+                requires_glue=upstream_output_type != stage.input_type,
+            )
+        )
+        preprocessor_nodes[stage.key] = node
+        upstream_node = node
+        upstream_output_name, upstream_output_type = _baseline_stage_ports(stage)[2:]
+
+    component_stage_nodes: dict[str, dict[str, AlgorithmicNode]] = {}
+    for component in spec.components:
+        stage_nodes: dict[str, AlgorithmicNode] = {}
+        component_prefix = f"({component.name})"
+
+        if component.shape == BaselineComponentShape.WINDOWED:
+            source_node = (
+                preprocessor_nodes[component.source_key]
+                if component.source_key is not None
+                else acquire
+            )
+            source_output_name, source_output_type = _port_type(
+                source_node.outputs,
+                "signal",
+                "np.ndarray",
+            )
+
+            window_node = _build_windowed_component_node(
+                skeleton,
+                component.window,
+                goal,
+                parent_id=parent_id,
+                base_depth=base_depth,
+                name=f"{component.window.name} {component_prefix}",
+            )
+            nodes.append(window_node)
+            edges.append(
+                DependencyEdge(
+                    source_id=source_node.node_id,
+                    target_id=window_node.node_id,
+                    output_name=source_output_name,
+                    input_name=component.window.input_name,
+                    source_type=source_output_type,
+                    target_type=component.window.input_type,
+                    requires_glue=source_output_type != component.window.input_type,
+                )
+            )
+            stage_nodes["windowed"] = window_node
+
+            body_nodes: list[AlgorithmicNode] = []
+            for stage in component.window_stages:
+                node = _build_baseline_stage_node(
+                    skeleton,
+                    stage,
+                    goal,
+                    parent_id=parent_id,
+                    base_depth=base_depth,
+                    name=f"{stage.name} {component_prefix}",
+                )
+                body_nodes.append(node)
+                stage_nodes[stage.key] = node
+                nodes.append(node)
+
+            window_node = window_node.model_copy(
+                update={"children": [node.node_id for node in body_nodes]}
+            )
+            nodes[nodes.index(stage_nodes["windowed"])] = window_node
+            stage_nodes["windowed"] = window_node
+
+            for source_stage, target_stage in zip(body_nodes, body_nodes[1:]):
+                source_output_name, source_output_type = _port_type(
+                    source_stage.outputs,
+                    "signal",
+                    "np.ndarray",
+                )
+                target_input_name, target_input_type = _port_type(
+                    target_stage.inputs,
+                    "signal",
+                    "np.ndarray",
+                )
+                edges.append(
+                    DependencyEdge(
+                        source_id=source_stage.node_id,
+                        target_id=target_stage.node_id,
+                        output_name=source_output_name,
+                        input_name=target_input_name,
+                        source_type=source_output_type,
+                        target_type=target_input_type,
+                        requires_glue=source_output_type != target_input_type,
+                    )
+                )
+
+            previous_node = window_node
+            previous_output_name, previous_output_type = _port_type(
+                window_node.outputs,
+                component.window.output_name,
+                component.window.output_type,
+            )
+        else:
+            combine_node = _build_baseline_stage_node(
+                skeleton,
+                component.combine_stage,
+                goal,
+                parent_id=parent_id,
+                base_depth=base_depth,
+                name=f"{component.combine_stage.name} {component_prefix}",
+            )
+            nodes.append(combine_node)
+            stage_nodes[component.combine_stage.key] = combine_node
+
+            for ref in component.combine_inputs:
+                source_node = component_stage_nodes[ref.component][ref.stage_key]
+                source_output_name, source_output_type = _port_type(
+                    source_node.outputs,
+                    "signal",
+                    "np.ndarray",
+                )
+                target_input_name, target_input_type = _port_type(
+                    combine_node.inputs,
+                    component.combine_stage.input_name,
+                    component.combine_stage.input_type,
+                )
+                edges.append(
+                    DependencyEdge(
+                        source_id=source_node.node_id,
+                        target_id=combine_node.node_id,
+                        output_name=source_output_name,
+                        input_name=target_input_name,
+                        source_type=source_output_type,
+                        target_type=target_input_type,
+                        requires_glue=source_output_type != target_input_type,
+                    )
+                )
+
+            previous_node = combine_node
+            previous_output_name, previous_output_type = _port_type(
+                combine_node.outputs,
+                component.combine_stage.output_name,
+                component.combine_stage.output_type,
+            )
+
+        for stage in component.post_stages:
+            node = _build_baseline_stage_node(
+                skeleton,
+                stage,
+                goal,
+                parent_id=parent_id,
+                base_depth=base_depth,
+                name=f"{stage.name} {component_prefix}",
+            )
+            nodes.append(node)
+            edges.append(
+                DependencyEdge(
+                    source_id=previous_node.node_id,
+                    target_id=node.node_id,
+                    output_name=previous_output_name,
+                    input_name=stage.input_name,
+                    source_type=previous_output_type,
+                    target_type=stage.input_type,
+                    requires_glue=previous_output_type != stage.input_type,
+                )
+            )
+            stage_nodes[stage.key] = node
+            previous_node = node
+            previous_output_name, previous_output_type = _baseline_stage_ports(stage)[2:]
+
+        component_stage_nodes[component.name] = stage_nodes
+
+    for alias in spec.predictor_aliases:
+        source_node = component_stage_nodes[alias.source.component][alias.source.stage_key]
+        source_output_name, source_output_type = _port_type(
+            source_node.outputs,
+            "signal",
+            "np.ndarray",
+        )
+        alias_node = _build_predictor_alias_node(
+            alias,
+            goal,
+            parent_id=parent_id,
+            base_depth=base_depth,
+            source_type=source_output_type,
+        )
+        nodes.append(alias_node)
+        edges.append(
+            DependencyEdge(
+                source_id=source_node.node_id,
+                target_id=alias_node.node_id,
+                output_name=source_output_name,
+                input_name="source",
+                source_type=source_output_type,
+                target_type=source_output_type,
+            )
+        )
+
+    return nodes, edges
 
 
 def instantiate_baseline_multi_component(

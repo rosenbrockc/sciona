@@ -5,6 +5,13 @@ import pytest
 from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
+    BaselineAnalyzerComponentSpec,
+    BaselineAnalyzerSpec,
+    BaselineComponentOutputRef,
+    BaselineComponentShape,
+    BaselinePredictorAliasSpec,
+    BaselineStageSpec,
+    BaselineWindowSpec,
     ConceptType,
     DependencyEdge,
     IOSpec,
@@ -283,3 +290,96 @@ class TestAlgorithmicPrimitive:
         data = prim.model_dump()
         restored = AlgorithmicPrimitive.model_validate(data)
         assert restored == prim
+
+
+class TestBaselineAnalyzerModels:
+    def test_windowed_component_requires_window_and_body(self):
+        with pytest.raises(ValueError, match="windowed components require a window spec"):
+            BaselineAnalyzerComponentSpec(
+                name="irsqi",
+                shape=BaselineComponentShape.WINDOWED,
+                default_output_stage="windowed",
+            )
+
+    def test_combiner_component_requires_inputs_and_combine_stage(self):
+        with pytest.raises(ValueError, match="combiner components require a combine_stage"):
+            BaselineAnalyzerComponentSpec(
+                name="combined",
+                shape=BaselineComponentShape.COMBINER,
+                default_output_stage="combine",
+            )
+
+    def test_component_references_must_resolve(self):
+        with pytest.raises(ValueError, match="unknown stage 'missing'"):
+            BaselineAnalyzerSpec(
+                components=[
+                    BaselineAnalyzerComponentSpec(
+                        name="irsqi",
+                        shape=BaselineComponentShape.WINDOWED,
+                        window=BaselineWindowSpec(size=120, hop=120),
+                        window_stages=[
+                            BaselineStageSpec(
+                                key="rise",
+                                name="Exp Rise Step",
+                            )
+                        ],
+                        default_output_stage="windowed",
+                    ),
+                    BaselineAnalyzerComponentSpec(
+                        name="combined",
+                        shape=BaselineComponentShape.COMBINER,
+                        combine_stage=BaselineStageSpec(
+                            key="combine",
+                            name="Combine",
+                            template_name="Combine",
+                        ),
+                        combine_inputs=[
+                            BaselineComponentOutputRef(
+                                component="irsqi",
+                                stage_key="missing",
+                            )
+                        ],
+                        default_output_stage="combine",
+                    ),
+                ]
+            )
+
+    def test_predictor_alias_references_resolve(self):
+        spec = BaselineAnalyzerSpec(
+            preprocessors=[
+                BaselineStageSpec(
+                    key="invert_pat",
+                    name="Invert PAT Signal",
+                    matched_primitive="baseline_invert_signal",
+                )
+            ],
+            components=[
+                BaselineAnalyzerComponentSpec(
+                    name="patsqi",
+                    shape=BaselineComponentShape.WINDOWED,
+                    source_key="invert_pat",
+                    window=BaselineWindowSpec(size=120, hop=120),
+                    window_stages=[BaselineStageSpec(key="rise", name="Exp Rise Step")],
+                    post_stages=[
+                        BaselineStageSpec(
+                            key="regions",
+                            name="Regionize",
+                            template_name="Regionize",
+                            output_type="list[tuple[int,int]]",
+                        )
+                    ],
+                    default_output_stage="regions",
+                )
+            ],
+            predictor_aliases=[
+                BaselinePredictorAliasSpec(
+                    alias="pat",
+                    source=BaselineComponentOutputRef(
+                        component="patsqi",
+                        stage_key="regions",
+                    ),
+                )
+            ],
+        )
+
+        assert spec.predictor_aliases[0].alias == "pat"
