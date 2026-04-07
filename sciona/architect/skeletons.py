@@ -2156,29 +2156,43 @@ def _build_baseline_analysis() -> SkeletonGraph:
 
 def _build_baseline_scoring() -> SkeletonGraph:
     """Baseline-core score graph that consumes analyzer outputs."""
-    sqi = _node(
-        "Analyzer Output: sqi",
-        "Expose the SQI predictor output produced by the baseline analyzer.",
+    sqi_events = _node(
+        "Analyzer Output: sqi_events",
+        "Expose the SQI event regions produced by the baseline analyzer.",
         ConceptType.DATA_EXTRACTION,
         outputs=[IOSpec(name="prediction", type_desc="list[tuple[int,int]]")],
         status=NodeStatus.ATOMIC,
     )
-    combined = _node(
-        "Analyzer Output: combined",
-        "Expose the combined baseline output produced by the analyzer.",
+    sqi_probability = _node(
+        "Analyzer Output: sqi_probability",
+        "Expose the SQI probability trace produced by the baseline analyzer.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="prediction", type_desc="np.ndarray")],
+        status=NodeStatus.ATOMIC,
+    )
+    combined_events = _node(
+        "Analyzer Output: combined_events",
+        "Expose the combined baseline event regions produced by the analyzer.",
         ConceptType.DATA_EXTRACTION,
         outputs=[IOSpec(name="prediction", type_desc="list[tuple[int,int]]")],
         status=NodeStatus.ATOMIC,
     )
-    pat = _node(
-        "Analyzer Output: pat",
-        "Expose the PAT predictor output produced by the baseline analyzer.",
+    pat_events = _node(
+        "Analyzer Output: pat_events",
+        "Expose the PAT event regions produced by the baseline analyzer.",
         ConceptType.DATA_EXTRACTION,
         outputs=[IOSpec(name="prediction", type_desc="list[tuple[int,int]]")],
         status=NodeStatus.ATOMIC,
     )
-    spo2 = _node(
-        "Analyzer Output: spo2",
+    pat_probability = _node(
+        "Analyzer Output: pat_probability",
+        "Expose the PAT probability trace produced by the baseline analyzer.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="prediction", type_desc="np.ndarray")],
+        status=NodeStatus.ATOMIC,
+    )
+    spo2_probability = _node(
+        "Analyzer Output: spo2_probability",
         "Expose the SpO2 probability output used for moderate/severe inference.",
         ConceptType.DATA_EXTRACTION,
         outputs=[IOSpec(name="prediction", type_desc="np.ndarray")],
@@ -2229,7 +2243,7 @@ def _build_baseline_scoring() -> SkeletonGraph:
         "Accumulate padded SQI prediction-window coverage from the analyzer output.",
         ConceptType.BASELINE_ANALYSIS,
         inputs=[
-            IOSpec(name="prediction", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="prediction", type_desc="np.ndarray"),
             IOSpec(name="anchor", type_desc="np.ndarray"),
         ],
         outputs=[IOSpec(name="density_hours", type_desc="float")],
@@ -2241,7 +2255,7 @@ def _build_baseline_scoring() -> SkeletonGraph:
         "Accumulate padded PAT prediction-window coverage from the analyzer output.",
         ConceptType.BASELINE_ANALYSIS,
         inputs=[
-            IOSpec(name="prediction", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="prediction", type_desc="np.ndarray"),
             IOSpec(name="anchor", type_desc="np.ndarray"),
         ],
         outputs=[IOSpec(name="density_hours", type_desc="float")],
@@ -2316,12 +2330,18 @@ def _build_baseline_scoring() -> SkeletonGraph:
             "np.ndarray",
         ),
         _edge(anchor, sqi_density, "anchor", "anchor", "np.ndarray"),
-        _edge(sqi, sqi_density, "prediction", "prediction", "list[tuple[int,int]]"),
+        _edge(sqi_probability, sqi_density, "prediction", "prediction", "np.ndarray"),
         _edge(anchor, pat_density, "anchor", "anchor", "np.ndarray"),
-        _edge(pat, pat_density, "prediction", "prediction", "list[tuple[int,int]]"),
-        _edge(sqi, sahi, "prediction", "predictor_events", "list[tuple[int,int]]"),
+        _edge(pat_probability, pat_density, "prediction", "prediction", "np.ndarray"),
         _edge(
-            combined,
+            sqi_events,
+            sahi,
+            "prediction",
+            "predictor_events",
+            "list[tuple[int,int]]",
+        ),
+        _edge(
+            combined_events,
             sahi,
             "prediction",
             "combined_events",
@@ -2335,10 +2355,22 @@ def _build_baseline_scoring() -> SkeletonGraph:
             "float",
         ),
         _edge(sqi_density, sahi, "density_hours", "density_hours", "float"),
-        _edge(spo2, sahi, "prediction", "spo2_probabilities", "np.ndarray"),
-        _edge(sqi, bahi, "prediction", "predictor_events", "list[tuple[int,int]]"),
         _edge(
-            combined,
+            spo2_probability,
+            sahi,
+            "prediction",
+            "spo2_probabilities",
+            "np.ndarray",
+        ),
+        _edge(
+            sqi_events,
+            bahi,
+            "prediction",
+            "predictor_events",
+            "list[tuple[int,int]]",
+        ),
+        _edge(
+            combined_events,
             bahi,
             "prediction",
             "combined_events",
@@ -2353,8 +2385,14 @@ def _build_baseline_scoring() -> SkeletonGraph:
         ),
         _edge(sqi_density, bahi, "density_hours", "density_hours", "float"),
         _edge(bmi, bahi, "bmi", "bmi", "float"),
-        _edge(spo2, bahi, "prediction", "spo2_probabilities", "np.ndarray"),
-        _edge(pat, pahi, "prediction", "pat_events", "list[tuple[int,int]]"),
+        _edge(
+            spo2_probability,
+            bahi,
+            "prediction",
+            "spo2_probabilities",
+            "np.ndarray",
+        ),
+        _edge(pat_events, pahi, "prediction", "pat_events", "list[tuple[int,int]]"),
         _edge(
             analyzed_time,
             pahi,
@@ -2373,10 +2411,12 @@ def _build_baseline_scoring() -> SkeletonGraph:
             "produces sAHI, bAHI, and pAHI outputs."
         ),
         template_nodes=[
-            sqi,
-            combined,
-            pat,
-            spo2,
+            sqi_events,
+            sqi_probability,
+            combined_events,
+            pat_events,
+            pat_probability,
+            spo2_probability,
             anchor,
             sleep_mask,
             bmi,

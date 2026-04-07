@@ -22,17 +22,19 @@ class TestBaselineScoringAssembly:
         skeleton = _baseline_scoring_skeleton()
 
         assert skeleton.name == "Baseline Scoring"
-        assert len(skeleton.template_nodes) == 13
+        assert len(skeleton.template_nodes) == 15
         assert len(skeleton.template_edges) == 20
 
     def test_wires_analyzer_alias_inputs_into_scores(self):
         nodes, edges = instantiate_baseline_scoring("AHI baseline core scoring")
 
         names = [node.name for node in nodes]
-        assert names.count("Analyzer Output: sqi") == 1
-        assert names.count("Analyzer Output: combined") == 1
-        assert names.count("Analyzer Output: pat") == 1
-        assert names.count("Analyzer Output: spo2") == 1
+        assert names.count("Analyzer Output: sqi_events") == 1
+        assert names.count("Analyzer Output: sqi_probability") == 1
+        assert names.count("Analyzer Output: combined_events") == 1
+        assert names.count("Analyzer Output: pat_events") == 1
+        assert names.count("Analyzer Output: pat_probability") == 1
+        assert names.count("Analyzer Output: spo2_probability") == 1
         assert names.count("Analyzer Anchor") == 1
         assert names.count("Analyzer Sleep Mask") == 1
         assert names.count("Analyzer BMI") == 1
@@ -44,16 +46,16 @@ class TestBaselineScoringAssembly:
         pairs = _edge_pairs(nodes, edges)
         assert ("Analyzer Sleep Mask", "Compute Analyzed Sleep Time") in pairs
         assert ("Analyzer Anchor", "Compute Analyzed Sleep Time") in pairs
-        assert ("Analyzer Output: sqi", "Compute SQI Density") in pairs
-        assert ("Analyzer Output: pat", "Compute PAT Density") in pairs
-        assert ("Analyzer Output: sqi", "Score sAHI") in pairs
-        assert ("Analyzer Output: combined", "Score sAHI") in pairs
-        assert ("Analyzer Output: spo2", "Score sAHI") in pairs
-        assert ("Analyzer Output: sqi", "Score bAHI") in pairs
-        assert ("Analyzer Output: combined", "Score bAHI") in pairs
-        assert ("Analyzer Output: spo2", "Score bAHI") in pairs
+        assert ("Analyzer Output: sqi_probability", "Compute SQI Density") in pairs
+        assert ("Analyzer Output: pat_probability", "Compute PAT Density") in pairs
+        assert ("Analyzer Output: sqi_events", "Score sAHI") in pairs
+        assert ("Analyzer Output: combined_events", "Score sAHI") in pairs
+        assert ("Analyzer Output: spo2_probability", "Score sAHI") in pairs
+        assert ("Analyzer Output: sqi_events", "Score bAHI") in pairs
+        assert ("Analyzer Output: combined_events", "Score bAHI") in pairs
+        assert ("Analyzer Output: spo2_probability", "Score bAHI") in pairs
         assert ("Analyzer BMI", "Score bAHI") in pairs
-        assert ("Analyzer Output: pat", "Score pAHI") in pairs
+        assert ("Analyzer Output: pat_events", "Score pAHI") in pairs
 
     def test_score_nodes_expose_baseline_result_aliases(self):
         nodes, _edges = instantiate_baseline_scoring("AHI baseline core scoring")
@@ -67,6 +69,6 @@ class TestBaselineScoringAssembly:
         nodes, edges = instantiate_baseline_scoring("AHI baseline core scoring")
 
         pairs = _edge_pairs(nodes, edges)
-        assert ("Analyzer Output: pat", "Compute PAT Density") in pairs
+        assert ("Analyzer Output: pat_probability", "Compute PAT Density") in pairs
         assert ("Compute PAT Density", "Score pAHI") in pairs
         assert ("Compute SQI Density", "Score pAHI") not in pairs
