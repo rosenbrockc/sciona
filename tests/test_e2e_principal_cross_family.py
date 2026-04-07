@@ -295,7 +295,24 @@ class _SingleShotExpansionEngine:
                         metric_value=0.85,
                         threshold=0.30,
                         source_domain="statistics",
+                        asset_id="expansion.statistics.quality_gate.v1",
+                        asset_version="phase3.v1",
+                        asset_family="statistics",
+                        asset_source_kind="local_asset",
+                        asset_review_status="transitional",
+                        asset_operation="Inject Signal Quality Gate",
                     ),
+                ),
+                applied_assets=(
+                    {
+                        "asset_id": "expansion.statistics.quality_gate.v1",
+                        "asset_version": "phase3.v1",
+                        "asset_family": "statistics",
+                        "asset_source_kind": "local_asset",
+                        "asset_review_status": "transitional",
+                        "asset_operation": "Inject Signal Quality Gate",
+                        "rule_name": "inject_signal_quality_gate",
+                    },
                 ),
                 expanded=True,
             )
@@ -369,6 +386,12 @@ class TestPrincipalCrossFamilyExpansionE2E:
             "inject_signal_quality_gate"
         ]
         assert first_trial["expansion"]["diagnostic_count"] == 1
+        assert first_trial["expansion"]["applied_assets"][0]["asset_id"] == (
+            "expansion.statistics.quality_gate.v1"
+        )
+        assert first_trial["expansion"]["diagnostic_assets"][0]["asset_operation"] == (
+            "Inject Signal Quality Gate"
+        )
         assert first_trial["expansion"]["context_summary"]["has_eval_result"] is True
 
     def test_second_trial_records_cross_family_structure(self, principal_cross_family_result):

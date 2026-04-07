@@ -295,6 +295,8 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
                 "applied": False,
                 "rules_applied": [],
                 "diagnostic_count": 0,
+                "diagnostic_assets": [],
+                "applied_assets": [],
                 "context_summary": {},
             },
             "rollback": {
@@ -365,6 +367,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
                 "match_results": match_results,
                 "ghost_report": ghost_report,
                 "rules_applied": list(expansion.applied_rules),
+                "applied_assets": list(expansion.applied_assets),
             }
         )
         proposal_rows.append(
@@ -373,6 +376,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
                 "loss": loss,
                 "improves_baseline": loss < baseline_loss,
                 "rules_applied": list(expansion.applied_rules),
+                "applied_assets": list(expansion.applied_assets),
             }
         )
 
@@ -470,6 +474,29 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             "diagnostic_rule_names": sorted(
                 {diag.rule_name for diag in expansion.diagnostics}
             ),
+            "diagnostic_assets": [
+                summary
+                for summary in {
+                    (
+                        diag.asset_id,
+                        diag.asset_version,
+                        diag.asset_family,
+                        diag.asset_source_kind,
+                        diag.asset_review_status,
+                        diag.asset_operation,
+                    ): {
+                        "asset_id": diag.asset_id,
+                        "asset_version": diag.asset_version,
+                        "asset_family": diag.asset_family,
+                        "asset_source_kind": diag.asset_source_kind,
+                        "asset_review_status": diag.asset_review_status,
+                        "asset_operation": diag.asset_operation,
+                    }
+                    for diag in expansion.diagnostics
+                    if diag.asset_id
+                }.values()
+            ],
+            "applied_assets": list(expansion.applied_assets),
             "context_summary": summarize_expansion_context(context),
         }
         state.trial_history[-1] = latest

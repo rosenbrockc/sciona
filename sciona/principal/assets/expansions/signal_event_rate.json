@@ -1,0 +1,142 @@
+{
+  "asset_id": "family.signal_event_rate.expansions.v1",
+  "asset_version": "phase3.v1",
+  "family": "signal_event_rate",
+  "domain": "signal_processing",
+  "name": "Signal Event Rate Expansion Inventory",
+  "description": "Declarative refinement inventory for signal to event to rate pipelines, covering pre-filter cleanup, signal-quality gating, and post-detection interval rejection.",
+  "operations": [
+    {
+      "rule_name": "insert_jump_removal_before_filter",
+      "runtime_rule_builder": "insert_jump_removal_before_filter",
+      "runtime_diagnostic": "jump_discontinuities",
+      "name": "Insert Jump Removal Before Filter",
+      "intent": "Protect downstream detection from large waveform steps by inserting a waveform-preserving cleanup stage before the first filter.",
+      "dejargonized_summary": "Add a step that removes big jumps before filtering the signal.",
+      "trigger": {
+        "metric_name": "jump_discontinuity_count",
+        "comparison": "gt",
+        "threshold": 3.0,
+        "required_signal_keys": [
+          "signal"
+        ],
+        "required_planning_constraint_categories": [
+          "loss"
+        ]
+      },
+      "rewrite": {
+        "before_summary": "A waveform source feeds the first detection-oriented filter directly.",
+        "after_summary": "A jump-removal stage is inserted between the waveform source and the first detection-oriented filter.",
+        "information_flow_effect": "Preserves waveform semantics while removing large discontinuities ahead of downstream filtering.",
+        "notes": [
+          "This rewrite is only appropriate while the pipeline still has access to the raw waveform path."
+        ]
+      },
+      "uncertainty_notes": [
+        "This expansion is only safe when the pre-filter stage still has access to the waveform."
+      ]
+    },
+    {
+      "rule_name": "insert_sqi_before_filter",
+      "runtime_rule_builder": "insert_sqi_before_filter",
+      "runtime_diagnostic": "signal_quality_variance",
+      "name": "Insert Signal Quality Gate Before Filter",
+      "intent": "Expose material waveform quality variation before the main filter so downstream detection does not commit to one brittle conditioning path.",
+      "dejargonized_summary": "Add a step that scores signal quality before the main filter when the waveform quality changes a lot over time.",
+      "trigger": {
+        "metric_name": "signal_quality_kurtosis_cv",
+        "comparison": "gt",
+        "threshold": 1.5,
+        "required_signal_keys": [
+          "signal",
+          "sampling_rate"
+        ]
+      },
+      "rewrite": {
+        "before_summary": "A waveform source feeds the first detection-oriented filter without an explicit quality-assessment stage.",
+        "after_summary": "A signal-quality assessment stage is inserted before the first detection-oriented filter.",
+        "information_flow_effect": "Adds a quality mask while preserving the waveform path into downstream filtering.",
+        "notes": [
+          "This rewrite assumes the family still exposes a waveform path before filtering."
+        ]
+      },
+      "uncertainty_notes": [
+        "This expansion assumes the family still exposes a waveform path before filtering."
+      ]
+    },
+    {
+      "rule_name": "insert_outlier_rejection_after_detection",
+      "runtime_rule_builder": "insert_outlier_rejection_after_detection",
+      "runtime_diagnostic": "interval_outlier_fraction",
+      "name": "Insert Outlier Rejection After Detection",
+      "intent": "Protect rate estimation from an implausible event stream by inserting interval-based event rejection after detection.",
+      "dejargonized_summary": "Add a cleanup step between peak detection and rate calculation when the detected timing is obviously inconsistent.",
+      "trigger": {
+        "metric_name": "interval_outlier_fraction",
+        "comparison": "gt",
+        "threshold": 0.15,
+        "required_intermediate_keys": [
+          "events"
+        ]
+      },
+      "rewrite": {
+        "before_summary": "A detector feeds an event-rate estimator directly.",
+        "after_summary": "An interval-rejection stage is inserted between detection and the event-rate estimator.",
+        "information_flow_effect": "Removes implausible events before rate estimation while keeping the event stream interpretation explicit.",
+        "notes": [
+          "This refinement is intentionally lossy and should only fire after event extraction."
+        ]
+      },
+      "uncertainty_notes": [
+        "This refinement is lossy and should only fire after event extraction."
+      ]
+    },
+    {
+      "rule_name": "insert_outlier_rejection_after_detection_smoothed",
+      "runtime_rule_builder": "insert_outlier_rejection_after_detection_smoothed",
+      "runtime_diagnostic": "interval_outlier_fraction",
+      "name": "Insert Outlier Rejection Before Smoothed Rate",
+      "intent": "Apply the same event-stream cleanup before the smoothed rate estimator when detected intervals are implausible.",
+      "dejargonized_summary": "Add the same event cleanup step before the smoothed rate calculator when the detected timing is inconsistent.",
+      "trigger": {
+        "metric_name": "interval_outlier_fraction",
+        "comparison": "gt",
+        "threshold": 0.15,
+        "required_intermediate_keys": [
+          "events"
+        ]
+      },
+      "rewrite": {
+        "before_summary": "A detector feeds the smoothed event-rate estimator directly.",
+        "after_summary": "An interval-rejection stage is inserted between detection and the smoothed event-rate estimator.",
+        "information_flow_effect": "Applies the same event cleanup before the smoothed rate estimator path.",
+        "notes": [
+          "This refinement is intentionally lossy and should only fire after event extraction."
+        ]
+      },
+      "uncertainty_notes": [
+        "This refinement is lossy and should only fire after event extraction."
+      ]
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Externalizes high-value signal-event-rate refinements that previously lived only in framework-local rule code.",
+    "dejargonized_summary": "These are the family-level cleanups we know can help a waveform-to-rate pipeline when the signal is jumpy, the quality varies, or the detected events are implausible.",
+    "uncertainty_notes": [
+      "The current runtime still adapts these assets through the legacy rewrite engine.",
+      "Boundary-aware applicability remains limited by the current CDG topology representation."
+    ],
+    "references": [
+      {
+        "title": "Phase 3 Expansion Asset Plan",
+        "note": "Framework plan for promoting refinement inventories into auditable family assets."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}

@@ -26,10 +26,29 @@ from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
 )
+from sciona.principal.expansion_assets import (
+    ExpansionFamilyAsset,
+    expansion_asset_summary,
+    load_local_expansion_assets_by_family,
+)
 
 logger = logging.getLogger(__name__)
 
 _DOMAIN = "signal_event_rate"
+
+
+def _signal_event_rate_asset() -> ExpansionFamilyAsset | None:
+    return load_local_expansion_assets_by_family().get("signal_event_rate")
+
+
+def _diag_asset_fields(rule_name: str) -> dict[str, str]:
+    asset = _signal_event_rate_asset()
+    if asset is None:
+        return {}
+    operation = asset.operation(rule_name)
+    if operation is None:
+        return {}
+    return expansion_asset_summary(asset, operation)
 
 
 # ---------------------------------------------------------------------------
@@ -332,6 +351,7 @@ def _diagnose_jump_discontinuities(
             metric_value=float(jump_count),
             threshold=float(threshold),
             source_domain=_DOMAIN,
+            **_diag_asset_fields("insert_jump_removal_before_filter"),
         )
     return None
 
@@ -383,6 +403,7 @@ def _diagnose_signal_quality_variance(
             metric_value=kurt_cv,
             threshold=threshold,
             source_domain=_DOMAIN,
+            **_diag_asset_fields("insert_sqi_before_filter"),
         )
     return None
 
@@ -433,6 +454,7 @@ def _diagnose_interval_outlier_fraction(
             metric_value=outlier_frac,
             threshold=threshold,
             source_domain=_DOMAIN,
+            **_diag_asset_fields(rule_name),
         )
     return None
 

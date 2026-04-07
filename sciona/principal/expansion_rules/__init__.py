@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 def default_rule_sets() -> list[ExpansionRuleSet]:
     """Return all built-in expansion rule sets."""
+    from sciona.principal.expansion_assets import asset_backed_rule_sets
     from sciona.principal.expansion_rules.divide_and_conquer import (
         DivideAndConquerExpansionRuleSet,
     )
@@ -116,7 +117,7 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         RandomizedExpansionRuleSet,
     )
 
-    return [
+    return asset_backed_rule_sets([
         SignalEventRateExpansionRuleSet(),
         SequentialFilterExpansionRuleSet(),
         MCMCExpansionRuleSet(),
@@ -150,4 +151,4 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         RandomizedExpansionRuleSet(),
         InformationTheoryExpansionRuleSet(),
         CompressionExpansionRuleSet(),
-    ]
+    ])

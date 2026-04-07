@@ -111,6 +111,12 @@ class TestExpansionEngine:
             metric_name="m",
             metric_value=1.0,
             threshold=0.5,
+            asset_id="asset.insert_x.v1",
+            asset_version="v1",
+            asset_family="test_family",
+            asset_source_kind="local_asset",
+            asset_review_status="transitional",
+            asset_operation="insert_X",
         )
         rs = MockRuleSet("sig", "signal", lambda c, ctx: [diag], [rule])
         engine = ExpansionEngine([rs])
@@ -122,6 +128,7 @@ class TestExpansionEngine:
         result = engine.expand(cdg, ExpansionContext())
         assert result.expanded
         assert "insert_X" in result.applied_rules
+        assert result.applied_assets[0]["asset_id"] == "asset.insert_x.v1"
         assert len(result.cdg.nodes) == 3
 
     def test_severity_ordering(self):
@@ -350,6 +357,11 @@ class TestSignalEventRateExpansion:
         diags = rs.diagnose(cdg, ctx)
         rule_names = {d.rule_name for d in diags}
         assert "insert_jump_removal_before_filter" in rule_names
+        jump_diag = next(
+            diag for diag in diags if diag.rule_name == "insert_jump_removal_before_filter"
+        )
+        assert jump_diag.asset_id == "family.signal_event_rate.expansions.v1"
+        assert jump_diag.asset_operation == "insert_jump_removal_before_filter"
 
     def test_diagnose_interval_outliers(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
@@ -405,6 +417,11 @@ class TestSignalEventRateExpansion:
 
         assert result.expanded
         assert len(result.applied_rules) >= 1
+        assert result.applied_assets
+        assert (
+            result.applied_assets[0]["asset_id"]
+            == "family.signal_event_rate.expansions.v1"
+        )
         prims = {n.matched_primitive for n in result.cdg.nodes if n.matched_primitive}
         # At least one expansion atom should be present
         expansion_atoms = prims & {

@@ -46,6 +46,12 @@ class ExpansionDiagnostic:
     metric_value: float  # measured value
     threshold: float  # the threshold that was exceeded
     source_domain: str = ""  # originating rule-set domain
+    asset_id: str = ""
+    asset_version: str = ""
+    asset_family: str = ""
+    asset_source_kind: str = ""
+    asset_review_status: str = ""
+    asset_operation: str = ""
 
 
 @dataclass
@@ -70,6 +76,7 @@ class ExpansionResult:
     applied_rules: tuple[str, ...]
     diagnostics: tuple[ExpansionDiagnostic, ...]
     expanded: bool
+    applied_assets: tuple[dict[str, Any], ...] = ()
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +163,7 @@ class ExpansionEngine:
         """
         all_diagnostics: list[ExpansionDiagnostic] = []
         applied_rules: list[str] = []
+        applied_assets: list[dict[str, Any]] = []
 
         # Collect diagnostics from ALL rule sets (cross-domain).
         for rs in self._rule_sets:
@@ -197,6 +205,18 @@ class ExpansionEngine:
             cdg = result.unwrap()
             applied_rules.append(diag.rule_name)
             applied_set.add(diag.rule_name)
+            if diag.asset_id:
+                asset_summary = {
+                    "asset_id": diag.asset_id,
+                    "asset_version": diag.asset_version,
+                    "asset_family": diag.asset_family,
+                    "asset_source_kind": diag.asset_source_kind,
+                    "asset_review_status": diag.asset_review_status,
+                    "asset_operation": diag.asset_operation,
+                    "rule_name": diag.rule_name,
+                }
+                if asset_summary not in applied_assets:
+                    applied_assets.append(asset_summary)
             logger.info(
                 "Expansion '%s' applied (severity=%.2f, %s=%.3f > %.3f)",
                 diag.rule_name,
@@ -209,6 +229,7 @@ class ExpansionEngine:
         return ExpansionResult(
             cdg=cdg,
             applied_rules=tuple(applied_rules),
+            applied_assets=tuple(applied_assets),
             diagnostics=tuple(all_diagnostics),
             expanded=len(applied_rules) > 0,
         )
