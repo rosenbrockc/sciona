@@ -691,6 +691,8 @@ import json
 import os
 from pathlib import Path
 
+from sciona.principal.e2e_benchmark_policy import evaluate_e2e_benchmark_report
+
 output_dir = Path(os.environ['OUTPUT_DIR_FOR_SUMMARY'])
 total_gt = int(os.environ['TOTAL_GT_FOR_SUMMARY'])
 
@@ -722,50 +724,69 @@ rapid_post = read_postprocess(os.environ['RAPID_DIR_FOR_SUMMARY'])
 structured_post = read_postprocess(os.environ['STRUCTURED_DIR_FOR_SUMMARY'])
 verified_post = read_postprocess(os.environ['VERIFIED_DIR_FOR_SUMMARY'])
 
-report = {
-    'goal': os.environ['GOAL_FOR_SUMMARY'],
-    'prover': os.environ['PROVER_FOR_SUMMARY'],
-    'llm_provider': os.environ['LLM_PROVIDER_FOR_SUMMARY'],
-    'ground_truth_atoms': total_gt,
-    'results': {
-        'rapid': {
-            'latency_ms': int(os.environ['RAPID_MS_FOR_SUMMARY']),
-            'matches_total': rapid_total,
-            'matches_verified': rapid_verified,
-            'ground_truth_hits': read_hits('rapid'),
-            'ground_truth_coverage': round(read_hits('rapid') / total_gt, 2),
-        },
-        'structured': {
-            'latency_ms': int(os.environ['STRUCTURED_MS_FOR_SUMMARY']),
-            'matches_total': structured_total,
-            'matches_verified': structured_verified,
-            'ground_truth_hits': read_hits('structured'),
-            'ground_truth_coverage': round(read_hits('structured') / total_gt, 2),
-        },
-        'verified': {
-            'latency_ms': int(os.environ['VERIFIED_MS_FOR_SUMMARY']),
-            'matches_total': verified_total,
-            'matches_verified': verified_verified,
-            'ground_truth_hits': read_hits('verified'),
-            'ground_truth_coverage': round(read_hits('verified') / total_gt, 2),
-        },
-        'raw_llm': {
-            'latency_ms': int(os.environ['RAW_MS_FOR_SUMMARY']),
-            'matches_total': raw_total,
-            'matches_verified': 0,
-            'ground_truth_hits': read_hits('raw_llm'),
-            'ground_truth_coverage': round(read_hits('raw_llm') / total_gt, 2),
-        },
-    },
-}
+postprocess = None
 if any(item is not None for item in (rapid_post, structured_post, verified_post)):
-    report['postprocess'] = {
+    postprocess = {
         'enabled': True,
         'dataset': os.environ['PROFILE_DATASET_FOR_SUMMARY'],
         'rapid': rapid_post,
         'structured': structured_post,
         'verified': verified_post,
     }
+
+shortcut_flags = {
+    'curated_signal_event_rate_shortcut': False,
+    'generic_only_keyword_path': (
+        str(os.environ.get('E2E_GENERIC_ONLY', '')).strip().lower() in {'1', 'true', 'yes'}
+    ),
+    'forced_semantic_backend_faiss': True,
+}
+
+variants = {
+    'rapid': {
+        'mode_dir': os.environ['RAPID_DIR_FOR_SUMMARY'],
+        'latency_ms': int(os.environ['RAPID_MS_FOR_SUMMARY']),
+        'matches_total': rapid_total,
+        'matches_verified': rapid_verified,
+        'ground_truth_hits': read_hits('rapid'),
+        'executable': bool((rapid_post or {}).get('synthesize', {}).get('compiled_ok', True)),
+    },
+    'structured': {
+        'mode_dir': os.environ['STRUCTURED_DIR_FOR_SUMMARY'],
+        'latency_ms': int(os.environ['STRUCTURED_MS_FOR_SUMMARY']),
+        'matches_total': structured_total,
+        'matches_verified': structured_verified,
+        'ground_truth_hits': read_hits('structured'),
+        'executable': bool((structured_post or {}).get('synthesize', {}).get('compiled_ok', True)),
+    },
+    'verified': {
+        'mode_dir': os.environ['VERIFIED_DIR_FOR_SUMMARY'],
+        'latency_ms': int(os.environ['VERIFIED_MS_FOR_SUMMARY']),
+        'matches_total': verified_total,
+        'matches_verified': verified_verified,
+        'ground_truth_hits': read_hits('verified'),
+        'executable': bool((verified_post or {}).get('synthesize', {}).get('compiled_ok', True)),
+    },
+    'raw_llm': {
+        'mode_dir': os.environ['RAW_DIR_FOR_SUMMARY'],
+        'latency_ms': int(os.environ['RAW_MS_FOR_SUMMARY']),
+        'matches_total': raw_total,
+        'matches_verified': 0,
+        'ground_truth_hits': read_hits('raw_llm'),
+        'executable': False,
+    },
+}
+
+report = evaluate_e2e_benchmark_report(
+    goal=os.environ['GOAL_FOR_SUMMARY'],
+    prover=os.environ['PROVER_FOR_SUMMARY'],
+    llm_provider=os.environ['LLM_PROVIDER_FOR_SUMMARY'],
+    total_ground_truth=total_gt,
+    variants=variants,
+    shortcut_flags=shortcut_flags,
+    declared_shortcuts=[],
+    postprocess=postprocess,
+)
 
 with open(output_dir / 'summary.json', 'w') as f:
     json.dump(report, f, indent=2)
@@ -780,6 +801,15 @@ for variant in ['rapid', 'structured', 'verified', 'raw_llm']:
     gt = f"{r['ground_truth_hits']}/{total_gt}"
     cov = f"{r['ground_truth_coverage']:.0%}"
     print(f"{variant} | {lat} | {r['matches_total']} | {r['matches_verified']} | {gt} ({cov})")
+print()
+print('variant | artifacts | anti-shortcut | behavioral')
+print('--- | --- | --- | ---')
+for variant in ['rapid', 'structured', 'verified', 'raw_llm']:
+    policy = report['results'][variant]['policy']
+    artifacts_ok = policy['required_artifacts']['passed']
+    anti_shortcut_ok = policy['anti_shortcut']['passed']
+    behavioral_ok = policy['behavioral']['passed']
+    print(f"{variant} | {artifacts_ok} | {anti_shortcut_ok} | {behavioral_ok}")
 if report.get('postprocess', {}).get('enabled'):
     print()
     print('postprocess variant | synth rc | compiled_ok | export rc | profile rc | gradients')
