@@ -1264,6 +1264,174 @@ _BASELINE_ANALYSIS_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
     ),
 ]
 
+_BASELINE_SCORING_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
+    (
+        AlgorithmicPrimitive(
+            name="accumulate_analyzed_time",
+            source="sciona-builtins",
+            category=ConceptType.BASELINE_ANALYSIS,
+            description=(
+                "Accumulate analyzed sleep time from an anchor-aligned sleep mask "
+                "for downstream baseline-path scoring."
+            ),
+            inputs=[
+                IOSpec(name="anchor", type_desc="np.ndarray"),
+                IOSpec(name="sleep_mask", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="analyzed_time_hours", type_desc="float")],
+            type_signature="np.ndarray, np.ndarray -> float",
+        ),
+        [
+            "accumulate analyzed time",
+            "compute analyzed sleep time",
+            "analyzed-time accumulation",
+            "compute analyzed time",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="accumulate_prediction_window_time",
+            source="sciona-builtins",
+            category=ConceptType.BASELINE_ANALYSIS,
+            description=(
+                "Accumulate padded prediction-window coverage from component "
+                "probabilities for density-aware baseline scoring."
+            ),
+            inputs=[
+                IOSpec(name="probabilities", type_desc="np.ndarray"),
+                IOSpec(name="anchor", type_desc="np.ndarray"),
+            ],
+            outputs=[IOSpec(name="prediction_window_hours", type_desc="float")],
+            type_signature="np.ndarray, np.ndarray -> float",
+        ),
+        [
+            "compute density windows",
+            "compute prediction density",
+            "prediction-density windows",
+            "accumulate prediction time",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_event_rate_per_hour",
+            source="sciona-builtins",
+            category=ConceptType.BASELINE_ANALYSIS,
+            description=(
+                "Compute an hourly event rate from region labels, intervals, or "
+                "event counts."
+            ),
+            inputs=[
+                IOSpec(name="events", type_desc="np.ndarray | int"),
+                IOSpec(name="analyzed_time_hours", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="hourly_event_rate", type_desc="float")],
+            type_signature="np.ndarray | int, float -> float",
+        ),
+        [
+            "compute event rate per hour",
+            "compute hourly event rate",
+            "compute events per hour",
+            "hourly event-rate",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="apply_bmi_correction",
+            source="sciona-builtins",
+            category=ConceptType.BASELINE_ANALYSIS,
+            description=(
+                "Apply the mild-branch BMI correction used by the baseline-path "
+                "AHI scorer."
+            ),
+            inputs=[
+                IOSpec(name="ahi", type_desc="float"),
+                IOSpec(name="bmi", type_desc="float", required=False),
+            ],
+            outputs=[IOSpec(name="corrected_ahi", type_desc="float")],
+            type_signature="float, float | None -> float",
+        ),
+        [
+            "apply bmi correction",
+            "bmi correction",
+            "adjust ahi for bmi",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="score_baseline_path",
+            source="sciona-builtins",
+            category=ConceptType.BASELINE_ANALYSIS,
+            description=(
+                "Compute the baseline SQI-path score from predictor events, "
+                "combined-path events, analyzed time, and density."
+            ),
+            inputs=[
+                IOSpec(name="predictor_events", type_desc="np.ndarray | int"),
+                IOSpec(name="combined_events", type_desc="np.ndarray | int"),
+                IOSpec(name="analyzed_time_hours", type_desc="float"),
+                IOSpec(name="density_hours", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="sahi", type_desc="float")],
+            type_signature="np.ndarray | int, np.ndarray | int, float, float -> float",
+        ),
+        [
+            "score baseline path",
+            "compute sahi",
+            "baseline-core score",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="score_bmi_baseline_path",
+            source="sciona-builtins",
+            category=ConceptType.BASELINE_ANALYSIS,
+            description=(
+                "Compute the BMI-corrected baseline-path score from predictor "
+                "events, combined-path events, analyzed time, density, and BMI."
+            ),
+            inputs=[
+                IOSpec(name="predictor_events", type_desc="np.ndarray | int"),
+                IOSpec(name="combined_events", type_desc="np.ndarray | int"),
+                IOSpec(name="analyzed_time_hours", type_desc="float"),
+                IOSpec(name="density_hours", type_desc="float"),
+                IOSpec(name="bmi", type_desc="float", required=False),
+            ],
+            outputs=[IOSpec(name="bahi", type_desc="float")],
+            type_signature=(
+                "np.ndarray | int, np.ndarray | int, float, float, float | None -> float"
+            ),
+        ),
+        [
+            "score bmi baseline path",
+            "compute bahi",
+            "bmi corrected baseline score",
+        ],
+    ),
+    (
+        AlgorithmicPrimitive(
+            name="score_pat_baseline_path",
+            source="sciona-builtins",
+            category=ConceptType.BASELINE_ANALYSIS,
+            description=(
+                "Compute the PAT baseline-branch score from PAT events, analyzed "
+                "time, and prediction density."
+            ),
+            inputs=[
+                IOSpec(name="pat_events", type_desc="np.ndarray | int"),
+                IOSpec(name="analyzed_time_hours", type_desc="float"),
+                IOSpec(name="density_hours", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="pahi", type_desc="float")],
+            type_signature="np.ndarray | int, float, float -> float",
+        ),
+        [
+            "score pat baseline path",
+            "compute pahi",
+            "pat baseline score",
+        ],
+    ),
+]
+
 
 def seed_bayesian_primitives(catalog: PrimitiveCatalog) -> None:
     """Add built-in Bayesian primitives to an existing catalog."""
@@ -1279,6 +1447,7 @@ def seed_builtin_primitives(catalog: PrimitiveCatalog) -> None:
         _SIGNAL_FILTER_PRIMITIVES,
         _SIGNAL_TRANSFORM_PRIMITIVES,
         _BASELINE_ANALYSIS_PRIMITIVES,
+        _BASELINE_SCORING_PRIMITIVES,
         _LINEAR_ALGEBRA_PRIMITIVES,
         _OPTIMIZATION_PRIMITIVES,
         _GRAPH_ALGEBRA_PRIMITIVES,
