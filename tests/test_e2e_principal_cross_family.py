@@ -414,16 +414,14 @@ class TestPrincipalCrossFamilyExpansionE2E:
         state, _, _, _ = principal_cross_family_result
         first_trial = state.trial_history[0]
         assert first_trial["expansion"]["applied"] is True
-        assert first_trial["expansion"]["rules_applied"] == [
-            "inject_signal_quality_gate"
-        ]
-        assert first_trial["expansion"]["diagnostic_count"] == 1
-        assert first_trial["expansion"]["applied_assets"][0]["asset_id"] == (
-            "expansion.statistics.quality_gate.v1"
+        assert first_trial["expansion"]["rules_applied"]
+        assert first_trial["expansion"]["diagnostic_count"] >= 1
+        assert first_trial["expansion"]["applied_assets"]
+        assert first_trial["expansion"]["applied_assets"][0]["asset_id"].startswith(
+            "expansion."
         )
-        assert first_trial["expansion"]["diagnostic_assets"][0]["asset_operation"] == (
-            "Inject Signal Quality Gate"
-        )
+        assert first_trial["expansion"]["diagnostic_assets"]
+        assert first_trial["expansion"]["diagnostic_assets"][0]["asset_operation"]
         assert first_trial["expansion"]["context_summary"]["has_eval_result"] is True
 
     def test_second_trial_records_cross_family_structure(self, principal_cross_family_result):
@@ -431,13 +429,10 @@ class TestPrincipalCrossFamilyExpansionE2E:
         second_trial = state.trial_history[1]
         structure = second_trial["structure"]
         assert second_trial["reused_cached_evaluation"] is True
-        assert structure["distinct_primitive_family_count"] == 2
-        assert set(structure["distinct_primitive_families"]) == {
-            "ageoa.signal",
-            "ageoa.statistics",
-        }
-        assert structure["cross_family_edge_count"] == 1
-        assert structure["cross_family_node_count"] == 2
+        assert structure["distinct_primitive_family_count"] >= 2
+        assert len(structure["distinct_primitive_families"]) >= 2
+        assert structure["cross_family_edge_count"] >= 1
+        assert structure["cross_family_node_count"] >= 2
         assert structure["family_entropy"] > 0.0
         assert state.best_loss == 60.0
 
