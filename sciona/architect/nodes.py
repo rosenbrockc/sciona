@@ -32,6 +32,13 @@ from sciona.architect.proposal_models import (
 from sciona.architect.proposal_ranking import ScoredProposal, rank_proposals
 from sciona.architect.skeleton_proposals import generate_skeleton_proposals
 from sciona.architect.structural_critic import structural_critique_issues
+from sciona.architect.planning_contract import (
+    PlanningConstraint,
+    PlanningConstraintCategory,
+    build_planning_artifact,
+    render_planning_artifact_block,
+    summarize_planning_artifact,
+)
 from sciona.architect.prompts import (
     CRITIQUE_SYSTEM,
     CRITIQUE_USER,
@@ -574,6 +581,13 @@ def _failure_namespace(config: RunnableConfig, deps: DecompositionDeps) -> str:
     return f"{base}/failures"
 
 
+def _planning_artifact_block(state: DecompositionState) -> str:
+    artifact = state.get("planning_artifact")
+    if not artifact:
+        return ""
+    return render_planning_artifact_block(artifact)
+
+
 async def _search_context(
     deps: DecompositionDeps,
     config: RunnableConfig,
@@ -776,16 +790,57 @@ async def select_strategy(
             status=NodeStatus.DECOMPOSED,
             depth=0,
         )
+        planning_artifact = build_planning_artifact(
+            goal=goal,
+            thread_id=str(config.get("configurable", {}).get("thread_id", "")),
+            paradigm="conjugate_update",
+            family_hint="conjugate_update",
+            strategy_rationale="Deterministic conjugate-pair short circuit.",
+            skeleton_instantiated=False,
+            root_inputs=[],
+            root_outputs=[],
+            assumptions=[f"Detected conjugate pair: {conjugate_spec['pair_name']}"],
+            unresolved_questions=[
+                "Conjugate fast-path should still preserve the planning contract."
+            ],
+            extra_constraints=[
+                PlanningConstraint(
+                    category=PlanningConstraintCategory.STAGE,
+                    subject="conjugate_update",
+                    statement="Short-circuit directly into conjugate update flow.",
+                    source_stage="strategy",
+                ),
+                PlanningConstraint(
+                    category=PlanningConstraintCategory.ADMISSIBILITY,
+                    subject="conjugate_update",
+                    statement=(
+                        "Only apply the short-circuit when the detected pair is "
+                        "unambiguously conjugate."
+                    ),
+                    source_stage="strategy",
+                ),
+            ],
+        )
+        planning_artifact_data = planning_artifact.model_dump(mode="json")
         history_entry = {
             "step": "select_strategy",
             "paradigm": "conjugate_update",
             "conjugate_pair": conjugate_spec["pair_name"],
             "short_circuit": True,
+            "planning_artifact": summarize_planning_artifact(planning_artifact_data),
         }
+        _publish_architect_snapshot(
+            phase="strategy",
+            node_id=root_id,
+            nodes=[root],
+            edges=[],
+            extra={"planning_artifact": summarize_planning_artifact(planning_artifact_data)},
+        )
         return {
             "nodes": [root],
             "edges": [],
             "history": [history_entry],
+            "planning_artifact": planning_artifact_data,
             "pending_node_ids": [],
             "current_node_id": root_id,
             "paradigm": "conjugate_update",
@@ -893,6 +948,29 @@ async def select_strategy(
     pending = [n.node_id for n in nodes if n.status == NodeStatus.PENDING]
 
     current_node_id = pending[0] if pending else ""
+    planning_artifact = build_planning_artifact(
+        goal=goal,
+        thread_id=str(config.get("configurable", {}).get("thread_id", "")),
+        paradigm=paradigm.value,
+        family_hint=paradigm.value,
+        strategy_rationale=str(parsed.get("rationale", "") if parsed else ""),
+        variant_hint=variant_hint,
+        skeleton_instantiated=skeleton_instantiated,
+        root_inputs=root.inputs,
+        root_outputs=root.outputs,
+        assumptions=[
+            "Root boundary contracts were derived from the instantiated skeleton.",
+        ]
+        if skeleton_instantiated
+        else [
+            "Root boundary contracts are still provisional until decomposition instantiates them.",
+        ],
+        unresolved_questions=[
+            "Family-specific refinements should preserve declared planning constraints."
+        ],
+    )
+    planning_artifact_data = planning_artifact.model_dump(mode="json")
+    planning_summary = summarize_planning_artifact(planning_artifact_data)
 
     history_entry = {
         "step": "select_strategy",
@@ -901,6 +979,7 @@ async def select_strategy(
         "skeleton_instantiated": skeleton_instantiated,
         "num_nodes": len(nodes),
         "num_pending": len(pending),
+        "planning_artifact": planning_summary,
     }
 
     await _put_context(
@@ -915,11 +994,19 @@ async def select_strategy(
         ),
         metadata={"paradigm": paradigm.value},
     )
+    _publish_architect_snapshot(
+        phase="strategy",
+        node_id=current_node_id or root_id,
+        nodes=nodes,
+        edges=edges,
+        extra={"planning_artifact": planning_summary},
+    )
 
     return {
         "nodes": nodes,
         "edges": edges,
         "history": [history_entry],
+        "planning_artifact": planning_artifact_data,
         "pending_node_ids": pending,
         "current_node_id": current_node_id,
         "paradigm": paradigm.value,
@@ -986,6 +1073,7 @@ async def decompose_node(
             f"Previous decomposition was rejected: {reason}\n"
             "Please fix the issues and try again."
         )
+    planning_context = _planning_artifact_block(state) or "(none)"
 
     # Try template retriever for high-confidence instantiation (skip LLM)
     template_retriever = getattr(deps, "template_retriever", None)
@@ -1138,6 +1226,7 @@ async def decompose_node(
         outputs=_format_io(node.outputs),
         depth=node.depth,
         max_depth=max_depth,
+        planning_context=planning_context,
         primitives=_format_primitives(all_prims),
         example_decompositions=example_decompositions,
         retry_context=retry_context,
@@ -1456,6 +1545,7 @@ async def critique_decomposition(
         parent_description=parent.description,
         parent_inputs=_format_io(parent.inputs),
         parent_outputs=_format_io(parent.outputs),
+        planning_context=_planning_artifact_block(state) or "(none)",
         sub_nodes=sub_nodes_str,
         edges=edges_str or "  (no edges)",
         current_depth=parent.depth,

@@ -261,6 +261,7 @@ class TestCheckpointPersistence:
         await agent.decompose("Sort a list", thread_id="terminal-check")
         state = await agent.get_state("terminal-check")
         assert state["values"]["done"] is True
+        assert state["values"]["planning_artifact"]["artifact_version"] == "phase1.v1"
 
     @pytest.mark.asyncio
     async def test_get_state_history_has_checkpoints(self):

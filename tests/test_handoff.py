@@ -18,6 +18,7 @@ from sciona.architect.models import (
     IOSpec,
     NodeStatus,
 )
+from sciona.architect.planning_contract import build_planning_artifact
 from sciona.types import Prover
 
 
@@ -233,9 +234,19 @@ class TestToPDGNodes:
 
 class TestSaveLoadJSON:
     def test_roundtrip(self, atomic_nodes, edges, tmp_path):
+        planning_artifact = build_planning_artifact(
+            goal="test",
+            thread_id="thread-1",
+            paradigm="divide_and_conquer",
+            variant_hint="merge_sort",
+            root_inputs=[IOSpec(name="input", type_desc="list[int]")],
+            root_outputs=[IOSpec(name="result", type_desc="list[int]")],
+            strategy_rationale="merge sort needs a divide-and-conquer skeleton",
+        )
         cdg = CDGExport(
             nodes=atomic_nodes,
             edges=edges,
+            planning_artifact=planning_artifact.model_dump(mode="json"),
             metadata={"goal": "test"},
         )
 
@@ -247,6 +258,9 @@ class TestSaveLoadJSON:
         assert len(loaded.nodes) == len(cdg.nodes)
         assert len(loaded.edges) == len(cdg.edges)
         assert loaded.metadata["goal"] == "test"
+        assert loaded.planning_artifact is not None
+        assert loaded.planning_artifact["artifact_version"] == "phase1.v1"
+        assert loaded.planning_artifact["skeleton_intent"]["variant_hint"] == "merge_sort"
 
     def test_creates_parent_dirs(self, atomic_nodes, edges, tmp_path):
         cdg = CDGExport(nodes=atomic_nodes, edges=edges)

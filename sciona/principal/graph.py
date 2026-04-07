@@ -49,6 +49,7 @@ from sciona.principal.proposal_helpers import (
 from sciona.principal.structure_summary import summarize_trial_structure
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
+from sciona.architect.planning_contract import summarize_planning_artifact
 from sciona.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from sciona.synthesizer.models import ExportBundle
 
@@ -67,6 +68,9 @@ async def seed_population(state: PrincipalState, config: RunnableConfig) -> dict
 
     cdg = await deps.architect.decompose(state.goal, thread_id=thread_id)
     state.cdg = cdg
+    state.planning_artifact = cdg.planning_artifact or cdg.metadata.get(
+        "planning_artifact"
+    )
     has_tunables = _structure_has_tunables(cdg, deps.catalog)
     state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
     state.param_trials_remaining = (
@@ -76,6 +80,7 @@ async def seed_population(state: PrincipalState, config: RunnableConfig) -> dict
     return {
         "cdg": cdg,
         "thread_id": thread_id,
+        "planning_artifact": state.planning_artifact,
         "current_trial": state.current_trial,
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
@@ -280,6 +285,9 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
             "trial": state.current_trial,
             "loss": benchmark.global_loss,
             "thread_id": state.thread_id,
+            "planning_artifact": summarize_planning_artifact(
+                state.planning_artifact
+            ),
             "structure": structure,
             "parameter_assignments": dict(state.node_params),
             "reused_cached_evaluation": reused_cached_evaluation,
@@ -478,6 +486,9 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         }
 
     state.cdg = selected["cdg"]
+    state.planning_artifact = state.cdg.planning_artifact or state.cdg.metadata.get(
+        "planning_artifact"
+    )
     state.export_bundle = selected.get("bundle")
     state.benchmark = selected.get("benchmark")
     state.match_results = list(selected.get("match_results", []))
@@ -629,6 +640,9 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
     cdg, new_thread_id = candidate
     state.thread_id = new_thread_id
     state.cdg = cdg
+    state.planning_artifact = cdg.planning_artifact or cdg.metadata.get(
+        "planning_artifact"
+    )
     has_tunables = _structure_has_tunables(cdg, deps.catalog)
     state.pending_param_search = has_tunables and deps.param_trials_per_structure > 0
     state.param_trials_remaining = deps.param_trials_per_structure if has_tunables else 0
@@ -641,6 +655,7 @@ async def time_travel_update(state: PrincipalState, config: RunnableConfig) -> d
     return {
         "cdg": cdg,
         "thread_id": new_thread_id,
+        "planning_artifact": state.planning_artifact,
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
     }

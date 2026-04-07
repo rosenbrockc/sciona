@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -42,6 +43,7 @@ class CDGExport(BaseModel):
 
     nodes: list[AlgorithmicNode]
     edges: list[DependencyEdge]
+    planning_artifact: dict[str, Any] | None = None
     metadata: dict = Field(default_factory=dict)
 
     def leaf_nodes(self) -> list[AlgorithmicNode]:
@@ -106,6 +108,7 @@ def export_cdg(
     *,
     goal: str = "",
     paradigm: str = "",
+    planning_artifact: dict[str, Any] | None = None,
 ) -> CDGExport:
     """Build a CDGExport, validating that all leaves are atomic.
 
@@ -115,12 +118,18 @@ def export_cdg(
     cdg = CDGExport(
         nodes=nodes,
         edges=edges,
+        planning_artifact=planning_artifact,
         metadata={
             "goal": goal,
             "paradigm": paradigm,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "num_nodes": len(nodes),
             "num_edges": len(edges),
+            **(
+                {"planning_artifact": planning_artifact}
+                if planning_artifact is not None
+                else {}
+            ),
         },
     )
 

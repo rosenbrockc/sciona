@@ -59,6 +59,7 @@ class ExpansionContext:
     intermediates: dict[str, Any] = field(default_factory=dict)
     eval_result: dict[str, Any] | None = None
     signal_data: dict[str, Any] | None = None
+    planning_artifact: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)

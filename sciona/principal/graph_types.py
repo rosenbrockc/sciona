@@ -31,6 +31,7 @@ class PrincipalState:
     # Pipeline artefacts
     thread_id: str = ""
     cdg: CDGExport | None = None
+    planning_artifact: dict[str, Any] | None = None
     export_bundle: ExportBundle | None = None
     ghost_report: GhostSimReport = field(default_factory=GhostSimReport)
     benchmark: BenchmarkResult | None = None

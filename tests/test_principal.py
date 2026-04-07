@@ -20,6 +20,7 @@ from sciona.architect.models import (
     ParamStatus,
     PrimitiveParamSpec,
 )
+from sciona.architect.planning_contract import build_planning_artifact
 from sciona.principal.models import (
     BenchmarkResult,
     NodeGradient,
@@ -748,8 +749,96 @@ class TestPrincipalState:
         assert state.done is False
         assert state.trial_history == []
         assert state.cdg is None
+        assert state.planning_artifact is None
         assert state.export_bundle is None
         assert state.benchmark is None
+
+    @pytest.mark.asyncio
+    async def test_seed_population_preserves_planning_artifact(self):
+        from sciona.principal.graph import PrincipalState, seed_population
+
+        planning_artifact = build_planning_artifact(
+            goal="Detect peaks in an ECG",
+            thread_id="thread-1",
+            paradigm="signal_detect_measure",
+            variant_hint="peak_detection",
+            root_inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            root_outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+            strategy_rationale="Keep the signal contract explicit before detection.",
+        )
+
+        class _DummyArchitect:
+            async def decompose(self, goal: str, thread_id: str | None = None) -> CDGExport:
+                assert goal == "Detect peaks in an ECG"
+                assert thread_id is not None
+                return CDGExport(
+                    nodes=[
+                        AlgorithmicNode(
+                            node_id="leaf",
+                            name="Leaf",
+                            description="atomic",
+                            concept_type=ConceptType.CUSTOM,
+                            status=NodeStatus.ATOMIC,
+                        )
+                    ],
+                    edges=[],
+                    planning_artifact=planning_artifact.model_dump(mode="json"),
+                )
+
+        deps = SimpleNamespace(
+            architect=_DummyArchitect(),
+            catalog=PrimitiveCatalog(),
+            param_trials_per_structure=0,
+        )
+        state = PrincipalState(goal="Detect peaks in an ECG")
+
+        result = await seed_population(state, {"configurable": {"deps": deps}})
+
+        assert state.cdg is not None
+        assert state.planning_artifact is not None
+        assert result["planning_artifact"] is not None
+        assert result["planning_artifact"]["artifact_version"] == "phase1.v1"
+        assert result["planning_artifact"]["skeleton_intent"]["variant_hint"] == "peak_detection"
+
+    @pytest.mark.asyncio
+    async def test_evaluate_run_records_planning_summary(self):
+        from sciona.principal.graph import PrincipalState, evaluate_run
+
+        planning_artifact = build_planning_artifact(
+            goal="Detect peaks in an ECG",
+            thread_id="thread-1",
+            paradigm="signal_detect_measure",
+            variant_hint="peak_detection",
+            root_inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+            root_outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+            strategy_rationale="Keep the signal contract explicit before detection.",
+        ).model_dump(mode="json")
+
+        state = PrincipalState(
+            goal="Detect peaks in an ECG",
+            current_trial=1,
+            thread_id="thread-1",
+            cdg=_make_cdg(("n1", "Detect Peaks")),
+            planning_artifact=planning_artifact,
+            export_bundle=SimpleNamespace(),
+            benchmark=BenchmarkResult(global_loss=1.25),
+            reuse_cached_evaluation=True,
+        )
+        deps = SimpleNamespace(
+            sandbox=SimpleNamespace(),
+            dataset_varset=None,
+            evaluation_spec=None,
+            hpo_manager=None,
+            catalog=PrimitiveCatalog(),
+        )
+
+        result = await evaluate_run(state, {"configurable": {"deps": deps}})
+
+        assert result["trial_history"]
+        planning_summary = result["trial_history"][0]["planning_artifact"]
+        assert planning_summary["artifact_version"] == "phase1.v1"
+        assert planning_summary["paradigm"] == "signal_detect_measure"
+        assert planning_summary["constraint_count"] >= 1
 
 
 class TestRouteAfterGradients:

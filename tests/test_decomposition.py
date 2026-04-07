@@ -842,6 +842,7 @@ class TestSelectStrategy:
             "nodes": [],
             "edges": [],
             "history": [],
+            "planning_artifact": None,
             "pending_node_ids": [],
             "current_node_id": "",
             "paradigm": "",
@@ -870,6 +871,9 @@ class TestSelectStrategy:
         assert len(result["nodes"]) > 1  # root + skeleton nodes
         assert result["pending_node_ids"]  # at least some pending
         assert result["current_node_id"]  # first pending node selected
+        assert result["planning_artifact"]["artifact_version"] == "phase1.v1"
+        assert result["planning_artifact"]["skeleton_intent"]["variant_hint"] == "merge_sort"
+        assert result["planning_artifact"]["planning_constraints"]
 
         # Root should be DECOMPOSED
         root = result["nodes"][0]
@@ -890,6 +894,7 @@ class TestSelectStrategy:
             "nodes": [],
             "edges": [],
             "history": [],
+            "planning_artifact": None,
             "pending_node_ids": [],
             "current_node_id": "",
             "paradigm": "",
@@ -919,6 +924,8 @@ class TestSelectStrategy:
         assert result["pending_node_ids"] == [result["nodes"][0].node_id]
         assert result["current_node_id"] == result["nodes"][0].node_id
         assert result["done"] is False
+        assert result["planning_artifact"]["artifact_version"] == "phase1.v1"
+        assert result["planning_artifact"]["skeleton_intent"]["skeleton_instantiated"] is False
 
     @pytest.mark.asyncio
     async def test_signal_transform_skeleton_nodes_bind_to_builtin_primitives(self):
@@ -944,6 +951,7 @@ class TestSelectStrategy:
             "nodes": [],
             "edges": [],
             "history": [],
+            "planning_artifact": None,
             "pending_node_ids": [],
             "current_node_id": "",
             "paradigm": "",

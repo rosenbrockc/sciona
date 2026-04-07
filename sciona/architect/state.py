@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import operator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 
 from typing_extensions import TypedDict
 
 from sciona.architect.catalog import PrimitiveCatalog
 from sciona.architect.embedder import SkillIndex
 from sciona.architect.models import AlgorithmicNode, DependencyEdge
+from sciona.architect.planning_contract import PlanningArtifact
 from sciona.hunter.llm import LLMClient
 from sciona.shared_context import SharedContextMetrics, SharedContextStore
 
@@ -46,6 +47,7 @@ class DecompositionState(TypedDict):
     nodes: Annotated[list[AlgorithmicNode], _merge_nodes]
     edges: Annotated[list[DependencyEdge], operator.add]
     history: Annotated[list[dict], operator.add]
+    planning_artifact: PlanningArtifact | dict[str, Any] | None
 
     # Per-iteration (overwrite)
     pending_node_ids: list[str]

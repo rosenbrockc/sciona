@@ -75,6 +75,9 @@ Node to decompose:
   Current depth: {depth}
   Max depth: {max_depth}
 
+Planning constraints and intent:
+{planning_context}
+
 Relevant primitives from the catalog:
 {primitives}
 
@@ -118,6 +121,9 @@ Parent node:
   Description: {parent_description}
   Inputs: {parent_inputs}
   Outputs: {parent_outputs}
+
+Planning constraints and intent:
+{planning_context}
 
 Proposed sub-nodes:
 {sub_nodes}

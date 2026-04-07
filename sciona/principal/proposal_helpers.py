@@ -13,6 +13,7 @@ from sciona.principal.expansion import ExpansionContext
 from sciona.principal.models import BenchmarkResult, OptimizationMetric
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
+from sciona.architect.planning_contract import summarize_planning_artifact
 from sciona.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from sciona.synthesizer.models import ExportBundle
 
@@ -24,6 +25,9 @@ def summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
     signal_data = context.signal_data or {}
     intermediates = context.intermediates or {}
     eval_result = context.eval_result or {}
+    planning_artifact = context.planning_artifact or {}
+    if hasattr(planning_artifact, "model_dump"):
+        planning_artifact = planning_artifact.model_dump(mode="json")
     return {
         "signal_keys": sorted(signal_data.keys())[:12],
         "intermediate_keys": sorted(intermediates.keys())[:16],
@@ -33,6 +37,7 @@ def summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
             if isinstance(eval_result, dict)
             else []
         ),
+        "planning_artifact": summarize_planning_artifact(planning_artifact),
     }
 
 
@@ -50,9 +55,14 @@ def build_expansion_context(state: Any) -> ExpansionContext:
     else:
         eval_result = {}
     if state.benchmark is not None:
-        eval_result.setdefault("global_loss", state.benchmark.global_loss)
+        global_loss = getattr(state.benchmark, "global_loss", None)
+        if global_loss is not None:
+            eval_result.setdefault("global_loss", global_loss)
     intermediates = artifacts.get("intermediates", {})
     signal_data = artifacts.get("signal_data", {})
+    planning_artifact = getattr(state, "planning_artifact", None) or {}
+    if hasattr(planning_artifact, "model_dump"):
+        planning_artifact = planning_artifact.model_dump(mode="json")
     if not isinstance(intermediates, dict):
         intermediates = {}
     if not isinstance(signal_data, dict):
@@ -61,6 +71,7 @@ def build_expansion_context(state: Any) -> ExpansionContext:
         intermediates=dict(intermediates),
         eval_result=eval_result or None,
         signal_data=dict(signal_data) or None,
+        planning_artifact=dict(planning_artifact) or None,
     )
 
 
@@ -93,6 +104,17 @@ async def build_redecomposition_candidate(
         f"The previous decomposition caused a bottleneck: "
         f"{state.bottleneck_reason}. Re-decompose more efficiently."
     )
+    planning_artifact = getattr(state, "planning_artifact", None) or {}
+    if hasattr(planning_artifact, "model_dump"):
+        planning_artifact = planning_artifact.model_dump(mode="json")
+    planning_summary = summarize_planning_artifact(planning_artifact)
+    if planning_summary:
+        constraint += (
+            "\nPLANNING CONTRACT: "
+            f"artifact_version={planning_summary.get('artifact_version', '')}, "
+            f"paradigm={planning_summary.get('paradigm', '')}, "
+            f"constraints={planning_summary.get('constraint_count', 0)}"
+        )
 
     if deps.atom_ledger is not None and deps.catalog is not None and state.cdg is not None:
         bottleneck_node = next(
