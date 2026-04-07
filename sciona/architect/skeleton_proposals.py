@@ -109,6 +109,10 @@ def generate_skeleton_proposals(
                     "paradigm": skeleton.paradigm.value,
                     "boundary_input_names": [port.name for port in boundary_inputs],
                     "boundary_output_names": [port.name for port in boundary_outputs],
+                    "source_asset": dict(
+                        skeleton.metadata.get("asset", {})
+                        or skeleton.metadata.get("source_asset", {})
+                    ),
                 },
             )
         )

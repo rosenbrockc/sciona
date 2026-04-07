@@ -48,6 +48,7 @@ class DecompositionState(TypedDict):
     edges: Annotated[list[DependencyEdge], operator.add]
     history: Annotated[list[dict], operator.add]
     planning_artifact: PlanningArtifact | dict[str, Any] | None
+    skeleton_asset: dict[str, Any] | None
 
     # Per-iteration (overwrite)
     pending_node_ids: list[str]

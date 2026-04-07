@@ -222,6 +222,7 @@ async def test_accepts_skeleton_only_when_materially_better(monkeypatch):
     assert result["history"][0]["selected_proposal_type"] == "skeleton"
     assert result["history"][0]["selected_skeleton_name"] == "signal_detect_measure"
     assert result["history"][0]["skeleton_acceptance_reason"].startswith("accepted_")
+    assert result["history"][0]["selected_skeleton_asset"]["asset_id"] == "signal_detect_measure"
     assert any(node.name == "Compute Event Rate" for node in result["nodes"])
 
 

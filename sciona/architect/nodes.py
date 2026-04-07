@@ -19,6 +19,7 @@ from sciona.architect.models import (
     DependencyEdge,
     IOSpec,
     NodeStatus,
+    SkeletonGraph,
 )
 from sciona.architect.deterministic_decompose import (
     DeterministicRewriteError,
@@ -39,6 +40,7 @@ from sciona.architect.planning_contract import (
     render_planning_artifact_block,
     summarize_planning_artifact,
 )
+from sciona.architect.skeleton_assets import skeleton_asset_summary
 from sciona.architect.prompts import (
     CRITIQUE_SYSTEM,
     CRITIQUE_USER,
@@ -588,6 +590,12 @@ def _planning_artifact_block(state: DecompositionState) -> str:
     return render_planning_artifact_block(artifact)
 
 
+def _selected_skeleton_asset(skeleton: SkeletonGraph | None) -> dict[str, Any]:
+    if skeleton is None:
+        return {}
+    return skeleton_asset_summary(skeleton)
+
+
 async def _search_context(
     deps: DecompositionDeps,
     config: RunnableConfig,
@@ -841,6 +849,7 @@ async def select_strategy(
             "edges": [],
             "history": [history_entry],
             "planning_artifact": planning_artifact_data,
+            "skeleton_asset": None,
             "pending_node_ids": [],
             "current_node_id": root_id,
             "paradigm": "conjugate_update",
@@ -906,10 +915,12 @@ async def select_strategy(
     nodes: list[AlgorithmicNode] = [root]
     edges: list[DependencyEdge] = []
     skeleton_instantiated = False
+    skeleton_asset = None
 
     # Try to instantiate skeleton
     skeleton = get_skeleton(paradigm, variant=variant_hint or None)
     if skeleton:
+        skeleton_asset = _selected_skeleton_asset(skeleton) or None
         skel_nodes, skel_edges = instantiate_skeleton(
             skeleton, goal, parent_id=root_id, base_depth=0
         )
@@ -958,6 +969,7 @@ async def select_strategy(
         skeleton_instantiated=skeleton_instantiated,
         root_inputs=root.inputs,
         root_outputs=root.outputs,
+        skeleton_asset=skeleton_asset,
         assumptions=[
             "Root boundary contracts were derived from the instantiated skeleton.",
         ]
@@ -980,6 +992,7 @@ async def select_strategy(
         "num_nodes": len(nodes),
         "num_pending": len(pending),
         "planning_artifact": planning_summary,
+        "skeleton_asset": skeleton_asset or {},
     }
 
     await _put_context(
@@ -1007,6 +1020,7 @@ async def select_strategy(
         "edges": edges,
         "history": [history_entry],
         "planning_artifact": planning_artifact_data,
+        "skeleton_asset": skeleton_asset,
         "pending_node_ids": pending,
         "current_node_id": current_node_id,
         "paradigm": paradigm.value,
@@ -1100,6 +1114,8 @@ async def decompose_node(
     )
     if accepted_skeleton is not None:
         skeleton_name = str(accepted_skeleton.proposal.skeleton_name or "")
+        selected_skeleton = get_skeleton(node.concept_type, variant=skeleton_name)
+        selected_skeleton_asset = _selected_skeleton_asset(selected_skeleton)
         log_event(
             "architect",
             "decompose",
@@ -1110,6 +1126,7 @@ async def decompose_node(
                 "score": round(accepted_skeleton.score, 3),
                 "margin": round(skeleton_margin, 3),
                 "source_family": accepted_skeleton.proposal.source_family,
+                "skeleton_asset": selected_skeleton_asset,
             },
         )
         new_nodes, new_edges = _instantiate_skeleton_for_node(
@@ -1119,6 +1136,7 @@ async def decompose_node(
         return {
             "nodes": new_nodes,
             "edges": new_edges,
+            "skeleton_asset": selected_skeleton_asset,
             "history": [
                 {
                     "step": "decompose_node",
@@ -1128,6 +1146,7 @@ async def decompose_node(
                     "selected_proposal_score": round(accepted_skeleton.score, 3),
                     "skeleton_acceptance_reason": skeleton_acceptance_reason,
                     "skeleton_acceptance_margin": round(skeleton_margin, 3),
+                    "selected_skeleton_asset": selected_skeleton_asset,
                     "primitive_proposal_count": len(primitive_proposals),
                     "template_proposal_count": len(template_proposals),
                     "skeleton_proposal_count": len(skeleton_proposals),

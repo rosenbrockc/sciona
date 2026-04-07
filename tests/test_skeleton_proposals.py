@@ -33,6 +33,10 @@ def test_generate_skeleton_proposals_respects_allowlist() -> None:
         ALLOWED_SKELETON_PROPOSALS
     )
     assert all(proposal.proposal_type == ProposalType.SKELETON for proposal in proposals)
+    signal_detect = next(
+        proposal for proposal in proposals if proposal.skeleton_name == "signal_detect_measure"
+    )
+    assert signal_detect.payload["source_asset"]["asset_id"] == "signal_detect_measure"
 
 
 def test_generate_skeleton_proposals_rejects_atomic_nodes() -> None:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -144,6 +144,7 @@ class SkeletonGraph(BaseModel):
     variants: list[str] = Field(
         default_factory=list
     )  # e.g., ["merge_sort", "quicksort"]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ParamStatus(str, Enum):

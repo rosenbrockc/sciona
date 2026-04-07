@@ -138,6 +138,7 @@ class DecompositionAgent:
             "edges": [],
             "history": [],
             "planning_artifact": None,
+            "skeleton_asset": None,
             "pending_node_ids": [],
             "current_node_id": "",
             "paradigm": "",
@@ -163,6 +164,7 @@ class DecompositionAgent:
         ]
         blocked_nodes = [n for n in active_nodes if n.status == NodeStatus.BLOCKED]
         planning_artifact = final_state.get("planning_artifact")
+        skeleton_asset = final_state.get("skeleton_asset")
         non_atomic_leaves = CDGExport(
             nodes=active_nodes,
             edges=final_state["edges"],
@@ -188,6 +190,7 @@ class DecompositionAgent:
                 "blocked_nodes": [n.name for n in blocked_nodes],
                 "non_atomic_leaf_count": len(non_atomic_leaves),
                 "planning_artifact": planning_artifact,
+                "skeleton_asset": skeleton_asset,
                 "planning_artifact_version": (
                     planning_artifact.get("artifact_version", "")
                     if isinstance(planning_artifact, dict)

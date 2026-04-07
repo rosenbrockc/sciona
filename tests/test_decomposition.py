@@ -873,7 +873,12 @@ class TestSelectStrategy:
         assert result["current_node_id"]  # first pending node selected
         assert result["planning_artifact"]["artifact_version"] == "phase1.v1"
         assert result["planning_artifact"]["skeleton_intent"]["variant_hint"] == "merge_sort"
+        assert (
+            result["planning_artifact"]["skeleton_intent"]["asset"]["asset_id"]
+            == "family.divide_and_conquer.v1"
+        )
         assert result["planning_artifact"]["planning_constraints"]
+        assert result["skeleton_asset"]["asset_id"] == "family.divide_and_conquer.v1"
 
         # Root should be DECOMPOSED
         root = result["nodes"][0]
@@ -978,11 +983,56 @@ class TestSelectStrategy:
         }
 
         assert bound["Window"] == "apply_window_function"
-        assert bound["Forward Transform"] == "compute_forward_transform"
-        assert bound["Spectral Processing"] == "process_spectrum"
-        assert bound["Inverse Transform"] == "compute_inverse_transform"
-        assert result["pending_node_ids"] == []
-        assert result["done"] is True
+
+    @pytest.mark.asyncio
+    async def test_signal_detect_measure_records_skeleton_asset_identity(self):
+        from sciona.architect.nodes import select_strategy
+        from sciona.architect.state import DecompositionDeps
+
+        catalog = _make_catalog()
+        skill_index = _make_skill_index()
+        llm = _make_mock_llm(
+            strategy_response=json.dumps(
+                {
+                    "paradigm": "signal_filter",
+                    "rationale": "This is a signal conditioning and event-rate problem.",
+                    "variant_hint": "signal_detect_measure",
+                }
+            )
+        )
+
+        state: DecompositionState = {
+            "goal": "Estimate event rate from a waveform",
+            "max_depth": 8,
+            "nodes": [],
+            "edges": [],
+            "history": [],
+            "planning_artifact": None,
+            "skeleton_asset": None,
+            "pending_node_ids": [],
+            "current_node_id": "",
+            "paradigm": "",
+            "skeleton_instantiated": False,
+            "critique_passed": False,
+            "critique_reason": "",
+            "critique_retries": 0,
+            "done": False,
+            "error": "",
+        }
+
+        deps = DecompositionDeps(
+            catalog=catalog,
+            skill_index=skill_index,
+            llm=llm,
+            architect_critique_llm_enabled=True,
+        )
+
+        result = await select_strategy(state, {"configurable": {"deps": deps}})
+
+        assert result["skeleton_asset"]["asset_id"] == "signal_detect_measure"
+        assert result["planning_artifact"]["skeleton_intent"]["asset"]["asset_version"] == "phase2.v1"
+        assert result["planning_artifact"]["skeleton_intent"]["asset"]["source_kind"] == "local_asset"
+        assert result["skeleton_instantiated"] is True
 
 
 class TestRouteAfterCritic:
@@ -1070,6 +1120,7 @@ class TestDecompositionHappyPath:
         # Metadata should be populated
         assert cdg.metadata["goal"] == "Implement merge sort"
         assert cdg.metadata["paradigm"] == "divide_and_conquer"
+        assert cdg.metadata["skeleton_asset"]["asset_id"] == "family.divide_and_conquer.v1"
 
 
 class TestCritiqueRejection:

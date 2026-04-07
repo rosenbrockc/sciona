@@ -150,6 +150,7 @@ def build_planning_artifact(
     skeleton_instantiated: bool = False,
     root_inputs: list[IOSpec] | None = None,
     root_outputs: list[IOSpec] | None = None,
+    skeleton_asset: dict[str, Any] | None = None,
     assumptions: list[str] | None = None,
     unresolved_questions: list[str] | None = None,
     extra_constraints: list[PlanningConstraint] | None = None,
@@ -229,6 +230,7 @@ def build_planning_artifact(
             "root_output_count": len(outputs),
             "root_input_names": [contract.name for contract in inputs],
             "root_output_names": [contract.name for contract in outputs],
+            "asset": dict(skeleton_asset or {}),
         },
         input_contracts=inputs,
         output_contracts=outputs,
@@ -257,6 +259,7 @@ def summarize_planning_artifact(artifact: dict[str, Any] | PlanningArtifact | No
         if category:
             categories[str(category)] += 1
     skeleton_intent = data.get("skeleton_intent", {}) if isinstance(data, dict) else {}
+    skeleton_asset = skeleton_intent.get("asset", {}) if isinstance(skeleton_intent, dict) else {}
     return {
         "artifact_version": data.get("artifact_version", ""),
         "paradigm": data.get("paradigm", ""),
@@ -272,6 +275,9 @@ def summarize_planning_artifact(artifact: dict[str, Any] | PlanningArtifact | No
         "unresolved_question_count": len(data.get("unresolved_questions", []) or []),
         "skeleton_variant_hint": str(skeleton_intent.get("variant_hint", "")),
         "skeleton_instantiated": bool(skeleton_intent.get("skeleton_instantiated", False)),
+        "skeleton_asset_id": str(skeleton_asset.get("asset_id", "")),
+        "skeleton_asset_version": str(skeleton_asset.get("asset_version", "")),
+        "skeleton_asset_source_kind": str(skeleton_asset.get("source_kind", "")),
     }
 
 
@@ -306,6 +312,12 @@ def render_planning_artifact_block(artifact: dict[str, Any] | PlanningArtifact |
         ):
             if key in skeleton_intent:
                 lines.append(f"      {key}: {skeleton_intent.get(key)}")
+        asset = skeleton_intent.get("asset", {})
+        if isinstance(asset, dict) and asset:
+            lines.append("      asset:")
+            for key in ("asset_id", "asset_version", "source_kind", "family"):
+                if key in asset:
+                    lines.append(f"        {key}: {asset.get(key)}")
 
     def _render_contracts(title: str, contracts: list[dict[str, Any]]) -> None:
         if not contracts:

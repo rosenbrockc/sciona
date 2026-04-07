@@ -21,6 +21,7 @@ from sciona.architect.models import (
     NodeStatus,
     SkeletonGraph,
 )
+from sciona.architect.skeleton_assets import load_local_skeleton_graphs
 
 
 def _node(
@@ -2434,6 +2435,10 @@ def _build_baseline_scoring() -> SkeletonGraph:
 
 BASELINE_SCORING_SKELETON = _build_baseline_scoring()
 
+ASSET_BACKED_SKELETON_TEMPLATES, ASSET_BACKED_NAMED_SKELETONS = (
+    load_local_skeleton_graphs()
+)
+
 
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
@@ -2490,6 +2495,7 @@ NAMED_SKELETONS: dict[str, SkeletonGraph] = {
     "event_rate_estimation": _build_signal_detect_measure(),
     "bandpass_hr_detection": _build_signal_detect_measure(),
 }
+NAMED_SKELETONS = {**NAMED_SKELETONS, **ASSET_BACKED_NAMED_SKELETONS}
 
 
 def get_skeleton(
@@ -2503,8 +2509,12 @@ def get_skeleton(
     paradigms with multiple topologies (e.g. ``SEQUENTIAL_FILTER`` has
     both particle-filter and kalman-filter) can be disambiguated.
     """
+    if variant and variant in ASSET_BACKED_NAMED_SKELETONS:
+        return ASSET_BACKED_NAMED_SKELETONS[variant]
     if variant and variant in NAMED_SKELETONS:
         return NAMED_SKELETONS[variant]
+    if concept_type in ASSET_BACKED_SKELETON_TEMPLATES:
+        return ASSET_BACKED_SKELETON_TEMPLATES[concept_type]
     return SKELETON_TEMPLATES.get(concept_type)
 
 

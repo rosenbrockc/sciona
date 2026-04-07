@@ -1,0 +1,200 @@
+{
+  "asset_id": "signal_detect_measure",
+  "asset_version": "phase2.v1",
+  "family": "signal_detect_measure",
+  "paradigm": "signal_filter",
+  "name": "Signal Detect and Measure",
+  "description": "Condition a raw signal, extract discrete events, and compute a downstream rate from those events.",
+  "variant_aliases": [
+    "signal_detect_measure",
+    "event_rate_estimation",
+    "bandpass_hr_detection"
+  ],
+  "inputs": [
+    {
+      "name": "signal",
+      "type_desc": "np.ndarray",
+      "constraints": "Preserve waveform semantics until event extraction.",
+      "required": true
+    },
+    {
+      "name": "sampling_rate",
+      "type_desc": "float",
+      "constraints": "Retain the source sampling context for every downstream stage.",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rate",
+      "type_desc": "tuple[np.ndarray, np.ndarray]",
+      "constraints": "Expose a rate series with enough support to explain plausibility and gaps.",
+      "required": true
+    }
+  ],
+  "planning_constraints": [
+    "Keep waveform conditioning separate from event extraction.",
+    "Do not introduce irreversible loss before event detection.",
+    "Preserve sampling-rate provenance through detection and rate estimation."
+  ],
+  "stages": [
+    {
+      "stage_id": "tpl_filter_signal_for_detection",
+      "name": "Filter Signal For Detection",
+      "description": "Filter or denoise the raw signal into a conditioned waveform for downstream event extraction.",
+      "dejargonized_description": "Clean the raw trace so the important peaks stand out without throwing away the timing information.",
+      "concept_type": "signal_filter",
+      "inputs": [
+        {
+          "name": "signal",
+          "type_desc": "np.ndarray",
+          "constraints": "Raw waveform input.",
+          "required": true
+        },
+        {
+          "name": "sampling_rate",
+          "type_desc": "float",
+          "constraints": "Input stream sampling rate.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "conditioned_signal",
+          "type_desc": "np.ndarray",
+          "constraints": "Conditioned waveform for detection.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "A waveform input and valid sampling rate are available."
+      ],
+      "guarantees": [
+        "The output remains a waveform aligned to the input time base."
+      ]
+    },
+    {
+      "stage_id": "tpl_detect_peaks_in_signal",
+      "name": "Detect Peaks In Signal",
+      "description": "Detect salient peaks or events in the conditioned signal.",
+      "dejargonized_description": "Find the beat-like moments in the cleaned trace without inventing a new clock.",
+      "concept_type": "analysis",
+      "inputs": [
+        {
+          "name": "conditioned_signal",
+          "type_desc": "np.ndarray",
+          "constraints": "Conditioned waveform for event detection.",
+          "required": true
+        },
+        {
+          "name": "sampling_rate",
+          "type_desc": "float",
+          "constraints": "Sampling rate must match the conditioned waveform.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "events",
+          "type_desc": "np.ndarray",
+          "constraints": "Ordered event indices or timestamps.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "The conditioned signal still preserves the waveform timing context."
+      ],
+      "guarantees": [
+        "The output is an event sequence tied to the source waveform."
+      ]
+    },
+    {
+      "stage_id": "tpl_compute_event_rate",
+      "name": "Compute Event Rate",
+      "description": "Compute a target rate or cadence from inter-event intervals.",
+      "dejargonized_description": "Turn the detected beats into a rate trace and keep enough evidence to explain whether the estimate is trustworthy.",
+      "concept_type": "analysis",
+      "inputs": [
+        {
+          "name": "events",
+          "type_desc": "np.ndarray",
+          "constraints": "Detected event sequence.",
+          "required": true
+        },
+        {
+          "name": "sampling_rate",
+          "type_desc": "float",
+          "constraints": "Sampling rate for interval conversion.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rate",
+          "type_desc": "tuple[np.ndarray, np.ndarray]",
+          "constraints": "Rate series and aligned support coordinates.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "Event ordering is monotone and retains source timing context."
+      ],
+      "guarantees": [
+        "The output is a rate series backed by the detected events."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source_stage_id": "tpl_filter_signal_for_detection",
+      "target_stage_id": "tpl_detect_peaks_in_signal",
+      "output_name": "conditioned_signal",
+      "input_name": "conditioned_signal",
+      "source_type": "np.ndarray",
+      "target_type": "np.ndarray",
+      "data_kind": "waveform",
+      "provenance": "Same waveform stream and sampling context.",
+      "loss_class": "preserving",
+      "alignment": "sample_aligned"
+    },
+    {
+      "source_stage_id": "tpl_detect_peaks_in_signal",
+      "target_stage_id": "tpl_compute_event_rate",
+      "output_name": "events",
+      "input_name": "events",
+      "source_type": "np.ndarray",
+      "target_type": "np.ndarray",
+      "data_kind": "event_sequence",
+      "provenance": "Events must preserve the source timing basis.",
+      "loss_class": "lossy_but_allowed",
+      "alignment": "monotone"
+    }
+  ],
+  "audit": {
+    "source_kind": "local_asset",
+    "review_status": "draft",
+    "rationale": "This family caused repeated refinement failures and is the first high-leverage candidate for explicit skeleton auditability.",
+    "dejargonized_summary": "Clean the signal, find the beats, then compute the rate while keeping track of what information is allowed to disappear at each step.",
+    "provenance_notes": [
+      "Transitional local asset until canonical ownership moves into ../ageo-atoms."
+    ],
+    "uncertainty_notes": [
+      "Peak-correction and quality-control branches are deferred to the expansion-family phase."
+    ],
+    "references": [
+      {
+        "title": "Constraint-Driven Synthesis And Refinement Plan",
+        "url": "docs/plans/CONSTRAINT_DRIVEN_SYNTHESIS_PLAN.md",
+        "note": "Framework rationale for promoting family scaffolds into audited assets."
+      },
+      {
+        "title": "Phase 2 Skeleton Asset Plan",
+        "url": "docs/plans/PHASE_2_SKELETON_FAMILY_ASSETS.md",
+        "note": "Defines the local compatibility-layer requirements for auditable skeleton assets."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}
