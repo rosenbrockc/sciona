@@ -216,6 +216,30 @@ class TestCheckpointerFactory:
         async with create_checkpointer("postgresql://test") as cp:
             assert isinstance(cp, MemorySaver)
 
+    @pytest.mark.asyncio
+    async def test_postgres_inner_exception_propagates_without_contextmanager_corruption(
+        self, monkeypatch
+    ):
+        class _DummySaver(MemorySaver):
+            async def setup(self) -> None:
+                return None
+
+        dummy = _DummySaver()
+
+        @asynccontextmanager
+        async def _from_conn_string(uri: str):
+            assert uri == "postgresql://test"
+            yield dummy
+
+        monkeypatch.setattr(
+            "langgraph.checkpoint.postgres.aio.AsyncPostgresSaver.from_conn_string",
+            _from_conn_string,
+        )
+
+        with pytest.raises(RuntimeError, match="boom"):
+            async with create_checkpointer("postgresql://test"):
+                raise RuntimeError("boom")
+
 
 # ---------------------------------------------------------------------------
 # TestCheckpointPersistence

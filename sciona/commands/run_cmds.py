@@ -34,6 +34,7 @@ from sciona.commands.shared_context_helpers import (
 )
 from sciona.runtime_paths import (
     _build_rapid_direct_cdg,
+    _is_signal_event_rate_scaffold,
     _run_rapid_direct_match,
     _run_structured_single_pass,
 )

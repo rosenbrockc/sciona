@@ -23,6 +23,8 @@ from sciona.principal.datasets.io import (
     LINK_CHARACTER,
     REF_CHARACTER,
 )
+from sciona.principal.datasets._parser import import_fqn
+from sciona.principal.adapters.transforms import shift_time_meta_attr
 
 
 class TestIsLink:
@@ -100,6 +102,16 @@ class TestRead:
         # Non-recursive: links are not followed, so the link stays as-is
         # Actually, the link character triggers read() internally which returns {}
         assert result["nested"] == {}
+
+
+def test_import_fqn_supports_legacy_ageom_adapter_alias():
+    module, caller = import_fqn(
+        "ageom.principal.adapters.transforms.shift_time_meta_attr",
+        cache=False,
+    )
+
+    assert module is not None
+    assert caller is shift_time_meta_attr
 
 
 # ---------------------------------------------------------------------------

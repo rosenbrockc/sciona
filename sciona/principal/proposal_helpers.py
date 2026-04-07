@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 from typing import Any
 
 from sciona.architect.handoff import CDGExport
@@ -14,6 +15,8 @@ from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
 from sciona.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from sciona.synthesizer.models import ExportBundle
+
+logger = logging.getLogger(__name__)
 
 
 def summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
@@ -146,17 +149,31 @@ async def evaluate_proposal_candidate(
     bundle: ExportBundle | None = None
     benchmark: BenchmarkResult | None = None
     if deps.synthesize_fn is not None:
-        bundle = await deps.synthesize_fn(cdg, match_results)
+        try:
+            bundle = await deps.synthesize_fn(cdg, match_results)
+        except Exception:
+            logger.warning(
+                "Proposal synthesis failed; scoring candidate as infinite loss.",
+                exc_info=True,
+            )
+            return float("inf"), None, None, match_results, ghost_report
     if state.metric == OptimizationMetric.STRUCTURE:
         benchmark = benchmark_from_ghost_report(ghost_report)
     elif bundle is not None:
-        benchmark = await evaluate_bundle_for_metric(
-            deps.sandbox,
-            bundle,
-            state.dataset_path,
-            state.metric,
-            dataset_varset=deps.dataset_varset,
-            evaluation_spec=deps.evaluation_spec,
-        )
+        try:
+            benchmark = await evaluate_bundle_for_metric(
+                deps.sandbox,
+                bundle,
+                state.dataset_path,
+                state.metric,
+                dataset_varset=deps.dataset_varset,
+                evaluation_spec=deps.evaluation_spec,
+            )
+        except Exception:
+            logger.warning(
+                "Proposal evaluation failed; scoring candidate as infinite loss.",
+                exc_info=True,
+            )
+            return float("inf"), bundle, None, match_results, ghost_report
     loss = float(benchmark.global_loss) if benchmark is not None else float("inf")
     return loss, bundle, benchmark, match_results, ghost_report

@@ -31,6 +31,21 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 IMPORT_CACHE = {}
+_LEGACY_FQDN_PREFIXES = (
+    ("ageom.principal.", "sciona.principal."),
+    ("ageom.", "sciona."),
+    ("happyx.parsers.", "sciona.principal.adapters.parsers."),
+    ("happyx.transforms.", "sciona.principal.adapters.transforms."),
+)
+
+
+def _candidate_fqdns(fqdn: str) -> tuple[str, ...]:
+    candidates = [fqdn]
+    for prefix, replacement in _LEGACY_FQDN_PREFIXES:
+        if fqdn.startswith(prefix):
+            candidates.append(replacement + fqdn[len(prefix):])
+    # Preserve order while removing duplicates.
+    return tuple(dict.fromkeys(candidates))
 
 
 def _sort_token(value) -> tuple[int, float | str]:
@@ -104,33 +119,34 @@ def import_fqn(fqdn, folder=None, cache: bool = True):
             result = import_fqn(fqdn, cache=cache)
         return result
 
-    parts = fqdn.split(".")
-    call = parts[-1]
-    module = ".".join(parts[0:-1])
-    log.debug(f"Importing {module} dynamically.")
+    result = (None, None)
+    for candidate in _candidate_fqdns(fqdn):
+        parts = candidate.split(".")
+        call = parts[-1]
+        module_name = ".".join(parts[0:-1])
+        log.debug("Importing %s dynamically.", module_name)
 
-    try:
-        module = import_module(module)
-        if not hasattr(module, call):
-            module = import_module(fqdn)
-    except (ImportError, ModuleNotFoundError):
-        log.debug(f"Import error for {fqdn}. Trying separate import.", exc_info=True)
         try:
-            module = import_module(parts[0])
-            if len(parts) > 2:
-                for part in parts[1:-1]:
-                    module = getattr(module, part)
+            module = import_module(module_name)
+            if not hasattr(module, call):
+                module = import_module(candidate)
         except (ImportError, ModuleNotFoundError):
-            log.debug(f"Import error for {parts[0]}.", exc_info=True)
-            module = None
+            log.debug("Import error for %s. Trying separate import.", candidate, exc_info=True)
+            try:
+                module = import_module(parts[0])
+                if len(parts) > 2:
+                    for part in parts[1:-1]:
+                        module = getattr(module, part)
+            except (ImportError, ModuleNotFoundError):
+                log.debug("Import error for %s.", parts[0], exc_info=True)
+                module = None
 
-    if module is not None and hasattr(module, call):
-        call = getattr(module, call)
-        result = module, call
-    elif module is not None:
-        result = module, None
-    else:
-        result = None, None
+        if module is not None and hasattr(module, call):
+            result = (module, getattr(module, call))
+            break
+        if module is not None:
+            result = (module, None)
+            break
 
     if cache:
         IMPORT_CACHE[fqdn] = result

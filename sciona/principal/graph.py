@@ -162,7 +162,30 @@ async def execute_forward(state: PrincipalState, config: RunnableConfig) -> dict
     # The actual synthesis is delegated to a caller-provided function
     # that returns an ExportBundle (keeps the graph deterministic).
     if deps.synthesize_fn is not None:
-        bundle = await deps.synthesize_fn(state.cdg, match_results)
+        try:
+            bundle = await deps.synthesize_fn(state.cdg, match_results)
+        except Exception as exc:
+            if deps.hpo_manager is not None:
+                deps.hpo_manager.prune_trial(
+                    signature=state.param_signature,
+                    trial_number=state.hpo_trial_number,
+                )
+            logger.warning(
+                "Trial %d synthesis failed during forward pass: %s",
+                state.current_trial,
+                exc,
+                exc_info=True,
+            )
+            state.export_bundle = None
+            return {
+                "ghost_report": ghost_report,
+                "export_bundle": None,
+                "current_trial": state.current_trial,
+                "match_results": state.match_results,
+                "error": str(exc),
+                "selected_proposal": "",
+                "reuse_cached_evaluation": False,
+            }
         if state.node_params:
             bundle.parameter_assignments = dict(state.node_params)
         state.export_bundle = bundle

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -829,6 +830,46 @@ class TestRouteAfterForward:
 
         state = PrincipalState()
         assert route_after_forward(state) == "evaluate"
+
+    @pytest.mark.asyncio
+    async def test_execute_forward_returns_error_when_synthesis_fails(self, monkeypatch):
+        from sciona.principal.graph import PrincipalState, execute_forward
+
+        state = PrincipalState(
+            cdg=_make_cdg(("leaf", "Leaf")),
+            current_trial=1,
+            param_signature="sig",
+            hpo_trial_number=7,
+        )
+
+        class _DummyHPO:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, int | None]] = []
+
+            def prune_trial(self, *, signature: str, trial_number: int | None) -> None:
+                self.calls.append((signature, trial_number))
+
+        async def _boom(_cdg, _match_results):
+            raise RuntimeError("compile failed")
+
+        monkeypatch.setattr(
+            "sciona.principal.graph.run_ghost_simulation",
+            lambda *_args, **_kwargs: GhostSimReport(ran=False, passed=True),
+        )
+
+        hpo = _DummyHPO()
+        deps = SimpleNamespace(
+            match_results_fn=lambda _cdg: [],
+            synthesize_fn=_boom,
+            hpo_manager=hpo,
+        )
+
+        result = await execute_forward(state, {"configurable": {"deps": deps}})
+
+        assert result["error"] == "compile failed"
+        assert result["export_bundle"] is None
+        assert result["reuse_cached_evaluation"] is False
+        assert hpo.calls == [("sig", 7)]
 
 
 class TestBuildPrincipalGraph:

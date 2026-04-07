@@ -680,6 +680,7 @@ class TestPythonExtractor:
         assert "--eval-spec" in content
         assert "--params" in content
         assert "compute_evaluation_payload" in content
+        assert "candidates = ('sciona.yml', 'ageom.yml', 'adapter.yml')" in content
 
     def test_generate_pipeline_py_with_steps(self):
         content = generate_pipeline_py(
