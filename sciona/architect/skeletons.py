@@ -2154,6 +2154,247 @@ def _build_baseline_analysis() -> SkeletonGraph:
     )
 
 
+def _build_baseline_scoring() -> SkeletonGraph:
+    """Baseline-core score graph that consumes analyzer outputs."""
+    sqi = _node(
+        "Analyzer Output: sqi",
+        "Expose the SQI predictor output produced by the baseline analyzer.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="prediction", type_desc="list[tuple[int,int]]")],
+        status=NodeStatus.ATOMIC,
+    )
+    combined = _node(
+        "Analyzer Output: combined",
+        "Expose the combined baseline output produced by the analyzer.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="prediction", type_desc="list[tuple[int,int]]")],
+        status=NodeStatus.ATOMIC,
+    )
+    pat = _node(
+        "Analyzer Output: pat",
+        "Expose the PAT predictor output produced by the baseline analyzer.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="prediction", type_desc="list[tuple[int,int]]")],
+        status=NodeStatus.ATOMIC,
+    )
+    spo2 = _node(
+        "Analyzer Output: spo2",
+        "Expose the SpO2 probability output used for moderate/severe inference.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="prediction", type_desc="np.ndarray")],
+        status=NodeStatus.ATOMIC,
+    )
+    anchor = _node(
+        "Analyzer Anchor",
+        "Expose the analyzer anchor time grid for duration and density scoring.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="anchor", type_desc="np.ndarray")],
+        status=NodeStatus.ATOMIC,
+    )
+    sleep_mask = _node(
+        "Analyzer Sleep Mask",
+        "Expose the sleep mask used to accumulate analyzed sleep time.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[IOSpec(name="sleep_mask", type_desc="np.ndarray")],
+        status=NodeStatus.ATOMIC,
+    )
+    bmi = _node(
+        "Analyzer BMI",
+        "Expose the per-night BMI value used by the baseline BMI correction.",
+        ConceptType.DATA_EXTRACTION,
+        outputs=[
+            IOSpec(
+                name="bmi",
+                type_desc="float",
+                required=False,
+                default_value_repr="22.0",
+            )
+        ],
+        status=NodeStatus.ATOMIC,
+    )
+    analyzed_time = _node(
+        "Compute Analyzed Sleep Time",
+        "Accumulate analyzed sleep time from the analyzer sleep mask and anchor.",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[
+            IOSpec(name="anchor", type_desc="np.ndarray"),
+            IOSpec(name="sleep_mask", type_desc="np.ndarray"),
+        ],
+        outputs=[IOSpec(name="analyzed_time_hours", type_desc="float")],
+        matched_primitive="accumulate_analyzed_time",
+        status=NodeStatus.ATOMIC,
+    )
+    sqi_density = _node(
+        "Compute SQI Density",
+        "Accumulate padded SQI prediction-window coverage from the analyzer output.",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[
+            IOSpec(name="prediction", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="anchor", type_desc="np.ndarray"),
+        ],
+        outputs=[IOSpec(name="density_hours", type_desc="float")],
+        matched_primitive="accumulate_prediction_window_time",
+        status=NodeStatus.ATOMIC,
+    )
+    pat_density = _node(
+        "Compute PAT Density",
+        "Accumulate padded PAT prediction-window coverage from the analyzer output.",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[
+            IOSpec(name="prediction", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="anchor", type_desc="np.ndarray"),
+        ],
+        outputs=[IOSpec(name="density_hours", type_desc="float")],
+        matched_primitive="accumulate_prediction_window_time",
+        status=NodeStatus.ATOMIC,
+    )
+    sahi = _node(
+        "Score sAHI",
+        "Score the SQI baseline path into an sAHI-style value.",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[
+            IOSpec(name="predictor_events", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="combined_events", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="analyzed_time_hours", type_desc="float"),
+            IOSpec(name="density_hours", type_desc="float"),
+            IOSpec(
+                name="spo2_probabilities",
+                type_desc="np.ndarray",
+                required=False,
+            ),
+        ],
+        outputs=[IOSpec(name="sAHI", type_desc="float")],
+        matched_primitive="score_baseline_path",
+        status=NodeStatus.ATOMIC,
+    )
+    bahi = _node(
+        "Score bAHI",
+        "Score the BMI-corrected SQI baseline path into a bAHI-style value.",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[
+            IOSpec(name="predictor_events", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="combined_events", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="analyzed_time_hours", type_desc="float"),
+            IOSpec(name="density_hours", type_desc="float"),
+            IOSpec(
+                name="bmi",
+                type_desc="float",
+                required=False,
+                default_value_repr="22.0",
+            ),
+            IOSpec(
+                name="spo2_probabilities",
+                type_desc="np.ndarray",
+                required=False,
+            ),
+        ],
+        outputs=[IOSpec(name="bAHI", type_desc="float")],
+        matched_primitive="score_bmi_baseline_path",
+        status=NodeStatus.ATOMIC,
+    )
+    pahi = _node(
+        "Score pAHI",
+        "Score the PAT baseline branch into a pAHI-style value.",
+        ConceptType.BASELINE_ANALYSIS,
+        inputs=[
+            IOSpec(name="pat_events", type_desc="list[tuple[int,int]]"),
+            IOSpec(name="analyzed_time_hours", type_desc="float"),
+            IOSpec(name="density_hours", type_desc="float"),
+        ],
+        outputs=[IOSpec(name="pAHI", type_desc="float")],
+        matched_primitive="score_pat_baseline_path",
+        status=NodeStatus.ATOMIC,
+    )
+
+    edges = [
+        _edge(anchor, analyzed_time, "anchor", "anchor", "np.ndarray"),
+        _edge(
+            sleep_mask,
+            analyzed_time,
+            "sleep_mask",
+            "sleep_mask",
+            "np.ndarray",
+        ),
+        _edge(anchor, sqi_density, "anchor", "anchor", "np.ndarray"),
+        _edge(sqi, sqi_density, "prediction", "prediction", "list[tuple[int,int]]"),
+        _edge(anchor, pat_density, "anchor", "anchor", "np.ndarray"),
+        _edge(pat, pat_density, "prediction", "prediction", "list[tuple[int,int]]"),
+        _edge(sqi, sahi, "prediction", "predictor_events", "list[tuple[int,int]]"),
+        _edge(
+            combined,
+            sahi,
+            "prediction",
+            "combined_events",
+            "list[tuple[int,int]]",
+        ),
+        _edge(
+            analyzed_time,
+            sahi,
+            "analyzed_time_hours",
+            "analyzed_time_hours",
+            "float",
+        ),
+        _edge(sqi_density, sahi, "density_hours", "density_hours", "float"),
+        _edge(spo2, sahi, "prediction", "spo2_probabilities", "np.ndarray"),
+        _edge(sqi, bahi, "prediction", "predictor_events", "list[tuple[int,int]]"),
+        _edge(
+            combined,
+            bahi,
+            "prediction",
+            "combined_events",
+            "list[tuple[int,int]]",
+        ),
+        _edge(
+            analyzed_time,
+            bahi,
+            "analyzed_time_hours",
+            "analyzed_time_hours",
+            "float",
+        ),
+        _edge(sqi_density, bahi, "density_hours", "density_hours", "float"),
+        _edge(bmi, bahi, "bmi", "bmi", "float"),
+        _edge(spo2, bahi, "prediction", "spo2_probabilities", "np.ndarray"),
+        _edge(pat, pahi, "prediction", "pat_events", "list[tuple[int,int]]"),
+        _edge(
+            analyzed_time,
+            pahi,
+            "analyzed_time_hours",
+            "analyzed_time_hours",
+            "float",
+        ),
+        _edge(pat_density, pahi, "density_hours", "density_hours", "float"),
+    ]
+
+    return SkeletonGraph(
+        paradigm=ConceptType.BASELINE_ANALYSIS,
+        name="Baseline Scoring",
+        description=(
+            "Baseline-core score assembly that consumes analyzer aliases and "
+            "produces sAHI, bAHI, and pAHI outputs."
+        ),
+        template_nodes=[
+            sqi,
+            combined,
+            pat,
+            spo2,
+            anchor,
+            sleep_mask,
+            bmi,
+            analyzed_time,
+            sqi_density,
+            pat_density,
+            sahi,
+            bahi,
+            pahi,
+        ],
+        template_edges=edges,
+        variants=["ahi_baseline_scoring", "baseline_score_graph"],
+    )
+
+
+BASELINE_SCORING_SKELETON = _build_baseline_scoring()
+
+
 # Registry of all skeleton templates
 SKELETON_TEMPLATES: dict[ConceptType, SkeletonGraph] = {
     ConceptType.DIVIDE_AND_CONQUER: _build_divide_and_conquer(),
@@ -2202,6 +2443,9 @@ NAMED_SKELETONS: dict[str, SkeletonGraph] = {
     "convergence_loop": SKELETON_TEMPLATES[ConceptType.FIXED_POINT],
     "map_over": SKELETON_TEMPLATES[ConceptType.MAP_OVER],
     "sliding_window": SKELETON_TEMPLATES[ConceptType.MAP_OVER],
+    "baseline_scoring": BASELINE_SCORING_SKELETON,
+    "ahi_baseline_scoring": BASELINE_SCORING_SKELETON,
+    "baseline_score_graph": BASELINE_SCORING_SKELETON,
     "signal_detect_measure": _build_signal_detect_measure(),
     "event_rate_estimation": _build_signal_detect_measure(),
     "bandpass_hr_detection": _build_signal_detect_measure(),
@@ -2709,6 +2953,24 @@ def instantiate_baseline_analyzer(
         )
 
     return nodes, edges
+
+
+def instantiate_baseline_scoring(
+    goal: str,
+    *,
+    parent_id: str | None = None,
+    base_depth: int = 0,
+) -> tuple[list[AlgorithmicNode], list[DependencyEdge]]:
+    """Instantiate the canonical baseline-core scoring graph."""
+    skeleton = get_skeleton(ConceptType.BASELINE_ANALYSIS, variant="baseline_scoring")
+    if skeleton is None:
+        raise ValueError("baseline scoring skeleton is unavailable")
+    return instantiate_skeleton(
+        skeleton,
+        goal,
+        parent_id=parent_id,
+        base_depth=base_depth,
+    )
 
 
 def instantiate_baseline_multi_component(
