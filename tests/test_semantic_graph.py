@@ -16,6 +16,7 @@ from sciona.architect.semantic_graph import (
     SemanticBoundaryKind,
     SemanticDataKind,
     SemanticEdgeProvenance,
+    insert_node_before_boundary_consumer,
     insert_node_before_root_input_consumer,
     project_semantic_cdg,
 )
@@ -127,6 +128,34 @@ def _jump_removal_node() -> AlgorithmicNode:
     )
 
 
+def _root_feature_pipeline_cdg() -> CDGExport:
+    root = AlgorithmicNode(
+        node_id="root_features",
+        parent_id=None,
+        name="Score Feature Vector",
+        description="Top-level feature scoring pipeline",
+        concept_type=ConceptType.ANALYSIS,
+        status=NodeStatus.DECOMPOSED,
+        children=["score"],
+        depth=0,
+        inputs=[IOSpec(name="features", type_desc="np.ndarray", data_kind="feature_vector")],
+        outputs=[IOSpec(name="score", type_desc="float", data_kind="scalar_statistic")],
+    )
+    score = AlgorithmicNode(
+        node_id="score",
+        parent_id="root_features",
+        name="Score Features",
+        description="Map feature vectors to a scalar score",
+        concept_type=ConceptType.ANALYSIS,
+        status=NodeStatus.ATOMIC,
+        matched_primitive="score_feature_vector",
+        depth=1,
+        inputs=[IOSpec(name="features", type_desc="np.ndarray", data_kind="feature_vector")],
+        outputs=[IOSpec(name="score", type_desc="float", data_kind="scalar_statistic")],
+    )
+    return CDGExport(nodes=[root, score], edges=[], metadata={"goal": "feature scoring"})
+
+
 def _match_result(node: AlgorithmicNode) -> MatchResult:
     type_sig = node.type_signature or "np.ndarray -> np.ndarray"
     decl = Declaration(
@@ -195,6 +224,25 @@ def test_semantic_cdg_roundtrip_preserves_boundary_projection() -> None:
     assert restored.metadata == semantic.metadata
 
 
+def test_project_semantic_cdg_prefers_declared_cross_family_data_kinds() -> None:
+    semantic = project_semantic_cdg(_root_feature_pipeline_cdg())
+
+    feature_boundary = next(
+        boundary
+        for boundary in semantic.boundaries
+        if boundary.kind == SemanticBoundaryKind.ROOT_INPUT
+        and boundary.port.name == "features"
+    )
+    feature_edge = next(
+        edge
+        for edge in semantic.edges
+        if edge.source_id == feature_boundary.boundary_id and edge.target_id == "score"
+    )
+
+    assert feature_boundary.data_kind == SemanticDataKind.FEATURE_VECTOR
+    assert feature_edge.data_kind == SemanticDataKind.FEATURE_VECTOR
+
+
 def test_graph_rewriter_uses_boundary_fallback_for_root_input_rewrite() -> None:
     cdg = _root_boundary_signal_rate_cdg()
     rule = _build_insert_jump_removal_before_filter()
@@ -256,6 +304,20 @@ def test_boundary_interposer_helper_lowers_root_input_rewrite_without_fake_sourc
 
     assert jump.parent_id == "root"
     assert jump.node_id in root.children
+
+
+def test_generic_boundary_interposer_can_match_by_boundary_data_kind() -> None:
+    rewritten = insert_node_before_boundary_consumer(
+        _root_boundary_signal_rate_cdg(),
+        boundary_kind=SemanticBoundaryKind.ROOT_INPUT,
+        boundary_data_kind=SemanticDataKind.WAVEFORM,
+        target_primitive="filter_signal_for_detection",
+        inserted_node=_jump_removal_node(),
+    )
+
+    assert any(
+        node.matched_primitive == "remove_signal_jumps" for node in rewritten.nodes
+    )
 
 
 def test_boundary_rewrite_lowering_preserves_assembler_visibility() -> None:

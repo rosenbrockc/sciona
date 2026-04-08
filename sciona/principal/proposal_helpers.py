@@ -22,14 +22,16 @@ logger = logging.getLogger(__name__)
 
 def summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
     """Return a compact telemetry summary for the runtime expansion context."""
-    signal_data = context.signal_data or {}
+    runtime_inputs = context.runtime_inputs or context.signal_data or {}
     intermediates = context.intermediates or {}
     eval_result = context.eval_result or {}
+    runtime_evidence = context.runtime_evidence or {}
     planning_artifact = context.planning_artifact or {}
     if hasattr(planning_artifact, "model_dump"):
         planning_artifact = planning_artifact.model_dump(mode="json")
     return {
-        "signal_keys": sorted(signal_data.keys())[:12],
+        "runtime_input_keys": sorted(runtime_inputs.keys())[:12],
+        "signal_keys": sorted((context.signal_data or {}).keys())[:12],
         "intermediate_keys": sorted(intermediates.keys())[:16],
         "has_eval_result": bool(eval_result),
         "eval_keys": (
@@ -37,6 +39,7 @@ def summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
             if isinstance(eval_result, dict)
             else []
         ),
+        "runtime_evidence_keys": sorted(runtime_evidence.keys())[:16],
         "planning_artifact": summarize_planning_artifact(planning_artifact),
     }
 
@@ -59,18 +62,26 @@ def build_expansion_context(state: Any) -> ExpansionContext:
         if global_loss is not None:
             eval_result.setdefault("global_loss", global_loss)
     intermediates = artifacts.get("intermediates", {})
-    signal_data = artifacts.get("signal_data", {})
+    runtime_inputs = artifacts.get("runtime_inputs", artifacts.get("signal_data", {}))
+    signal_data = artifacts.get("signal_data", runtime_inputs)
+    runtime_evidence = artifacts.get("runtime_evidence", {})
     planning_artifact = getattr(state, "planning_artifact", None) or {}
     if hasattr(planning_artifact, "model_dump"):
         planning_artifact = planning_artifact.model_dump(mode="json")
     if not isinstance(intermediates, dict):
         intermediates = {}
+    if not isinstance(runtime_inputs, dict):
+        runtime_inputs = {}
     if not isinstance(signal_data, dict):
         signal_data = {}
+    if not isinstance(runtime_evidence, dict):
+        runtime_evidence = {}
     return ExpansionContext(
         intermediates=dict(intermediates),
         eval_result=eval_result or None,
+        runtime_inputs=dict(runtime_inputs) or None,
         signal_data=dict(signal_data) or None,
+        runtime_evidence=dict(runtime_evidence) or None,
         planning_artifact=dict(planning_artifact) or None,
     )
 

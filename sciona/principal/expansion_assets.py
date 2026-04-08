@@ -8,10 +8,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 from sciona.architect.handoff import CDGExport
-from sciona.architect.semantic_graph import project_semantic_cdg
+from sciona.architect.semantic_graph import (
+    SemanticBoundaryKind,
+    SemanticCDG,
+    project_semantic_cdg,
+)
 from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
@@ -32,7 +36,11 @@ class ExpansionReference(BaseModel):
 
 
 class ExpansionTriggerAsset(BaseModel):
-    """Structured trigger metadata for one expansion operation."""
+    """Structured trigger metadata for one expansion operation.
+
+    The public contract is family-neutral. Legacy signal-specific fields are
+    accepted as aliases so older assets continue to load.
+    """
 
     metric_name: str = ""
     comparison: Literal["gt", "gte", "lt", "lte", "eq"] = Field(
@@ -40,10 +48,13 @@ class ExpansionTriggerAsset(BaseModel):
         validation_alias=AliasChoices("comparison", "comparator"),
     )
     threshold: float = 0.0
-    required_signal_keys: list[str] = Field(default_factory=list)
+    required_runtime_keys: list[str] = Field(default_factory=list)
+    required_runtime_namespaces: list[str] = Field(default_factory=list)
     required_intermediate_keys: list[str] = Field(default_factory=list)
     required_primitives: list[str] = Field(default_factory=list)
-    required_root_inputs: list[str] = Field(default_factory=list)
+    required_boundary_requirements: list["ExpansionBoundaryRequirement"] = Field(
+        default_factory=list
+    )
     required_adjacencies: list[tuple[str, str]] = Field(default_factory=list)
     required_planning_constraint_categories: list[str] = Field(
         default_factory=list,
@@ -52,6 +63,55 @@ class ExpansionTriggerAsset(BaseModel):
             "required_planning_terms",
         ),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_legacy_fields(
+        cls, data: object
+    ) -> object:
+        if not isinstance(data, dict):
+            return data
+        normalized = dict(data)
+
+        if "required_runtime_keys" not in normalized and "required_signal_keys" in normalized:
+            normalized["required_runtime_keys"] = normalized.pop("required_signal_keys")
+
+        boundary_requirements = list(normalized.get("required_boundary_requirements", []))
+        root_inputs = normalized.pop("required_root_inputs", [])
+        root_outputs = normalized.pop("required_root_outputs", [])
+        if root_inputs:
+            boundary_requirements.extend(
+                {
+                    "boundary_kind": "root_input",
+                    "port_name": str(port_name),
+                }
+                for port_name in root_inputs
+            )
+        if root_outputs:
+            boundary_requirements.extend(
+                {
+                    "boundary_kind": "root_output",
+                    "port_name": str(port_name),
+                }
+                for port_name in root_outputs
+            )
+        if boundary_requirements:
+            normalized["required_boundary_requirements"] = boundary_requirements
+        return normalized
+
+
+class ExpansionBoundaryRequirement(BaseModel):
+    """Semantic boundary requirement for an expansion operation."""
+
+    boundary_kind: Literal["root_input", "root_output"]
+    port_name: str
+    matched_primitives: list[str] = Field(default_factory=list)
+    data_kind: str = ""
+    loss_class: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+ExpansionTriggerAsset.model_rebuild()
 
 
 class ExpansionRewriteAsset(BaseModel):
@@ -188,16 +248,108 @@ def _planning_constraint_categories(context: ExpansionContext) -> set[str]:
     return categories
 
 
+def _runtime_key_matches_namespace(key: str, namespace: str) -> bool:
+    normalized_key = str(key).strip()
+    normalized_namespace = str(namespace).strip()
+    if not normalized_namespace:
+        return False
+    if normalized_key == normalized_namespace:
+        return True
+    prefixes = (
+        f"{normalized_namespace}.",
+        f"{normalized_namespace}:",
+        f"{normalized_namespace}/",
+    )
+    return normalized_key.startswith(prefixes)
+
+
+def _boundary_requirement_matches(
+    semantic_cdg: SemanticCDG | None,
+    requirement: ExpansionBoundaryRequirement,
+    *,
+    cdg: CDGExport,
+) -> bool:
+    if semantic_cdg is None:
+        return False
+    node_map = {node.node_id: node for node in cdg.nodes}
+    required_data_kind = str(requirement.data_kind or "").strip()
+    required_loss_class = str(requirement.loss_class or "").strip()
+
+    if requirement.boundary_kind == "root_input":
+        consumers = semantic_cdg.find_boundary_consumers(
+            boundary_kind=SemanticBoundaryKind.ROOT_INPUT,
+            port_name=requirement.port_name,
+            matched_primitive="",
+        )
+        if required_data_kind:
+            consumers = [
+                consumer
+                for consumer in consumers
+                if consumer.data_kind == required_data_kind
+            ]
+        if requirement.matched_primitives:
+            matched = {consumer.matched_primitive for consumer in consumers}
+            if not set(requirement.matched_primitives).issubset(matched):
+                return False
+        if required_loss_class:
+            boundary_ids = {consumer.boundary_id for consumer in consumers}
+            loss_matches = [
+                edge
+                for edge in semantic_cdg.edges
+                if edge.source_id in boundary_ids
+                and edge.loss_class.value == required_loss_class
+            ]
+            if not loss_matches:
+                return False
+        return bool(consumers)
+
+    output_boundaries = [
+        boundary
+        for boundary in semantic_cdg.boundaries
+        if boundary.kind == SemanticBoundaryKind.ROOT_OUTPUT
+        and boundary.port.name == requirement.port_name
+        and (not required_data_kind or boundary.data_kind.value == required_data_kind)
+    ]
+    if not output_boundaries:
+        return False
+    for boundary in output_boundaries:
+        producer_edges = [
+            edge for edge in semantic_cdg.edges if edge.target_id == boundary.boundary_id
+        ]
+        if required_loss_class:
+            producer_edges = [
+                edge for edge in producer_edges if edge.loss_class.value == required_loss_class
+            ]
+        if not producer_edges:
+            continue
+        producers = [
+            node_map[edge.source_id]
+            for edge in producer_edges
+            if edge.source_id in node_map
+        ]
+        if requirement.matched_primitives:
+            matched = {str(node.matched_primitive or "") for node in producers}
+            if not set(requirement.matched_primitives).issubset(matched):
+                continue
+        return True
+    return False
+
+
 def _operation_matches(
     operation: ExpansionOperationAsset,
     cdg: CDGExport,
     context: ExpansionContext,
 ) -> bool:
-    if any(
-        key not in (context.signal_data or {})
-        for key in operation.trigger.required_signal_keys
-    ):
+    runtime_data = context.runtime_inputs or context.signal_data or {}
+    if any(key not in runtime_data for key in operation.trigger.required_runtime_keys):
         return False
+    if operation.trigger.required_runtime_namespaces:
+        runtime_keys = list(runtime_data.keys())
+        for namespace in operation.trigger.required_runtime_namespaces:
+            if not any(
+                _runtime_key_matches_namespace(key, namespace) for key in runtime_keys
+            ):
+                return False
     if any(
         key not in (context.intermediates or {})
         for key in operation.trigger.required_intermediate_keys
@@ -219,11 +371,11 @@ def _operation_matches(
         required = {primitive for primitive in operation.trigger.required_primitives}
         if not required.issubset(primitives):
             return False
-    if operation.trigger.required_root_inputs or operation.trigger.required_adjacencies:
+    if operation.trigger.required_boundary_requirements or operation.trigger.required_adjacencies:
         semantic = project_semantic_cdg(cdg)
-        if operation.trigger.required_root_inputs:
-            for root_input in operation.trigger.required_root_inputs:
-                if not semantic.find_root_input_consumers(root_input):
+        if operation.trigger.required_boundary_requirements:
+            for requirement in operation.trigger.required_boundary_requirements:
+                if not _boundary_requirement_matches(semantic, requirement, cdg=cdg):
                     return False
         if operation.trigger.required_adjacencies:
             primitive_by_node = {

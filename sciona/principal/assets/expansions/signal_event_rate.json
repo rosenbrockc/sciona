@@ -17,8 +17,17 @@
         "metric_name": "jump_discontinuity_count",
         "comparison": "gt",
         "threshold": 3.0,
-        "required_signal_keys": [
+        "required_runtime_keys": [
           "signal"
+        ],
+        "required_boundary_requirements": [
+          {
+            "boundary_kind": "root_input",
+            "port_name": "signal",
+            "matched_primitives": [
+              "filter_signal_for_detection"
+            ]
+          }
         ],
         "required_planning_constraint_categories": [
           "loss"
@@ -47,9 +56,18 @@
         "metric_name": "signal_quality_kurtosis_cv",
         "comparison": "gt",
         "threshold": 1.5,
-        "required_signal_keys": [
+        "required_runtime_keys": [
           "signal",
           "sampling_rate"
+        ],
+        "required_boundary_requirements": [
+          {
+            "boundary_kind": "root_input",
+            "port_name": "signal",
+            "matched_primitives": [
+              "filter_signal_for_detection"
+            ]
+          }
         ]
       },
       "rewrite": {

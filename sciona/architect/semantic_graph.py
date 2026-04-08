@@ -1,9 +1,9 @@
-"""Semantic CDG projection with first-class root-boundary representation.
+"""Semantic CDG projection with first-class boundary and edge semantics.
 
 This module adds an additive semantic layer on top of the existing CDGExport
 form. It does not replace the executable graph; it projects root input/output
-boundaries into explicit semantic ports and provides a focused lowering helper
-for root-boundary interposition.
+boundaries into explicit semantic ports, normalizes declared port/edge
+contracts, and provides focused lowering helpers for boundary-aware rewrites.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, DependencyEdge, IOSpec
+from sciona.architect.planning_contract import infer_data_kind
 
 
 class SemanticBoundaryKind(str, Enum):
@@ -32,6 +33,13 @@ class SemanticDataKind(str, Enum):
     WAVEFORM = "waveform"
     EVENT_SEQUENCE = "event_sequence"
     RATE_SERIES = "rate_series"
+    FEATURE_VECTOR = "feature_vector"
+    STATE = "state"
+    MASK = "mask"
+    PARAMETER = "parameter"
+    SCALAR_STATISTIC = "scalar_statistic"
+    TIME_AXIS = "time_axis"
+    SAMPLING_CONTEXT = "sampling_context"
 
 
 class SemanticLossClass(str, Enum):
@@ -56,6 +64,7 @@ class SemanticBoundaryPort(BaseModel):
     root_node_id: str
     kind: SemanticBoundaryKind
     port: IOSpec
+    data_kind: SemanticDataKind = SemanticDataKind.GENERIC
 
 
 class SemanticFlowEdge(BaseModel):
@@ -79,6 +88,8 @@ class SemanticBoundaryTarget(BaseModel):
     port_name: str
     matched_primitive: str = ""
     concept_type: str = ""
+    boundary_kind: str = ""
+    data_kind: str = ""
 
 
 class SemanticCDG(BaseModel):
@@ -96,20 +107,23 @@ class SemanticCDG(BaseModel):
                 return boundary
         return None
 
-    def find_root_input_consumers(
+    def find_boundary_consumers(
         self,
-        input_name: str,
         *,
+        boundary_kind: SemanticBoundaryKind,
+        port_name: str = "",
+        data_kind: SemanticDataKind | None = None,
         matched_primitive: str = "",
     ) -> list[SemanticBoundaryTarget]:
-        """Return unresolved consumers of a named root input boundary."""
+        """Return unresolved consumers of boundaries matching semantic filters."""
         node_map = {node.node_id: node for node in self.nodes}
         matches: list[SemanticBoundaryTarget] = []
         for boundary in self.boundaries:
-            if (
-                boundary.kind != SemanticBoundaryKind.ROOT_INPUT
-                or boundary.port.name != input_name
-            ):
+            if boundary.kind != boundary_kind:
+                continue
+            if port_name and boundary.port.name != port_name:
+                continue
+            if data_kind is not None and boundary.data_kind != data_kind:
                 continue
             for edge in self.edges:
                 if edge.source_id != boundary.boundary_id:
@@ -127,9 +141,26 @@ class SemanticCDG(BaseModel):
                         port_name=edge.input_name,
                         matched_primitive=str(node.matched_primitive or ""),
                         concept_type=node.concept_type.value,
+                        boundary_kind=boundary.kind.value,
+                        data_kind=edge.data_kind.value,
                     )
                 )
         return matches
+
+    def find_root_input_consumers(
+        self,
+        input_name: str,
+        *,
+        matched_primitive: str = "",
+        data_kind: SemanticDataKind | None = None,
+    ) -> list[SemanticBoundaryTarget]:
+        """Return unresolved consumers of a named root input boundary."""
+        return self.find_boundary_consumers(
+            boundary_kind=SemanticBoundaryKind.ROOT_INPUT,
+            port_name=input_name,
+            data_kind=data_kind,
+            matched_primitive=matched_primitive,
+        )
 
 
 def _boundary_id(root_node_id: str, kind: SemanticBoundaryKind, port_name: str) -> str:
@@ -137,20 +168,50 @@ def _boundary_id(root_node_id: str, kind: SemanticBoundaryKind, port_name: str) 
     return f"boundary:{prefix}:{root_node_id}:{port_name}"
 
 
-def _infer_data_kind(*tokens: str) -> SemanticDataKind:
-    joined = " ".join(tokens).lower()
-    if any(token in joined for token in ("signal", "waveform", "ecg", "raw trace")):
-        return SemanticDataKind.WAVEFORM
-    if any(token in joined for token in ("event", "peak", "beat", "r_peak")):
-        return SemanticDataKind.EVENT_SEQUENCE
-    if any(token in joined for token in ("rate", "hr", "bpm", "frequency")):
-        return SemanticDataKind.RATE_SERIES
-    return SemanticDataKind.GENERIC
+def normalize_semantic_data_kind(value: str | SemanticDataKind | None) -> SemanticDataKind:
+    """Normalize a declared or inferred data-kind token into the semantic enum."""
+    if isinstance(value, SemanticDataKind):
+        return value
+    normalized = str(value or "").strip().lower()
+    if not normalized:
+        return SemanticDataKind.GENERIC
+    normalized = normalized.replace(" ", "_")
+    mapping = {
+        "generic": SemanticDataKind.GENERIC,
+        "waveform": SemanticDataKind.WAVEFORM,
+        "event_sequence": SemanticDataKind.EVENT_SEQUENCE,
+        "rate_series": SemanticDataKind.RATE_SERIES,
+        "feature_vector": SemanticDataKind.FEATURE_VECTOR,
+        "state": SemanticDataKind.STATE,
+        "mask": SemanticDataKind.MASK,
+        "parameter": SemanticDataKind.PARAMETER,
+        "scalar_statistic": SemanticDataKind.SCALAR_STATISTIC,
+        "time_axis": SemanticDataKind.TIME_AXIS,
+        "sampling_context": SemanticDataKind.SAMPLING_CONTEXT,
+    }
+    return mapping.get(normalized, SemanticDataKind.GENERIC)
+
+
+def _infer_data_kind(*tokens: str, declared: str = "") -> SemanticDataKind:
+    if declared:
+        return normalize_semantic_data_kind(declared)
+    return normalize_semantic_data_kind(infer_data_kind(" ".join(tokens)))
+
+
+def _normalized_port(port: IOSpec) -> IOSpec:
+    return port.model_copy(
+        update={
+            "data_kind": (
+                port.data_kind
+                or _infer_data_kind(port.name, port.type_desc).value
+            )
+        }
+    )
 
 
 def _node_output_kinds(node: AlgorithmicNode) -> set[SemanticDataKind]:
     return {
-        _infer_data_kind(port.name, port.type_desc)
+        _infer_data_kind(port.name, port.type_desc, declared=port.data_kind)
         for port in node.outputs
     } or {SemanticDataKind.GENERIC}
 
@@ -201,6 +262,7 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                 edge.input_name,
                 edge.source_type,
                 edge.target_type,
+                declared=edge.data_kind,
             ),
             loss_class=_edge_loss_class(
                 _infer_data_kind(
@@ -208,6 +270,7 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                     edge.input_name,
                     edge.source_type,
                     edge.target_type,
+                    declared=edge.data_kind,
                 ),
                 node_map[edge.target_id],
             ),
@@ -230,7 +293,8 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                 ),
                 root_node_id=root.node_id,
                 kind=SemanticBoundaryKind.ROOT_INPUT,
-                port=port.model_copy(),
+                port=_normalized_port(port),
+                data_kind=_infer_data_kind(port.name, port.type_desc, declared=port.data_kind),
             )
             boundaries.append(boundary)
             for node_id in scope_ids:
@@ -253,6 +317,7 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                                 node_input.name,
                                 port.type_desc,
                                 node_input.type_desc,
+                                declared=node_input.data_kind or port.data_kind,
                             ),
                             loss_class=_edge_loss_class(
                                 _infer_data_kind(
@@ -260,6 +325,7 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                                     node_input.name,
                                     port.type_desc,
                                     node_input.type_desc,
+                                    declared=node_input.data_kind or port.data_kind,
                                 ),
                                 node,
                             ),
@@ -276,7 +342,8 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                 ),
                 root_node_id=root.node_id,
                 kind=SemanticBoundaryKind.ROOT_OUTPUT,
-                port=port.model_copy(),
+                port=_normalized_port(port),
+                data_kind=_infer_data_kind(port.name, port.type_desc, declared=port.data_kind),
             )
             boundaries.append(boundary)
             for node_id in scope_ids:
@@ -299,6 +366,7 @@ def project_semantic_cdg(cdg: CDGExport) -> SemanticCDG:
                                 port.name,
                                 node_output.type_desc,
                                 port.type_desc,
+                                declared=node_output.data_kind or port.data_kind,
                             ),
                             loss_class=SemanticLossClass.PRESERVING,
                             provenance=SemanticEdgeProvenance.ROOT_CONTRACT,
@@ -328,15 +396,37 @@ def insert_node_before_root_input_consumer(
     inserted node remains root-fed by leaving its own input unresolved, which
     matches the current assembler/runtime convention.
     """
+    return insert_node_before_boundary_consumer(
+        cdg,
+        boundary_kind=SemanticBoundaryKind.ROOT_INPUT,
+        boundary_port_name=root_input_name,
+        target_primitive=target_primitive,
+        inserted_node=inserted_node,
+        target_input_name=target_input_name,
+    )
+
+
+def insert_node_before_boundary_consumer(
+    cdg: CDGExport,
+    *,
+    boundary_kind: SemanticBoundaryKind,
+    boundary_port_name: str = "",
+    boundary_data_kind: SemanticDataKind | None = None,
+    target_primitive: str,
+    inserted_node: AlgorithmicNode,
+    target_input_name: str | None = None,
+) -> CDGExport:
+    """Lower a semantic-boundary interposition into the executable CDG form."""
     semantic = project_semantic_cdg(cdg)
     node_map = {node.node_id: node for node in cdg.nodes}
     candidates: list[tuple[SemanticBoundaryPort, SemanticFlowEdge, AlgorithmicNode]] = []
 
     for boundary in semantic.boundaries:
-        if (
-            boundary.kind != SemanticBoundaryKind.ROOT_INPUT
-            or boundary.port.name != root_input_name
-        ):
+        if boundary.kind != boundary_kind:
+            continue
+        if boundary_port_name and boundary.port.name != boundary_port_name:
+            continue
+        if boundary_data_kind is not None and boundary.data_kind != boundary_data_kind:
             continue
         for edge in semantic.edges:
             if edge.source_id != boundary.boundary_id:
@@ -351,13 +441,21 @@ def insert_node_before_root_input_consumer(
             candidates.append((boundary, edge, candidate))
 
     if not candidates:
+        boundary_label = (
+            boundary_port_name
+            or (boundary_data_kind.value if boundary_data_kind else "*")
+        )
         raise ValueError(
-            f"No unresolved root-input consumer found for '{root_input_name}' -> "
+            f"No unresolved boundary consumer found for '{boundary_kind.value}:{boundary_label}' -> "
             f"'{target_primitive}'."
         )
     if len(candidates) > 1:
+        boundary_label = (
+            boundary_port_name
+            or (boundary_data_kind.value if boundary_data_kind else "*")
+        )
         raise ValueError(
-            f"Ambiguous root-input consumer for '{root_input_name}' -> "
+            f"Ambiguous boundary consumer for '{boundary_kind.value}:{boundary_label}' -> "
             f"'{target_primitive}': {len(candidates)} matches."
         )
 

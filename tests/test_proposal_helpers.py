@@ -80,7 +80,9 @@ def test_build_expansion_context_carries_planning_artifact() -> None:
             runtime_artifacts={
                 "stdout_payload": {"global_loss": 1.0},
                 "intermediates": {"events": [1, 2, 3]},
+                "runtime_inputs": {"features": [0.1, 0.2]},
                 "signal_data": {"signal": [0.1, 0.2]},
+                "runtime_evidence": {"core": {"input_count": 1}},
             }
         ),
         planning_artifact=planning_artifact,
@@ -90,5 +92,9 @@ def test_build_expansion_context_carries_planning_artifact() -> None:
 
     assert ctx.planning_artifact is not None
     assert ctx.planning_artifact["artifact_version"] == "phase1.v1"
+    assert ctx.runtime_inputs == {"features": [0.1, 0.2]}
+    assert ctx.runtime_evidence == {"core": {"input_count": 1}}
     summary = summarize_expansion_context(ctx)
+    assert summary["runtime_input_keys"] == ["features"]
+    assert summary["runtime_evidence_keys"] == ["core"]
     assert summary["planning_artifact"]["paradigm"] == "signal_detect_measure"

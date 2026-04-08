@@ -9,7 +9,9 @@ from sciona.architect.graph_rewriter import GraphState
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode
 from sciona.architect.semantic_graph import (
-    insert_node_before_root_input_consumer,
+    SemanticBoundaryKind,
+    SemanticDataKind,
+    insert_node_before_boundary_consumer,
     project_semantic_cdg,
 )
 
@@ -21,31 +23,37 @@ def build_boundary_interposition_callback(
     insert_node: AlgorithmicNode,
     target_input_name: str = "",
     insert_output_name: str = "",
+    boundary_kind: SemanticBoundaryKind = SemanticBoundaryKind.ROOT_INPUT,
+    boundary_data_kind: SemanticDataKind | None = None,
 ) -> Callable[[CDGExport], GraphState[CDGExport]]:
-    """Create a semantic fallback that interposes a node at a root boundary."""
+    """Create a semantic fallback that interposes a node at a boundary."""
 
     def _apply(graph: CDGExport) -> GraphState[CDGExport]:
         target_input = target_input_name or boundary_input_name
         original_node_ids = {node.node_id for node in graph.nodes}
         semantic = project_semantic_cdg(graph)
-        matches = semantic.find_root_input_consumers(
-            boundary_input_name,
+        matches = semantic.find_boundary_consumers(
+            boundary_kind=boundary_kind,
+            port_name=boundary_input_name,
+            data_kind=boundary_data_kind,
             matched_primitive=target_primitive,
         )
         matches = [match for match in matches if match.port_name == target_input]
         if not matches:
             return GraphState.failure(
-                f"no root-boundary consumer for '{boundary_input_name}' into '{target_primitive}'"
+                f"no boundary consumer for '{boundary_kind.value}:{boundary_input_name}' into '{target_primitive}'"
             )
         if len(matches) > 1:
             return GraphState.failure(
-                f"ambiguous root-boundary consumer for '{boundary_input_name}' into '{target_primitive}'"
+                f"ambiguous boundary consumer for '{boundary_kind.value}:{boundary_input_name}' into '{target_primitive}'"
             )
 
         try:
-            rewritten = insert_node_before_root_input_consumer(
+            rewritten = insert_node_before_boundary_consumer(
                 graph,
-                root_input_name=boundary_input_name,
+                boundary_kind=boundary_kind,
+                boundary_port_name=boundary_input_name,
+                boundary_data_kind=boundary_data_kind,
                 target_primitive=target_primitive,
                 inserted_node=insert_node.model_copy(
                     deep=True,
@@ -87,7 +95,11 @@ def build_boundary_interposition_callback(
         metadata["semantic_rewrite"] = {
             "kind": "boundary_interposition",
             "target_primitive": target_primitive,
+            "boundary_kind": boundary_kind.value,
             "boundary_input_name": boundary_input_name,
+            "boundary_data_kind": (
+                boundary_data_kind.value if boundary_data_kind is not None else ""
+            ),
             "target_input_name": target_input,
             "insert_node_primitive": insert_node.matched_primitive,
             "insert_output_name": insert_output_name or target_input,

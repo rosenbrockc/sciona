@@ -19,6 +19,7 @@ from sciona.principal.expansion import (
 )
 from sciona.principal.expansion_assets import (
     AssetBackedExpansionRuleSet,
+    ExpansionTriggerAsset,
     ExpansionFamilyAsset,
     asset_backed_rule_sets,
     load_local_expansion_assets_by_family,
@@ -114,14 +115,61 @@ def _root_boundary_signal_rate_cdg() -> CDGExport:
     )
 
 
+def _generic_records_cdg() -> CDGExport:
+    root = AlgorithmicNode(
+        node_id="root",
+        name="Records Pipeline",
+        description="top level records pipeline",
+        concept_type=ConceptType.DATA_ASSEMBLY,
+        status=NodeStatus.DECOMPOSED,
+        children=["norm"],
+        inputs=[IOSpec(name="records", type_desc="list[dict]")],
+        outputs=[IOSpec(name="result", type_desc="list[dict]")],
+    )
+    norm = AlgorithmicNode(
+        node_id="norm",
+        parent_id="root",
+        name="Normalize Records",
+        description="normalize input records",
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.ATOMIC,
+        matched_primitive="normalize_records",
+        depth=1,
+        inputs=[IOSpec(name="records", type_desc="list[dict]")],
+        outputs=[IOSpec(name="records", type_desc="list[dict]")],
+    )
+    return CDGExport(nodes=[root, norm], edges=[], metadata={"goal": "records"})
+
+
 class TestExpansionAssets:
     def test_loads_local_expansion_assets(self):
         by_family = load_local_expansion_assets_by_family()
         asset = by_family["signal_event_rate"]
+        jump = asset.operation("insert_jump_removal_before_filter")
 
         assert asset.asset_id == "family.signal_event_rate.expansions.v1"
         assert asset.audit.review_status == "transitional"
         assert len(asset.operations) == 4
+        assert jump is not None
+        assert jump.trigger.required_runtime_keys == ["signal"]
+        assert jump.trigger.required_boundary_requirements[0].boundary_kind == "root_input"
+        assert jump.trigger.required_boundary_requirements[0].port_name == "signal"
+
+    def test_trigger_asset_accepts_legacy_signal_and_boundary_aliases(self):
+        trigger = ExpansionTriggerAsset.model_validate(
+            {
+                "metric_name": "coverage_gap",
+                "threshold": 0.5,
+                "required_signal_keys": ["records.payload"],
+                "required_root_inputs": ["records"],
+                "required_planning_terms": ["loss", "telemetry"],
+            }
+        )
+
+        assert trigger.required_runtime_keys == ["records.payload"]
+        assert trigger.required_boundary_requirements[0].boundary_kind == "root_input"
+        assert trigger.required_boundary_requirements[0].port_name == "records"
+        assert trigger.required_planning_constraint_categories == ["loss", "telemetry"]
 
     def test_asset_backed_rule_set_attaches_provenance(self):
         class _StubRuleSet:
@@ -157,12 +205,84 @@ class TestExpansionAssets:
             },
         )
 
-        diagnostics = rule_set.diagnose(_signal_rate_cdg(), context)
+        diagnostics = rule_set.diagnose(_root_boundary_signal_rate_cdg(), context)
 
         assert diagnostics
         assert diagnostics[0].asset_id == "family.signal_event_rate.expansions.v1"
         assert diagnostics[0].asset_operation == "insert_jump_removal_before_filter"
         assert diagnostics[0].asset_source_kind == "local_asset"
+
+    def test_asset_wrapper_supports_generic_runtime_keys_and_boundaries(self):
+        class _StubRuleSet:
+            name = "generic_records"
+            domain = "tabular_processing"
+
+            def diagnose(self, cdg, context):
+                return [
+                    ExpansionDiagnostic(
+                        rule_name="insert_normalization_gate",
+                        severity=0.9,
+                        evidence="records are inconsistent",
+                        metric_name="record_shape_variance",
+                        metric_value=2.0,
+                        threshold=1.0,
+                    )
+                ]
+
+            def rules(self):
+                return []
+
+        asset = ExpansionFamilyAsset.model_validate(
+            {
+                "asset_id": "family.generic_records.expansions.v1",
+                "asset_version": "phase2.v1",
+                "family": "generic_records",
+                "domain": "tabular_processing",
+                "name": "Generic Records Expansion Inventory",
+                "summary": "Generic asset for family-neutral runtime key and boundary checks.",
+                "operations": [
+                    {
+                        "rule_name": "insert_normalization_gate",
+                        "name": "Insert Normalization Gate",
+                        "intent": "Protect downstream processing by inserting a normalization stage before the first consumer.",
+                        "dejargonized_summary": "Add a normalization step when the incoming records need cleanup before the main analysis.",
+                        "trigger": {
+                            "metric_name": "record_shape_variance",
+                            "comparison": "gt",
+                            "threshold": 1.0,
+                            "required_runtime_keys": ["records.payload"],
+                            "required_runtime_namespaces": ["records"],
+                            "required_boundary_requirements": [
+                                {
+                                    "boundary_kind": "root_input",
+                                    "port_name": "records",
+                                    "matched_primitives": ["normalize_records"],
+                                }
+                            ],
+                        },
+                    }
+                ],
+                "audit": {
+                    "review_status": "transitional",
+                    "source_kind": "local_asset",
+                    "dejargonized_summary": "Generic family-neutral records asset.",
+                    "references": [{"title": "Generic records reference"}],
+                },
+            }
+        )
+        rule_set = AssetBackedExpansionRuleSet(_StubRuleSet(), asset)
+
+        diagnostics = rule_set.diagnose(
+            _generic_records_cdg(),
+            ExpansionContext(
+                runtime_inputs={"records.payload": [1, 2, 3]},
+                planning_artifact={"planning_constraints": [{"category": "loss"}]},
+            ),
+        )
+
+        assert diagnostics
+        assert diagnostics[0].asset_id == "family.generic_records.expansions.v1"
+        assert diagnostics[0].asset_operation == "insert_normalization_gate"
 
     def test_engine_reports_applied_asset_summary(self):
         class _StubRuleSet:
@@ -198,7 +318,7 @@ class TestExpansionAssets:
             },
         )
 
-        result = engine.expand(_signal_rate_cdg(), context)
+        result = engine.expand(_root_boundary_signal_rate_cdg(), context)
 
         assert result.expanded is True
         assert result.applied_assets[0]["asset_id"] == "family.signal_event_rate.expansions.v1"
@@ -212,7 +332,7 @@ class TestExpansionAssets:
 
         rule_set = next(rs for rs in default_rule_sets() if rs.name == "signal_event_rate")
         diagnostics = rule_set.diagnose(
-            _signal_rate_cdg(),
+            _root_boundary_signal_rate_cdg(),
             ExpansionContext(
                 signal_data={"signal": signal},
                 planning_artifact={"planning_constraints": [{"category": "loss"}]},

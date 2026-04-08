@@ -94,6 +94,13 @@ class MockRuleSet:
 
 
 class TestExpansionEngine:
+    def test_runtime_inputs_and_signal_data_alias_each_other(self):
+        ctx = ExpansionContext(runtime_inputs={"features": [1.0, 2.0]})
+        assert ctx.signal_data == {"features": [1.0, 2.0]}
+
+        legacy = ExpansionContext(signal_data={"signal": [0.0, 1.0]})
+        assert legacy.runtime_inputs == {"signal": [0.0, 1.0]}
+
     def test_no_diagnostics_no_expansion(self):
         rs = MockRuleSet("empty", "test", lambda c, ctx: [], [])
         engine = ExpansionEngine([rs])

@@ -64,8 +64,17 @@ class ExpansionContext:
 
     intermediates: dict[str, Any] = field(default_factory=dict)
     eval_result: dict[str, Any] | None = None
+    runtime_inputs: dict[str, Any] | None = None
     signal_data: dict[str, Any] | None = None
+    runtime_evidence: dict[str, Any] | None = None
     planning_artifact: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        """Keep the deprecated signal_data alias aligned with runtime_inputs."""
+        if self.runtime_inputs is None and self.signal_data is not None:
+            self.runtime_inputs = dict(self.signal_data)
+        elif self.signal_data is None and self.runtime_inputs is not None:
+            self.signal_data = dict(self.runtime_inputs)
 
 
 @dataclass(frozen=True)
