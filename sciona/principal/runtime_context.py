@@ -96,12 +96,12 @@ def _choose_primary_stream(streams: list[RuntimeStream]) -> RuntimeStream | None
 
 
 def _bind_canonical_aliases(
-    signal_data: dict[str, Any],
+    runtime_inputs: dict[str, Any],
     streams: dict[str, RuntimeStream],
 ) -> None:
     """Attach generic canonical aliases to a stable stream when possible."""
     stream_list = sorted(streams.values(), key=_signal_priority)
-    if not stream_list and any(key in signal_data for key in ("signal", "time", "sampling_rate")):
+    if not stream_list and any(key in runtime_inputs for key in ("signal", "time", "sampling_rate")):
         streams["primary"] = RuntimeStream(stream_id="primary", data_kind=_infer_data_kind("signal"))
         stream_list = [streams["primary"]]
     if not stream_list:
@@ -112,7 +112,7 @@ def _bind_canonical_aliases(
         target = waveform_bindable[0]
     elif len(stream_list) == 1 and stream_list[0].signal_key in {"", "signal"}:
         target = stream_list[0]
-    elif any(key in signal_data for key in ("signal", "time", "sampling_rate")):
+    elif any(key in runtime_inputs for key in ("signal", "time", "sampling_rate")):
         target = streams.get("primary")
         if target is None:
             target = RuntimeStream(stream_id="primary", data_kind=_infer_data_kind("signal"))
@@ -122,19 +122,19 @@ def _bind_canonical_aliases(
 
     if target is None:
         return
-    if "signal" in signal_data and not target.signal_key:
+    if "signal" in runtime_inputs and not target.signal_key:
         target.signal_key = "signal"
-        target.signal_values = signal_data.get("signal")
+        target.signal_values = runtime_inputs.get("signal")
         if "signal" not in target.aliases:
             target.aliases.append("signal")
-    if "time" in signal_data and not target.time_key:
+    if "time" in runtime_inputs and not target.time_key:
         target.time_key = "time"
-        target.time_values = signal_data.get("time")
+        target.time_values = runtime_inputs.get("time")
         if "time" not in target.aliases:
             target.aliases.append("time")
-    if "sampling_rate" in signal_data and target.sampling_rate is None:
+    if "sampling_rate" in runtime_inputs and target.sampling_rate is None:
         try:
-            target.sampling_rate = float(signal_data["sampling_rate"])
+            target.sampling_rate = float(runtime_inputs["sampling_rate"])
             target.sampling_rate_key = "sampling_rate"
             if "sampling_rate" not in target.aliases:
                 target.aliases.append("sampling_rate")
@@ -142,9 +142,28 @@ def _bind_canonical_aliases(
             pass
 
 
-def resolve_canonical_runtime_context(signal_data: dict[str, Any]) -> CanonicalRuntimeContext:
-    """Resolve dataset-specific aliases into a canonical multi-stream context."""
-    if not isinstance(signal_data, dict):
+def _coerce_runtime_inputs(
+    runtime_inputs: dict[str, Any] | None = None,
+    *,
+    signal_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Merge the family-neutral runtime input contract with legacy aliases."""
+    merged: dict[str, Any] = {}
+    if isinstance(signal_data, dict):
+        merged.update(signal_data)
+    if isinstance(runtime_inputs, dict):
+        merged.update(runtime_inputs)
+    return merged
+
+
+def resolve_canonical_runtime_context(
+    runtime_inputs: dict[str, Any] | None = None,
+    *,
+    signal_data: dict[str, Any] | None = None,
+) -> CanonicalRuntimeContext:
+    """Resolve runtime aliases into a canonical multi-stream context."""
+    runtime_inputs = _coerce_runtime_inputs(runtime_inputs, signal_data=signal_data)
+    if not isinstance(runtime_inputs, dict):
         return CanonicalRuntimeContext()
 
     streams: dict[str, RuntimeStream] = {}
@@ -158,7 +177,7 @@ def resolve_canonical_runtime_context(signal_data: dict[str, Any]) -> CanonicalR
             stream.data_kind = data_kind
         return stream
 
-    for raw_key, raw_value in signal_data.items():
+    for raw_key, raw_value in runtime_inputs.items():
         if raw_key in {"signal", "sampling_rate", "time"}:
             continue
         key = str(raw_key)
@@ -185,24 +204,28 @@ def resolve_canonical_runtime_context(signal_data: dict[str, Any]) -> CanonicalR
         stream.signal_key = key
         stream.signal_values = raw_value
 
-    _bind_canonical_aliases(signal_data, streams)
+    _bind_canonical_aliases(runtime_inputs, streams)
 
     if not streams:
         generic = RuntimeStream(
             stream_id="generic",
             data_kind=_infer_data_kind("signal"),
-            signal_key=str("signal") if "signal" in signal_data else "",
-            signal_values=signal_data.get("signal"),
-            time_key=str("time") if "time" in signal_data else "",
-            time_values=signal_data.get("time"),
-            sampling_rate_key=str("sampling_rate") if "sampling_rate" in signal_data else "",
+            signal_key=str("signal") if "signal" in runtime_inputs else "",
+            signal_values=runtime_inputs.get("signal"),
+            time_key=str("time") if "time" in runtime_inputs else "",
+            time_values=runtime_inputs.get("time"),
+            sampling_rate_key=str("sampling_rate")
+            if "sampling_rate" in runtime_inputs
+            else "",
             sampling_rate=(
-                float(signal_data["sampling_rate"])
-                if "sampling_rate" in signal_data
+                float(runtime_inputs["sampling_rate"])
+                if "sampling_rate" in runtime_inputs
                 else None
             ),
-            aliases=[key for key in ("signal", "time", "sampling_rate") if key in signal_data],
-            provenance="raw_signal_data",
+            aliases=[
+                key for key in ("signal", "time", "sampling_rate") if key in runtime_inputs
+            ],
+            provenance="raw_runtime_inputs",
         )
         streams[generic.stream_id] = generic
 
@@ -393,16 +416,25 @@ def summarize_runtime_context(context: CanonicalRuntimeContext) -> dict[str, Any
     }
 
 
-def canonicalize_signal_data(
-    signal_data: dict[str, Any],
+def canonicalize_runtime_inputs(
+    runtime_inputs: dict[str, Any] | None = None,
+    *,
+    signal_data: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], CanonicalRuntimeContext]:
-    """Resolve deterministic canonical aliases onto a raw signal-data payload."""
-    normalized = dict(signal_data) if isinstance(signal_data, dict) else {}
+    """Resolve deterministic canonical aliases onto runtime inputs."""
+    normalized = _coerce_runtime_inputs(runtime_inputs, signal_data=signal_data)
     context = resolve_canonical_runtime_context(normalized)
     for canonical_name, ref in context.canonical_inputs.items():
         if ref.raw_key in normalized:
             normalized[canonical_name] = normalized[ref.raw_key]
     return normalized, context
+
+
+def canonicalize_signal_data(
+    signal_data: dict[str, Any] | None,
+) -> tuple[dict[str, Any], CanonicalRuntimeContext]:
+    """Backward-compatible alias for :func:`canonicalize_runtime_inputs`."""
+    return canonicalize_runtime_inputs(signal_data=signal_data)
 
 
 def _intermediate_role_priority(key: str) -> tuple[str, int] | None:
@@ -468,11 +500,16 @@ def _duration_seconds_for_signal(
 
 
 def build_canonical_runtime_evidence(
-    signal_data: dict[str, Any] | None,
+    runtime_inputs: dict[str, Any] | None = None,
     intermediates: dict[str, Any] | None = None,
+    *,
+    signal_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build canonical runtime context and compact telemetry summaries."""
-    canonical_signal_data, context = canonicalize_signal_data(signal_data or {})
+    canonical_runtime_inputs, context = canonicalize_runtime_inputs(
+        runtime_inputs,
+        signal_data=signal_data,
+    )
     canonical_intermediates, intermediate_aliases = canonicalize_intermediates(
         intermediates or {}
     )
@@ -486,19 +523,19 @@ def build_canonical_runtime_evidence(
     sampling_ref = context.canonical_inputs.get("sampling_rate")
 
     sampling_rate: float | None = None
-    if sampling_ref is not None and sampling_ref.raw_key in canonical_signal_data:
+    if sampling_ref is not None and sampling_ref.raw_key in canonical_runtime_inputs:
         try:
-            sampling_rate = float(canonical_signal_data[sampling_ref.raw_key])
+            sampling_rate = float(canonical_runtime_inputs[sampling_ref.raw_key])
         except Exception:
             sampling_rate = None
 
     signal_values = (
-        canonical_signal_data.get(signal_ref.raw_key)
+        canonical_runtime_inputs.get(signal_ref.raw_key)
         if signal_ref is not None
         else None
     )
     time_values = (
-        canonical_signal_data.get(time_ref.raw_key)
+        canonical_runtime_inputs.get(time_ref.raw_key)
         if time_ref is not None
         else None
     )
@@ -541,7 +578,8 @@ def build_canonical_runtime_evidence(
     return {
         "runtime_context": runtime_context,
         "telemetry": telemetry,
-        "signal_data": canonical_signal_data,
+        "runtime_inputs": canonical_runtime_inputs,
+        "signal_data": canonical_runtime_inputs,
         "intermediates": canonical_intermediates,
     }
 
@@ -581,18 +619,23 @@ def serialize_runtime_context(context: CanonicalRuntimeContext) -> dict[str, Any
 
 
 def summarize_runtime_evidence(
-    signal_data: dict[str, Any],
+    runtime_inputs: dict[str, Any] | None = None,
     *,
+    signal_data: dict[str, Any] | None = None,
     intermediates: dict[str, Any] | None = None,
     outputs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the canonical evidence contract used by refinement and profiling."""
-    base = build_canonical_runtime_evidence(signal_data, intermediates)
-    canonical_signal_data = dict(base["signal_data"])
+    base = build_canonical_runtime_evidence(
+        runtime_inputs,
+        intermediates,
+        signal_data=signal_data,
+    )
+    canonical_runtime_inputs = dict(base["runtime_inputs"])
     canonical_intermediates = dict(base["intermediates"])
     canonical_outputs, _ = canonicalize_intermediates(outputs or {})
 
-    canonical = resolve_canonical_runtime_context(canonical_signal_data)
+    canonical = resolve_canonical_runtime_context(canonical_runtime_inputs)
     runtime_context = dict(base["runtime_context"])
     telemetry = dict(base["telemetry"])
     sampling_rate = telemetry.get("signal", {}).get("sampling_rate")
@@ -607,7 +650,7 @@ def summarize_runtime_evidence(
         if stream.sampling_rate is not None:
             stream_summary["sampling_rate"] = float(stream.sampling_rate)
         if stream.signal_key:
-            values = canonical_signal_data.get(stream.signal_key)
+            values = canonical_runtime_inputs.get(stream.signal_key)
             if values is not None:
                 signal_summary = summarize_waveform(values)
                 if stream.sampling_rate is not None and stream.sampling_rate > 0:
@@ -615,7 +658,7 @@ def summarize_runtime_evidence(
                     signal_summary["duration_seconds"] = float(len(values)) / float(stream.sampling_rate)
                 stream_summary["signal"] = signal_summary
         if stream.time_key:
-            time_values = canonical_signal_data.get(stream.time_key)
+            time_values = canonical_runtime_inputs.get(stream.time_key)
             if time_values is not None:
                 stream_summary["time"] = summarize_time_axis(time_values)
         streams[stream.stream_id] = stream_summary
@@ -649,6 +692,7 @@ def summarize_runtime_evidence(
             "intermediates": _summarize_named_values(canonical_intermediates),
             "outputs": _summarize_named_values(canonical_outputs),
         },
-        "signal_data": canonical_signal_data,
+        "runtime_inputs": canonical_runtime_inputs,
+        "signal_data": canonical_runtime_inputs,
         "intermediates": canonical_intermediates,
     }

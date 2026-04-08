@@ -7,6 +7,7 @@ import pytest
 
 from sciona.principal.runtime_context import (
     canonicalize_intermediates,
+    canonicalize_runtime_inputs,
     canonicalize_signal_data,
     resolve_canonical_runtime_context,
     serialize_runtime_context,
@@ -78,6 +79,27 @@ def test_canonicalize_signal_data_overrides_wrong_generic_aliases() -> None:
     assert normalized["signal"] is ecg
     assert normalized["sampling_rate"] == pytest.approx(129.96)
     assert np.array_equal(normalized["time"], signal_data["h10_ecg_t"])
+
+
+def test_canonicalize_runtime_inputs_overrides_wrong_generic_aliases() -> None:
+    ecg = np.sin(np.linspace(0.0, 10.0, 300))
+    runtime_inputs = {
+        "signal": np.linspace(0.0, 1.0, 30),
+        "sampling_rate": 21.0,
+        "time": np.linspace(0.0, 10.0, 30),
+        "capnostream_value": np.linspace(0.0, 1.0, 30),
+        "capnostream_sampling_rate": 21.0,
+        "h10_ecg_value": ecg,
+        "ecg_sampling_rate": 129.96,
+        "h10_ecg_t": np.linspace(0.0, 10.0, 300),
+    }
+
+    normalized, context = canonicalize_runtime_inputs(runtime_inputs)
+
+    assert context.canonical_inputs["signal"].raw_key == "h10_ecg_value"
+    assert normalized["signal"] is ecg
+    assert normalized["sampling_rate"] == pytest.approx(129.96)
+    assert np.array_equal(normalized["time"], runtime_inputs["h10_ecg_t"])
 
 
 def test_canonicalize_intermediates_adds_events_and_rate_aliases() -> None:
@@ -174,14 +196,14 @@ def test_serialize_runtime_context_avoids_raw_arrays() -> None:
 
 
 def test_summarize_runtime_evidence_emits_canonical_contract() -> None:
-    signal_data = {
+    runtime_inputs = {
         "capnostream_value": np.linspace(0.0, 1.0, 30),
         "capnostream_sampling_rate": 21.0,
         "h10_ecg_value": np.sin(np.linspace(0.0, 20.0, 2000)),
         "ecg_sampling_rate": 100.0,
     }
     evidence = summarize_runtime_evidence(
-        signal_data,
+        runtime_inputs,
         intermediates={"events": np.array([100.0, 350.0, 600.0])},
         outputs={"rate": np.array([70.0, 71.0, 69.5])},
     )
@@ -191,11 +213,30 @@ def test_summarize_runtime_evidence_emits_canonical_contract() -> None:
         evidence["canonical_runtime_context"]["canonical_inputs"]["sampling_rate"]["stream_id"]
         == "ecg"
     )
-    assert evidence["signal_data"]["signal"].shape == signal_data["h10_ecg_value"].shape
+    assert evidence["runtime_inputs"]["signal"].shape == runtime_inputs["h10_ecg_value"].shape
+    assert evidence["signal_data"]["signal"].shape == runtime_inputs["h10_ecg_value"].shape
+    assert evidence["runtime_inputs"]["sampling_rate"] == 100.0
     assert evidence["signal_data"]["sampling_rate"] == 100.0
     assert evidence["telemetry_summary"]["streams"]["ecg"]["signal"]["sampling_rate"] == 100.0
     assert evidence["telemetry_summary"]["events"]["count"] == 3.0
     assert evidence["telemetry_summary"]["outputs"]["rate"]["mean"] > 0.0
+
+
+def test_summarize_runtime_evidence_preserves_generic_runtime_inputs() -> None:
+    runtime_inputs = {
+        "sensor_value": np.array([0.5, 0.75, 0.9]),
+        "sensor_sampling_rate": 50.0,
+    }
+    evidence = summarize_runtime_evidence(
+        runtime_inputs=runtime_inputs,
+        intermediates={"score": np.array([1.0, 2.0, 3.0])},
+        outputs={"quality": np.array([0.2, 0.4, 0.6])},
+    )
+
+    assert evidence["runtime_inputs"]["sensor_value"].shape == (3,)
+    assert evidence["signal_data"]["sensor_sampling_rate"] == 50.0
+    assert evidence["runtime_context"]["stream_count"] >= 1
+    assert evidence["telemetry_summary"]["outputs"]["quality"]["mean"] == pytest.approx(0.4)
 
 
 def test_summarize_runtime_evidence_derives_canonical_output_aliases() -> None:

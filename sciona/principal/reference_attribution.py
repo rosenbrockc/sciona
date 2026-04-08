@@ -15,7 +15,10 @@ import numpy as np
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import NodeStatus
 from sciona.principal.eval_spec import compute_evaluation_payload, load_evaluation_spec
-from sciona.principal.evaluator import _build_runtime_artifacts, _collect_signal_data_from_frames
+from sciona.principal.evaluator import (
+    _build_runtime_artifacts,
+    _collect_runtime_inputs_from_frames,
+)
 from sciona.principal.models import NodeGradient, OptimizationMetric
 from sciona.synthesizer.models import ExportBundle
 
@@ -85,19 +88,19 @@ async def compute_reference_loss_gradients(
         flat_inputs = pipeline_mod._flatten_inputs(group_frames)
         baseline_result = pipeline_mod.run_pipeline(entrypoint=entrypoint, **group_frames)
         try:
-            signal_data = (
-                _collect_signal_data_from_frames(group_frames)
+            runtime_inputs = (
+                _collect_runtime_inputs_from_frames(group_frames)
                 if isinstance(group_frames, dict)
                 else {}
             )
-            if not signal_data and isinstance(flat_inputs, dict):
-                signal_data = _collect_signal_data_from_runtime_inputs(flat_inputs)
+            if not runtime_inputs and isinstance(flat_inputs, dict):
+                runtime_inputs = _collect_runtime_inputs_from_runtime_inputs(flat_inputs)
         except Exception:
-            signal_data = {}
+            runtime_inputs = {}
         runtime_artifacts = _build_runtime_artifacts(
             trace_path=bundle.output_dir / "trace.jsonl",
             stdout_payload=baseline_result if isinstance(baseline_result, dict) else None,
-            signal_data=signal_data,
+            runtime_inputs=runtime_inputs,
         )
         profile_artifacts = {
             key: runtime_artifacts[key]
@@ -247,20 +250,25 @@ def _extract_traced_node_functions(atoms_mod: Any) -> dict[str, str]:
     return mapping
 
 
-def _collect_signal_data_from_runtime_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
+def _collect_runtime_inputs_from_runtime_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
     """Collect array-like runtime inputs when no grouped frames are available."""
-    signal_data: dict[str, Any] = {}
+    runtime_inputs: dict[str, Any] = {}
     for raw_key, raw_value in inputs.items():
         key = str(raw_key)
         lowered = key.lower()
         if "reference" in lowered or lowered.startswith("target"):
             continue
         if isinstance(raw_value, (list, tuple, np.ndarray)):
-            signal_data[key] = raw_value
+            runtime_inputs[key] = raw_value
             continue
         if np.isscalar(raw_value):
-            signal_data[key] = raw_value
-    return signal_data
+            runtime_inputs[key] = raw_value
+    return runtime_inputs
+
+
+def _collect_signal_data_from_runtime_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Backward-compatible alias for runtime-input collection."""
+    return _collect_runtime_inputs_from_runtime_inputs(inputs)
 
 
 def _perturb_value(value: Any) -> Any:

@@ -139,7 +139,7 @@ def test_runtime_artifacts_emit_phase6_canonical_evidence_contract(tmp_path) -> 
             "intermediates": {"events": np.array([12.0, 140.0, 280.0])},
             "outputs": {"rate": np.array([70.0, 71.0, 69.5])},
         },
-        signal_data={
+        runtime_inputs={
             "capnostream_value": np.linspace(0.0, 1.0, 30),
             "capnostream_sampling_rate": 21.0,
             "h10_ecg_value": np.sin(np.linspace(0.0, 100.0, 12996)),
@@ -148,6 +148,7 @@ def test_runtime_artifacts_emit_phase6_canonical_evidence_contract(tmp_path) -> 
         },
     )
 
+    assert artifacts["runtime_inputs"]["h10_ecg_value"].shape == (12996,)
     assert artifacts["runtime_context"]["canonical_inputs"]["signal"] == "h10_ecg_value"
     assert (
         artifacts["canonical_runtime_context"]["canonical_inputs"]["sampling_rate"]["raw_key"]

@@ -108,7 +108,7 @@ class ExecutionSandbox:
         runtime_artifacts = _build_runtime_artifacts(
             trace_path=trace_path,
             stdout_payload=stdout_payload,
-            signal_data=_load_signal_data_from_dataset_path(dataset_path),
+            runtime_inputs=_load_runtime_inputs_from_dataset_path(dataset_path),
         )
 
         if proc.returncode != 0:
@@ -183,7 +183,7 @@ class ExecutionSandbox:
                 evaluation_spec=evaluation_spec,
             )
 
-        signal_data: dict[str, Any] = {}
+        runtime_inputs: dict[str, Any] = {}
         try:
             coll_cls = create_templated_dataset_collection(
                 str(adapter), varset=varset,
@@ -191,7 +191,7 @@ class ExecutionSandbox:
             options = coll_cls.get_filter_options(user, serial, recursive=True)
             coll = coll_cls.from_folder(options=options)
             dfs = coll.to_pandas()
-            signal_data = _collect_signal_data_from_frames(dfs)
+            runtime_inputs = _collect_runtime_inputs_from_frames(dfs)
         except Exception as exc:
             logger.error("Failed to load adapter dataset: %s", exc)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
@@ -214,8 +214,9 @@ class ExecutionSandbox:
             evaluation_spec=evaluation_spec,
         )
         artifacts = dict(result.runtime_artifacts)
-        if signal_data:
-            artifacts["signal_data"] = signal_data
+        if runtime_inputs:
+            artifacts.setdefault("runtime_inputs", runtime_inputs)
+            artifacts.setdefault("signal_data", runtime_inputs)
         return result.model_copy(update={"runtime_artifacts": artifacts})
 
     async def _evaluate_python_adapter_runner(
@@ -237,16 +238,16 @@ class ExecutionSandbox:
             logger.error("Artifact not found: %s", artifact)
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
-        signal_data: dict[str, Any] = {}
+        runtime_inputs: dict[str, Any] = {}
         try:
             from sciona.principal.datasets import create_templated_dataset_collection
 
             coll_cls = create_templated_dataset_collection(str(adapter), varset=varset)
             options = coll_cls.get_filter_options(user, serial, recursive=True)
             coll = coll_cls.from_folder(options=options)
-            signal_data = _collect_signal_data_from_frames(coll.to_pandas())
+            runtime_inputs = _collect_runtime_inputs_from_frames(coll.to_pandas())
         except Exception:
-            signal_data = {}
+            runtime_inputs = {}
 
         trace_path = output_dir / "trace.jsonl"
         if trace_path.exists():
@@ -298,7 +299,7 @@ class ExecutionSandbox:
         runtime_artifacts = _build_runtime_artifacts(
             trace_path=trace_path,
             stdout_payload=stdout_payload,
-            signal_data=signal_data,
+            runtime_inputs=runtime_inputs,
         )
 
         if proc.returncode != 0:
@@ -429,7 +430,8 @@ def _build_runtime_artifacts(
     *,
     trace_path: Path,
     stdout_payload: dict[str, Any] | None,
-    signal_data: dict[str, Any] | None,
+    runtime_inputs: dict[str, Any] | None = None,
+    signal_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble best-effort runtime artifacts for downstream expansion."""
     artifacts: dict[str, Any] = {"trace_path": str(trace_path)}
@@ -450,10 +452,13 @@ def _build_runtime_artifacts(
                 if key not in merged:
                     merged[key] = value
             artifacts["intermediates"] = merged
-    if signal_data:
-        artifacts["signal_data"] = dict(signal_data)
+    merged_runtime_inputs = dict(signal_data or {})
+    if runtime_inputs:
+        merged_runtime_inputs.update(runtime_inputs)
+    artifacts["runtime_inputs"] = merged_runtime_inputs
+    artifacts["signal_data"] = artifacts["runtime_inputs"]
     evidence = summarize_runtime_evidence(
-        dict(signal_data or {}),
+        dict(merged_runtime_inputs),
         intermediates=intermediates,
         outputs=outputs,
     )
@@ -482,8 +487,8 @@ def _persist_runtime_evidence(trace_path: Path, evidence: dict[str, Any]) -> Non
         )
 
 
-def _load_signal_data_from_dataset_path(dataset_path: str) -> dict[str, Any]:
-    """Best-effort signal-data loading from a dataset manifest path."""
+def _load_runtime_inputs_from_dataset_path(dataset_path: str) -> dict[str, Any]:
+    """Best-effort runtime-input loading from a dataset manifest path."""
     candidate = Path(dataset_path).expanduser()
     if not candidate.exists() or candidate.suffix.lower() != ".json":
         return {}
@@ -508,15 +513,20 @@ def _load_signal_data_from_dataset_path(dataset_path: str) -> dict[str, Any]:
             frames[group_name] = pd.read_parquet(path)
         except Exception:
             continue
-    return _collect_signal_data_from_frames(frames)
+    return _collect_runtime_inputs_from_frames(frames)
 
 
-def _collect_signal_data_from_frames(group_frames: dict[str, Any]) -> dict[str, Any]:
-    """Extract signal-oriented arrays and sampling metadata from dataset frames."""
+def _load_signal_data_from_dataset_path(dataset_path: str) -> dict[str, Any]:
+    """Backward-compatible alias for runtime-input loading."""
+    return _load_runtime_inputs_from_dataset_path(dataset_path)
+
+
+def _collect_runtime_inputs_from_frames(group_frames: dict[str, Any]) -> dict[str, Any]:
+    """Extract runtime inputs and sampling metadata from dataset frames."""
     if not isinstance(group_frames, dict):
         return {}
 
-    signal_data: dict[str, Any] = {}
+    runtime_inputs: dict[str, Any] = {}
     for group_name, frame in group_frames.items():
         if not hasattr(frame, "columns"):
             continue
@@ -526,31 +536,36 @@ def _collect_signal_data_from_frames(group_frames: dict[str, Any]) -> dict[str, 
         time_column = _pick_time_column(frame)
         sampling_rate = _infer_sampling_rate(frame, time_column=time_column)
         if sampling_rate is not None:
-            signal_data.setdefault("sampling_rate", sampling_rate)
-            signal_data[f"{group}_sampling_rate"] = sampling_rate
+            runtime_inputs.setdefault("sampling_rate", sampling_rate)
+            runtime_inputs[f"{group}_sampling_rate"] = sampling_rate
             if group_alias:
-                signal_data[f"{group_alias}_sampling_rate"] = sampling_rate
+                runtime_inputs[f"{group_alias}_sampling_rate"] = sampling_rate
 
         for column in frame.columns:
             series = frame[column]
             values = series.to_numpy() if hasattr(series, "to_numpy") else list(series)
             key = str(column)
-            signal_data[key] = values
+            runtime_inputs[key] = values
             if key.startswith(f"{group}_"):
                 alias = key[len(group) + 1 :]
-                signal_data.setdefault(alias, values)
+                runtime_inputs.setdefault(alias, values)
                 if group_alias and alias != "value":
-                    signal_data.setdefault(f"{group_alias}_{alias}", values)
+                    runtime_inputs.setdefault(f"{group_alias}_{alias}", values)
                 if group_alias and alias == "value":
-                    signal_data.setdefault(group_alias, values)
+                    runtime_inputs.setdefault(group_alias, values)
             if key == "value" and any(
                 token in group_lower for token in ("signal", "wave", "waveform", "ecg", "ppg", "eeg", "emg")
             ):
-                signal_data.setdefault("signal", values)
+                runtime_inputs.setdefault("signal", values)
             if time_column is not None and key == time_column:
-                signal_data.setdefault("time", values)
+                runtime_inputs.setdefault("time", values)
 
-    return signal_data
+    return runtime_inputs
+
+
+def _collect_signal_data_from_frames(group_frames: dict[str, Any]) -> dict[str, Any]:
+    """Backward-compatible alias for runtime-input collection."""
+    return _collect_runtime_inputs_from_frames(group_frames)
 
 
 def _pick_time_column(frame: Any) -> str | None:

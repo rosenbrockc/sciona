@@ -20,7 +20,7 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
             "intermediates": {"rpeaks": [100.0, 350.0, 600.0]},
             "outputs": {"heart_rate": [70.0, 71.0, 69.5]},
         },
-        signal_data={
+        runtime_inputs={
             "signal": list(np.linspace(0.0, 1.0, 30)),
             "sampling_rate": 21.0,
             "capnostream_value": list(np.linspace(0.0, 1.0, 30)),
@@ -31,7 +31,9 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
         },
     )
 
-    assert artifacts["signal_data"]["signal"] is signal
+    assert artifacts["runtime_inputs"]["h10_ecg_value"] is signal
+    assert artifacts["signal_data"]["h10_ecg_value"] is signal
+    assert artifacts["runtime_inputs"]["sampling_rate"] == 100.0
     assert artifacts["signal_data"]["sampling_rate"] == 100.0
     assert artifacts["intermediates"]["events"] == [100.0, 350.0, 600.0]
     assert (
