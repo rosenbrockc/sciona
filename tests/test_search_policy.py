@@ -205,6 +205,30 @@ def test_enriched_cdg_policy_requires_real_search_evidence() -> None:
     assert "missing_search_trace" in failing.violations
 
 
+def test_enriched_cdg_policy_rejects_incoherent_asset_application() -> None:
+    report = evaluate_enriched_cdg_policy(
+        {
+            "search_discipline": {
+                "trial_count": 2,
+                "expansion_attempts": 0,
+                "admissibility_decisions": 2,
+            },
+            "proposal_selection": {
+                "trial_count": 2,
+                "proposal_selection_trials": 1,
+                "selected_trials": 1,
+            },
+            "search_trace_summary": {
+                "entry_count": 2,
+                "applied_asset_count": 1,
+            },
+        }
+    )
+
+    assert report.passed is False
+    assert "applied_assets_without_expansion_attempts" in report.violations
+
+
 def test_asset_migration_readiness_distinguishes_transitional_and_ready_assets() -> None:
     ready = evaluate_asset_migration_readiness(
         {
@@ -246,8 +270,17 @@ def test_asset_migration_readiness_distinguishes_transitional_and_ready_assets()
             "asset_id": "skeleton.generic.v1",
             "asset_version": "v1",
             "family": "generic",
+            "stages": [],
             "review_status": "transitional",
             "source_kind": "local_asset",
+            "dejargonized_summary": "Generic skeleton.",
+            "references": [{"title": "Generic reference"}],
+            "migration_readiness_status": "in_progress",
+            "migration_readiness_target_repository": "../ageo-atoms",
+            "migration_readiness_check_count": 1,
+            "migration_readiness_required_check_count": 1,
+            "migration_readiness_completed_required_check_count": 0,
+            "migration_readiness_ready": False,
         },
         minimum_ready_assets=1,
     )
@@ -257,3 +290,4 @@ def test_asset_migration_readiness_distinguishes_transitional_and_ready_assets()
     assert blocked.passed is False
     assert blocked.details["blocked_asset_count"] == 1
     assert "insufficient_migration_ready_assets:0/1" in blocked.violations
+    assert "asset_not_ready_for_migration:skeleton.generic.v1:in_progress" in blocked.warnings
