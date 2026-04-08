@@ -246,31 +246,38 @@ def _asset_readiness_record(asset: Any) -> dict[str, Any]:
     ready_scope = "full" if asset_kind in {"skeleton", "expansion"} else "identity"
     migration_status = str(
         asset_map.get("migration_readiness_status")
+        or asset_map.get("asset_migration_readiness_status")
         or migration.get("status")
         or ""
     )
     migration_ready = bool(
         asset_map.get("migration_readiness_ready")
         if "migration_readiness_ready" in asset_map
+        else asset_map.get("asset_migration_readiness_ready")
+        if "asset_migration_readiness_ready" in asset_map
         else migration.get("ready_for_migration")
     )
     migration_target_repository = str(
         asset_map.get("migration_readiness_target_repository")
+        or asset_map.get("asset_migration_readiness_target_repository")
         or migration.get("target_repository")
         or ""
     )
     migration_target_scope = str(
         asset_map.get("migration_readiness_target_scope")
+        or asset_map.get("asset_migration_readiness_target_scope")
         or migration.get("target_scope")
         or ""
     )
     migration_check_count = int(
         asset_map.get("migration_readiness_check_count")
+        or asset_map.get("asset_migration_readiness_check_count")
         or len(migration.get("checklist", []))
         or 0
     )
     migration_required_check_count = int(
         asset_map.get("migration_readiness_required_check_count")
+        or asset_map.get("asset_migration_readiness_required_check_count")
         or sum(
             1
             for item in migration.get("checklist", [])
@@ -280,6 +287,7 @@ def _asset_readiness_record(asset: Any) -> dict[str, Any]:
     )
     migration_completed_required_check_count = int(
         asset_map.get("migration_readiness_completed_required_check_count")
+        or asset_map.get("asset_migration_readiness_completed_required_check_count")
         or sum(
             1
             for item in migration.get("checklist", [])

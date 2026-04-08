@@ -64,13 +64,69 @@ def test_e2e_benchmark_policy_reads_list_trial_history_and_runtime_evidence(
                     "paradigm": "signal_event_rate",
                 },
                 "metadata": {
-                    "skeleton_asset": {"asset_id": "skeleton.signal_event_rate.ecg.v1"}
+                    "skeleton_asset": {
+                        "asset_id": "skeleton.signal_event_rate.ecg.v1",
+                        "asset_version": "v1",
+                        "family": "signal_event_rate",
+                        "source_kind": "local_asset",
+                        "review_status": "transitional",
+                        "migration_readiness_status": "in_progress",
+                        "migration_readiness_target_repository": "../ageo-atoms",
+                        "migration_readiness_check_count": 2,
+                        "migration_readiness_required_check_count": 2,
+                        "migration_readiness_completed_required_check_count": 1,
+                        "migration_readiness_ready": False,
+                    }
                 },
             }
         )
     )
     (mode_dir / "trial_history.json").write_text(
-        json.dumps([{"trial": 1, "admissibility": {"decision_count": 2}}])
+        json.dumps(
+            [
+                {
+                    "trial": 1,
+                    "admissibility": {"decision_count": 2},
+                    "expansion": {
+                        "diagnostic_count": 1,
+                        "diagnostic_assets": [
+                            {
+                                "asset_id": "family.signal_event_rate.expansions.v1",
+                                "asset_version": "phase3.v1",
+                                "asset_family": "signal_event_rate",
+                                "asset_source_kind": "local_asset",
+                                "asset_review_status": "transitional",
+                                "asset_operation": "insert_jump_removal_before_filter",
+                                "migration_readiness_status": "in_progress",
+                                "migration_readiness_target_repository": "../ageo-atoms",
+                                "migration_readiness_check_count": 3,
+                                "migration_readiness_required_check_count": 3,
+                                "migration_readiness_completed_required_check_count": 2,
+                                "migration_readiness_ready": False,
+                            }
+                        ],
+                        "applied_assets": [
+                            {
+                                "asset_id": "family.signal_event_rate.expansions.v1",
+                                "asset_version": "phase3.v1",
+                                "asset_family": "signal_event_rate",
+                                "asset_source_kind": "local_asset",
+                                "asset_review_status": "transitional",
+                                "asset_operation": "insert_jump_removal_before_filter",
+                                "asset_migration_readiness_status": "in_progress",
+                                "asset_migration_readiness_ready": False,
+                                "asset_migration_readiness_check_count": 3,
+                                "asset_migration_readiness_required_check_count": 3,
+                            }
+                        ],
+                    },
+                    "proposal_selection": {
+                        "selected": "expansion",
+                        "candidates": [{"label": "expansion", "loss": 0.1}],
+                    },
+                }
+            ]
+        )
     )
     (mode_dir / "runtime_evidence.json").write_text(
         json.dumps({"runtime_context": {"stream_count": 1}})
@@ -99,9 +155,15 @@ def test_e2e_benchmark_policy_reads_list_trial_history_and_runtime_evidence(
     assert verified["ground_truth_coverage"] == 1.0
     assert verified["artifact_inventory"]["search_trace"] is True
     assert verified["search_trace_summary"]["entry_count"] == 1
+    assert verified["search_trace_summary"]["applied_asset_count"] == 1
+    assert verified["asset_inventory"]["asset_count"] == 2
+    assert verified["policy"]["enriched_cdg"]["passed"] is True
+    assert verified["policy"]["asset_migration"]["passed"] is True
+    assert verified["policy"]["asset_migration"]["warnings"]
     assert verified["policy"]["required_artifacts"]["passed"] is True
     assert verified["policy"]["behavioral"]["passed"] is True
     assert report["benchmark_policy"]["anti_shortcut"]["passed"] is True
+    assert report["benchmark_policy"]["passed"] is True
 
 
 def test_e2e_benchmark_policy_reports_enriched_cdg_and_asset_readiness(
