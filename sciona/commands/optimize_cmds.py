@@ -720,7 +720,11 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                         trial_index=trial_counter["value"],
                     )
 
-                sandbox = ExecutionSandbox(timeout_s=args.timeout)
+                sandbox = ExecutionSandbox(
+                    timeout_s=args.timeout,
+                    dataset_slice_start_s=getattr(args, "dataset_slice_start", None),
+                    dataset_slice_stop_s=getattr(args, "dataset_slice_stop", None),
+                )
                 atom_ledger = AtomLedger()
                 hpo_manager = OptunaManager(study_name="principal")
                 expansion_engine = ExpansionEngine(default_rule_sets())
@@ -908,6 +912,8 @@ async def _cmd_profile(args: argparse.Namespace) -> None:
             dataset_varset=dataset_varset or None,
             match_results=match_results,
             evaluation_spec=evaluation_spec,
+            dataset_slice_start_s=getattr(args, "dataset_slice_start", None),
+            dataset_slice_stop_s=getattr(args, "dataset_slice_stop", None),
         )
 
         if not gradients:

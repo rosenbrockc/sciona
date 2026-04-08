@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 from typing import Any
 
+from sciona.principal.dataset_slice import apply_relative_dataset_slice
 from sciona.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
 from sciona.principal.runtime_context import (
     canonicalize_runtime_inputs,
@@ -24,6 +25,26 @@ _FAILURE_PENALTY: float = 1e12
 
 # Default subprocess timeout in seconds.
 _DEFAULT_TIMEOUT_S: float = 120.0
+_DATASET_SLICE_START_ENV = "SCIONA_EVALUATOR_DATASET_SLICE_START_S"
+_DATASET_SLICE_STOP_ENV = "SCIONA_EVALUATOR_DATASET_SLICE_STOP_S"
+
+
+def _resolve_optional_float_setting(
+    direct_value: float | None,
+    *,
+    env_name: str,
+) -> float | None:
+    """Resolve an optional float setting from an explicit value or environment."""
+    if direct_value is not None:
+        return float(direct_value)
+    raw = os.environ.get(env_name)
+    if raw is None or not str(raw).strip():
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        logger.warning("Ignoring invalid %s=%r", env_name, raw)
+        return None
 
 
 class ExecutionSandbox:
@@ -34,17 +55,45 @@ class ExecutionSandbox:
     ``trace.jsonl`` file emitted by the ``@sciona_probe`` instrumentation.
     """
 
-    def __init__(self, *, timeout_s: float | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        timeout_s: float | None = None,
+        dataset_slice_start_s: float | None = None,
+        dataset_slice_stop_s: float | None = None,
+    ) -> None:
         self._timeout_s = (
             float(os.environ.get("SCIONA_EVALUATOR_TIMEOUT_S", str(_DEFAULT_TIMEOUT_S)))
             if timeout_s is None
             else timeout_s
+        )
+        self._dataset_slice_start_s = _resolve_optional_float_setting(
+            dataset_slice_start_s,
+            env_name=_DATASET_SLICE_START_ENV,
+        )
+        self._dataset_slice_stop_s = _resolve_optional_float_setting(
+            dataset_slice_stop_s,
+            env_name=_DATASET_SLICE_STOP_ENV,
         )
         self._python_executable = (
             os.environ.get("SCIONA_PYTHON_PATH")
             or sys.executable
             or "python"
         )
+
+    def _apply_dataset_slice(self, collection: Any) -> None:
+        """Apply an optional time slice to a dataset collection in-place."""
+        apply_relative_dataset_slice(
+            collection,
+            start_s=self._dataset_slice_start_s,
+            stop_s=self._dataset_slice_stop_s,
+        )
+
+    def _subprocess_env(self) -> dict[str, str]:
+        """Environment for generated runner subprocesses."""
+        env = dict(os.environ)
+        env.setdefault("SCIONA_COMPACT_OUTPUT", "1")
+        return env
 
     async def evaluate(
         self,
@@ -91,6 +140,7 @@ class ExecutionSandbox:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 cwd=str(output_dir),
+                env=self._subprocess_env(),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -193,7 +243,12 @@ class ExecutionSandbox:
             )
             options = coll_cls.get_filter_options(user, serial, recursive=True)
             coll = coll_cls.from_folder(options=options)
-            dfs = coll.to_pandas()
+            sliced = (
+                self._dataset_slice_start_s is not None
+                or self._dataset_slice_stop_s is not None
+            )
+            self._apply_dataset_slice(coll)
+            dfs = _to_pandas_with_optional_slice(coll, sliced=sliced)
             runtime_inputs = _collect_runtime_inputs_from_frames(dfs)
         except Exception as exc:
             logger.error("Failed to load adapter dataset: %s", exc)
@@ -248,7 +303,14 @@ class ExecutionSandbox:
             coll_cls = create_templated_dataset_collection(str(adapter), varset=varset)
             options = coll_cls.get_filter_options(user, serial, recursive=True)
             coll = coll_cls.from_folder(options=options)
-            runtime_inputs = _collect_runtime_inputs_from_frames(coll.to_pandas())
+            sliced = (
+                self._dataset_slice_start_s is not None
+                or self._dataset_slice_stop_s is not None
+            )
+            self._apply_dataset_slice(coll)
+            runtime_inputs = _collect_runtime_inputs_from_frames(
+                _to_pandas_with_optional_slice(coll, sliced=sliced)
+            )
         except Exception:
             runtime_inputs = {}
 
@@ -270,6 +332,10 @@ class ExecutionSandbox:
             cmd.extend(["--user", user])
         if serial is not None:
             cmd.extend(["--serial", serial])
+        if self._dataset_slice_start_s is not None:
+            cmd.extend(["--slice-start", str(self._dataset_slice_start_s)])
+        if self._dataset_slice_stop_s is not None:
+            cmd.extend(["--slice-stop", str(self._dataset_slice_stop_s)])
         eval_spec_arg = _materialize_evaluation_spec_arg(output_dir, evaluation_spec)
         if eval_spec_arg is not None:
             cmd.extend(["--eval-spec", eval_spec_arg])
@@ -282,6 +348,7 @@ class ExecutionSandbox:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 cwd=str(output_dir),
+                env=self._subprocess_env(),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -606,6 +673,16 @@ def _collect_runtime_inputs_from_frames(group_frames: dict[str, Any]) -> dict[st
     if primary_sampling_rate is not None:
         normalized["sampling_rate"] = primary_sampling_rate
     return normalized
+
+
+def _to_pandas_with_optional_slice(collection: Any, *, sliced: bool) -> dict[str, Any]:
+    """Materialize group frames while preserving any already-applied collection slice."""
+    if sliced:
+        data = getattr(collection, "data", None)
+        if data is None:
+            return {}
+        return dict(data.to_pandas(private=False, exclude=("*_start", "*_stop")))
+    return dict(collection.to_pandas())
 
 
 def _collect_signal_data_from_frames(group_frames: dict[str, Any]) -> dict[str, Any]:

@@ -496,6 +496,18 @@ def main() -> None:
         default=120.0,
         help="Per-trial subprocess timeout in seconds (default: 120)",
     )
+    optimize_parser.add_argument(
+        "--dataset-slice-start",
+        type=float,
+        default=None,
+        help="Optional relative dataset slice start in seconds from adapter start time.",
+    )
+    optimize_parser.add_argument(
+        "--dataset-slice-stop",
+        type=float,
+        default=None,
+        help="Optional relative dataset slice stop in seconds from adapter start time.",
+    )
     _add_mode_argument(optimize_parser)
 
     # --- profile ---
@@ -528,6 +540,18 @@ def main() -> None:
         choices=list(SUPPORTED_OBJECTIVES),
         default="precision",
         help="Optimization objective to profile (default: precision)",
+    )
+    profile_parser.add_argument(
+        "--dataset-slice-start",
+        type=float,
+        default=None,
+        help="Optional relative dataset slice start in seconds from adapter start time.",
+    )
+    profile_parser.add_argument(
+        "--dataset-slice-stop",
+        type=float,
+        default=None,
+        help="Optional relative dataset slice stop in seconds from adapter start time.",
     )
 
     # --- prompt-benchmark ---

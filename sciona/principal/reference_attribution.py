@@ -50,6 +50,8 @@ async def compute_reference_loss_gradients(
     evaluation_spec: dict[str, Any] | str | None,
     *,
     dataset_varset: dict[str, str] | None = None,
+    dataset_slice_start_s: float | None = None,
+    dataset_slice_stop_s: float | None = None,
 ) -> list[NodeGradient]:
     """Estimate per-node attribution by perturbing exported atom outputs."""
     spec, loss_name = is_reference_loss_objective(
@@ -84,6 +86,8 @@ async def compute_reference_loss_gradients(
             dataset_vars=dataset_varset,
             entrypoint=entrypoint,
             eval_spec=spec,
+            slice_start=dataset_slice_start_s,
+            slice_stop=dataset_slice_stop_s,
         )
         flat_inputs = pipeline_mod._flatten_inputs(group_frames)
         baseline_result = pipeline_mod.run_pipeline(entrypoint=entrypoint, **group_frames)

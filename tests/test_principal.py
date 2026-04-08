@@ -515,6 +515,131 @@ class TestExecutionSandbox:
         assert result.global_loss == pytest.approx(1.5)
         assert "--eval-spec" in calls[0]
 
+    def test_evaluate_adapter_forwards_dataset_slice_to_python_runner(self, tmp_path: Path, monkeypatch):
+        from sciona.principal.evaluator import ExecutionSandbox
+        from sciona.synthesizer.models import ExportBundle
+
+        runner = tmp_path / "runner.py"
+        runner.write_text("print('ok')\n")
+        (tmp_path / "sciona.yml").write_text("name: test\n")
+        trace = tmp_path / "trace.jsonl"
+        bundle = ExportBundle(
+            target="python-pkg",
+            output_dir=tmp_path,
+            source_path=runner,
+            compiled_artifact=runner,
+            executable_artifact=runner,
+        )
+
+        class DummyProc:
+            returncode = 0
+
+            async def communicate(self):
+                trace.write_text(
+                    '{"node_id":"leaf","execution_time_ms":1.0,"peak_memory_bytes":2}\n'
+                )
+                return (b'{"loss": 0.25}\n', b"")
+
+        calls: list[list[str]] = []
+
+        async def fake_exec(*cmd, **kwargs):
+            calls.append(list(cmd))
+            return DummyProc()
+
+        monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
+
+        result = asyncio.run(
+            ExecutionSandbox(
+                timeout_s=5.0,
+                dataset_slice_start_s=5.0,
+                dataset_slice_stop_s=305.0,
+            ).evaluate_adapter(
+                bundle,
+                str(tmp_path / "sciona.yml"),
+                OptimizationMetric.PRECISION,
+            )
+        )
+
+        assert result.global_loss == pytest.approx(0.25)
+        assert "--slice-start" in calls[0]
+        assert "5.0" in calls[0]
+        assert "--slice-stop" in calls[0]
+        assert "305.0" in calls[0]
+
+    def test_evaluate_adapter_applies_dataset_slice_to_collection_preload(
+        self,
+        tmp_path: Path,
+        monkeypatch,
+    ):
+        from sciona.principal.evaluator import ExecutionSandbox
+        from sciona.principal.models import BenchmarkResult
+        from sciona.synthesizer.models import ExportBundle
+
+        adapter = tmp_path / "sciona.yml"
+        adapter.write_text("name: test\n")
+        artifact = tmp_path / "artifact.bin"
+        artifact.write_text("placeholder\n")
+        bundle = ExportBundle(
+            target="python",
+            output_dir=tmp_path,
+            source_path=artifact,
+            compiled_artifact=artifact,
+            executable_artifact=artifact,
+        )
+
+        slice_calls: list[tuple[float | None, float | None]] = []
+
+        class DummyCollection:
+            def __init__(self):
+                self.data = None
+
+            @classmethod
+            def get_filter_options(cls, user, serial, recursive=True):
+                return {"user": user, "serial": serial, "recursive": recursive}
+
+            @classmethod
+            def from_folder(cls, options=None):
+                return cls()
+
+            def autoload(self):
+                self.data = type(
+                    "DummyData",
+                    (),
+                    {"min": 1000.0, "to_pandas": lambda self, **kwargs: {}},
+                )()
+                return self.data
+
+            def slice(self, start=None, stop=None):
+                slice_calls.append((start, stop))
+
+            def to_pandas(self):
+                return {}
+
+        monkeypatch.setattr(
+            "sciona.principal.datasets.create_templated_dataset_collection",
+            lambda *args, **kwargs: DummyCollection,
+        )
+
+        async def fake_evaluate(*args, **kwargs):
+            return BenchmarkResult(global_loss=0.0)
+
+        monkeypatch.setattr(ExecutionSandbox, "evaluate", fake_evaluate)
+
+        result = asyncio.run(
+            ExecutionSandbox(
+                timeout_s=5.0,
+                dataset_slice_start_s=0.0,
+                dataset_slice_stop_s=300.0,
+            ).evaluate_adapter(
+                bundle,
+                str(adapter),
+                OptimizationMetric.PRECISION,
+            )
+        )
+
+        assert result.global_loss == pytest.approx(0.0)
+        assert slice_calls == [(1000.0, 1300.0)]
+
 
 # ===================================================================
 # Tests for sciona.principal.backprop

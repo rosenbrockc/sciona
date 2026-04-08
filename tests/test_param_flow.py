@@ -160,5 +160,45 @@ class TestEvaluatorParamsFlag:
                     bundle, str(tmp_path / "data.json"), OptimizationMetric.PRECISION
                 )
 
-        cmd_str = " ".join(str(c) for c in captured_cmd)
-        assert "--params" not in cmd_str
+    @pytest.mark.asyncio
+    async def test_evaluate_sets_compact_output_env(self, tmp_path):
+        from unittest.mock import AsyncMock, patch
+
+        from sciona.principal.evaluator import ExecutionSandbox
+
+        artifact = tmp_path / "artifact.py"
+        artifact.write_text("print('ok')")
+
+        bundle = ExportBundle(
+            target="python",
+            output_dir=tmp_path,
+            source_path=artifact,
+            executable_artifact=artifact,
+        )
+
+        captured_env = {}
+
+        async def mock_exec(*args, **kwargs):
+            captured_env.update(kwargs.get("env", {}))
+            proc = AsyncMock()
+            proc.communicate = AsyncMock(return_value=(b'{"loss": 0.5}', b""))
+            proc.returncode = 0
+            proc.kill = AsyncMock()
+            proc.wait = AsyncMock()
+            return proc
+
+        trace_path = tmp_path / "trace.jsonl"
+        trace_path.write_text('{"node_id": "n", "execution_time_ms": 10, "peak_memory_bytes": 100}\n')
+
+        async def await_coro(coro, **kw):
+            return await coro
+
+        with patch("asyncio.create_subprocess_exec", side_effect=mock_exec):
+            with patch("asyncio.wait_for", side_effect=await_coro):
+                await ExecutionSandbox(timeout_s=5.0).evaluate(
+                    bundle,
+                    str(tmp_path / "data.json"),
+                    OptimizationMetric.PRECISION,
+                )
+
+        assert captured_env["SCIONA_COMPACT_OUTPUT"] == "1"

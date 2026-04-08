@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 
 from sciona.architect.handoff import CDGExport
@@ -21,6 +22,32 @@ from sciona.types import MatchResult
 logger = logging.getLogger(__name__)
 
 
+def _create_execution_sandbox(
+    *,
+    dataset_slice_start_s: float | None = None,
+    dataset_slice_stop_s: float | None = None,
+) -> ExecutionSandbox:
+    """Instantiate ExecutionSandbox while remaining compatible with older mocks."""
+    kwargs = {
+        "dataset_slice_start_s": dataset_slice_start_s,
+        "dataset_slice_stop_s": dataset_slice_stop_s,
+    }
+    try:
+        signature = inspect.signature(ExecutionSandbox)
+    except (TypeError, ValueError):
+        signature = None
+    if signature is not None and not any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    ):
+        kwargs = {
+            name: value
+            for name, value in kwargs.items()
+            if name in signature.parameters and value is not None
+        }
+    return ExecutionSandbox(**kwargs)
+
+
 async def profile_algorithm_error(
     cdg: CDGExport,
     bundle: ExportBundle,
@@ -28,6 +55,8 @@ async def profile_algorithm_error(
     metric: OptimizationMetric = OptimizationMetric.PRECISION,
     *,
     dataset_varset: dict[str, str] | None = None,
+    dataset_slice_start_s: float | None = None,
+    dataset_slice_stop_s: float | None = None,
     match_results: list[MatchResult] | None = None,
     evaluation_spec: dict | str | None = None,
 ) -> list[NodeGradient]:
@@ -55,7 +84,10 @@ async def profile_algorithm_error(
             # evidence contract as the benchmark path before counterfactual
             # attribution takes over.
             benchmark = await evaluate_bundle_for_metric(
-                ExecutionSandbox(),
+                _create_execution_sandbox(
+                    dataset_slice_start_s=dataset_slice_start_s,
+                    dataset_slice_stop_s=dataset_slice_stop_s,
+                ),
                 bundle,
                 dataset_path,
                 metric,
@@ -68,11 +100,16 @@ async def profile_algorithm_error(
                 dataset_path,
                 evaluation_spec,
                 dataset_varset=dataset_varset,
+                dataset_slice_start_s=dataset_slice_start_s,
+                dataset_slice_stop_s=dataset_slice_stop_s,
             )
             if gradients:
                 return gradients
         if benchmark is None:
-            sandbox = ExecutionSandbox()
+            sandbox = _create_execution_sandbox(
+                dataset_slice_start_s=dataset_slice_start_s,
+                dataset_slice_stop_s=dataset_slice_stop_s,
+            )
             benchmark = await evaluate_bundle_for_metric(
                 sandbox,
                 bundle,

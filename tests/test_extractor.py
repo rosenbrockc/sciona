@@ -327,6 +327,24 @@ class TestCertificate:
         assert "unresolved_params = set(content_params)" in pipeline
         assert "if unresolved_params & outputs:" in pipeline
 
+    def test_generated_pipeline_supports_dataset_slicing_for_adapter_runs(self):
+        pipeline = generate_pipeline_py([])
+        assert "slice_start: float | None = None" in pipeline
+        assert "slice_stop: float | None = None" in pipeline
+        assert "if slice_start is not None or slice_stop is not None:" in pipeline
+        assert "apply_relative_dataset_slice" in pipeline
+        assert "apply_relative_dataset_slice(coll, start_s=slice_start, stop_s=slice_stop)" in pipeline
+        assert "coll.data.to_pandas(private=False, exclude=('*_start', '*_stop'))" in pipeline
+        assert "parser.add_argument('--slice-start', type=float, default=None)" in pipeline
+        assert "parser.add_argument('--slice-stop', type=float, default=None)" in pipeline
+
+    def test_generated_pipeline_supports_compact_output_mode(self):
+        pipeline = generate_pipeline_py([])
+        assert "import os" in pipeline
+        assert "def _jsonify_compact(value: Any) -> Any:" in pipeline
+        assert "compact_output = str(os.environ.get('SCIONA_COMPACT_OUTPUT', '')).lower()" in pipeline
+        assert "'outputs': _jsonify_compact(result) if compact_output else _jsonify(result)" in pipeline
+
     def test_prepare_python_package_source_keeps_instrumented_helper(self):
         source = (
             "import json\n"
