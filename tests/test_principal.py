@@ -1353,6 +1353,19 @@ class TestRouteAfterGradients:
         )
         assert route_after_gradients(state) == "end"
 
+    def test_budget_exhausted_on_first_trial_prefers_proposal_selection(self):
+        from sciona.principal.graph import PrincipalState, route_after_gradients
+
+        state = PrincipalState(
+            current_trial=1,
+            max_trials=1,
+            bottleneck_node_id="leaf",
+            trial_history=[{"trial": 1}],
+            pending_param_search=True,
+            param_trials_remaining=1,
+        )
+        assert route_after_gradients(state) == "select_proposal"
+
     def test_non_pruned_error(self):
         from sciona.principal.graph import PrincipalState, route_after_gradients
 
@@ -1424,6 +1437,36 @@ class TestRouteAfterUpdate:
 
         state = PrincipalState(current_trial=5, max_trials=10)
         assert route_after_update(state) == "suggest_params"
+
+
+class TestRouteAfterProposal:
+    def test_done(self):
+        from sciona.principal.graph import PrincipalState
+        from sciona.principal.graph_routing import route_after_proposal
+
+        state = PrincipalState(done=True)
+        assert route_after_proposal(state) == "end"
+
+    def test_selected_proposal_runs_even_when_budget_exhausted(self):
+        from sciona.principal.graph import PrincipalState
+        from sciona.principal.graph_routing import route_after_proposal
+
+        state = PrincipalState(
+            selected_proposal="expansion",
+            max_trials=1,
+            trial_history=[{"trial": 1}],
+        )
+        assert route_after_proposal(state) == "suggest_params"
+
+    def test_budget_exhausted_without_proposal_ends(self):
+        from sciona.principal.graph import PrincipalState
+        from sciona.principal.graph_routing import route_after_proposal
+
+        state = PrincipalState(
+            max_trials=1,
+            trial_history=[{"trial": 1}],
+        )
+        assert route_after_proposal(state) == "end"
 
 
 class TestRouteAfterForward:

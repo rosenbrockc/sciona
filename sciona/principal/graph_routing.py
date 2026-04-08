@@ -9,9 +9,11 @@ def route_after_gradients(state: PrincipalState) -> str:
     """Decide whether to continue optimising or stop."""
     if state.done:
         return "end"
-    if len(state.trial_history) >= state.max_trials and state.current_trial > 1:
-        return "end"
     if state.error and "pruned" not in state.error.lower():
+        return "end"
+    if len(state.trial_history) >= state.max_trials:
+        if state.current_trial <= 1:
+            return "select_proposal"
         return "end"
     if state.pending_param_search and state.param_trials_remaining > 0:
         return "suggest_params"
@@ -22,10 +24,10 @@ def route_after_proposal(state: PrincipalState) -> str:
     """After proposal comparison, either evaluate the chosen branch or fall back."""
     if state.done:
         return "end"
-    if len(state.trial_history) >= state.max_trials:
-        return "end"
     if state.selected_proposal:
         return "suggest_params"
+    if len(state.trial_history) >= state.max_trials:
+        return "end"
     return "time_travel"
 
 
