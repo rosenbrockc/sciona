@@ -5,6 +5,7 @@ from __future__ import annotations
 from sciona.principal.search_policy import (
     enforce_anti_shortcut_policy,
     evaluate_behavioral_benchmark_policy,
+    summarize_proposal_selection,
     summarize_search_discipline,
     validate_required_benchmark_artifacts,
 )
@@ -109,3 +110,57 @@ def test_search_discipline_summary_counts_behavioral_signals() -> None:
     assert summary.admissibility_decisions == 3
     assert summary.pruned_trials == 1
     assert summary.reused_cached_evaluations == 1
+
+
+def test_proposal_selection_summary_handles_typed_nested_records() -> None:
+    class _Candidate:
+        def __init__(self, label: str, loss: float) -> None:
+            self.label = label
+            self.loss = loss
+
+    class _ProposalSelection:
+        def __init__(self) -> None:
+            self.selected_proposal = "expansion"
+            self.proposal_candidates = [
+                _Candidate("expansion", 8.5),
+                _Candidate("local_mutation", 9.0),
+            ]
+            self.proposal_baseline_loss = 10.0
+            self.proposal_improvement = 1.5
+
+        def model_dump(self, mode: str = "json") -> dict[str, object]:
+            return {
+                "selected_proposal": self.selected_proposal,
+                "proposal_candidates": [
+                    {"label": candidate.label, "loss": candidate.loss}
+                    for candidate in self.proposal_candidates
+                ],
+                "proposal_baseline_loss": self.proposal_baseline_loss,
+                "proposal_improvement": self.proposal_improvement,
+            }
+
+    summary = summarize_proposal_selection(
+        [
+            {
+                "proposal_selection": _ProposalSelection(),
+                "expansion": {"applied": True},
+            },
+            {
+                "proposal_selection": {
+                    "selected": "",
+                    "candidates": [],
+                    "skipped_due_to_admissibility": True,
+                }
+            },
+        ]
+    )
+
+    assert summary.trial_count == 2
+    assert summary.proposal_selection_trials == 2
+    assert summary.selected_trials == 1
+    assert summary.rejected_trials == 1
+    assert summary.skipped_due_to_admissibility_trials == 1
+    assert summary.selected_proposal_counts == {"expansion": 1}
+    assert summary.proposal_selection_labels == ("expansion", "local_mutation")
+    assert summary.mean_selected_proposal_improvement == 1.5
+    assert summary.best_selected_proposal_improvement == 1.5

@@ -909,6 +909,16 @@ class TestDashboardAPI:
                             "proposal_baseline_loss": 10.524294403000809,
                             "proposal_selected_loss": None,
                             "proposal_improvement": None,
+                            "proposal_selection_record": {
+                                "selected_proposal": "",
+                                "selected_kind": "none",
+                                "proposal_candidates": [
+                                    {"label": "expansion", "loss": 10.7},
+                                    {"label": "local_mutation", "loss": 10.9},
+                                ],
+                                "skipped_due_to_admissibility": True,
+                                "skip_reason": "hard_reject",
+                            },
                             "skeleton_proposal": {
                                 "target_node": "Estimate Event Rate",
                                 "source_family": "signal_filter",
@@ -949,6 +959,15 @@ class TestDashboardAPI:
                             "proposal_baseline_loss": 10.524294403000809,
                             "proposal_selected_loss": 8.55304557280547,
                             "proposal_improvement": 1.9712488301953387,
+                            "proposal_selection_record": {
+                                "selected_proposal": "expansion",
+                                "selected_kind": "expansion",
+                                "proposal_candidates": [
+                                    {"label": "expansion", "loss": 8.55304557280547},
+                                    {"label": "local_mutation", "loss": 8.9},
+                                ],
+                                "proposal_improvement": 1.9712488301953387,
+                            },
                             "skeleton_proposal": {
                                 "target_node": "Estimate Event Rate",
                                 "source_family": "sequential_filter",
