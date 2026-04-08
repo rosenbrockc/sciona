@@ -7,10 +7,13 @@ from pathlib import Path
 from typing import Any
 
 from sciona.principal.search_policy import (
+    evaluate_asset_migration_readiness,
+    evaluate_enriched_cdg_policy,
     enforce_anti_shortcut_policy,
     evaluate_behavioral_benchmark_policy,
     summarize_proposal_selection,
     summarize_search_discipline,
+    summarize_asset_migration_readiness,
     validate_required_benchmark_artifacts,
 )
 
@@ -72,6 +75,42 @@ def _read_planning_artifact(label_dir: Path) -> tuple[dict[str, Any], str]:
         or ""
     ).strip()
     return planning, family
+
+
+def _read_skeleton_asset(label_dir: Path) -> dict[str, Any]:
+    payload = _read_json(label_dir / "cdg.json")
+    if not isinstance(payload, dict):
+        return {}
+    metadata = payload.get("metadata", {})
+    if isinstance(metadata, dict):
+        asset = metadata.get("skeleton_asset")
+        if isinstance(asset, dict):
+            return dict(asset)
+    planning = payload.get("planning_artifact", {})
+    if isinstance(planning, dict):
+        skeleton_intent = planning.get("skeleton_intent", {})
+        if isinstance(skeleton_intent, dict):
+            asset = skeleton_intent.get("asset")
+            if isinstance(asset, dict):
+                return dict(asset)
+    return {}
+
+
+def _read_applied_assets(trial_history: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    assets: list[dict[str, Any]] = []
+    for entry in trial_history:
+        if not isinstance(entry, dict):
+            continue
+        expansion = entry.get("expansion", {})
+        if not isinstance(expansion, dict):
+            continue
+        applied = expansion.get("applied_assets", [])
+        if not isinstance(applied, list):
+            continue
+        for asset in applied:
+            if isinstance(asset, dict):
+                assets.append(dict(asset))
+    return assets
 
 
 def _artifact_presence(label_dir: Path) -> dict[str, bool]:
@@ -141,28 +180,43 @@ def build_e2e_benchmark_summary(
         artifact_presence = _artifact_presence(label_dir)
         postprocess = _read_json(label_dir / "postprocess.json")
         trial_history = _read_json(label_dir / "trial_history.json")
-        search_summary = None
-        if isinstance(trial_history, list):
-            summary = summarize_search_discipline(trial_history)
-            proposal_summary = summarize_proposal_selection(trial_history)
-            search_summary = {
-                "trial_count": summary.trial_count,
-                "expansion_attempts": summary.expansion_attempts,
-                "admissibility_decisions": summary.admissibility_decisions,
-                "pruned_trials": summary.pruned_trials,
-                "reused_cached_evaluations": summary.reused_cached_evaluations,
+        if not isinstance(trial_history, list):
+            trial_history = []
+        summary = summarize_search_discipline(trial_history)
+        proposal_summary = summarize_proposal_selection(trial_history)
+        search_summary = {
+            "trial_count": summary.trial_count,
+            "expansion_attempts": summary.expansion_attempts,
+            "admissibility_decisions": summary.admissibility_decisions,
+            "pruned_trials": summary.pruned_trials,
+            "reused_cached_evaluations": summary.reused_cached_evaluations,
+        }
+        proposal_selection = {
+            "trial_count": proposal_summary.trial_count,
+            "proposal_selection_trials": proposal_summary.proposal_selection_trials,
+            "selected_trials": proposal_summary.selected_trials,
+            "rejected_trials": proposal_summary.rejected_trials,
+            "skipped_due_to_admissibility_trials": proposal_summary.skipped_due_to_admissibility_trials,
+            "selected_proposal_counts": dict(proposal_summary.selected_proposal_counts),
+            "proposal_selection_labels": list(proposal_summary.proposal_selection_labels),
+            "mean_selected_proposal_improvement": proposal_summary.mean_selected_proposal_improvement,
+            "best_selected_proposal_improvement": proposal_summary.best_selected_proposal_improvement,
+        }
+        skeleton_asset = _read_skeleton_asset(label_dir)
+        applied_assets = _read_applied_assets(trial_history)
+        asset_inventory = [asset for asset in [skeleton_asset, *applied_assets] if asset]
+        enriched_cdg_policy = evaluate_enriched_cdg_policy(
+            {
+                "search_discipline": search_summary,
+                "proposal_selection": proposal_selection,
+                "search_trace_summary": {
+                    "entry_count": len(trial_history),
+                    "applied_asset_count": len(asset_inventory),
+                },
             }
-            proposal_selection = {
-                "trial_count": proposal_summary.trial_count,
-                "proposal_selection_trials": proposal_summary.proposal_selection_trials,
-                "selected_trials": proposal_summary.selected_trials,
-                "rejected_trials": proposal_summary.rejected_trials,
-                "skipped_due_to_admissibility_trials": proposal_summary.skipped_due_to_admissibility_trials,
-                "selected_proposal_counts": dict(proposal_summary.selected_proposal_counts),
-                "proposal_selection_labels": list(proposal_summary.proposal_selection_labels),
-                "mean_selected_proposal_improvement": proposal_summary.mean_selected_proposal_improvement,
-                "best_selected_proposal_improvement": proposal_summary.best_selected_proposal_improvement,
-            }
+        )
+        asset_migration_policy = evaluate_asset_migration_readiness(asset_inventory)
+        asset_migration_summary = summarize_asset_migration_readiness(asset_inventory)
         coverage = round(float(ground_truth_hits.get(variant, 0)) / max(total_gt, 1), 2)
         used_real_assets = _used_real_assets(matched_primitives)
         executable = _is_executable(label_dir, postprocess=postprocess if isinstance(postprocess, dict) else None)
@@ -178,10 +232,18 @@ def build_e2e_benchmark_summary(
             "artifact_presence": artifact_presence,
             "matched_primitives": matched_primitives,
             "planning_artifact_present": bool(planning_artifact),
+            "asset_inventory": {
+                "asset_count": len(asset_inventory),
+                "ready_asset_count": asset_migration_summary["ready_asset_count"],
+                "blocked_asset_count": asset_migration_summary["blocked_asset_count"],
+                "ready_asset_ids": list(asset_migration_summary["ready_asset_ids"]),
+                "blocked_asset_ids": list(asset_migration_summary["blocked_asset_ids"]),
+            },
+            "enriched_cdg": _report_to_dict(enriched_cdg_policy),
+            "asset_migration": _report_to_dict(asset_migration_policy),
         }
-        if search_summary is not None:
-            results[variant]["search_discipline"] = search_summary
-            results[variant]["proposal_selection"] = proposal_selection
+        results[variant]["search_discipline"] = search_summary
+        results[variant]["proposal_selection"] = proposal_selection
         if isinstance(postprocess, dict):
             postprocess_summary[variant] = postprocess
 
@@ -203,6 +265,8 @@ def build_e2e_benchmark_summary(
         policy_variants[variant] = {
             "required_artifacts": _report_to_dict(artifact_policy),
             "behavioral": _report_to_dict(behavioral_policy),
+            "enriched_cdg": _report_to_dict(enriched_cdg_policy),
+            "asset_migration": _report_to_dict(asset_migration_policy),
         }
 
     anti_shortcut = enforce_anti_shortcut_policy(

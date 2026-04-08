@@ -8,8 +8,13 @@ from typing import Any
 
 from sciona.principal.search_policy import (
     BenchmarkPolicyReport,
+    evaluate_asset_migration_readiness,
+    evaluate_enriched_cdg_policy,
     enforce_anti_shortcut_policy,
     evaluate_behavioral_benchmark_policy,
+    summarize_asset_migration_readiness,
+    summarize_proposal_selection,
+    summarize_search_discipline,
     validate_required_benchmark_artifacts,
 )
 
@@ -101,6 +106,45 @@ def _extract_search_trace(mode_dir: Path) -> list[dict[str, Any]]:
     return []
 
 
+def _extract_applied_assets(search_trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    assets: list[dict[str, Any]] = []
+    for entry in search_trace:
+        expansion = entry.get("expansion", {})
+        if not isinstance(expansion, dict):
+            continue
+        for key in ("diagnostic_assets", "applied_assets"):
+            applied = expansion.get(key, [])
+            if not isinstance(applied, list):
+                continue
+            for asset in applied:
+                if isinstance(asset, dict):
+                    assets.append(dict(asset))
+    return assets
+
+
+def _extract_asset_inventory(
+    cdg_payload: dict[str, Any] | None,
+    search_trace: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    inventory: list[dict[str, Any]] = []
+    skeleton_asset = _extract_skeleton_asset(cdg_payload)
+    if skeleton_asset:
+        inventory.append(skeleton_asset)
+    inventory.extend(_extract_applied_assets(search_trace))
+    deduped: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for asset in inventory:
+        asset_id = str(asset.get("asset_id", "") or "")
+        asset_version = str(asset.get("asset_version", "") or "")
+        asset_operation = str(asset.get("asset_operation", "") or "")
+        key = (asset_id, asset_version, asset_operation)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(asset)
+    return deduped
+
+
 def evaluate_e2e_variant(
     *,
     label: str,
@@ -122,6 +166,10 @@ def evaluate_e2e_variant(
     runtime_context = _extract_runtime_context(path)
     search_trace = _extract_search_trace(path)
     planner_artifacts = _load_json(path / "planner_artifacts.json") or {}
+    asset_inventory = _extract_asset_inventory(cdg_payload, search_trace)
+    migration_summary = summarize_asset_migration_readiness(asset_inventory)
+    search_discipline = summarize_search_discipline(search_trace)
+    proposal_selection = summarize_proposal_selection(search_trace)
 
     family = str(
         planning_artifact.get("family_hint")
@@ -167,6 +215,34 @@ def evaluate_e2e_variant(
         allowed_families={family or label},
         require_real_assets=(label != "raw_llm"),
     )
+    enriched_cdg = evaluate_enriched_cdg_policy(
+        {
+            "search_discipline": {
+                "trial_count": search_discipline.trial_count,
+                "expansion_attempts": search_discipline.expansion_attempts,
+                "admissibility_decisions": search_discipline.admissibility_decisions,
+                "pruned_trials": search_discipline.pruned_trials,
+                "reused_cached_evaluations": search_discipline.reused_cached_evaluations,
+            },
+            "proposal_selection": {
+                "trial_count": proposal_selection.trial_count,
+                "proposal_selection_trials": proposal_selection.proposal_selection_trials,
+                "selected_trials": proposal_selection.selected_trials,
+                "rejected_trials": proposal_selection.rejected_trials,
+                "skipped_due_to_admissibility_trials": proposal_selection.skipped_due_to_admissibility_trials,
+                "selected_proposal_counts": dict(proposal_selection.selected_proposal_counts),
+            },
+            "search_trace_summary": {
+                "entry_count": len(search_trace),
+                "applied_asset_count": max(
+                    0,
+                    migration_summary.get("asset_count", len(asset_inventory))
+                    - (1 if skeleton_asset else 0),
+                ),
+            },
+        }
+    )
+    asset_migration = evaluate_asset_migration_readiness(asset_inventory)
 
     return {
         "latency_ms": int(latency_ms),
@@ -184,15 +260,40 @@ def evaluate_e2e_variant(
             "runtime_context": bool(runtime_context),
             "planner_artifacts": bool(planner_artifacts),
         },
+        "asset_inventory": {
+            "asset_count": int(migration_summary.get("asset_count", len(asset_inventory))),
+            "skeleton_asset": bool(skeleton_asset),
+            "expansion_assets": max(
+                0,
+                int(migration_summary.get("asset_count", len(asset_inventory)))
+                - (1 if skeleton_asset else 0),
+            ),
+            "ready_asset_count": int(migration_summary.get("ready_asset_count", 0) or 0),
+            "blocked_asset_count": int(migration_summary.get("blocked_asset_count", 0) or 0),
+            "ready_asset_ids": list(migration_summary.get("ready_asset_ids", [])),
+            "blocked_asset_ids": list(migration_summary.get("blocked_asset_ids", [])),
+            "records": list(migration_summary.get("records", [])),
+        },
         "policy": {
             "required_artifacts": _serialize_policy(artifact_report),
             "anti_shortcut": _serialize_policy(anti_shortcut),
             "behavioral": _serialize_policy(behavioral),
+            "enriched_cdg": _serialize_policy(enriched_cdg),
+            "asset_migration": _serialize_policy(asset_migration),
         },
         "search_trace_summary": {
             "entry_count": len(search_trace),
             "execution_path": planner_artifacts.get("execution_path", ""),
             "verification_status": planner_artifacts.get("verification_status", ""),
+            "expansion_attempts": search_discipline.expansion_attempts,
+            "admissibility_decisions": search_discipline.admissibility_decisions,
+            "proposal_selection_trials": proposal_selection.proposal_selection_trials,
+            "selected_trials": proposal_selection.selected_trials,
+            "applied_asset_count": max(
+                0,
+                int(migration_summary.get("asset_count", len(asset_inventory)))
+                - (1 if skeleton_asset else 0),
+            ),
         },
     }
 
@@ -234,6 +335,8 @@ def evaluate_e2e_benchmark_report(
         variant["policy"]["required_artifacts"]["passed"]
         and variant["policy"]["anti_shortcut"]["passed"]
         and variant["policy"]["behavioral"]["passed"]
+        and variant["policy"]["enriched_cdg"]["passed"]
+        and variant["policy"]["asset_migration"]["passed"]
         for label, variant in results.items()
         if label != "raw_llm"
     )

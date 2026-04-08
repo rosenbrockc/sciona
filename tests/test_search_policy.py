@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from sciona.principal.search_policy import (
+    evaluate_asset_migration_readiness,
+    evaluate_enriched_cdg_policy,
     enforce_anti_shortcut_policy,
     evaluate_behavioral_benchmark_policy,
     summarize_proposal_selection,
@@ -164,3 +166,94 @@ def test_proposal_selection_summary_handles_typed_nested_records() -> None:
     assert summary.proposal_selection_labels == ("expansion", "local_mutation")
     assert summary.mean_selected_proposal_improvement == 1.5
     assert summary.best_selected_proposal_improvement == 1.5
+
+
+def test_enriched_cdg_policy_requires_real_search_evidence() -> None:
+    passing = evaluate_enriched_cdg_policy(
+        {
+            "search_discipline": {
+                "trial_count": 3,
+                "expansion_attempts": 2,
+                "admissibility_decisions": 4,
+                "pruned_trials": 0,
+                "reused_cached_evaluations": 1,
+            },
+            "proposal_selection": {
+                "trial_count": 3,
+                "proposal_selection_trials": 2,
+                "selected_trials": 1,
+                "rejected_trials": 1,
+            },
+            "search_trace_summary": {
+                "entry_count": 3,
+                "applied_asset_count": 1,
+            },
+        }
+    )
+
+    failing = evaluate_enriched_cdg_policy(
+        {
+            "search_discipline": {},
+            "proposal_selection": {},
+            "search_trace_summary": {"entry_count": 0, "applied_asset_count": 0},
+        }
+    )
+
+    assert passing.passed is True
+    assert passing.details["expansion_attempts"] == 2
+    assert failing.passed is False
+    assert "missing_search_trace" in failing.violations
+
+
+def test_asset_migration_readiness_distinguishes_transitional_and_ready_assets() -> None:
+    ready = evaluate_asset_migration_readiness(
+        {
+            "asset_id": "family.generic.expansions.v1",
+            "asset_version": "v1",
+            "family": "generic",
+                "operations": [
+                    {
+                        "rule_name": "generic_rule",
+                        "name": "Generic Rule",
+                        "intent": "Generic enrichment",
+                    "dejargonized_summary": "Generic enrichment step.",
+                    "trigger": {
+                        "metric_name": "variance",
+                        "threshold": 1.0,
+                        "required_runtime_keys": ["records"],
+                    },
+                }
+            ],
+                "audit": {
+                    "review_status": "canonical",
+                    "source_kind": "shared_asset",
+                    "dejargonized_summary": "Generic family asset.",
+                    "references": [{"title": "Generic reference"}],
+                },
+                "migration_readiness_status": "ready_for_migration",
+                "migration_readiness_ready": True,
+                "migration_readiness_target_repository": "../ageo-atoms",
+                "migration_readiness_target_scope": "shared_family_asset",
+                "migration_readiness_check_count": 2,
+                "migration_readiness_required_check_count": 2,
+                "migration_readiness_completed_required_check_count": 2,
+                "migration_readiness_check_ids": ["docs", "tests"],
+            }
+        )
+
+    blocked = evaluate_asset_migration_readiness(
+        {
+            "asset_id": "skeleton.generic.v1",
+            "asset_version": "v1",
+            "family": "generic",
+            "review_status": "transitional",
+            "source_kind": "local_asset",
+        },
+        minimum_ready_assets=1,
+    )
+
+    assert ready.passed is True
+    assert ready.details["ready_asset_count"] == 1
+    assert blocked.passed is False
+    assert blocked.details["blocked_asset_count"] == 1
+    assert "insufficient_migration_ready_assets:0/1" in blocked.violations

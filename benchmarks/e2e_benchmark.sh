@@ -803,14 +803,19 @@ for variant in ['rapid', 'structured', 'verified', 'raw_llm']:
     cov = f"{r['ground_truth_coverage']:.0%}"
     print(f"{variant} | {lat} | {r['matches_total']} | {r['matches_verified']} | {gt} ({cov})")
 print()
-print('variant | artifacts | anti-shortcut | behavioral')
-print('--- | --- | --- | ---')
+print('variant | artifacts | anti-shortcut | behavioral | enriched-cdg | asset-migration')
+print('--- | --- | --- | --- | --- | ---')
 for variant in ['rapid', 'structured', 'verified', 'raw_llm']:
     policy = report['results'][variant]['policy']
     artifacts_ok = policy['required_artifacts']['passed']
     anti_shortcut_ok = policy['anti_shortcut']['passed']
     behavioral_ok = policy['behavioral']['passed']
-    print(f"{variant} | {artifacts_ok} | {anti_shortcut_ok} | {behavioral_ok}")
+    enriched_ok = policy['enriched_cdg']['passed']
+    migration_ok = policy['asset_migration']['passed']
+    print(
+        f"{variant} | {artifacts_ok} | {anti_shortcut_ok} | {behavioral_ok} | "
+        f"{enriched_ok} | {migration_ok}"
+    )
 if report.get('postprocess', {}).get('enabled'):
     print()
     print('postprocess variant | synth rc | compiled_ok | export rc | profile rc | gradients')

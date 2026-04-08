@@ -212,6 +212,292 @@ def summarize_search_discipline(trial_history: list[dict[str, Any]]) -> SearchDi
     )
 
 
+def _asset_readiness_record(asset: Any) -> dict[str, Any]:
+    """Normalize a skeleton or expansion asset into a readiness record."""
+    asset_map = _coerce_mapping(asset)
+    audit = _coerce_mapping(asset_map.get("audit", {}))
+    migration = _coerce_mapping(
+        asset_map.get("migration_readiness")
+        or audit.get("migration_readiness")
+    )
+    asset_kind = str(
+        asset_map.get("asset_kind")
+        or ("skeleton" if "stages" in asset_map else "expansion" if "operations" in asset_map else "")
+    )
+    references = audit.get("references", asset_map.get("references", []))
+    if not isinstance(references, list):
+        references = []
+    dejargonized_summary = str(
+        asset_map.get("dejargonized_summary")
+        or audit.get("dejargonized_summary")
+        or asset_map.get("summary", "")
+        or ""
+    )
+    review_status = str(
+        asset_map.get("review_status")
+        or audit.get("review_status")
+        or ""
+    )
+    source_kind = str(
+        asset_map.get("source_kind")
+        or audit.get("source_kind")
+        or ""
+    )
+    ready_scope = "full" if asset_kind in {"skeleton", "expansion"} else "identity"
+    migration_status = str(
+        asset_map.get("migration_readiness_status")
+        or migration.get("status")
+        or ""
+    )
+    migration_ready = bool(
+        asset_map.get("migration_readiness_ready")
+        if "migration_readiness_ready" in asset_map
+        else migration.get("ready_for_migration")
+    )
+    migration_target_repository = str(
+        asset_map.get("migration_readiness_target_repository")
+        or migration.get("target_repository")
+        or ""
+    )
+    migration_target_scope = str(
+        asset_map.get("migration_readiness_target_scope")
+        or migration.get("target_scope")
+        or ""
+    )
+    migration_check_count = int(
+        asset_map.get("migration_readiness_check_count")
+        or len(migration.get("checklist", []))
+        or 0
+    )
+    migration_required_check_count = int(
+        asset_map.get("migration_readiness_required_check_count")
+        or sum(
+            1
+            for item in migration.get("checklist", [])
+            if isinstance(item, dict) and bool(item.get("required", True))
+        )
+        or 0
+    )
+    migration_completed_required_check_count = int(
+        asset_map.get("migration_readiness_completed_required_check_count")
+        or sum(
+            1
+            for item in migration.get("checklist", [])
+            if isinstance(item, dict)
+            and bool(item.get("required", True))
+            and bool(item.get("satisfied"))
+        )
+        or 0
+    )
+    migration_check_ids = asset_map.get("migration_readiness_check_ids")
+    if not isinstance(migration_check_ids, list):
+        migration_check_ids = [
+            str(item.get("check_id", ""))
+            for item in migration.get("checklist", [])
+            if isinstance(item, dict) and item.get("check_id")
+        ]
+    return {
+        "asset_id": str(asset_map.get("asset_id", "") or ""),
+        "asset_version": str(asset_map.get("asset_version", "") or ""),
+        "family": str(
+            asset_map.get("family")
+            or asset_map.get("asset_family")
+            or ""
+        ),
+        "asset_kind": asset_kind,
+        "review_status": review_status,
+        "source_kind": source_kind,
+        "canonical_for_paradigm": bool(asset_map.get("canonical_for_paradigm")),
+        "dejargonized_summary_present": bool(dejargonized_summary.strip()),
+        "reference_count": len(references),
+        "ready_scope": ready_scope,
+        "migration_readiness_status": migration_status,
+        "migration_readiness_ready": migration_ready,
+        "migration_readiness_target_repository": migration_target_repository,
+        "migration_readiness_target_scope": migration_target_scope,
+        "migration_readiness_check_count": migration_check_count,
+        "migration_readiness_required_check_count": migration_required_check_count,
+        "migration_readiness_completed_required_check_count": (
+            migration_completed_required_check_count
+        ),
+        "migration_readiness_check_ids": list(migration_check_ids),
+    }
+
+
+def _asset_record_ready(
+    record: dict[str, Any],
+) -> bool:
+    asset_id = str(record.get("asset_id", "") or "")
+    if not asset_id:
+        return False
+    return bool(record.get("migration_readiness_ready"))
+
+
+def summarize_asset_migration_readiness(
+    assets: list[dict[str, Any]] | dict[str, Any],
+) -> dict[str, Any]:
+    """Summarize how migration-ready a set of family assets is."""
+    if isinstance(assets, dict):
+        asset_list: list[Any] = [assets]
+    else:
+        asset_list = list(assets)
+
+    records = [
+        _asset_readiness_record(asset)
+        for asset in asset_list
+        if _coerce_mapping(asset)
+    ]
+    ready_records = [
+        record
+        for record in records
+        if _asset_record_ready(record)
+    ]
+    blocked_records = [record for record in records if record not in ready_records]
+    return {
+        "asset_count": len(records),
+        "ready_asset_count": len(ready_records),
+        "blocked_asset_count": len(blocked_records),
+        "ready_asset_ids": sorted(
+            record["asset_id"] for record in ready_records if record.get("asset_id")
+        ),
+        "blocked_asset_ids": sorted(
+            record["asset_id"] for record in blocked_records if record.get("asset_id")
+        ),
+        "records": records,
+    }
+
+
+def evaluate_asset_migration_readiness(
+    assets: list[dict[str, Any]] | dict[str, Any],
+    *,
+    minimum_ready_assets: int = 0,
+    require_migration_contract: bool = True,
+) -> BenchmarkPolicyReport:
+    """Check whether the candidate assets look ready for shared ownership."""
+    summary = summarize_asset_migration_readiness(assets)
+    violations: list[str] = []
+    warnings: list[str] = []
+
+    ready_count = 0
+    records = summary.get("records", [])
+    if not isinstance(records, list):
+        records = []
+
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        asset_id = str(record.get("asset_id", "") or "")
+        review_status = str(record.get("review_status", "") or "")
+        source_kind = str(record.get("source_kind", "") or "")
+        asset_kind = str(record.get("asset_kind", "") or "")
+        dejargonized = bool(record.get("dejargonized_summary_present"))
+        reference_count = int(record.get("reference_count", 0) or 0)
+        ready = _asset_record_ready(record)
+        migration_status = str(record.get("migration_readiness_status", "") or "")
+        migration_target_repository = str(
+            record.get("migration_readiness_target_repository", "") or ""
+        )
+        migration_check_count = int(
+            record.get("migration_readiness_check_count", 0) or 0
+        )
+        if not asset_id:
+            violations.append("asset_missing_identity")
+        if asset_kind in {"skeleton", "expansion"} and not dejargonized:
+            violations.append(f"asset_missing_dejargonized_summary:{asset_id}")
+        if asset_kind in {"skeleton", "expansion"} and reference_count == 0:
+            violations.append(f"asset_missing_references:{asset_id}")
+        if require_migration_contract and not migration_status:
+            violations.append(f"asset_missing_migration_status:{asset_id}")
+        if require_migration_contract and not migration_target_repository:
+            violations.append(f"asset_missing_migration_target:{asset_id}")
+        if require_migration_contract and migration_check_count == 0:
+            warnings.append(f"asset_missing_migration_checklist:{asset_id}")
+        if review_status in {"draft", "", "missing"}:
+            warnings.append(
+                f"asset_review_not_stable:{asset_id}:{review_status or '--'}"
+            )
+        if source_kind in {"", "local_asset", "repo_local_transitional_asset"}:
+            warnings.append(f"asset_not_yet_shared:{asset_id}:{source_kind or '--'}")
+        if migration_status and migration_status not in {
+            "ready_for_migration",
+            "migrated",
+        }:
+            warnings.append(f"asset_not_ready_for_migration:{asset_id}:{migration_status}")
+
+        if ready:
+            ready_count += 1
+
+    if ready_count < minimum_ready_assets:
+        violations.append(
+            f"insufficient_migration_ready_assets:{ready_count}/{minimum_ready_assets}"
+        )
+
+    return BenchmarkPolicyReport(
+        passed=not violations,
+        violations=tuple(violations),
+        warnings=tuple(warnings),
+        details={
+            **summary,
+            "minimum_ready_assets": minimum_ready_assets,
+            "require_migration_contract": require_migration_contract,
+        },
+    )
+
+
+def evaluate_enriched_cdg_policy(
+    result: dict[str, Any],
+    *,
+    min_admissibility_decisions: int = 1,
+) -> BenchmarkPolicyReport:
+    """Check that a benchmark run actually exercised enriched-CDG behavior."""
+    search = _coerce_mapping(result.get("search_discipline", {}))
+    proposal = _coerce_mapping(result.get("proposal_selection", {}))
+    trace = _coerce_mapping(result.get("search_trace_summary", {}))
+
+    expansion_attempts = int(search.get("expansion_attempts", 0) or 0)
+    admissibility_decisions = int(search.get("admissibility_decisions", 0) or 0)
+    proposal_trials = int(proposal.get("proposal_selection_trials", 0) or 0)
+    selected_trials = int(proposal.get("selected_trials", 0) or 0)
+    search_entries = int(trace.get("entry_count", 0) or 0)
+    applied_asset_count = int(trace.get("applied_asset_count", 0) or 0)
+
+    violations: list[str] = []
+    warnings: list[str] = []
+    if search_entries == 0:
+        violations.append("missing_search_trace")
+    if proposal_trials > search_entries:
+        violations.append("proposal_selection_exceeds_search_trace")
+    if selected_trials > proposal_trials:
+        violations.append("selected_trials_exceed_proposal_trials")
+    if applied_asset_count > 0 and expansion_attempts == 0:
+        violations.append("applied_assets_without_expansion_attempts")
+    if admissibility_decisions < min_admissibility_decisions:
+        warnings.append(
+            f"low_admissibility_decisions:{admissibility_decisions}/{min_admissibility_decisions}"
+        )
+    if expansion_attempts > 0 and proposal_trials == 0:
+        warnings.append("expansion_without_proposal_selection")
+    if proposal_trials > 0 and selected_trials == 0:
+        warnings.append("no_selected_proposals")
+    if applied_asset_count == 0:
+        warnings.append("no_applied_assets")
+
+    return BenchmarkPolicyReport(
+        passed=not violations,
+        violations=tuple(violations),
+        warnings=tuple(warnings),
+        details={
+            "search_trace_entries": search_entries,
+            "trial_count": int(search.get("trial_count", 0) or 0),
+            "expansion_attempts": expansion_attempts,
+            "admissibility_decisions": admissibility_decisions,
+            "proposal_selection_trials": proposal_trials,
+            "selected_trials": selected_trials,
+            "applied_asset_count": applied_asset_count,
+        },
+    )
+
+
 def validate_required_benchmark_artifacts(
     artifacts: dict[str, Any],
     *,
