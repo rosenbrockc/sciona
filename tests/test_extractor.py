@@ -317,6 +317,15 @@ class TestCertificate:
         assert 'ENTRYPOINTS = ["direct_goal_match"]' in pipeline
         assert "read_dataset_template" in pipeline
         assert "_reduce_adapter_template" in pipeline
+        assert "canonicalize_runtime_inputs" in pipeline
+        assert "flat, _ = canonicalize_runtime_inputs(flat)" in pipeline
+
+    def test_generated_pipeline_prefers_eval_spec_groups_for_adapter_reduction(self):
+        pipeline = generate_pipeline_py([])
+        assert "selected = []" in pipeline
+        assert "if extra_sources:" in pipeline
+        assert "unresolved_params = set(content_params)" in pipeline
+        assert "if unresolved_params & outputs:" in pipeline
 
     def test_prepare_python_package_source_keeps_instrumented_helper(self):
         source = (

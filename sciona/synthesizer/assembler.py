@@ -927,19 +927,29 @@ class Assembler:
         lines.append("import inspect")
 
         # Infer imports from declaration names
+        imported_modules: list[str] = []
         imports_seen: set[str] = {"icontract", "inspect"}
         for unit in units:
             if "." in unit.declaration_name:
                 module = unit.declaration_name.rsplit(".", 1)[0]
                 if module not in imports_seen:
                     imports_seen.add(module)
-                    lines.append(f"import {module}")
+                    imported_modules.append(module)
+        if any(module.startswith("ageoa.") for module in imported_modules):
+            lines.append("from sciona.julia_runtime import configure_juliacall_env")
+            lines.append("configure_juliacall_env()")
+        for module in imported_modules:
+            lines.append(f"import {module}")
 
-        # Common scientific imports if not already present
-        for pkg in ("numpy", "scipy"):
-            if pkg not in imports_seen:
-                imports_seen.add(pkg)
-                lines.append(f"import {pkg}")
+        # Common scientific imports if not already present. Generated Python
+        # annotations use ``np.ndarray`` heavily, so the alias needs to exist in
+        # the whole-file compile path as well, not only during export cleanup.
+        if "numpy" not in imports_seen:
+            imports_seen.add("numpy")
+            lines.append("import numpy as np")
+        if "scipy" not in imports_seen:
+            imports_seen.add("scipy")
+            lines.append("import scipy")
 
         # Telemetry imports
         if telemetry:

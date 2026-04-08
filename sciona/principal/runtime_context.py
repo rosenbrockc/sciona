@@ -56,6 +56,16 @@ def _infer_data_kind(key: str) -> str:
     return "generic"
 
 
+def _data_kind_priority(kind: str) -> int:
+    priorities = {
+        "generic": 0,
+        "rate_series": 1,
+        "event_sequence": 2,
+        "waveform": 3,
+    }
+    return priorities.get(kind, 0)
+
+
 def _infer_stream_id(key: str) -> str:
     lowered = key.lower()
     for token in ("ecg", "ppg", "eeg", "emg", "capnostream"):
@@ -108,8 +118,8 @@ def _bind_canonical_aliases(
         return
 
     waveform_bindable = [stream for stream in stream_list if stream.data_kind == "waveform"]
-    if len(waveform_bindable) == 1:
-        target = waveform_bindable[0]
+    if waveform_bindable:
+        target = sorted(waveform_bindable, key=_signal_priority)[0]
     elif len(stream_list) == 1 and stream_list[0].signal_key in {"", "signal"}:
         target = stream_list[0]
     elif any(key in runtime_inputs for key in ("signal", "time", "sampling_rate")):
@@ -173,22 +183,23 @@ def resolve_canonical_runtime_context(
         if stream is None:
             stream = RuntimeStream(stream_id=stream_id, data_kind=data_kind)
             streams[stream_id] = stream
-        elif stream.data_kind == "generic" and data_kind != "generic":
+        elif _data_kind_priority(data_kind) > _data_kind_priority(stream.data_kind):
             stream.data_kind = data_kind
         return stream
 
     for raw_key, raw_value in runtime_inputs.items():
         if raw_key in {"signal", "sampling_rate", "time"}:
             continue
+        if hasattr(raw_value, "columns"):
+            continue
         key = str(raw_key)
         lowered = key.lower()
-        data_kind = _infer_data_kind(lowered)
         stream_id = _infer_stream_id(lowered)
-        stream = ensure_stream(stream_id, data_kind=data_kind)
-        if key not in stream.aliases:
-            stream.aliases.append(key)
 
         if lowered.endswith("_sampling_rate"):
+            stream = ensure_stream(stream_id, data_kind="generic")
+            if key not in stream.aliases:
+                stream.aliases.append(key)
             try:
                 stream.sampling_rate = float(raw_value)
                 stream.sampling_rate_key = key
@@ -196,9 +207,16 @@ def resolve_canonical_runtime_context(
                 pass
             continue
         if lowered.endswith("_t") or lowered == "t" or lowered.endswith("_time"):
+            stream = ensure_stream(stream_id, data_kind="generic")
+            if key not in stream.aliases:
+                stream.aliases.append(key)
             stream.time_key = key
             stream.time_values = raw_value
             continue
+        data_kind = _infer_data_kind(lowered)
+        stream = ensure_stream(stream_id, data_kind=data_kind)
+        if key not in stream.aliases:
+            stream.aliases.append(key)
         if stream.signal_key:
             continue
         stream.signal_key = key

@@ -185,13 +185,18 @@ class TestHunterHappyPath:
             type_signature="(filtered: np.ndarray) -> np.ndarray",
             source_lib="ageoa.pronto.blip_filter.atoms",
             docstring="Detect peaks in a filtered signal.",
+            raw_code="def r_peak_detection(filtered):\n    fs = 360.0\n    return filtered\n",
             prover=Prover.PYTHON,
         )
         biosppy = Declaration(
             name="ageoa.biosppy.ecg.r_peak_detection",
-            type_signature="(filtered: np.ndarray) -> np.ndarray",
+            type_signature="(filtered: np.ndarray, sampling_rate: float = 1000.0) -> np.ndarray",
             source_lib="ageoa.biosppy.ecg",
             docstring="Detect R-peaks in an ECG waveform.",
+            raw_code=(
+                "def r_peak_detection(filtered, sampling_rate=1000.0):\n"
+                "    return hamilton_segmenter(signal=filtered, sampling_rate=sampling_rate)\n"
+            ),
             prover=Prover.PYTHON,
         )
 

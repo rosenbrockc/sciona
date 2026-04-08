@@ -11,7 +11,10 @@ import sys
 from typing import Any
 
 from sciona.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
-from sciona.principal.runtime_context import summarize_runtime_evidence
+from sciona.principal.runtime_context import (
+    canonicalize_runtime_inputs,
+    summarize_runtime_evidence,
+)
 from sciona.synthesizer.models import ExportBundle
 
 logger = logging.getLogger(__name__)
@@ -526,7 +529,25 @@ def _collect_runtime_inputs_from_frames(group_frames: dict[str, Any]) -> dict[st
     if not isinstance(group_frames, dict):
         return {}
 
+    def _waveform_priority(group_name: str) -> int:
+        lowered = group_name.lower()
+        if "ecg" in lowered:
+            return 0
+        if "ppg" in lowered:
+            return 1
+        if "eeg" in lowered:
+            return 2
+        if "emg" in lowered:
+            return 3
+        if "signal" in lowered or "waveform" in lowered or "wave" in lowered:
+            return 10
+        return 99
+
     runtime_inputs: dict[str, Any] = {}
+    primary_signal_values: Any | None = None
+    primary_time_values: Any | None = None
+    primary_sampling_rate: float | None = None
+    primary_priority = 10**6
     for group_name, frame in group_frames.items():
         if not hasattr(frame, "columns"):
             continue
@@ -535,8 +556,9 @@ def _collect_runtime_inputs_from_frames(group_frames: dict[str, Any]) -> dict[st
         group_alias = group.rsplit("_", 1)[-1] if "_" in group else group
         time_column = _pick_time_column(frame)
         sampling_rate = _infer_sampling_rate(frame, time_column=time_column)
+        candidate_signal_values: Any | None = None
+        candidate_time_values: Any | None = None
         if sampling_rate is not None:
-            runtime_inputs.setdefault("sampling_rate", sampling_rate)
             runtime_inputs[f"{group}_sampling_rate"] = sampling_rate
             if group_alias:
                 runtime_inputs[f"{group_alias}_sampling_rate"] = sampling_rate
@@ -548,19 +570,42 @@ def _collect_runtime_inputs_from_frames(group_frames: dict[str, Any]) -> dict[st
             runtime_inputs[key] = values
             if key.startswith(f"{group}_"):
                 alias = key[len(group) + 1 :]
-                runtime_inputs.setdefault(alias, values)
                 if group_alias and alias != "value":
                     runtime_inputs.setdefault(f"{group_alias}_{alias}", values)
                 if group_alias and alias == "value":
                     runtime_inputs.setdefault(group_alias, values)
-            if key == "value" and any(
-                token in group_lower for token in ("signal", "wave", "waveform", "ecg", "ppg", "eeg", "emg")
-            ):
-                runtime_inputs.setdefault("signal", values)
+                    candidate_signal_values = values
+                if alias == time_column:
+                    candidate_time_values = values
+            elif key == "value":
+                candidate_signal_values = values
             if time_column is not None and key == time_column:
-                runtime_inputs.setdefault("time", values)
+                candidate_time_values = values
 
-    return runtime_inputs
+        if candidate_signal_values is not None:
+            priority = _waveform_priority(group_lower)
+            candidate_size = int(getattr(candidate_signal_values, "size", len(candidate_signal_values)))
+            if candidate_size > 0 and priority < primary_priority:
+                primary_priority = priority
+                primary_signal_values = candidate_signal_values
+                primary_time_values = candidate_time_values
+                primary_sampling_rate = sampling_rate
+
+    if primary_signal_values is not None:
+        runtime_inputs["signal"] = primary_signal_values
+    if primary_time_values is not None:
+        runtime_inputs["time"] = primary_time_values
+    if primary_sampling_rate is not None:
+        runtime_inputs["sampling_rate"] = primary_sampling_rate
+
+    normalized, _context = canonicalize_runtime_inputs(runtime_inputs)
+    if primary_signal_values is not None:
+        normalized["signal"] = primary_signal_values
+    if primary_time_values is not None:
+        normalized["time"] = primary_time_values
+    if primary_sampling_rate is not None:
+        normalized["sampling_rate"] = primary_sampling_rate
+    return normalized
 
 
 def _collect_signal_data_from_frames(group_frames: dict[str, Any]) -> dict[str, Any]:

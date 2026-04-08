@@ -158,6 +158,98 @@ def apply_filter(spec: filter specification, signal: np.ndarray) -> filter desig
     assert "-> 'filter design targets':" in sanitized
 
 
+def test_python_assembler_emits_numpy_alias_for_np_annotations():
+    root = AlgorithmicNode(
+        node_id="root",
+        name="Detect heart rate",
+        description="Root signal pipeline",
+        concept_type=ConceptType.ANALYSIS,
+        status=NodeStatus.DECOMPOSED,
+        children=["leaf"],
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+    )
+    leaf = AlgorithmicNode(
+        node_id="leaf",
+        parent_id="root",
+        name="Detect Peaks In Signal",
+        description="Detect events from a waveform",
+        concept_type=ConceptType.DATA_EXTRACTION,
+        status=NodeStatus.ATOMIC,
+        matched_primitive="detect_peaks_in_signal",
+        inputs=[
+            IOSpec(name="signal", type_desc="np.ndarray"),
+            IOSpec(name="sampling_rate", type_desc="float"),
+        ],
+        outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+    )
+    cdg = CDGExport(nodes=[root, leaf], edges=[])
+    match = MatchResult(
+        pdg_node=PDGNode(predicate_id="leaf", statement="np.ndarray, float -> np.ndarray"),
+        verified_match=VerificationResult(
+            candidate=CandidateMatch(
+                declaration=Declaration(
+                    name="fake_runtime.detect_impl",
+                    type_signature="np.ndarray, float -> np.ndarray",
+                    prover=Prover.PYTHON,
+                ),
+                score=0.9,
+                retrieval_method="test",
+            ),
+            verified=True,
+        ),
+    )
+
+    skeleton = Assembler(Prover.PYTHON).assemble(cdg, [match])
+
+    assert "import numpy as np" in skeleton.source_code
+
+
+def test_python_assembler_configures_juliacall_before_ageoa_imports() -> None:
+    root = AlgorithmicNode(
+        node_id="root",
+        name="Root",
+        description="Root pipeline",
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.DECOMPOSED,
+        children=["leaf"],
+    )
+    leaf = AlgorithmicNode(
+        node_id="leaf",
+        parent_id="root",
+        name="Filter ECG",
+        description="Filter ECG signal.",
+        concept_type=ConceptType.SIGNAL_FILTER,
+        status=NodeStatus.ATOMIC,
+        type_signature="(signal: np.ndarray) -> np.ndarray",
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+    )
+    cdg = CDGExport(nodes=[root, leaf], edges=[])
+    match = MatchResult(
+        pdg_node=PDGNode(predicate_id="leaf", statement="(signal: np.ndarray) -> np.ndarray"),
+        verified_match=VerificationResult(
+            candidate=CandidateMatch(
+                declaration=Declaration(
+                    name="ageoa.biosppy.ecg.bandpass_filter",
+                    type_signature="(signal: np.ndarray, *, sampling_rate: float) -> np.ndarray",
+                    prover=Prover.PYTHON,
+                ),
+                score=0.9,
+                retrieval_method="test",
+            ),
+            verified=True,
+        ),
+    )
+
+    skeleton = Assembler(Prover.PYTHON).assemble(cdg, [match])
+
+    assert "from sciona.julia_runtime import configure_juliacall_env" in skeleton.source_code
+    assert skeleton.source_code.index("configure_juliacall_env()") < skeleton.source_code.index(
+        "import ageoa.biosppy.ecg"
+    )
+
+
 @pytest.fixture
 def sample_match_results() -> list[MatchResult]:
     return [

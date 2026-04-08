@@ -42,6 +42,26 @@ def test_resolve_canonical_runtime_context_prefers_ecg_stream() -> None:
     assert by_stream["capnostream"].provenance == "auxiliary_stream"
 
 
+def test_resolve_canonical_runtime_context_prefers_ecg_over_generic_ppg_aliases() -> None:
+    signal_data = {
+        "signal": np.array([0.1, 0.2, 0.3]),
+        "sampling_rate": 129.96,
+        "ppg_ir": np.array([0.1, 0.2, 0.3]),
+        "ppg_t": np.array([0.0, 0.01, 0.02]),
+        "h10_ecg_value": np.sin(np.linspace(0.0, 10.0, 300)),
+        "h10_ecg_t": np.linspace(0.0, 10.0, 300),
+        "ecg_sampling_rate": 129.96,
+    }
+
+    context = resolve_canonical_runtime_context(signal_data)
+    by_stream = {stream.stream_id: stream for stream in context.streams}
+
+    assert by_stream["ecg"].data_kind == "waveform"
+    assert context.canonical_inputs["signal"].raw_key == "h10_ecg_value"
+    assert context.canonical_inputs["sampling_rate"].raw_key == "ecg_sampling_rate"
+    assert context.alias_resolution["signal"] == "h10_ecg_value"
+
+
 def test_runtime_context_tracks_stream_aliases_and_sampling_rates() -> None:
     context = resolve_canonical_runtime_context(
         {

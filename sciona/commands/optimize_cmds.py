@@ -362,6 +362,11 @@ def _summarize_optimize_history(
     }
 
 
+def _should_allow_curated_signal_event_rate_shortcut_for_optimize(*, config: Any) -> bool:
+    """Optimize must exercise the real atom framework rather than the curated scaffold."""
+    return False
+
+
 async def _match_results_for_optimize(
     cdg: Any,
     *,
@@ -505,7 +510,7 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
     config = AgeomConfig()
     mode_settings = resolve_execution_mode(config, getattr(args, "mode", None))
     allow_curated_signal_event_rate_shortcut = (
-        not config.disable_curated_signal_event_rate_shortcuts
+        _should_allow_curated_signal_event_rate_shortcut_for_optimize(config=config)
     )
     prover = Prover(args.prover)
     _print_mode_summary("optimize", mode_settings)

@@ -363,6 +363,64 @@ class TestPythonEnvironment:
         await env.close()
 
     @pytest.mark.asyncio
+    async def test_check_term_treats_dependency_environment_failure_as_soft_success(self):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (
+            b"",
+            (
+                b"ArgumentError: Package PythonCall is required but does not seem to be installed\n"
+                b"Exception: PythonCall.jl did not start properly\n"
+            ),
+        )
+        mock_proc.returncode = 1
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+            success, output = await env.check_term(
+                "ageoa.biosppy.ecg.bandpass_filter",
+                "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
+            )
+            assert success is True
+            assert "dependency-environment failure" in output
+
+        await env.close()
+
+    @pytest.mark.asyncio
+    async def test_check_term_keeps_missing_ageoa_modules_as_failures(self):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (
+            b"",
+            (
+                b"ArgumentError: Package PythonCall is required but does not seem to be installed\n"
+                b"Exception: PythonCall.jl did not start properly\n"
+            ),
+        )
+        mock_proc.returncode = 1
+
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ), patch(
+            "sciona.judge.python_env._local_module_source_exists",
+            return_value=False,
+        ):
+            success, output = await env.check_term(
+                "ageoa.biosppy.ecg_hamilton_d12.atoms.hamilton_segmenter",
+                "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
+            )
+            assert success is False
+            assert "dependency-environment failure" not in output
+
+        await env.close()
+
+    @pytest.mark.asyncio
     async def test_mypy_not_found(self):
         from sciona.judge.python_env import PythonEnvironment
 
@@ -393,6 +451,39 @@ class TestPythonEnvironment:
             assert success is True
             assert create_proc.await_args_list[0].args[0] == env._python_path
             assert create_proc.await_args_list[0].args[1].endswith("_check.py")
+
+        await env.close()
+
+    @pytest.mark.asyncio
+    async def test_run_file_falls_back_to_py_compile_on_dependency_env_failure(self):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        runtime_proc = AsyncMock()
+        runtime_proc.communicate.return_value = (
+            b"",
+            (
+                b"A module that was compiled using NumPy 1.x cannot be run in "
+                b"NumPy 2.1.3 as it may crash.\n"
+                b"ImportError: numpy.core.multiarray failed to import\n"
+            ),
+        )
+        runtime_proc.returncode = 1
+
+        compile_proc = AsyncMock()
+        compile_proc.communicate.return_value = (b"", b"")
+        compile_proc.returncode = 0
+
+        with patch(
+            "asyncio.create_subprocess_exec",
+            side_effect=[runtime_proc, compile_proc],
+        ) as create_proc:
+            feedback = await env._run_file("import numpy as np\nx: np.ndarray | None = None\n")
+            assert feedback.success is True
+            assert "py_compile fallback passed" in feedback.raw_output
+            child_env = create_proc.await_args_list[0].kwargs["env"]
+            assert child_env["PYTHON_JULIACALL_INIT"] == "no"
 
         await env.close()
 

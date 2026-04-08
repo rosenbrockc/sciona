@@ -282,9 +282,11 @@ def _candidate_prior_bonus(
             declaration.source_lib,
             declaration.type_signature,
             declaration.docstring,
+            declaration.conceptual_summary,
         ]
     )
     candidate_tokens = _tokenize_candidate_text(candidate_text)
+    raw_code_tokens = _tokenize_candidate_text(declaration.raw_code or "")
     if not candidate_tokens:
         return 0.0
 
@@ -337,7 +339,15 @@ def _candidate_prior_bonus(
         "rate",
     }
     if "sampling_rate" in candidate_tokens and goal_tokens & sampled_signal_tokens:
-        bonus += 0.06
+        bonus += 0.45
+    if {"sampling_rate", "fs"} & raw_code_tokens and goal_tokens & sampled_signal_tokens:
+        bonus += 0.08
+    if (
+        active_modality in {"ecg", "ppg", "eeg", "emg", "pcg"}
+        and stage in {"filter", "detect", "rate"}
+        and "sampling_rate" not in candidate_tokens
+    ):
+        bonus -= 0.55
     bonus += _stage_alignment_bonus(pdg_node, candidate_tokens)
     bonus -= _cross_stage_penalty(pdg_node, candidate_tokens)
     return max(-0.5, min(2.4, bonus))

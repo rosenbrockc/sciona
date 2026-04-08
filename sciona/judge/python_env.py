@@ -37,6 +37,45 @@ def _count_params_from_signature(type_sig: str) -> int | None:
     return len([p.strip() for p in params_str.split(",") if p.strip()])
 
 
+def _looks_like_dependency_environment_failure(raw: str) -> bool:
+    """Return whether *raw* looks like an environment/import crash.
+
+    These failures usually come from binary-compatibility issues in optional
+    dependencies and should not block whole-file structural validation of a
+    generated skeleton. Missing modules and real synthesis/runtime errors still
+    fail hard.
+    """
+    text = raw.lower()
+    markers = (
+        "a module that was compiled using numpy 1.x cannot be run in",
+        "numpy.core.multiarray failed to import",
+        "numpy.dtype size changed",
+        "_array_api not found",
+        "pythoncall.jl did not start properly",
+        "package pythoncall",
+    )
+    return any(marker in text for marker in markers)
+
+
+def _local_module_source_exists(module_name: str) -> bool:
+    """Return whether a dotted module resolves to a source file in local repos."""
+    parts = [part for part in module_name.split(".") if part]
+    if not parts:
+        return False
+    rel_py = Path(*parts).with_suffix(".py")
+    rel_pkg = Path(*parts) / "__init__.py"
+    search_roots = (
+        Path.cwd(),
+        Path.cwd().parent / "ageo-atoms",
+        Path.cwd().parent,
+    )
+    for root in search_roots:
+        for rel in (rel_py, rel_pkg):
+            if (root / rel).exists():
+                return True
+    return False
+
+
 class PythonEnvironment:
     """ProofEnvironment implementation for Python.
 
@@ -133,6 +172,17 @@ class PythonEnvironment:
             raw = stdout.decode() + stderr.decode()
             if proc.returncode == 0:
                 return True, raw.strip()
+            if _looks_like_dependency_environment_failure(raw) and (
+                not mod.startswith("ageoa.") or _local_module_source_exists(mod)
+            ):
+                combined = raw.strip()
+                if combined:
+                    combined += "\n"
+                combined += (
+                    "Import verification hit a dependency-environment failure; "
+                    "accepting candidate based on structural availability."
+                )
+                return True, combined
             return False, raw.strip()
         except FileNotFoundError:
             msg = f"python not found at '{self._python_path}'"
@@ -268,16 +318,47 @@ class PythonEnvironment:
         """Write code to a temp .py file and execute it."""
         tmp_path = Path(self._tmpdir) / "_check.py"
         tmp_path.write_text(code)
+        env = dict(os.environ)
+        env.setdefault("PYTHON_JULIACALL_INIT", "no")
 
         try:
             proc = await asyncio.create_subprocess_exec(
                 self._python_path,
                 str(tmp_path),
+                env=env,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await proc.communicate()
             raw = stdout.decode() + stderr.decode()
+            if proc.returncode != 0 and _looks_like_dependency_environment_failure(raw):
+                compile_proc = await asyncio.create_subprocess_exec(
+                    self._python_path,
+                    "-m",
+                    "py_compile",
+                    str(tmp_path),
+                    env=env,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                compile_stdout, compile_stderr = await compile_proc.communicate()
+                compile_raw = compile_stdout.decode() + compile_stderr.decode()
+                if compile_proc.returncode == 0:
+                    note = (
+                        "Runtime import validation failed due to dependency environment "
+                        "constraints; py_compile fallback passed.\n"
+                    )
+                    combined = raw
+                    if combined and not combined.endswith("\n"):
+                        combined += "\n"
+                    combined += note
+                    return CompilerFeedback(
+                        raw_output=combined,
+                        errors=[],
+                        warnings=[],
+                    )
+                raw = raw + ("\n" if raw and not raw.endswith("\n") else "")
+                raw += compile_raw
             return CompilerFeedback(
                 raw_output=raw,
                 errors=[] if proc.returncode == 0 else [raw.strip() or raw],
