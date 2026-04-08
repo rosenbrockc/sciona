@@ -467,6 +467,27 @@ class TestSignalEventRateExpansion:
         assert jump_diag.asset_id == "family.signal_event_rate.expansions.v1"
         assert jump_diag.asset_operation == "insert_jump_removal_before_filter"
 
+    def test_diagnose_jump_discontinuities_from_summary_telemetry(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        ctx = ExpansionContext(
+            runtime_evidence={
+                "telemetry_summary": {
+                    "signal": {
+                        "count": 38943.0,
+                        "discontinuity_count": 3716.0,
+                    }
+                }
+            }
+        )
+        cdg = self._pipeline_cdg()
+        diags = rs.diagnose(cdg, ctx)
+        rule_names = {d.rule_name for d in diags}
+        assert "insert_jump_removal_before_filter" in rule_names
+
     def test_diagnose_interval_outliers(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
             SignalEventRateExpansionRuleSet,
@@ -479,6 +500,28 @@ class TestSignalEventRateExpansion:
             0, 480, 1000, 1490, 2010, 2020, 2530, 3020, 3500, 6000, 6510,
         ])
         ctx = ExpansionContext(intermediates={"events": events})
+        cdg = self._pipeline_cdg()
+        diags = rs.diagnose(cdg, ctx)
+        rule_names = {d.rule_name for d in diags}
+        assert "insert_outlier_rejection_after_detection" in rule_names
+
+    def test_diagnose_interval_outliers_from_summary_telemetry(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        ctx = ExpansionContext(
+            runtime_evidence={
+                "telemetry_summary": {
+                    "events": {
+                        "count": 438.0,
+                        "outlier_fraction": 0.22,
+                        "interval_median_samples": 88.0,
+                    }
+                }
+            }
+        )
         cdg = self._pipeline_cdg()
         diags = rs.diagnose(cdg, ctx)
         rule_names = {d.rule_name for d in diags}

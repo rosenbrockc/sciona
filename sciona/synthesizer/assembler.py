@@ -38,11 +38,36 @@ _PYTHON_PARAMS_HARNESS: list[str] = [
 
 _PYTHON_TELEMETRY_HELPER: list[str] = [
     "",
+    "from sciona.principal.runtime_context import summarize_named_value as _sciona_summarize_named_value",
+    "",
     "_SCIONA_TRACE_PATH = 'trace.jsonl'",
     "",
     "",
-    "def _sciona_probe(node_id: str, fn):",
+    "def _sciona_summarize_outputs(output_names, result):",
+    '    """Build compact named summaries for one node result."""',
+    "    names = [str(name) for name in output_names or () if name]",
+    "    if not names:",
+    "        return {}",
+    "    if len(names) == 1:",
+    "        values = [result]",
+    "    elif isinstance(result, (tuple, list)):",
+    "        values = list(result)",
+    "    else:",
+    "        values = [result]",
+    "    summaries = {}",
+    "    for index, name in enumerate(names):",
+    "        if index >= len(values):",
+    "            break",
+    "        try:",
+    "            summaries[name] = _sciona_summarize_named_value(name, values[index])",
+    "        except Exception:",
+    "            continue",
+    "    return summaries",
+    "",
+    "",
+    "def _sciona_probe(node_id: str, fn, output_names=()):",
     '    """Execute *fn* and append a JSON-lines telemetry record."""',
+    "    result = None",
     "    tracemalloc.start()",
     "    t0 = time.perf_counter()",
     "    try:",
@@ -56,6 +81,9 @@ _PYTHON_TELEMETRY_HELPER: list[str] = [
     '            "execution_time_ms": elapsed_ms,',
     '            "peak_memory_bytes": peak,',
     "        }",
+    "        summaries = _sciona_summarize_outputs(output_names, result)",
+    "        if summaries:",
+    '            record["output_summaries"] = summaries',
     "        with open(_SCIONA_TRACE_PATH, 'a') as _f:",
     "            _f.write(json.dumps(record) + '\\n')",
     "    return result",
@@ -1078,8 +1106,9 @@ class Assembler:
                     call_expr = f"_sciona_call({unit.declaration_name}, {ordered_names_expr})"
 
             if telemetry:
+                output_names_expr = repr(tuple(out.name for out in unit.outputs))
                 lines.append(
-                    f"    return _sciona_probe({unit.node_id!r}, lambda: {call_expr})"
+                    f"    return _sciona_probe({unit.node_id!r}, lambda: {call_expr}, output_names={output_names_expr})"
                 )
             else:
                 lines.append(f"    return {call_expr}")

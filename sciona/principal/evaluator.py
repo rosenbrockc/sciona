@@ -13,6 +13,7 @@ from typing import Any
 from sciona.principal.dataset_slice import apply_relative_dataset_slice
 from sciona.principal.models import BenchmarkResult, NodeTelemetry, OptimizationMetric
 from sciona.principal.runtime_context import (
+    canonicalize_intermediates,
     canonicalize_runtime_inputs,
     summarize_runtime_evidence,
 )
@@ -423,6 +424,32 @@ def _parse_trace(trace_path: Path) -> dict[str, NodeTelemetry]:
     return telemetry
 
 
+def _parse_trace_output_summaries(trace_path: Path) -> dict[str, Any]:
+    """Collect compact per-output summaries emitted by instrumented probes."""
+    if not trace_path.exists():
+        return {}
+    summaries: dict[str, Any] = {}
+    try:
+        with open(trace_path) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    payload = json.loads(line)
+                except Exception:
+                    continue
+                output_summaries = payload.get("output_summaries")
+                if not isinstance(output_summaries, dict):
+                    continue
+                for name, summary in output_summaries.items():
+                    if isinstance(name, str) and isinstance(summary, dict):
+                        summaries[name] = summary
+    except Exception:
+        logger.debug("Failed to parse trace output summaries from %s", trace_path, exc_info=True)
+    return summaries
+
+
 def _compute_loss(
     telemetry: dict[str, NodeTelemetry],
     metric: OptimizationMetric,
@@ -532,6 +559,24 @@ def _build_runtime_artifacts(
         intermediates=intermediates,
         outputs=outputs,
     )
+    trace_output_summaries = _parse_trace_output_summaries(trace_path)
+    if trace_output_summaries:
+        artifacts["intermediate_summaries"] = dict(trace_output_summaries)
+        telemetry_summary = evidence.setdefault("telemetry_summary", {})
+        merged_intermediate_summaries = dict(telemetry_summary.get("intermediates", {}))
+        merged_intermediate_summaries.update(trace_output_summaries)
+        telemetry_summary["intermediates"] = merged_intermediate_summaries
+        canonical_summaries, _aliases = canonicalize_intermediates(trace_output_summaries)
+        if (
+            not telemetry_summary.get("events")
+            and isinstance(canonical_summaries.get("events"), dict)
+        ):
+            telemetry_summary["events"] = canonical_summaries["events"]
+        if (
+            not telemetry_summary.get("rate")
+            and isinstance(canonical_summaries.get("rate"), dict)
+        ):
+            telemetry_summary["rate"] = canonical_summaries["rate"]
     artifacts.update(evidence)
     _persist_runtime_evidence(trace_path, evidence)
     return artifacts

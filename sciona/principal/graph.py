@@ -754,6 +754,8 @@ async def compute_gradients(state: PrincipalState, config: RunnableConfig) -> di
             state.dataset_path,
             deps.evaluation_spec,
             dataset_varset=deps.dataset_varset,
+            dataset_slice_start_s=deps.dataset_slice_start_s,
+            dataset_slice_stop_s=deps.dataset_slice_stop_s,
         )
         if gradients:
             if deps.atom_ledger is not None and state.cdg is not None:

@@ -147,11 +147,34 @@ def _telemetry_helper_source() -> str:
 import json
 import time
 import tracemalloc
+from sciona.principal.runtime_context import summarize_named_value as _sciona_summarize_named_value
 
 _SCIONA_TRACE_PATH = 'trace.jsonl'
 
 
-def _sciona_probe(node_id: str, fn):
+def _sciona_summarize_outputs(output_names, result):
+    names = [str(name) for name in output_names or () if name]
+    if not names:
+        return {}
+    if len(names) == 1:
+        values = [result]
+    elif isinstance(result, (tuple, list)):
+        values = list(result)
+    else:
+        values = [result]
+    summaries = {}
+    for index, name in enumerate(names):
+        if index >= len(values):
+            break
+        try:
+            summaries[name] = _sciona_summarize_named_value(name, values[index])
+        except Exception:
+            continue
+    return summaries
+
+
+def _sciona_probe(node_id: str, fn, output_names=()):
+    result = None
     tracemalloc.start()
     t0 = time.perf_counter()
     try:
@@ -165,6 +188,9 @@ def _sciona_probe(node_id: str, fn):
             "execution_time_ms": elapsed_ms,
             "peak_memory_bytes": peak,
         }
+        summaries = _sciona_summarize_outputs(output_names, result)
+        if summaries:
+            record["output_summaries"] = summaries
         with open(_SCIONA_TRACE_PATH, "a") as handle:
             handle.write(json.dumps(record) + "\\n")
     return result
@@ -197,6 +223,7 @@ def _build_wrapper_function(
             ast.keyword(arg=None, value=ast.Name(id=wrapper.args.kwarg.arg, ctx=ast.Load()))
         )
 
+    output_names = _infer_output_names(original)
     probe_call = ast.Call(
         func=ast.Name(id="_sciona_probe", ctx=ast.Load()),
         args=[
@@ -211,12 +238,32 @@ def _build_wrapper_function(
                 ),
                 body=call,
             ),
+            ast.Tuple(
+                elts=[ast.Constant(value=name) for name in output_names],
+                ctx=ast.Load(),
+            ),
         ],
         keywords=[],
     )
     body.append(ast.Return(value=probe_call))
     wrapper.body = body
     return wrapper
+
+
+def _infer_output_names(original: ast.FunctionDef) -> list[str]:
+    """Infer stable semantic output names for exported wrapper telemetry."""
+    name = original.name.lower()
+    if any(token in name for token in ("detect_peaks", "detect_peak", "find_peaks", "find_events")):
+        return ["events"]
+    if any(token in name for token in ("event_rate", "heart_rate", "compute_rate", "measure_rate")):
+        return ["rate"]
+    if any(token in name for token in ("filter_signal", "condition_signal", "bandpass", "denoise")):
+        return ["signal"]
+    if any(token in name for token in ("signal_quality", "quality", "snr")):
+        return ["quality"]
+    if any(token in name for token in ("outlier", "peak_correction", "correct_peaks")):
+        return ["events"]
+    return []
 
 
 def _ensure_python_export_telemetry(source: str) -> str:

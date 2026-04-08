@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import inspect
 import json
 import sys
 from contextlib import contextmanager
@@ -81,13 +82,14 @@ async def compute_reference_loss_gradients(
             return []
 
         entrypoint = getattr(pipeline_mod, "DEFAULT_ENTRYPOINT", None)
-        group_frames = pipeline_mod.load_dataset(
+        group_frames = _load_dataset_with_optional_slice(
+            pipeline_mod,
             dataset_file.parent,
-            dataset_vars=dataset_varset,
+            dataset_varset=dataset_varset,
             entrypoint=entrypoint,
-            eval_spec=spec,
-            slice_start=dataset_slice_start_s,
-            slice_stop=dataset_slice_stop_s,
+            spec=spec,
+            dataset_slice_start_s=dataset_slice_start_s,
+            dataset_slice_stop_s=dataset_slice_stop_s,
         )
         flat_inputs = pipeline_mod._flatten_inputs(group_frames)
         baseline_result = pipeline_mod.run_pipeline(entrypoint=entrypoint, **group_frames)
@@ -177,7 +179,41 @@ async def compute_reference_loss_gradients(
             for node_id, delta in deltas.items()
         ]
         gradients.sort(key=lambda item: item.gradient_score, reverse=True)
-        return gradients
+    return gradients
+
+
+def _load_dataset_with_optional_slice(
+    pipeline_mod: Any,
+    dataset_root: Path,
+    *,
+    dataset_varset: dict[str, str] | None,
+    entrypoint: str | None,
+    spec: dict[str, Any],
+    dataset_slice_start_s: float | None,
+    dataset_slice_stop_s: float | None,
+) -> Any:
+    """Call exported load_dataset with slice args only when supported."""
+    kwargs: dict[str, Any] = {
+        "dataset_vars": dataset_varset,
+        "entrypoint": entrypoint,
+        "eval_spec": spec,
+        "slice_start": dataset_slice_start_s,
+        "slice_stop": dataset_slice_stop_s,
+    }
+    try:
+        signature = inspect.signature(pipeline_mod.load_dataset)
+    except (TypeError, ValueError):
+        signature = None
+    if signature is not None and not any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    ):
+        kwargs = {
+            name: value
+            for name, value in kwargs.items()
+            if name in signature.parameters
+        }
+    return pipeline_mod.load_dataset(dataset_root, **kwargs)
 
 
 @contextmanager

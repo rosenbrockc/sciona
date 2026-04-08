@@ -76,6 +76,8 @@ class PrincipalDeps:
     synthesize_fn: Any = None  # Callable[[CDGExport, list], Awaitable[ExportBundle]]
     evaluation_spec: Any = None
     dataset_varset: dict[str, str] | None = None
+    dataset_slice_start_s: float | None = None
+    dataset_slice_stop_s: float | None = None
     atom_ledger: AtomLedger | None = None
     catalog: PrimitiveCatalog | None = None
     hpo_manager: OptunaManager | None = None

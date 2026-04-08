@@ -346,20 +346,26 @@ def _diagnose_jump_discontinuities(
 ) -> ExpansionDiagnostic | None:
     """Detect signal jumps that warrant pre-filter dejumping."""
     signal = (context.signal_data or {}).get("signal")
-    if signal is None:
+    jump_count: int | None = None
+    if signal is not None:
+        values = np.asarray(signal, dtype=np.float64).reshape(-1)
+        if values.size >= 10:
+            diff = np.diff(values)
+            median_diff = float(np.median(diff))
+            mad_diff = float(np.median(np.abs(diff - median_diff)))
+            if mad_diff >= 1e-10:
+                jump_count = int(np.sum(np.abs(diff - median_diff) > 5.0 * mad_diff))
+    if jump_count is None and isinstance(context.runtime_evidence, dict):
+        telemetry_summary = context.runtime_evidence.get("telemetry_summary", {})
+        if isinstance(telemetry_summary, dict):
+            signal_summary = telemetry_summary.get("signal", {})
+            if isinstance(signal_summary, dict):
+                try:
+                    jump_count = int(float(signal_summary.get("discontinuity_count")))
+                except (TypeError, ValueError):
+                    jump_count = None
+    if jump_count is None:
         return None
-
-    values = np.asarray(signal, dtype=np.float64).reshape(-1)
-    if values.size < 10:
-        return None
-
-    diff = np.diff(values)
-    median_diff = float(np.median(diff))
-    mad_diff = float(np.median(np.abs(diff - median_diff)))
-    if mad_diff < 1e-10:
-        return None
-
-    jump_count = int(np.sum(np.abs(diff - median_diff) > 5.0 * mad_diff))
     threshold = 3
 
     if jump_count > threshold:
@@ -433,26 +439,32 @@ def _diagnose_interval_outlier_fraction(
 ) -> ExpansionDiagnostic | None:
     """Detect excessive outlier intervals after peak detection."""
     events = (context.intermediates or {}).get("events")
-    if events is None:
+    outlier_frac: float | None = None
+    if events is not None:
+        idx = np.asarray(events, dtype=np.float64).reshape(-1)
+        if idx.size >= 5:
+            intervals = np.diff(np.sort(idx))
+            intervals = intervals[intervals > 0]
+            if intervals.size >= 3:
+                median_ivl = float(np.median(intervals))
+                mad_ivl = float(np.median(np.abs(intervals - median_ivl)))
+                if mad_ivl >= 1e-10:
+                    lo = median_ivl - 3.0 * mad_ivl
+                    hi = median_ivl + 3.0 * mad_ivl
+                    outlier_frac = float(np.mean((intervals < lo) | (intervals > hi)))
+    if outlier_frac is None:
+        telemetry_summary = {}
+        if isinstance(context.runtime_evidence, dict):
+            telemetry_summary = context.runtime_evidence.get("telemetry_summary", {})
+        if isinstance(telemetry_summary, dict):
+            event_summary = telemetry_summary.get("events", {})
+            if isinstance(event_summary, dict):
+                try:
+                    outlier_frac = float(event_summary.get("outlier_fraction"))
+                except (TypeError, ValueError):
+                    outlier_frac = None
+    if outlier_frac is None:
         return None
-
-    idx = np.asarray(events, dtype=np.float64).reshape(-1)
-    if idx.size < 5:
-        return None
-
-    intervals = np.diff(np.sort(idx))
-    intervals = intervals[intervals > 0]
-    if intervals.size < 3:
-        return None
-
-    median_ivl = float(np.median(intervals))
-    mad_ivl = float(np.median(np.abs(intervals - median_ivl)))
-    if mad_ivl < 1e-10:
-        return None
-
-    lo = median_ivl - 3.0 * mad_ivl
-    hi = median_ivl + 3.0 * mad_ivl
-    outlier_frac = float(np.mean((intervals < lo) | (intervals > hi)))
     threshold = 0.15  # more than 15% outlier intervals
 
     if outlier_frac > threshold:

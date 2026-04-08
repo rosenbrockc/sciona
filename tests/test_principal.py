@@ -1057,6 +1057,62 @@ class TestPrincipalState:
         assert state.trial_history[0]["admissibility"]["telemetry"]["events"]["count"] == 3.0
 
     @pytest.mark.asyncio
+    async def test_compute_gradients_forwards_dataset_slice_to_reference_attribution(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        from sciona.principal.graph import PrincipalState, compute_gradients
+
+        captured: dict[str, float | None] = {}
+
+        async def _fake_reference_gradients(
+            cdg,
+            bundle,
+            dataset_path,
+            evaluation_spec,
+            *,
+            dataset_varset=None,
+            dataset_slice_start_s=None,
+            dataset_slice_stop_s=None,
+        ):
+            del cdg, bundle, dataset_path, evaluation_spec, dataset_varset
+            captured["start"] = dataset_slice_start_s
+            captured["stop"] = dataset_slice_stop_s
+            return [
+                NodeGradient(
+                    node_id="n1",
+                    gradient_score=100.0,
+                    metric_type=OptimizationMetric.PRECISION,
+                    bottleneck_reason="reference attribution",
+                )
+            ]
+
+        monkeypatch.setattr(
+            "sciona.principal.graph.compute_reference_loss_gradients",
+            _fake_reference_gradients,
+        )
+
+        state = PrincipalState(
+            metric=OptimizationMetric.PRECISION,
+            dataset_path="/tmp/nightcap.yml",
+            current_trial=1,
+            cdg=_make_cdg(("n1", "Detect Peaks")),
+            export_bundle=SimpleNamespace(),
+            benchmark=BenchmarkResult(global_loss=1.25),
+        )
+        deps = SimpleNamespace(
+            evaluation_spec={"loss": "rmse", "reference": {"value_source": "reference"}},
+            dataset_varset={"tracker": "single"},
+            dataset_slice_start_s=5.0,
+            dataset_slice_stop_s=305.0,
+            atom_ledger=None,
+        )
+
+        result = await compute_gradients(state, {"configurable": {"deps": deps}})
+
+        assert result["bottleneck_node_id"] == "n1"
+        assert captured == {"start": 5.0, "stop": 305.0}
+
+    @pytest.mark.asyncio
     async def test_select_proposal_skips_generation_after_hard_reject(self):
         from sciona.principal.graph import PrincipalState, check_admissibility, select_proposal
 

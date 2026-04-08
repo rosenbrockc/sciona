@@ -173,6 +173,16 @@ def build_expansion_context(state: Any) -> ExpansionContext:
         signal_data = {}
     if not isinstance(runtime_evidence, dict):
         runtime_evidence = {}
+    telemetry_summary = artifacts.get("telemetry_summary")
+    if isinstance(telemetry_summary, dict) and telemetry_summary:
+        runtime_evidence = dict(runtime_evidence)
+        runtime_evidence.setdefault("telemetry_summary", dict(telemetry_summary))
+    intermediate_summaries = artifacts.get("intermediate_summaries")
+    if isinstance(intermediate_summaries, dict) and intermediate_summaries:
+        runtime_evidence = dict(runtime_evidence)
+        runtime_evidence.setdefault(
+            "intermediate_summaries", dict(intermediate_summaries)
+        )
     return ExpansionContext(
         intermediates=dict(intermediates),
         eval_result=eval_result or None,

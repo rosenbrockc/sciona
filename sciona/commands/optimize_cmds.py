@@ -742,6 +742,8 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                     synthesize_fn=_trial_synthesizer,
                     evaluation_spec=evaluation_spec,
                     dataset_varset=_parse_dataset_vars(getattr(args, "dataset_var", None)),
+                    dataset_slice_start_s=getattr(args, "dataset_slice_start", None),
+                    dataset_slice_stop_s=getattr(args, "dataset_slice_stop", None),
                     atom_ledger=atom_ledger,
                     catalog=catalog,
                     hpo_manager=hpo_manager,

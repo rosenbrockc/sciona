@@ -399,6 +399,26 @@ def summarize_series(values: Any) -> dict[str, float]:
     }
 
 
+def summarize_named_value(
+    name: str,
+    values: Any,
+    *,
+    sampling_rate: float | None = None,
+    duration_seconds: float | None = None,
+) -> dict[str, Any]:
+    """Summarize one named runtime value using cross-family data-kind inference."""
+    kind = _infer_data_kind(name)
+    if kind == "event_sequence":
+        return summarize_events(
+            values,
+            sampling_rate=sampling_rate,
+            duration_seconds=duration_seconds,
+        )
+    if kind == "waveform":
+        return summarize_waveform(values)
+    return summarize_series(values)
+
+
 def summarize_runtime_context(context: CanonicalRuntimeContext) -> dict[str, Any]:
     """Emit a compact stable summary for the resolved runtime context."""
     primary_signal = context.canonical_inputs.get("signal")
@@ -684,17 +704,12 @@ def summarize_runtime_evidence(
     def _summarize_named_values(values_by_name: dict[str, Any]) -> dict[str, Any]:
         summarized: dict[str, Any] = {}
         for name, values in sorted(values_by_name.items()):
-            kind = _infer_data_kind(name)
-            if kind == "event_sequence":
-                summarized[name] = summarize_events(
-                    values,
-                    sampling_rate=sampling_rate,
-                    duration_seconds=signal_duration,
-                )
-            elif kind == "waveform":
-                summarized[name] = summarize_waveform(values)
-            else:
-                summarized[name] = summarize_series(values)
+            summarized[name] = summarize_named_value(
+                name,
+                values,
+                sampling_rate=sampling_rate,
+                duration_seconds=signal_duration,
+            )
         return summarized
 
     return {

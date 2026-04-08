@@ -15,6 +15,23 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
     tmp_path: Path,
 ) -> None:
     trace_path = tmp_path / "trace.jsonl"
+    trace_path.write_text(
+        json.dumps(
+            {
+                "node_id": "det",
+                "execution_time_ms": 1.0,
+                "peak_memory_bytes": 1024,
+                "output_summaries": {
+                    "rpeaks": {
+                        "count": 3.0,
+                        "outlier_fraction": 0.25,
+                        "interval_median_samples": 250.0,
+                    }
+                },
+            }
+        )
+        + "\n"
+    )
     signal = np.sin(np.linspace(0.0, 20.0, 2000))
 
     artifacts = _build_runtime_artifacts(
@@ -39,11 +56,13 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
     assert artifacts["runtime_inputs"]["sampling_rate"] == 100.0
     assert artifacts["signal_data"]["sampling_rate"] == 100.0
     assert artifacts["intermediates"]["events"] == [100.0, 350.0, 600.0]
+    assert artifacts["intermediate_summaries"]["rpeaks"]["outlier_fraction"] == 0.25
     assert (
         artifacts["canonical_runtime_context"]["canonical_inputs"]["sampling_rate"]["stream_id"]
         == "ecg"
     )
     assert artifacts["telemetry_summary"]["events"]["source_key"] == "rpeaks"
+    assert artifacts["telemetry_summary"]["intermediates"]["rpeaks"]["outlier_fraction"] == 0.25
     assert artifacts["telemetry_summary"]["outputs"]["heart_rate"]["mean"] > 0.0
 
     evidence_path = tmp_path / "runtime_evidence.json"
