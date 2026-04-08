@@ -20,6 +20,10 @@ from sciona.architect.planning_contract import (
     PlanningConstraint,
     PlanningConstraintCategory,
 )
+from sciona.asset_migration import (
+    MigrationReadinessAsset,
+    migration_readiness_summary,
+)
 
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets" / "skeletons"
@@ -73,6 +77,9 @@ class SkeletonAuditAsset(BaseModel):
     review_status: str = "draft"
     rationale: str = ""
     dejargonized_summary: str = ""
+    migration_readiness: MigrationReadinessAsset = Field(
+        default_factory=MigrationReadinessAsset
+    )
     provenance_notes: list[str] = Field(default_factory=list)
     uncertainty_notes: list[str] = Field(default_factory=list)
     references: list[SkeletonReference] = Field(default_factory=list)
@@ -220,6 +227,7 @@ def skeleton_asset_summary(
             "variant_hints": list(asset.variant_hints),
             "review_status": asset.audit.review_status,
             "source_kind": asset.audit.source_kind,
+            **migration_readiness_summary(asset.audit.migration_readiness),
         }
     if isinstance(asset, SkeletonGraph):
         metadata = asset.metadata or {}
@@ -227,7 +235,7 @@ def skeleton_asset_summary(
             return dict(metadata["asset"])
         return {}
     if isinstance(asset, dict):
-        return {
+        summary = {
             key: asset[key]
             for key in (
                 "asset_id",
@@ -238,9 +246,19 @@ def skeleton_asset_summary(
                 "variant_hints",
                 "review_status",
                 "source_kind",
+                "migration_readiness_status",
+                "migration_readiness_target_repository",
+                "migration_readiness_target_scope",
+                "migration_readiness_rationale",
+                "migration_readiness_check_count",
+                "migration_readiness_required_check_count",
+                "migration_readiness_completed_required_check_count",
+                "migration_readiness_ready",
+                "migration_readiness_check_ids",
             )
             if key in asset
         }
+        return summary | migration_readiness_summary(asset.get("migration_readiness"))
     return {}
 
 

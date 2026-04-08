@@ -52,6 +52,10 @@ class ExpansionDiagnostic:
     asset_source_kind: str = ""
     asset_review_status: str = ""
     asset_operation: str = ""
+    asset_migration_readiness_status: str = ""
+    asset_migration_readiness_ready: bool = False
+    asset_migration_readiness_check_count: int = 0
+    asset_migration_readiness_required_check_count: int = 0
 
 
 @dataclass
@@ -222,6 +226,18 @@ class ExpansionEngine:
                     "asset_source_kind": diag.asset_source_kind,
                     "asset_review_status": diag.asset_review_status,
                     "asset_operation": diag.asset_operation,
+                    "asset_migration_readiness_status": (
+                        diag.asset_migration_readiness_status
+                    ),
+                    "asset_migration_readiness_ready": (
+                        diag.asset_migration_readiness_ready
+                    ),
+                    "asset_migration_readiness_check_count": (
+                        diag.asset_migration_readiness_check_count
+                    ),
+                    "asset_migration_readiness_required_check_count": (
+                        diag.asset_migration_readiness_required_check_count
+                    ),
                     "rule_name": diag.rule_name,
                 }
                 if asset_summary not in applied_assets:

@@ -42,14 +42,19 @@ def _signal_event_rate_asset() -> ExpansionFamilyAsset | None:
     return load_local_expansion_assets_by_family().get("signal_event_rate")
 
 
-def _diag_asset_fields(rule_name: str) -> dict[str, str]:
+def _diag_asset_fields(rule_name: str) -> dict[str, object]:
     asset = _signal_event_rate_asset()
     if asset is None:
         return {}
     operation = asset.operation(rule_name)
     if operation is None:
         return {}
-    return expansion_asset_summary(asset, operation)
+    summary = expansion_asset_summary(asset, operation)
+    return {
+        key: summary[key]
+        for key in summary
+        if key.startswith("asset_")
+    }
 
 
 # ---------------------------------------------------------------------------

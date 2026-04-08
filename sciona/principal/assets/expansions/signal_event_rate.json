@@ -142,6 +142,41 @@
     "source_kind": "local_asset",
     "review_status": "transitional",
     "rationale": "Externalizes high-value signal-event-rate refinements that previously lived only in framework-local rule code.",
+    "migration_readiness": {
+      "status": "in_progress",
+      "target_repository": "../ageo-atoms",
+      "target_scope": "expansion.signal_event_rate",
+      "rationale": "The refinement inventory is now declarative and reviewable, but it still depends on legacy runtime matching in this repository.",
+      "checklist": [
+        {
+          "check_id": "asset_schema_stable",
+          "description": "The expansion asset schema is declarative and loads without custom parsing.",
+          "required": true,
+          "satisfied": true,
+          "evidence": [
+            "The family asset validates through the shared expansion asset model."
+          ]
+        },
+        {
+          "check_id": "family_docs_complete",
+          "description": "Each operation has intent, rewrite rationale, and dejargonized documentation.",
+          "required": true,
+          "satisfied": true,
+          "evidence": [
+            "All operations include intent, rewrite summaries, and uncertainty notes."
+          ]
+        },
+        {
+          "check_id": "runtime_independence",
+          "description": "The asset no longer relies on legacy topology-only runtime matching.",
+          "required": true,
+          "satisfied": false,
+          "notes": [
+            "Boundary-aware applicability still requires framework-local compatibility logic."
+          ]
+        }
+      ]
+    },
     "dejargonized_summary": "These are the family-level cleanups we know can help a waveform-to-rate pipeline when the signal is jumpy, the quality varies, or the detected events are implausible.",
     "uncertainty_notes": [
       "The current runtime still adapts these assets through the legacy rewrite engine.",

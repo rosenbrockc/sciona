@@ -177,6 +177,41 @@
   "audit": {
     "provenance": "repo_local_transitional_asset",
     "rationale": "Provides a reviewed family scaffold while skeleton ownership migrates out of framework-local templates.",
+    "migration_readiness": {
+      "status": "in_progress",
+      "target_repository": "../ageo-atoms",
+      "target_scope": "skeleton.divide_and_conquer",
+      "rationale": "This skeleton is structurally stable but still lives in the framework-local compatibility layer.",
+      "checklist": [
+        {
+          "check_id": "schema_stable",
+          "description": "Skeleton stages and edge semantics are explicit and loadable.",
+          "required": true,
+          "satisfied": true,
+          "evidence": [
+            "Typed stage and edge contracts are present in the asset file."
+          ]
+        },
+        {
+          "check_id": "audit_complete",
+          "description": "References, rationale, and dejargonized documentation are present.",
+          "required": true,
+          "satisfied": true,
+          "evidence": [
+            "The asset includes references and a dejargonized summary."
+          ]
+        },
+        {
+          "check_id": "cross_family_portability",
+          "description": "The scaffold encodes a generic family pattern rather than a local shortcut.",
+          "required": true,
+          "satisfied": false,
+          "notes": [
+            "Branch-specific base-case structure is still intentionally goal-specific."
+          ]
+        }
+      ]
+    },
     "references": [
       {
         "title": "Introduction to Algorithms",

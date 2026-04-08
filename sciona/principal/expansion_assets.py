@@ -6,7 +6,7 @@ import json
 from dataclasses import replace
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
@@ -20,6 +20,10 @@ from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
     ExpansionRuleSet,
+)
+from sciona.asset_migration import (
+    MigrationReadinessAsset,
+    migration_readiness_summary,
 )
 
 
@@ -159,6 +163,9 @@ class ExpansionAuditAsset(BaseModel):
     review_status: str = "draft"
     rationale: str = ""
     dejargonized_summary: str = ""
+    migration_readiness: MigrationReadinessAsset = Field(
+        default_factory=MigrationReadinessAsset
+    )
     uncertainty_notes: list[str] = Field(default_factory=list)
     references: list[ExpansionReference] = Field(default_factory=list)
     maintainers: list[str] = Field(default_factory=list)
@@ -202,8 +209,9 @@ class ExpansionFamilyAsset(BaseModel):
 def expansion_asset_summary(
     asset: ExpansionFamilyAsset,
     operation: ExpansionOperationAsset,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Return the compact runtime identity for one operation."""
+    readiness = migration_readiness_summary(asset.audit.migration_readiness)
     return {
         "asset_id": asset.asset_id,
         "asset_version": asset.asset_version,
@@ -211,6 +219,19 @@ def expansion_asset_summary(
         "asset_review_status": asset.audit.review_status,
         "asset_source_kind": asset.audit.source_kind,
         "asset_operation": operation.rule_name,
+        "asset_migration_readiness_status": readiness.get(
+            "migration_readiness_status", ""
+        ),
+        "asset_migration_readiness_ready": readiness.get(
+            "migration_readiness_ready", False
+        ),
+        "asset_migration_readiness_check_count": readiness.get(
+            "migration_readiness_check_count", 0
+        ),
+        "asset_migration_readiness_required_check_count": readiness.get(
+            "migration_readiness_required_check_count", 0
+        ),
+        **readiness,
     }
 
 
@@ -428,6 +449,18 @@ class AssetBackedExpansionRuleSet:
                     asset_source_kind=summary["asset_source_kind"],
                     asset_review_status=summary["asset_review_status"],
                     asset_operation=summary["asset_operation"],
+                    asset_migration_readiness_status=summary[
+                        "asset_migration_readiness_status"
+                    ],
+                    asset_migration_readiness_ready=summary[
+                        "asset_migration_readiness_ready"
+                    ],
+                    asset_migration_readiness_check_count=summary[
+                        "asset_migration_readiness_check_count"
+                    ],
+                    asset_migration_readiness_required_check_count=summary[
+                        "asset_migration_readiness_required_check_count"
+                    ],
                 )
             )
         return enriched

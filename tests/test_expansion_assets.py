@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from sciona.asset_migration import MigrationReadinessAsset
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import (
     AlgorithmicNode,
@@ -21,6 +22,7 @@ from sciona.principal.expansion_assets import (
     AssetBackedExpansionRuleSet,
     ExpansionTriggerAsset,
     ExpansionFamilyAsset,
+    expansion_asset_summary,
     asset_backed_rule_sets,
     load_local_expansion_assets_by_family,
 )
@@ -154,6 +156,21 @@ class TestExpansionAssets:
         assert jump.trigger.required_runtime_keys == ["signal"]
         assert jump.trigger.required_boundary_requirements[0].boundary_kind == "root_input"
         assert jump.trigger.required_boundary_requirements[0].port_name == "signal"
+        assert asset.audit.migration_readiness.status == "in_progress"
+        assert asset.audit.migration_readiness.required_check_count() == 3
+        assert asset.audit.migration_readiness.completed_required_check_count() == 2
+
+    def test_expansion_asset_summary_includes_migration_readiness(self):
+        by_family = load_local_expansion_assets_by_family()
+        asset = by_family["signal_event_rate"]
+        jump = asset.operation("insert_jump_removal_before_filter")
+
+        summary = expansion_asset_summary(asset, jump)
+
+        assert summary["migration_readiness_status"] == "in_progress"
+        assert summary["migration_readiness_ready"] is False
+        assert summary["migration_readiness_check_count"] == 3
+        assert "runtime_independence" in summary["migration_readiness_check_ids"]
 
     def test_trigger_asset_accepts_legacy_signal_and_boundary_aliases(self):
         trigger = ExpansionTriggerAsset.model_validate(
@@ -211,6 +228,8 @@ class TestExpansionAssets:
         assert diagnostics[0].asset_id == "family.signal_event_rate.expansions.v1"
         assert diagnostics[0].asset_operation == "insert_jump_removal_before_filter"
         assert diagnostics[0].asset_source_kind == "local_asset"
+        assert diagnostics[0].asset_migration_readiness_status == "in_progress"
+        assert diagnostics[0].asset_migration_readiness_ready is False
 
     def test_asset_wrapper_supports_generic_runtime_keys_and_boundaries(self):
         class _StubRuleSet:
@@ -284,6 +303,24 @@ class TestExpansionAssets:
         assert diagnostics[0].asset_id == "family.generic_records.expansions.v1"
         assert diagnostics[0].asset_operation == "insert_normalization_gate"
 
+    def test_migration_readiness_asset_accepts_ready_checklist(self):
+        readiness = MigrationReadinessAsset.model_validate(
+            {
+                "status": "migrated",
+                "target_repository": "../ageo-atoms",
+                "checklist": [
+                    {
+                        "check_id": "schema",
+                        "description": "Schema stable",
+                        "required": True,
+                        "satisfied": True,
+                    }
+                ],
+            }
+        )
+
+        assert readiness.is_ready_for_migration() is True
+
     def test_engine_reports_applied_asset_summary(self):
         class _StubRuleSet:
             name = "signal_event_rate"
@@ -323,6 +360,8 @@ class TestExpansionAssets:
         assert result.expanded is True
         assert result.applied_assets[0]["asset_id"] == "family.signal_event_rate.expansions.v1"
         assert result.applied_assets[0]["asset_operation"] == "insert_jump_removal_before_filter"
+        assert result.applied_assets[0]["asset_migration_readiness_status"] == "in_progress"
+        assert result.applied_assets[0]["asset_migration_readiness_ready"] is False
 
     def test_default_rule_sets_expose_asset_backed_provenance(self):
         rng = np.random.default_rng(42)
