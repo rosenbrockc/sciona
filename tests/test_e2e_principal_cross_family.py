@@ -482,9 +482,10 @@ class TestPrincipalAdmissibilityRefinementE2E:
         assert admissibility.call_count >= 1
         assert state.bottleneck_node_id == ""
         assert state.trial_history[0]["admissibility"]["routed_to_refinement"] is True
-        assert (
-            state.trial_history[0]["proposal_selection"]["selected"] == "expansion"
-        )
+        proposal = state.trial_history[0]["proposal_selection"]
+        assert proposal["selected"] == "expansion"
+        assert "best_ranked_candidate" in proposal["selected_reason_codes"]
+        assert proposal["candidates"][0]["proposal_type"] == "semantic_enrichment"
 
 
 @pytest.fixture(scope="module")
@@ -546,6 +547,7 @@ class TestPrincipalExpansionPreferredOverFallbackE2E:
         assert by_name["Filter Signal"].matched_primitive == "ageoa.signal.filter_signal_fast"
         proposal = state.trial_history[0]["proposal_selection"]
         assert proposal["selected"] == "local_mutation"
+        assert proposal["candidates"][0]["structural_delta"]["node_count_delta"] >= 0
 
 
 def _build_graph_opt_cdg() -> CDGExport:
@@ -848,4 +850,5 @@ class TestPrincipalCrossFamilyRollbackE2E:
         state, _, _, _ = principal_harmful_expansion_result
         first_trial = state.trial_history[0]
         assert first_trial["proposal_selection"]["selected"] == ""
+        assert first_trial["proposal_selection"]["selected_reason"] == "no_admissible_improvement"
         assert first_trial["expansion"]["applied"] is False

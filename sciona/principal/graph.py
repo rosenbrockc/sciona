@@ -40,15 +40,20 @@ from sciona.principal.models import (
     BenchmarkResult,
     NodeGradient,
     OptimizationMetric,
+    ProposalSelectionTrace,
 )
 from sciona.principal.reference_attribution import (
     compute_reference_loss_gradients,
     is_reference_loss_objective,
 )
 from sciona.principal.proposal_helpers import (
+    ProposalCandidate,
     build_expansion_context,
     build_redecomposition_candidate,
     evaluate_proposal_candidate,
+    proposal_structural_delta,
+    select_best_proposal,
+    summarize_proposal_admissibility,
     summarize_expansion_context,
 )
 from sciona.principal.structure_summary import summarize_trial_structure
@@ -399,28 +404,52 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
     refinement_routed = hard_rejected or state.admissibility_requires_refinement
     if state.cdg is None or state.benchmark is None:
         state.selected_proposal = ""
-        return {"selected_proposal": ""}
+        state.selected_proposal_reason = ""
+        state.proposal_selection_summary = {}
+        return {
+            "selected_proposal": "",
+            "selected_proposal_reason": "",
+            "proposal_selection_summary": {},
+        }
     if not state.bottleneck_node_id and not refinement_routed:
         state.selected_proposal = ""
-        return {"selected_proposal": ""}
+        state.selected_proposal_reason = ""
+        state.proposal_selection_summary = {}
+        return {
+            "selected_proposal": "",
+            "selected_proposal_reason": "",
+            "proposal_selection_summary": {},
+        }
 
     baseline_cdg = state.cdg.model_copy(deep=True)
     baseline_loss = float(state.benchmark.global_loss)
+    proposal_evaluator = getattr(deps, "admissibility_evaluator", None) or default_admissibility_evaluator(
+        family=(
+            state.planning_artifact.get("family_hint", "")
+            if isinstance(state.planning_artifact, dict)
+            else ""
+        )
+    )
     if hard_rejected:
+        proposal_summary = ProposalSelectionTrace(
+            baseline_loss=baseline_loss,
+            candidates=[],
+            selected="",
+            selected_reason_codes=["skipped_after_hard_reject"],
+            skipped_due_to_admissibility=True,
+            skip_reason="hard_reject",
+            hard_reject_rule_ids=list(
+                state.admissibility_summary.get("hard_reject_rule_ids", [])
+            ),
+        ).model_dump(mode="json")
+        proposal_summary["selected_reason"] = "skipped_after_hard_reject"
         if state.trial_history:
             latest = dict(state.trial_history[-1])
-            latest["proposal_selection"] = {
-                "baseline_loss": baseline_loss,
-                "candidates": [],
-                "selected": "",
-                "skipped_due_to_admissibility": True,
-                "skip_reason": "hard_reject",
-                "hard_reject_rule_ids": list(
-                    state.admissibility_summary.get("hard_reject_rule_ids", [])
-                ),
-            }
+            latest["proposal_selection"] = proposal_summary
             state.trial_history[-1] = latest
         state.selected_proposal = ""
+        state.selected_proposal_reason = "skipped_after_hard_reject"
+        state.proposal_selection_summary = proposal_summary
         state.reuse_cached_evaluation = False
         logger.info(
             "Trial %d skipping proposal generation after hard admissibility reject.",
@@ -428,6 +457,8 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         )
         return {
             "selected_proposal": "",
+            "selected_proposal_reason": state.selected_proposal_reason,
+            "proposal_selection_summary": proposal_summary,
             "trial_history": state.trial_history,
             "expansion_applied": False,
             "expansion_rules_applied": [],
@@ -439,7 +470,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         None,
     )
     proposal_rows: list[dict[str, Any]] = []
-    candidates: list[dict[str, Any]] = []
+    candidates: list[ProposalCandidate] = []
 
     engine = deps.expansion_engine or ExpansionEngine(default_rule_sets())
     context = build_expansion_context(state)
@@ -450,28 +481,36 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             deps,
             expansion.cdg,
         )
-        candidates.append(
-            {
-                "label": "expansion",
-                "loss": loss,
-                "cdg": expansion.cdg,
-                "bundle": bundle,
-                "benchmark": benchmark,
-                "match_results": match_results,
-                "ghost_report": ghost_report,
-                "rules_applied": list(expansion.applied_rules),
-                "applied_assets": list(expansion.applied_assets),
-            }
+        candidate = ProposalCandidate(
+            label="expansion",
+            candidate_type="semantic_enrichment",
+            loss=loss,
+            cdg=expansion.cdg,
+            bundle=bundle,
+            benchmark=benchmark,
+            match_results=match_results,
+            ghost_report=ghost_report,
+            rules_applied=list(expansion.applied_rules),
+            applied_assets=list(expansion.applied_assets),
+            diagnostic_count=len(expansion.diagnostics),
+            diagnostic_rule_names=sorted(
+                {diag.rule_name for diag in expansion.diagnostics}
+            ),
+            context_summary=summarize_expansion_context(context),
+            structural_delta=proposal_structural_delta(baseline_cdg, expansion.cdg),
         )
-        proposal_rows.append(
-            {
-                "label": "expansion",
-                "loss": loss,
-                "improves_baseline": loss < baseline_loss,
-                "rules_applied": list(expansion.applied_rules),
-                "applied_assets": list(expansion.applied_assets),
-            }
+        candidate.admissibility = summarize_proposal_admissibility(
+            cdg=candidate.cdg,
+            benchmark=candidate.benchmark,
+            planning_artifact=(
+                candidate.cdg.planning_artifact
+                or candidate.cdg.metadata.get("planning_artifact")
+                or state.planning_artifact
+            ),
+            evaluator=proposal_evaluator,
         )
+        candidates.append(candidate)
+        proposal_rows.append(candidate.history_row(baseline_loss))
 
     mutation = maybe_apply_bottleneck_variant(
         baseline_cdg,
@@ -485,34 +524,33 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             deps,
             mutation.cdg,
         )
-        candidates.append(
-            {
-                "label": "local_mutation",
-                "loss": loss,
-                "cdg": mutation.cdg,
-                "bundle": bundle,
-                "benchmark": benchmark,
-                "match_results": match_results,
-                "ghost_report": ghost_report,
-                "variant_name": mutation.variant_name or "",
-                "family": mutation.family or "",
-            }
+        candidate = ProposalCandidate(
+            label="local_mutation",
+            candidate_type="local_mutation",
+            loss=loss,
+            cdg=mutation.cdg,
+            bundle=bundle,
+            benchmark=benchmark,
+            match_results=match_results,
+            ghost_report=ghost_report,
+            variant_name=mutation.variant_name or "",
+            family=mutation.family or "",
+            structural_delta=proposal_structural_delta(baseline_cdg, mutation.cdg),
         )
-        proposal_rows.append(
-            {
-                "label": "local_mutation",
-                "loss": loss,
-                "improves_baseline": loss < baseline_loss,
-                "variant_name": mutation.variant_name or "",
-                "family": mutation.family or "",
-            }
+        candidate.admissibility = summarize_proposal_admissibility(
+            cdg=candidate.cdg,
+            benchmark=candidate.benchmark,
+            planning_artifact=(
+                candidate.cdg.planning_artifact
+                or candidate.cdg.metadata.get("planning_artifact")
+                or state.planning_artifact
+            ),
+            evaluator=proposal_evaluator,
         )
+        candidates.append(candidate)
+        proposal_rows.append(candidate.history_row(baseline_loss))
 
-    selected = None
-    for candidate in sorted(candidates, key=lambda row: (row["loss"], row["label"])):
-        if candidate["loss"] < baseline_loss:
-            selected = candidate
-            break
+    selected = select_best_proposal(candidates, baseline_loss=baseline_loss)
 
     if selected is None and state.bottleneck_node_id:
         redecomposition = await build_redecomposition_candidate(
@@ -527,40 +565,62 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
                 deps,
                 redecompose_cdg,
             )
-            candidates.append(
-                {
-                    "label": "redecompose",
-                    "loss": loss,
-                    "cdg": redecompose_cdg,
-                    "bundle": bundle,
-                    "benchmark": benchmark,
-                    "match_results": match_results,
-                    "ghost_report": ghost_report,
-                    "thread_id": redecompose_thread_id,
-                }
+            candidate = ProposalCandidate(
+                label="redecompose",
+                candidate_type="redecomposition",
+                loss=loss,
+                cdg=redecompose_cdg,
+                bundle=bundle,
+                benchmark=benchmark,
+                match_results=match_results,
+                ghost_report=ghost_report,
+                thread_id=redecompose_thread_id,
+                structural_delta=proposal_structural_delta(
+                    baseline_cdg, redecompose_cdg
+                ),
             )
-            proposal_rows.append(
-                {
-                    "label": "redecompose",
-                    "loss": loss,
-                    "improves_baseline": loss < baseline_loss,
-                }
+            candidate.admissibility = summarize_proposal_admissibility(
+                cdg=candidate.cdg,
+                benchmark=candidate.benchmark,
+                planning_artifact=(
+                    candidate.cdg.planning_artifact
+                    or candidate.cdg.metadata.get("planning_artifact")
+                    or state.planning_artifact
+                ),
+                evaluator=proposal_evaluator,
             )
-            if loss < baseline_loss:
-                selected = candidates[-1]
+            candidates.append(candidate)
+            proposal_rows.append(candidate.history_row(baseline_loss))
+            selected = select_best_proposal(candidates, baseline_loss=baseline_loss)
+
+    proposal_rows = [
+        candidate.history_row(baseline_loss)
+        for candidate in candidates
+    ]
+    selected_reason = (
+        selected.selection_reason if selected is not None else "no_admissible_improvement"
+    )
+    proposal_summary = ProposalSelectionTrace(
+        baseline_loss=baseline_loss,
+        candidates=proposal_rows,
+        selected=selected.label if selected is not None else "",
+        selected_reason=selected_reason,
+        selected_reason_codes=(
+            list(selected.selected_reason_codes) if selected is not None else []
+        ),
+        skipped_due_to_admissibility=False,
+        skip_reason="",
+        hard_reject_rule_ids=[],
+    ).model_dump(mode="json")
 
     if state.trial_history:
         latest = dict(state.trial_history[-1])
-        latest["proposal_selection"] = {
-            "baseline_loss": baseline_loss,
-            "candidates": proposal_rows,
-            "selected": str(selected["label"]) if selected is not None else "",
-        }
+        latest["proposal_selection"] = proposal_summary
         latest["expansion"] = {
-            "applied": selected is not None and selected["label"] == "expansion",
+            "applied": selected is not None and selected.label == "expansion",
             "rules_applied": (
-                list(selected.get("rules_applied", []))
-                if selected is not None and selected["label"] == "expansion"
+                list(selected.rules_applied)
+                if selected is not None and selected.label == "expansion"
                 else []
             ),
             "diagnostic_count": len(expansion.diagnostics),
@@ -593,29 +653,33 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             "context_summary": summarize_expansion_context(context),
         }
         state.trial_history[-1] = latest
+    state.proposal_selection_summary = proposal_summary
 
     if selected is None:
         state.selected_proposal = ""
+        state.selected_proposal_reason = selected_reason
         state.reuse_cached_evaluation = False
         return {
             "selected_proposal": "",
+            "selected_proposal_reason": state.selected_proposal_reason,
+            "proposal_selection_summary": proposal_summary,
             "trial_history": state.trial_history,
             "expansion_applied": False,
             "expansion_rules_applied": [],
             "reuse_cached_evaluation": False,
         }
 
-    state.cdg = selected["cdg"]
+    state.cdg = selected.cdg
     state.planning_artifact = state.cdg.planning_artifact or state.cdg.metadata.get(
         "planning_artifact"
     )
-    state.export_bundle = selected.get("bundle")
-    state.benchmark = selected.get("benchmark")
-    state.match_results = list(selected.get("match_results", []))
-    state.ghost_report = selected["ghost_report"]
-    state.expansion_applied = selected["label"] == "expansion"
-    state.expansion_rules_applied = list(selected.get("rules_applied", []))
-    state.thread_id = str(selected.get("thread_id", state.thread_id) or state.thread_id)
+    state.export_bundle = selected.bundle
+    state.benchmark = selected.benchmark
+    state.match_results = list(selected.match_results)
+    state.ghost_report = selected.ghost_report
+    state.expansion_applied = selected.label == "expansion"
+    state.expansion_rules_applied = list(selected.rules_applied)
+    state.thread_id = str(selected.thread_id or state.thread_id)
     state.node_params = {}
     state.param_signature = ""
     state.hpo_trial_number = None
@@ -625,14 +689,16 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
     state.param_trials_remaining = (
         deps.param_trials_per_structure if state.pending_param_search else 0
     )
-    state.selected_proposal = str(selected["label"])
+    state.selected_proposal = str(selected.label)
+    state.selected_proposal_reason = selected.selection_reason
     state.reuse_cached_evaluation = not state.pending_param_search
     logger.info(
-        "Trial %d selected proposal '%s' (loss=%.6f vs baseline %.6f)",
+        "Trial %d selected proposal '%s' (loss=%.6f vs baseline %.6f, reason=%s)",
         state.current_trial,
         state.selected_proposal,
-        float(selected["loss"]),
+        float(selected.loss),
         baseline_loss,
+        state.selected_proposal_reason,
     )
     return {
         "cdg": state.cdg,
@@ -645,6 +711,8 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
         "pending_param_search": state.pending_param_search,
         "param_trials_remaining": state.param_trials_remaining,
         "selected_proposal": state.selected_proposal,
+        "selected_proposal_reason": state.selected_proposal_reason,
+        "proposal_selection_summary": proposal_summary,
         "thread_id": state.thread_id,
         "reuse_cached_evaluation": state.reuse_cached_evaluation,
         "trial_history": state.trial_history,

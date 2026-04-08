@@ -9,8 +9,11 @@ from sciona.architect.models import AlgorithmicNode, ConceptType, IOSpec, NodeSt
 from sciona.architect.planning_contract import build_planning_artifact
 from sciona.principal.models import OptimizationMetric
 from sciona.principal.proposal_helpers import (
+    ProposalCandidate,
     build_expansion_context,
     evaluate_proposal_candidate,
+    proposal_structural_delta,
+    select_best_proposal,
     summarize_expansion_context,
 )
 
@@ -98,3 +101,101 @@ def test_build_expansion_context_carries_planning_artifact() -> None:
     assert summary["runtime_input_keys"] == ["features"]
     assert summary["runtime_evidence_keys"] == ["core"]
     assert summary["planning_artifact"]["paradigm"] == "signal_detect_measure"
+
+
+def test_select_best_proposal_prefers_admissible_improvement() -> None:
+    baseline_loss = 10.0
+    rejected = ProposalCandidate(
+        label="expansion",
+        candidate_type="semantic_enrichment",
+        cdg=CDGExport(nodes=[], edges=[], metadata={}),
+        loss=8.0,
+        admissibility={"hard_rejected": True, "routed_to_refinement": False},
+    )
+    accepted = ProposalCandidate(
+        label="local_mutation",
+        candidate_type="local_mutation",
+        cdg=CDGExport(nodes=[], edges=[], metadata={}),
+        loss=9.0,
+        admissibility={"hard_rejected": False, "routed_to_refinement": False},
+    )
+
+    selected = select_best_proposal(
+        [rejected, accepted],
+        baseline_loss=baseline_loss,
+    )
+
+    assert selected is accepted
+    assert selected.selection_disposition == "selected"
+    assert selected.selection_reason == "best_admissible_improvement"
+    assert rejected.selection_disposition == "rejected"
+    assert rejected.selection_reason == "proposal_hard_rejected"
+
+
+def test_select_best_proposal_keeps_refinement_routed_improvement_eligible() -> None:
+    baseline = CDGExport(nodes=[], edges=[], metadata={})
+    improved = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="leaf",
+                name="Leaf",
+                description="Improved leaf",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+            )
+        ],
+        edges=[],
+        metadata={},
+    )
+    candidate = ProposalCandidate(
+        label="expansion",
+        candidate_type="semantic_enrichment",
+        cdg=improved,
+        loss=8.0,
+        structural_delta=proposal_structural_delta(baseline, improved),
+        admissibility={
+            "hard_rejected": False,
+            "routed_to_refinement": True,
+            "decision_count": 1,
+        },
+    )
+
+    selected = select_best_proposal([candidate], baseline_loss=10.0)
+
+    assert selected is candidate
+    assert selected.selection_disposition == "selected"
+    assert "improves_baseline" in selected.selected_reason_codes
+
+
+def test_history_row_emits_typed_and_compatibility_fields() -> None:
+    baseline = CDGExport(nodes=[], edges=[], metadata={})
+    improved = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="leaf",
+                name="Leaf",
+                description="Improved leaf",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+            )
+        ],
+        edges=[],
+        metadata={},
+    )
+    candidate = ProposalCandidate(
+        label="local_mutation",
+        candidate_type="local_mutation",
+        cdg=improved,
+        loss=3.0,
+        variant_name="fast_path",
+        family="graph_optimization",
+        structural_delta=proposal_structural_delta(baseline, improved),
+    )
+
+    row = candidate.history_row(baseline_loss=5.0)
+
+    assert row["proposal_type"] == "local_mutation"
+    assert row["candidate_type"] == "local_mutation"
+    assert row["metadata"]["variant_name"] == "fast_path"
+    assert row["family"] == "graph_optimization"
+    assert row["structural_delta"]["node_count_delta"] == 1

@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import inspect
 import logging
 from typing import Any
 
 from sciona.architect.handoff import CDGExport
 from sciona.principal.atom_ledger import compute_slot_signature
+from sciona.principal.admissibility import (
+    build_admissibility_context,
+    default_admissibility_evaluator,
+)
 from sciona.principal.evaluation_helpers import evaluate_bundle_for_metric
 from sciona.principal.expansion import ExpansionContext
-from sciona.principal.models import BenchmarkResult, OptimizationMetric
+from sciona.principal.models import (
+    BenchmarkResult,
+    OptimizationMetric,
+    ProposalCandidateTrace,
+    ProposalStructuralDelta,
+)
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
 from sciona.architect.planning_contract import summarize_planning_artifact
@@ -18,6 +28,93 @@ from sciona.synthesizer.ghost_sim import GhostSimReport, run_ghost_simulation
 from sciona.synthesizer.models import ExportBundle
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ProposalCandidate:
+    """Typed proposal candidate tracked during refinement selection."""
+
+    label: str
+    candidate_type: str
+    cdg: CDGExport
+    loss: float
+    bundle: ExportBundle | None = None
+    benchmark: BenchmarkResult | None = None
+    match_results: list[Any] = field(default_factory=list)
+    ghost_report: GhostSimReport = field(default_factory=GhostSimReport)
+    rules_applied: list[str] = field(default_factory=list)
+    applied_assets: list[dict[str, Any]] = field(default_factory=list)
+    variant_name: str = ""
+    family: str = ""
+    thread_id: str = ""
+    diagnostic_count: int = 0
+    diagnostic_rule_names: list[str] = field(default_factory=list)
+    context_summary: dict[str, Any] = field(default_factory=dict)
+    admissibility: dict[str, Any] = field(default_factory=dict)
+    structural_delta: ProposalStructuralDelta = field(
+        default_factory=ProposalStructuralDelta
+    )
+    selection_disposition: str = "candidate"
+    selection_reason: str = ""
+    selected_reason_codes: list[str] = field(default_factory=list)
+    rejected_reason_codes: list[str] = field(default_factory=list)
+
+    def improves_baseline(self, baseline_loss: float) -> bool:
+        return self.loss < baseline_loss
+
+    def ranking_key(self, baseline_loss: float) -> tuple[int, int, int, int, float, str]:
+        complexity = (
+            abs(int(self.structural_delta.node_count_delta))
+            + abs(int(self.structural_delta.edge_count_delta))
+        )
+        return (
+            1 if bool(self.admissibility.get("hard_rejected")) else 0,
+            0 if self.improves_baseline(baseline_loss) else 1,
+            1 if bool(self.admissibility.get("routed_to_refinement")) else 0,
+            complexity,
+            float(self.loss),
+            self.label,
+        )
+
+    def history_row(self, baseline_loss: float) -> dict[str, Any]:
+        """Serialize one candidate in a backward-compatible history shape."""
+        payload = ProposalCandidateTrace(
+            label=self.label,
+            proposal_type=self.candidate_type,
+            candidate_type=self.candidate_type,
+            loss=float(self.loss),
+            improves_baseline=self.improves_baseline(baseline_loss),
+            admissibility=dict(self.admissibility),
+            evidence={
+                "rules_applied": list(self.rules_applied),
+                "applied_assets": list(self.applied_assets),
+                "diagnostic_count": int(self.diagnostic_count),
+                "diagnostic_rule_names": list(self.diagnostic_rule_names),
+                "context_summary": dict(self.context_summary),
+            },
+            metadata={
+                "variant_name": self.variant_name,
+                "family": self.family,
+                "thread_id": self.thread_id,
+                "selection_disposition": self.selection_disposition,
+                "selection_reason": self.selection_reason,
+            },
+            structural_delta=self.structural_delta,
+            selected=self.selection_disposition == "selected",
+            selected_reason_codes=list(self.selected_reason_codes),
+            rejected_reason_codes=list(self.rejected_reason_codes),
+            rules_applied=list(self.rules_applied),
+            applied_assets=list(self.applied_assets),
+            variant_name=self.variant_name,
+            family=self.family,
+            thread_id=self.thread_id,
+            diagnostic_count=int(self.diagnostic_count),
+            diagnostic_rule_names=list(self.diagnostic_rule_names),
+            context_summary=dict(self.context_summary),
+            selection_disposition=self.selection_disposition,
+            selection_reason=self.selection_reason,
+        ).model_dump(mode="json")
+        return payload
 
 
 def summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
@@ -210,3 +307,122 @@ async def evaluate_proposal_candidate(
             return float("inf"), bundle, None, match_results, ghost_report
     loss = float(benchmark.global_loss) if benchmark is not None else float("inf")
     return loss, bundle, benchmark, match_results, ghost_report
+
+
+def summarize_proposal_admissibility(
+    *,
+    cdg: CDGExport,
+    benchmark: BenchmarkResult | None,
+    planning_artifact: dict[str, Any] | None,
+    evaluator: Any,
+) -> dict[str, Any]:
+    """Evaluate admissibility for a proposal candidate and serialize the result."""
+    if benchmark is None:
+        return {
+            "hard_rejected": False,
+            "routed_to_refinement": False,
+            "decision_count": 0,
+            "hard_reject_rule_ids": [],
+            "warning_rule_ids": [],
+            "refinement_rule_ids": [],
+            "decisions": [],
+            "family": "",
+        }
+
+    family = (
+        planning_artifact.get("family_hint", "")
+        if isinstance(planning_artifact, dict)
+        else ""
+    )
+    context = build_admissibility_context(
+        cdg=cdg,
+        planning_artifact=planning_artifact,
+        runtime_artifacts=getattr(benchmark, "runtime_artifacts", {}) or {},
+        family=family,
+    )
+    report = evaluator.evaluate(context)
+    summary = report.summary()
+    summary["family"] = context.family
+    return summary
+
+
+def proposal_structural_delta(
+    baseline_cdg: CDGExport,
+    candidate_cdg: CDGExport,
+) -> ProposalStructuralDelta:
+    """Summarize structural cost relative to the current baseline CDG."""
+    return ProposalStructuralDelta(
+        node_count_delta=len(candidate_cdg.nodes) - len(baseline_cdg.nodes),
+        edge_count_delta=len(candidate_cdg.edges) - len(baseline_cdg.edges),
+    )
+
+
+def classify_proposal_candidate(
+    candidate: ProposalCandidate,
+    *,
+    baseline_loss: float,
+) -> ProposalCandidate:
+    """Assign a deterministic disposition and reason to one proposal."""
+    if bool(candidate.admissibility.get("hard_rejected")):
+        candidate.selection_disposition = "rejected"
+        candidate.selection_reason = "proposal_hard_rejected"
+        candidate.rejected_reason_codes = ["hard_reject"]
+        return candidate
+    if not candidate.improves_baseline(baseline_loss):
+        candidate.selection_disposition = "rejected"
+        candidate.selection_reason = "no_improvement_over_baseline"
+        reasons = ["no_loss_improvement"]
+        if bool(candidate.admissibility.get("routed_to_refinement")):
+            reasons.append("still_requires_refinement")
+        candidate.rejected_reason_codes = reasons
+        return candidate
+    candidate.selection_disposition = "ranked"
+    candidate.selection_reason = (
+        "improving_candidate_requires_further_refinement"
+        if bool(candidate.admissibility.get("routed_to_refinement"))
+        else "admissible_improvement"
+    )
+    return candidate
+
+
+def select_best_proposal(
+    candidates: list[ProposalCandidate],
+    *,
+    baseline_loss: float,
+) -> ProposalCandidate | None:
+    """Return the best admissible improving candidate."""
+    ranked = [
+        classify_proposal_candidate(candidate, baseline_loss=baseline_loss)
+        for candidate in candidates
+    ]
+    admissible = [
+        candidate
+        for candidate in ranked
+        if candidate.selection_disposition == "ranked"
+    ]
+    if not admissible:
+        return None
+    selected = sorted(
+        admissible,
+        key=lambda candidate: candidate.ranking_key(baseline_loss),
+    )[0]
+    selected.selection_disposition = "selected"
+    selected.selection_reason = "best_admissible_improvement"
+    selected.selected_reason_codes = ["best_ranked_candidate", "improves_baseline"]
+    if not bool(selected.admissibility.get("hard_rejected")):
+        selected.selected_reason_codes.append("passes_hard_admissibility")
+    if not bool(selected.admissibility.get("routed_to_refinement")):
+        selected.selected_reason_codes.append("satisfies_admissibility")
+    for candidate in ranked:
+        if candidate is selected:
+            candidate.rejected_reason_codes = []
+            continue
+        if candidate.selection_disposition == "rejected":
+            continue
+        candidate.selection_disposition = "rejected"
+        candidate.selection_reason = "outranked_by_selected_candidate"
+        reasons = ["outranked_by_selected_candidate"]
+        if bool(candidate.admissibility.get("routed_to_refinement")):
+            reasons.append("still_requires_refinement")
+        candidate.rejected_reason_codes = reasons
+    return selected

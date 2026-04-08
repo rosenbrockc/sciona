@@ -53,6 +53,8 @@ class PrincipalState:
     expansion_applied: bool = False
     expansion_rules_applied: list[str] = field(default_factory=list)
     selected_proposal: str = ""
+    selected_proposal_reason: str = ""
+    proposal_selection_summary: dict[str, Any] = field(default_factory=dict)
     reuse_cached_evaluation: bool = False
     admissibility_summary: dict[str, Any] = field(default_factory=dict)
     admissibility_requires_refinement: bool = False

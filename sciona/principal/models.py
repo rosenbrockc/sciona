@@ -53,6 +53,55 @@ class BenchmarkResult(BaseModel, frozen=True):
     )
 
 
+class ProposalStructuralDelta(BaseModel, frozen=True):
+    """Compact structural delta from a baseline CDG to a proposal candidate."""
+
+    node_count_delta: int = 0
+    edge_count_delta: int = 0
+
+
+class ProposalCandidateTrace(BaseModel):
+    """Serializable trace of one evaluated refinement proposal."""
+
+    label: str
+    proposal_type: str
+    candidate_type: str = ""
+    loss: float | None = None
+    improves_baseline: bool = False
+    admissibility: dict[str, Any] = Field(default_factory=dict)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    structural_delta: ProposalStructuralDelta = Field(
+        default_factory=ProposalStructuralDelta
+    )
+    selected: bool = False
+    selected_reason_codes: list[str] = Field(default_factory=list)
+    rejected_reason_codes: list[str] = Field(default_factory=list)
+    rules_applied: list[str] = Field(default_factory=list)
+    applied_assets: list[dict[str, Any]] = Field(default_factory=list)
+    variant_name: str = ""
+    family: str = ""
+    thread_id: str = ""
+    diagnostic_count: int = 0
+    diagnostic_rule_names: list[str] = Field(default_factory=list)
+    context_summary: dict[str, Any] = Field(default_factory=dict)
+    selection_disposition: str = ""
+    selection_reason: str = ""
+
+
+class ProposalSelectionTrace(BaseModel):
+    """Serializable proposal-selection record for one trial."""
+
+    baseline_loss: float
+    candidates: list[ProposalCandidateTrace] = Field(default_factory=list)
+    selected: str = ""
+    selected_reason: str = ""
+    selected_reason_codes: list[str] = Field(default_factory=list)
+    skipped_due_to_admissibility: bool = False
+    skip_reason: str = ""
+    hard_reject_rule_ids: list[str] = Field(default_factory=list)
+
+
 class NodeGradient(BaseModel, frozen=True):
     """Algorithmic partial derivative indicating optimisation pressure on a node."""
 
