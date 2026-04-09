@@ -132,3 +132,25 @@ def test_resolve_external_atom_heuristic_metadata_loads_ageo_atoms_signal_exampl
     assert metadata is not None
     assert metadata.heuristic_outputs
     assert metadata.heuristic_outputs[0].heuristic.heuristic_id == "quality_instability"
+
+
+def test_external_metadata_supports_multiple_records_in_one_asset_file() -> None:
+    metadata = resolve_external_atom_heuristic_metadata(
+        "ageoa.biosppy.ecg_zz2018.calculatefrequencypowersqi"
+    )
+
+    assert metadata is not None
+    assert metadata.heuristic_outputs[0].heuristic.heuristic_id == (
+        "dominant_nuisance_structure"
+    )
+
+
+def test_external_metadata_loads_non_signal_family_example() -> None:
+    metadata = resolve_external_atom_heuristic_metadata(
+        "ageoa.kalman_filters.filter_rs.evaluatemeasurementoracle"
+    )
+
+    assert metadata is not None
+    assert metadata.heuristic_outputs[0].heuristic.heuristic_id == (
+        "residual_structure_after_transform"
+    )

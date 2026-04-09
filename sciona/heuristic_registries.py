@@ -24,7 +24,7 @@ from sciona.heuristics import (
 ASSET_DIR = (
     Path(__file__).resolve().parent / "principal" / "assets" / "heuristic_registries"
 )
-DEFAULT_AGEO_ATOMS_ROOT = (Path(__file__).resolve().parent.parent / "ageo-atoms").resolve()
+DEFAULT_AGEO_ATOMS_ROOT = (Path(__file__).resolve().parents[1].parent / "ageo-atoms").resolve()
 EXTERNAL_ASSET_DIR_CANDIDATES = (
     ("data", "heuristics", "families"),
     ("data", "heuristics", "family_registries"),
@@ -223,7 +223,23 @@ def _load_heuristic_registries_from_dir(
         return tuple()
     for path in sorted(asset_dir.glob("*.json")):
         raw = json.loads(path.read_text())
-        registry = HeuristicFamilyRegistry.model_validate(raw)
+        if isinstance(raw, dict):
+            normalized = dict(raw)
+            if "entries" not in normalized and isinstance(
+                normalized.get("heuristic_bindings"), list
+            ):
+                normalized["entries"] = normalized.get("heuristic_bindings")
+            if (
+                "dejargonized_summary" not in normalized
+                and isinstance(normalized.get("audit"), dict)
+                and normalized["audit"].get("dejargonized_summary")
+            ):
+                normalized["dejargonized_summary"] = normalized["audit"][
+                    "dejargonized_summary"
+                ]
+        else:
+            normalized = raw
+        registry = HeuristicFamilyRegistry.model_validate(normalized)
         if registry.family in families_seen:
             raise ValueError(
                 "Duplicate heuristic registry family in "

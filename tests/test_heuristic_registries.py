@@ -52,7 +52,17 @@ def test_non_signal_registry_proves_interface_stays_generic() -> None:
     assert registry is not None
     entry_ids = {entry.heuristic_id for entry in registry.entries}
     assert "coverage_fragmentation" in entry_ids
-    assert "resource_growth_instability" in entry_ids
+    assert "merge_cost_pressure" in entry_ids
+
+
+def test_sequential_filter_registry_resolves_from_shared_assets() -> None:
+    registry = resolve_heuristic_registry("kalman_filter")
+
+    assert registry is not None
+    assert registry.family == "sequential_filter"
+    entry_ids = {entry.heuristic_id for entry in registry.entries}
+    assert "residual_structure_after_transform" in entry_ids
+    assert "alignment_error" in entry_ids
 
 
 def test_registry_rejects_unknown_heuristic_ids() -> None:

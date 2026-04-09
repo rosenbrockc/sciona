@@ -185,6 +185,17 @@ def atom_heuristic_metadata_from_snapshot(
     )
 
 
+def _metadata_snapshots_from_payload(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, dict):
+        records = payload.get("records")
+        if isinstance(records, list):
+            return [item for item in records if isinstance(item, dict)]
+        return [payload]
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    return []
+
+
 def _candidate_ageo_atoms_roots() -> tuple[Path, ...]:
     configured = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
     roots: list[Path] = []
@@ -209,11 +220,12 @@ def load_external_atom_heuristic_metadata() -> tuple[AtomHeuristicMetadata, ...]
     for root in _candidate_ageo_atoms_roots():
         for path in sorted(root.glob(EXTERNAL_METADATA_GLOB)):
             raw = json.loads(path.read_text())
-            record = AtomHeuristicMetadata.model_validate(raw)
-            if record.atom_fqdn in seen_fqdns:
-                continue
-            seen_fqdns.add(record.atom_fqdn)
-            records.append(record)
+            for snapshot in _metadata_snapshots_from_payload(raw):
+                record = AtomHeuristicMetadata.model_validate(snapshot)
+                if record.atom_fqdn in seen_fqdns:
+                    continue
+                seen_fqdns.add(record.atom_fqdn)
+                records.append(record)
     return tuple(records)
 
 
