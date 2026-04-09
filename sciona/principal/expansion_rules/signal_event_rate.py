@@ -113,6 +113,7 @@ _SIG_OUT = IOSpec(name="signal", type_desc="np.ndarray")
 _MASK_OUT = IOSpec(name="quality_mask", type_desc="np.ndarray")
 _EVENTS_IN = IOSpec(name="events", type_desc="np.ndarray")
 _EVENTS_OUT = IOSpec(name="events", type_desc="np.ndarray")
+_FILTERED_IN = IOSpec(name="filtered", type_desc="np.ndarray")
 
 
 # ---------------------------------------------------------------------------
@@ -278,6 +279,73 @@ def _build_insert_outlier_rejection_after_detection() -> RewriteRule:
             node_map={"detect": "detect", "rate": "rate"}, edge_map={}
         ),
         priority=3,
+        anchor_type="detect_peaks_in_signal",
+    )
+
+
+def _build_insert_peak_correction_after_detection() -> RewriteRule:
+    """Insert ``peak_correction`` before rate estimation using the filtered signal."""
+    filt_l = _node(
+        "filt",
+        "filter",
+        ConceptType.SIGNAL_FILTER,
+        matched_primitive="filter_signal_for_detection",
+    )
+    detect_l = _node(
+        "detect",
+        "detect_peaks",
+        ConceptType.DATA_EXTRACTION,
+        matched_primitive="detect_peaks_in_signal",
+    )
+    rate_l = _node(
+        "rate",
+        "compute_rate",
+        ConceptType.ANALYSIS,
+        matched_primitive="compute_event_rate",
+    )
+    lhs = CDGExport(
+        nodes=[filt_l, detect_l, rate_l],
+        edges=[
+            _edge("filt", "detect", "signal", "signal"),
+            _edge("detect", "rate", "events", "events"),
+        ],
+    )
+    interface = CDGExport(nodes=[filt_l, detect_l, rate_l], edges=[])
+
+    correct_r = _node(
+        "correct",
+        "Correct Detected Events",
+        ConceptType.DATA_EXTRACTION,
+        matched_primitive="peak_correction",
+        inputs=[_FILTERED_IN, _EVENTS_IN, _RATE_IN],
+        outputs=[_EVENTS_OUT],
+        description="Refine detected event locations against the conditioned waveform.",
+        type_signature="np.ndarray, np.ndarray, float -> np.ndarray",
+    )
+    rhs = CDGExport(
+        nodes=[filt_l, detect_l, correct_r, rate_l],
+        edges=[
+            _edge("filt", "detect", "signal", "signal"),
+            _edge("filt", "correct", "signal", "filtered"),
+            _edge("detect", "correct", "events", "events"),
+            _edge("correct", "rate", "events", "events"),
+        ],
+    )
+
+    return RewriteRule(
+        name="insert_peak_correction_after_detection",
+        lhs=lhs,
+        rhs=rhs,
+        interface=interface,
+        l_morphism=Morphism(
+            node_map={"filt": "filt", "detect": "detect", "rate": "rate"},
+            edge_map={},
+        ),
+        r_morphism=Morphism(
+            node_map={"filt": "filt", "detect": "detect", "rate": "rate"},
+            edge_map={},
+        ),
+        priority=4,
         anchor_type="detect_peaks_in_signal",
     )
 
@@ -491,6 +559,61 @@ def _diagnose_interval_outlier_fraction(
     return None
 
 
+def _diagnose_peak_correction_need(
+    cdg: CDGExport, context: ExpansionContext
+) -> ExpansionDiagnostic | None:
+    """Detect moderate event-stream irregularity that warrants peak correction."""
+    if any(str(node.matched_primitive or "") == "peak_correction" for node in cdg.nodes):
+        return None
+
+    outlier_frac: float | None = None
+    telemetry_summary = {}
+    if isinstance(context.runtime_evidence, dict):
+        telemetry_summary = context.runtime_evidence.get("telemetry_summary", {})
+    if isinstance(telemetry_summary, dict):
+        event_summary = telemetry_summary.get("events", {})
+        if isinstance(event_summary, dict):
+            try:
+                outlier_frac = float(event_summary.get("outlier_fraction"))
+            except (TypeError, ValueError):
+                outlier_frac = None
+
+    if outlier_frac is None:
+        events = (context.intermediates or {}).get("events")
+        if events is not None:
+            idx = np.asarray(events, dtype=np.float64).reshape(-1)
+            if idx.size >= 5:
+                intervals = np.diff(np.sort(idx))
+                intervals = intervals[intervals > 0]
+                if intervals.size >= 3:
+                    median_ivl = float(np.median(intervals))
+                    mad_ivl = float(np.median(np.abs(intervals - median_ivl)))
+                    if mad_ivl >= 1e-10:
+                        lo = median_ivl - 3.0 * mad_ivl
+                        hi = median_ivl + 3.0 * mad_ivl
+                        outlier_frac = float(np.mean((intervals < lo) | (intervals > hi)))
+
+    if outlier_frac is None:
+        return None
+
+    threshold = 0.05
+    if outlier_frac > threshold:
+        return ExpansionDiagnostic(
+            rule_name="insert_peak_correction_after_detection",
+            severity=min(1.0, max(0.35, outlier_frac / 0.2)),
+            evidence=(
+                f"{outlier_frac:.1%} of inter-event intervals are irregular "
+                f"(>{threshold:.0%} threshold), suggesting event timing drift"
+            ),
+            metric_name="interval_outlier_fraction",
+            metric_value=outlier_frac,
+            threshold=threshold,
+            source_domain=_DOMAIN,
+            **_diag_asset_fields("insert_peak_correction_after_detection"),
+        )
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Rule set implementation
 # ---------------------------------------------------------------------------
@@ -506,6 +629,7 @@ class SignalEventRateExpansionRuleSet:
         self._rules = [
             _build_insert_jump_removal_before_filter(),
             _build_insert_sqi_before_filter(),
+            _build_insert_peak_correction_after_detection(),
             _build_insert_outlier_rejection_after_detection(),
             _build_insert_outlier_rejection_after_detection_smoothed(),
         ]
@@ -525,6 +649,7 @@ class SignalEventRateExpansionRuleSet:
         for fn in (
             _diagnose_jump_discontinuities,
             _diagnose_signal_quality_variance,
+            _diagnose_peak_correction_need,
             _diagnose_interval_outlier_fraction,
         ):
             diag = fn(cdg, context)

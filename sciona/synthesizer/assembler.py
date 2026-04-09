@@ -110,6 +110,26 @@ def sanitize_name(name: str) -> str:
     return s or "unnamed"
 
 
+_PORT_ALIAS_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("signal", "conditioned_signal", "filtered", "filtered_signal", "waveform"),
+    ("events", "rpeaks", "peaks", "beats", "onsets"),
+    ("rate", "heart_rate", "bpm"),
+)
+
+
+def _port_names_compatible(left: str, right: str) -> bool:
+    left_norm = str(left or "").strip().lower()
+    right_norm = str(right or "").strip().lower()
+    if not left_norm or not right_norm:
+        return False
+    if left_norm == right_norm:
+        return True
+    for group in _PORT_ALIAS_GROUPS:
+        if left_norm in group and right_norm in group:
+            return True
+    return False
+
+
 def _python_annotation_expr(type_desc: str) -> str:
     """Return a syntactically valid Python annotation expression.
 
@@ -483,7 +503,8 @@ class Assembler:
                     (
                         e
                         for e in relevant_edges
-                        if e.target_id == unit.node_id and e.input_name == inp.name
+                        if e.target_id == unit.node_id
+                        and _port_names_compatible(e.input_name, inp.name)
                     ),
                     None,
                 )
@@ -627,7 +648,8 @@ class Assembler:
                     (
                         e
                         for e in glue_edges
-                        if e.target_id == unit.node_id and e.input_name == inp.name
+                        if e.target_id == unit.node_id
+                        and _port_names_compatible(e.input_name, inp.name)
                     ),
                     None,
                 )
@@ -693,7 +715,8 @@ class Assembler:
                     (
                         e
                         for e in glue_edges
-                        if e.target_id == unit.node_id and e.input_name == inp.name
+                        if e.target_id == unit.node_id
+                        and _port_names_compatible(e.input_name, inp.name)
                     ),
                     None,
                 )
@@ -779,7 +802,8 @@ class Assembler:
                     (
                         e
                         for e in glue_edges
-                        if e.target_id == unit.node_id and e.input_name == inp.name
+                        if e.target_id == unit.node_id
+                        and _port_names_compatible(e.input_name, inp.name)
                     ),
                     None,
                 )

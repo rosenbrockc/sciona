@@ -1335,6 +1335,125 @@ class TestPrincipalState:
         assert proposal["candidates"][0]["selection_reason"] == "proposal_hard_rejected"
         assert proposal["candidates"][0]["admissibility"]["hard_rejected"] is True
 
+    @pytest.mark.asyncio
+    async def test_select_proposal_does_not_reopen_param_search_when_budget_exhausted(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        from sciona.principal.expansion import ExpansionResult
+        from sciona.principal.graph import PrincipalState, select_proposal
+
+        root = AlgorithmicNode(
+            node_id="root",
+            name="Root",
+            description="Root pipeline",
+            concept_type=ConceptType.ANALYSIS,
+            status=NodeStatus.DECOMPOSED,
+            children=["leaf"],
+            inputs=[IOSpec(name="records", type_desc="list[dict]")],
+            outputs=[IOSpec(name="score", type_desc="float")],
+        )
+        leaf = AlgorithmicNode(
+            node_id="leaf",
+            parent_id="root",
+            name="Normalize Records",
+            description="Normalize record payloads",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.ATOMIC,
+            matched_primitive="normalize_records",
+            inputs=[IOSpec(name="records", type_desc="list[dict]")],
+            outputs=[IOSpec(name="score", type_desc="float")],
+        )
+        candidate_leaf = leaf.model_copy(
+            update={"node_id": "leaf_refined", "matched_primitive": "normalize_records_refined"}
+        )
+        refined_cdg = CDGExport(nodes=[root, candidate_leaf], edges=[], metadata={})
+        benchmark = BenchmarkResult(
+            global_loss=10.0,
+            runtime_artifacts={
+                "runtime_inputs": {"records": [{"a": 1}]},
+                "intermediates": {"score": [1.0]},
+            },
+        )
+        improved_benchmark = BenchmarkResult(
+            global_loss=8.0,
+            runtime_artifacts={
+                "runtime_inputs": {"records": [{"a": 1}]},
+                "intermediates": {"score": [0.8]},
+            },
+        )
+        state = PrincipalState(
+            goal="Score normalized records",
+            current_trial=1,
+            max_trials=1,
+            cdg=CDGExport(nodes=[root, leaf], edges=[], metadata={}),
+            benchmark=benchmark,
+            bottleneck_node_id="leaf",
+            thread_id="thread-1",
+            trial_history=[{"trial": 1, "admissibility": {}, "expansion": {"applied": False}}],
+        )
+
+        class _SingleExpansionEngine:
+            def expand(self, input_cdg, context):
+                del input_cdg, context
+                return ExpansionResult(
+                    cdg=refined_cdg,
+                    applied_rules=("insert_normalization_gate",),
+                    diagnostics=(),
+                    expanded=True,
+                    applied_assets=(),
+                )
+
+        class _AcceptingReport:
+            hard_rejected = False
+            routed_to_refinement = False
+
+            def summary(self):
+                return {
+                    "hard_rejected": False,
+                    "routed_to_refinement": False,
+                    "decision_count": 0,
+                    "hard_reject_rule_ids": [],
+                    "warning_rule_ids": [],
+                    "refinement_rule_ids": [],
+                    "decisions": [],
+                }
+
+        class _AcceptingEvaluator:
+            def evaluate(self, context):
+                del context
+                return _AcceptingReport()
+
+        async def _fake_eval(state_arg, deps_arg, candidate_cdg):
+            del state_arg, deps_arg, candidate_cdg
+            return (8.0, None, improved_benchmark, [], GhostSimReport())
+
+        async def _no_redecompose(state_arg, deps_arg, *, bottleneck_name):
+            del state_arg, deps_arg, bottleneck_name
+            return None
+
+        monkeypatch.setattr("sciona.principal.graph.evaluate_proposal_candidate", _fake_eval)
+        monkeypatch.setattr("sciona.principal.graph.build_redecomposition_candidate", _no_redecompose)
+
+        result = await select_proposal(
+            state,
+            {
+                "configurable": {
+                    "deps": SimpleNamespace(
+                        expansion_engine=_SingleExpansionEngine(),
+                        admissibility_evaluator=_AcceptingEvaluator(),
+                        atom_ledger=None,
+                        catalog=PrimitiveCatalog(),
+                        param_trials_per_structure=2,
+                    )
+                }
+            },
+        )
+
+        assert result["selected_proposal"] == "expansion"
+        assert state.pending_param_search is False
+        assert state.param_trials_remaining == 0
+        assert state.reuse_cached_evaluation is True
+
 
 class TestRouteAfterGradients:
     def test_done(self):

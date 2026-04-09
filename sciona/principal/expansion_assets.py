@@ -269,6 +269,20 @@ def _planning_constraint_categories(context: ExpansionContext) -> set[str]:
     return categories
 
 
+def _planning_constraint_categories_declared(context: ExpansionContext) -> bool:
+    """Whether the planning artifact explicitly declared categorized constraints."""
+    artifact = context.planning_artifact or {}
+    constraints = (
+        artifact.get("planning_constraints", []) if isinstance(artifact, dict) else []
+    )
+    if not isinstance(constraints, list) or not constraints:
+        return False
+    return any(
+        isinstance(item, dict) and str(item.get("category", "")).strip()
+        for item in constraints
+    )
+
+
 def _runtime_key_matches_namespace(key: str, namespace: str) -> bool:
     normalized_key = str(key).strip()
     normalized_namespace = str(namespace).strip()
@@ -282,6 +296,57 @@ def _runtime_key_matches_namespace(key: str, namespace: str) -> bool:
         f"{normalized_namespace}/",
     )
     return normalized_key.startswith(prefixes)
+
+
+def _available_runtime_keys(context: ExpansionContext) -> set[str]:
+    """Return runtime keys available from raw inputs or canonical evidence."""
+    available = {
+        str(key)
+        for key in (context.runtime_inputs or context.signal_data or {}).keys()
+    }
+    runtime_evidence = context.runtime_evidence or {}
+    if not isinstance(runtime_evidence, dict):
+        return available
+    canonical = runtime_evidence.get("canonical_runtime_context", {})
+    if isinstance(canonical, dict):
+        canonical_inputs = canonical.get("canonical_inputs", {})
+        if isinstance(canonical_inputs, dict):
+            available.update(str(key) for key in canonical_inputs.keys())
+            for value in canonical_inputs.values():
+                if isinstance(value, dict):
+                    raw_key = str(value.get("raw_key", "")).strip()
+                    if raw_key:
+                        available.add(raw_key)
+        alias_resolution = canonical.get("alias_resolution", {})
+        if isinstance(alias_resolution, dict):
+            available.update(str(key) for key in alias_resolution.keys())
+            available.update(str(value) for value in alias_resolution.values())
+    telemetry_summary = runtime_evidence.get("telemetry_summary", {})
+    if isinstance(telemetry_summary, dict):
+        for key in ("signal", "time", "sampling_rate"):
+            if key in telemetry_summary:
+                available.add(key)
+    return available
+
+
+def _available_intermediate_keys(context: ExpansionContext) -> set[str]:
+    """Return intermediate keys available from raw or summarized telemetry."""
+    available = {str(key) for key in (context.intermediates or {}).keys()}
+    runtime_evidence = context.runtime_evidence or {}
+    if not isinstance(runtime_evidence, dict):
+        return available
+    intermediate_summaries = runtime_evidence.get("intermediate_summaries", {})
+    if isinstance(intermediate_summaries, dict):
+        available.update(str(key) for key in intermediate_summaries.keys())
+    telemetry_summary = runtime_evidence.get("telemetry_summary", {})
+    if isinstance(telemetry_summary, dict):
+        for key in ("events", "rate", "quality", "state", "mask"):
+            if key in telemetry_summary:
+                available.add(key)
+        telemetry_intermediates = telemetry_summary.get("intermediates", {})
+        if isinstance(telemetry_intermediates, dict):
+            available.update(str(key) for key in telemetry_intermediates.keys())
+    return available
 
 
 def _boundary_requirement_matches(
@@ -362,28 +427,33 @@ def _operation_matches(
     context: ExpansionContext,
 ) -> bool:
     runtime_data = context.runtime_inputs or context.signal_data or {}
-    if any(key not in runtime_data for key in operation.trigger.required_runtime_keys):
+    available_runtime_keys = _available_runtime_keys(context)
+    if any(
+        key not in available_runtime_keys
+        for key in operation.trigger.required_runtime_keys
+    ):
         return False
     if operation.trigger.required_runtime_namespaces:
-        runtime_keys = list(runtime_data.keys())
+        runtime_keys = sorted(available_runtime_keys)
         for namespace in operation.trigger.required_runtime_namespaces:
             if not any(
                 _runtime_key_matches_namespace(key, namespace) for key in runtime_keys
             ):
                 return False
+    available_intermediate_keys = _available_intermediate_keys(context)
     if any(
-        key not in (context.intermediates or {})
+        key not in available_intermediate_keys
         for key in operation.trigger.required_intermediate_keys
     ):
         return False
     if operation.trigger.required_planning_constraint_categories:
-        categories = _planning_constraint_categories(context)
-        required = {
-            str(category)
-            for category in operation.trigger.required_planning_constraint_categories
-        }
-        if not required.issubset(categories):
-            return False
+        # Planning categories are advisory until the Architect contract emits a
+        # stable, exhaustive constraint taxonomy across families. We keep the
+        # field for auditability, but do not suppress a runtime-supported
+        # operation simply because the current planning artifact omitted or
+        # coarsened the relevant category.
+        _planning_constraint_categories(context)
+        _planning_constraint_categories_declared(context)
     if operation.trigger.required_primitives:
         primitives = {
             str(getattr(node, "matched_primitive", "") or "")

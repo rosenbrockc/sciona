@@ -173,6 +173,39 @@ def build_expansion_context(state: Any) -> ExpansionContext:
         signal_data = {}
     if not isinstance(runtime_evidence, dict):
         runtime_evidence = {}
+    if not runtime_inputs and runtime_evidence:
+        canonical = runtime_evidence.get("canonical_runtime_context", {})
+        if isinstance(canonical, dict):
+            canonical_inputs = canonical.get("canonical_inputs", {})
+            if isinstance(canonical_inputs, dict):
+                recovered_inputs: dict[str, Any] = {}
+                telemetry_summary = runtime_evidence.get("telemetry_summary", {})
+                telemetry_summary = (
+                    telemetry_summary if isinstance(telemetry_summary, dict) else {}
+                )
+                for canonical_name, ref in canonical_inputs.items():
+                    if not isinstance(canonical_name, str):
+                        continue
+                    if isinstance(ref, dict):
+                        recovered_inputs[canonical_name] = (
+                            telemetry_summary.get(canonical_name)
+                            if canonical_name in telemetry_summary
+                            else ref.get("raw_key", canonical_name)
+                        )
+                    else:
+                        recovered_inputs[canonical_name] = canonical_name
+                if recovered_inputs:
+                    runtime_inputs = recovered_inputs
+                    if not signal_data:
+                        signal_data = dict(recovered_inputs)
+    if not intermediates and runtime_evidence:
+        recovered_intermediates = runtime_evidence.get("intermediate_summaries", {})
+        if not isinstance(recovered_intermediates, dict) or not recovered_intermediates:
+            telemetry_summary = runtime_evidence.get("telemetry_summary", {})
+            if isinstance(telemetry_summary, dict):
+                recovered_intermediates = telemetry_summary.get("intermediates", {})
+        if isinstance(recovered_intermediates, dict) and recovered_intermediates:
+            intermediates = dict(recovered_intermediates)
     telemetry_summary = artifacts.get("telemetry_summary")
     if isinstance(telemetry_summary, dict) and telemetry_summary:
         runtime_evidence = dict(runtime_evidence)

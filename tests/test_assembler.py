@@ -903,6 +903,134 @@ class TestAssembler:
             ("rate", ("peaks",), {"sampling_rate": 256.0}),
         ]
 
+    def test_python_composition_matches_edge_inputs_by_alias(self):
+        nodes = [
+            AlgorithmicNode(
+                node_id="root",
+                name="Heart Rate",
+                description="Estimate heart rate from a filtered signal",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.DECOMPOSED,
+                children=["filter", "detect"],
+                inputs=[
+                    IOSpec(name="signal", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+                depth=0,
+            ),
+            AlgorithmicNode(
+                node_id="filter",
+                parent_id="root",
+                name="Filter Signal For Detection",
+                description="Condition waveform",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="bandpass_filter",
+                type_signature="signal -> conditioned_signal",
+                inputs=[
+                    IOSpec(name="signal", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="conditioned_signal", type_desc="np.ndarray")],
+                depth=1,
+            ),
+            AlgorithmicNode(
+                node_id="detect",
+                parent_id="root",
+                name="Detect Peaks In Signal",
+                description="Detect ECG peaks",
+                concept_type=ConceptType.DATA_EXTRACTION,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="r_peak_detection",
+                type_signature="conditioned_signal -> events",
+                inputs=[
+                    IOSpec(name="conditioned_signal", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="events", type_desc="np.ndarray")],
+                depth=1,
+            ),
+        ]
+        cdg = CDGExport(
+            nodes=nodes,
+            edges=[
+                DependencyEdge(
+                    source_id="filter",
+                    target_id="detect",
+                    output_name="signal",
+                    input_name="signal",
+                    source_type="np.ndarray",
+                    target_type="np.ndarray",
+                )
+            ],
+            metadata={"goal": "Heart Rate"},
+        )
+        filter_decl = Declaration(
+            name="fake_runtime.filter_impl",
+            type_signature="(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
+            prover=Prover.PYTHON,
+        )
+        detect_decl = Declaration(
+            name="fake_runtime.detect_impl",
+            type_signature="(filtered: np.ndarray, sampling_rate: float) -> np.ndarray",
+            prover=Prover.PYTHON,
+        )
+        filter_candidate = CandidateMatch(
+            declaration=filter_decl,
+            score=0.95,
+            retrieval_method="embedding",
+        )
+        detect_candidate = CandidateMatch(
+            declaration=detect_decl,
+            score=0.94,
+            retrieval_method="embedding",
+        )
+        filter_verified = VerificationResult(candidate=filter_candidate, verified=True)
+        detect_verified = VerificationResult(candidate=detect_candidate, verified=True)
+        matches = [
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="filter", statement=filter_decl.type_signature),
+                verified_match=filter_verified,
+                all_candidates=[filter_candidate],
+                all_verifications=[filter_verified],
+            ),
+            MatchResult(
+                pdg_node=PDGNode(predicate_id="detect", statement=detect_decl.type_signature),
+                verified_match=detect_verified,
+                all_candidates=[detect_candidate],
+                all_verifications=[detect_verified],
+            ),
+        ]
+
+        calls: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+        module = types.ModuleType("fake_runtime")
+
+        def filter_impl(signal, sampling_rate):
+            calls.append(("filter", (signal, sampling_rate), {}))
+            return "conditioned"
+
+        def detect_impl(filtered, sampling_rate):
+            calls.append(("detect", (filtered, sampling_rate), {}))
+            return "events"
+
+        module.filter_impl = filter_impl
+        module.detect_impl = detect_impl
+        sys.modules["fake_runtime"] = module
+        try:
+            skeleton = Assembler(Prover.PYTHON).assemble(cdg, matches)
+            namespace: dict[str, object] = {}
+            exec(skeleton.source_code, namespace)
+            result = namespace["heart_rate_composition"]("raw-signal", 256.0)
+        finally:
+            sys.modules.pop("fake_runtime", None)
+
+        assert result == "events"
+        assert calls == [
+            ("filter", ("raw-signal", 256.0), {}),
+            ("detect", ("conditioned", 256.0), {}),
+        ]
+
 
 # ---------------------------------------------------------------------------
 # TestSkeletonCompiler

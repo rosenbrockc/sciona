@@ -194,6 +194,26 @@ def _resolve_signature_param_name(port_name: str, declared_names: set[str]) -> s
     return port_name
 
 
+def _resolve_source_output_name(
+    requested_name: str,
+    source_node: AlgorithmicNode | None,
+) -> str:
+    """Resolve an edge output label to the source node's declared output port."""
+    if source_node is None or not source_node.outputs:
+        return requested_name
+    lowered_map = {
+        str(output.name).lower(): output.name
+        for output in source_node.outputs
+        if output.name
+    }
+    if requested_name.lower() in lowered_map:
+        return lowered_map[requested_name.lower()]
+    for alias in _aliases_for(requested_name):
+        if alias in lowered_map:
+            return lowered_map[alias]
+    return requested_name
+
+
 def _build_abstract_value(type_desc: str, constraints: str) -> Any:
     """Build an abstract value from IOSpec metadata.
 
@@ -871,7 +891,11 @@ def run_ghost_simulation(
         edge_inputs: dict[str, str] = {}
         for edge in in_edges:
             if edge.source_id in atomic_leaves:
-                state_key = f"{edge.source_id}:{edge.output_name}"
+                source_output_name = _resolve_source_output_name(
+                    edge.output_name,
+                    node_map.get(edge.source_id),
+                )
+                state_key = f"{edge.source_id}:{source_output_name}"
                 target_name = _resolve_signature_param_name(
                     edge.input_name,
                     declared_param_names,

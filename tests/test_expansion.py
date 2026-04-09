@@ -429,6 +429,30 @@ class TestSignalEventRateExpansion:
         prims = {n.matched_primitive for n in g.nodes if n.matched_primitive}
         assert "reject_outlier_intervals" in prims
 
+    def test_peak_correction_rule_applies(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        rules_by_name = {r.name: r for r in rs.rules()}
+        rule = rules_by_name["insert_peak_correction_after_detection"]
+
+        rw = GraphRewriter()
+        cdg = self._pipeline_cdg()
+        result = rw.apply_rule(rule, cdg)
+        assert not result.is_failure
+
+        g = result.unwrap()
+        prims = {n.matched_primitive for n in g.nodes if n.matched_primitive}
+        assert "peak_correction" in prims
+        correction_inputs = {
+            (edge.source_id, edge.target_id, edge.input_name)
+            for edge in g.edges
+            if edge.target_id != "rate"
+        }
+        assert ("filt", next(node.node_id for node in g.nodes if node.matched_primitive == "peak_correction"), "filtered") in correction_inputs
+
     def test_outlier_rejection_smoothed_variant(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
             SignalEventRateExpansionRuleSet,
@@ -527,6 +551,36 @@ class TestSignalEventRateExpansion:
         rule_names = {d.rule_name for d in diags}
         assert "insert_outlier_rejection_after_detection" in rule_names
 
+    def test_diagnose_peak_correction_need_from_summary_telemetry(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        ctx = ExpansionContext(
+            runtime_evidence={
+                "telemetry_summary": {
+                    "signal": {
+                        "count": 38943.0,
+                    },
+                    "events": {
+                        "count": 438.0,
+                        "outlier_fraction": 0.09,
+                    },
+                },
+                "canonical_runtime_context": {
+                    "canonical_inputs": {
+                        "signal": {"raw_key": "h10_ecg_value"},
+                        "sampling_rate": {"raw_key": "ecg_sampling_rate"},
+                    }
+                },
+            }
+        )
+        cdg = self._pipeline_cdg()
+        diags = rs.diagnose(cdg, ctx)
+        rule_names = {d.rule_name for d in diags}
+        assert "insert_peak_correction_after_detection" in rule_names
+
     def test_diagnose_no_signal_data_returns_nothing(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
             SignalEventRateExpansionRuleSet,
@@ -610,4 +664,47 @@ class TestSignalEventRateExpansion:
             and edge.target_id == "filt"
             and edge.input_name == "signal"
             for edge in result.cdg.edges
+        )
+
+    def test_asset_backed_rules_do_not_require_missing_planning_categories(self):
+        from sciona.principal.expansion import ExpansionContext
+        from sciona.principal.expansion_assets import asset_backed_rule_sets
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        wrapped = asset_backed_rule_sets([SignalEventRateExpansionRuleSet()])[0]
+        diagnostics = wrapped.diagnose(
+            self._root_boundary_pipeline_cdg(),
+            ExpansionContext(
+                runtime_evidence={
+                    "telemetry_summary": {
+                        "signal": {
+                            "count": 512.0,
+                            "discontinuity_count": 12.0,
+                        }
+                    },
+                    "canonical_runtime_context": {
+                        "canonical_inputs": {
+                            "signal": {
+                                "raw_key": "h10_ecg_value",
+                            },
+                            "sampling_rate": {
+                                "raw_key": "ecg_sampling_rate",
+                            },
+                        }
+                    },
+                },
+                planning_artifact={
+                    "family_hint": "signal_detect_measure",
+                    "planning_constraints": [
+                        {"category": "data_kind"},
+                        {"category": "provenance"},
+                    ],
+                },
+            ),
+        )
+        assert any(
+            diagnostic.rule_name == "insert_jump_removal_before_filter"
+            for diagnostic in diagnostics
         )

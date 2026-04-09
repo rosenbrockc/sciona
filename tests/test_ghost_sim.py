@@ -16,10 +16,11 @@ from sciona.architect.models import (
 from sciona.synthesizer.ghost_sim import (
     GhostSimReport,
     _compute_precision_gradients,
-    _extract_atom_name,
     _build_abstract_value,
     _declared_param_names,
+    _extract_atom_name,
     _parse_raw_code_param_names,
+    _resolve_source_output_name,
     _GHOST_AVAILABLE,
     run_ghost_simulation,
 )
@@ -107,6 +108,37 @@ def r_peak_detection(filtered: np.ndarray, sampling_rate: float = 1000.0, state:
         )
 
         assert _declared_param_names(match) == {"filtered", "sampling_rate"}
+
+    def test_resolve_source_output_name_accepts_aliases(self):
+        source = AlgorithmicNode(
+            node_id="filter_node",
+            name="Filter",
+            description="Filter signal",
+            concept_type=ConceptType.SIGNAL_FILTER,
+            status=NodeStatus.ATOMIC,
+            outputs=[
+                IOSpec(
+                    name="conditioned_signal",
+                    type_desc="np.ndarray",
+                    constraints="",
+                )
+            ],
+        )
+
+        assert _resolve_source_output_name("signal", source) == "conditioned_signal"
+        assert _resolve_source_output_name("filtered", source) == "conditioned_signal"
+
+    def test_resolve_source_output_name_leaves_unknown_names_unchanged(self):
+        source = AlgorithmicNode(
+            node_id="rate_node",
+            name="Rate",
+            description="Compute rate",
+            concept_type=ConceptType.ANALYSIS,
+            status=NodeStatus.ATOMIC,
+            outputs=[IOSpec(name="score", type_desc="float", constraints="")],
+        )
+
+        assert _resolve_source_output_name("rate", source) == "rate"
 
 
 # ---------------------------------------------------------------------------

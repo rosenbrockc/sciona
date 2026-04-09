@@ -83,6 +83,46 @@
       ]
     },
     {
+      "rule_name": "insert_peak_correction_after_detection",
+      "runtime_rule_builder": "insert_peak_correction_after_detection",
+      "runtime_diagnostic": "interval_outlier_fraction",
+      "name": "Insert Peak Correction After Detection",
+      "intent": "Refine detected event locations against the conditioned waveform before rate estimation when the event timing is only moderately inconsistent.",
+      "dejargonized_summary": "Add a step that nudges detected peaks onto better waveform locations before computing the final rate.",
+      "trigger": {
+        "metric_name": "interval_outlier_fraction",
+        "comparison": "gt",
+        "threshold": 0.05,
+        "required_runtime_keys": [
+          "signal",
+          "sampling_rate"
+        ],
+        "required_intermediate_keys": [
+          "events"
+        ],
+        "required_boundary_requirements": [
+          {
+            "boundary_kind": "root_input",
+            "port_name": "signal",
+            "matched_primitives": [
+              "filter_signal_for_detection"
+            ]
+          }
+        ]
+      },
+      "rewrite": {
+        "before_summary": "A detector feeds a rate estimator directly, with no explicit event-timing refinement stage.",
+        "after_summary": "A peak-correction stage consumes both the conditioned waveform and the detected events before the rate estimator.",
+        "information_flow_effect": "Preserves the waveform path long enough to correct event timing before the final lossy rate conversion.",
+        "notes": [
+          "This refinement depends on the filtered waveform still being available alongside the detected events."
+        ]
+      },
+      "uncertainty_notes": [
+        "This refinement is most appropriate when the detector is mostly right but the event timing is still locally unstable."
+      ]
+    },
+    {
       "rule_name": "insert_outlier_rejection_after_detection",
       "runtime_rule_builder": "insert_outlier_rejection_after_detection",
       "runtime_diagnostic": "interval_outlier_fraction",

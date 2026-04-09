@@ -148,11 +148,13 @@ class TestExpansionAssets:
         by_family = load_local_expansion_assets_by_family()
         asset = by_family["signal_event_rate"]
         jump = asset.operation("insert_jump_removal_before_filter")
+        correction = asset.operation("insert_peak_correction_after_detection")
 
         assert asset.asset_id == "family.signal_event_rate.expansions.v1"
         assert asset.audit.review_status == "transitional"
-        assert len(asset.operations) == 4
+        assert len(asset.operations) == 5
         assert jump is not None
+        assert correction is not None
         assert jump.trigger.required_runtime_keys == ["signal"]
         assert jump.trigger.required_boundary_requirements[0].boundary_kind == "root_input"
         assert jump.trigger.required_boundary_requirements[0].port_name == "signal"
@@ -230,6 +232,88 @@ class TestExpansionAssets:
         assert diagnostics[0].asset_source_kind == "local_asset"
         assert diagnostics[0].asset_migration_readiness_status == "in_progress"
         assert diagnostics[0].asset_migration_readiness_ready is False
+
+    def test_asset_backed_rule_set_accepts_summary_only_evidence(self):
+        class _StubRuleSet:
+            name = "signal_event_rate"
+            domain = "signal_processing"
+
+            def diagnose(self, cdg, context):
+                return [
+                    ExpansionDiagnostic(
+                        rule_name="insert_outlier_rejection_after_detection",
+                        severity=0.9,
+                        evidence="summary-only event telemetry",
+                        metric_name="interval_outlier_fraction",
+                        metric_value=0.22,
+                        threshold=0.15,
+                        source_domain="signal_processing",
+                    )
+                ]
+
+            def rules(self):
+                return []
+
+        rule_set = asset_backed_rule_sets([_StubRuleSet()])[0]
+        context = ExpansionContext(
+            runtime_evidence={
+                "telemetry_summary": {
+                    "intermediates": {
+                        "events": {
+                            "count": 438.0,
+                            "outlier_fraction": 0.22,
+                        }
+                    }
+                }
+            }
+        )
+
+        diagnostics = rule_set.diagnose(_root_boundary_signal_rate_cdg(), context)
+
+        assert diagnostics
+        assert diagnostics[0].asset_operation == "insert_outlier_rejection_after_detection"
+
+    def test_asset_backed_rule_set_accepts_peak_correction_summary_evidence(self):
+        class _StubRuleSet:
+            name = "signal_event_rate"
+            domain = "signal_processing"
+
+            def diagnose(self, cdg, context):
+                return [
+                    ExpansionDiagnostic(
+                        rule_name="insert_peak_correction_after_detection",
+                        severity=0.7,
+                        evidence="moderate event drift",
+                        metric_name="interval_outlier_fraction",
+                        metric_value=0.09,
+                        threshold=0.05,
+                        source_domain="signal_processing",
+                    )
+                ]
+
+            def rules(self):
+                return []
+
+        rule_set = asset_backed_rule_sets([_StubRuleSet()])[0]
+        context = ExpansionContext(
+            runtime_evidence={
+                "telemetry_summary": {
+                    "signal": {"count": 38943.0},
+                    "events": {"count": 438.0, "outlier_fraction": 0.09},
+                },
+                "canonical_runtime_context": {
+                    "canonical_inputs": {
+                        "signal": {"raw_key": "h10_ecg_value"},
+                        "sampling_rate": {"raw_key": "ecg_sampling_rate"},
+                    }
+                },
+            }
+        )
+
+        diagnostics = rule_set.diagnose(_root_boundary_signal_rate_cdg(), context)
+
+        assert diagnostics
+        assert diagnostics[0].asset_operation == "insert_peak_correction_after_detection"
 
     def test_asset_wrapper_supports_generic_runtime_keys_and_boundaries(self):
         class _StubRuleSet:

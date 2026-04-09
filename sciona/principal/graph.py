@@ -683,8 +683,11 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
     state.node_params = {}
     state.param_signature = ""
     state.hpo_trial_number = None
-    state.pending_param_search = _structure_has_tunables(state.cdg, deps.catalog) and (
-        deps.param_trials_per_structure > 0
+    budget_exhausted = len(state.trial_history) >= state.max_trials
+    state.pending_param_search = (
+        not budget_exhausted
+        and _structure_has_tunables(state.cdg, deps.catalog)
+        and deps.param_trials_per_structure > 0
     )
     state.param_trials_remaining = (
         deps.param_trials_per_structure if state.pending_param_search else 0

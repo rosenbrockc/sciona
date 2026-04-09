@@ -103,6 +103,45 @@ def test_build_expansion_context_carries_planning_artifact() -> None:
     assert summary["planning_artifact"]["paradigm"] == "signal_detect_measure"
 
 
+def test_build_expansion_context_recovers_canonical_keys_from_runtime_evidence() -> None:
+    state = SimpleNamespace(
+        benchmark=SimpleNamespace(
+            runtime_artifacts={
+                "runtime_evidence": {
+                    "canonical_runtime_context": {
+                        "canonical_inputs": {
+                            "signal": {
+                                "raw_key": "h10_ecg_value",
+                            },
+                            "sampling_rate": {
+                                "raw_key": "ecg_sampling_rate",
+                            },
+                        }
+                    },
+                    "telemetry_summary": {
+                        "signal": {
+                            "discontinuity_count": 12.0,
+                        },
+                        "intermediates": {
+                            "events": {
+                                "count": 438.0,
+                            }
+                        },
+                    },
+                }
+            }
+        ),
+        planning_artifact={"family_hint": "signal_detect_measure"},
+    )
+
+    ctx = build_expansion_context(state)
+
+    assert ctx.runtime_inputs is not None
+    assert "signal" in ctx.runtime_inputs
+    assert "sampling_rate" in ctx.runtime_inputs
+    assert ctx.intermediates == {"events": {"count": 438.0}}
+
+
 def test_select_best_proposal_prefers_admissible_improvement() -> None:
     baseline_loss = 10.0
     rejected = ProposalCandidate(
