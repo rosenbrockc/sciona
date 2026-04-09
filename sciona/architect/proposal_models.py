@@ -12,6 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from sciona.atom_identity import infer_source_family
 from sciona.architect.graph_retrieval import ExampleChild
 from sciona.architect.models import AlgorithmicPrimitive
 from sciona.architect.template_retriever import TemplateMatch
@@ -24,27 +25,11 @@ class ProposalType(str, Enum):
     TEMPLATE = "template"
     SKELETON = "skeleton"
 
-
-def _infer_source_family(label: str, *, fallback: str = "") -> str:
-    """Infer a stable family label from a primitive/template identifier."""
-    text = str(label or "").strip()
-    if not text:
-        return str(fallback or "").strip()
-    if text.startswith("ageoa."):
-        parts = text.split(".")
-        if len(parts) >= 2:
-            return ".".join(parts[:2])
-        return text
-    if "." in text:
-        return text.split(".", 1)[0]
-    return str(fallback or text).strip()
-
-
 def _families_from_example_children(children: list[ExampleChild]) -> set[str]:
     """Infer distinct source families represented inside a template example."""
     families: set[str] = set()
     for child in children:
-        family = _infer_source_family(child.matched_primitive)
+        family = infer_source_family(child.matched_primitive)
         if family:
             families.add(family)
     return families
@@ -108,7 +93,7 @@ def proposal_from_primitive(
     compatibility_score: float = 0.0,
 ) -> EnrichmentProposal:
     """Build a passive proposal from a primitive candidate."""
-    family = _infer_source_family(primitive.name, fallback=primitive.source)
+    family = infer_source_family(primitive.name, fallback=primitive.source)
     return EnrichmentProposal(
         proposal_type=ProposalType.PRIMITIVE,
         source_family=family,
@@ -137,7 +122,7 @@ def proposal_from_template_match(match: TemplateMatch) -> EnrichmentProposal:
         for child in children
         if str(child.concept_type or "").strip()
     }
-    source_family = _infer_source_family(example.fqn, fallback=example.repo)
+    source_family = infer_source_family(example.fqn, fallback=example.repo)
     return EnrichmentProposal(
         proposal_type=ProposalType.TEMPLATE,
         source_family=source_family,

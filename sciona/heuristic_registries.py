@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from sciona.atom_identity import DEFAULT_PROVIDER_ROOT, candidate_atom_provider_roots
 from sciona.asset_migration import (
     MigrationReadinessAsset,
     migration_readiness_summary,
@@ -24,7 +24,7 @@ from sciona.heuristics import (
 ASSET_DIR = (
     Path(__file__).resolve().parent / "principal" / "assets" / "heuristic_registries"
 )
-DEFAULT_AGEO_ATOMS_ROOT = (Path(__file__).resolve().parents[1].parent / "ageo-atoms").resolve()
+DEFAULT_AGEO_ATOMS_ROOT = DEFAULT_PROVIDER_ROOT
 EXTERNAL_ASSET_DIR_CANDIDATES = (
     ("data", "heuristics", "families"),
     ("data", "heuristics", "family_registries"),
@@ -172,9 +172,9 @@ def heuristic_asset_root(ageo_atoms_root: str | Path | None = None) -> Path:
     """Return the canonical sibling repository root for shared heuristic assets."""
     if ageo_atoms_root is not None:
         return Path(ageo_atoms_root).expanduser().resolve()
-    configured = os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "").strip()
-    if configured:
-        return Path(configured).expanduser().resolve()
+    candidates = candidate_atom_provider_roots()
+    if candidates:
+        return candidates[0]
     return DEFAULT_AGEO_ATOMS_ROOT
 
 

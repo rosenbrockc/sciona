@@ -298,7 +298,7 @@ def test_build_heuristic_proposal_guidance_uses_family_registry() -> None:
             "heuristics": [
                 {
                     "heuristic": {
-                        "heuristic_id": "density_collapse",
+                        "heuristic_id": "coverage_fragmentation",
                     }
                 }
             ]
@@ -307,7 +307,7 @@ def test_build_heuristic_proposal_guidance_uses_family_registry() -> None:
 
     assert guidance.family == "divide_and_conquer"
     assert guidance.registry_asset_id == "family.divide_and_conquer.heuristics.v1"
-    assert guidance.preferred_action_classes[0] == HeuristicActionClass.SPLIT_STAGE
+    assert guidance.preferred_action_classes[0] == HeuristicActionClass.GATE_OR_VALIDATE
 
 
 def test_build_heuristic_proposal_guidance_uses_positive_outcome_memory_cautiously() -> None:
@@ -359,3 +359,36 @@ def test_build_heuristic_proposal_guidance_uses_positive_outcome_memory_cautious
 
     assert guidance.preferred_action_classes[0] == HeuristicActionClass.INSERT_CORRECTION
     assert any(note.startswith("outcome_memory:") for note in guidance.notes)
+
+
+def test_build_heuristic_proposal_guidance_weights_recurrent_cohort_heuristics() -> None:
+    guidance = build_heuristic_proposal_guidance(
+        planning_artifact={"family_hint": "signal_event_rate"},
+        runtime_artifacts={
+            "heuristic_cohort": {
+                "cohort_size": 5,
+                "evaluated_member_count": 5,
+                "heuristics": {
+                    "interval_instability": {
+                        "occurrence_count": 5,
+                        "member_count": 5,
+                        "coverage_fraction": 1.0,
+                        "mean_confidence": 0.7,
+                        "max_confidence": 0.8,
+                    },
+                    "quality_instability": {
+                        "occurrence_count": 1,
+                        "member_count": 1,
+                        "coverage_fraction": 0.2,
+                        "mean_confidence": 0.95,
+                        "max_confidence": 0.95,
+                    },
+                },
+            }
+        },
+    )
+
+    assert guidance.cohort_size == 5
+    assert guidance.heuristic_summary["interval_instability"]["member_count"] == 5
+    assert guidance.preferred_action_classes[0] == HeuristicActionClass.INSERT_CORRECTION
+    assert any(note.startswith("cohort:interval_instability:5/5") for note in guidance.notes)

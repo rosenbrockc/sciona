@@ -82,5 +82,7 @@ class PrincipalDeps:
     catalog: PrimitiveCatalog | None = None
     hpo_manager: OptunaManager | None = None
     param_trials_per_structure: int = 1
+    heuristic_cohort_size: int = 1
+    heuristic_cohort_concurrency: int = 1
     expansion_engine: ExpansionEngine | None = None
     admissibility_evaluator: AdmissibilityEvaluator | None = None

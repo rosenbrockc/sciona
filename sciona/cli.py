@@ -508,6 +508,24 @@ def main() -> None:
         default=None,
         help="Optional relative dataset slice stop in seconds from adapter start time.",
     )
+    optimize_parser.add_argument(
+        "--heuristic-cohort-size",
+        type=int,
+        default=5,
+        help=(
+            "Number of dataset members to aggregate for heuristic guidance before "
+            "proposal selection (default: 5; set to 1 to disable cohorting)."
+        ),
+    )
+    optimize_parser.add_argument(
+        "--heuristic-cohort-concurrency",
+        type=int,
+        default=2,
+        help=(
+            "Maximum number of cohort member evaluations to run concurrently "
+            "(default: 2)."
+        ),
+    )
     _add_mode_argument(optimize_parser)
 
     # --- profile ---

@@ -103,6 +103,8 @@ def test_summary_reports_heuristic_ids() -> None:
     summary = atom_heuristic_metadata_summary(metadata)
     assert summary["heuristic_output_count"] == 1
     assert summary["heuristic_ids"] == ["quality_instability"]
+    assert summary["logical_atom_id"] == "example.quality_gate"
+    assert summary["provider_id"] == "core.ageo_atoms"
 
 
 def test_metadata_requires_dejargonized_summary_and_reference() -> None:

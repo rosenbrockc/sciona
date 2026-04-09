@@ -748,6 +748,14 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                     catalog=catalog,
                     hpo_manager=hpo_manager,
                     param_trials_per_structure=2,
+                    heuristic_cohort_size=max(
+                        1,
+                        int(getattr(args, "heuristic_cohort_size", 1) or 1),
+                    ),
+                    heuristic_cohort_concurrency=max(
+                        1,
+                        int(getattr(args, "heuristic_cohort_concurrency", 1) or 1),
+                    ),
                     expansion_engine=expansion_engine,
                 )
                 graph = build_principal_graph().compile()

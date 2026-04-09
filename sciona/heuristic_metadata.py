@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 import json
-import os
 from functools import lru_cache
-from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from sciona.atom_identity import (
+    ATOM_METADATA_GLOB_CANDIDATES,
+    atom_provider_id_for_fqdn,
+    candidate_atom_provider_roots,
+    logical_atom_id_from_fqdn,
+)
 from sciona.heuristics import (
     CanonicalHeuristic,
     HeuristicProducerKind,
     canonical_heuristic_from_metric,
 )
-EXTERNAL_METADATA_GLOB = "ageoa/**/heuristic_metadata.json"
 
 
 class AtomHeuristicReference(BaseModel):
@@ -94,6 +97,8 @@ def atom_heuristic_metadata_summary(
     if isinstance(metadata, AtomHeuristicMetadata):
         return {
             "atom_fqdn": metadata.atom_fqdn,
+            "logical_atom_id": logical_atom_id_from_fqdn(metadata.atom_fqdn),
+            "provider_id": atom_provider_id_for_fqdn(metadata.atom_fqdn),
             "heuristic_output_count": len(metadata.heuristic_outputs),
             "heuristic_ids": [
                 item.heuristic.heuristic_id for item in metadata.heuristic_outputs
@@ -117,6 +122,12 @@ def atom_heuristic_metadata_summary(
                 roles.append(str(item["role"]))
         return {
             "atom_fqdn": str(metadata.get("atom_fqdn", "") or ""),
+            "logical_atom_id": logical_atom_id_from_fqdn(
+                str(metadata.get("atom_fqdn", "") or "")
+            ),
+            "provider_id": atom_provider_id_for_fqdn(
+                str(metadata.get("atom_fqdn", "") or "")
+            ),
             "heuristic_output_count": len(outputs),
             "heuristic_ids": heuristic_ids,
             "roles": roles,
@@ -195,37 +206,20 @@ def _metadata_snapshots_from_payload(payload: Any) -> list[dict[str, Any]]:
         return [item for item in payload if isinstance(item, dict)]
     return []
 
-
-def _candidate_ageo_atoms_roots() -> tuple[Path, ...]:
-    configured = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
-    roots: list[Path] = []
-    if configured:
-        roots.append(Path(configured).expanduser())
-    roots.append(Path(__file__).resolve().parents[1].parent / "ageo-atoms")
-    deduped: list[Path] = []
-    seen: set[Path] = set()
-    for root in roots:
-        resolved = root.resolve()
-        if resolved in seen:
-            continue
-        seen.add(resolved)
-        deduped.append(resolved)
-    return tuple(deduped)
-
-
 @lru_cache(maxsize=1)
 def load_external_atom_heuristic_metadata() -> tuple[AtomHeuristicMetadata, ...]:
     records: list[AtomHeuristicMetadata] = []
     seen_fqdns: set[str] = set()
-    for root in _candidate_ageo_atoms_roots():
-        for path in sorted(root.glob(EXTERNAL_METADATA_GLOB)):
-            raw = json.loads(path.read_text())
-            for snapshot in _metadata_snapshots_from_payload(raw):
-                record = AtomHeuristicMetadata.model_validate(snapshot)
-                if record.atom_fqdn in seen_fqdns:
-                    continue
-                seen_fqdns.add(record.atom_fqdn)
-                records.append(record)
+    for root in candidate_atom_provider_roots():
+        for pattern in ATOM_METADATA_GLOB_CANDIDATES:
+            for path in sorted(root.glob(pattern)):
+                raw = json.loads(path.read_text())
+                for snapshot in _metadata_snapshots_from_payload(raw):
+                    record = AtomHeuristicMetadata.model_validate(snapshot)
+                    if record.atom_fqdn in seen_fqdns:
+                        continue
+                    seen_fqdns.add(record.atom_fqdn)
+                    records.append(record)
     return tuple(records)
 
 

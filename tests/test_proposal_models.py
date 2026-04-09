@@ -109,6 +109,21 @@ def test_proposal_from_template_match_derives_shape_metadata() -> None:
     assert proposal.skeleton_name is None
 
 
+def test_proposal_from_primitive_supports_federated_namespace_family_inference() -> None:
+    primitive = AlgorithmicPrimitive(
+        name="sciona.atoms.fintech.options.charfuncoption",
+        source="sciona.atoms.fintech",
+        category=ConceptType.CUSTOM,
+        description="Price an option.",
+        inputs=[IOSpec(name="params", type_desc="dict")],
+        outputs=[IOSpec(name="price", type_desc="float")],
+    )
+
+    proposal = proposal_from_primitive(primitive)
+
+    assert proposal.source_family == "sciona.atoms.fintech"
+
+
 def test_placeholder_skeleton_proposal_is_representable() -> None:
     proposal = proposal_placeholder_skeleton(
         skeleton_name="kalman_filter",

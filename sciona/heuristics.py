@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from enum import Enum
 from functools import lru_cache
-from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
+from sciona.atom_identity import candidate_atom_provider_roots
 
 
 _HEURISTIC_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -137,27 +136,9 @@ class CanonicalHeuristic(BaseModel):
             )
         return self
 
-
-def _candidate_ageo_atoms_roots() -> tuple[Path, ...]:
-    configured = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
-    roots: list[Path] = []
-    if configured:
-        roots.append(Path(configured).expanduser())
-    roots.append((Path(__file__).resolve().parents[1].parent / "ageo-atoms"))
-    deduped: list[Path] = []
-    seen: set[Path] = set()
-    for root in roots:
-        resolved = root.resolve()
-        if resolved in seen:
-            continue
-        seen.add(resolved)
-        deduped.append(resolved)
-    return tuple(deduped)
-
-
 @lru_cache(maxsize=1)
 def _external_canonical_heuristics() -> tuple[CanonicalHeuristic, ...]:
-    for root in _candidate_ageo_atoms_roots():
+    for root in candidate_atom_provider_roots():
         for rel in EXTERNAL_CANONICAL_ASSET_CANDIDATES:
             path = root.joinpath(*rel)
             if not path.exists():

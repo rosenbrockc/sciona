@@ -58,6 +58,7 @@ from sciona.principal.proposal_helpers import (
     summarize_expansion_context,
 )
 from sciona.principal.heuristic_proposal_policy import build_heuristic_proposal_guidance
+from sciona.principal.heuristic_cohort import build_adapter_heuristic_cohort
 from sciona.principal.structure_summary import summarize_trial_structure
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
@@ -476,9 +477,38 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
 
     engine = deps.expansion_engine or ExpansionEngine(default_rule_sets())
     context = build_expansion_context(state)
+    guidance_runtime_artifacts = dict(getattr(state.benchmark, "runtime_artifacts", {}) or {})
+    heuristic_cohort_size = int(getattr(deps, "heuristic_cohort_size", 1) or 1)
+    heuristic_cohort_concurrency = int(
+        getattr(deps, "heuristic_cohort_concurrency", 1) or 1
+    )
+    if (
+        heuristic_cohort_size > 1
+        and state.export_bundle is not None
+        and state.dataset_path.endswith((".yml", ".yaml"))
+    ):
+        try:
+            heuristic_cohort = await build_adapter_heuristic_cohort(
+                bundle=state.export_bundle,
+                sandbox=deps.sandbox,
+                adapter_path=state.dataset_path,
+                metric=state.metric,
+                dataset_varset=deps.dataset_varset,
+                evaluation_spec=deps.evaluation_spec,
+                cohort_size=heuristic_cohort_size,
+                max_concurrency=heuristic_cohort_concurrency,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to build heuristic cohort for proposal guidance.",
+                exc_info=True,
+            )
+            heuristic_cohort = None
+        if heuristic_cohort:
+            guidance_runtime_artifacts["heuristic_cohort"] = heuristic_cohort
     heuristic_guidance = build_heuristic_proposal_guidance(
         planning_artifact=state.planning_artifact,
-        runtime_artifacts=getattr(state.benchmark, "runtime_artifacts", {}) or {},
+        runtime_artifacts=guidance_runtime_artifacts,
         search_trace=state.trial_history,
     )
     expansion = engine.expand(baseline_cdg, context)
