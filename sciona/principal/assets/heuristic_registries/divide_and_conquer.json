@@ -1,0 +1,77 @@
+{
+  "asset_id": "family.divide_and_conquer.heuristics.v1",
+  "asset_version": "phase3.v1",
+  "family": "divide_and_conquer",
+  "name": "Divide And Conquer Heuristic Registry",
+  "summary": "Family-local interpretation of shared heuristics for split, recurse, and merge algorithms.",
+  "dejargonized_summary": "This registry says which generic warning signs matter most for algorithms that repeatedly split work into subproblems and then merge the results.",
+  "entries": [
+    {
+      "heuristic_id": "density_collapse",
+      "sanctioned_producer_kinds": ["atom_output", "runtime_transform"],
+      "supported_action_classes": ["split_stage", "branch_and_compare"],
+      "action_priority": ["split_stage", "branch_and_compare"],
+      "expected_evidence_strength": "strong",
+      "admissibility_notes": [
+        "When most of the work collapses into one branch, the current split strategy is likely too weak."
+      ],
+      "escalation_conditions": [
+        "Escalate when repeated decompositions produce highly imbalanced subproblem mass."
+      ],
+      "family_notes": [
+        "In divide-and-conquer families, density collapse often appears as split imbalance rather than sample dropout or detector collapse."
+      ]
+    },
+    {
+      "heuristic_id": "resource_growth_instability",
+      "sanctioned_producer_kinds": ["atom_output", "runtime_transform"],
+      "supported_action_classes": ["gate_or_validate", "replace_stage"],
+      "action_priority": ["gate_or_validate", "replace_stage"],
+      "expected_evidence_strength": "moderate",
+      "admissibility_notes": [
+        "Unstable recursion depth or merge-cost growth should trigger validation before the family commits to deeper expansion."
+      ],
+      "escalation_conditions": [
+        "Escalate when depth or merge cost grows faster than the family expects."
+      ],
+      "family_notes": [
+        "This is a family-local reading of a shared resource-growth heuristic."
+      ]
+    },
+    {
+      "heuristic_id": "coverage_fragmentation",
+      "sanctioned_producer_kinds": ["atom_output", "diagnostic_atom"],
+      "supported_action_classes": ["gate_or_validate", "insert_correction"],
+      "action_priority": ["gate_or_validate", "insert_correction"],
+      "expected_evidence_strength": "moderate",
+      "admissibility_notes": [
+        "If the split strategy fragments coverage or misses overlap structure, the merge path should not be trusted without validation."
+      ],
+      "escalation_conditions": [
+        "Escalate when overlap or partition coverage checks repeatedly fail."
+      ],
+      "family_notes": [
+        "Coverage fragmentation is a generic heuristic; this family interprets it in terms of subproblem overlap and partition completeness."
+      ]
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Proves that family-local heuristic interpretation can stay generic even in a non-signal algorithm family.",
+    "dejargonized_summary": "These are the generic warning signs that matter most for split-and-merge algorithms and the structural responses they justify.",
+    "uncertainty_notes": [
+      "The registry intentionally interprets shared heuristics locally without redefining them."
+    ],
+    "references": [
+      {
+        "title": "Divide and conquer heuristic registry",
+        "citation": "Local transitional family registry for shared heuristic interpretation."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}

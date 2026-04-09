@@ -25,6 +25,24 @@ _BANNED_SHARED_TOKENS = {
     "heart",
 }
 
+_EXPLICIT_CANONICAL_HEURISTIC_IDS = {
+    "alignment_error",
+    "boundary_discontinuity",
+    "confidence_instability",
+    "constraint_violation_risk",
+    "convergence_instability",
+    "coverage_fragmentation",
+    "density_collapse",
+    "dominant_nuisance_structure",
+    "interval_instability",
+    "numerical_condition_instability",
+    "oscillation_instability",
+    "plausibility_fragmentation",
+    "quality_instability",
+    "residual_structure_after_transform",
+    "resource_growth_instability",
+}
+
 
 class HeuristicEvidenceType(str, Enum):
     """Family-neutral shapes for first-class heuristic values."""
@@ -305,3 +323,10 @@ def known_heuristic_compatibility_hints() -> tuple[HeuristicCompatibilityHint, .
         _LEGACY_COMPATIBILITY_HINTS[key]
         for key in sorted(_LEGACY_COMPATIBILITY_HINTS.keys())
     )
+
+
+def known_heuristic_ids() -> tuple[str, ...]:
+    """Return the canonical heuristic identifiers supported by the shared layer."""
+    ids = set(_EXPLICIT_CANONICAL_HEURISTIC_IDS)
+    ids.update(hint.heuristic_id for hint in _LEGACY_COMPATIBILITY_HINTS.values())
+    return tuple(sorted(ids))
