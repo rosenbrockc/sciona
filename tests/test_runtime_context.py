@@ -219,13 +219,20 @@ def test_summarize_runtime_evidence_emits_canonical_contract() -> None:
     runtime_inputs = {
         "capnostream_value": np.linspace(0.0, 1.0, 30),
         "capnostream_sampling_rate": 21.0,
-        "h10_ecg_value": np.sin(np.linspace(0.0, 20.0, 2000)),
+        "h10_ecg_value": np.concatenate(
+            [
+                np.zeros(500, dtype=float),
+                np.ones(500, dtype=float) * 4.0,
+                np.ones(500, dtype=float) * -1.0,
+                np.ones(500, dtype=float) * 9.0,
+            ]
+        ),
         "ecg_sampling_rate": 100.0,
     }
     evidence = summarize_runtime_evidence(
         runtime_inputs,
-        intermediates={"events": np.array([100.0, 350.0, 600.0])},
-        outputs={"rate": np.array([70.0, 71.0, 69.5])},
+        intermediates={"events": np.array([100.0, 350.0, 600.0, 5000.0])},
+        outputs={"rate": np.array([70.0, 170.0, 20.0])},
     )
 
     assert evidence["runtime_context"]["canonical_inputs"]["signal"] == "h10_ecg_value"
@@ -238,7 +245,10 @@ def test_summarize_runtime_evidence_emits_canonical_contract() -> None:
     assert evidence["runtime_inputs"]["sampling_rate"] == 100.0
     assert evidence["signal_data"]["sampling_rate"] == 100.0
     assert evidence["telemetry_summary"]["streams"]["ecg"]["signal"]["sampling_rate"] == 100.0
-    assert evidence["telemetry_summary"]["events"]["count"] == 3.0
+    assert evidence["heuristics"]
+    assert evidence["heuristic_summary"]["heuristic_count"] == len(evidence["heuristics"])
+    assert "boundary_discontinuity" in evidence["heuristic_summary"]["heuristic_ids"]
+    assert evidence["telemetry_summary"]["events"]["count"] == 4.0
     assert evidence["telemetry_summary"]["outputs"]["rate"]["mean"] > 0.0
 
 

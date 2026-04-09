@@ -7,6 +7,8 @@ from typing import Any
 import numpy as np
 from pydantic import BaseModel, Field
 
+from sciona.principal.runtime_heuristics import derive_runtime_heuristics
+
 
 class CanonicalInputRef(BaseModel):
     """Reference from a canonical input name to one resolved raw key/stream."""
@@ -712,7 +714,7 @@ def summarize_runtime_evidence(
             )
         return summarized
 
-    return {
+    evidence_for_heuristics = {
         "runtime_context": runtime_context,
         "canonical_runtime_context": serialize_runtime_context(canonical),
         "telemetry_summary": {
@@ -728,4 +730,19 @@ def summarize_runtime_evidence(
         "runtime_inputs": canonical_runtime_inputs,
         "signal_data": canonical_runtime_inputs,
         "intermediates": canonical_intermediates,
+    }
+    heuristics = derive_runtime_heuristics(evidence_for_heuristics)
+
+    return {
+        "runtime_context": runtime_context,
+        "canonical_runtime_context": serialize_runtime_context(canonical),
+        "telemetry_summary": evidence_for_heuristics["telemetry_summary"],
+        "runtime_inputs": canonical_runtime_inputs,
+        "signal_data": canonical_runtime_inputs,
+        "intermediates": canonical_intermediates,
+        "heuristics": [
+            observation.model_dump(mode="json")
+            for observation in heuristics.observations
+        ],
+        "heuristic_summary": dict(heuristics.heuristic_summary),
     }

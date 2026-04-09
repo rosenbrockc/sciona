@@ -17,6 +17,7 @@ from sciona.principal.runtime_context import (
     canonicalize_runtime_inputs,
     summarize_runtime_evidence,
 )
+from sciona.principal.runtime_heuristics import derive_runtime_heuristics
 from sciona.synthesizer.models import ExportBundle
 
 logger = logging.getLogger(__name__)
@@ -577,6 +578,12 @@ def _build_runtime_artifacts(
             and isinstance(canonical_summaries.get("rate"), dict)
         ):
             telemetry_summary["rate"] = canonical_summaries["rate"]
+    runtime_heuristics = derive_runtime_heuristics(evidence)
+    evidence["heuristics"] = [
+        observation.model_dump(mode="json")
+        for observation in runtime_heuristics.observations
+    ]
+    evidence["heuristic_summary"] = dict(runtime_heuristics.heuristic_summary)
     artifacts.update(evidence)
     _persist_runtime_evidence(trace_path, evidence)
     return artifacts
@@ -590,6 +597,8 @@ def _persist_runtime_evidence(trace_path: Path, evidence: dict[str, Any]) -> Non
             "runtime_context": evidence.get("runtime_context", {}),
             "canonical_runtime_context": evidence.get("canonical_runtime_context", {}),
             "telemetry_summary": evidence.get("telemetry_summary", {}),
+            "heuristics": evidence.get("heuristics", []),
+            "heuristic_summary": evidence.get("heuristic_summary", {}),
         }
         (trace_path.parent / "runtime_evidence.json").write_text(
             json.dumps(payload, indent=2, sort_keys=True)

@@ -64,12 +64,21 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
     assert artifacts["telemetry_summary"]["events"]["source_key"] == "rpeaks"
     assert artifacts["telemetry_summary"]["intermediates"]["rpeaks"]["outlier_fraction"] == 0.25
     assert artifacts["telemetry_summary"]["outputs"]["heart_rate"]["mean"] > 0.0
+    assert artifacts["heuristics"]
+    assert artifacts["heuristic_summary"]["heuristic_count"] == len(
+        artifacts["heuristics"]
+    )
+    assert "interval_instability" in artifacts["heuristic_summary"]["heuristic_ids"]
 
     evidence_path = tmp_path / "runtime_evidence.json"
     assert evidence_path.exists()
     persisted = json.loads(evidence_path.read_text())
     assert persisted["runtime_context"]["canonical_inputs"]["signal"] == "h10_ecg_value"
     assert persisted["telemetry_summary"]["events"]["source_key"] == "rpeaks"
+    assert persisted["heuristics"]
+    assert persisted["heuristic_summary"]["heuristic_count"] == len(
+        persisted["heuristics"]
+    )
 
 
 def test_collect_runtime_inputs_from_frames_prefers_primary_waveform_stream() -> None:
