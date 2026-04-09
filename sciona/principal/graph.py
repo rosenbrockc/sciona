@@ -479,6 +479,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
     heuristic_guidance = build_heuristic_proposal_guidance(
         planning_artifact=state.planning_artifact,
         runtime_artifacts=getattr(state.benchmark, "runtime_artifacts", {}) or {},
+        search_trace=state.trial_history,
     )
     expansion = engine.expand(baseline_cdg, context)
     if expansion.expanded:

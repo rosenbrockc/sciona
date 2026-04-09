@@ -17,6 +17,10 @@ from sciona.principal.search_policy import (
     summarize_search_discipline,
     validate_required_benchmark_artifacts,
 )
+from sciona.principal.heuristic_outcomes import (
+    extract_heuristic_outcomes,
+    summarize_heuristic_outcomes,
+)
 
 
 def _load_json(path: Path) -> dict[str, Any] | list[Any] | None:
@@ -170,6 +174,9 @@ def evaluate_e2e_variant(
     migration_summary = summarize_asset_migration_readiness(asset_inventory)
     search_discipline = summarize_search_discipline(search_trace)
     proposal_selection = summarize_proposal_selection(search_trace)
+    heuristic_outcomes = summarize_heuristic_outcomes(
+        extract_heuristic_outcomes(search_trace)
+    )
 
     family = str(
         planning_artifact.get("family_hint")
@@ -231,7 +238,10 @@ def evaluate_e2e_variant(
                 "rejected_trials": proposal_selection.rejected_trials,
                 "skipped_due_to_admissibility_trials": proposal_selection.skipped_due_to_admissibility_trials,
                 "selected_proposal_counts": dict(proposal_selection.selected_proposal_counts),
+                "heuristic_outcome_count": proposal_selection.heuristic_outcome_count,
+                "positive_heuristic_outcome_count": proposal_selection.positive_heuristic_outcome_count,
             },
+            "heuristic_outcomes": dict(heuristic_outcomes),
             "search_trace_summary": {
                 "entry_count": len(search_trace),
                 "applied_asset_count": max(

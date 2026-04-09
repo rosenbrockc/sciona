@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from sciona.heuristic_registries import resolve_local_heuristic_registry
 from sciona.heuristics import HeuristicActionClass
 from sciona.principal.expansion_assets import load_local_expansion_assets_by_family
+from sciona.principal.heuristic_outcomes import heuristic_action_bonus
 
 
 class HeuristicProposalGuidance(BaseModel):
@@ -43,6 +44,7 @@ def build_heuristic_proposal_guidance(
     *,
     planning_artifact: dict[str, Any] | None,
     runtime_artifacts: dict[str, Any] | None,
+    search_trace: list[dict[str, Any]] | None = None,
 ) -> HeuristicProposalGuidance:
     """Build deterministic family-local proposal guidance from persisted heuristics."""
     planning_artifact = planning_artifact if isinstance(planning_artifact, dict) else {}
@@ -66,6 +68,14 @@ def build_heuristic_proposal_guidance(
             scores[action_class] += max(1, 8 - index)
         if entry.escalation_conditions:
             notes.extend(entry.escalation_conditions[:1])
+
+    for action_class, bonus in heuristic_action_bonus(
+        family=family,
+        heuristic_ids=heuristic_ids,
+        search_trace=search_trace,
+    ).items():
+        scores[action_class] += bonus
+        notes.append(f"outcome_memory:{action_class.value}")
 
     preferred_action_classes = [
         action_class

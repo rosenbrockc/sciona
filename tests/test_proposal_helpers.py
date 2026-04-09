@@ -296,3 +296,54 @@ def test_build_heuristic_proposal_guidance_uses_family_registry() -> None:
     assert guidance.family == "divide_and_conquer"
     assert guidance.registry_asset_id == "family.divide_and_conquer.heuristics.v1"
     assert guidance.preferred_action_classes[0] == HeuristicActionClass.SPLIT_STAGE
+
+
+def test_build_heuristic_proposal_guidance_uses_positive_outcome_memory_cautiously() -> None:
+    search_trace = [
+        {
+            "proposal_selection": {
+                "baseline_loss": 10.0,
+                "selected": "expansion",
+                "candidates": [
+                    {
+                        "label": "expansion",
+                        "family": "signal_event_rate",
+                        "loss": 8.0,
+                        "evidence": {
+                            "heuristic_ids": ["interval_instability"],
+                            "candidate_action_classes": ["insert_correction"],
+                        },
+                    }
+                ],
+            }
+        },
+        {
+            "proposal_selection": {
+                "baseline_loss": 11.0,
+                "selected": "expansion",
+                "candidates": [
+                    {
+                        "label": "expansion",
+                        "family": "signal_event_rate",
+                        "loss": 9.0,
+                        "evidence": {
+                            "heuristic_ids": ["interval_instability"],
+                            "candidate_action_classes": ["insert_correction"],
+                        },
+                    }
+                ],
+            }
+        },
+    ]
+    guidance = build_heuristic_proposal_guidance(
+        planning_artifact={"family_hint": "signal_event_rate"},
+        runtime_artifacts={
+            "heuristics": [
+                {"heuristic": {"heuristic_id": "interval_instability"}},
+            ]
+        },
+        search_trace=search_trace,
+    )
+
+    assert guidance.preferred_action_classes[0] == HeuristicActionClass.INSERT_CORRECTION
+    assert any(note.startswith("outcome_memory:") for note in guidance.notes)

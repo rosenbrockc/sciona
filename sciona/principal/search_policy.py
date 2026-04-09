@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from sciona.principal.heuristic_outcomes import (
+    extract_heuristic_outcomes,
+    summarize_heuristic_outcomes,
+)
+
 
 @dataclass(frozen=True)
 class SearchDisciplineSummary:
@@ -30,6 +35,8 @@ class ProposalSelectionSummary:
     proposal_selection_labels: tuple[str, ...] = ()
     mean_selected_proposal_improvement: float = 0.0
     best_selected_proposal_improvement: float = 0.0
+    heuristic_outcome_count: int = 0
+    positive_heuristic_outcome_count: int = 0
 
 
 def _coerce_mapping(value: Any) -> dict[str, Any]:
@@ -157,6 +164,9 @@ def summarize_proposal_selection(
         if proposal.get("skipped_due_to_admissibility"):
             skipped_due_to_admissibility_trials += 1
 
+    heuristic_summary = summarize_heuristic_outcomes(
+        extract_heuristic_outcomes(trial_history)
+    )
     return ProposalSelectionSummary(
         trial_count=len(trial_history),
         proposal_selection_trials=proposal_selection_trials,
@@ -170,6 +180,10 @@ def summarize_proposal_selection(
         ),
         best_selected_proposal_improvement=(
             float(max(improvements)) if improvements else 0.0
+        ),
+        heuristic_outcome_count=int(heuristic_summary.get("outcome_count", 0) or 0),
+        positive_heuristic_outcome_count=int(
+            heuristic_summary.get("positive_outcome_count", 0) or 0
         ),
     )
 
