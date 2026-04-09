@@ -8,6 +8,7 @@ from sciona.heuristic_metadata import (
     HeuristicOutputContract,
     atom_heuristic_metadata_from_snapshot,
     atom_heuristic_metadata_summary,
+    resolve_external_atom_heuristic_metadata,
 )
 from sciona.heuristics import (
     CanonicalHeuristic,
@@ -121,3 +122,13 @@ def test_metadata_requires_dejargonized_summary_and_reference() -> None:
             heuristic_outputs=[],
             references=[],
         )
+
+
+def test_resolve_external_atom_heuristic_metadata_loads_ageo_atoms_signal_example() -> None:
+    metadata = resolve_external_atom_heuristic_metadata(
+        "ageoa.biosppy.ecg_zz2018_d12.assemblezz2018sqi"
+    )
+
+    assert metadata is not None
+    assert metadata.heuristic_outputs
+    assert metadata.heuristic_outputs[0].heuristic.heuristic_id == "quality_instability"

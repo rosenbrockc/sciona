@@ -1,14 +1,22 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 from sciona.heuristic_registries import (
+    EXTERNAL_ASSET_DIR_CANDIDATES,
     HeuristicFamilyRegistry,
     HeuristicRegistryAudit,
     HeuristicRegistryEntry,
+    clear_heuristic_registry_caches,
     heuristic_registry_summary,
+    heuristic_registry_compatibility_report,
+    load_heuristic_registries,
     load_local_heuristic_registries,
     load_local_heuristic_registries_by_family,
+    resolve_heuristic_registry,
     resolve_local_heuristic_registry,
 )
 from sciona.heuristics import HeuristicActionClass, HeuristicProducerKind
@@ -21,7 +29,7 @@ def test_loads_reference_registries_for_signal_and_non_signal_families() -> None
 
 
 def test_signal_registry_uses_canonical_heuristics_and_generic_actions() -> None:
-    registry = resolve_local_heuristic_registry("signal_event_rate")
+    registry = resolve_heuristic_registry("signal_event_rate")
     assert registry is not None
     entry_ids = {entry.heuristic_id for entry in registry.entries}
     assert "interval_instability" in entry_ids
@@ -32,7 +40,7 @@ def test_signal_registry_uses_canonical_heuristics_and_generic_actions() -> None
 
 
 def test_signal_registry_resolves_from_skeleton_family_alias() -> None:
-    registry = resolve_local_heuristic_registry("signal_detect_measure")
+    registry = resolve_heuristic_registry("signal_detect_measure")
 
     assert registry is not None
     assert registry.family == "signal_event_rate"
@@ -40,7 +48,7 @@ def test_signal_registry_resolves_from_skeleton_family_alias() -> None:
 
 
 def test_non_signal_registry_proves_interface_stays_generic() -> None:
-    registry = resolve_local_heuristic_registry("divide_and_conquer")
+    registry = resolve_heuristic_registry("divide_and_conquer")
     assert registry is not None
     entry_ids = {entry.heuristic_id for entry in registry.entries}
     assert "coverage_fragmentation" in entry_ids
@@ -93,7 +101,166 @@ def test_registry_rejects_duplicate_entries() -> None:
 
 
 def test_registry_summary_reports_family_and_count() -> None:
-    registry = next(iter(load_local_heuristic_registries()))
+    registry = next(iter(load_heuristic_registries()))
     summary = heuristic_registry_summary(registry)
     assert summary["family"]
     assert summary["heuristic_count"] > 0
+    assert summary["source_kind"]
+    assert summary["compatibility_status"]
+
+
+def _clear_registry_caches() -> None:
+    clear_heuristic_registry_caches()
+
+
+def _write_registry(
+    asset_dir: Path,
+    *,
+    asset_id: str,
+    asset_version: str,
+    family: str,
+    heuristic_id: str = "interval_instability",
+    family_aliases: list[str] | None = None,
+) -> None:
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    path = asset_dir / f"{family}.json"
+    path.write_text(
+        json.dumps(
+            {
+                "asset_id": asset_id,
+                "asset_version": asset_version,
+                "family": family,
+                "family_aliases": family_aliases or [],
+                "name": f"{family} registry",
+                "summary": "Cross-family heuristic registry fixture.",
+                "dejargonized_summary": "Fixture registry for loader compatibility tests.",
+                "entries": [
+                    {
+                        "heuristic_id": heuristic_id,
+                        "sanctioned_producer_kinds": ["atom_output"],
+                        "supported_action_classes": ["gate_or_validate"],
+                        "action_priority": ["gate_or_validate"],
+                    }
+                ],
+                "audit": {
+                    "references": [
+                        {
+                            "title": "Fixture Reference",
+                            "citation": "Synthetic fixture registry.",
+                        }
+                    ]
+                },
+            }
+        )
+    )
+
+
+@pytest.fixture
+def isolated_registry_layout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> dict[str, Path]:
+    local_dir = tmp_path / "local" / "heuristic_registries"
+    atoms_root = tmp_path / "ageo-atoms"
+    external_dir = atoms_root.joinpath(*EXTERNAL_ASSET_DIR_CANDIDATES[0])
+    monkeypatch.setattr("sciona.heuristic_registries.ASSET_DIR", local_dir)
+    monkeypatch.setenv("SCIONA_AGEO_ATOMS_ROOT", str(atoms_root))
+    _clear_registry_caches()
+    try:
+        yield {
+            "local_dir": local_dir,
+            "atoms_root": atoms_root,
+            "external_dir": external_dir,
+        }
+    finally:
+        _clear_registry_caches()
+
+
+def test_external_registry_is_preferred_when_present(
+    isolated_registry_layout: dict[str, Path],
+) -> None:
+    _write_registry(
+        isolated_registry_layout["local_dir"],
+        asset_id="family.demo.heuristics.local",
+        asset_version="v1",
+        family="demo_family",
+        family_aliases=["demo_alias"],
+    )
+    _write_registry(
+        isolated_registry_layout["external_dir"],
+        asset_id="family.demo.heuristics.shared",
+        asset_version="v1",
+        family="demo_family",
+        family_aliases=["demo_alias"],
+    )
+
+    registry = resolve_heuristic_registry("demo_alias")
+
+    assert registry is not None
+    summary = heuristic_registry_summary(registry)
+    assert registry.asset_id == "family.demo.heuristics.shared"
+    assert summary["source_kind"] == "shared_asset"
+    assert summary["source_repository"] == "../ageo-atoms"
+    assert summary["compatibility_status"] == "external_preferred"
+
+
+def test_local_registry_falls_back_when_external_dir_missing(
+    isolated_registry_layout: dict[str, Path],
+) -> None:
+    _write_registry(
+        isolated_registry_layout["local_dir"],
+        asset_id="family.demo.heuristics.local",
+        asset_version="v1",
+        family="demo_family",
+    )
+
+    registry = resolve_heuristic_registry("demo_family")
+
+    assert registry is not None
+    summary = heuristic_registry_summary(registry)
+    assert summary["source_kind"] == "local_asset"
+    assert summary["compatibility_status"] == "local_fallback"
+    assert "shared heuristic registry directory not found" in " ".join(
+        summary["compatibility_notes"]
+    )
+
+
+def test_version_mismatch_is_reported_when_both_sources_exist(
+    isolated_registry_layout: dict[str, Path],
+) -> None:
+    _write_registry(
+        isolated_registry_layout["local_dir"],
+        asset_id="family.demo.heuristics.local",
+        asset_version="v1",
+        family="demo_family",
+    )
+    _write_registry(
+        isolated_registry_layout["external_dir"],
+        asset_id="family.demo.heuristics.shared",
+        asset_version="v2",
+        family="demo_family",
+    )
+
+    registry = resolve_local_heuristic_registry("demo_family")
+
+    assert registry is not None
+    summary = heuristic_registry_summary(registry)
+    assert registry.asset_id == "family.demo.heuristics.shared"
+    assert summary["compatibility_status"] == "version_mismatch"
+    assert "asset_version mismatch" in " ".join(summary["compatibility_notes"])
+
+
+def test_compatibility_report_surfaces_selected_source_and_missing_external_dir(
+    isolated_registry_layout: dict[str, Path],
+) -> None:
+    _write_registry(
+        isolated_registry_layout["local_dir"],
+        asset_id="family.demo.heuristics.local",
+        asset_version="v1",
+        family="demo_family",
+    )
+
+    report = heuristic_registry_compatibility_report()
+
+    assert report["external_asset_dir_exists"] is False
+    assert report["record_count"] == 1
+    assert report["warnings"]
+    assert report["records"][0]["family"] == "demo_family"
+    assert report["records"][0]["compatibility_status"] == "local_fallback"

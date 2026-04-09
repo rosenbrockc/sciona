@@ -10,6 +10,7 @@ from sciona.heuristics import (
     HeuristicProducerKind,
     canonical_heuristic_from_metric,
     compatibility_hint_for_metric,
+    known_heuristic_ids,
     known_heuristic_compatibility_hints,
 )
 
@@ -96,3 +97,10 @@ def test_canonical_heuristic_round_trip() -> None:
     assert heuristic is not None
     restored = CanonicalHeuristic.model_validate(heuristic.model_dump(mode="json"))
     assert restored.heuristic_id == "numerical_condition_instability"
+
+
+def test_known_heuristic_ids_include_external_ageo_atoms_registry_entries() -> None:
+    ids = set(known_heuristic_ids())
+
+    assert "split_balance_instability" in ids
+    assert "recursion_depth_pressure" in ids

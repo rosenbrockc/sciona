@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 from enum import Enum
+from functools import lru_cache
+from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -42,6 +46,9 @@ _EXPLICIT_CANONICAL_HEURISTIC_IDS = {
     "residual_structure_after_transform",
     "resource_growth_instability",
 }
+EXTERNAL_CANONICAL_ASSET_CANDIDATES: tuple[tuple[str, ...], ...] = (
+    ("data", "heuristics", "canonical_registry.json"),
+)
 
 
 class HeuristicEvidenceType(str, Enum):
@@ -129,6 +136,48 @@ class CanonicalHeuristic(BaseModel):
                 f"found domain-specific tokens: {', '.join(banned)}"
             )
         return self
+
+
+def _candidate_ageo_atoms_roots() -> tuple[Path, ...]:
+    configured = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
+    roots: list[Path] = []
+    if configured:
+        roots.append(Path(configured).expanduser())
+    roots.append((Path(__file__).resolve().parents[1].parent / "ageo-atoms"))
+    deduped: list[Path] = []
+    seen: set[Path] = set()
+    for root in roots:
+        resolved = root.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        deduped.append(resolved)
+    return tuple(deduped)
+
+
+@lru_cache(maxsize=1)
+def _external_canonical_heuristics() -> tuple[CanonicalHeuristic, ...]:
+    for root in _candidate_ageo_atoms_roots():
+        for rel in EXTERNAL_CANONICAL_ASSET_CANDIDATES:
+            path = root.joinpath(*rel)
+            if not path.exists():
+                continue
+            raw = json.loads(path.read_text())
+            heuristics = raw.get("heuristics", []) or []
+            loaded: list[CanonicalHeuristic] = []
+            for item in heuristics:
+                if not isinstance(item, dict):
+                    continue
+                payload = dict(item)
+                payload.setdefault("producer_kind", HeuristicProducerKind.RUNTIME_TRANSFORM)
+                payload.setdefault(
+                    "applicability_scope",
+                    HeuristicApplicabilityScope.CROSS_FAMILY,
+                )
+                loaded.append(CanonicalHeuristic.model_validate(payload))
+            if loaded:
+                return tuple(loaded)
+    return tuple()
 
 
 _LEGACY_COMPATIBILITY_HINTS: dict[str, HeuristicCompatibilityHint] = {
@@ -300,19 +349,51 @@ def canonical_heuristic_from_metric(
     hint = compatibility_hint_for_metric(metric_name, source_domain=source_domain)
     if hint is None:
         return None
+    external = {
+        item.heuristic_id: item for item in _external_canonical_heuristics()
+    }.get(hint.heuristic_id)
+    display_name = (
+        external.display_name
+        if external is not None
+        else hint.heuristic_id.replace("_", " ").title()
+    )
+    meaning = external.dejargonized_meaning if external is not None else hint.rationale
+    evidence_type = (
+        external.evidence_type
+        if external is not None
+        else HeuristicEvidenceType.SCALAR_SCORE
+    )
+    supported_action_classes = (
+        list(external.supported_action_classes)
+        if external is not None and external.supported_action_classes
+        else list(hint.supported_action_classes)
+    )
+    provenance_requirements = (
+        list(external.provenance_requirements)
+        if external is not None and external.provenance_requirements
+        else ["metric_name", "metric_value", "threshold"]
+    )
+    compatibility_aliases = list(
+        dict.fromkeys(
+            [
+                *(list(external.compatibility_aliases) if external is not None else []),
+                hint.legacy_metric_name,
+            ]
+        )
+    )
     return CanonicalHeuristic(
         heuristic_id=hint.heuristic_id,
-        display_name=hint.heuristic_id.replace("_", " ").title(),
-        dejargonized_meaning=hint.rationale,
-        evidence_type=HeuristicEvidenceType.SCALAR_SCORE,
+        display_name=display_name,
+        dejargonized_meaning=meaning,
+        evidence_type=evidence_type,
         value_kind="score",
         value_shape="scalar",
         confidence=confidence,
         producer_kind=HeuristicProducerKind.COMPATIBILITY_MAPPING,
         applicability_scope=HeuristicApplicabilityScope.CROSS_FAMILY,
-        supported_action_classes=list(hint.supported_action_classes),
-        provenance_requirements=["metric_name", "metric_value", "threshold"],
-        compatibility_aliases=[hint.legacy_metric_name],
+        supported_action_classes=supported_action_classes,
+        provenance_requirements=provenance_requirements,
+        compatibility_aliases=compatibility_aliases,
         family_notes=[f"source_domain:{source_domain}"] if source_domain else [],
     )
 
@@ -327,6 +408,7 @@ def known_heuristic_compatibility_hints() -> tuple[HeuristicCompatibilityHint, .
 
 def known_heuristic_ids() -> tuple[str, ...]:
     """Return the canonical heuristic identifiers supported by the shared layer."""
-    ids = set(_EXPLICIT_CANONICAL_HEURISTIC_IDS)
+    ids = {item.heuristic_id for item in _external_canonical_heuristics()}
+    ids.update(_EXPLICIT_CANONICAL_HEURISTIC_IDS)
     ids.update(hint.heuristic_id for hint in _LEGACY_COMPATIBILITY_HINTS.values())
     return tuple(sorted(ids))

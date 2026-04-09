@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import os
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -11,6 +15,7 @@ from sciona.heuristics import (
     HeuristicProducerKind,
     canonical_heuristic_from_metric,
 )
+EXTERNAL_METADATA_GLOB = "ageoa/**/heuristic_metadata.json"
 
 
 class AtomHeuristicReference(BaseModel):
@@ -178,3 +183,47 @@ def atom_heuristic_metadata_from_snapshot(
             str(item) for item in snapshot.get("maintainers", []) or [] if str(item)
         ],
     )
+
+
+def _candidate_ageo_atoms_roots() -> tuple[Path, ...]:
+    configured = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
+    roots: list[Path] = []
+    if configured:
+        roots.append(Path(configured).expanduser())
+    roots.append(Path(__file__).resolve().parents[1].parent / "ageo-atoms")
+    deduped: list[Path] = []
+    seen: set[Path] = set()
+    for root in roots:
+        resolved = root.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        deduped.append(resolved)
+    return tuple(deduped)
+
+
+@lru_cache(maxsize=1)
+def load_external_atom_heuristic_metadata() -> tuple[AtomHeuristicMetadata, ...]:
+    records: list[AtomHeuristicMetadata] = []
+    seen_fqdns: set[str] = set()
+    for root in _candidate_ageo_atoms_roots():
+        for path in sorted(root.glob(EXTERNAL_METADATA_GLOB)):
+            raw = json.loads(path.read_text())
+            record = AtomHeuristicMetadata.model_validate(raw)
+            if record.atom_fqdn in seen_fqdns:
+                continue
+            seen_fqdns.add(record.atom_fqdn)
+            records.append(record)
+    return tuple(records)
+
+
+def resolve_external_atom_heuristic_metadata(
+    atom_fqdn: str,
+) -> AtomHeuristicMetadata | None:
+    target = str(atom_fqdn or "").strip()
+    if not target:
+        return None
+    for record in load_external_atom_heuristic_metadata():
+        if record.atom_fqdn == target:
+            return record
+    return None
