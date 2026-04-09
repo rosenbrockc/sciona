@@ -179,6 +179,7 @@ class ExpansionFamilyAsset(BaseModel):
     asset_id: str
     asset_version: str
     family: str
+    family_aliases: list[str] = Field(default_factory=list)
     domain: str
     name: str
     summary: str = Field(validation_alias=AliasChoices("summary", "description"))
@@ -256,6 +257,18 @@ def load_local_expansion_assets() -> tuple[ExpansionFamilyAsset, ...]:
 def load_local_expansion_assets_by_family() -> dict[str, ExpansionFamilyAsset]:
     """Index local expansion assets by family name."""
     return {asset.family: asset for asset in load_local_expansion_assets()}
+
+
+def resolve_local_expansion_asset(family: str) -> ExpansionFamilyAsset | None:
+    """Resolve one expansion asset by primary family or declared alias."""
+    assets = load_local_expansion_assets_by_family()
+    asset = assets.get(family)
+    if asset is not None:
+        return asset
+    for candidate in load_local_expansion_assets():
+        if family in set(candidate.family_aliases):
+            return candidate
+    return None
 
 
 def _planning_constraint_categories(context: ExpansionContext) -> set[str]:

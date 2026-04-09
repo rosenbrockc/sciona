@@ -281,6 +281,54 @@ class TestHunterHappyPath:
         assert "sampling_rate" in result.verified_match.candidate.declaration.type_signature
 
     @pytest.mark.asyncio
+    async def test_matched_primitive_hint_seeds_exact_candidate_from_live_catalog(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="event_cleanup",
+            statement="Remove implausible events before downstream rate estimation.",
+            informal_desc="Clean event markers that create unstable intervals.",
+            prover=Prover.PYTHON,
+            context={"matched_primitive": "ageoa.biosppy.ecg.reject_outlier_intervals"},
+        )
+
+        catalog = PrimitiveCatalog()
+        catalog.add(
+            AlgorithmicPrimitive(
+                name="reject_outlier_intervals",
+                source="ageo-atoms",
+                category=ConceptType.SIGNAL_FILTER,
+                description="Remove events that induce implausible adjacent intervals.",
+                inputs=[
+                    IOSpec(name="rpeaks", type_desc="np.ndarray"),
+                    IOSpec(name="sampling_rate", type_desc="float"),
+                ],
+                outputs=[IOSpec(name="rpeaks", type_desc="np.ndarray")],
+                type_signature="(rpeaks: np.ndarray, sampling_rate: float) -> np.ndarray",
+            )
+        )
+
+        index = _make_mock_index([])
+        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.reject_outlier_intervals"})
+        llm = _make_mock_llm(rank_response="[0]")
+
+        agent = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            max_iterations=1,
+            live_catalog=catalog,
+        )
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert result.verified_match is not None
+        assert (
+            result.verified_match.candidate.declaration.name
+            == "ageoa.biosppy.ecg.reject_outlier_intervals"
+        )
+
+    @pytest.mark.asyncio
     async def test_stage_prior_penalizes_rate_atom_on_detect_leaf(self):
         from sciona.hunter.graph import HunterAgent
 

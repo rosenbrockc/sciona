@@ -149,7 +149,7 @@ class ExpansionEngine:
         rule_sets: list[ExpansionRuleSet] | None = None,
         rewriter: GraphRewriter | None = None,
         *,
-        activation_threshold: float = 0.3,
+        activation_threshold: float = 0.0,
     ):
         self._rule_sets: list[ExpansionRuleSet] = list(rule_sets or [])
         self._rewriter = rewriter or GraphRewriter()

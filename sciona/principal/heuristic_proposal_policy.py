@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from sciona.heuristic_registries import resolve_local_heuristic_registry
 from sciona.heuristics import HeuristicActionClass
-from sciona.principal.expansion_assets import load_local_expansion_assets_by_family
+from sciona.principal.expansion_assets import resolve_local_expansion_asset
 from sciona.principal.heuristic_outcomes import heuristic_action_bonus
 
 
@@ -122,7 +122,7 @@ def candidate_action_classes(
         return list(dict.fromkeys(classes))
 
     if family:
-        asset = load_local_expansion_assets_by_family().get(family)
+        asset = resolve_local_expansion_asset(family)
         if asset is not None:
             for rule_name in rules_applied or []:
                 operation = asset.operation(rule_name)

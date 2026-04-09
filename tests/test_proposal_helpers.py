@@ -11,6 +11,7 @@ from sciona.principal.models import OptimizationMetric
 from sciona.principal.heuristic_proposal_policy import (
     HeuristicProposalGuidance,
     build_heuristic_proposal_guidance,
+    candidate_action_classes,
 )
 from sciona.principal.proposal_helpers import (
     ProposalCandidate,
@@ -208,6 +209,17 @@ def test_select_best_proposal_prefers_candidate_matching_heuristic_guidance() ->
 
     assert selected is expansion
     assert "matches_heuristic_guidance" in selected.selected_reason_codes
+
+
+def test_candidate_action_classes_resolve_expansion_asset_family_alias() -> None:
+    actions = candidate_action_classes(
+        "semantic_enrichment",
+        family="signal_detect_measure",
+        rules_applied=["insert_outlier_rejection_after_detection"],
+    )
+
+    assert HeuristicActionClass.INSERT_CORRECTION in actions
+    assert HeuristicActionClass.GATE_OR_VALIDATE in actions
 
 
 def test_select_best_proposal_keeps_refinement_routed_improvement_eligible() -> None:

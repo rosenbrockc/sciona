@@ -32,6 +32,7 @@ from sciona.principal.expansion_assets import (
     expansion_asset_summary,
     load_local_expansion_assets_by_family,
 )
+from sciona.principal.runtime_context import summarize_waveform
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +254,7 @@ def _build_insert_outlier_rejection_after_detection() -> RewriteRule:
         "reject",
         "Reject Outlier Intervals",
         ConceptType.SIGNAL_FILTER,
-        matched_primitive="reject_outlier_intervals",
+        matched_primitive="ageoa.biosppy.ecg.reject_outlier_intervals",
         inputs=[_EVENTS_IN, _RATE_IN],
         outputs=[_EVENTS_OUT],
         description="Remove events creating physiologically implausible intervals.",
@@ -374,7 +375,7 @@ def _build_insert_outlier_rejection_after_detection_smoothed() -> RewriteRule:
         "reject",
         "Reject Outlier Intervals",
         ConceptType.SIGNAL_FILTER,
-        matched_primitive="reject_outlier_intervals",
+        matched_primitive="ageoa.biosppy.ecg.reject_outlier_intervals",
         inputs=[_EVENTS_IN, _RATE_IN],
         outputs=[_EVENTS_OUT],
         description="Remove events creating physiologically implausible intervals.",
@@ -418,11 +419,9 @@ def _diagnose_jump_discontinuities(
     if signal is not None:
         values = np.asarray(signal, dtype=np.float64).reshape(-1)
         if values.size >= 10:
-            diff = np.diff(values)
-            median_diff = float(np.median(diff))
-            mad_diff = float(np.median(np.abs(diff - median_diff)))
-            if mad_diff >= 1e-10:
-                jump_count = int(np.sum(np.abs(diff - median_diff) > 5.0 * mad_diff))
+            jump_count = int(
+                float(summarize_waveform(values).get("discontinuity_count", 0.0))
+            )
     if jump_count is None and isinstance(context.runtime_evidence, dict):
         telemetry_summary = context.runtime_evidence.get("telemetry_summary", {})
         if isinstance(telemetry_summary, dict):
@@ -533,7 +532,7 @@ def _diagnose_interval_outlier_fraction(
                     outlier_frac = None
     if outlier_frac is None:
         return None
-    threshold = 0.15  # more than 15% outlier intervals
+    threshold = 0.08  # stronger instability warrants lossy cleanup
 
     if outlier_frac > threshold:
         # Pick the right rule depending on which rate primitive is present
@@ -597,7 +596,8 @@ def _diagnose_peak_correction_need(
         return None
 
     threshold = 0.05
-    if outlier_frac > threshold:
+    escalation_threshold = 0.08
+    if threshold < outlier_frac < escalation_threshold:
         return ExpansionDiagnostic(
             rule_name="insert_peak_correction_after_detection",
             severity=min(1.0, max(0.35, outlier_frac / 0.2)),

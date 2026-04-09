@@ -176,6 +176,19 @@ class TestExpansionEngine:
         result = engine.expand(cdg, ExpansionContext())
         assert not result.expanded
 
+    def test_default_engine_does_not_suppress_emitted_low_severity_diagnostic(self):
+        rule = _interpose_rule("insert_X", "B", "X")
+        diag = ExpansionDiagnostic(
+            rule_name="insert_X", severity=0.1, evidence="triggered",
+            metric_name="m", metric_value=0.6, threshold=0.5,
+        )
+        rs = MockRuleSet("sig", "signal", lambda c, ctx: [diag], [rule])
+        engine = ExpansionEngine([rs])
+        cdg = _cdg([_node("a"), _node("b", primitive="B")], [_edge("a", "b")])
+        result = engine.expand(cdg, ExpansionContext())
+        assert result.expanded
+        assert result.applied_rules == ("insert_X",)
+
     def test_graceful_failure_no_match(self):
         """Rule that doesn't match CDG topology is silently skipped."""
         rule = _interpose_rule("insert_X", "MISSING", "X")
@@ -427,7 +440,7 @@ class TestSignalEventRateExpansion:
 
         g = result.unwrap()
         prims = {n.matched_primitive for n in g.nodes if n.matched_primitive}
-        assert "reject_outlier_intervals" in prims
+        assert "ageoa.biosppy.ecg.reject_outlier_intervals" in prims
 
     def test_peak_correction_rule_applies(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
@@ -565,7 +578,7 @@ class TestSignalEventRateExpansion:
                     },
                     "events": {
                         "count": 438.0,
-                        "outlier_fraction": 0.09,
+                        "outlier_fraction": 0.06,
                     },
                 },
                 "canonical_runtime_context": {

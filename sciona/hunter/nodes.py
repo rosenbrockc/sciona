@@ -449,6 +449,45 @@ def _canonicalize_candidates(
     return list(normalized.values())
 
 
+def _exact_matched_primitive_candidate(
+    deps: HunterDeps,
+    pdg_node,
+) -> CandidateMatch | None:
+    """Build a deterministic exact-match candidate from a bound primitive hint."""
+    catalog = deps.live_catalog
+    if catalog is None:
+        return None
+
+    raw = str((pdg_node.context or {}).get("matched_primitive", "") or "").strip()
+    if not raw:
+        return None
+
+    candidates = [raw]
+    parts = [part for part in raw.split(".") if part]
+    for start in range(1, len(parts)):
+        candidates.append(".".join(parts[start:]))
+
+    primitive = None
+    for key in candidates:
+        primitive = catalog.get(key)
+        if primitive is not None:
+            break
+    if primitive is None:
+        return None
+
+    source_lib = raw.rsplit(".", 1)[0] if "." in raw else primitive.source
+    return CandidateMatch(
+        declaration=_declaration_from_primitive(
+            primitive,
+            name=raw,
+            source_lib=source_lib,
+            prover=pdg_node.prover,
+        ),
+        score=10.0,
+        retrieval_method="exact_primitive",
+    )
+
+
 def _apply_deterministic_candidate_priors(
     pdg_node,
     candidates: list[CandidateMatch],
@@ -575,6 +614,10 @@ class InitialSearch(BaseNode[HunterState, HunterDeps, MatchResult]):
         candidate_pool = {
             candidate.declaration.name: candidate for candidate in state.candidates_found
         }
+
+        exact_candidate = _exact_matched_primitive_candidate(deps, node)
+        if exact_candidate is not None:
+            candidate_pool[exact_candidate.declaration.name] = exact_candidate
 
         for decl, score in embedding_results:
             candidate = _canonicalize_candidate_match(

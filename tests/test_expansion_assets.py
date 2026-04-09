@@ -25,10 +25,13 @@ from sciona.principal.expansion_assets import (
     expansion_asset_summary,
     asset_backed_rule_sets,
     load_local_expansion_assets_by_family,
+    resolve_local_expansion_asset,
 )
 from sciona.principal.expansion_rules import default_rule_sets
 from sciona.principal.expansion_rules.signal_event_rate import (
     _build_insert_jump_removal_before_filter,
+    _diagnose_interval_outlier_fraction,
+    _diagnose_peak_correction_need,
 )
 
 
@@ -178,6 +181,13 @@ class TestExpansionAssets:
         assert summary["migration_readiness_check_count"] == 3
         assert "runtime_independence" in summary["migration_readiness_check_ids"]
 
+    def test_expansion_asset_resolves_from_semantic_family_alias(self):
+        asset = resolve_local_expansion_asset("signal_detect_measure")
+
+        assert asset is not None
+        assert asset.family == "signal_event_rate"
+        assert "signal_detect_measure" in asset.family_aliases
+
     def test_trigger_asset_accepts_legacy_signal_and_boundary_aliases(self):
         trigger = ExpansionTriggerAsset.model_validate(
             {
@@ -319,6 +329,53 @@ class TestExpansionAssets:
         assert diagnostics
         assert diagnostics[0].asset_operation == "insert_peak_correction_after_detection"
 
+    def test_stronger_interval_instability_prefers_lossy_cleanup_over_peak_correction(self):
+        cdg = CDGExport(
+            nodes=[
+                AlgorithmicNode(
+                    node_id="filt",
+                    name="Filter",
+                    description="filter signal",
+                    concept_type=ConceptType.SIGNAL_FILTER,
+                    status=NodeStatus.ATOMIC,
+                    matched_primitive="filter_signal_for_detection",
+                ),
+                AlgorithmicNode(
+                    node_id="det",
+                    name="Detect",
+                    description="detect events",
+                    concept_type=ConceptType.DATA_EXTRACTION,
+                    status=NodeStatus.ATOMIC,
+                    matched_primitive="detect_peaks_in_signal",
+                ),
+                AlgorithmicNode(
+                    node_id="rate",
+                    name="Rate",
+                    description="compute rate",
+                    concept_type=ConceptType.ANALYSIS,
+                    status=NodeStatus.ATOMIC,
+                    matched_primitive="compute_event_rate",
+                ),
+            ],
+            edges=[],
+        )
+        context = ExpansionContext(
+            runtime_evidence={
+                "telemetry_summary": {
+                    "events": {
+                        "outlier_fraction": 0.09,
+                    }
+                }
+            }
+        )
+
+        cleanup = _diagnose_interval_outlier_fraction(cdg, context)
+        correction = _diagnose_peak_correction_need(cdg, context)
+
+        assert cleanup is not None
+        assert cleanup.rule_name == "insert_outlier_rejection_after_detection"
+        assert correction is None
+
     def test_asset_wrapper_supports_generic_runtime_keys_and_boundaries(self):
         class _StubRuleSet:
             name = "generic_records"
@@ -450,6 +507,36 @@ class TestExpansionAssets:
         assert result.applied_assets[0]["asset_operation"] == "insert_jump_removal_before_filter"
         assert result.applied_assets[0]["asset_migration_readiness_status"] == "in_progress"
         assert result.applied_assets[0]["asset_migration_readiness_ready"] is False
+
+    def test_asset_backed_engine_does_not_drop_emitted_low_severity_operation(self):
+        class _StubRuleSet:
+            name = "signal_event_rate"
+            domain = "signal_processing"
+
+            def diagnose(self, cdg, context):
+                return [
+                    ExpansionDiagnostic(
+                        rule_name="insert_jump_removal_before_filter",
+                        severity=0.18,
+                        evidence="mild but above-trigger discontinuity evidence",
+                        metric_name="jump_discontinuity_count",
+                        metric_value=4.0,
+                        threshold=3.0,
+                        source_domain="signal_processing",
+                    )
+                ]
+
+            def rules(self):
+                return [_build_insert_jump_removal_before_filter()]
+
+        engine = ExpansionEngine(asset_backed_rule_sets([_StubRuleSet()]))
+        result = engine.expand(
+            _root_boundary_signal_rate_cdg(),
+            ExpansionContext(signal_data={"signal": np.zeros(32, dtype=float)}),
+        )
+
+        assert result.expanded is True
+        assert result.applied_rules == ("insert_jump_removal_before_filter",)
 
     def test_default_rule_sets_expose_asset_backed_provenance(self):
         rng = np.random.default_rng(42)

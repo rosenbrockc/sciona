@@ -575,6 +575,7 @@ def _alias_candidates(
             aliases.add(f"{module_leaf}.{leaf_name}")
             aliases.add(f"{module_leaf} {leaf_name}")
             aliases.add(f"{module_leaf}_{leaf_name}")
+            aliases.add(f"{module_name}.{leaf_name}")
         if len(module_parts) >= 2:
             module_suffix = module_parts[-2:]
             dotted = ".".join([*module_suffix, leaf_name])

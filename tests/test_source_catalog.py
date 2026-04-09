@@ -8,6 +8,7 @@ from pathlib import Path
 
 from sciona.architect.catalog import CatalogReport, PrimitiveCatalog
 from sciona.architect.source_catalog import (
+    _alias_candidates,
     audit_source_registration_alignment,
     seed_catalog_from_sources,
 )
@@ -112,6 +113,19 @@ def detect_peaks(signal: "np.ndarray") -> "np.ndarray":
         for name in set(sys.modules) - before_modules:
             if name == "mypkg" or name.startswith("mypkg.") or name == "sharedpkg" or name.startswith("sharedpkg."):
                 sys.modules.pop(name, None)
+
+
+def test_alias_candidates_include_full_module_path_alias():
+    def detect_peaks(signal):
+        return signal
+
+    aliases = _alias_candidates(
+        "detect_peaks",
+        detect_peaks,
+        module_name="ageoa.biosppy.ecg",
+    )
+
+    assert "ageoa.biosppy.ecg.detect_peaks" in aliases
 
 
 def test_seed_catalog_marks_defaulted_parameters_optional(tmp_path: Path):

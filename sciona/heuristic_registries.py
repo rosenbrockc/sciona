@@ -78,6 +78,7 @@ class HeuristicFamilyRegistry(BaseModel):
     asset_id: str
     asset_version: str
     family: str
+    family_aliases: list[str] = Field(default_factory=list)
     skeleton_scope: str = ""
     name: str
     summary: str
@@ -118,6 +119,7 @@ def heuristic_registry_summary(
             "asset_id": registry.asset_id,
             "asset_version": registry.asset_version,
             "family": registry.family,
+            "family_aliases": list(registry.family_aliases),
             "skeleton_scope": registry.skeleton_scope,
             "heuristic_count": len(registry.entries),
             "review_status": registry.audit.review_status,
@@ -128,6 +130,7 @@ def heuristic_registry_summary(
             "asset_id": str(registry.get("asset_id", "") or ""),
             "asset_version": str(registry.get("asset_version", "") or ""),
             "family": str(registry.get("family", "") or ""),
+            "family_aliases": list(registry.get("family_aliases", []) or []),
             "skeleton_scope": str(registry.get("skeleton_scope", "") or ""),
             "heuristic_count": len(registry.get("entries", []) or []),
             "review_status": str(registry.get("review_status", "") or ""),
@@ -160,9 +163,19 @@ def resolve_local_heuristic_registry(
     skeleton_scope: str | None = None,
 ) -> HeuristicFamilyRegistry | None:
     """Resolve the best local family registry for a family and optional scope."""
-    registry = load_local_heuristic_registries_by_family().get(family)
+    registries = load_local_heuristic_registries_by_family()
+    registry = registries.get(family)
+    if registry is None:
+        for candidate in load_local_heuristic_registries():
+            if family in set(candidate.family_aliases):
+                registry = candidate
+                break
     if registry is None:
         return None
-    if skeleton_scope and registry.skeleton_scope and registry.skeleton_scope != skeleton_scope:
+    if (
+        skeleton_scope
+        and registry.skeleton_scope
+        and registry.skeleton_scope != skeleton_scope
+    ):
         return None
     return registry

@@ -303,15 +303,27 @@ def summarize_waveform(values: Any) -> dict[str, float]:
     arr = _as_array(values)
     if arr.size == 0:
         return {"count": 0.0}
-    diff = np.diff(arr) if arr.size > 1 else np.array([], dtype=np.float64)
-    if diff.size:
-        median_diff = float(np.median(diff))
-        mad_diff = float(np.median(np.abs(diff - median_diff)))
-        discontinuity_count = float(
-            np.sum(np.abs(diff - median_diff) > 5.0 * max(mad_diff, 1e-9))
-        )
-    else:
-        discontinuity_count = 0.0
+    discontinuity_count = 0.0
+    if arr.size > 8:
+        # Detect persistent level shifts rather than any steep local slope so
+        # peak-rich or oscillatory waveforms do not look like broken joins.
+        window = int(max(8, min(arr.size // 32, 256)))
+        if window > 1 and arr.size >= window * 2:
+            trimmed = arr[: (arr.size // window) * window]
+            if trimmed.size >= window * 2:
+                segments = trimmed.reshape(-1, window)
+                levels = np.median(segments, axis=1)
+                level_diff = np.diff(levels)
+                if level_diff.size:
+                    median_diff = float(np.median(level_diff))
+                    mad_diff = float(np.median(np.abs(level_diff - median_diff)))
+                    signal_span = float(
+                        np.quantile(arr, 0.99) - np.quantile(arr, 0.01)
+                    )
+                    threshold = max(1.5 * mad_diff, 0.1 * signal_span, 1e-9)
+                    discontinuity_count = float(
+                        np.sum(np.abs(level_diff) >= threshold)
+                    )
     return {
         "count": float(arr.size),
         "mean": float(np.mean(arr)),
@@ -359,7 +371,7 @@ def summarize_events(
     density = (
         float(arr.size) / max(duration / 60.0, 1e-9)
         if duration is not None and duration > 0
-        else 0.0
+        else None
     )
     if intervals.size:
         interval_median = float(np.median(intervals))
@@ -373,12 +385,14 @@ def summarize_events(
         outlier_fraction = 0.0
     summary = {
         "count": float(arr.size),
-        "duration_seconds": float(duration) if duration is not None else 0.0,
-        "density_per_minute": density,
         "interval_median_samples": interval_median,
         "interval_mad_samples": interval_mad,
         "outlier_fraction": outlier_fraction,
     }
+    if duration is not None:
+        summary["duration_seconds"] = float(duration)
+    if density is not None:
+        summary["density_per_minute"] = density
     if sampling_rate is not None and sampling_rate > 0 and interval_median > 0:
         summary["interval_median_seconds"] = interval_median / float(sampling_rate)
     return summary

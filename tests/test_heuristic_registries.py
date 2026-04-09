@@ -31,6 +31,14 @@ def test_signal_registry_uses_canonical_heuristics_and_generic_actions() -> None
     assert interval_entry.action_priority[0] == HeuristicActionClass.INSERT_CORRECTION
 
 
+def test_signal_registry_resolves_from_skeleton_family_alias() -> None:
+    registry = resolve_local_heuristic_registry("signal_detect_measure")
+
+    assert registry is not None
+    assert registry.family == "signal_event_rate"
+    assert "signal_detect_measure" in registry.family_aliases
+
+
 def test_non_signal_registry_proves_interface_stays_generic() -> None:
     registry = resolve_local_heuristic_registry("divide_and_conquer")
     assert registry is not None

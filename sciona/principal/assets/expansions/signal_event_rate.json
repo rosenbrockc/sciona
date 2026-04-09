@@ -2,6 +2,7 @@
   "asset_id": "family.signal_event_rate.expansions.v1",
   "asset_version": "phase3.v1",
   "family": "signal_event_rate",
+  "family_aliases": ["signal_detect_measure"],
   "domain": "signal_processing",
   "name": "Signal Event Rate Expansion Inventory",
   "description": "Declarative refinement inventory for signal to event to rate pipelines, covering pre-filter cleanup, signal-quality gating, and post-detection interval rejection.",
@@ -144,7 +145,7 @@
       "trigger": {
         "metric_name": "interval_outlier_fraction",
         "comparison": "gt",
-        "threshold": 0.15,
+        "threshold": 0.08,
         "required_intermediate_keys": [
           "events"
         ]
@@ -175,7 +176,7 @@
       "trigger": {
         "metric_name": "interval_outlier_fraction",
         "comparison": "gt",
-        "threshold": 0.15,
+        "threshold": 0.08,
         "required_intermediate_keys": [
           "events"
         ]

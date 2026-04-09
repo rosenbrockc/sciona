@@ -163,6 +163,16 @@ def test_summarize_waveform_emits_compact_artifact_metrics() -> None:
     assert summary["discontinuity_count"] >= 1.0
 
 
+def test_summarize_waveform_does_not_treat_regular_oscillation_as_boundary_breaks() -> None:
+    x = np.linspace(0.0, 8.0 * np.pi, 2048)
+    signal = np.sin(x)
+
+    summary = summarize_waveform(signal)
+
+    assert summary["count"] == 2048.0
+    assert summary["discontinuity_count"] <= 1.0
+
+
 def test_summarize_events_emits_density_and_interval_stats() -> None:
     events = np.array([0, 128, 256, 384, 900, 1028], dtype=float)
 
@@ -174,6 +184,16 @@ def test_summarize_events_emits_density_and_interval_stats() -> None:
     assert summary["interval_median_samples"] == 128.0
     assert summary["interval_median_seconds"] == 1.0
     assert summary["outlier_fraction"] > 0.0
+
+
+def test_summarize_events_without_duration_does_not_fabricate_density() -> None:
+    events = np.array([10, 50, 100], dtype=float)
+
+    summary = summarize_events(events)
+
+    assert summary["count"] == 3.0
+    assert "duration_seconds" not in summary
+    assert "density_per_minute" not in summary
 
 
 def test_summarize_series_emits_compact_distribution_metrics() -> None:

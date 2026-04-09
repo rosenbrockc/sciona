@@ -2,6 +2,7 @@
   "asset_id": "family.signal_event_rate.heuristics.v1",
   "asset_version": "phase3.v1",
   "family": "signal_event_rate",
+  "family_aliases": ["signal_detect_measure"],
   "name": "Signal Event Rate Heuristic Registry",
   "summary": "Family-local interpretation of shared heuristics for waveform to event to rate pipelines.",
   "dejargonized_summary": "This registry says which generic warning signs matter most for pipelines that turn a sampled waveform into detected events and then a derived rate.",
