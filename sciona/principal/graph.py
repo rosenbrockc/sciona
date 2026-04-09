@@ -48,6 +48,7 @@ from sciona.principal.reference_attribution import (
 )
 from sciona.principal.proposal_helpers import (
     ProposalCandidate,
+    apply_heuristic_guidance,
     build_expansion_context,
     build_redecomposition_candidate,
     evaluate_proposal_candidate,
@@ -56,6 +57,7 @@ from sciona.principal.proposal_helpers import (
     summarize_proposal_admissibility,
     summarize_expansion_context,
 )
+from sciona.principal.heuristic_proposal_policy import build_heuristic_proposal_guidance
 from sciona.principal.structure_summary import summarize_trial_structure
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
@@ -474,6 +476,10 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
 
     engine = deps.expansion_engine or ExpansionEngine(default_rule_sets())
     context = build_expansion_context(state)
+    heuristic_guidance = build_heuristic_proposal_guidance(
+        planning_artifact=state.planning_artifact,
+        runtime_artifacts=getattr(state.benchmark, "runtime_artifacts", {}) or {},
+    )
     expansion = engine.expand(baseline_cdg, context)
     if expansion.expanded:
         loss, bundle, benchmark, match_results, ghost_report = await evaluate_proposal_candidate(
@@ -498,6 +504,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             ),
             context_summary=summarize_expansion_context(context),
             structural_delta=proposal_structural_delta(baseline_cdg, expansion.cdg),
+            family=str((state.planning_artifact or {}).get("family_hint", "") or ""),
         )
         candidate.admissibility = summarize_proposal_admissibility(
             cdg=candidate.cdg,
@@ -509,6 +516,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             ),
             evaluator=proposal_evaluator,
         )
+        candidate = apply_heuristic_guidance(candidate, guidance=heuristic_guidance)
         candidates.append(candidate)
         proposal_rows.append(candidate.history_row(baseline_loss))
 
@@ -547,6 +555,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             ),
             evaluator=proposal_evaluator,
         )
+        candidate = apply_heuristic_guidance(candidate, guidance=heuristic_guidance)
         candidates.append(candidate)
         proposal_rows.append(candidate.history_row(baseline_loss))
 
@@ -578,6 +587,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
                 structural_delta=proposal_structural_delta(
                     baseline_cdg, redecompose_cdg
                 ),
+                family=str((state.planning_artifact or {}).get("family_hint", "") or ""),
             )
             candidate.admissibility = summarize_proposal_admissibility(
                 cdg=candidate.cdg,
@@ -589,6 +599,7 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
                 ),
                 evaluator=proposal_evaluator,
             )
+            candidate = apply_heuristic_guidance(candidate, guidance=heuristic_guidance)
             candidates.append(candidate)
             proposal_rows.append(candidate.history_row(baseline_loss))
             selected = select_best_proposal(candidates, baseline_loss=baseline_loss)

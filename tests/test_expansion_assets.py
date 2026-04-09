@@ -156,6 +156,10 @@ class TestExpansionAssets:
         assert jump is not None
         assert correction is not None
         assert jump.trigger.required_runtime_keys == ["signal"]
+        assert [action.value for action in jump.action_classes] == [
+            "precondition",
+            "insert_correction",
+        ]
         assert jump.trigger.required_boundary_requirements[0].boundary_kind == "root_input"
         assert jump.trigger.required_boundary_requirements[0].port_name == "signal"
         assert asset.audit.migration_readiness.status == "in_progress"

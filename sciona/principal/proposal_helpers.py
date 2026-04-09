@@ -15,6 +15,10 @@ from sciona.principal.admissibility import (
 )
 from sciona.principal.evaluation_helpers import evaluate_bundle_for_metric
 from sciona.principal.expansion import ExpansionContext
+from sciona.principal.heuristic_proposal_policy import (
+    HeuristicProposalGuidance,
+    candidate_action_classes,
+)
 from sciona.principal.models import (
     BenchmarkResult,
     OptimizationMetric,
@@ -54,6 +58,9 @@ class ProposalCandidate:
     structural_delta: ProposalStructuralDelta = field(
         default_factory=ProposalStructuralDelta
     )
+    heuristic_ids: list[str] = field(default_factory=list)
+    preferred_action_classes: list[str] = field(default_factory=list)
+    candidate_action_classes: list[str] = field(default_factory=list)
     selection_disposition: str = "candidate"
     selection_reason: str = ""
     selected_reason_codes: list[str] = field(default_factory=list)
@@ -62,7 +69,15 @@ class ProposalCandidate:
     def improves_baseline(self, baseline_loss: float) -> bool:
         return self.loss < baseline_loss
 
-    def ranking_key(self, baseline_loss: float) -> tuple[int, int, int, int, float, str]:
+    def heuristic_alignment_rank(self) -> int:
+        if not self.preferred_action_classes or not self.candidate_action_classes:
+            return 0
+        for index, action in enumerate(self.preferred_action_classes):
+            if action in self.candidate_action_classes:
+                return index
+        return len(self.preferred_action_classes) + 1
+
+    def ranking_key(self, baseline_loss: float) -> tuple[int, int, int, int, int, float, str]:
         complexity = (
             abs(int(self.structural_delta.node_count_delta))
             + abs(int(self.structural_delta.edge_count_delta))
@@ -71,6 +86,7 @@ class ProposalCandidate:
             1 if bool(self.admissibility.get("hard_rejected")) else 0,
             0 if self.improves_baseline(baseline_loss) else 1,
             1 if bool(self.admissibility.get("routed_to_refinement")) else 0,
+            self.heuristic_alignment_rank(),
             complexity,
             float(self.loss),
             self.label,
@@ -91,6 +107,9 @@ class ProposalCandidate:
                 "diagnostic_count": int(self.diagnostic_count),
                 "diagnostic_rule_names": list(self.diagnostic_rule_names),
                 "context_summary": dict(self.context_summary),
+                "heuristic_ids": list(self.heuristic_ids),
+                "preferred_action_classes": list(self.preferred_action_classes),
+                "candidate_action_classes": list(self.candidate_action_classes),
             },
             metadata={
                 "variant_name": self.variant_name,
@@ -137,6 +156,13 @@ def summarize_expansion_context(context: ExpansionContext) -> dict[str, Any]:
             else []
         ),
         "runtime_evidence_keys": sorted(runtime_evidence.keys())[:16],
+        "heuristic_ids": [
+            str(item.get("heuristic", {}).get("heuristic_id", ""))
+            for item in runtime_evidence.get("heuristics", [])
+            if isinstance(item, dict)
+            and isinstance(item.get("heuristic"), dict)
+            and item.get("heuristic", {}).get("heuristic_id")
+        ],
         "planning_artifact": summarize_planning_artifact(planning_artifact),
     }
 
@@ -428,6 +454,33 @@ def classify_proposal_candidate(
     return candidate
 
 
+def apply_heuristic_guidance(
+    candidate: ProposalCandidate,
+    *,
+    guidance: HeuristicProposalGuidance,
+) -> ProposalCandidate:
+    """Attach heuristic-driven action preferences to one proposal candidate."""
+    candidate.heuristic_ids = list(guidance.heuristic_ids)
+    candidate.preferred_action_classes = [
+        action_class.value for action_class in guidance.preferred_action_classes
+    ]
+    candidate.candidate_action_classes = [
+        action_class.value
+        for action_class in candidate_action_classes(
+            candidate.candidate_type,
+            family=candidate.family,
+            rules_applied=candidate.rules_applied,
+            applied_assets=candidate.applied_assets,
+        )
+    ]
+    if candidate.context_summary:
+        candidate.context_summary = dict(candidate.context_summary)
+    candidate.context_summary.setdefault(
+        "heuristic_guidance", guidance.model_dump(mode="json")
+    )
+    return candidate
+
+
 def select_best_proposal(
     candidates: list[ProposalCandidate],
     *,
@@ -452,6 +505,12 @@ def select_best_proposal(
     selected.selection_disposition = "selected"
     selected.selection_reason = "best_admissible_improvement"
     selected.selected_reason_codes = ["best_ranked_candidate", "improves_baseline"]
+    if (
+        selected.preferred_action_classes
+        and selected.candidate_action_classes
+        and selected.heuristic_alignment_rank() == 0
+    ):
+        selected.selected_reason_codes.append("matches_heuristic_guidance")
     if not bool(selected.admissibility.get("hard_rejected")):
         selected.selected_reason_codes.append("passes_hard_admissibility")
     if not bool(selected.admissibility.get("routed_to_refinement")):
@@ -465,6 +524,8 @@ def select_best_proposal(
         candidate.selection_disposition = "rejected"
         candidate.selection_reason = "outranked_by_selected_candidate"
         reasons = ["outranked_by_selected_candidate"]
+        if selected.preferred_action_classes and candidate.candidate_action_classes:
+            reasons.append("weaker_heuristic_alignment")
         if bool(candidate.admissibility.get("routed_to_refinement")):
             reasons.append("still_requires_refinement")
         candidate.rejected_reason_codes = reasons

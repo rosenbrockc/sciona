@@ -8,14 +8,20 @@ from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, ConceptType, IOSpec, NodeStatus
 from sciona.architect.planning_contract import build_planning_artifact
 from sciona.principal.models import OptimizationMetric
+from sciona.principal.heuristic_proposal_policy import (
+    HeuristicProposalGuidance,
+    build_heuristic_proposal_guidance,
+)
 from sciona.principal.proposal_helpers import (
     ProposalCandidate,
+    apply_heuristic_guidance,
     build_expansion_context,
     evaluate_proposal_candidate,
     proposal_structural_delta,
     select_best_proposal,
     summarize_expansion_context,
 )
+from sciona.heuristics import HeuristicActionClass
 
 
 @pytest.mark.asyncio
@@ -171,6 +177,39 @@ def test_select_best_proposal_prefers_admissible_improvement() -> None:
     assert rejected.selection_reason == "proposal_hard_rejected"
 
 
+def test_select_best_proposal_prefers_candidate_matching_heuristic_guidance() -> None:
+    guidance = HeuristicProposalGuidance(
+        family="signal_event_rate",
+        heuristic_ids=["interval_instability"],
+        preferred_action_classes=[HeuristicActionClass.INSERT_CORRECTION],
+        registry_asset_id="family.signal_event_rate.heuristics.v1",
+    )
+    expansion = ProposalCandidate(
+        label="expansion",
+        candidate_type="semantic_enrichment",
+        cdg=CDGExport(nodes=[], edges=[], metadata={}),
+        loss=8.0,
+        family="signal_event_rate",
+        applied_assets=[{"action_classes": ["insert_correction"]}],
+        admissibility={"hard_rejected": False, "routed_to_refinement": False},
+    )
+    mutation = ProposalCandidate(
+        label="local_mutation",
+        candidate_type="local_mutation",
+        cdg=CDGExport(nodes=[], edges=[], metadata={}),
+        loss=8.0,
+        family="signal_event_rate",
+        admissibility={"hard_rejected": False, "routed_to_refinement": False},
+    )
+    apply_heuristic_guidance(expansion, guidance=guidance)
+    apply_heuristic_guidance(mutation, guidance=guidance)
+
+    selected = select_best_proposal([mutation, expansion], baseline_loss=10.0)
+
+    assert selected is expansion
+    assert "matches_heuristic_guidance" in selected.selected_reason_codes
+
+
 def test_select_best_proposal_keeps_refinement_routed_improvement_eligible() -> None:
     baseline = CDGExport(nodes=[], edges=[], metadata={})
     improved = CDGExport(
@@ -238,3 +277,22 @@ def test_history_row_emits_typed_and_compatibility_fields() -> None:
     assert row["metadata"]["variant_name"] == "fast_path"
     assert row["family"] == "graph_optimization"
     assert row["structural_delta"]["node_count_delta"] == 1
+
+
+def test_build_heuristic_proposal_guidance_uses_family_registry() -> None:
+    guidance = build_heuristic_proposal_guidance(
+        planning_artifact={"family_hint": "divide_and_conquer"},
+        runtime_artifacts={
+            "heuristics": [
+                {
+                    "heuristic": {
+                        "heuristic_id": "density_collapse",
+                    }
+                }
+            ]
+        },
+    )
+
+    assert guidance.family == "divide_and_conquer"
+    assert guidance.registry_asset_id == "family.divide_and_conquer.heuristics.v1"
+    assert guidance.preferred_action_classes[0] == HeuristicActionClass.SPLIT_STAGE

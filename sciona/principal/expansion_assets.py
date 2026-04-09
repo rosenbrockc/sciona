@@ -16,6 +16,7 @@ from sciona.architect.semantic_graph import (
     SemanticCDG,
     project_semantic_cdg,
 )
+from sciona.heuristics import HeuristicActionClass
 from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
@@ -140,6 +141,7 @@ class ExpansionOperationAsset(BaseModel):
         default_factory=ExpansionTriggerAsset,
         validation_alias=AliasChoices("trigger", "applicability"),
     )
+    action_classes: list[HeuristicActionClass] = Field(default_factory=list)
     rewrite: ExpansionRewriteAsset = Field(default_factory=ExpansionRewriteAsset)
     uncertainty_notes: list[str] = Field(default_factory=list)
 
@@ -219,6 +221,7 @@ def expansion_asset_summary(
         "asset_review_status": asset.audit.review_status,
         "asset_source_kind": asset.audit.source_kind,
         "asset_operation": operation.rule_name,
+        "action_classes": [action.value for action in operation.action_classes],
         "asset_migration_readiness_status": readiness.get(
             "migration_readiness_status", ""
         ),

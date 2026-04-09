@@ -33,6 +33,10 @@
           "loss"
         ]
       },
+      "action_classes": [
+        "precondition",
+        "insert_correction"
+      ],
       "rewrite": {
         "before_summary": "A waveform source feeds the first detection-oriented filter directly.",
         "after_summary": "A jump-removal stage is inserted between the waveform source and the first detection-oriented filter.",
@@ -70,6 +74,10 @@
           }
         ]
       },
+      "action_classes": [
+        "gate_or_validate",
+        "branch_and_compare"
+      ],
       "rewrite": {
         "before_summary": "A waveform source feeds the first detection-oriented filter without an explicit quality-assessment stage.",
         "after_summary": "A signal-quality assessment stage is inserted before the first detection-oriented filter.",
@@ -110,6 +118,10 @@
           }
         ]
       },
+      "action_classes": [
+        "insert_correction",
+        "smooth_or_aggregate"
+      ],
       "rewrite": {
         "before_summary": "A detector feeds a rate estimator directly, with no explicit event-timing refinement stage.",
         "after_summary": "A peak-correction stage consumes both the conditioned waveform and the detected events before the rate estimator.",
@@ -137,6 +149,10 @@
           "events"
         ]
       },
+      "action_classes": [
+        "insert_correction",
+        "gate_or_validate"
+      ],
       "rewrite": {
         "before_summary": "A detector feeds an event-rate estimator directly.",
         "after_summary": "An interval-rejection stage is inserted between detection and the event-rate estimator.",
@@ -164,6 +180,10 @@
           "events"
         ]
       },
+      "action_classes": [
+        "insert_correction",
+        "smooth_or_aggregate"
+      ],
       "rewrite": {
         "before_summary": "A detector feeds the smoothed event-rate estimator directly.",
         "after_summary": "An interval-rejection stage is inserted between detection and the smoothed event-rate estimator.",
