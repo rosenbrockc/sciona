@@ -64,7 +64,10 @@ def test_materialize_heuristic_tracker_cohort_creates_subset_dataset_root(
 def _runtime_usability_assessment(heuristic_id: str) -> dict[str, object]:
     evidence = {
         "runtime_context": {"tracker": heuristic_id},
-        "telemetry_summary": {"signal": {"count": 10.0, "mean": 0.5}},
+        "telemetry_summary": {
+            "signal": {"count": 10.0, "mean": 0.5, "std": 0.1},
+            "rate": {"count": 3.0, "mean": 70.0, "std": 1.0},
+        },
         "heuristics": [
             {
                 "heuristic": {"heuristic_id": heuristic_id},

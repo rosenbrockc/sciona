@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import os
 from pathlib import Path
 import sys
@@ -18,6 +19,7 @@ from sciona.principal.runtime_context import (
     summarize_runtime_evidence,
 )
 from sciona.principal.runtime_heuristics import derive_runtime_heuristics
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
 from sciona.synthesizer.models import ExportBundle
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,92 @@ _FAILURE_PENALTY: float = 1e12
 _DEFAULT_TIMEOUT_S: float = 120.0
 _DATASET_SLICE_START_ENV = "SCIONA_EVALUATOR_DATASET_SLICE_START_S"
 _DATASET_SLICE_STOP_ENV = "SCIONA_EVALUATOR_DATASET_SLICE_STOP_S"
+
+
+def _is_finite_number(value: Any) -> bool:
+    if not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _loss_from_stdout_payload(stdout_payload: dict[str, Any] | None) -> float | None:
+    if not isinstance(stdout_payload, dict):
+        return None
+    for key in ("loss", "rmse", "mse"):
+        value = stdout_payload.get(key)
+        if _is_finite_number(value):
+            return float(value)
+    return None
+
+
+def _supports_nonzero_exit_recovery(
+    *,
+    stdout_payload: dict[str, Any] | None,
+    telemetry: dict[str, NodeTelemetry],
+) -> bool:
+    return bool(telemetry) and _loss_from_stdout_payload(stdout_payload) is not None
+
+
+def _persist_final_runtime_evidence(runtime_artifacts: dict[str, Any]) -> None:
+    raw_trace_path = str(runtime_artifacts.get("trace_path", "") or "").strip()
+    if not raw_trace_path:
+        return
+    trace_path = Path(raw_trace_path).expanduser()
+    try:
+        payload = {
+            "trace_path": str(trace_path),
+            "runtime_context": runtime_artifacts.get("runtime_context", {}),
+            "canonical_runtime_context": runtime_artifacts.get(
+                "canonical_runtime_context", {}
+            ),
+            "telemetry_summary": runtime_artifacts.get("telemetry_summary", {}),
+            "heuristics": runtime_artifacts.get("heuristics", []),
+            "heuristic_summary": runtime_artifacts.get("heuristic_summary", {}),
+            "execution_summary": runtime_artifacts.get("execution_summary", {}),
+            "usability_assessment": runtime_artifacts.get("usability_assessment", {}),
+        }
+        (trace_path.parent / "runtime_evidence.json").write_text(
+            json.dumps(payload, indent=2, sort_keys=True)
+        )
+    except Exception:
+        logger.debug("Failed to persist final runtime evidence", exc_info=True)
+
+
+def _finalize_runtime_artifacts(
+    runtime_artifacts: dict[str, Any],
+    *,
+    process_returncode: int,
+    global_loss: float,
+    telemetry: dict[str, NodeTelemetry],
+) -> dict[str, Any]:
+    artifacts = dict(runtime_artifacts)
+    soft_accepted = process_returncode != 0 and _is_finite_number(global_loss) and float(
+        global_loss
+    ) < _FAILURE_PENALTY and bool(telemetry)
+    output_support_present = bool(
+        artifacts.get("telemetry_summary", {}).get("outputs")
+        or artifacts.get("telemetry_summary", {}).get("rate")
+        or artifacts.get("telemetry_summary", {}).get("events")
+    )
+    execution_summary = {
+        "process_returncode": int(process_returncode),
+        "loss_is_finite": _is_finite_number(global_loss)
+        and float(global_loss) < _FAILURE_PENALTY,
+        "trace_support_present": bool(telemetry),
+        "output_support_present": bool(output_support_present),
+        "soft_accepted_nonzero_exit": bool(soft_accepted),
+    }
+    artifacts["execution_summary"] = execution_summary
+    evidence = dict(artifacts)
+    evidence["execution_summary"] = execution_summary
+    artifacts["usability_assessment"] = build_runtime_usability_assessment(
+        evidence
+    ).model_dump(mode="json")
+    _persist_final_runtime_evidence(artifacts)
+    return artifacts
 
 
 def _resolve_optional_float_setting(
@@ -165,13 +253,40 @@ class ExecutionSandbox:
             stdout_payload=stdout_payload,
             runtime_inputs=_load_runtime_inputs_from_dataset_path(dataset_path),
         )
+        telemetry = _parse_trace(trace_path)
 
         if proc.returncode != 0:
-            telemetry = _parse_trace(trace_path)
+            if _supports_nonzero_exit_recovery(
+                stdout_payload=stdout_payload,
+                telemetry=telemetry,
+            ):
+                logger.warning(
+                    "Artifact exited with code %d after emitting valid telemetry; "
+                    "accepting scoreable result.",
+                    proc.returncode,
+                )
+                global_loss = _compute_loss(telemetry, metric, stdout)
+                runtime_artifacts = _finalize_runtime_artifacts(
+                    runtime_artifacts,
+                    process_returncode=proc.returncode,
+                    global_loss=global_loss,
+                    telemetry=telemetry,
+                )
+                return BenchmarkResult(
+                    global_loss=global_loss,
+                    node_telemetry=telemetry,
+                    runtime_artifacts=runtime_artifacts,
+                )
             logger.error(
                 "Artifact exited with code %d: %s",
                 proc.returncode,
                 (stderr or b"").decode(errors="replace")[:500],
+            )
+            runtime_artifacts = _finalize_runtime_artifacts(
+                runtime_artifacts,
+                process_returncode=proc.returncode,
+                global_loss=_FAILURE_PENALTY,
+                telemetry=telemetry,
             )
             return BenchmarkResult(
                 global_loss=_FAILURE_PENALTY,
@@ -179,11 +294,14 @@ class ExecutionSandbox:
                 runtime_artifacts=runtime_artifacts,
             )
 
-        # Parse trace.jsonl
-        telemetry = _parse_trace(trace_path)
-
         # Compute global loss from the chosen metric
         global_loss = _compute_loss(telemetry, metric, stdout)
+        runtime_artifacts = _finalize_runtime_artifacts(
+            runtime_artifacts,
+            process_returncode=proc.returncode,
+            global_loss=global_loss,
+            telemetry=telemetry,
+        )
 
         return BenchmarkResult(
             global_loss=global_loss,
@@ -373,13 +491,40 @@ class ExecutionSandbox:
             stdout_payload=stdout_payload,
             runtime_inputs=runtime_inputs,
         )
+        telemetry = _parse_trace(trace_path)
 
         if proc.returncode != 0:
-            telemetry = _parse_trace(trace_path)
+            if _supports_nonzero_exit_recovery(
+                stdout_payload=stdout_payload,
+                telemetry=telemetry,
+            ):
+                logger.warning(
+                    "Artifact exited with code %d after emitting valid telemetry; "
+                    "accepting scoreable adapter result.",
+                    proc.returncode,
+                )
+                global_loss = _compute_loss(telemetry, metric, stdout)
+                runtime_artifacts = _finalize_runtime_artifacts(
+                    runtime_artifacts,
+                    process_returncode=proc.returncode,
+                    global_loss=global_loss,
+                    telemetry=telemetry,
+                )
+                return BenchmarkResult(
+                    global_loss=global_loss,
+                    node_telemetry=telemetry,
+                    runtime_artifacts=runtime_artifacts,
+                )
             logger.error(
                 "Artifact exited with code %d: %s",
                 proc.returncode,
                 (stderr or b"").decode(errors="replace")[:500],
+            )
+            runtime_artifacts = _finalize_runtime_artifacts(
+                runtime_artifacts,
+                process_returncode=proc.returncode,
+                global_loss=_FAILURE_PENALTY,
+                telemetry=telemetry,
             )
             return BenchmarkResult(
                 global_loss=_FAILURE_PENALTY,
@@ -387,8 +532,13 @@ class ExecutionSandbox:
                 runtime_artifacts=runtime_artifacts,
             )
 
-        telemetry = _parse_trace(trace_path)
         global_loss = _compute_loss(telemetry, metric, stdout)
+        runtime_artifacts = _finalize_runtime_artifacts(
+            runtime_artifacts,
+            process_returncode=proc.returncode,
+            global_loss=global_loss,
+            telemetry=telemetry,
+        )
         return BenchmarkResult(
             global_loss=global_loss,
             node_telemetry=telemetry,

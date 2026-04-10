@@ -6,9 +6,11 @@ from pathlib import Path
 import numpy as np
 
 from sciona.principal.evaluator import (
+    _finalize_runtime_artifacts,
     _build_runtime_artifacts,
     _collect_runtime_inputs_from_frames,
 )
+from sciona.principal.models import NodeTelemetry
 
 
 def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
@@ -122,3 +124,48 @@ def test_collect_runtime_inputs_from_frames_prefers_primary_waveform_stream() ->
     assert "sampling_rate" in runtime_inputs
     assert runtime_inputs["signal"].shape == runtime_inputs["h10_ecg_value"].shape
     assert runtime_inputs["sampling_rate"] > 100.0
+
+
+def test_finalize_runtime_artifacts_soft_accepts_scoreable_nonzero_exit(
+    tmp_path: Path,
+) -> None:
+    trace_path = tmp_path / "trace.jsonl"
+    trace_path.write_text(
+        json.dumps(
+            {
+                "node_id": "det",
+                "execution_time_ms": 1.0,
+                "peak_memory_bytes": 1024,
+                "output_summaries": {
+                    "heart_rate": {"count": 3.0, "mean": 70.0, "std": 1.0}
+                },
+            }
+        )
+        + "\n"
+    )
+    artifacts = _build_runtime_artifacts(
+        trace_path=trace_path,
+        stdout_payload={"loss": 7.95, "outputs": {"heart_rate": [70.0, 71.0, 69.5]}},
+        runtime_inputs={
+            "signal": list(np.linspace(0.0, 1.0, 30)),
+            "sampling_rate": 100.0,
+        },
+    )
+
+    finalized = _finalize_runtime_artifacts(
+        artifacts,
+        process_returncode=-10,
+        global_loss=7.95,
+        telemetry={
+            "det": NodeTelemetry(
+                node_id="det",
+                execution_time_ms=1.0,
+                peak_memory_bytes=1024,
+                error_expansion=0.0,
+            )
+        },
+    )
+
+    assert finalized["execution_summary"]["soft_accepted_nonzero_exit"] is True
+    assert finalized["execution_summary"]["loss_is_finite"] is True
+    assert finalized["usability_assessment"]["usable_for_scoring"] is True

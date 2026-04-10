@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import math
 from typing import Any
 
 from sciona.usability import (
@@ -86,6 +87,68 @@ def _confidence_from_support(heuristic_count: int, max_confidence: float) -> flo
     return max(0.4, min(0.95, 0.45 + (max_confidence * 0.5)))
 
 
+_SUMMARY_METADATA_KEYS = {
+    "source_key",
+    "stream_id",
+    "sampling_rate",
+    "duration_seconds",
+}
+
+
+def _is_finite_number(value: Any) -> bool:
+    if not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _summary_has_supported_values(
+    summary: Mapping[str, Any] | None,
+    *,
+    min_count: float,
+) -> bool:
+    if not isinstance(summary, Mapping) or not summary:
+        return False
+    count = summary.get("count")
+    if not _is_finite_number(count) or float(count) < min_count:
+        return False
+    for key, value in summary.items():
+        if key in _SUMMARY_METADATA_KEYS or key == "count":
+            continue
+        if _is_finite_number(value):
+            return True
+    return False
+
+
+def _has_supported_primary_signal(telemetry_summary: Mapping[str, Any]) -> bool:
+    return _summary_has_supported_values(
+        telemetry_summary.get("signal"),
+        min_count=2.0,
+    )
+
+
+def _has_supported_scoring_outputs(telemetry_summary: Mapping[str, Any]) -> bool:
+    rate_summary = telemetry_summary.get("rate")
+    if _summary_has_supported_values(rate_summary, min_count=1.0):
+        return True
+    events_summary = telemetry_summary.get("events")
+    if _summary_has_supported_values(events_summary, min_count=2.0):
+        return True
+    outputs = telemetry_summary.get("outputs", {})
+    if isinstance(outputs, Mapping):
+        for summary in outputs.values():
+            if _summary_has_supported_values(summary, min_count=1.0):
+                return True
+    return False
+
+
+def _execution_summary(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    raw = payload.get("execution_summary", {})
+    return raw if isinstance(raw, Mapping) else {}
+
+
 def _guidance_scope(
     *,
     runtime_context: Mapping[str, Any],
@@ -120,6 +183,21 @@ def _guidance_scope(
                 source_id="telemetry_summary",
                 related_heuristics=heuristic_ids,
                 confidence=0.9,
+            )
+        )
+        usable = False
+    elif not _has_supported_primary_signal(telemetry_summary):
+        blocking_reasons.append(
+            _reason(
+                UsabilityReasonKind.BLOCKING,
+                UsabilityBlockingReasonCode.REQUIRED_INPUT_MISSING,
+                summary=(
+                    "Primary input evidence is missing or non-finite, so runtime "
+                    "guidance is not reliable."
+                ),
+                source_id="telemetry_summary.signal",
+                related_heuristics=heuristic_ids,
+                confidence=0.95,
             )
         )
         usable = False
@@ -177,6 +255,7 @@ def _scoring_scope(
     heuristic_ids: list[str],
     heuristic_count: int,
     max_confidence: float,
+    execution_summary: Mapping[str, Any],
 ) -> UsabilityScopeAssessment:
     blocking_reasons: list[UsabilityReason] = []
     warning_reasons: list[UsabilityReason] = []
@@ -192,6 +271,36 @@ def _scoring_scope(
                 source_id="telemetry_summary",
                 related_heuristics=heuristic_ids,
                 confidence=0.9,
+            )
+        )
+        usable = False
+    elif not _has_supported_scoring_outputs(telemetry_summary):
+        blocking_reasons.append(
+            _reason(
+                UsabilityReasonKind.BLOCKING,
+                UsabilityBlockingReasonCode.COVERAGE_INSUFFICIENT,
+                summary=(
+                    "Runtime execution did not produce finite downstream outputs "
+                    "needed for scoring."
+                ),
+                source_id="telemetry_summary.outputs",
+                related_heuristics=heuristic_ids,
+                confidence=0.9,
+            )
+        )
+        usable = False
+    if execution_summary and not bool(execution_summary.get("loss_is_finite", True)):
+        blocking_reasons.append(
+            _reason(
+                UsabilityReasonKind.BLOCKING,
+                UsabilityBlockingReasonCode.BENCHMARK_CONTRACT_MISMATCH,
+                summary=(
+                    "Execution did not produce a finite scoreable outcome for this "
+                    "benchmark scope."
+                ),
+                source_id="execution_summary",
+                related_heuristics=heuristic_ids,
+                confidence=0.95,
             )
         )
         usable = False
@@ -237,6 +346,7 @@ def _final_benchmark_scope(
     heuristic_ids: list[str],
     heuristic_count: int,
     max_confidence: float,
+    execution_summary: Mapping[str, Any],
 ) -> UsabilityScopeAssessment:
     blocking_reasons: list[UsabilityReason] = []
     warning_reasons: list[UsabilityReason] = []
@@ -254,6 +364,21 @@ def _final_benchmark_scope(
                 confidence=max(0.7, max_confidence or 0.7),
             )
         )
+    elif execution_summary and not bool(execution_summary.get("output_support_present", True)):
+        blocking_reasons.append(
+            _reason(
+                UsabilityReasonKind.BLOCKING,
+                UsabilityBlockingReasonCode.COVERAGE_INSUFFICIENT,
+                summary=(
+                    "Final benchmark use requires supported downstream outputs, "
+                    "but execution emitted only invalid or empty summaries."
+                ),
+                source_id="execution_summary",
+                related_heuristics=heuristic_ids,
+                confidence=0.95,
+            )
+        )
+        usable = False
     elif heuristic_count == 0:
         blocking_reasons.append(
             _reason(
@@ -321,6 +446,7 @@ def build_runtime_usability_assessment(
     runtime_context = payload.get("runtime_context", {})
     telemetry_summary = payload.get("telemetry_summary", {})
     heuristic_summary = payload.get("heuristic_summary", {})
+    execution_summary = _execution_summary(payload)
     heuristic_ids = _heuristic_ids(payload)
     heuristic_count = len(heuristic_ids)
     max_confidence = 0.0
@@ -343,12 +469,14 @@ def build_runtime_usability_assessment(
         heuristic_ids=heuristic_ids,
         heuristic_count=heuristic_count,
         max_confidence=max_confidence,
+        execution_summary=execution_summary,
     )
     final_benchmark = _final_benchmark_scope(
         scoring_usable=scoring.usable,
         heuristic_ids=heuristic_ids,
         heuristic_count=heuristic_count,
         max_confidence=max_confidence,
+        execution_summary=execution_summary,
     )
 
     return UsabilityAssessment(

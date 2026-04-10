@@ -95,6 +95,10 @@ def test_behavioral_policy_reports_usability_scope_exclusions() -> None:
     assessment = build_runtime_usability_assessment(
         {
             "runtime_context": {"tracker": "trial-1"},
+            "telemetry_summary": {
+                "signal": {"count": 10.0, "mean": 0.5, "std": 0.1},
+                "rate": {"count": 3.0, "mean": 70.0, "std": 1.0},
+            },
             "heuristics": [
                 {
                     "heuristic": {"heuristic_id": "interval_instability"},
@@ -106,6 +110,13 @@ def test_behavioral_policy_reports_usability_scope_exclusions() -> None:
                 "heuristic_count": 1,
                 "heuristic_ids": ["interval_instability"],
                 "max_confidence": 0.7,
+            },
+            "execution_summary": {
+                "process_returncode": 1,
+                "loss_is_finite": False,
+                "trace_support_present": True,
+                "output_support_present": False,
+                "soft_accepted_nonzero_exit": False,
             },
         }
     ).model_dump(mode="json")
@@ -125,11 +136,11 @@ def test_behavioral_policy_reports_usability_scope_exclusions() -> None:
     assert report.passed is False
     assert "final_benchmark_usability_excluded" in report.violations
     assert any(
-        warning.startswith("guidance_usability_excluded:")
+        warning.startswith("scoring_usability_excluded:")
         for warning in report.warnings
     )
     assert any(
-        warning.startswith("scoring_usability_excluded:")
+        warning.startswith("guidance_warning:")
         for warning in report.warnings
     )
 

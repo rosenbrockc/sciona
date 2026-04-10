@@ -14,7 +14,10 @@ from sciona.principal.runtime_usability import build_runtime_usability_assessmen
 def _runtime_usability_evidence(heuristic_id: str) -> dict[str, object]:
     evidence = {
         "runtime_context": {"stream_count": 1},
-        "telemetry_summary": {"signal": {"count": 10.0, "mean": 0.5}},
+        "telemetry_summary": {
+            "signal": {"count": 10.0, "mean": 0.5, "std": 0.1},
+            "rate": {"count": 3.0, "mean": 70.0, "std": 1.0},
+        },
         "heuristics": [
             {
                 "heuristic": {"heuristic_id": heuristic_id},
