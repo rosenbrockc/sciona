@@ -510,6 +510,18 @@ async def select_proposal(state: PrincipalState, config: RunnableConfig) -> dict
             heuristic_cohort = None
         if heuristic_cohort:
             guidance_runtime_artifacts["heuristic_cohort"] = heuristic_cohort
+            if state.trial_history:
+                latest = dict(state.trial_history[-1])
+                runtime_evidence = dict(latest.get("runtime_evidence", {}) or {})
+                compact_evidence = summarize_runtime_heuristic_evidence(
+                    {"heuristic_cohort": heuristic_cohort}
+                )
+                if compact_evidence.get("heuristic_cohort"):
+                    runtime_evidence["heuristic_cohort"] = compact_evidence[
+                        "heuristic_cohort"
+                    ]
+                    latest["runtime_evidence"] = runtime_evidence
+                    state.trial_history[-1] = latest
     heuristic_guidance = build_heuristic_proposal_guidance(
         planning_artifact=state.planning_artifact,
         runtime_artifacts=guidance_runtime_artifacts,

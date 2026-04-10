@@ -433,3 +433,46 @@ def test_build_heuristic_proposal_guidance_weights_recurrent_cohort_heuristics()
     assert guidance.heuristic_summary["interval_instability"]["member_count"] == 5
     assert guidance.preferred_action_classes[0] == HeuristicActionClass.INSERT_CORRECTION
     assert any(note.startswith("cohort:interval_instability:5/5") for note in guidance.notes)
+
+
+def test_build_heuristic_proposal_guidance_uses_scoreable_cohort_members_only() -> None:
+    guidance = build_heuristic_proposal_guidance(
+        planning_artifact={"family_hint": "signal_event_rate"},
+        runtime_artifacts={
+            "heuristic_cohort": {
+                "cohort_size": 5,
+                "evaluated_member_count": 2,
+                "attempted_member_count": 5,
+                "heuristics": {
+                    "interval_instability": {
+                        "occurrence_count": 2,
+                        "member_count": 2,
+                        "coverage_fraction": 1.0,
+                        "mean_confidence": 0.8,
+                        "max_confidence": 0.9,
+                    }
+                },
+                "gating_heuristics": {
+                    "quality_instability": {
+                        "occurrence_count": 3,
+                        "member_count": 3,
+                        "coverage_fraction": 1.0,
+                        "mean_confidence": 0.9,
+                        "max_confidence": 0.95,
+                    }
+                },
+                "usability": {
+                    "proposal_basis": "scoring_usable_members",
+                    "guidance_usable_member_count": 5,
+                    "scoring_usable_member_count": 2,
+                    "unscoreable_member_count": 3,
+                },
+            }
+        },
+    )
+
+    assert guidance.cohort_size == 2
+    assert "interval_instability" in guidance.heuristic_summary
+    assert "quality_instability" not in guidance.heuristic_summary
+    assert guidance.usability_summary["cohort_usability"]["proposal_basis"] == "scoring_usable_members"
+    assert any(note.startswith("cohort:interval_instability:2/2") for note in guidance.notes)

@@ -54,6 +54,88 @@ class HeuristicUsabilityMemoryRecord(BaseModel):
     heuristic_summary: dict[str, Any] = Field(default_factory=dict)
 
 
+def _compact_heuristic_cohort_member(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        return {}
+    heuristics: list[dict[str, Any]] = []
+    for item in raw.get("heuristics", []) or []:
+        if not isinstance(item, dict):
+            continue
+        heuristic = item.get("heuristic", {})
+        if not isinstance(heuristic, dict):
+            continue
+        heuristic_id = str(heuristic.get("heuristic_id", "") or "").strip()
+        if not heuristic_id:
+            continue
+        heuristics.append(
+            {
+                "heuristic_id": heuristic_id,
+                "confidence": float(
+                    item.get("confidence", heuristic.get("confidence", 0.0)) or 0.0
+                ),
+                "source_section": str(item.get("source_section", "") or ""),
+            }
+        )
+    usability = raw.get("usability", {})
+    usability_summary = {}
+    if isinstance(usability, dict):
+        scope_exclusions = usability.get("scope_exclusions", {})
+        usability_summary = {
+            "usable_for_guidance": bool(usability.get("usable_for_guidance", False)),
+            "usable_for_scoring": bool(usability.get("usable_for_scoring", False)),
+            "usable_for_final_benchmark": bool(
+                usability.get("usable_for_final_benchmark", False)
+            ),
+            "scope_exclusions": (
+                dict(scope_exclusions) if isinstance(scope_exclusions, dict) else {}
+            ),
+        }
+    return {
+        "member_label": str(raw.get("member_label", "") or ""),
+        "tracker_value": str(raw.get("tracker_value", "") or ""),
+        "loss": raw.get("loss"),
+        "heuristics": heuristics,
+        "usability": usability_summary,
+    }
+
+
+def _compact_heuristic_cohort(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        return {}
+    summary: dict[str, Any] = {}
+    for key in (
+        "cohort_size",
+        "evaluated_member_count",
+        "attempted_member_count",
+        "source_tracker_path",
+        "combined_tracker_csv",
+    ):
+        value = raw.get(key)
+        if value is not None:
+            summary[key] = value
+    heuristics = raw.get("heuristics")
+    if isinstance(heuristics, dict):
+        summary["heuristics"] = dict(heuristics)
+    gating_heuristics = raw.get("gating_heuristics")
+    if isinstance(gating_heuristics, dict):
+        summary["gating_heuristics"] = dict(gating_heuristics)
+    usability = raw.get("usability")
+    if isinstance(usability, dict):
+        summary["usability"] = dict(usability)
+    excluded_members = raw.get("excluded_members", [])
+    if isinstance(excluded_members, list):
+        compact_members = [
+            compact
+            for compact in (
+                _compact_heuristic_cohort_member(item) for item in excluded_members
+            )
+            if compact
+        ]
+        if compact_members:
+            summary["excluded_members"] = compact_members[:20]
+    return summary
+
+
 def summarize_runtime_heuristic_evidence(
     runtime_artifacts: dict[str, Any] | None,
 ) -> dict[str, Any]:
@@ -73,6 +155,9 @@ def summarize_runtime_heuristic_evidence(
             continue
         if isinstance(value, (dict, list)):
             summary[key] = value
+    heuristic_cohort = _compact_heuristic_cohort(runtime_artifacts.get("heuristic_cohort"))
+    if heuristic_cohort:
+        summary["heuristic_cohort"] = heuristic_cohort
     return summary
 
 

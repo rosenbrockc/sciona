@@ -252,8 +252,6 @@ def summarize_heuristic_cohort(
     excluded_members: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Aggregate heuristic recurrence across cohort members."""
-    heuristic_stats: dict[str, dict[str, Any]] = {}
-    member_count = len(entries)
     excluded_members = list(excluded_members or [])
     all_members = [*entries, *excluded_members]
     scope_counts = {
@@ -263,6 +261,94 @@ def summarize_heuristic_cohort(
     }
     exclusion_reason_counts: dict[str, int] = {}
     excluded_labels: list[str] = []
+    proposal_members: list[dict[str, Any]] = []
+    unscoreable_members: list[dict[str, Any]] = []
+
+    def _aggregate_members(
+        members: list[dict[str, Any]],
+        *,
+        denominator_count: int,
+    ) -> dict[str, Any]:
+        heuristic_stats: dict[str, dict[str, Any]] = {}
+        for member in members:
+            if not isinstance(member, dict):
+                continue
+            seen_in_member: set[str] = set()
+            for item in member.get("heuristics", []) or []:
+                try:
+                    observation = RuntimeHeuristicObservation.model_validate(item)
+                    heuristic_id = observation.heuristic.heuristic_id
+                    confidence = float(observation.confidence)
+                    source_section = observation.source_section
+                except Exception:
+                    if not isinstance(item, dict):
+                        continue
+                    heuristic = item.get("heuristic", {})
+                    if not isinstance(heuristic, dict):
+                        continue
+                    heuristic_id = str(heuristic.get("heuristic_id", "") or "").strip()
+                    if not heuristic_id:
+                        continue
+                    try:
+                        confidence = float(
+                            item.get("confidence", heuristic.get("confidence", 0.0)) or 0.0
+                        )
+                    except (TypeError, ValueError):
+                        confidence = 0.0
+                    source_section = str(item.get("source_section", "") or "")
+                stats = heuristic_stats.setdefault(
+                    heuristic_id,
+                    {
+                        "occurrence_count": 0,
+                        "member_count": 0,
+                        "mean_confidence": 0.0,
+                        "max_confidence": 0.0,
+                        "source_sections": set(),
+                        "member_labels": [],
+                    },
+                )
+                stats["occurrence_count"] += 1
+                stats["mean_confidence"] += confidence
+                stats["max_confidence"] = max(
+                    float(stats["max_confidence"]),
+                    confidence,
+                )
+                if source_section:
+                    stats["source_sections"].add(source_section)
+                if heuristic_id not in seen_in_member:
+                    stats["member_count"] += 1
+                    stats["member_labels"].append(str(member.get("member_label", "")))
+                    seen_in_member.add(heuristic_id)
+
+        serialized: dict[str, Any] = {}
+        for heuristic_id, stats in heuristic_stats.items():
+            occurrence_count = int(stats["occurrence_count"])
+            member_presence = int(stats["member_count"])
+            serialized[heuristic_id] = {
+                "occurrence_count": occurrence_count,
+                "member_count": member_presence,
+                "coverage_fraction": (
+                    float(member_presence / denominator_count)
+                    if denominator_count > 0
+                    else 0.0
+                ),
+                "mean_confidence": (
+                    float(stats["mean_confidence"] / occurrence_count)
+                    if occurrence_count > 0
+                    else 0.0
+                ),
+                "max_confidence": float(stats["max_confidence"]),
+                "source_sections": sorted(
+                    section for section in stats["source_sections"] if section
+                ),
+                "member_labels": [
+                    label
+                    for label in stats["member_labels"]
+                    if isinstance(label, str) and label
+                ][:denominator_count],
+            }
+        return serialized
+
     for entry in all_members:
         if not isinstance(entry, dict):
             continue
@@ -302,82 +388,26 @@ def summarize_heuristic_cohort(
                 code_text = str(code or "").strip()
                 if not code_text:
                     continue
-                exclusion_reason_counts[code_text] = exclusion_reason_counts.get(code_text, 0) + 1
+                exclusion_reason_counts[code_text] = (
+                    exclusion_reason_counts.get(code_text, 0) + 1
+                )
         if not bool(usability.get("usable_for_guidance")):
             excluded_labels.append(str(entry.get("member_label", "")))
-            continue
-        seen_in_member: set[str] = set()
-        for item in entry.get("heuristics", []) or []:
-            try:
-                observation = RuntimeHeuristicObservation.model_validate(item)
-                heuristic_id = observation.heuristic.heuristic_id
-                confidence = float(observation.confidence)
-                source_section = observation.source_section
-            except Exception:
-                if not isinstance(item, dict):
-                    continue
-                heuristic = item.get("heuristic", {})
-                if not isinstance(heuristic, dict):
-                    continue
-                heuristic_id = str(heuristic.get("heuristic_id", "") or "").strip()
-                if not heuristic_id:
-                    continue
-                try:
-                    confidence = float(
-                        item.get("confidence", heuristic.get("confidence", 0.0)) or 0.0
-                    )
-                except (TypeError, ValueError):
-                    confidence = 0.0
-                source_section = str(item.get("source_section", "") or "")
-            stats = heuristic_stats.setdefault(
-                heuristic_id,
-                {
-                    "occurrence_count": 0,
-                    "member_count": 0,
-                    "mean_confidence": 0.0,
-                    "max_confidence": 0.0,
-                    "source_sections": set(),
-                    "member_labels": [],
-                },
-            )
-            stats["occurrence_count"] += 1
-            stats["mean_confidence"] += confidence
-            stats["max_confidence"] = max(
-                float(stats["max_confidence"]),
-                confidence,
-            )
-            if source_section:
-                stats["source_sections"].add(source_section)
-            if heuristic_id not in seen_in_member:
-                stats["member_count"] += 1
-                stats["member_labels"].append(str(entry.get("member_label", "")))
-                seen_in_member.add(heuristic_id)
+        if bool(usability.get("usable_for_scoring")):
+            proposal_members.append(entry)
+        else:
+            unscoreable_members.append(entry)
 
-    serialized: dict[str, Any] = {}
-    for heuristic_id, stats in heuristic_stats.items():
-        occurrence_count = int(stats["occurrence_count"])
-        member_presence = int(stats["member_count"])
-        serialized[heuristic_id] = {
-            "occurrence_count": occurrence_count,
-            "member_count": member_presence,
-            "coverage_fraction": (
-                float(member_presence / member_count) if member_count > 0 else 0.0
-            ),
-            "mean_confidence": (
-                float(stats["mean_confidence"] / occurrence_count)
-                if occurrence_count > 0
-                else 0.0
-            ),
-            "max_confidence": float(stats["max_confidence"]),
-            "source_sections": sorted(
-                section for section in stats["source_sections"] if section
-            ),
-            "member_labels": [
-                label
-                for label in stats["member_labels"]
-                if isinstance(label, str) and label
-            ][:member_count],
-        }
+    member_count = len(entries)
+    proposal_heuristics = _aggregate_members(
+        proposal_members,
+        denominator_count=member_count,
+    )
+    gating_member_count = len(unscoreable_members)
+    gating_heuristics = _aggregate_members(
+        unscoreable_members,
+        denominator_count=gating_member_count,
+    )
 
     return {
         "cohort_size": cohort_size,
@@ -385,7 +415,8 @@ def summarize_heuristic_cohort(
         "attempted_member_count": len(all_members),
         "source_tracker_path": source_tracker_path,
         "combined_tracker_csv": combined_tracker_csv,
-        "heuristics": serialized,
+        "heuristics": proposal_heuristics,
+        "gating_heuristics": gating_heuristics,
         "members": entries,
         "excluded_members": excluded_members,
         "usability": {
@@ -395,6 +426,9 @@ def summarize_heuristic_cohort(
             "excluded_member_count": len(excluded_members),
             "excluded_member_labels": [label for label in excluded_labels if label],
             "exclusion_reason_counts": dict(sorted(exclusion_reason_counts.items())),
+            "proposal_member_count": member_count,
+            "unscoreable_member_count": gating_member_count,
+            "proposal_basis": "scoring_usable_members",
         },
     }
 
@@ -474,6 +508,9 @@ async def build_adapter_heuristic_cohort(
             guidance_usable = bool(
                 isinstance(usability, dict) and usability.get("usable_for_guidance")
             )
+            scoring_usable = bool(
+                isinstance(usability, dict) and usability.get("usable_for_scoring")
+            )
             if entry["loss"] >= 1e11:
                 skipped_members.append(entry)
                 continue
@@ -481,6 +518,9 @@ async def build_adapter_heuristic_cohort(
                 skipped_members.append(entry)
                 continue
             if not guidance_usable:
+                skipped_members.append(entry)
+                continue
+            if not scoring_usable:
                 skipped_members.append(entry)
                 continue
             entries.append(entry)

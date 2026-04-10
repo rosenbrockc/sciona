@@ -104,6 +104,60 @@ def test_summarize_runtime_heuristic_evidence_keeps_only_compact_fields() -> Non
     assert summary["heuristic_summary"]["heuristic_count"] == 1
 
 
+def test_summarize_runtime_heuristic_evidence_keeps_compact_cohort_gating_data() -> None:
+    summary = summarize_runtime_heuristic_evidence(
+        {
+            "heuristic_cohort": {
+                "cohort_size": 5,
+                "evaluated_member_count": 2,
+                "attempted_member_count": 5,
+                "heuristics": {
+                    "interval_instability": {
+                        "member_count": 2,
+                        "coverage_fraction": 1.0,
+                    }
+                },
+                "gating_heuristics": {
+                    "quality_instability": {
+                        "member_count": 3,
+                        "coverage_fraction": 1.0,
+                    }
+                },
+                "usability": {
+                    "proposal_basis": "scoring_usable_members",
+                    "unscoreable_member_count": 3,
+                },
+                "excluded_members": [
+                    {
+                        "member_label": "night_3",
+                        "tracker_value": "heuristic_cohort_5_003",
+                        "loss": 1e12,
+                        "heuristics": [
+                            {
+                                "heuristic": {"heuristic_id": "quality_instability"},
+                                "confidence": 0.7,
+                                "source_section": "signal",
+                            }
+                        ],
+                        "usability": {
+                            "usable_for_guidance": True,
+                            "usable_for_scoring": False,
+                            "usable_for_final_benchmark": False,
+                            "scope_exclusions": {"scoring": ["coverage_insufficient"]},
+                        },
+                    }
+                ],
+            }
+        }
+    )
+
+    cohort = summary["heuristic_cohort"]
+    assert cohort["usability"]["proposal_basis"] == "scoring_usable_members"
+    assert cohort["gating_heuristics"]["quality_instability"]["member_count"] == 3
+    assert cohort["excluded_members"][0]["heuristics"][0]["heuristic_id"] == "quality_instability"
+    assert cohort["excluded_members"][0]["usability"]["usable_for_scoring"] is False
+
+
 def test_extract_heuristic_usability_memory_tracks_scopes_and_loss_delta() -> None:
     evidence = {
         "runtime_context": {"primary_stream_id": "generic"},
