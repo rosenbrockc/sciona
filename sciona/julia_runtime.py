@@ -100,24 +100,48 @@ def prewarm_juliacall_project(
     bootstrap = (
         "import Pkg\n"
         f'Pkg.activate(raw"{cfg.project}")\n'
+        "Pkg.instantiate()\n"
         "try\n"
         "    import PythonCall\n"
         "catch\n"
         '    Pkg.add(\"PythonCall\")\n'
+        "    Pkg.instantiate()\n"
         "    import PythonCall\n"
         "end\n"
-        "Pkg.instantiate()\n"
         "println(Base.active_project())\n"
     )
-    env = dict(os.environ)
-    env["JULIA_DEPOT_PATH"] = str(cfg.depot)
-    env["PYTHON_JULIAPKG_PROJECT"] = str(cfg.project)
-    subprocess.run(
-        [cfg.julia_exe, "--startup-file=no", "-e", bootstrap],
-        check=True,
-        env=env,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
-    )
+
+    def _run_bootstrap(script: str) -> None:
+        env = dict(os.environ)
+        env["JULIA_DEPOT_PATH"] = str(cfg.depot)
+        env["PYTHON_JULIAPKG_PROJECT"] = str(cfg.project)
+        subprocess.run(
+            [cfg.julia_exe, "--startup-file=no", "-e", script],
+            check=True,
+            env=env,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
+
+    try:
+        _run_bootstrap(bootstrap)
+    except subprocess.CalledProcessError:
+        # The writable Julia runtime is disposable. If it drifts into a broken
+        # state, wipe it and rehydrate from a clean project/depot rather than
+        # trying to repair ad hoc package state.
+        shutil.rmtree(cfg.project, ignore_errors=True)
+        shutil.rmtree(cfg.depot, ignore_errors=True)
+        cfg.project.mkdir(parents=True, exist_ok=True)
+        cfg.depot.mkdir(parents=True, exist_ok=True)
+        clean_bootstrap = (
+            "import Pkg\n"
+            f'Pkg.activate(raw"{cfg.project}")\n'
+            'Pkg.add("PythonCall")\n'
+            "Pkg.instantiate()\n"
+            "import PythonCall\n"
+            "println(Base.active_project())\n"
+        )
+        _run_bootstrap(clean_bootstrap)
+
     os.environ["PYTHON_JULIACALL_PROJECT"] = str(cfg.project)
     return cfg
