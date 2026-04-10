@@ -22,6 +22,7 @@ from sciona.principal.proposal_helpers import (
     select_best_proposal,
     summarize_expansion_context,
 )
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
 from sciona.heuristics import HeuristicActionClass
 
 
@@ -308,6 +309,46 @@ def test_build_heuristic_proposal_guidance_uses_family_registry() -> None:
     assert guidance.family == "divide_and_conquer"
     assert guidance.registry_asset_id == "family.divide_and_conquer.heuristics.v1"
     assert guidance.preferred_action_classes[0] == HeuristicActionClass.GATE_OR_VALIDATE
+
+
+def test_build_heuristic_proposal_guidance_respects_usability_scope_exclusions() -> None:
+    heuristic_id = "interval_instability"
+    usability_assessment = build_runtime_usability_assessment(
+        {
+            "runtime_context": {"tracker": heuristic_id},
+            "heuristics": [
+                {
+                    "heuristic": {"heuristic_id": heuristic_id},
+                    "confidence": 0.7,
+                    "source_section": "events",
+                }
+            ],
+            "heuristic_summary": {
+                "heuristic_count": 1,
+                "heuristic_ids": [heuristic_id],
+                "max_confidence": 0.7,
+            },
+        }
+    ).model_dump(mode="json")
+
+    guidance = build_heuristic_proposal_guidance(
+        planning_artifact={"family_hint": "signal_event_rate"},
+        runtime_artifacts={
+            "heuristics": [
+                {
+                    "heuristic": {"heuristic_id": heuristic_id},
+                    "confidence": 0.7,
+                    "source_section": "events",
+                }
+            ],
+            "usability_assessment": usability_assessment,
+        },
+    )
+
+    assert guidance.heuristic_ids == []
+    assert guidance.heuristic_summary == {}
+    assert guidance.usability_summary["usable_for_guidance"] is False
+    assert any(note.startswith("guidance_excluded:") for note in guidance.notes)
 
 
 def test_build_heuristic_proposal_guidance_uses_positive_outcome_memory_cautiously() -> None:

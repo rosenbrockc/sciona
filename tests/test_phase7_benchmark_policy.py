@@ -8,6 +8,32 @@ from pathlib import Path
 from sciona.e2e_benchmark_summary import build_e2e_benchmark_summary
 from sciona.benchmark_validation import flow_execution_path_summary
 from sciona.principal.e2e_benchmark_policy import evaluate_e2e_benchmark_report
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
+
+
+def _runtime_usability_evidence(heuristic_id: str) -> dict[str, object]:
+    evidence = {
+        "runtime_context": {"stream_count": 1},
+        "telemetry_summary": {"signal": {"count": 10.0, "mean": 0.5}},
+        "heuristics": [
+            {
+                "heuristic": {"heuristic_id": heuristic_id},
+                "confidence": 0.8,
+                "source_section": "events",
+            }
+        ],
+        "heuristic_summary": {
+            "heuristic_count": 1,
+            "heuristic_ids": [heuristic_id],
+            "max_confidence": 0.8,
+        },
+    }
+    return {
+        **evidence,
+        "usability_assessment": build_runtime_usability_assessment(evidence).model_dump(
+            mode="json"
+        ),
+    }
 
 
 def test_e2e_benchmark_scripts_enforce_full_framework_mode() -> None:
@@ -129,7 +155,7 @@ def test_e2e_benchmark_policy_reads_list_trial_history_and_runtime_evidence(
         )
     )
     (mode_dir / "runtime_evidence.json").write_text(
-        json.dumps({"runtime_context": {"stream_count": 1}})
+        json.dumps(_runtime_usability_evidence("interval_instability"))
     )
 
     report = evaluate_e2e_benchmark_report(
@@ -162,6 +188,10 @@ def test_e2e_benchmark_policy_reads_list_trial_history_and_runtime_evidence(
     assert verified["policy"]["asset_migration"]["warnings"]
     assert verified["policy"]["required_artifacts"]["passed"] is True
     assert verified["policy"]["behavioral"]["passed"] is True
+    assert verified["policy"]["behavioral"]["details"]["usability_assessment"][
+        "usable_for_final_benchmark"
+    ] is True
+    assert verified["usability_assessment"]["usable_for_final_benchmark"] is True
     assert report["benchmark_policy"]["anti_shortcut"]["passed"] is True
     assert report["benchmark_policy"]["passed"] is True
 
@@ -227,7 +257,7 @@ def test_e2e_benchmark_policy_reports_enriched_cdg_and_asset_readiness(
         )
     )
     (mode_dir / "runtime_evidence.json").write_text(
-        json.dumps({"runtime_context": {"stream_count": 1}})
+        json.dumps(_runtime_usability_evidence("interval_instability"))
     )
 
     report = evaluate_e2e_benchmark_report(
@@ -255,6 +285,9 @@ def test_e2e_benchmark_policy_reports_enriched_cdg_and_asset_readiness(
     assert verified["asset_inventory"]["asset_count"] == 2
     assert verified["asset_inventory"]["ready_asset_count"] == 1
     assert verified["asset_inventory"]["blocked_asset_count"] == 1
+    assert verified["policy"]["behavioral"]["details"]["usability_assessment"][
+        "usable_for_guidance"
+    ] is True
 
 
 def test_benchmark_summary_persists_enriched_policy_sections(tmp_path: Path) -> None:
@@ -307,7 +340,7 @@ def test_benchmark_summary_persists_enriched_policy_sections(tmp_path: Path) -> 
         )
     )
     (variant_dir / "runtime_evidence.json").write_text(
-        json.dumps({"runtime_context": {"stream_count": 1}})
+        json.dumps(_runtime_usability_evidence("interval_instability"))
     )
 
     report = build_e2e_benchmark_summary(
@@ -328,6 +361,8 @@ def test_benchmark_summary_persists_enriched_policy_sections(tmp_path: Path) -> 
     assert verified["enriched_cdg"]["passed"] is True
     assert verified["asset_migration"]["passed"] is False
     assert verified["asset_inventory"]["asset_count"] == 1
+    assert verified["usability_assessment"]["usable_for_guidance"] is True
     assert report["policy"]["variants"]["verified"]["enriched_cdg"]["passed"] is True
     assert report["policy"]["variants"]["verified"]["asset_migration"]["passed"] is False
+    assert report["policy"]["variants"]["verified"]["usability"]["usable_for_guidance"] is True
     assert (output_dir / "summary.json").exists()

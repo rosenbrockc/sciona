@@ -7,10 +7,12 @@ from sciona.principal.search_policy import (
     evaluate_enriched_cdg_policy,
     enforce_anti_shortcut_policy,
     evaluate_behavioral_benchmark_policy,
+    summarize_usability_assessment,
     summarize_proposal_selection,
     summarize_search_discipline,
     validate_required_benchmark_artifacts,
 )
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
 
 
 def test_validate_required_benchmark_artifacts_reports_missing_keys() -> None:
@@ -87,6 +89,77 @@ def test_behavioral_policy_rejects_non_executable_shortcut_run() -> None:
     assert "insufficient_ground_truth_coverage" in report.violations
     assert "real_assets_not_exercised" in report.violations
     assert "non_executable_candidate" in report.violations
+
+
+def test_behavioral_policy_reports_usability_scope_exclusions() -> None:
+    assessment = build_runtime_usability_assessment(
+        {
+            "runtime_context": {"tracker": "trial-1"},
+            "heuristics": [
+                {
+                    "heuristic": {"heuristic_id": "interval_instability"},
+                    "confidence": 0.7,
+                    "source_section": "events",
+                }
+            ],
+            "heuristic_summary": {
+                "heuristic_count": 1,
+                "heuristic_ids": ["interval_instability"],
+                "max_confidence": 0.7,
+            },
+        }
+    ).model_dump(mode="json")
+
+    report = evaluate_behavioral_benchmark_policy(
+        {
+            "family": "generic_records",
+            "ground_truth_coverage": 1.0,
+            "used_real_assets": True,
+            "executable": True,
+            "usability_assessment": assessment,
+        },
+        allowed_families={"generic_records"},
+        require_real_assets=True,
+    )
+
+    assert report.passed is False
+    assert "final_benchmark_usability_excluded" in report.violations
+    assert any(
+        warning.startswith("guidance_usability_excluded:")
+        for warning in report.warnings
+    )
+    assert any(
+        warning.startswith("scoring_usability_excluded:")
+        for warning in report.warnings
+    )
+
+
+def test_summarize_usability_assessment_returns_cross_family_scope_data() -> None:
+    assessment = build_runtime_usability_assessment(
+        {
+            "runtime_context": {"tracker": "trial-1"},
+            "heuristics": [
+                {
+                    "heuristic": {"heuristic_id": "interval_instability"},
+                    "confidence": 0.7,
+                    "source_section": "events",
+                }
+            ],
+            "heuristic_summary": {
+                "heuristic_count": 1,
+                "heuristic_ids": ["interval_instability"],
+                "max_confidence": 0.7,
+            },
+        }
+    )
+
+    summary = summarize_usability_assessment(assessment)
+
+    assert summary["assessment_id"] == "runtime_usability_assessment"
+    assert summary["usable_for_guidance"] is False
+    assert summary["guidance_exclusions"]
+    assert summary["scoring_exclusions"]
+    assert summary["usable_for_final_benchmark"] is False
 
 
 def test_search_discipline_summary_counts_behavioral_signals() -> None:

@@ -13,6 +13,7 @@ import pandas as pd
 from sciona.principal.datasets import read_adapter
 from sciona.principal.models import BenchmarkResult, OptimizationMetric
 from sciona.principal.runtime_heuristics import RuntimeHeuristicObservation
+from sciona.usability import UsabilityAssessment
 from sciona.synthesizer.models import ExportBundle
 
 
@@ -183,18 +184,127 @@ def _shadow_bundle(bundle: ExportBundle, *, output_dir: Path) -> ExportBundle:
     )
 
 
+def _parse_usability_assessment(
+    runtime_artifacts: dict[str, Any],
+) -> UsabilityAssessment | None:
+    raw = runtime_artifacts.get("usability_assessment", {})
+    if not isinstance(raw, dict):
+        return None
+    try:
+        return UsabilityAssessment.model_validate(raw)
+    except Exception:
+        return None
+
+
+def _scope_exclusion_codes(scope: Any) -> list[str]:
+    if scope is None:
+        return ["missing_usability_assessment"]
+    blocking = getattr(scope, "blocking_reasons", []) or []
+    codes = [
+        str(getattr(reason, "code", "") or "")
+        for reason in blocking
+        if str(getattr(reason, "code", "") or "")
+    ]
+    if codes:
+        return codes
+    if not bool(getattr(scope, "usable", False)):
+        return ["scope_unusable"]
+    return []
+
+
+def _usability_member_summary(
+    runtime_artifacts: dict[str, Any],
+) -> dict[str, Any]:
+    assessment = _parse_usability_assessment(runtime_artifacts)
+    if assessment is None:
+        return {
+            "present": False,
+            "usable_for_guidance": False,
+            "usable_for_scoring": False,
+            "usable_for_final_benchmark": False,
+            "assessment": {},
+            "scope_exclusions": {
+                "guidance": ["missing_usability_assessment"],
+                "scoring": ["missing_usability_assessment"],
+                "final_benchmark": ["missing_usability_assessment"],
+            },
+        }
+    return {
+        "present": True,
+        "assessment": assessment.model_dump(mode="json"),
+        "usable_for_guidance": bool(assessment.usable_for_guidance),
+        "usable_for_scoring": bool(assessment.usable_for_scoring),
+        "usable_for_final_benchmark": bool(assessment.usable_for_final_benchmark),
+        "scope_exclusions": {
+            "guidance": _scope_exclusion_codes(assessment.guidance),
+            "scoring": _scope_exclusion_codes(assessment.scoring),
+            "final_benchmark": _scope_exclusion_codes(assessment.final_benchmark),
+        },
+    }
+
+
 def summarize_heuristic_cohort(
     entries: list[dict[str, Any]],
     *,
     cohort_size: int,
     source_tracker_path: str,
     combined_tracker_csv: str,
+    excluded_members: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Aggregate heuristic recurrence across cohort members."""
     heuristic_stats: dict[str, dict[str, Any]] = {}
     member_count = len(entries)
-    for entry in entries:
+    excluded_members = list(excluded_members or [])
+    all_members = [*entries, *excluded_members]
+    scope_counts = {
+        "guidance": 0,
+        "scoring": 0,
+        "final_benchmark": 0,
+    }
+    exclusion_reason_counts: dict[str, int] = {}
+    excluded_labels: list[str] = []
+    for entry in all_members:
         if not isinstance(entry, dict):
+            continue
+        usability = entry.get("usability", {})
+        if not isinstance(usability, dict):
+            usability = {}
+        if not usability or "usable_for_guidance" not in usability:
+            usability = {
+                "usable_for_guidance": True,
+                "usable_for_scoring": True,
+                "usable_for_final_benchmark": True,
+                "scope_exclusions": {
+                    "guidance": [],
+                    "scoring": [],
+                    "final_benchmark": [],
+                },
+            }
+        if bool(usability.get("usable_for_guidance")):
+            scope_counts["guidance"] += 1
+        if bool(usability.get("usable_for_scoring")):
+            scope_counts["scoring"] += 1
+        if bool(usability.get("usable_for_final_benchmark")):
+            scope_counts["final_benchmark"] += 1
+        for scope_name, codes in (
+            ("guidance", usability.get("scope_exclusions", {}).get("guidance", [])),
+            ("scoring", usability.get("scope_exclusions", {}).get("scoring", [])),
+            (
+                "final_benchmark",
+                usability.get("scope_exclusions", {}).get("final_benchmark", []),
+            ),
+        ):
+            if bool(usability.get(f"usable_for_{scope_name}")):
+                continue
+            if not isinstance(codes, list):
+                continue
+            for code in codes:
+                code_text = str(code or "").strip()
+                if not code_text:
+                    continue
+                exclusion_reason_counts[code_text] = exclusion_reason_counts.get(code_text, 0) + 1
+        if not bool(usability.get("usable_for_guidance")):
+            excluded_labels.append(str(entry.get("member_label", "")))
             continue
         seen_in_member: set[str] = set()
         for item in entry.get("heuristics", []) or []:
@@ -272,10 +382,20 @@ def summarize_heuristic_cohort(
     return {
         "cohort_size": cohort_size,
         "evaluated_member_count": member_count,
+        "attempted_member_count": len(all_members),
         "source_tracker_path": source_tracker_path,
         "combined_tracker_csv": combined_tracker_csv,
         "heuristics": serialized,
         "members": entries,
+        "excluded_members": excluded_members,
+        "usability": {
+            "guidance_usable_member_count": scope_counts["guidance"],
+            "scoring_usable_member_count": scope_counts["scoring"],
+            "final_benchmark_usable_member_count": scope_counts["final_benchmark"],
+            "excluded_member_count": len(excluded_members),
+            "excluded_member_labels": [label for label in excluded_labels if label],
+            "exclusion_reason_counts": dict(sorted(exclusion_reason_counts.items())),
+        },
     }
 
 
@@ -321,6 +441,7 @@ async def build_adapter_heuristic_cohort(
             evaluation_spec=evaluation_spec,
         )
         artifacts = dict(result.runtime_artifacts)
+        usability = _usability_member_summary(artifacts)
         return {
             "member_index": index,
             "member_label": member.member_label,
@@ -328,6 +449,8 @@ async def build_adapter_heuristic_cohort(
             "tracker_value": member.tracker_value,
             "loss": float(result.global_loss),
             "heuristics": list(artifacts.get("heuristics", []) or []),
+            "usability_assessment": usability.get("assessment", {}),
+            "usability": usability,
         }
 
     entries: list[dict[str, Any]] = []
@@ -347,7 +470,17 @@ async def build_adapter_heuristic_cohort(
         )
         batch_results.sort(key=lambda item: int(item.get("member_index", 0)))
         for entry in batch_results:
-            if entry["loss"] >= 1e11 or not entry["heuristics"]:
+            usability = entry.get("usability", {})
+            guidance_usable = bool(
+                isinstance(usability, dict) and usability.get("usable_for_guidance")
+            )
+            if entry["loss"] >= 1e11:
+                skipped_members.append(entry)
+                continue
+            if not entry["heuristics"]:
+                skipped_members.append(entry)
+                continue
+            if not guidance_usable:
                 skipped_members.append(entry)
                 continue
             entries.append(entry)
@@ -360,7 +493,7 @@ async def build_adapter_heuristic_cohort(
         cohort_size=cohort_size,
         source_tracker_path=str(materialized.source_tracker_path),
         combined_tracker_csv=str(materialized.combined_tracker_csv),
+        excluded_members=skipped_members,
     )
-    summary["attempted_member_count"] = len(entries) + len(skipped_members)
     summary["skipped_members"] = skipped_members[:10]
     return summary

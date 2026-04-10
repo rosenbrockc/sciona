@@ -11,6 +11,7 @@ from sciona.heuristic_registries import resolve_local_heuristic_registry
 from sciona.heuristics import HeuristicActionClass
 from sciona.principal.expansion_assets import resolve_local_expansion_asset
 from sciona.principal.heuristic_outcomes import heuristic_action_bonus
+from sciona.usability import UsabilityAssessment
 
 
 class HeuristicProposalGuidance(BaseModel):
@@ -22,14 +23,58 @@ class HeuristicProposalGuidance(BaseModel):
     preferred_action_classes: list[HeuristicActionClass] = Field(default_factory=list)
     registry_asset_id: str = ""
     cohort_size: int = 0
+    usability_summary: dict[str, Any] = Field(default_factory=dict)
     notes: list[str] = Field(default_factory=list)
+
+
+def _summarize_usability_assessment(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        return {}
+    try:
+        assessment = UsabilityAssessment.model_validate(raw)
+    except Exception:
+        return {}
+    return {
+        "assessment_id": assessment.assessment_id,
+        "usable_for_guidance": assessment.usable_for_guidance,
+        "usable_for_scoring": assessment.usable_for_scoring,
+        "usable_for_final_benchmark": assessment.usable_for_final_benchmark,
+        "heuristic_signature": list(assessment.heuristic_signature),
+        "guidance_exclusions": [
+            reason.code for reason in assessment.guidance.blocking_reasons
+        ],
+        "scoring_exclusions": [
+            reason.code for reason in assessment.scoring.blocking_reasons
+        ],
+        "final_benchmark_exclusions": [
+            reason.code for reason in assessment.final_benchmark.blocking_reasons
+        ],
+        "guidance_warnings": [
+            reason.code for reason in assessment.guidance.warning_reasons
+        ],
+        "scoring_warnings": [
+            reason.code for reason in assessment.scoring.warning_reasons
+        ],
+        "final_benchmark_warnings": [
+            reason.code for reason in assessment.final_benchmark.warning_reasons
+        ],
+    }
 
 
 def _extract_runtime_heuristic_summary(
     runtime_artifacts: dict[str, Any],
-) -> tuple[list[str], dict[str, dict[str, Any]], int]:
+) -> tuple[list[str], dict[str, dict[str, Any]], int, dict[str, Any]]:
+    usability_summary = _summarize_usability_assessment(
+        runtime_artifacts.get("usability_assessment", {})
+    )
+    guidance_enabled = (
+        bool(usability_summary.get("usable_for_guidance"))
+        if usability_summary
+        else True
+    )
     heuristics = runtime_artifacts.get("heuristics", [])
     heuristic_summary: dict[str, dict[str, Any]] = {}
+    excluded_heuristic_ids: list[str] = []
     if isinstance(heuristics, list):
         counts: Counter[str] = Counter()
         confidence_totals: Counter[str] = Counter()
@@ -43,6 +88,9 @@ def _extract_runtime_heuristic_summary(
                 continue
             heuristic_id = str(heuristic.get("heuristic_id", "") or "").strip()
             if not heuristic_id:
+                continue
+            if usability_summary and not guidance_enabled:
+                excluded_heuristic_ids.append(heuristic_id)
                 continue
             counts[heuristic_id] += 1
             try:
@@ -88,12 +136,39 @@ def _extract_runtime_heuristic_summary(
                 if not isinstance(stats, dict):
                     continue
                 heuristic_summary[str(heuristic_id)] = dict(stats)
+        cohort_usability = cohort.get("usability", {})
+        if isinstance(cohort_usability, dict):
+            usability_summary = {
+                **usability_summary,
+                "cohort_usability": dict(cohort_usability),
+            }
+        excluded_members = cohort.get("excluded_members", [])
+        if isinstance(excluded_members, list):
+            usability_summary.setdefault("cohort_excluded_member_count", len(excluded_members))
+            usability_summary.setdefault(
+                "cohort_excluded_member_labels",
+                [
+                    str(item.get("member_label", ""))
+                    for item in excluded_members
+                    if isinstance(item, dict) and item.get("member_label")
+                ],
+            )
 
-    return sorted(heuristic_summary.keys()), heuristic_summary, cohort_size
+    if excluded_heuristic_ids:
+        usability_summary.setdefault(
+            "excluded_heuristic_ids",
+            sorted(dict.fromkeys(excluded_heuristic_ids)),
+        )
+        usability_summary.setdefault(
+            "guidance_exclusions",
+            ["guidance_usability_excluded"],
+        )
+
+    return sorted(heuristic_summary.keys()), heuristic_summary, cohort_size, usability_summary
 
 
 def _extract_runtime_heuristic_ids(runtime_artifacts: dict[str, Any]) -> list[str]:
-    heuristic_ids, _summary, _cohort_size = _extract_runtime_heuristic_summary(
+    heuristic_ids, _summary, _cohort_size, _usability_summary = _extract_runtime_heuristic_summary(
         runtime_artifacts
     )
     return heuristic_ids
@@ -123,24 +198,42 @@ def build_heuristic_proposal_guidance(
     planning_artifact = planning_artifact if isinstance(planning_artifact, dict) else {}
     runtime_artifacts = runtime_artifacts if isinstance(runtime_artifacts, dict) else {}
     family = str(planning_artifact.get("family_hint", "") or "")
-    heuristic_ids, heuristic_summary, cohort_size = _extract_runtime_heuristic_summary(
+    heuristic_ids, heuristic_summary, cohort_size, usability_summary = _extract_runtime_heuristic_summary(
         runtime_artifacts
     )
     if not family or not heuristic_ids:
+        notes: list[str] = []
+        if usability_summary:
+            exclusions = usability_summary.get("guidance_exclusions", [])
+            if isinstance(exclusions, list) and exclusions:
+                notes.append(
+                    "guidance_excluded:" + ",".join(str(item) for item in exclusions if item)
+                )
         return HeuristicProposalGuidance(
             family=family,
             heuristic_ids=heuristic_ids,
             heuristic_summary=heuristic_summary,
             cohort_size=cohort_size,
+            usability_summary=usability_summary,
+            notes=notes,
         )
 
     registry = resolve_local_heuristic_registry(family)
     if registry is None:
+        notes = []
+        if usability_summary:
+            exclusions = usability_summary.get("guidance_exclusions", [])
+            if isinstance(exclusions, list) and exclusions:
+                notes.append(
+                    "guidance_excluded:" + ",".join(str(item) for item in exclusions if item)
+                )
         return HeuristicProposalGuidance(
             family=family,
             heuristic_ids=heuristic_ids,
             heuristic_summary=heuristic_summary,
             cohort_size=cohort_size,
+            usability_summary=usability_summary,
+            notes=notes,
         )
 
     scores: Counter[HeuristicActionClass] = Counter()
@@ -167,6 +260,25 @@ def build_heuristic_proposal_guidance(
     ).items():
         scores[action_class] += bonus
         notes.append(f"outcome_memory:{action_class.value}")
+    if usability_summary:
+        if not bool(usability_summary.get("usable_for_guidance", True)):
+            exclusions = usability_summary.get("guidance_exclusions", [])
+            if isinstance(exclusions, list) and exclusions:
+                notes.append(
+                    "guidance_excluded:" + ",".join(str(item) for item in exclusions if item)
+                )
+        if not bool(usability_summary.get("usable_for_scoring", True)):
+            exclusions = usability_summary.get("scoring_exclusions", [])
+            if isinstance(exclusions, list) and exclusions:
+                notes.append(
+                    "scoring_excluded:" + ",".join(str(item) for item in exclusions if item)
+                )
+        if not bool(usability_summary.get("usable_for_final_benchmark", True)):
+            exclusions = usability_summary.get("final_benchmark_exclusions", [])
+            if isinstance(exclusions, list) and exclusions:
+                notes.append(
+                    "final_benchmark_excluded:" + ",".join(str(item) for item in exclusions if item)
+                )
 
     preferred_action_classes = [
         action_class
@@ -182,6 +294,7 @@ def build_heuristic_proposal_guidance(
         preferred_action_classes=preferred_action_classes,
         registry_asset_id=registry.asset_id,
         cohort_size=cohort_size,
+        usability_summary=usability_summary,
         notes=notes[:4],
     )
 

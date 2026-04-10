@@ -35,6 +35,10 @@ from sciona.commands.shared_context_helpers import (
     _shared_context_metadata,
     _write_shared_context_metrics_file,
 )
+from sciona.principal.heuristic_outcomes import (
+    extract_heuristic_usability_memory,
+    summarize_heuristic_usability_memory,
+)
 
 
 def _parse_dataset_vars(entries: list[str] | None) -> dict[str, str]:
@@ -814,6 +818,21 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
         print(f"  Flare saved to {flare_path}. Run `sciona bounty generate` to post.")
     except Exception as flare_exc:
         logger.warning("Failed to write flare: %s", flare_exc)
+    heuristic_memory_records = extract_heuristic_usability_memory(history)
+    heuristic_memory_summary = summarize_heuristic_usability_memory(
+        heuristic_memory_records
+    )
+    (output_root / "heuristic_outcome_memory.json").write_text(
+        json.dumps(
+            {
+                "summary": heuristic_memory_summary,
+                "records": heuristic_memory_summary.get("records", []),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
     _print_shared_context_metrics("architect", architect_shared_metrics)
     metrics_out_dir = Path("output")
     metrics_path = _write_shared_context_metrics_file(
@@ -836,6 +855,19 @@ async def _cmd_optimize(args: argparse.Namespace) -> None:
                 max_trials=int(args.trials),
                 output_root=output_root,
             ),
+            "heuristic_outcome_memory": {
+                "memory_count": heuristic_memory_summary.get("memory_count", 0),
+                "positive_memory_count": heuristic_memory_summary.get(
+                    "positive_memory_count", 0
+                ),
+                "selected_memory_count": heuristic_memory_summary.get(
+                    "selected_memory_count", 0
+                ),
+                "heuristic_signatures": list(
+                    heuristic_memory_summary.get("heuristic_signatures", {}).keys()
+                ),
+                "memory_path": str(output_root / "heuristic_outcome_memory.json"),
+            },
         },
         run_id=telemetry_run_id,
     )

@@ -1,0 +1,122 @@
+{
+  "asset_id": "family.signal_processing.usability.v1",
+  "asset_version": "phase2.v1",
+  "family": "signal_processing",
+  "family_aliases": [
+    "signal_event_rate",
+    "signal_detect_measure"
+  ],
+  "name": "Signal Processing Usability Registry",
+  "summary": "Family-local interpretation of canonical usability reasons for sampled-signal pipelines.",
+  "dejargonized_summary": "This registry explains when signal-processing artifacts are ready for guidance, scoring, or final benchmarking.",
+  "entries": [
+    {
+      "reason_code": "required_input_missing",
+      "reason_kind": "blocking",
+      "supported_scopes": [
+        "guidance",
+        "scoring",
+        "final_benchmark"
+      ],
+      "sanctioned_provenance_kinds": [
+        "heuristic_observation",
+        "runtime_assessor"
+      ],
+      "expected_evidence_strength": "strong",
+      "admissibility_notes": [
+        "Use when a required waveform, event stream, or sampling context is unavailable."
+      ],
+      "escalation_conditions": [
+        "Escalate when the missing input prevents a concrete candidate from being evaluated."
+      ],
+      "family_notes": [
+        "In signal workflows this often means a required waveform, reference stream, or sampling rate is absent."
+      ],
+      "references": [
+        {
+          "title": "Heuristic usability assessment plan",
+          "citation": "Phase 2 registry layer for reusable usability decisions.",
+          "note": "Cross-family usability registry baseline."
+        }
+      ]
+    },
+    {
+      "reason_code": "quality_instability",
+      "reason_kind": "warning",
+      "supported_scopes": [
+        "guidance",
+        "scoring"
+      ],
+      "sanctioned_provenance_kinds": [
+        "heuristic_observation",
+        "runtime_assessor",
+        "family_rule_registry"
+      ],
+      "expected_evidence_strength": "moderate",
+      "admissibility_notes": [
+        "Use when a waveform or derived quality score varies enough to make one fixed path brittle."
+      ],
+      "escalation_conditions": [
+        "Escalate when local quality changes enough that one fixed path is likely to fail on part of the window."
+      ],
+      "family_notes": [
+        "The shared usability meaning stays generic; the family note explains the waveform-specific reading."
+      ],
+      "references": [
+        {
+          "title": "Heuristic evidence layer plan",
+          "citation": "Repository plan for cross-family usability interpretation.",
+          "note": "Shared usability meaning with local signal-processing interpretation."
+        }
+      ]
+    },
+    {
+      "reason_code": "timing_context_incoherent",
+      "reason_kind": "blocking",
+      "supported_scopes": [
+        "scoring",
+        "final_benchmark"
+      ],
+      "sanctioned_provenance_kinds": [
+        "runtime_assessor",
+        "benchmark_policy"
+      ],
+      "expected_evidence_strength": "strong",
+      "admissibility_notes": [
+        "Use when the waveform and its event markers do not share a coherent time base."
+      ],
+      "escalation_conditions": [
+        "Escalate when timing context cannot be aligned without changing the meaning of the artifact."
+      ],
+      "family_notes": [
+        "In signal workflows this can mean the waveform and event stream disagree about the same time axis."
+      ],
+      "references": [
+        {
+          "title": "Heuristic usability implementation plan",
+          "citation": "Cross-family usability registry design and rollout plan.",
+          "note": "Timing coherence is a general usability issue, not a signal-only rule."
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Captures family-local interpretation of canonical usability reasons without redefining their meaning.",
+    "dejargonized_summary": "These are the generic warning signs that matter when deciding whether a signal-processing artifact is usable for guidance, scoring, or final benchmarking.",
+    "uncertainty_notes": [
+      "Family guidance should remain local and should not redefine the shared usability identifiers."
+    ],
+    "references": [
+      {
+        "title": "Heuristic usability assessment plan",
+        "citation": "Cross-family usability registry baseline."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}

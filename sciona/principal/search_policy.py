@@ -9,6 +9,7 @@ from sciona.principal.heuristic_outcomes import (
     extract_heuristic_outcomes,
     summarize_heuristic_outcomes,
 )
+from sciona.usability import UsabilityAssessment
 
 
 @dataclass(frozen=True)
@@ -196,6 +197,76 @@ class BenchmarkPolicyReport:
     violations: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     details: dict[str, Any] = field(default_factory=dict)
+
+
+def summarize_usability_assessment(assessment: Any) -> dict[str, Any]:
+    """Return a compact, family-neutral usability summary."""
+    if not isinstance(assessment, dict):
+        if hasattr(assessment, "model_dump"):
+            dumped = assessment.model_dump(mode="json")
+            if isinstance(dumped, dict):
+                assessment = dumped
+        else:
+            return {}
+    if {
+        "usable_for_guidance",
+        "usable_for_scoring",
+        "usable_for_final_benchmark",
+    }.issubset(set(assessment.keys())) and "guidance" not in assessment:
+        return {
+            "assessment_id": str(assessment.get("assessment_id", "") or ""),
+            "family": str(assessment.get("family", "") or ""),
+            "task_intent": str(assessment.get("task_intent", "") or ""),
+            "heuristic_signature": list(assessment.get("heuristic_signature", []) or []),
+            "usable_for_guidance": bool(assessment.get("usable_for_guidance")),
+            "usable_for_scoring": bool(assessment.get("usable_for_scoring")),
+            "usable_for_final_benchmark": bool(
+                assessment.get("usable_for_final_benchmark")
+            ),
+            "confidence": float(assessment.get("confidence", 0.0) or 0.0),
+            "guidance_exclusions": list(assessment.get("guidance_exclusions", []) or []),
+            "scoring_exclusions": list(assessment.get("scoring_exclusions", []) or []),
+            "final_benchmark_exclusions": list(
+                assessment.get("final_benchmark_exclusions", []) or []
+            ),
+            "guidance_warnings": list(assessment.get("guidance_warnings", []) or []),
+            "scoring_warnings": list(assessment.get("scoring_warnings", []) or []),
+            "final_benchmark_warnings": list(
+                assessment.get("final_benchmark_warnings", []) or []
+            ),
+        }
+    try:
+        model = UsabilityAssessment.model_validate(assessment)
+    except Exception:
+        return {}
+    return {
+        "assessment_id": model.assessment_id,
+        "family": model.family,
+        "task_intent": model.task_intent,
+        "heuristic_signature": list(model.heuristic_signature),
+        "usable_for_guidance": model.usable_for_guidance,
+        "usable_for_scoring": model.usable_for_scoring,
+        "usable_for_final_benchmark": model.usable_for_final_benchmark,
+        "confidence": float(model.confidence),
+        "guidance_exclusions": [
+            reason.code for reason in model.guidance.blocking_reasons
+        ],
+        "scoring_exclusions": [
+            reason.code for reason in model.scoring.blocking_reasons
+        ],
+        "final_benchmark_exclusions": [
+            reason.code for reason in model.final_benchmark.blocking_reasons
+        ],
+        "guidance_warnings": [
+            reason.code for reason in model.guidance.warning_reasons
+        ],
+        "scoring_warnings": [
+            reason.code for reason in model.scoring.warning_reasons
+        ],
+        "final_benchmark_warnings": [
+            reason.code for reason in model.final_benchmark.warning_reasons
+        ],
+    }
 
 
 def summarize_search_discipline(trial_history: list[dict[str, Any]]) -> SearchDisciplineSummary:
@@ -577,6 +648,7 @@ def evaluate_behavioral_benchmark_policy(
 ) -> BenchmarkPolicyReport:
     """Prefer semantic and behavioral checks over exact scaffold matching."""
     violations: list[str] = []
+    warnings: list[str] = []
     details: dict[str, Any] = {}
 
     family = str(result.get("family", "") or "")
@@ -592,6 +664,38 @@ def evaluate_behavioral_benchmark_policy(
             "executable": executable,
         }
     )
+    usability = summarize_usability_assessment(
+        result.get("usability_assessment", {})
+    )
+    if usability:
+        details["usability_assessment"] = dict(usability)
+        if not bool(usability.get("usable_for_guidance", True)):
+            warnings.append(
+                "guidance_usability_excluded:"
+                + ",".join(usability.get("guidance_exclusions", []) or [])
+            )
+        if not bool(usability.get("usable_for_scoring", True)):
+            warnings.append(
+                "scoring_usability_excluded:"
+                + ",".join(usability.get("scoring_exclusions", []) or [])
+            )
+        for warning_code in usability.get("guidance_warnings", []) or []:
+            warnings.append(f"guidance_warning:{warning_code}")
+        for warning_code in usability.get("scoring_warnings", []) or []:
+            warnings.append(f"scoring_warning:{warning_code}")
+        if not bool(usability.get("usable_for_final_benchmark", True)):
+            violations.append("final_benchmark_usability_excluded")
+            if usability.get("final_benchmark_exclusions"):
+                warnings.append(
+                    "final_benchmark_usability_excluded:"
+                    + ",".join(usability.get("final_benchmark_exclusions", []) or [])
+                )
+        for warning_code in usability.get("final_benchmark_warnings", []) or []:
+            warnings.append(f"final_benchmark_warning:{warning_code}")
+    elif "usable_for_final_benchmark" in result and not bool(
+        result.get("usable_for_final_benchmark")
+    ):
+        violations.append("final_benchmark_usability_excluded")
 
     if family not in allowed_families:
         violations.append(f"disallowed_family:{family}")
@@ -605,5 +709,6 @@ def evaluate_behavioral_benchmark_policy(
     return BenchmarkPolicyReport(
         passed=not violations,
         violations=tuple(violations),
+        warnings=tuple(warnings),
         details=details,
     )

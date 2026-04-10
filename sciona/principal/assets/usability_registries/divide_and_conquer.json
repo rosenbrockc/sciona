@@ -1,0 +1,122 @@
+{
+  "asset_id": "family.divide_and_conquer.usability.v1",
+  "asset_version": "phase2.v1",
+  "family": "divide_and_conquer",
+  "family_aliases": [
+    "recursive_split_merge",
+    "graph_partition"
+  ],
+  "name": "Divide And Conquer Usability Registry",
+  "summary": "Family-local interpretation of canonical usability reasons for recursive split/merge style pipelines.",
+  "dejargonized_summary": "This registry explains when recursive artifacts are usable for guidance, scoring, or final benchmarking.",
+  "entries": [
+    {
+      "reason_code": "coverage_insufficient",
+      "reason_kind": "blocking",
+      "supported_scopes": [
+        "guidance",
+        "scoring",
+        "final_benchmark"
+      ],
+      "sanctioned_provenance_kinds": [
+        "heuristic_observation",
+        "runtime_assessor"
+      ],
+      "expected_evidence_strength": "strong",
+      "admissibility_notes": [
+        "Use when the explored subproblems do not cover enough of the intended solution space."
+      ],
+      "escalation_conditions": [
+        "Escalate when missing coverage would invalidate the candidate or make the result untrustworthy."
+      ],
+      "family_notes": [
+        "In divide-and-conquer terms this means the current split leaves too much of the problem unrepresented."
+      ],
+      "references": [
+        {
+          "title": "Heuristic usability assessment plan",
+          "citation": "Cross-family usability registry baseline.",
+          "note": "Coverage is a general usability concern across recursive systems."
+        }
+      ]
+    },
+    {
+      "reason_code": "required_reference_missing",
+      "reason_kind": "blocking",
+      "supported_scopes": [
+        "scoring",
+        "final_benchmark"
+      ],
+      "sanctioned_provenance_kinds": [
+        "manual_review",
+        "benchmark_policy"
+      ],
+      "expected_evidence_strength": "moderate",
+      "admissibility_notes": [
+        "Use when the artifact cannot be traced to a sufficient source or reference basis."
+      ],
+      "escalation_conditions": [
+        "Escalate when provenance is too thin to support benchmark or scoring use."
+      ],
+      "family_notes": [
+        "This stays generic: the issue is missing support, not a recursion-specific rule."
+      ],
+      "references": [
+        {
+          "title": "Heuristic usability implementation plan",
+          "citation": "Cross-family usability registry rollout.",
+          "note": "Provenance and reference support are portable concepts."
+        }
+      ]
+    },
+    {
+      "reason_code": "review_recommended",
+      "reason_kind": "warning",
+      "supported_scopes": [
+        "guidance",
+        "scoring"
+      ],
+      "sanctioned_provenance_kinds": [
+        "heuristic_observation",
+        "family_rule_registry",
+        "manual_review"
+      ],
+      "expected_evidence_strength": "weak",
+      "admissibility_notes": [
+        "Use when the artifact is plausible but still benefits from a human or family-level review."
+      ],
+      "escalation_conditions": [
+        "Escalate when the candidate is usable in principle but the supporting evidence is still thin."
+      ],
+      "family_notes": [
+        "In recursive systems this often means the branch is plausible but not yet a strong enough baseline."
+      ],
+      "references": [
+        {
+          "title": "Heuristic evidence layer plan",
+          "citation": "Repository plan for cross-family usability interpretation.",
+          "note": "Review can be requested by many families without changing meaning."
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "draft",
+    "rationale": "Non-signal fixture proving the usability registry schema works outside sampled-signal families.",
+    "dejargonized_summary": "These are the generic warning signs that matter when deciding whether a recursive artifact is usable for guidance, scoring, or final benchmarking.",
+    "uncertainty_notes": [
+      "Family guidance should remain local and should not redefine the shared usability identifiers."
+    ],
+    "references": [
+      {
+        "title": "Heuristic usability assessment plan",
+        "citation": "Cross-family usability registry baseline."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}

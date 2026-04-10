@@ -21,6 +21,7 @@ from sciona.principal.heuristic_outcomes import (
     extract_heuristic_outcomes,
     summarize_heuristic_outcomes,
 )
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
 
 
 def _load_json(path: Path) -> dict[str, Any] | list[Any] | None:
@@ -84,6 +85,27 @@ def _extract_runtime_context(mode_dir: Path) -> dict[str, Any]:
             if isinstance(runtime_context, dict):
                 return dict(runtime_context)
     return {}
+
+
+def _extract_runtime_evidence(mode_dir: Path) -> dict[str, Any]:
+    for candidate in (
+        mode_dir / "runtime_evidence.json",
+        mode_dir / "profile_runtime_artifacts.json",
+    ):
+        payload = _load_json(candidate)
+        if isinstance(payload, dict):
+            return dict(payload)
+    return {}
+
+
+def _extract_usability_assessment(mode_dir: Path) -> dict[str, Any]:
+    runtime_evidence = _extract_runtime_evidence(mode_dir)
+    assessment = runtime_evidence.get("usability_assessment", {})
+    if not isinstance(assessment, dict) or not assessment:
+        assessment = build_runtime_usability_assessment(runtime_evidence).model_dump(
+            mode="json"
+        )
+    return dict(assessment)
 
 
 def _extract_search_trace(mode_dir: Path) -> list[dict[str, Any]]:
@@ -168,6 +190,7 @@ def evaluate_e2e_variant(
     planning_artifact = _extract_planning_artifact(cdg_payload)
     skeleton_asset = _extract_skeleton_asset(cdg_payload)
     runtime_context = _extract_runtime_context(path)
+    usability_assessment = _extract_usability_assessment(path)
     search_trace = _extract_search_trace(path)
     planner_artifacts = _load_json(path / "planner_artifacts.json") or {}
     asset_inventory = _extract_asset_inventory(cdg_payload, search_trace)
@@ -197,6 +220,7 @@ def evaluate_e2e_variant(
             "search_trace": search_trace,
             "final_candidate": cdg_payload or {},
             "runtime_context": runtime_context,
+            "usability_assessment": usability_assessment,
         },
         required_keys=(
             "planning_artifact",
@@ -218,6 +242,7 @@ def evaluate_e2e_variant(
             "ground_truth_coverage": coverage,
             "used_real_assets": used_real_assets,
             "executable": executable,
+            "usability_assessment": usability_assessment,
         },
         allowed_families={family or label},
         require_real_assets=(label != "raw_llm"),
@@ -270,6 +295,7 @@ def evaluate_e2e_variant(
             "runtime_context": bool(runtime_context),
             "planner_artifacts": bool(planner_artifacts),
         },
+        "usability_assessment": usability_assessment,
         "asset_inventory": {
             "asset_count": int(migration_summary.get("asset_count", len(asset_inventory))),
             "skeleton_asset": bool(skeleton_asset),

@@ -16,6 +16,7 @@ from sciona.principal.search_policy import (
     summarize_asset_migration_readiness,
     validate_required_benchmark_artifacts,
 )
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
 
 
 def _read_json(path: Path) -> dict[str, Any] | list[Any] | None:
@@ -26,6 +27,27 @@ def _read_json(path: Path) -> dict[str, Any] | list[Any] | None:
             return json.load(handle)
     except Exception:
         return None
+
+
+def _read_runtime_evidence(label_dir: Path) -> dict[str, Any]:
+    for candidate in (
+        label_dir / "runtime_evidence.json",
+        label_dir / "profile_runtime_artifacts.json",
+    ):
+        payload = _read_json(candidate)
+        if isinstance(payload, dict):
+            return dict(payload)
+    return {}
+
+
+def _read_usability_assessment(label_dir: Path) -> dict[str, Any]:
+    runtime_evidence = _read_runtime_evidence(label_dir)
+    assessment = runtime_evidence.get("usability_assessment", {})
+    if not isinstance(assessment, dict) or not assessment:
+        assessment = build_runtime_usability_assessment(runtime_evidence).model_dump(
+            mode="json"
+        )
+    return dict(assessment)
 
 
 def _read_matches(label_dir: Path) -> tuple[int, int, list[str]]:
@@ -203,6 +225,7 @@ def build_e2e_benchmark_summary(
             "best_selected_proposal_improvement": proposal_summary.best_selected_proposal_improvement,
         }
         skeleton_asset = _read_skeleton_asset(label_dir)
+        usability_assessment = _read_usability_assessment(label_dir)
         applied_assets = _read_applied_assets(trial_history)
         asset_inventory = [asset for asset in [skeleton_asset, *applied_assets] if asset]
         enriched_cdg_policy = evaluate_enriched_cdg_policy(
@@ -239,6 +262,7 @@ def build_e2e_benchmark_summary(
                 "ready_asset_ids": list(asset_migration_summary["ready_asset_ids"]),
                 "blocked_asset_ids": list(asset_migration_summary["blocked_asset_ids"]),
             },
+            "usability_assessment": usability_assessment,
             "enriched_cdg": _report_to_dict(enriched_cdg_policy),
             "asset_migration": _report_to_dict(asset_migration_policy),
         }
@@ -267,6 +291,7 @@ def build_e2e_benchmark_summary(
             "behavioral": _report_to_dict(behavioral_policy),
             "enriched_cdg": _report_to_dict(enriched_cdg_policy),
             "asset_migration": _report_to_dict(asset_migration_policy),
+            "usability": usability_assessment,
         }
 
     anti_shortcut = enforce_anti_shortcut_policy(

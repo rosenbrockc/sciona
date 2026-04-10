@@ -59,6 +59,7 @@ from sciona.principal.proposal_helpers import (
 )
 from sciona.principal.heuristic_proposal_policy import build_heuristic_proposal_guidance
 from sciona.principal.heuristic_cohort import build_adapter_heuristic_cohort
+from sciona.principal.heuristic_outcomes import summarize_runtime_heuristic_evidence
 from sciona.principal.structure_summary import summarize_trial_structure
 from sciona.principal.structure_objective import benchmark_from_ghost_report
 from sciona.principal.variant_mutation import maybe_apply_bottleneck_variant
@@ -326,6 +327,9 @@ async def evaluate_run(state: PrincipalState, config: RunnableConfig) -> dict:
                 "reason": "",
                 "restored_trial": None,
             },
+            "runtime_evidence": summarize_runtime_heuristic_evidence(
+                getattr(state.benchmark, "runtime_artifacts", {}) or {}
+            ),
         }
     )
 

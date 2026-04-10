@@ -69,6 +69,8 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
         artifacts["heuristics"]
     )
     assert "interval_instability" in artifacts["heuristic_summary"]["heuristic_ids"]
+    assert artifacts["usability_assessment"]["assessment_id"] == "runtime_usability_assessment"
+    assert "quality_instability" in artifacts["usability_assessment"]["heuristic_signature"]
 
     evidence_path = tmp_path / "runtime_evidence.json"
     assert evidence_path.exists()
@@ -79,6 +81,8 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
     assert persisted["heuristic_summary"]["heuristic_count"] == len(
         persisted["heuristics"]
     )
+    assert persisted["usability_assessment"]["assessment_id"] == "runtime_usability_assessment"
+    assert "quality_instability" in persisted["usability_assessment"]["heuristic_signature"]
 
 
 def test_collect_runtime_inputs_from_frames_prefers_primary_waveform_stream() -> None:

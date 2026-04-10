@@ -599,6 +599,7 @@ def _persist_runtime_evidence(trace_path: Path, evidence: dict[str, Any]) -> Non
             "telemetry_summary": evidence.get("telemetry_summary", {}),
             "heuristics": evidence.get("heuristics", []),
             "heuristic_summary": evidence.get("heuristic_summary", {}),
+            "usability_assessment": evidence.get("usability_assessment", {}),
         }
         (trace_path.parent / "runtime_evidence.json").write_text(
             json.dumps(payload, indent=2, sort_keys=True)

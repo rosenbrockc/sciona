@@ -8,6 +8,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from sciona.principal.runtime_heuristics import derive_runtime_heuristics
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
 
 
 class CanonicalInputRef(BaseModel):
@@ -746,6 +747,13 @@ def summarize_runtime_evidence(
         "intermediates": canonical_intermediates,
     }
     heuristics = derive_runtime_heuristics(evidence_for_heuristics)
+    evidence_for_usability = dict(evidence_for_heuristics)
+    evidence_for_usability["heuristics"] = [
+        observation.model_dump(mode="json")
+        for observation in heuristics.observations
+    ]
+    evidence_for_usability["heuristic_summary"] = dict(heuristics.heuristic_summary)
+    usability_assessment = build_runtime_usability_assessment(evidence_for_usability)
 
     return {
         "runtime_context": runtime_context,
@@ -759,4 +767,5 @@ def summarize_runtime_evidence(
             for observation in heuristics.observations
         ],
         "heuristic_summary": dict(heuristics.heuristic_summary),
+        "usability_assessment": usability_assessment.model_dump(mode="json"),
     }
