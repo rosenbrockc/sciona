@@ -154,13 +154,10 @@ def _load_architect_catalog(
     try:
         sources_cfg = load_sources(config.sources_file)
         for source in sources_cfg.sources:
-            if source.package != "ageoa":
-                continue
             source_root = resolve_source(source, Path.cwd())
             manifest_path = source_root / "data" / "hyperparams" / "manifest.json"
-            if manifest_path.exists():
+            if manifest_path.is_file():
                 tunables_map.update(load_manifest(manifest_path))
-                break
         tunables_map.update(get_runtime_signal_event_rate_params())
         attached = catalog.attach_tunables(tunables_map)
         if attached:

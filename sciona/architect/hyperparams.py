@@ -33,7 +33,7 @@ def _decode_json_text(text: str | None) -> object:
 
 
 def _normalize_manifest_param(raw: dict[str, object]) -> dict[str, object]:
-    """Translate ageo-atoms JSON manifest keys into ``PrimitiveParamSpec`` keys."""
+    """Translate provider manifest JSON keys into ``PrimitiveParamSpec`` keys."""
     data = dict(raw)
     if "min_value" not in data and "min" in data:
         data["min_value"] = data.pop("min")
@@ -52,7 +52,7 @@ def _normalize_manifest_param(raw: dict[str, object]) -> dict[str, object]:
 def load_hyperparams_manifest_sqlite(
     db_path: Path,
 ) -> dict[str, list[PrimitiveParamSpec]]:
-    """Load tunables from the ageo-atoms manifest.sqlite.
+    """Load tunables from a provider manifest.sqlite.
 
     Queries only approved atoms with approved hyperparams.
     """
@@ -115,7 +115,7 @@ def load_hyperparams_manifest_sqlite(
 def load_hyperparams_manifest(
     manifest_path: Path,
 ) -> dict[str, list[PrimitiveParamSpec]]:
-    """Load ageo-atoms manifest.json and return atom_name -> tunable_params mapping.
+    """Load a provider manifest.json and return atom_name -> tunable_params mapping.
 
     Only returns params from atoms with status="approved" and safe_to_optimize=True.
     Falls back to this when SQLite manifest is unavailable.
@@ -255,6 +255,19 @@ def get_runtime_signal_event_rate_params() -> dict[str, list[PrimitiveParamSpec]
                 max_value=15,
                 step=2,
                 semantic_role="Moving average window size for rate smoothing",
+                range_source="empirical",
+                source_confidence="medium",
+            ),
+        ],
+        "compute_event_rate_median_smoothed": [
+            PrimitiveParamSpec(
+                name="smoothing_window",
+                kind="int",
+                default=5,
+                min_value=1,
+                max_value=15,
+                step=2,
+                semantic_role="Median smoothing window size for robust rate aggregation",
                 range_source="empirical",
                 source_confidence="medium",
             ),

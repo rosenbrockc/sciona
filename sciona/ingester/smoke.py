@@ -2,7 +2,7 @@
 
 This module keeps probe coverage intentionally narrow. The goal is to catch
 obviously bad generated outputs for a small allowlisted subset, not to replay
-the full audit stack from ``ageo-atoms`` inside the matcher.
+the full external audit stack inside the matcher.
 """
 
 from __future__ import annotations

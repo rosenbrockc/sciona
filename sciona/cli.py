@@ -843,7 +843,11 @@ def main() -> None:
     upsert_cdg_parser.add_argument(
         "repo_path",
         type=str,
-        help="Path to atoms repo directory (e.g. ~/personal/ageo-atoms/ageoa/biosppy)",
+        help=(
+            "Path to atoms repo directory "
+            "(e.g. ~/personal/sciona-atoms/src/sciona/atoms/signal_processing/biosppy "
+            "or ~/personal/ageo-atoms/ageoa/biosppy)"
+        ),
     )
     upsert_cdg_parser.add_argument(
         "--repo-name",

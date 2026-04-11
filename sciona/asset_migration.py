@@ -27,7 +27,7 @@ class MigrationReadinessAsset(BaseModel):
         "ready_for_migration",
         "migrated",
     ] = "not_assessed"
-    target_repository: str = "../ageo-atoms"
+    target_repository: str = "../sciona-atoms"
     target_scope: str = ""
     rationale: str = ""
     checklist: list[MigrationReadinessCheck] = Field(default_factory=list)
