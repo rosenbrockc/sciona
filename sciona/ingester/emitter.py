@@ -9,15 +9,17 @@ from __future__ import annotations
 
 import asyncio
 import ast
+import importlib
 import json
 import keyword
+import logging
 import re
-import importlib
 from pathlib import Path
 
 from sciona.json_utils import extract_json
-import logging
 
+from sciona.atom_identity import candidate_atom_provider_roots
+from sciona.sources import load_sources, resolve_import_root
 from sciona.hunter.llm import LLMClient
 from sciona.ingester.ffi_emitter import generate_ffi_bindings, generate_ffi_imports
 from sciona.llm_router import INGESTER_OPAQUE_WITNESS, select_llm
@@ -320,18 +322,65 @@ def _state_witness_type(
     return "AbstractArray"
 
 
-def _available_ghost_abstract_names() -> set[str]:
-    """Return the real exported ghost abstract names when discoverable."""
+def _normalized_ghost_package_root(ghost_package_root: str) -> str:
+    root = str(ghost_package_root or "").strip()
+    return root or "ageoa"
+
+
+def _ghost_module_name(ghost_package_root: str, module_name: str) -> str:
+    return f"{_normalized_ghost_package_root(ghost_package_root)}.ghost.{module_name}"
+
+
+def _ghost_abstract_candidate_paths(ghost_package_root: str) -> tuple[Path, ...]:
+    """Return candidate abstract.py paths for a ghost package root."""
+    package_path = Path(*_normalized_ghost_package_root(ghost_package_root).split("."))
+    candidates: list[Path] = []
+    seen: set[str] = set()
+
+    def add(path: Path) -> None:
+        key = str(path)
+        if key in seen:
+            return
+        seen.add(key)
+        candidates.append(path)
+
     try:
-        module = importlib.import_module("ageoa.ghost.abstract")
+        sources = load_sources().sources
+    except Exception:
+        sources = []
+
+    for source in sources:
+        try:
+            import_root = resolve_import_root(source)
+        except Exception:
+            continue
+        add(import_root / package_path / "ghost" / "abstract.py")
+
+    for provider_root in candidate_atom_provider_roots():
+        add(provider_root / package_path / "ghost" / "abstract.py")
+        add(provider_root / "src" / package_path / "ghost" / "abstract.py")
+
+    return tuple(candidates)
+
+
+def _resolve_ghost_abstract_path(ghost_package_root: str) -> Path | None:
+    for candidate in _ghost_abstract_candidate_paths(ghost_package_root):
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _available_ghost_abstract_names(*, ghost_package_root: str = "ageoa") -> set[str]:
+    """Return the real exported ghost abstract names when discoverable."""
+    abstract_module = _ghost_module_name(ghost_package_root, "abstract")
+    try:
+        module = importlib.import_module(abstract_module)
         return {name for name in dir(module) if not name.startswith("_")}
     except Exception:
         pass
 
-    sibling_abstract = (
-        Path(__file__).resolve().parents[3] / "ageo-atoms" / "ageoa" / "ghost" / "abstract.py"
-    )
-    if sibling_abstract.exists():
+    sibling_abstract = _resolve_ghost_abstract_path(ghost_package_root)
+    if sibling_abstract is not None:
         try:
             tree = ast.parse(sibling_abstract.read_text(encoding="utf-8"))
             return {
@@ -344,14 +393,19 @@ def _available_ghost_abstract_names() -> set[str]:
     return set(_GHOST_ABSTRACT_FALLBACKS)
 
 
-def _emit_ghost_import_preamble(*, requested_names: set[str]) -> list[str]:
+def _emit_ghost_import_preamble(
+    *,
+    requested_names: set[str],
+    ghost_package_root: str = "ageoa",
+) -> list[str]:
     """Emit a ghost import preamble that validates names against the real surface."""
-    available = _available_ghost_abstract_names()
+    abstract_module = _ghost_module_name(ghost_package_root, "abstract")
+    available = _available_ghost_abstract_names(ghost_package_root=ghost_package_root)
     lines = [
         "from dataclasses import dataclass",
         "",
         "try:",
-        "    import ageoa.ghost.abstract as _ghost_abstract",
+        f"    import {abstract_module} as _ghost_abstract",
         "except ImportError:",
         "    _ghost_abstract = None",
         "",
@@ -499,6 +553,7 @@ async def generate_opaque_witnesses(
     context_namespace: str = "",
     context_budget_chars: int = 900,
     parallelism: int = 1,
+    ghost_package_root: str = "ageoa",
 ) -> tuple[str, dict[str, str]]:
     """Generate AbstractArray-based witnesses for opaque DL atoms.
 
@@ -519,7 +574,7 @@ async def generate_opaque_witnesses(
         "import networkx as nx  # type: ignore",
         "",
         "try:",
-        "    from ageoa.ghost.abstract import AbstractArray",
+        f"    from {_ghost_module_name(ghost_package_root, 'abstract')} import AbstractArray",
         "except ImportError:",
         "    pass",
         "",
@@ -1774,6 +1829,7 @@ def generate_atom_wrappers(
     class_name: str = "",
     source_file: str = "",
     plan: ValidatedMacroPlan | None = None,
+    ghost_package_root: str = "ageoa",
 ) -> str:
     """Generate ``@register_atom`` decorated function wrappers."""
     allowed_names = {spec.model_name for spec in state_models}
@@ -1789,7 +1845,7 @@ def generate_atom_wrappers(
         "",
         "import numpy as np",
         "import icontract",
-        "from ageoa.ghost.registry import register_atom",
+        f"from {_ghost_module_name(ghost_package_root, 'registry')} import register_atom",
         "",
         "_SCIONA_UNSET = object()",
         "",
@@ -2037,6 +2093,7 @@ def generate_stateful_wrappers(
     source_file: str = "",
     source_language: str = "python",
     plan: ValidatedMacroPlan | None = None,
+    ghost_package_root: str = "ageoa",
 ) -> str:
     """Generate ``@register_atom`` wrappers with inject/run/extract state pattern.
 
@@ -2053,6 +2110,7 @@ def generate_stateful_wrappers(
             class_name=class_name,
             source_file=source_file,
             plan=plan,
+            ghost_package_root=ghost_package_root,
         )
 
     state_model = state_models[0]
@@ -2070,7 +2128,7 @@ def generate_stateful_wrappers(
         "",
         "import numpy as np",
         "import icontract",
-        "from ageoa.ghost.registry import register_atom",
+        f"from {_ghost_module_name(ghost_package_root, 'registry')} import register_atom",
         "",
         "_SCIONA_UNSET = object()",
         "",
@@ -2520,6 +2578,7 @@ def generate_ghost_witnesses(
     state_models: list[StateModelSpec] | None = None,
     *,
     plan: ValidatedMacroPlan | None = None,
+    ghost_package_root: str = "ageoa",
 ) -> tuple[str, dict[str, str]]:
     """Generate ghost witness functions.
 
@@ -2553,7 +2612,12 @@ def generate_ghost_witnesses(
         "from __future__ import annotations",
         "",
     ]
-    lines.extend(_emit_ghost_import_preamble(requested_names=requested_names))
+    lines.extend(
+        _emit_ghost_import_preamble(
+            requested_names=requested_names,
+            ghost_package_root=ghost_package_root,
+        )
+    )
 
     # Memoization cache preamble for message-passing witnesses
     if has_message_passing:
@@ -3400,6 +3464,7 @@ def emit_ingestion_bundle(
     class_name: str,
     source_file: str = "",
     source_language: str = "python",
+    ghost_package_root: str = "ageoa",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
     # Conjugate updates should follow deterministic
@@ -3415,6 +3480,7 @@ def emit_ingestion_bundle(
         compat_atoms,
         state_models=compat_state_models,
         plan=plan,
+        ghost_package_root=ghost_package_root,
     )
 
     if has_opaque:
@@ -3445,6 +3511,7 @@ def emit_ingestion_bundle(
             source_file=source_file,
             source_language=source_language,
             plan=plan,
+            ghost_package_root=ghost_package_root,
         )
     else:
         atoms_source = generate_atom_wrappers(
@@ -3455,6 +3522,7 @@ def emit_ingestion_bundle(
             class_name=class_name,
             source_file=source_file,
             plan=plan,
+            ghost_package_root=ghost_package_root,
         )
 
     # Append FFI binding stubs for non-Python sources
