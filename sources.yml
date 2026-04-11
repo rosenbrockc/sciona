@@ -7,6 +7,10 @@ sources:
     path: ../sciona-atoms
     python_path: src
     package: sciona.atoms.state_estimation
+  - name: sciona-atoms-algorithmic
+    path: ../sciona-atoms
+    python_path: src
+    package: sciona.atoms.algorithmic.divide_and_conquer
   - name: ageo-atoms
     path: ../ageo-atoms
     package: ageoa

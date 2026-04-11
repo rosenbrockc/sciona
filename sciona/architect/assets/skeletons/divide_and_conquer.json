@@ -179,7 +179,7 @@
     "rationale": "Provides a reviewed family scaffold while skeleton ownership migrates out of framework-local templates.",
     "migration_readiness": {
       "status": "in_progress",
-      "target_repository": "../ageo-atoms",
+      "target_repository": "../sciona-atoms",
       "target_scope": "skeleton.divide_and_conquer",
       "rationale": "This skeleton is structurally stable but still lives in the framework-local compatibility layer.",
       "checklist": [

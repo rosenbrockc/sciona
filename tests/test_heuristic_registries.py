@@ -68,6 +68,18 @@ def test_non_signal_registry_proves_interface_stays_generic() -> None:
     assert "merge_cost_pressure" in entry_ids
 
 
+def test_divide_and_conquer_registry_prefers_namespace_pilot_asset_when_available() -> None:
+    registry = resolve_heuristic_registry("divide_and_conquer")
+
+    assert registry is not None
+    summary = heuristic_registry_summary(registry)
+    assert summary["source_kind"] == "shared_asset"
+    assert summary["source_repository"] == "../sciona-atoms"
+    assert summary["source_path"].endswith(
+        "data/heuristics/families/divide_and_conquer.json"
+    )
+
+
 def test_sequential_filter_registry_resolves_from_shared_assets() -> None:
     registry = resolve_heuristic_registry("kalman_filter")
 

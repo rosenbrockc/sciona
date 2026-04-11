@@ -29,6 +29,7 @@ class TestLocalSkeletonAssets:
         assert by_id["signal_detect_measure"].audit.rationale
         readiness = by_id["family.divide_and_conquer.v1"].audit.migration_readiness
         assert readiness.status == "in_progress"
+        assert readiness.target_repository == "../sciona-atoms"
         assert readiness.required_check_count() == 3
         assert readiness.completed_required_check_count() == 2
         assert readiness.is_ready_for_migration() is False
