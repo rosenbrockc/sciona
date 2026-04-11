@@ -6,6 +6,7 @@ from sciona.asset_migration import MigrationReadinessAsset
 from sciona.architect.models import ConceptType
 from sciona.architect.skeleton_assets import (
     load_local_skeleton_assets,
+    load_local_skeleton_graphs,
     skeleton_asset_summary,
 )
 from sciona.architect.skeletons import get_skeleton
@@ -17,8 +18,14 @@ class TestLocalSkeletonAssets:
         by_id = {asset.asset_id: asset for asset in assets}
 
         assert "family.divide_and_conquer.v1" in by_id
+        assert "family.sequential_filter.v1" in by_id
         assert "signal_detect_measure" in by_id
         assert by_id["family.divide_and_conquer.v1"].audit.review_status == "transitional"
+        assert by_id["family.sequential_filter.v1"].family == "sequential_filter"
+        assert by_id["family.sequential_filter.v1"].variant_hints == [
+            "kalman_filter",
+            "particle_filter",
+        ]
         assert by_id["signal_detect_measure"].audit.rationale
         readiness = by_id["family.divide_and_conquer.v1"].audit.migration_readiness
         assert readiness.status == "in_progress"
@@ -41,7 +48,7 @@ class TestLocalSkeletonAssets:
         readiness = MigrationReadinessAsset.model_validate(
             {
                 "status": "ready_for_migration",
-                "target_repository": "../ageo-atoms",
+                "target_repository": "../sciona-atoms",
                 "checklist": [
                     {
                         "check_id": "schema",
@@ -79,3 +86,27 @@ class TestLocalSkeletonAssets:
         assert "asset" not in default_signal.metadata
         assert hr_signal is not None
         assert hr_signal.metadata["asset"]["asset_id"] == "signal_detect_measure"
+
+    def test_sequential_filter_asset_is_discoverable_by_paradigm_and_variant_hint(self):
+        by_paradigm, by_name = load_local_skeleton_graphs()
+
+        sequential = by_paradigm[ConceptType.SEQUENTIAL_FILTER]
+
+        assert sequential.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+        assert by_name["kalman_filter"].metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+        assert by_name["particle_filter"].metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+
+    def test_sequential_filter_asset_is_first_class_skeleton_lookup(self):
+        default_filter = get_skeleton(ConceptType.SEQUENTIAL_FILTER)
+        kalman_hint = get_skeleton(ConceptType.SEQUENTIAL_FILTER, variant="kalman_filter")
+        particle_hint = get_skeleton(
+            ConceptType.SEQUENTIAL_FILTER,
+            variant="particle_filter",
+        )
+
+        assert default_filter is not None
+        assert kalman_hint is not None
+        assert particle_hint is not None
+        assert default_filter.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+        assert kalman_hint.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+        assert particle_hint.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"

@@ -1,0 +1,357 @@
+{
+  "asset_id": "family.sequential_filter.v1",
+  "asset_version": "v1",
+  "family": "sequential_filter",
+  "paradigm": "sequential_filter",
+  "name": "Sequential Filter Family Skeleton",
+  "summary": "Carry a running state estimate forward, compare it with each new observation, assimilate the evidence, and emit the updated posterior state.",
+  "dejargonized_summary": "Keep a best guess of the hidden state, revise that guess when new measurements arrive, and keep the uncertainty attached instead of dropping it.",
+  "canonical_for_paradigm": true,
+  "variant_hints": [
+    "kalman_filter",
+    "particle_filter"
+  ],
+  "stages": [
+    {
+      "stage_id": "predict_state_hypothesis",
+      "name": "Predict State Hypothesis",
+      "description": "Advance the prior state estimate through the transition dynamics before the next observation is processed.",
+      "dejargonized_description": "Project the current guess one step forward before looking at the next measurement.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "prior_state",
+          "type_desc": "state estimate"
+        },
+        {
+          "name": "transition_model",
+          "type_desc": "state transition rule"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "predicted_state",
+          "type_desc": "state estimate"
+        }
+      ],
+      "preconditions": [
+        "A prior state estimate and transition rule are available."
+      ],
+      "guarantees": [
+        "Produces a forward-propagated state hypothesis without consuming the new observation."
+      ]
+    },
+    {
+      "stage_id": "predict_uncertainty",
+      "name": "Predict Uncertainty",
+      "description": "Advance the uncertainty representation that accompanies the predicted state.",
+      "dejargonized_description": "Carry forward how unsure the filter is, not just the state guess itself.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "prior_uncertainty",
+          "type_desc": "uncertainty representation"
+        },
+        {
+          "name": "transition_model",
+          "type_desc": "state transition rule"
+        },
+        {
+          "name": "process_noise_model",
+          "type_desc": "process noise rule"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "predicted_uncertainty",
+          "type_desc": "uncertainty representation"
+        }
+      ],
+      "preconditions": [
+        "The filter carries an explicit uncertainty representation."
+      ],
+      "guarantees": [
+        "Preserves the uncertainty channel needed for measurement assimilation."
+      ]
+    },
+    {
+      "stage_id": "score_measurement_fit",
+      "name": "Score Measurement Fit",
+      "description": "Evaluate how well the new observation agrees with the predicted state and uncertainty without mutating the belief directly.",
+      "dejargonized_description": "Check how surprising the new measurement is before changing the running estimate.",
+      "concept_type": "probabilistic_oracle",
+      "inputs": [
+        {
+          "name": "predicted_state",
+          "type_desc": "state estimate"
+        },
+        {
+          "name": "predicted_uncertainty",
+          "type_desc": "uncertainty representation"
+        },
+        {
+          "name": "observation",
+          "type_desc": "measurement"
+        },
+        {
+          "name": "measurement_model",
+          "type_desc": "measurement likelihood rule"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "measurement_evidence",
+          "type_desc": "observation evidence"
+        }
+      ],
+      "preconditions": [
+        "Prediction outputs still retain the uncertainty needed to evaluate fit."
+      ],
+      "guarantees": [
+        "Produces evidence terms that can drive the update step while keeping scoring stateless."
+      ]
+    },
+    {
+      "stage_id": "assimilate_observation",
+      "name": "Assimilate Observation",
+      "description": "Combine the prediction and measurement evidence to produce the posterior state and posterior uncertainty.",
+      "dejargonized_description": "Use the new measurement to revise the guess and its confidence together.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "predicted_state",
+          "type_desc": "state estimate"
+        },
+        {
+          "name": "predicted_uncertainty",
+          "type_desc": "uncertainty representation"
+        },
+        {
+          "name": "measurement_evidence",
+          "type_desc": "observation evidence"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "state_posterior",
+          "type_desc": "state estimate"
+        },
+        {
+          "name": "uncertainty_posterior",
+          "type_desc": "uncertainty representation"
+        }
+      ],
+      "preconditions": [
+        "Prediction and measurement evidence refer to the same observation step."
+      ],
+      "guarantees": [
+        "Produces a posterior belief state ready for the next sequential iteration."
+      ]
+    },
+    {
+      "stage_id": "emit_posterior_estimate",
+      "name": "Emit Posterior Estimate",
+      "description": "Package the posterior state and uncertainty into the external estimate emitted for this step.",
+      "dejargonized_description": "Return the updated guess in a form the rest of the pipeline can consume.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "state_posterior",
+          "type_desc": "state estimate"
+        },
+        {
+          "name": "uncertainty_posterior",
+          "type_desc": "uncertainty representation"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "state_estimate",
+          "type_desc": "state estimate"
+        },
+        {
+          "name": "uncertainty_summary",
+          "type_desc": "uncertainty representation"
+        }
+      ],
+      "preconditions": [
+        "The posterior state and uncertainty have both been updated."
+      ],
+      "guarantees": [
+        "Emits a step-local output while preserving the uncertainty channel."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source_stage_id": "predict_state_hypothesis",
+      "target_stage_id": "score_measurement_fit",
+      "output_name": "predicted_state",
+      "input_name": "predicted_state",
+      "source_type": "state estimate",
+      "target_type": "state estimate",
+      "data_kind": "state",
+      "provenance": "Forward-propagated latent state hypothesis.",
+      "loss_class": "preserving",
+      "alignment_expectation": "prediction step identity preserved"
+    },
+    {
+      "source_stage_id": "predict_uncertainty",
+      "target_stage_id": "score_measurement_fit",
+      "output_name": "predicted_uncertainty",
+      "input_name": "predicted_uncertainty",
+      "source_type": "uncertainty representation",
+      "target_type": "uncertainty representation",
+      "data_kind": "state_uncertainty",
+      "provenance": "Forward-propagated uncertainty channel for the current step.",
+      "loss_class": "preserving",
+      "alignment_expectation": "uncertainty remains paired with the predicted state"
+    },
+    {
+      "source_stage_id": "predict_state_hypothesis",
+      "target_stage_id": "assimilate_observation",
+      "output_name": "predicted_state",
+      "input_name": "predicted_state",
+      "source_type": "state estimate",
+      "target_type": "state estimate",
+      "data_kind": "state",
+      "provenance": "State prediction handed to the update step.",
+      "loss_class": "preserving",
+      "alignment_expectation": "state prediction remains tied to the current observation step"
+    },
+    {
+      "source_stage_id": "predict_uncertainty",
+      "target_stage_id": "assimilate_observation",
+      "output_name": "predicted_uncertainty",
+      "input_name": "predicted_uncertainty",
+      "source_type": "uncertainty representation",
+      "target_type": "uncertainty representation",
+      "data_kind": "state_uncertainty",
+      "provenance": "Prediction uncertainty handed to the update step.",
+      "loss_class": "preserving",
+      "alignment_expectation": "uncertainty channel stays aligned with the predicted state"
+    },
+    {
+      "source_stage_id": "score_measurement_fit",
+      "target_stage_id": "assimilate_observation",
+      "output_name": "measurement_evidence",
+      "input_name": "measurement_evidence",
+      "source_type": "observation evidence",
+      "target_type": "observation evidence",
+      "data_kind": "measurement_evidence",
+      "provenance": "Evidence derived from the current observation only.",
+      "loss_class": "lossy_but_allowed",
+      "alignment_expectation": "measurement evidence remains scoped to the same time step"
+    },
+    {
+      "source_stage_id": "assimilate_observation",
+      "target_stage_id": "emit_posterior_estimate",
+      "output_name": "state_posterior",
+      "input_name": "state_posterior",
+      "source_type": "state estimate",
+      "target_type": "state estimate",
+      "data_kind": "state",
+      "provenance": "Posterior state after assimilating the current observation.",
+      "loss_class": "preserving",
+      "alignment_expectation": "posterior state stays paired with its posterior uncertainty"
+    },
+    {
+      "source_stage_id": "assimilate_observation",
+      "target_stage_id": "emit_posterior_estimate",
+      "output_name": "uncertainty_posterior",
+      "input_name": "uncertainty_posterior",
+      "source_type": "uncertainty representation",
+      "target_type": "uncertainty representation",
+      "data_kind": "state_uncertainty",
+      "provenance": "Posterior uncertainty after assimilating the current observation.",
+      "loss_class": "preserving",
+      "alignment_expectation": "posterior uncertainty stays paired with its posterior state"
+    }
+  ],
+  "planning_constraints": [
+    {
+      "category": "stage",
+      "subject": "sequential_filter",
+      "statement": "Keep state prediction and uncertainty propagation explicit until the observation-assimilation stage completes.",
+      "severity": "required",
+      "rationale": "Sequential filters rely on advancing both the estimate and its uncertainty before the measurement update.",
+      "source_stage": "skeleton_asset"
+    },
+    {
+      "category": "stage",
+      "subject": "measurement_evidence",
+      "statement": "Treat measurement scoring as an evidence-producing step rather than a belief-mutating shortcut.",
+      "severity": "required",
+      "rationale": "This keeps variant-specific likelihood logic isolated while preserving the shared family structure.",
+      "source_stage": "skeleton_asset"
+    },
+    {
+      "category": "loss",
+      "subject": "uncertainty_representation",
+      "statement": "Do not discard the uncertainty representation before the posterior estimate is emitted.",
+      "severity": "required",
+      "rationale": "Both Kalman-style and particle-style variants depend on uncertainty surviving through the update boundary.",
+      "source_stage": "skeleton_asset"
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Provides the Phase 1 matcher-local compatibility asset for the sequential_filter pilot while canonical family ownership remains outside this repository.",
+    "migration_readiness": {
+      "status": "in_progress",
+      "target_repository": "../sciona-atoms",
+      "target_scope": "skeleton.sequential_filter",
+      "rationale": "The pilot family scaffold is explicit and loadable, but family-level ownership and broader variant coverage are still being migrated.",
+      "checklist": [
+        {
+          "check_id": "schema_stable",
+          "description": "Stage contracts and edge semantics are explicit and loadable as a first-class skeleton asset.",
+          "required": true,
+          "satisfied": true,
+          "evidence": [
+            "The asset declares typed stages, typed edges, and audit metadata required by the loader."
+          ]
+        },
+        {
+          "check_id": "pilot_variant_hints",
+          "description": "The pilot captures kalman_filter and particle_filter as family variant hints.",
+          "required": true,
+          "satisfied": true,
+          "evidence": [
+            "The asset-backed registry exposes kalman_filter and particle_filter through variant_hints."
+          ]
+        },
+        {
+          "check_id": "cross_family_portability",
+          "description": "The scaffold remains family-generic rather than encoding a single concrete topology.",
+          "required": true,
+          "satisfied": false,
+          "notes": [
+            "Variant-specific sub-topologies still live in matcher code during the pilot and are not fully reconciled into one shared external scaffold."
+          ]
+        }
+      ]
+    },
+    "provenance_notes": [
+      "Transitional matcher-local asset used to prove asset-backed sequential_filter loading without changing namespace or discovery behavior."
+    ],
+    "uncertainty_notes": [
+      "Variant-specific resampling, gain computation, and richer posterior branches remain outside this family-level pilot scaffold."
+    ],
+    "references": [
+      {
+        "title": "Bayesian Filtering and Smoothing",
+        "citation": "Sarkka. Bayesian Filtering and Smoothing."
+      },
+      {
+        "title": "Probabilistic Robotics",
+        "citation": "Thrun, Burgard, Fox. Probabilistic Robotics."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}

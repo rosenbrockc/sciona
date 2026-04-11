@@ -6,7 +6,7 @@ sources:
   - name: sciona-atoms-state-estimation
     path: ../sciona-atoms
     python_path: src
-    package: sciona.atoms.state_estimation.kalman_filters
+    package: sciona.atoms.state_estimation
   - name: ageo-atoms
     path: ../ageo-atoms
     package: ageoa
