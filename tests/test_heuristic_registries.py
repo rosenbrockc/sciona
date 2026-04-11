@@ -84,7 +84,7 @@ def test_sequential_filter_registry_reports_shared_provider_asset_path() -> None
     assert registry is not None
     summary = heuristic_registry_summary(registry)
     assert summary["source_kind"] == "shared_asset"
-    assert summary["source_repository"] == "../ageo-atoms"
+    assert summary["source_repository"] == "../sciona-atoms"
     assert summary["source_path"].endswith(
         "data/heuristics/families/sequential_filter.json"
     )
