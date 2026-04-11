@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+import sciona as matcher_sciona
+
 from sciona.architect.catalog import CatalogReport, PrimitiveCatalog
 from sciona.architect.source_catalog import (
     _alias_candidates,
@@ -19,6 +21,12 @@ from sciona.types import Declaration, Prover
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text)
+
+
+def _purge_modules(prefixes: tuple[str, ...], baseline: set[str]) -> None:
+    for name in set(sys.modules) - baseline:
+        if any(name == prefix or name.startswith(prefix + ".") for prefix in prefixes):
+            sys.modules.pop(name, None)
 
 
 def test_seed_catalog_from_sources_uses_shared_registry_and_cdg_metadata(tmp_path: Path):
@@ -115,6 +123,107 @@ def detect_peaks(signal: "np.ndarray") -> "np.ndarray":
                 sys.modules.pop(name, None)
 
 
+def test_seed_catalog_from_namespace_style_sciona_atoms_source(tmp_path: Path):
+    repo = tmp_path / "repo"
+
+    _write(
+        repo / "src" / "sciona" / "atoms" / "demo" / "ghost" / "registry.py",
+        """
+from __future__ import annotations
+
+REGISTRY = {}
+
+def register_atom(witness, *, name=None):
+    def decorator(func):
+        atom_name = name or func.__name__
+        REGISTRY[atom_name] = {"impl": func, "witness": witness}
+        return func
+    return decorator
+""".strip()
+        + "\n",
+    )
+
+    _write(
+        repo / "src" / "sciona" / "atoms" / "demo" / "atoms.py",
+        """
+from __future__ import annotations
+
+from sciona.atoms.demo.ghost.registry import register_atom
+
+def witness_detect_demo(signal: "AbstractSignal") -> "AbstractDemoSignal":
+    return signal
+
+@register_atom(witness_detect_demo)
+def detect_demo(signal: "np.ndarray") -> "np.ndarray":
+    return signal
+""".strip()
+        + "\n",
+    )
+
+    _write(
+        repo / "demo_cdg.json",
+        """
+{
+  "nodes": [
+    {
+      "node_id": "detect_demo",
+      "name": "DetectDemo",
+      "description": "Detect demo events from a namespace-packaged waveform.",
+      "concept_type": "signal_transform",
+      "inputs": [{"name": "signal", "type_desc": "np.ndarray"}],
+      "outputs": [{"name": "events", "type_desc": "np.ndarray"}],
+      "status": "atomic",
+      "type_signature": "(signal: np.ndarray) -> np.ndarray"
+    }
+  ]
+}
+""".strip()
+        + "\n",
+    )
+
+    config = SourcesConfig(
+        sources=[
+            AtomSource(
+                name="demo-namespace",
+                package="sciona.atoms.demo",
+                path="repo",
+                python_path="src",
+            )
+        ]
+    )
+    catalog = PrimitiveCatalog()
+    report = CatalogReport()
+
+    before_modules = set(sys.modules)
+    before_sciona_path = list(matcher_sciona.__path__)
+    before_sciona_spec_path = list(matcher_sciona.__spec__.submodule_search_locations or [])
+    try:
+        added = seed_catalog_from_sources(catalog, config=config, base_dir=tmp_path, report=report)
+        assert added == 1
+
+        prim = catalog.get("detect_demo")
+        assert prim is not None
+        assert prim.source == "demo-namespace"
+        assert prim.category.value == "signal_transform"
+        assert prim.description == "Detect demo events from a namespace-packaged waveform."
+        assert prim.inputs[0].name == "signal"
+        assert prim.outputs[0].name == "events"
+        assert prim.type_signature == "(signal: np.ndarray) -> np.ndarray"
+
+        aliased = catalog.get("DetectDemo")
+        assert aliased is not None
+        assert aliased.name == "detect_demo"
+
+        assert report.source_live_registry_candidates == 1
+        assert report.source_cdg_metadata_matches == 1
+        assert report.source_breakdown["demo-namespace"]["live_registry_candidates"] == 1
+        assert report.source_breakdown["demo-namespace"]["added"] == 1
+    finally:
+        _purge_modules(("sciona.atoms",), before_modules)
+        matcher_sciona.__path__[:] = before_sciona_path
+        matcher_sciona.__spec__.submodule_search_locations[:] = before_sciona_spec_path
+
+
 def test_alias_candidates_include_full_module_path_alias():
     def detect_peaks(signal):
         return signal
@@ -126,6 +235,50 @@ def test_alias_candidates_include_full_module_path_alias():
     )
 
     assert "ageoa.biosppy.ecg.detect_peaks" in aliases
+
+
+def test_seed_catalog_from_configured_ageo_atoms_source_discovers_pilot_cdgs() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    config = SourcesConfig(
+        sources=[
+            AtomSource(
+                name="ageo-kalman-pilot",
+                package="ageoa.kalman_filters",
+                path="../ageo-atoms",
+                cdg_glob="ageoa/kalman_filters/**/cdg.json",
+            )
+        ]
+    )
+    catalog = PrimitiveCatalog()
+    report = CatalogReport()
+
+    added = seed_catalog_from_sources(
+        catalog,
+        config=config,
+        base_dir=repo_root,
+        include_live_registries=False,
+        report=report,
+    )
+
+    assert added > 0
+    measurement_oracle = catalog.get("evaluatemeasurementoracle")
+    assert measurement_oracle is not None
+    assert measurement_oracle.source == "ageo-kalman-pilot"
+    assert measurement_oracle.description == (
+        "Pure observation oracle that maps latent state to predicted measurement "
+        "and measurement residual; performs no persistent state writes."
+    )
+    assert [port.name for port in measurement_oracle.inputs] == ["x", "z", "H"]
+
+    state_model = catalog.get("initializelineargaussianstatemodel")
+    assert state_model is not None
+    assert state_model.source == "ageo-kalman-pilot"
+    assert state_model.description == (
+        "Create the immutable linear-Gaussian state-space model with latent mean "
+        "and covariance plus fixed system/noise matrices."
+    )
+    assert report.source_cdg_metadata_matches >= 2
+    assert report.source_breakdown["ageo-kalman-pilot"]["ast_candidates"] > 0
 
 
 def test_seed_catalog_marks_defaulted_parameters_optional(tmp_path: Path):

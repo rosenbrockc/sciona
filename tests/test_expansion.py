@@ -19,6 +19,15 @@ from sciona.principal.expansion import (
     ExpansionResult,
     ExpansionRuleSet,
 )
+from sciona.synthesizer.assembler import Assembler
+from sciona.types import (
+    CandidateMatch,
+    Declaration,
+    MatchResult,
+    PDGNode,
+    Prover,
+    VerificationResult,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -269,9 +278,9 @@ class TestExpansionEngine:
 class TestSignalEventRateExpansion:
     """Integration tests for the signal-event-rate expansion rules."""
 
-    def _pipeline_cdg(self, use_smoothed=False):
+    def _pipeline_cdg(self, use_smoothed=False, rate_primitive=None):
         """Build a minimal filter → detect → rate CDG."""
-        rate_prim = (
+        rate_prim = rate_primitive or (
             "compute_event_rate_smoothed" if use_smoothed else "compute_event_rate"
         )
         return _cdg(
@@ -426,6 +435,7 @@ class TestSignalEventRateExpansion:
 
     def test_outlier_rejection_rule_applies(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
+            _biosppy_ecg_primitive_fqdn,
             SignalEventRateExpansionRuleSet,
         )
 
@@ -440,7 +450,7 @@ class TestSignalEventRateExpansion:
 
         g = result.unwrap()
         prims = {n.matched_primitive for n in g.nodes if n.matched_primitive}
-        assert "ageoa.biosppy.ecg.reject_outlier_intervals" in prims
+        assert _biosppy_ecg_primitive_fqdn("reject_outlier_intervals") in prims
 
     def test_peak_correction_rule_applies(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
@@ -479,6 +489,148 @@ class TestSignalEventRateExpansion:
         cdg = self._pipeline_cdg(use_smoothed=True)
         result = rw.apply_rule(rule, cdg)
         assert not result.is_failure
+
+    def test_outlier_rejection_median_smoothed_variant(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            _biosppy_ecg_primitive_fqdn,
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        rules_by_name = {r.name: r for r in rs.rules()}
+        rule = rules_by_name["insert_outlier_rejection_after_detection_median_smoothed"]
+
+        rw = GraphRewriter()
+        cdg = self._pipeline_cdg()
+        result = rw.apply_rule(rule, cdg)
+        assert not result.is_failure
+
+        g = result.unwrap()
+        prims = {n.matched_primitive for n in g.nodes if n.matched_primitive}
+        assert _biosppy_ecg_primitive_fqdn("reject_outlier_intervals") in prims
+        assert _biosppy_ecg_primitive_fqdn(
+            "heart_rate_computation_median_smoothed"
+        ) in prims
+
+    def test_outlier_rejection_median_smoothed_variant_preserves_root_children(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            _biosppy_ecg_primitive_fqdn,
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        rules_by_name = {r.name: r for r in rs.rules()}
+        rule = rules_by_name["insert_outlier_rejection_after_detection_median_smoothed"]
+
+        rw = GraphRewriter()
+        cdg = self._root_boundary_pipeline_cdg()
+        result = rw.apply_rule(rule, cdg)
+        assert not result.is_failure
+
+        g = result.unwrap()
+        root = next(node for node in g.nodes if node.node_id == "root")
+        robust_node = next(
+            node
+            for node in g.nodes
+            if node.matched_primitive
+            == _biosppy_ecg_primitive_fqdn(
+                "heart_rate_computation_median_smoothed"
+            )
+        )
+        assert robust_node.parent_id == "root"
+        assert robust_node.node_id in root.children
+        assert [port.name for port in robust_node.outputs] == ["rate"]
+
+    def test_biosppy_ecg_primitive_fqdn_prefers_pilot_namespace(self, tmp_path, monkeypatch):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            _biosppy_ecg_primitive_fqdn,
+        )
+
+        pilot_ecg = (
+            tmp_path
+            / "src"
+            / "sciona"
+            / "atoms"
+            / "signal_processing"
+            / "biosppy"
+            / "ecg.py"
+        )
+        pilot_ecg.parent.mkdir(parents=True)
+        pilot_ecg.write_text("# pilot atom\n", encoding="utf-8")
+        monkeypatch.setattr(
+            "sciona.principal.expansion_rules.signal_event_rate.candidate_atom_provider_roots",
+            lambda: [tmp_path],
+        )
+
+        assert _biosppy_ecg_primitive_fqdn(
+            "reject_outlier_intervals"
+        ) == "sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals"
+
+    def test_biosppy_ecg_primitive_fqdn_falls_back_to_legacy_namespace(self, tmp_path, monkeypatch):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            _biosppy_ecg_primitive_fqdn,
+        )
+
+        monkeypatch.setattr(
+            "sciona.principal.expansion_rules.signal_event_rate.candidate_atom_provider_roots",
+            lambda: [tmp_path],
+        )
+
+        assert _biosppy_ecg_primitive_fqdn(
+            "heart_rate_computation_median_smoothed"
+        ) == "ageoa.biosppy.ecg.heart_rate_computation_median_smoothed"
+
+    def test_outlier_rejection_median_smoothed_variant_preserves_rate_output_tags_in_assembly(self):
+        from sciona.principal.expansion_rules.signal_event_rate import (
+            SignalEventRateExpansionRuleSet,
+        )
+
+        rs = SignalEventRateExpansionRuleSet()
+        rules_by_name = {r.name: r for r in rs.rules()}
+        rule = rules_by_name["insert_outlier_rejection_after_detection_median_smoothed"]
+
+        rw = GraphRewriter()
+        cdg = self._root_boundary_pipeline_cdg()
+        result = rw.apply_rule(rule, cdg)
+        assert not result.is_failure
+
+        g = result.unwrap()
+        matches: list[MatchResult] = []
+        for index, node in enumerate(g.nodes):
+            if node.status != NodeStatus.ATOMIC:
+                continue
+            decl = Declaration(
+                name=f"fake_runtime.atom_{index}",
+                type_signature=node.type_signature or "",
+                prover=Prover.PYTHON,
+            )
+            candidate = CandidateMatch(
+                declaration=decl,
+                score=1.0,
+                retrieval_method="test",
+            )
+            verified = VerificationResult(candidate=candidate, verified=True)
+            matches.append(
+                MatchResult(
+                    pdg_node=PDGNode(
+                        predicate_id=node.node_id,
+                        statement=node.type_signature or "",
+                    ),
+                    verified_match=verified,
+                    all_candidates=[candidate],
+                    all_verifications=[verified],
+                )
+            )
+
+        source = Assembler(Prover.PYTHON).assemble(
+            g,
+            matches,
+            with_telemetry=True,
+        ).source_code
+
+        assert "def compute_robust_smoothed_rate" in source
+        assert "output_names=('rate',)" in source
+        assert "return compute_robust_smoothed_rate_result" in source
 
     def test_diagnose_jump_discontinuities(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
@@ -540,7 +692,7 @@ class TestSignalEventRateExpansion:
         cdg = self._pipeline_cdg()
         diags = rs.diagnose(cdg, ctx)
         rule_names = {d.rule_name for d in diags}
-        assert "insert_outlier_rejection_after_detection" in rule_names
+        assert "insert_outlier_rejection_after_detection_median_smoothed" in rule_names
 
     def test_diagnose_interval_outliers_from_summary_telemetry(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
@@ -562,7 +714,7 @@ class TestSignalEventRateExpansion:
         cdg = self._pipeline_cdg()
         diags = rs.diagnose(cdg, ctx)
         rule_names = {d.rule_name for d in diags}
-        assert "insert_outlier_rejection_after_detection" in rule_names
+        assert "insert_outlier_rejection_after_detection_median_smoothed" in rule_names
 
     def test_diagnose_peak_correction_need_from_summary_telemetry(self):
         from sciona.principal.expansion_rules.signal_event_rate import (

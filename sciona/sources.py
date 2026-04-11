@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.machinery
 import logging
 import subprocess
 import sys
@@ -25,6 +26,7 @@ class AtomSource(BaseModel):
     name: str
     package: str
     path: str | None = None
+    python_path: str | None = None
     git: str | None = None
     ref: str = "main"
     cdg_glob: str = _DEFAULT_CDG_GLOB
@@ -86,6 +88,24 @@ def resolve_source(source: AtomSource, base_dir: Path | None = None) -> Path:
     return repo_dir
 
 
+def resolve_import_root(source: AtomSource, base_dir: Path | None = None) -> Path:
+    """Return the Python import root for *source*.
+
+    For standard repo layouts this is the same as :func:`resolve_source`.
+    For ``src/`` layouts a source can set ``python_path`` to the directory
+    within the repo that should be added to ``sys.path``.
+    """
+    root = resolve_source(source, base_dir)
+    if source.python_path:
+        return (root / Path(source.python_path).expanduser()).resolve()
+    return root
+
+
+def resolve_package_root(source: AtomSource, base_dir: Path | None = None) -> Path:
+    """Return the filesystem root for ``source.package`` within *source*."""
+    return resolve_import_root(source, base_dir).joinpath(*source.package.split("."))
+
+
 def sync_source(source: AtomSource, base_dir: Path | None = None) -> Path:
     """Fetch / update a git source.  No-op for local-path sources."""
     if source.path:
@@ -122,14 +142,15 @@ def find_cdg(name: str, config: SourcesConfig | None = None, base_dir: Path | No
 def import_atoms(source: AtomSource, base_dir: Path | None = None) -> None:
     """Import the Python package for *source*, triggering ``@register_atom``.
 
-    For ``path`` sources the repo root is inserted into ``sys.path`` so that
-    the package can be found even if it isn't installed.
+    For ``path`` sources the Python import root is inserted into ``sys.path``
+    so that the package can be found even if it isn't installed.
     """
     if source.path:
-        root = resolve_source(source, base_dir)
-        root_str = str(root)
-        if root_str not in sys.path:
-            sys.path.insert(0, root_str)
+        import_root = resolve_import_root(source, base_dir)
+        import_root_str = str(import_root)
+        if import_root_str not in sys.path:
+            sys.path.insert(0, import_root_str)
+        _prepare_package_import_paths(source.package, import_root)
 
     pkg = None
     pkg_path = None
@@ -146,8 +167,7 @@ def import_atoms(source: AtomSource, base_dir: Path | None = None) -> None:
             )
             return
 
-        root = resolve_source(source, base_dir)
-        package_root = root.joinpath(*source.package.split("."))
+        package_root = resolve_package_root(source, base_dir)
         if not package_root.exists():
             logger.warning(
                 "Could not import package '%s' for source '%s'",
@@ -158,19 +178,18 @@ def import_atoms(source: AtomSource, base_dir: Path | None = None) -> None:
 
         # Fallback for broken top-level __init__.py files: treat the package as a
         # namespace package so submodules can still be imported and register atoms.
-        pkg = types.ModuleType(source.package)
-        pkg.__path__ = [str(package_root)]  # type: ignore[attr-defined]
-        pkg.__package__ = source.package
+        pkg = _ensure_namespace_package(source.package, package_root)
         sys.modules[source.package] = pkg
         pkg_path = pkg.__path__
         fallback_scan_root = package_root
 
     # Walk submodules to trigger @register_atom decorators
     if fallback_scan_root is not None:
+        import_root = resolve_import_root(source, base_dir)
         for py_file in sorted(fallback_scan_root.rglob("*.py")):
             if py_file.name == "__init__.py":
                 continue
-            module_parts = py_file.relative_to(root).with_suffix("").parts
+            module_parts = py_file.relative_to(import_root).with_suffix("").parts
             modname = ".".join(module_parts)
             _import_module_from_file(modname, py_file)
         return
@@ -217,6 +236,86 @@ def _import_module_from_file(modname: str, path: Path) -> None:
         spec.loader.exec_module(module)
     except Exception:
         logger.debug("Failed to import %s from %s, skipping", modname, path, exc_info=True)
+
+
+def _prepare_package_import_paths(package_name: str, root: Path) -> None:
+    """Expose namespace-style package paths to the import system for *root*."""
+    importlib.invalidate_caches()
+
+    parts = [part for part in package_name.split(".") if part]
+    for idx in range(1, len(parts) + 1):
+        prefix_name = ".".join(parts[:idx])
+        prefix_path = root.joinpath(*parts[:idx])
+        if not prefix_path.exists():
+            break
+
+        module = sys.modules.get(prefix_name)
+        if module is not None:
+            _append_module_search_path(module, prefix_path)
+            continue
+
+        try:
+            spec = importlib.util.find_spec(prefix_name)
+        except (ImportError, ModuleNotFoundError, AttributeError, ValueError):
+            spec = None
+        if spec is not None and spec.submodule_search_locations is not None:
+            try:
+                module = importlib.import_module(prefix_name)
+            except Exception:
+                module = None
+            if isinstance(module, types.ModuleType):
+                _append_module_search_path(module, prefix_path)
+                continue
+
+        if prefix_path.joinpath("__init__.py").exists():
+            continue
+
+        module = _ensure_namespace_package(prefix_name, prefix_path)
+        sys.modules[prefix_name] = module
+        if idx > 1:
+            parent_name = ".".join(parts[: idx - 1])
+            parent = sys.modules.get(parent_name)
+            if parent is not None:
+                setattr(parent, parts[idx - 1], module)
+
+
+def _append_module_search_path(module: types.ModuleType, package_path: Path) -> None:
+    module_path = getattr(module, "__path__", None)
+    if module_path is None:
+        return
+
+    package_path_str = str(package_path)
+    try:
+        if package_path_str in module_path:
+            return
+        module_path.append(package_path_str)
+    except Exception:
+        normalized = list(module_path)
+        if package_path_str not in normalized:
+            normalized.append(package_path_str)
+            module.__path__ = normalized  # type: ignore[attr-defined]
+
+    spec = getattr(module, "__spec__", None)
+    search_locations = getattr(spec, "submodule_search_locations", None)
+    if search_locations is None:
+        return
+    if package_path_str not in search_locations:
+        search_locations.append(package_path_str)
+
+
+def _ensure_namespace_package(package_name: str, package_path: Path) -> types.ModuleType:
+    module = sys.modules.get(package_name)
+    if isinstance(module, types.ModuleType):
+        _append_module_search_path(module, package_path)
+        return module
+
+    module = types.ModuleType(package_name)
+    module.__path__ = [str(package_path)]  # type: ignore[attr-defined]
+    module.__package__ = package_name
+    spec = importlib.machinery.ModuleSpec(package_name, loader=None, is_package=True)
+    spec.submodule_search_locations = [str(package_path)]
+    module.__spec__ = spec
+    return module
 
 
 def import_all_sources(

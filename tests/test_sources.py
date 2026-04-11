@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import textwrap
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -17,6 +18,7 @@ from sciona.sources import (
     find_cdg,
     import_atoms,
     load_sources,
+    resolve_package_root,
     resolve_source,
 )
 
@@ -33,6 +35,16 @@ class TestAtomSource:
         assert src.package == "foo_pkg"
         assert src.path == "../foo"
         assert src.git is None
+
+    def test_valid_src_layout_source(self):
+        src = AtomSource(
+            name="demo",
+            package="sciona.atoms.demo",
+            path="../sciona-atoms",
+            python_path="src",
+        )
+        assert src.python_path == "src"
+        assert src.package == "sciona.atoms.demo"
 
     def test_valid_git_source(self):
         src = AtomSource(
@@ -64,7 +76,12 @@ class TestSourcesConfig:
             yaml.dump(
                 {
                     "sources": [
-                        {"name": "a", "package": "a_pkg", "path": "../a"},
+                        {
+                            "name": "a",
+                            "package": "a_pkg",
+                            "path": "../a",
+                            "python_path": "src",
+                        },
                         {
                             "name": "b",
                             "package": "b_pkg",
@@ -77,6 +94,7 @@ class TestSourcesConfig:
         cfg = SourcesConfig.load(yml)
         assert len(cfg.sources) == 2
         assert cfg.sources[0].name == "a"
+        assert cfg.sources[0].python_path == "src"
         assert cfg.sources[1].git == "https://github.com/x/b.git"
 
     def test_load_missing_file_returns_empty(self, tmp_path: Path):
@@ -133,6 +151,20 @@ class TestResolveSource:
         src = AtomSource(name="home-repo", package="home_pkg", path="~/codex_test_atoms_repo")
         resolved = resolve_source(src, base_dir=tmp_path)
         assert resolved == home_repo.resolve()
+
+    def test_resolve_package_root_uses_python_path_for_src_layout(self, tmp_path: Path):
+        repo = tmp_path / "sciona-atoms"
+        package_root = repo / "src" / "sciona" / "atoms" / "demo"
+        package_root.mkdir(parents=True)
+
+        src = AtomSource(
+            name="demo",
+            package="sciona.atoms.demo",
+            path="sciona-atoms",
+            python_path="src",
+        )
+        resolved = resolve_package_root(src, base_dir=tmp_path)
+        assert resolved == package_root.resolve()
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +244,42 @@ class TestImportAtoms:
 
         if "mypkg" in sys.modules:
             del sys.modules["mypkg"]
+
+    def test_import_atoms_supports_src_layout_namespace_package(self, tmp_path: Path):
+        repo = tmp_path / "sciona-atoms"
+        mod_dir = repo / "src" / "sciona" / "atoms" / "demo"
+        mod_dir.mkdir(parents=True)
+        (mod_dir / "atoms.py").write_text("LOADED = True\n")
+
+        src = AtomSource(
+            name="demo",
+            package="sciona.atoms.demo",
+            path="sciona-atoms",
+            python_path="src",
+        )
+
+        import sciona as matcher_sciona
+
+        before_sciona_path = list(matcher_sciona.__path__)
+        before_sciona_spec_path = list(
+            matcher_sciona.__spec__.submodule_search_locations or []
+        )
+        before_modules = set(sys.modules)
+        try:
+            import_atoms(src, base_dir=tmp_path)
+
+            import importlib
+
+            module = importlib.import_module("sciona.atoms.demo.atoms")
+            assert getattr(module, "LOADED", False) is True
+            assert str((repo / "src").resolve()) in sys.path
+        finally:
+            for name in set(sys.modules) - before_modules:
+                if name == "sciona" or name.startswith("sciona."):
+                    sys.modules.pop(name, None)
+            matcher_sciona.__path__[:] = before_sciona_path
+            matcher_sciona.__spec__.submodule_search_locations[:] = before_sciona_spec_path
+            sys.path = [entry for entry in sys.path if entry != str((repo / "src").resolve())]
 
     def test_import_missing_package_warns(self, tmp_path: Path, caplog):
         src = AtomSource(name="missing", package="no_such_pkg_12345", path=".")

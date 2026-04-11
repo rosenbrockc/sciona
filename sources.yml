@@ -1,4 +1,8 @@
 sources:
+  - name: sciona-atoms-signal-processing
+    path: ../sciona-atoms
+    python_path: src
+    package: sciona.atoms.signal_processing.biosppy
   - name: ageo-atoms
     path: ../ageo-atoms
     package: ageoa

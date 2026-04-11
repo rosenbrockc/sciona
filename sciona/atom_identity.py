@@ -8,40 +8,104 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Iterable
 
 LEGACY_ATOM_PACKAGE_PREFIX = "ageoa"
 FEDERATED_ATOM_NAMESPACE_PREFIX = "sciona.atoms"
 DEFAULT_PROVIDER_ID = "core.ageo_atoms"
-DEFAULT_PROVIDER_ROOT = (Path(__file__).resolve().parents[1].parent / "ageo-atoms").resolve()
+DEFAULT_NAMESPACE_PROVIDER_ROOT = (
+    Path(__file__).resolve().parents[1].parent / "sciona-atoms"
+).resolve()
+DEFAULT_PROVIDER_ROOT = (
+    Path(__file__).resolve().parents[1].parent / "ageo-atoms"
+).resolve()
+ATOM_PROVIDER_ID_PREFIX_ENV = "SCIONA_ATOM_PROVIDER_PREFIX_TO_ID"
 ATOM_METADATA_GLOB_CANDIDATES: tuple[str, ...] = (
     "ageoa/**/heuristic_metadata.json",
     "sciona/atoms/**/heuristic_metadata.json",
 )
 
 
-def known_atom_package_prefixes() -> tuple[str, ...]:
-    """Return recognized import namespace prefixes for atom packages."""
-    configured = str(os.environ.get("SCIONA_ATOM_PACKAGE_PREFIXES", "") or "").strip()
-    prefixes: list[str] = []
-    if configured:
-        prefixes.extend(
-            token.strip().rstrip(".")
-            for token in configured.split(",")
-            if token.strip()
-        )
-    prefixes.extend((LEGACY_ATOM_PACKAGE_PREFIX, FEDERATED_ATOM_NAMESPACE_PREFIX))
+def _dedupe_in_order(values: Iterable[str]) -> tuple[str, ...]:
     deduped: list[str] = []
     seen: set[str] = set()
-    for prefix in prefixes:
-        if prefix in seen:
+    for value in values:
+        if value in seen:
             continue
-        seen.add(prefix)
-        deduped.append(prefix)
+        seen.add(value)
+        deduped.append(value)
     return tuple(deduped)
 
 
+def _normalized_prefixes(values: Iterable[str]) -> tuple[str, ...]:
+    return _dedupe_in_order(
+        token
+        for raw in values
+        if (token := str(raw or "").strip().rstrip("."))
+    )
+
+
+def _configured_atom_package_prefixes() -> tuple[str, ...]:
+    configured = str(os.environ.get("SCIONA_ATOM_PACKAGE_PREFIXES", "") or "").strip()
+    if not configured:
+        return tuple()
+    return _normalized_prefixes(configured.split(","))
+
+
+def _provider_id_prefix_pairs() -> tuple[tuple[str, str], ...]:
+    configured = str(os.environ.get(ATOM_PROVIDER_ID_PREFIX_ENV, "") or "").strip()
+    pairs: list[tuple[str, str]] = []
+    seen_prefixes: set[str] = set()
+    if not configured:
+        return tuple()
+
+    for raw in configured.split(","):
+        token = str(raw or "").strip()
+        if "=" not in token:
+            continue
+        prefix_text, provider_id_text = token.split("=", 1)
+        prefix = str(prefix_text or "").strip().rstrip(".")
+        provider_id = str(provider_id_text or "").strip()
+        if not prefix or not provider_id or prefix in seen_prefixes:
+            continue
+        seen_prefixes.add(prefix)
+        pairs.append((prefix, provider_id))
+    return tuple(pairs)
+
+
+def _match_known_atom_prefix(import_fqdn: str) -> tuple[str, str]:
+    text = str(import_fqdn or "").strip()
+    if not text:
+        return "", ""
+    for prefix in sorted(known_atom_package_prefixes(), key=len, reverse=True):
+        dotted = prefix + "."
+        if text.startswith(dotted):
+            return prefix, text[len(dotted) :]
+        if text == prefix:
+            return prefix, ""
+    return "", text
+
+
+def known_atom_package_prefixes() -> tuple[str, ...]:
+    """Return recognized import namespace prefixes for atom packages."""
+    return _normalized_prefixes(
+        (
+            *_configured_atom_package_prefixes(),
+            LEGACY_ATOM_PACKAGE_PREFIX,
+            FEDERATED_ATOM_NAMESPACE_PREFIX,
+        )
+    )
+
+
 def candidate_atom_provider_roots() -> tuple[Path, ...]:
-    """Return configured or default external atom-provider roots."""
+    """Return provider roots in precedence order.
+
+    Precedence is:
+    1. `SCIONA_ATOM_PROVIDER_ROOTS`
+    2. `SCIONA_AGEO_ATOMS_ROOT`
+    3. the namespace pilot sibling `../sciona-atoms` root
+    4. the legacy sibling `../ageo-atoms` root
+    """
     roots: list[Path] = []
     configured_multi = str(os.environ.get("SCIONA_ATOM_PROVIDER_ROOTS", "") or "").strip()
     if configured_multi:
@@ -53,6 +117,7 @@ def candidate_atom_provider_roots() -> tuple[Path, ...]:
     configured_legacy = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
     if configured_legacy:
         roots.append(Path(configured_legacy).expanduser())
+    roots.append(DEFAULT_NAMESPACE_PROVIDER_ROOT)
     roots.append(DEFAULT_PROVIDER_ROOT)
     deduped: list[Path] = []
     seen: set[Path] = set()
@@ -66,13 +131,23 @@ def candidate_atom_provider_roots() -> tuple[Path, ...]:
 
 
 def atom_provider_id_for_fqdn(import_fqdn: str) -> str:
-    """Infer a coarse provider identifier from the current import namespace."""
+    """Return the configured or inferred provider identifier for an atom import."""
     text = str(import_fqdn or "").strip()
     if not text:
         return DEFAULT_PROVIDER_ID
-    if text.startswith(LEGACY_ATOM_PACKAGE_PREFIX + ".") or text == LEGACY_ATOM_PACKAGE_PREFIX:
+
+    for prefix, provider_id in sorted(
+        _provider_id_prefix_pairs(),
+        key=lambda item: len(item[0]),
+        reverse=True,
+    ):
+        if text == prefix or text.startswith(prefix + "."):
+            return provider_id
+
+    matched_prefix, _ = _match_known_atom_prefix(text)
+    if matched_prefix == LEGACY_ATOM_PACKAGE_PREFIX:
         return DEFAULT_PROVIDER_ID
-    if text.startswith(FEDERATED_ATOM_NAMESPACE_PREFIX + ".") or text == FEDERATED_ATOM_NAMESPACE_PREFIX:
+    if matched_prefix == FEDERATED_ATOM_NAMESPACE_PREFIX:
         parts = text.split(".")
         if len(parts) >= 3:
             return ".".join(parts[:3])
@@ -82,16 +157,8 @@ def atom_provider_id_for_fqdn(import_fqdn: str) -> str:
 
 def logical_atom_id_from_fqdn(import_fqdn: str) -> str:
     """Strip known namespace/package prefixes from an import FQDN."""
-    text = str(import_fqdn or "").strip()
-    if not text:
-        return ""
-    for prefix in sorted(known_atom_package_prefixes(), key=len, reverse=True):
-        dotted = prefix + "."
-        if text.startswith(dotted):
-            return text[len(dotted) :]
-        if text == prefix:
-            return ""
-    return text
+    _, remainder = _match_known_atom_prefix(import_fqdn)
+    return remainder
 
 
 def infer_source_family(
@@ -105,11 +172,8 @@ def infer_source_family(
     if not text:
         return str(fallback or "").strip()
 
-    for prefix in sorted(known_atom_package_prefixes(), key=len, reverse=True):
-        dotted = prefix + "."
-        if not text.startswith(dotted):
-            continue
-        remainder = text[len(dotted) :]
+    prefix, remainder = _match_known_atom_prefix(text)
+    if prefix:
         remainder_parts = [part for part in remainder.split(".") if part]
         if not remainder_parts:
             return prefix if preserve_namespace else str(fallback or "").strip()
@@ -121,4 +185,3 @@ def infer_source_family(
     if "." in text:
         return text.split(".", 1)[0]
     return str(fallback or text).strip()
-

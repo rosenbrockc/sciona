@@ -10,6 +10,7 @@ All diagnostics are pure functions of signal data / intermediate results.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import numpy as np
 
@@ -23,6 +24,7 @@ from sciona.architect.models import (
     NodeStatus,
 )
 from sciona.architect.semantic_rewrites import build_boundary_interposition_callback
+from sciona.atom_identity import candidate_atom_provider_roots
 from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
@@ -37,10 +39,28 @@ from sciona.principal.runtime_context import summarize_waveform
 logger = logging.getLogger(__name__)
 
 _DOMAIN = "signal_event_rate"
+_LEGACY_BIOSSPY_ECG_PRIMITIVE_PREFIX = "ageoa.biosppy.ecg"
+_PILOT_BIOSSPY_ECG_PRIMITIVE_PREFIX = (
+    "sciona.atoms.signal_processing.biosppy.ecg"
+)
 
 
 def _signal_event_rate_asset() -> ExpansionFamilyAsset | None:
     return load_local_expansion_assets_by_family().get("signal_event_rate")
+
+
+def _biosppy_ecg_primitive_fqdn(symbol: str) -> str:
+    pilot_module_relpath = Path(
+        "sciona/atoms/signal_processing/biosppy/ecg.py"
+    )
+    for provider_root in candidate_atom_provider_roots():
+        root = Path(provider_root)
+        if any(
+            (root / prefix / pilot_module_relpath).exists()
+            for prefix in (Path("src"), Path(""))
+        ):
+            return f"{_PILOT_BIOSSPY_ECG_PRIMITIVE_PREFIX}.{symbol}"
+    return f"{_LEGACY_BIOSSPY_ECG_PRIMITIVE_PREFIX}.{symbol}"
 
 
 def _diag_asset_fields(rule_name: str) -> dict[str, object]:
@@ -254,7 +274,7 @@ def _build_insert_outlier_rejection_after_detection() -> RewriteRule:
         "reject",
         "Reject Outlier Intervals",
         ConceptType.SIGNAL_FILTER,
-        matched_primitive="ageoa.biosppy.ecg.reject_outlier_intervals",
+        matched_primitive=_biosppy_ecg_primitive_fqdn("reject_outlier_intervals"),
         inputs=[_EVENTS_IN, _RATE_IN],
         outputs=[_EVENTS_OUT],
         description="Remove events creating physiologically implausible intervals.",
@@ -375,7 +395,7 @@ def _build_insert_outlier_rejection_after_detection_smoothed() -> RewriteRule:
         "reject",
         "Reject Outlier Intervals",
         ConceptType.SIGNAL_FILTER,
-        matched_primitive="ageoa.biosppy.ecg.reject_outlier_intervals",
+        matched_primitive=_biosppy_ecg_primitive_fqdn("reject_outlier_intervals"),
         inputs=[_EVENTS_IN, _RATE_IN],
         outputs=[_EVENTS_OUT],
         description="Remove events creating physiologically implausible intervals.",
@@ -401,6 +421,68 @@ def _build_insert_outlier_rejection_after_detection_smoothed() -> RewriteRule:
             node_map={"detect": "detect", "rate": "rate"}, edge_map={}
         ),
         priority=3,
+        anchor_type="detect_peaks_in_signal",
+    )
+
+
+def _build_insert_outlier_rejection_after_detection_median_smoothed() -> RewriteRule:
+    """Replace raw rate estimation with robust smoothed rate after rejection."""
+    detect_l = _node(
+        "detect",
+        "detect_peaks",
+        ConceptType.DATA_EXTRACTION,
+        matched_primitive="detect_peaks_in_signal",
+    )
+    rate_l = _node(
+        "rate",
+        "compute_rate",
+        ConceptType.ANALYSIS,
+        matched_primitive="compute_event_rate",
+    )
+    lhs = CDGExport(
+        nodes=[detect_l, rate_l],
+        edges=[_edge("detect", "rate", "events", "events")],
+    )
+    interface = CDGExport(nodes=[detect_l], edges=[])
+
+    reject_r = _node(
+        "reject",
+        "Reject Outlier Intervals",
+        ConceptType.SIGNAL_FILTER,
+        matched_primitive=_biosppy_ecg_primitive_fqdn("reject_outlier_intervals"),
+        inputs=[_EVENTS_IN, _RATE_IN],
+        outputs=[_EVENTS_OUT],
+        description="Remove events creating physiologically implausible intervals.",
+        type_signature="np.ndarray, float -> np.ndarray",
+    )
+    rate_r = _node(
+        "rate_smooth",
+        "Compute Robust Smoothed Rate",
+        ConceptType.ANALYSIS,
+        matched_primitive=_biosppy_ecg_primitive_fqdn(
+            "heart_rate_computation_median_smoothed"
+        ),
+        inputs=[_EVENTS_IN, _RATE_IN],
+        outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+        description="Compute a robust median-smoothed rate estimate from ordered events.",
+        type_signature="np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
+    )
+    rhs = CDGExport(
+        nodes=[detect_l, reject_r, rate_r],
+        edges=[
+            _edge("detect", "reject", "events", "events"),
+            _edge("reject", "rate_smooth", "events", "events"),
+        ],
+    )
+
+    return RewriteRule(
+        name="insert_outlier_rejection_after_detection_median_smoothed",
+        lhs=lhs,
+        rhs=rhs,
+        interface=interface,
+        l_morphism=Morphism(node_map={"detect": "detect"}, edge_map={}),
+        r_morphism=Morphism(node_map={"detect": "detect"}, edge_map={}),
+        priority=4,
         anchor_type="detect_peaks_in_signal",
     )
 
@@ -538,6 +620,9 @@ def _diagnose_interval_outlier_fraction(
         # Pick the right rule depending on which rate primitive is present
         rule_name = "insert_outlier_rejection_after_detection"
         for node in cdg.nodes:
+            if node.matched_primitive == "compute_event_rate":
+                rule_name = "insert_outlier_rejection_after_detection_median_smoothed"
+                break
             if node.matched_primitive == "compute_event_rate_smoothed":
                 rule_name = "insert_outlier_rejection_after_detection_smoothed"
                 break
@@ -631,6 +716,7 @@ class SignalEventRateExpansionRuleSet:
             _build_insert_sqi_before_filter(),
             _build_insert_peak_correction_after_detection(),
             _build_insert_outlier_rejection_after_detection(),
+            _build_insert_outlier_rejection_after_detection_median_smoothed(),
             _build_insert_outlier_rejection_after_detection_smoothed(),
         ]
 

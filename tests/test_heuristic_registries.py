@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -39,6 +40,18 @@ def test_signal_registry_uses_canonical_heuristics_and_generic_actions() -> None
     assert interval_entry.action_priority[0] == HeuristicActionClass.INSERT_CORRECTION
 
 
+def test_signal_registry_prefers_namespace_pilot_asset_when_available() -> None:
+    registry = resolve_heuristic_registry("signal_event_rate")
+
+    assert registry is not None
+    summary = heuristic_registry_summary(registry)
+    assert summary["source_kind"] == "shared_asset"
+    assert summary["source_repository"] == "../sciona-atoms"
+    assert summary["source_path"].endswith(
+        "data/heuristics/families/signal_event_rate.json"
+    )
+
+
 def test_signal_registry_resolves_from_skeleton_family_alias() -> None:
     registry = resolve_heuristic_registry("signal_detect_measure")
 
@@ -63,6 +76,18 @@ def test_sequential_filter_registry_resolves_from_shared_assets() -> None:
     entry_ids = {entry.heuristic_id for entry in registry.entries}
     assert "residual_structure_after_transform" in entry_ids
     assert "alignment_error" in entry_ids
+
+
+def test_sequential_filter_registry_reports_shared_provider_asset_path() -> None:
+    registry = resolve_heuristic_registry("sequential_filter")
+
+    assert registry is not None
+    summary = heuristic_registry_summary(registry)
+    assert summary["source_kind"] == "shared_asset"
+    assert summary["source_repository"] == "../ageo-atoms"
+    assert summary["source_path"].endswith(
+        "data/heuristics/families/sequential_filter.json"
+    )
 
 
 def test_registry_rejects_unknown_heuristic_ids() -> None:
@@ -171,6 +196,11 @@ def isolated_registry_layout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     atoms_root = tmp_path / "ageo-atoms"
     external_dir = atoms_root.joinpath(*EXTERNAL_ASSET_DIR_CANDIDATES[0])
     monkeypatch.setattr("sciona.heuristic_registries.ASSET_DIR", local_dir)
+    monkeypatch.setattr("sciona.heuristic_registries.DEFAULT_AGEO_ATOMS_ROOT", atoms_root)
+    monkeypatch.setattr(
+        "sciona.heuristic_registries.candidate_atom_provider_roots",
+        lambda: (atoms_root,),
+    )
     monkeypatch.setenv("SCIONA_AGEO_ATOMS_ROOT", str(atoms_root))
     _clear_registry_caches()
     try:
@@ -209,6 +239,47 @@ def test_external_registry_is_preferred_when_present(
     assert summary["source_kind"] == "shared_asset"
     assert summary["source_repository"] == "../ageo-atoms"
     assert summary["compatibility_status"] == "external_preferred"
+
+
+def test_external_registry_prefers_first_configured_provider_root(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local" / "heuristic_registries"
+    first_root = tmp_path / "provider-one"
+    second_root = tmp_path / "provider-two"
+    first_external_dir = first_root.joinpath(*EXTERNAL_ASSET_DIR_CANDIDATES[0])
+    second_external_dir = second_root.joinpath(*EXTERNAL_ASSET_DIR_CANDIDATES[0])
+
+    monkeypatch.setattr("sciona.heuristic_registries.ASSET_DIR", local_dir)
+    monkeypatch.setenv(
+        "SCIONA_ATOM_PROVIDER_ROOTS",
+        os.pathsep.join((str(first_root), str(second_root))),
+    )
+    monkeypatch.delenv("SCIONA_AGEO_ATOMS_ROOT", raising=False)
+    _clear_registry_caches()
+    try:
+        _write_registry(
+            first_external_dir,
+            asset_id="family.demo.heuristics.first",
+            asset_version="v1",
+            family="demo_family",
+        )
+        _write_registry(
+            second_external_dir,
+            asset_id="family.demo.heuristics.second",
+            asset_version="v1",
+            family="demo_family",
+        )
+
+        registry = resolve_heuristic_registry("demo_family")
+
+        assert registry is not None
+        summary = heuristic_registry_summary(registry)
+        assert registry.asset_id == "family.demo.heuristics.first"
+        assert summary["source_path"] == str(first_external_dir / "demo_family.json")
+    finally:
+        _clear_registry_caches()
 
 
 def test_local_registry_falls_back_when_external_dir_missing(
