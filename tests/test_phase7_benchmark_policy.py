@@ -39,6 +39,64 @@ def _runtime_usability_evidence(heuristic_id: str) -> dict[str, object]:
     }
 
 
+def _benchmark_variant_dir(
+    root: Path,
+    *,
+    matched_primitives: list[str],
+) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    variant_dir = root / "pipeline_verified"
+    variant_dir.mkdir(parents=True, exist_ok=True)
+    (variant_dir / "cdg.json").write_text(
+        json.dumps(
+            {
+                "planning_artifact": {
+                    "family_hint": "generic_records",
+                    "paradigm": "generic_records",
+                },
+                "metadata": {
+                    "skeleton_asset": {
+                        "asset_id": "skeleton.generic_records.v1",
+                        "review_status": "transitional",
+                        "source_kind": "local_asset",
+                    }
+                },
+            }
+        )
+    )
+    (variant_dir / "trial_history.json").write_text(
+        json.dumps(
+            [
+                {
+                    "trial": 1,
+                    "admissibility": {"decision_count": 1},
+                    "expansion": {"applied": True, "diagnostic_count": 1},
+                    "proposal_selection": {
+                        "selected": "expansion",
+                        "candidates": [{"label": "expansion", "loss": 1.0}],
+                    },
+                }
+            ]
+        )
+    )
+    (variant_dir / "matches.json").write_text(
+        json.dumps(
+            [
+                {
+                    "verified_match": {"verified": True},
+                    "all_candidates": [
+                        {"declaration": {"name": name}} for name in matched_primitives
+                    ],
+                }
+            ]
+        )
+    )
+    (variant_dir / "runtime_evidence.json").write_text(
+        json.dumps(_runtime_usability_evidence("interval_instability"))
+    )
+    return variant_dir
+
+
 def test_e2e_benchmark_scripts_enforce_full_framework_mode() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     benchmark_script = (repo_root / "benchmarks" / "e2e_benchmark.sh").read_text()
@@ -100,7 +158,7 @@ def test_e2e_benchmark_policy_reads_list_trial_history_and_runtime_evidence(
                         "source_kind": "local_asset",
                         "review_status": "transitional",
                         "migration_readiness_status": "in_progress",
-                        "migration_readiness_target_repository": "../ageo-atoms",
+                        "migration_readiness_target_repository": "../sciona-atoms",
                         "migration_readiness_check_count": 2,
                         "migration_readiness_required_check_count": 2,
                         "migration_readiness_completed_required_check_count": 1,
@@ -127,7 +185,7 @@ def test_e2e_benchmark_policy_reads_list_trial_history_and_runtime_evidence(
                                 "asset_review_status": "transitional",
                                 "asset_operation": "insert_jump_removal_before_filter",
                                 "migration_readiness_status": "in_progress",
-                                "migration_readiness_target_repository": "../ageo-atoms",
+                                "migration_readiness_target_repository": "../sciona-atoms",
                                 "migration_readiness_check_count": 3,
                                 "migration_readiness_required_check_count": 3,
                                 "migration_readiness_completed_required_check_count": 2,
@@ -296,54 +354,9 @@ def test_e2e_benchmark_policy_reports_enriched_cdg_and_asset_readiness(
 def test_benchmark_summary_persists_enriched_policy_sections(tmp_path: Path) -> None:
     output_dir = tmp_path / "summary"
     output_dir.mkdir()
-    variant_dir = output_dir / "pipeline_verified"
-    variant_dir.mkdir()
-    (variant_dir / "cdg.json").write_text(
-        json.dumps(
-            {
-                "planning_artifact": {
-                    "family_hint": "generic_records",
-                    "paradigm": "generic_records",
-                },
-                "metadata": {
-                    "skeleton_asset": {
-                        "asset_id": "skeleton.generic_records.v1",
-                        "review_status": "transitional",
-                        "source_kind": "local_asset",
-                    }
-                },
-            }
-        )
-    )
-    (variant_dir / "trial_history.json").write_text(
-        json.dumps(
-            [
-                {
-                    "trial": 1,
-                    "admissibility": {"decision_count": 1},
-                    "expansion": {"applied": True, "diagnostic_count": 1},
-                    "proposal_selection": {
-                        "selected": "expansion",
-                        "candidates": [{"label": "expansion", "loss": 1.0}],
-                    },
-                }
-            ]
-        )
-    )
-    (variant_dir / "matches.json").write_text(
-        json.dumps(
-            [
-                {
-                    "verified_match": {"verified": True},
-                    "all_candidates": [
-                        {"declaration": {"name": "generic_atom"}},
-                    ],
-                }
-            ]
-        )
-    )
-    (variant_dir / "runtime_evidence.json").write_text(
-        json.dumps(_runtime_usability_evidence("interval_instability"))
+    variant_dir = _benchmark_variant_dir(
+        output_dir,
+        matched_primitives=["generic_atom"],
     )
 
     report = build_e2e_benchmark_summary(
@@ -369,3 +382,37 @@ def test_benchmark_summary_persists_enriched_policy_sections(tmp_path: Path) -> 
     assert report["policy"]["variants"]["verified"]["asset_migration"]["passed"] is False
     assert report["policy"]["variants"]["verified"]["usability"]["usable_for_guidance"] is True
     assert (output_dir / "summary.json").exists()
+
+
+def test_benchmark_summary_marks_atom_namespaces_as_real_assets(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "summary"
+    output_dir.mkdir()
+
+    cases = [
+        "sciona.atoms.demo.ecg.r_peak_detection",
+        "ageom.signal.rate_estimate",
+        "sciona.expansion_atoms.signal_event_rate.outlier_rejection",
+    ]
+
+    for index, matched_primitive in enumerate(cases, start=1):
+        variant_dir = _benchmark_variant_dir(
+            output_dir / f"case_{index}",
+            matched_primitives=[matched_primitive],
+        )
+        report = build_e2e_benchmark_summary(
+            output_dir=output_dir / f"case_{index}",
+            goal="Analyze generic records",
+            prover="python",
+            llm_provider="codex_shim",
+            total_gt=1,
+            latencies_ms={"verified": 123},
+            ground_truth_hits={"verified": 1},
+            variant_dirs={"verified": variant_dir},
+            profile_dataset="dataset.yml",
+            shortcut_flags={"generic_fast_path": False},
+            declared_shortcuts=[],
+        )
+
+        assert report["results"]["verified"]["used_real_assets"] is True

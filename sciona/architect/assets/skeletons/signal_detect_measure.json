@@ -176,7 +176,7 @@
     "rationale": "This family caused repeated refinement failures and is the first high-leverage candidate for explicit skeleton auditability.",
     "dejargonized_summary": "Clean the signal, find the beats, then compute the rate while keeping track of what information is allowed to disappear at each step.",
     "provenance_notes": [
-      "Transitional local asset until canonical ownership moves into ../ageo-atoms."
+      "Transitional local asset until canonical ownership moves into ../sciona-atoms."
     ],
     "uncertainty_notes": [
       "Peak-correction and quality-control branches are deferred to the expansion-family phase."

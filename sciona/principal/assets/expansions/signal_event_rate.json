@@ -167,6 +167,37 @@
       ]
     },
     {
+      "rule_name": "insert_outlier_rejection_after_detection_median_smoothed",
+      "runtime_rule_builder": "insert_outlier_rejection_after_detection_median_smoothed",
+      "runtime_diagnostic": "interval_outlier_fraction",
+      "name": "Insert Outlier Rejection Before Robust Smoothed Rate",
+      "intent": "Respond to unstable event spacing by cleaning the event stream and replacing the final measure stage with a more robust smoothed rate estimator.",
+      "dejargonized_summary": "When detected event timing is unstable, clean the events and use a more robust smoothed rate calculator instead of the raw rate step.",
+      "trigger": {
+        "metric_name": "interval_outlier_fraction",
+        "comparison": "gt",
+        "threshold": 0.08,
+        "required_intermediate_keys": [
+          "events"
+        ]
+      },
+      "action_classes": [
+        "insert_correction",
+        "smooth_or_aggregate"
+      ],
+      "rewrite": {
+        "before_summary": "A detector feeds a raw event-rate estimator directly.",
+        "after_summary": "An interval-rejection stage is inserted and the final rate stage is replaced with a more robust smoothed estimator.",
+        "information_flow_effect": "Cleans unstable events before the final lossy rate conversion and makes the final measure stage less sensitive to local jitter.",
+        "notes": [
+          "This refinement is intentionally lossy and should only fire after event extraction."
+        ]
+      },
+      "uncertainty_notes": [
+        "This refinement changes the final measure stage, so it should only fire when event-spacing instability is materially present."
+      ]
+    },
+    {
       "rule_name": "insert_outlier_rejection_after_detection_smoothed",
       "runtime_rule_builder": "insert_outlier_rejection_after_detection_smoothed",
       "runtime_diagnostic": "interval_outlier_fraction",
@@ -205,7 +236,7 @@
     "rationale": "Externalizes high-value signal-event-rate refinements that previously lived only in framework-local rule code.",
     "migration_readiness": {
       "status": "in_progress",
-      "target_repository": "../ageo-atoms",
+      "target_repository": "../sciona-atoms",
       "target_scope": "expansion.signal_event_rate",
       "rationale": "The refinement inventory is now declarative and reviewable, but it still depends on legacy runtime matching in this repository.",
       "checklist": [
