@@ -329,3 +329,37 @@ class TestLoadSources:
         cfg = load_sources(yml)
         assert len(cfg.sources) == 1
         assert cfg.sources[0].package == "apkg"
+
+
+def test_live_state_estimation_source_exposes_snake_case_kalman_symbols() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    config = load_sources(repo_root / "sources.yml")
+    source = next(
+        src for src in config.sources if src.name == "sciona-atoms-state-estimation"
+    )
+
+    import sciona as matcher_sciona
+
+    before_sciona_path = list(matcher_sciona.__path__)
+    before_sciona_spec_path = list(
+        matcher_sciona.__spec__.submodule_search_locations or []
+    )
+    before_modules = set(sys.modules)
+    try:
+        import_atoms(source, base_dir=repo_root)
+
+        import importlib
+
+        module = importlib.import_module(
+            "sciona.atoms.state_estimation.kalman_filters.filter_rs"
+        )
+        assert hasattr(module, "initialize_kalman_state_model")
+        assert hasattr(module, "evaluate_measurement_oracle")
+        assert module.initializekalmanstatemodel is module.initialize_kalman_state_model
+        assert module.evaluatemeasurementoracle is module.evaluate_measurement_oracle
+    finally:
+        for name in set(sys.modules) - before_modules:
+            if name == "sciona" or name.startswith("sciona."):
+                sys.modules.pop(name, None)
+        matcher_sciona.__path__[:] = before_sciona_path
+        matcher_sciona.__spec__.submodule_search_locations[:] = before_sciona_spec_path
