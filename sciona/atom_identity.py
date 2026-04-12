@@ -23,6 +23,7 @@ ATOM_PROVIDER_ID_PREFIX_ENV = "SCIONA_ATOM_PROVIDER_PREFIX_TO_ID"
 ATOM_METADATA_GLOB_CANDIDATES: tuple[str, ...] = (
     "ageoa/**/heuristic_metadata.json",
     "sciona/atoms/**/heuristic_metadata.json",
+    "src/sciona/atoms/**/heuristic_metadata.json",
 )
 
 
