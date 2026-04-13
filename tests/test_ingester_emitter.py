@@ -235,6 +235,25 @@ class TestGenerateAtomWrappers:
         )
         assert "# mypy: disable-error-code=untyped-decorator" in source
 
+    def test_wrapper_imports_custom_ghost_registry_root(self):
+        plan = _make_plan()
+        _, witness_names = generate_ghost_witnesses(plan.plan.macro_atoms)
+        default_source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+        )
+        source = generate_atom_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            witness_names,
+            ghost_package_root="sciona.atoms.demo",
+        )
+
+        assert "from ageoa.ghost.registry import register_atom" in default_source
+        assert "from sciona.atoms.demo.ghost.registry import register_atom" in source
+        assert "from ageoa.ghost.registry import register_atom" not in source
+
     def test_canonical_wrapper_uses_exact_signature_and_return_value(self):
         atom = MacroAtomSpec(
             name="Predict",
@@ -1108,6 +1127,18 @@ class TestGenerateGhostWitnesses:
         assert "@dataclass" in source
         assert "_ghost_abstract = None" in source
 
+    def test_witness_imports_custom_ghost_abstract_root(self):
+        plan = _make_plan()
+        default_source, _ = generate_ghost_witnesses(plan.plan.macro_atoms)
+        source, _ = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            ghost_package_root="sciona.atoms.demo",
+        )
+
+        assert "import ageoa.ghost.abstract as _ghost_abstract" in default_source
+        assert "import sciona.atoms.demo.ghost.abstract as _ghost_abstract" in source
+        assert "import ageoa.ghost.abstract as _ghost_abstract" not in source
+
     def test_canonical_witness_uses_exact_inputs_and_scalar_types(self):
         atom = MacroAtomSpec(
             name="Predict",
@@ -1537,3 +1568,23 @@ class TestEmitIngestionBundle:
         assert any(node.node_id == "predict" for node in bundle.cdg.nodes)
         assert len(bundle.match_results) == 1
         assert plan.plan.macro_atoms == []
+
+    def test_bundle_threads_custom_ghost_package_root(self):
+        plan = _make_plan()
+
+        bundle = emit_ingestion_bundle(
+            plan,
+            "TestClass",
+            ghost_package_root="sciona.atoms.demo",
+        )
+
+        assert (
+            "import sciona.atoms.demo.ghost.abstract as _ghost_abstract"
+            in bundle.generated_witnesses
+        )
+        assert (
+            "from sciona.atoms.demo.ghost.registry import register_atom"
+            in bundle.generated_atoms
+        )
+        assert "import ageoa.ghost.abstract as _ghost_abstract" not in bundle.generated_witnesses
+        assert "from ageoa.ghost.registry import register_atom" not in bundle.generated_atoms

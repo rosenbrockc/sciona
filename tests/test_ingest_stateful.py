@@ -359,6 +359,23 @@ class TestStatefulWrapperGeneration:
         # The average_computer wrapper should return tuple[float, RollingAveragerState]
         assert "RollingAveragerState]" in source
 
+    def test_wrapper_imports_custom_ghost_registry_root(self):
+        plan = _make_stateful_plan()
+        _, witness_names = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+        )
+        source = generate_stateful_wrappers(
+            plan.plan.macro_atoms,
+            plan.plan.state_models,
+            "RollingAverager",
+            witness_names,
+            ghost_package_root="sciona.atoms.demo",
+        )
+
+        assert "from sciona.atoms.demo.ghost.registry import register_atom" in source
+        assert "from ageoa.ghost.registry import register_atom" not in source
+
     def test_wrapper_contains_dunder_new(self):
         plan = _make_stateful_plan()
         _, witness_names = generate_ghost_witnesses(
@@ -660,6 +677,17 @@ class TestStatefulGhostWitnesses:
             state_models=plan.plan.state_models,
         )
         ast.parse(source)
+
+    def test_witness_imports_custom_ghost_abstract_root(self):
+        plan = _make_stateful_plan()
+        source, _ = generate_ghost_witnesses(
+            plan.plan.macro_atoms,
+            state_models=plan.plan.state_models,
+            ghost_package_root="sciona.atoms.demo",
+        )
+
+        assert "import sciona.atoms.demo.ghost.abstract as _ghost_abstract" in source
+        assert "import ageoa.ghost.abstract as _ghost_abstract" not in source
 
     def test_canonical_witness_uses_exact_inputs_and_marks_state_preserving(self):
         plan = _make_canonical_stateful_plan()
