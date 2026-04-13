@@ -419,13 +419,13 @@ class GraphRewriter:
                     rhs_node_id=node.node_id,
                     rule=rule,
                     r_to_g=r_to_g,
-                    context_graph=context_graph,
+                    available_nodes=new_nodes,
                 )
                 depth = self._infer_depth(
                     rhs_node_id=node.node_id,
                     rule=rule,
                     r_to_g=r_to_g,
-                    context_graph=context_graph,
+                    available_nodes=new_nodes,
                 )
                 update = {"node_id": r_to_g[node.node_id]}
                 if parent_id is not None:
@@ -470,9 +470,10 @@ class GraphRewriter:
         rhs_node_id: str,
         rule: RewriteRule,
         r_to_g: dict[str, str],
-        context_graph: CDGExport,
+        available_nodes: list[AlgorithmicNode],
     ) -> str | None:
         parent_ids: set[str] = set()
+        node_map = {node.node_id: node for node in available_nodes}
         for edge in rule.rhs.edges:
             neighbor_id: str | None = None
             if edge.source_id == rhs_node_id and edge.target_id in r_to_g:
@@ -481,10 +482,7 @@ class GraphRewriter:
                 neighbor_id = r_to_g[edge.source_id]
             if neighbor_id is None:
                 continue
-            neighbor = next(
-                (node for node in context_graph.nodes if node.node_id == neighbor_id),
-                None,
-            )
+            neighbor = node_map.get(neighbor_id)
             if neighbor is None:
                 continue
             if neighbor.parent_id:
@@ -499,9 +497,10 @@ class GraphRewriter:
         rhs_node_id: str,
         rule: RewriteRule,
         r_to_g: dict[str, str],
-        context_graph: CDGExport,
+        available_nodes: list[AlgorithmicNode],
     ) -> int | None:
         depths: list[int] = []
+        node_map = {node.node_id: node for node in available_nodes}
         for edge in rule.rhs.edges:
             neighbor_id: str | None = None
             if edge.source_id == rhs_node_id and edge.target_id in r_to_g:
@@ -510,10 +509,7 @@ class GraphRewriter:
                 neighbor_id = r_to_g[edge.source_id]
             if neighbor_id is None:
                 continue
-            neighbor = next(
-                (node for node in context_graph.nodes if node.node_id == neighbor_id),
-                None,
-            )
+            neighbor = node_map.get(neighbor_id)
             if neighbor is None:
                 continue
             depths.append(neighbor.depth)
