@@ -230,6 +230,117 @@ def _validate_fft_output(result: Any) -> tuple[bool, str, dict[str, Any]]:
     )
 
 
+def _validate_array_shape(expected_shape: tuple[int, ...]) -> Callable[[Any], tuple[bool, str, dict[str, Any]]]:
+    def _validator(result: Any) -> tuple[bool, str, dict[str, Any]]:
+        import numpy as np
+
+        array = np.asarray(result)
+        observed_shape = tuple(int(dim) for dim in array.shape)
+        ok = observed_shape == expected_shape
+        return (
+            ok,
+            f"positive-path result shape is {expected_shape}"
+            if ok
+            else f"expected result shape {expected_shape}, got {observed_shape}",
+            {
+                "observed_shape": list(observed_shape),
+                "observed_dtype": str(array.dtype),
+            },
+        )
+
+    return _validator
+
+
+def _validate_scalar_result(result: Any) -> tuple[bool, str, dict[str, Any]]:
+    import numpy as np
+
+    array = np.asarray(result)
+    ok = array.shape == ()
+    return (
+        ok,
+        "positive-path scalar result looks structurally valid"
+        if ok
+        else f"expected a scalar result, got shape {array.shape}",
+        {"observed_shape": list(array.shape), "observed_dtype": str(array.dtype)},
+    )
+
+
+def _validate_tuple_result(expected_length: int) -> Callable[[Any], tuple[bool, str, dict[str, Any]]]:
+    def _validator(result: Any) -> tuple[bool, str, dict[str, Any]]:
+        ok = isinstance(result, tuple) and len(result) == expected_length
+        return (
+            ok,
+            f"positive-path tuple result has length {expected_length}"
+            if ok
+            else f"expected a tuple of length {expected_length}",
+            {
+                "observed_type": type(result).__name__,
+                "observed_length": len(result) if isinstance(result, tuple) else None,
+            },
+        )
+
+    return _validator
+
+
+def _validate_optimize_vector(expected_length: int) -> Callable[[Any], tuple[bool, str, dict[str, Any]]]:
+    def _validator(result: Any) -> tuple[bool, str, dict[str, Any]]:
+        import numpy as np
+
+        x = getattr(result, "x", None)
+        if x is None:
+            return (
+                False,
+                "expected an optimize result with x",
+                {"observed_type": type(result).__name__},
+            )
+        array = np.asarray(x)
+        observed_shape = tuple(int(dim) for dim in array.shape)
+        ok = observed_shape == (expected_length,)
+        return (
+            ok,
+            f"positive-path optimize result vector has length {expected_length}"
+            if ok
+            else f"expected optimize result vector length {expected_length}, got {observed_shape}",
+            {
+                "observed_shape": list(observed_shape),
+                "observed_dtype": str(array.dtype),
+                "observed_success": getattr(result, "success", None),
+            },
+        )
+
+    return _validator
+
+
+def _validate_curve_fit_result(expected_n_params: int) -> Callable[[Any], tuple[bool, str, dict[str, Any]]]:
+    def _validator(result: Any) -> tuple[bool, str, dict[str, Any]]:
+        import numpy as np
+
+        if not isinstance(result, tuple) or len(result) != 2:
+            return (
+                False,
+                "expected curve_fit to return (popt, pcov)",
+                {"observed_type": type(result).__name__},
+            )
+        popt, pcov = result
+        popt_arr = np.asarray(popt)
+        pcov_arr = np.asarray(pcov)
+        ok = popt_arr.shape == (expected_n_params,) and pcov_arr.shape == (expected_n_params, expected_n_params)
+        return (
+            ok,
+            f"positive-path curve_fit result has {expected_n_params} fitted parameters"
+            if ok
+            else f"expected curve_fit result shapes {(expected_n_params,)}, {(expected_n_params, expected_n_params)}",
+            {
+                "observed_popt_shape": list(popt_arr.shape),
+                "observed_pcov_shape": list(pcov_arr.shape),
+                "observed_popt_dtype": str(popt_arr.dtype),
+                "observed_pcov_dtype": str(pcov_arr.dtype),
+            },
+        )
+
+    return _validator
+
+
 def _validate_numeric_offset(result: Any) -> tuple[bool, str, dict[str, Any]]:
     try:
         value = float(result)
@@ -618,6 +729,290 @@ def _run_threshold_based_onset_detection_probe(fn: Callable[..., Any]) -> dict[s
     )
 
 
+def _run_linalg_solve_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    a = np.array([[3.0, 1.0], [1.0, 2.0]])
+    b = np.array([9.0, 8.0])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(a, b),
+        validator=_validate_array_shape((2,)),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, b),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.linalg.solve.basic",
+        "solve",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_linalg_inv_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    a = np.array([[2.0, 0.0], [0.0, 4.0]])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(a,),
+        validator=_validate_array_shape((2, 2)),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None,),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.linalg.inv.basic",
+        "inv",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_linalg_det_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    a = np.array([[2.0, 0.0], [0.0, 4.0]])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(a,),
+        validator=_validate_scalar_result,
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None,),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.linalg.det.basic",
+        "det",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_linalg_lu_factor_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    a = np.array([[3.0, 1.0], [1.0, 2.0]])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(a,),
+        validator=_validate_tuple_result(2),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None,),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.linalg.lu_factor.basic",
+        "lu_factor",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_linalg_lu_solve_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+    from scipy.linalg import lu_factor
+
+    a = np.array([[3.0, 1.0], [1.0, 2.0]])
+    lu_and_piv = lu_factor(a)
+    b = np.array([9.0, 8.0])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(lu_and_piv, b),
+        validator=_validate_array_shape((2,)),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=((lu_and_piv[0],), b),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.linalg.lu_solve.basic",
+        "lu_solve",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_optimize_minimize_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    def objective(x: np.ndarray) -> float:
+        return float(np.sum((x - 1.0) ** 2))
+
+    x0 = np.array([0.0, 0.0])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(objective, x0),
+        validator=_validate_optimize_vector(2),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, x0),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.optimize.minimize.basic",
+        "minimize",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_optimize_root_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    def objective(x: np.ndarray) -> np.ndarray:
+        return np.array([x[0] - 1.0, x[1] - 2.0])
+
+    x0 = np.array([0.0, 0.0])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(objective, x0),
+        validator=_validate_optimize_vector(2),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, x0),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.optimize.root.basic",
+        "root",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_optimize_linprog_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    c = np.array([1.0, 1.0])
+    A_ub = np.array([[-1.0, 0.0], [0.0, -1.0]])
+    b_ub = np.array([0.0, 0.0])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(c,),
+        kwargs={"A_ub": A_ub, "b_ub": b_ub},
+        validator=_validate_optimize_vector(2),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None,),
+        kwargs={"A_ub": A_ub, "b_ub": b_ub},
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.optimize.linprog.basic",
+        "linprog",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_optimize_curve_fit_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    import numpy as np
+
+    def model(x: np.ndarray, a: float, b: float) -> np.ndarray:
+        return a * x + b
+
+    xdata = np.array([0.0, 1.0, 2.0, 3.0])
+    ydata = np.array([1.0, 3.0, 5.0, 7.0])
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(model, xdata, ydata),
+        validator=_validate_curve_fit_result(2),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(model, None, ydata),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.optimize.curve_fit.basic",
+        "curve_fit",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_optimize_shgo_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    def objective(x: Any) -> float:
+        return float((x[0] - 1.0) ** 2)
+
+    bounds = [(-2.0, 2.0)]
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(objective, bounds),
+        validator=_validate_optimize_vector(1),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, bounds),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.optimize.shgo.basic",
+        "shgo",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
+def _run_optimize_differential_evolution_probe(fn: Callable[..., Any]) -> dict[str, Any]:
+    def objective(x: Any) -> float:
+        return float((x[0] - 1.0) ** 2)
+
+    bounds = [(-2.0, 2.0)]
+    positive_case = _run_probe_case(
+        "positive",
+        fn,
+        args=(objective, bounds),
+        validator=_validate_optimize_vector(1),
+    )
+    negative_case = _run_probe_case(
+        "negative",
+        fn,
+        args=(None, bounds),
+        expect_exception=True,
+    )
+    return _compile_probe_result(
+        "scipy.optimize.differential_evolution.basic",
+        "differential_evolution",
+        positive_case=positive_case,
+        negative_case=negative_case,
+    )
+
+
 ALLOWLISTED_SMOKE_PROBES: tuple[SmokeProbe, ...] = (
     SmokeProbe(
         probe_id="sklearn.images.extract_patches_2d.basic",
@@ -689,6 +1084,72 @@ ALLOWLISTED_SMOKE_PROBES: tuple[SmokeProbe, ...] = (
         target_symbol="threshold_based_onset_detection",
         package_basenames=("emg_detectors",),
         runner=_run_threshold_based_onset_detection_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.linalg.solve.basic",
+        target_symbol="solve",
+        package_basenames=("linalg",),
+        runner=_run_linalg_solve_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.linalg.inv.basic",
+        target_symbol="inv",
+        package_basenames=("linalg",),
+        runner=_run_linalg_inv_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.linalg.det.basic",
+        target_symbol="det",
+        package_basenames=("linalg",),
+        runner=_run_linalg_det_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.linalg.lu_factor.basic",
+        target_symbol="lu_factor",
+        package_basenames=("linalg",),
+        runner=_run_linalg_lu_factor_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.linalg.lu_solve.basic",
+        target_symbol="lu_solve",
+        package_basenames=("linalg",),
+        runner=_run_linalg_lu_solve_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.optimize.minimize.basic",
+        target_symbol="minimize",
+        package_basenames=("optimize",),
+        runner=_run_optimize_minimize_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.optimize.root.basic",
+        target_symbol="root",
+        package_basenames=("optimize",),
+        runner=_run_optimize_root_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.optimize.linprog.basic",
+        target_symbol="linprog",
+        package_basenames=("optimize",),
+        runner=_run_optimize_linprog_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.optimize.curve_fit.basic",
+        target_symbol="curve_fit",
+        package_basenames=("optimize",),
+        runner=_run_optimize_curve_fit_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.optimize.shgo.basic",
+        target_symbol="shgo",
+        package_basenames=("optimize",),
+        runner=_run_optimize_shgo_probe,
+    ),
+    SmokeProbe(
+        probe_id="scipy.optimize.differential_evolution.basic",
+        target_symbol="differential_evolution",
+        package_basenames=("optimize",),
+        runner=_run_optimize_differential_evolution_probe,
     ),
 )
 

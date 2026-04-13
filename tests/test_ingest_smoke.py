@@ -301,6 +301,105 @@ def test_run_smoke_validation_threshold_based_onset_detection_passes(tmp_path: P
     assert result["details"]["negative_case"]["status"] == "pass"
 
 
+def test_run_smoke_validation_linalg_solve_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "import scipy.linalg\n"
+            "def solve(a, b, lower=False, overwrite_a=False, overwrite_b=False, check_finite=True, assume_a=None, transposed=False):\n"
+            "    if a is None or b is None:\n"
+            "        raise TypeError('a or b')\n"
+            "    return scipy.linalg.solve(a, b, lower=lower, overwrite_a=overwrite_a, overwrite_b=overwrite_b, check_finite=check_finite, assume_a=assume_a, transposed=transposed)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="linalg",
+        target_symbol="solve",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "scipy.linalg.solve.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
+def test_run_smoke_validation_linalg_lu_factor_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import scipy.linalg\n"
+            "def lu_factor(a, overwrite_a=False, check_finite=True):\n"
+            "    if a is None:\n"
+            "        raise TypeError('a')\n"
+            "    return scipy.linalg.lu_factor(a, overwrite_a=overwrite_a, check_finite=check_finite)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="linalg",
+        target_symbol="lu_factor",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "scipy.linalg.lu_factor.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
+def test_run_smoke_validation_optimize_minimize_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "import scipy.optimize\n"
+            "def minimize(fun, x0, args=(), method=None, jac=None, hess=None, hessp=None, bounds=None, constraints=(), tol=None, callback=None, options=None):\n"
+            "    if fun is None or x0 is None:\n"
+            "        raise TypeError('fun or x0')\n"
+            "    return scipy.optimize.minimize(fun, x0, args=args, method=method, jac=jac, hess=hess, hessp=hessp, bounds=bounds, constraints=constraints, tol=tol, callback=callback, options=options)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="optimize",
+        target_symbol="minimize",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "scipy.optimize.minimize.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
+def test_run_smoke_validation_optimize_differential_evolution_passes(tmp_path: Path):
+    staged_dir = _write_staged_atoms(
+        tmp_path,
+        generated_atoms=(
+            "import numpy as np\n"
+            "import scipy.optimize\n"
+            "def differential_evolution(func, bounds, args=(), strategy='best1bin', maxiter=1, popsize=5, tol=0.1, mutation=(0.5, 1.0), recombination=0.7, rng=None, callback=None, disp=False, polish=False, init='latinhypercube', atol=0.0, updating='immediate', workers=1, constraints=(), x0=None, integrality=None, vectorized=False):\n"
+            "    if func is None or bounds is None:\n"
+            "        raise TypeError('func or bounds')\n"
+            "    return scipy.optimize.differential_evolution(func, bounds, args=args, strategy=strategy, maxiter=maxiter, popsize=popsize, tol=tol, mutation=mutation, recombination=recombination, rng=rng, callback=callback, disp=disp, polish=polish, init=init, atol=atol, updating=updating, workers=workers, constraints=constraints, x0=x0, integrality=integrality, vectorized=vectorized)\n"
+        ),
+    )
+
+    result = run_smoke_validation(
+        staged_dir,
+        package_basename="optimize",
+        target_symbol="differential_evolution",
+    )
+
+    assert result["status"] == "pass"
+    assert result["probe_id"] == "scipy.optimize.differential_evolution.basic"
+    assert result["details"]["positive_case"]["status"] == "pass"
+    assert result["details"]["negative_case"]["status"] == "pass"
+
+
 def test_run_smoke_validation_hamilton_segmenter_fails_when_negative_path_does_not_raise(tmp_path: Path):
     staged_dir = _write_staged_atoms(
         tmp_path,
