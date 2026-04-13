@@ -68,6 +68,7 @@ def _persist_final_runtime_evidence(runtime_artifacts: dict[str, Any]) -> None:
     try:
         payload = {
             "trace_path": str(trace_path),
+            "invocation_summary": runtime_artifacts.get("invocation_summary", {}),
             "runtime_context": runtime_artifacts.get("runtime_context", {}),
             "canonical_runtime_context": runtime_artifacts.get(
                 "canonical_runtime_context", {}
@@ -117,6 +118,82 @@ def _finalize_runtime_artifacts(
     ).model_dump(mode="json")
     _persist_final_runtime_evidence(artifacts)
     return artifacts
+
+
+def _normalize_invocation_path(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    try:
+        return str(Path(text).expanduser().resolve())
+    except Exception:
+        return text
+
+
+def _build_invocation_summary(
+    *,
+    mode: str,
+    metric: OptimizationMetric,
+    command: list[str] | None = None,
+    cwd: Path | str | None = None,
+    artifact_path: Path | str | None = None,
+    dataset_path: str | None = None,
+    adapter_path: Path | str | None = None,
+    dataset_root: Path | str | None = None,
+    dataset_vars: dict[str, Any] | None = None,
+    user: str | None = None,
+    serial: str | None = None,
+    slice_start_s: float | None = None,
+    slice_stop_s: float | None = None,
+    evaluation_spec_path: str | None = None,
+    params_path: Path | str | None = None,
+    trace_path: Path | str | None = None,
+) -> dict[str, Any]:
+    summary: dict[str, Any] = {
+        "mode": str(mode),
+        "metric": str(getattr(metric, "value", metric)),
+    }
+    if command:
+        summary["argv"] = [str(item) for item in command]
+    normalized_cwd = _normalize_invocation_path(cwd)
+    if normalized_cwd:
+        summary["cwd"] = normalized_cwd
+    normalized_artifact = _normalize_invocation_path(artifact_path)
+    if normalized_artifact:
+        summary["artifact_path"] = normalized_artifact
+    normalized_dataset_path = _normalize_invocation_path(dataset_path)
+    if normalized_dataset_path:
+        summary["dataset_path"] = normalized_dataset_path
+    normalized_adapter_path = _normalize_invocation_path(adapter_path)
+    if normalized_adapter_path:
+        summary["adapter_path"] = normalized_adapter_path
+    normalized_dataset_root = _normalize_invocation_path(dataset_root)
+    if normalized_dataset_root:
+        summary["dataset_root"] = normalized_dataset_root
+    if dataset_vars:
+        summary["dataset_vars"] = {
+            str(key): str(value) for key, value in sorted(dataset_vars.items())
+        }
+    if user is not None:
+        summary["user"] = str(user)
+    if serial is not None:
+        summary["serial"] = str(serial)
+    if slice_start_s is not None:
+        summary["slice_start_s"] = float(slice_start_s)
+    if slice_stop_s is not None:
+        summary["slice_stop_s"] = float(slice_stop_s)
+    normalized_eval_spec = _normalize_invocation_path(evaluation_spec_path)
+    if normalized_eval_spec:
+        summary["evaluation_spec_path"] = normalized_eval_spec
+    normalized_params_path = _normalize_invocation_path(params_path)
+    if normalized_params_path:
+        summary["params_path"] = normalized_params_path
+    normalized_trace_path = _normalize_invocation_path(trace_path)
+    if normalized_trace_path:
+        summary["trace_path"] = normalized_trace_path
+    return summary
 
 
 def _resolve_optional_float_setting(
@@ -221,6 +298,7 @@ class ExecutionSandbox:
         try:
             cmd = [self._python_executable, str(artifact), str(dataset_path)]
             eval_spec_arg = _materialize_evaluation_spec_arg(output_dir, evaluation_spec)
+            params_path: Path | None = None
             if eval_spec_arg is not None:
                 cmd.extend(["--eval-spec", eval_spec_arg])
             if bundle.parameter_assignments:
@@ -248,10 +326,24 @@ class ExecutionSandbox:
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
         stdout_payload = _parse_stdout_payload(stdout)
+        invocation_summary = _build_invocation_summary(
+            mode="dataset_path",
+            metric=metric,
+            command=cmd,
+            cwd=output_dir,
+            artifact_path=artifact,
+            dataset_path=dataset_path,
+            slice_start_s=self._dataset_slice_start_s,
+            slice_stop_s=self._dataset_slice_stop_s,
+            evaluation_spec_path=eval_spec_arg,
+            params_path=params_path,
+            trace_path=trace_path,
+        )
         runtime_artifacts = _build_runtime_artifacts(
             trace_path=trace_path,
             stdout_payload=stdout_payload,
             runtime_inputs=_load_runtime_inputs_from_dataset_path(dataset_path),
+            invocation_summary=invocation_summary,
         )
         telemetry = _parse_trace(trace_path)
 
@@ -392,9 +484,25 @@ class ExecutionSandbox:
             evaluation_spec=evaluation_spec,
         )
         artifacts = dict(result.runtime_artifacts)
+        artifacts["invocation_summary"] = _build_invocation_summary(
+            mode="adapter_manifest",
+            metric=metric,
+            cwd=out_dir,
+            artifact_path=executable or bundle.source_path,
+            dataset_path=str(manifest_path),
+            adapter_path=adapter,
+            dataset_root=adapter.parent,
+            dataset_vars=varset,
+            user=user,
+            serial=serial,
+            slice_start_s=self._dataset_slice_start_s,
+            slice_stop_s=self._dataset_slice_stop_s,
+            trace_path=artifacts.get("trace_path"),
+        )
         if runtime_inputs:
             artifacts.setdefault("runtime_inputs", runtime_inputs)
             artifacts.setdefault("signal_data", runtime_inputs)
+        _persist_final_runtime_evidence(artifacts)
         return result.model_copy(update={"runtime_artifacts": artifacts})
 
     async def _evaluate_python_adapter_runner(
@@ -457,6 +565,7 @@ class ExecutionSandbox:
         if self._dataset_slice_stop_s is not None:
             cmd.extend(["--slice-stop", str(self._dataset_slice_stop_s)])
         eval_spec_arg = _materialize_evaluation_spec_arg(output_dir, evaluation_spec)
+        params_path: Path | None = None
         if eval_spec_arg is not None:
             cmd.extend(["--eval-spec", eval_spec_arg])
         if bundle.parameter_assignments:
@@ -486,10 +595,28 @@ class ExecutionSandbox:
             return BenchmarkResult(global_loss=_FAILURE_PENALTY)
 
         stdout_payload = _parse_stdout_payload(stdout)
+        invocation_summary = _build_invocation_summary(
+            mode="adapter_runner",
+            metric=metric,
+            command=cmd,
+            cwd=output_dir,
+            artifact_path=artifact,
+            adapter_path=adapter,
+            dataset_root=adapter.parent,
+            dataset_vars=varset,
+            user=user,
+            serial=serial,
+            slice_start_s=self._dataset_slice_start_s,
+            slice_stop_s=self._dataset_slice_stop_s,
+            evaluation_spec_path=eval_spec_arg,
+            params_path=params_path,
+            trace_path=trace_path,
+        )
         runtime_artifacts = _build_runtime_artifacts(
             trace_path=trace_path,
             stdout_payload=stdout_payload,
             runtime_inputs=runtime_inputs,
+            invocation_summary=invocation_summary,
         )
         telemetry = _parse_trace(trace_path)
 
@@ -680,9 +807,12 @@ def _build_runtime_artifacts(
     stdout_payload: dict[str, Any] | None,
     runtime_inputs: dict[str, Any] | None = None,
     signal_data: dict[str, Any] | None = None,
+    invocation_summary: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble best-effort runtime artifacts for downstream expansion."""
     artifacts: dict[str, Any] = {"trace_path": str(trace_path)}
+    if isinstance(invocation_summary, dict) and invocation_summary:
+        artifacts["invocation_summary"] = dict(invocation_summary)
     outputs: dict[str, Any] = {}
     intermediates: dict[str, Any] = {}
     if stdout_payload:
@@ -710,6 +840,8 @@ def _build_runtime_artifacts(
         intermediates=intermediates,
         outputs=outputs,
     )
+    if isinstance(invocation_summary, dict) and invocation_summary:
+        evidence["invocation_summary"] = dict(invocation_summary)
     trace_output_summaries = _parse_trace_output_summaries(trace_path)
     if trace_output_summaries:
         artifacts["intermediate_summaries"] = dict(trace_output_summaries)
@@ -744,6 +876,7 @@ def _persist_runtime_evidence(trace_path: Path, evidence: dict[str, Any]) -> Non
     try:
         payload = {
             "trace_path": str(trace_path),
+            "invocation_summary": evidence.get("invocation_summary", {}),
             "runtime_context": evidence.get("runtime_context", {}),
             "canonical_runtime_context": evidence.get("canonical_runtime_context", {}),
             "telemetry_summary": evidence.get("telemetry_summary", {}),

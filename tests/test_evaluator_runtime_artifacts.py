@@ -51,6 +51,13 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
             "ecg_sampling_rate": 100.0,
             "h10_ecg_t": list(np.linspace(0.0, 20.0, 2000)),
         },
+        invocation_summary={
+            "mode": "adapter_runner",
+            "dataset_root": "/tmp/nightcap",
+            "dataset_vars": {"tracker": "single"},
+            "slice_start_s": 5.0,
+            "slice_stop_s": 305.0,
+        },
     )
 
     assert artifacts["runtime_inputs"]["h10_ecg_value"] is signal
@@ -70,6 +77,7 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
     assert artifacts["heuristic_summary"]["heuristic_count"] == len(
         artifacts["heuristics"]
     )
+    assert artifacts["invocation_summary"]["dataset_vars"]["tracker"] == "single"
     assert "interval_instability" in artifacts["heuristic_summary"]["heuristic_ids"]
     assert artifacts["usability_assessment"]["assessment_id"] == "runtime_usability_assessment"
     assert "quality_instability" in artifacts["usability_assessment"]["heuristic_signature"]
@@ -83,6 +91,8 @@ def test_build_runtime_artifacts_persists_canonical_runtime_evidence(
     assert persisted["heuristic_summary"]["heuristic_count"] == len(
         persisted["heuristics"]
     )
+    assert persisted["invocation_summary"]["slice_start_s"] == 5.0
+    assert persisted["invocation_summary"]["slice_stop_s"] == 305.0
     assert persisted["usability_assessment"]["assessment_id"] == "runtime_usability_assessment"
     assert "quality_instability" in persisted["usability_assessment"]["heuristic_signature"]
 
@@ -150,6 +160,11 @@ def test_finalize_runtime_artifacts_soft_accepts_scoreable_nonzero_exit(
             "signal": list(np.linspace(0.0, 1.0, 30)),
             "sampling_rate": 100.0,
         },
+        invocation_summary={
+            "mode": "dataset_path",
+            "dataset_path": "/tmp/manifest.json",
+            "trace_path": str(trace_path),
+        },
     )
 
     finalized = _finalize_runtime_artifacts(
@@ -168,4 +183,8 @@ def test_finalize_runtime_artifacts_soft_accepts_scoreable_nonzero_exit(
 
     assert finalized["execution_summary"]["soft_accepted_nonzero_exit"] is True
     assert finalized["execution_summary"]["loss_is_finite"] is True
+    assert finalized["invocation_summary"]["dataset_path"] == "/tmp/manifest.json"
     assert finalized["usability_assessment"]["usable_for_scoring"] is True
+    persisted = json.loads((tmp_path / "runtime_evidence.json").read_text())
+    assert persisted["invocation_summary"]["dataset_path"] == "/tmp/manifest.json"
+    assert persisted["execution_summary"]["soft_accepted_nonzero_exit"] is True
