@@ -89,5 +89,5 @@ def test_signal_event_rate_match_results_use_provider_registry(
         "provider.signal_event_rate.filter_signal_for_detection"
     )
     assert results[0].all_candidates[0].declaration.source_lib == (
-        "sciona.expansion_atoms.runtime_signal_event_rate"
+        "provider.signal_event_rate"
     )

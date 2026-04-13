@@ -63,6 +63,18 @@ def _signal_event_rate_declarations() -> dict[str, tuple[str, str, str]]:
     return SIGNAL_EVENT_RATE_DECLARATIONS
 
 
+def _declaration_source_lib(
+    declaration_name: str,
+    *,
+    fallback: str,
+) -> str:
+    """Infer a declaration module path from a dotted declaration name."""
+    text = str(declaration_name or "").strip()
+    if "." not in text:
+        return fallback
+    return text.rsplit(".", 1)[0]
+
+
 def _matches_signal_event_rate_goal(goal: str) -> bool:
     lowered = goal.lower()
     signal_terms = ("signal", "waveform", "ecg", "ppg", "eeg", "sensor")
@@ -109,7 +121,10 @@ def _build_signal_event_rate_match_results(
             type_signature=type_signature,
             docstring=docstring,
             conceptual_summary=node.description,
-            source_lib="sciona.expansion_atoms.runtime_signal_event_rate",
+            source_lib=_declaration_source_lib(
+                declaration_name,
+                fallback="sciona.expansion_atoms.runtime_signal_event_rate",
+            ),
             prover=prover,
         )
         candidate = CandidateMatch(
