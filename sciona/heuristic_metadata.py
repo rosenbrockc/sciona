@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -206,11 +207,31 @@ def _metadata_snapshots_from_payload(payload: Any) -> list[dict[str, Any]]:
         return [item for item in payload if isinstance(item, dict)]
     return []
 
-@lru_cache(maxsize=1)
-def load_external_atom_heuristic_metadata() -> tuple[AtomHeuristicMetadata, ...]:
+
+def _metadata_provider_roots(
+    provider_roots: tuple[str | Path, ...] | None = None,
+) -> tuple[Path, ...]:
+    if provider_roots is None:
+        return tuple(candidate_atom_provider_roots())
+    deduped: list[Path] = []
+    seen: set[Path] = set()
+    for root in provider_roots:
+        resolved = Path(root).expanduser().resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        deduped.append(resolved)
+    return tuple(deduped)
+
+
+@lru_cache(maxsize=8)
+def _load_external_atom_heuristic_metadata_cached(
+    provider_roots: tuple[str, ...],
+) -> tuple[AtomHeuristicMetadata, ...]:
     records: list[AtomHeuristicMetadata] = []
     seen_fqdns: set[str] = set()
-    for root in candidate_atom_provider_roots():
+    for root_text in provider_roots:
+        root = Path(root_text).expanduser().resolve()
         for pattern in ATOM_METADATA_GLOB_CANDIDATES:
             for path in sorted(root.glob(pattern)):
                 raw = json.loads(path.read_text())
@@ -223,13 +244,29 @@ def load_external_atom_heuristic_metadata() -> tuple[AtomHeuristicMetadata, ...]
     return tuple(records)
 
 
+def load_external_atom_heuristic_metadata(
+    provider_roots: tuple[str | Path, ...] | None = None,
+) -> tuple[AtomHeuristicMetadata, ...]:
+    roots = _metadata_provider_roots(provider_roots)
+    return _load_external_atom_heuristic_metadata_cached(
+        tuple(str(root) for root in roots)
+    )
+
+
 def resolve_external_atom_heuristic_metadata(
     atom_fqdn: str,
+    *,
+    provider_roots: tuple[str | Path, ...] | None = None,
 ) -> AtomHeuristicMetadata | None:
     target = str(atom_fqdn or "").strip()
     if not target:
         return None
-    for record in load_external_atom_heuristic_metadata():
+    for record in load_external_atom_heuristic_metadata(provider_roots):
         if record.atom_fqdn == target:
             return record
     return None
+
+
+def clear_atom_heuristic_metadata_caches() -> None:
+    """Clear metadata-loader caches used by tests and migration tooling."""
+    _load_external_atom_heuristic_metadata_cached.cache_clear()

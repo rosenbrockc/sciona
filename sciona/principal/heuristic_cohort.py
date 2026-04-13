@@ -391,7 +391,7 @@ def summarize_heuristic_cohort(
                 exclusion_reason_counts[code_text] = (
                     exclusion_reason_counts.get(code_text, 0) + 1
                 )
-        if not bool(usability.get("usable_for_guidance")):
+        if not bool(usability.get("usable_for_scoring")):
             excluded_labels.append(str(entry.get("member_label", "")))
         if bool(usability.get("usable_for_scoring")):
             proposal_members.append(entry)

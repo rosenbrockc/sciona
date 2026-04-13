@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from sciona.heuristics import HeuristicActionClass
+from sciona.principal.runtime_usability import build_runtime_usability_assessment
 
 
 class HeuristicOutcomeRecord(BaseModel):
@@ -145,16 +146,20 @@ def summarize_runtime_heuristic_evidence(
     summary: dict[str, Any] = {}
     for key in (
         "runtime_context",
+        "canonical_runtime_context",
         "telemetry_summary",
         "heuristics",
         "heuristic_summary",
-        "usability_assessment",
+        "execution_summary",
     ):
         value = runtime_artifacts.get(key)
         if value is None:
             continue
         if isinstance(value, (dict, list)):
             summary[key] = value
+    assessment = build_runtime_usability_assessment(summary).model_dump(mode="json")
+    if assessment:
+        summary["usability_assessment"] = assessment
     heuristic_cohort = _compact_heuristic_cohort(runtime_artifacts.get("heuristic_cohort"))
     if heuristic_cohort:
         summary["heuristic_cohort"] = heuristic_cohort

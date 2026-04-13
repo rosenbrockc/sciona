@@ -91,6 +91,7 @@ def test_summarize_runtime_heuristic_evidence_keeps_only_compact_fields() -> Non
     summary = summarize_runtime_heuristic_evidence(
         {
             "runtime_context": {"primary_stream_id": "generic"},
+            "canonical_runtime_context": {"primary_stream_id": "generic"},
             "telemetry_summary": {"signal": {"count": 10.0}},
             "heuristics": [{"heuristic": {"heuristic_id": "interval_instability"}}],
             "heuristic_summary": {"heuristic_count": 1},
@@ -102,6 +103,50 @@ def test_summarize_runtime_heuristic_evidence_keeps_only_compact_fields() -> Non
     assert "runtime_inputs" not in summary
     assert summary["runtime_context"]["primary_stream_id"] == "generic"
     assert summary["heuristic_summary"]["heuristic_count"] == 1
+
+
+def test_summarize_runtime_heuristic_evidence_refreshes_stale_usability() -> None:
+    summary = summarize_runtime_heuristic_evidence(
+        {
+            "runtime_context": {"primary_stream_id": "generic"},
+            "canonical_runtime_context": {"primary_stream_id": "generic"},
+            "telemetry_summary": {
+                "signal": {"count": 10.0, "mean": 0.0},
+                "events": {"count": 5.0, "interval_median_samples": 1.0},
+                "rate": {"count": 5.0, "mean": 80.0},
+                "outputs": {},
+            },
+            "heuristics": [
+                {
+                    "heuristic": {"heuristic_id": "interval_instability"},
+                    "confidence": 0.8,
+                    "source_section": "rate",
+                }
+            ],
+            "heuristic_summary": {
+                "heuristic_count": 1,
+                "heuristic_ids": ["interval_instability"],
+                "max_confidence": 0.8,
+            },
+            "execution_summary": {
+                "process_returncode": 0,
+                "loss_is_finite": True,
+                "trace_support_present": True,
+                "output_support_present": True,
+                "soft_accepted_nonzero_exit": False,
+            },
+            "usability_assessment": {
+                "assessment_id": "runtime_usability_assessment",
+                "usable_for_guidance": True,
+                "usable_for_scoring": False,
+                "usable_for_final_benchmark": False,
+            },
+        }
+    )
+
+    assert summary["execution_summary"]["output_support_present"] is True
+    assert summary["usability_assessment"]["usable_for_scoring"] is True
+    assert summary["usability_assessment"]["usable_for_final_benchmark"] is True
 
 
 def test_summarize_runtime_heuristic_evidence_keeps_compact_cohort_gating_data() -> None:
@@ -161,7 +206,12 @@ def test_summarize_runtime_heuristic_evidence_keeps_compact_cohort_gating_data()
 def test_extract_heuristic_usability_memory_tracks_scopes_and_loss_delta() -> None:
     evidence = {
         "runtime_context": {"primary_stream_id": "generic"},
-        "telemetry_summary": {"signal": {"count": 10.0, "mean": 0.5}},
+        "canonical_runtime_context": {"primary_stream_id": "generic"},
+        "telemetry_summary": {
+            "signal": {"count": 10.0, "mean": 0.5},
+            "rate": {"count": 5.0, "mean": 80.0},
+            "outputs": {},
+        },
         "heuristics": [
             {
                 "heuristic": {"heuristic_id": "interval_instability"},
@@ -173,6 +223,13 @@ def test_extract_heuristic_usability_memory_tracks_scopes_and_loss_delta() -> No
             "heuristic_count": 1,
             "heuristic_ids": ["interval_instability"],
             "max_confidence": 0.8,
+        },
+        "execution_summary": {
+            "process_returncode": 0,
+            "loss_is_finite": True,
+            "trace_support_present": True,
+            "output_support_present": True,
+            "soft_accepted_nonzero_exit": False,
         },
     }
     runtime_evidence = {

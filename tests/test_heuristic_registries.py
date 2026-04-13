@@ -46,7 +46,7 @@ def test_signal_registry_prefers_namespace_pilot_asset_when_available() -> None:
     assert registry is not None
     summary = heuristic_registry_summary(registry)
     assert summary["source_kind"] == "shared_asset"
-    assert summary["source_repository"] == "../sciona-atoms"
+    assert summary["source_repository"] == "../sciona-atoms-signal"
     assert summary["source_path"].endswith(
         "data/heuristics/families/signal_event_rate.json"
     )

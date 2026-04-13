@@ -7,6 +7,7 @@ import json
 import math
 from typing import Any
 
+from sciona.atom_identity import logical_atom_id_from_fqdn, known_atom_package_prefixes
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import NodeStatus
 from sciona.graph_store import _topo_hash
@@ -138,6 +139,27 @@ def _infer_root_id(nodes: list[Any], edges: list[Any]) -> str | None:
     return nodes[0].node_id if nodes else None
 
 
+def _recognized_atom_package_prefix(label: str) -> str:
+    text = str(label or "").strip()
+    if not text:
+        return ""
+    for prefix in sorted(known_atom_package_prefixes(), key=len, reverse=True):
+        if text == prefix or text.startswith(prefix + "."):
+            return prefix
+    return ""
+
+
+def _fallback_atom_family(label: str) -> str:
+    prefix = _recognized_atom_package_prefix(label)
+    if not prefix:
+        return ""
+    logical_name = logical_atom_id_from_fqdn(label)
+    logical_parts = [part for part in logical_name.split(".") if part]
+    if not logical_parts:
+        return prefix
+    return ".".join([prefix, *logical_parts[:2]])
+
+
 def _primitive_family(primitive_name: str, catalog: Any | None) -> str:
     primitive_name = str(primitive_name or "").strip()
     if not primitive_name:
@@ -148,11 +170,9 @@ def _primitive_family(primitive_name: str, catalog: Any | None) -> str:
             source = str(getattr(prim, "source", "") or "").strip()
             if source:
                 return source
-    if primitive_name.startswith("ageoa."):
-        parts = primitive_name.split(".")
-        if len(parts) >= 3:
-            return ".".join(parts[:3])
-        return primitive_name
+    atom_family = _fallback_atom_family(primitive_name)
+    if atom_family:
+        return atom_family
     if "." in primitive_name:
         return primitive_name.split(".", 1)[0]
     return "builtin"
