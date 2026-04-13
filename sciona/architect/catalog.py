@@ -969,6 +969,30 @@ _SIGNAL_FILTER_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [
             "stabilize cadence estimate",
         ],
     ),
+    (
+        AlgorithmicPrimitive(
+            name="compute_event_rate_median_smoothed",
+            source="sciona-builtins",
+            category=ConceptType.ANALYSIS,
+            description=(
+                "Compute a downstream rate or cadence from inter-event intervals and "
+                "apply robust median smoothing to reduce impulsive jitter."
+            ),
+            inputs=[
+                IOSpec(name="events", type_desc="np.ndarray"),
+                IOSpec(name="sampling_rate", type_desc="float"),
+            ],
+            outputs=[IOSpec(name="rate", type_desc="tuple[np.ndarray, np.ndarray]")],
+            type_signature="np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
+        ),
+        [
+            "compute robust smoothed rate from detected events",
+            "compute median smoothed event rate",
+            "median smoothed heart rate computation",
+            "robustly smooth interval-derived rate",
+            "reduce impulsive rate jitter",
+        ],
+    ),
 ]
 
 _LINEAR_ALGEBRA_PRIMITIVES: list[tuple[AlgorithmicPrimitive, list[str]]] = [

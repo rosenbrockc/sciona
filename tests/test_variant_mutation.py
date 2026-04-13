@@ -97,13 +97,13 @@ def test_maybe_apply_bottleneck_variant_returns_family_metadata() -> None:
 
     assert result.applied is True
     assert result.family == "signal_event_rate"
-    assert result.variant_name == "compute_event_rate_smoothed"
+    assert result.variant_name == "compute_event_rate_median_smoothed"
     updated = {
         node.name: node.matched_primitive
         for node in result.cdg.nodes
         if node.status == NodeStatus.ATOMIC
     }
-    assert updated["Compute Event Rate"] == "compute_event_rate_smoothed"
+    assert updated["Compute Event Rate"] == "compute_event_rate_median_smoothed"
     assert updated["Detect Peaks In Signal"] == "detect_peaks_in_signal"
 
 

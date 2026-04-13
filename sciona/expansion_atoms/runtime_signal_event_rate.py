@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+from scipy.ndimage import median_filter
 from scipy.signal import butter, find_peaks, sosfiltfilt
 
 
@@ -153,6 +154,29 @@ def compute_event_rate_smoothed(
     kernel = np.ones(window, dtype=np.float64) / float(window)
     smoothed = np.convolve(event_rate, kernel, mode="same")
     return midpoints, smoothed.astype(np.float64)
+
+
+def compute_event_rate_median_smoothed(
+    events: np.ndarray,
+    sampling_rate: float | int,
+    *,
+    smoothing_window: int = 5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Convert event indices into a robust median-smoothed rate estimate."""
+    midpoints, event_rate = compute_event_rate(events, sampling_rate)
+    if event_rate.size == 0:
+        return midpoints, event_rate
+
+    window = max(1, int(smoothing_window))
+    if window > event_rate.size:
+        window = int(event_rate.size)
+    if window % 2 == 0:
+        window = max(1, window - 1)
+    if window <= 1:
+        return midpoints, event_rate
+
+    smoothed = median_filter(event_rate.astype(np.float64), size=window, mode="nearest")
+    return midpoints, np.asarray(smoothed, dtype=np.float64)
 
 
 # ---------------------------------------------------------------------------

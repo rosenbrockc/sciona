@@ -7,6 +7,7 @@ import pytest
 
 from sciona.expansion_atoms.runtime_signal_event_rate import (
     compute_event_rate_smoothed,
+    compute_event_rate_median_smoothed,
     detect_peaks_in_signal,
     filter_signal_for_detection,
 )
@@ -96,6 +97,27 @@ class TestComputeEventRateSmoothed:
             pytest.skip("Not enough peaks to test smoothing difference")
         _, s1 = compute_event_rate_smoothed(peaks, rate, smoothing_window=5)
         _, s2 = compute_event_rate_smoothed(peaks, rate, smoothing_window=1)
+        assert not np.allclose(s1, s2), (
+            "Different smoothing windows should produce different outputs"
+        )
+
+
+class TestComputeEventRateMedianSmoothed:
+    def test_defaults_unchanged(self, synthetic_signal):
+        signal, rate = synthetic_signal
+        filtered = filter_signal_for_detection(signal, rate)
+        peaks = detect_peaks_in_signal(filtered, rate)
+        midpoints, smoothed = compute_event_rate_median_smoothed(peaks, rate)
+        assert len(midpoints) == len(smoothed)
+
+    def test_smoothing_window_changes_output(self, synthetic_signal):
+        signal, rate = synthetic_signal
+        filtered = filter_signal_for_detection(signal, rate)
+        peaks = detect_peaks_in_signal(filtered, rate)
+        if len(peaks) < 6:
+            pytest.skip("Not enough peaks to test smoothing difference")
+        _, s1 = compute_event_rate_median_smoothed(peaks, rate, smoothing_window=5)
+        _, s2 = compute_event_rate_median_smoothed(peaks, rate, smoothing_window=1)
         assert not np.allclose(s1, s2), (
             "Different smoothing windows should produce different outputs"
         )

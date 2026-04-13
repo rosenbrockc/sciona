@@ -24,6 +24,11 @@ SIGNAL_EVENT_RATE_DECLARATIONS = {
         "np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
         "Convert ordered event indices into a smoothed per-minute rate estimate.",
     ),
+    "compute_event_rate_median_smoothed": (
+        "sciona.expansion_atoms.runtime_signal_event_rate.compute_event_rate_median_smoothed",
+        "np.ndarray, float -> tuple[np.ndarray, np.ndarray]",
+        "Convert ordered event indices into a robust median-smoothed per-minute rate estimate.",
+    ),
     # Expansion atoms — inserted by the DPO expansion engine
     "assess_signal_quality": (
         "sciona.expansion_atoms.runtime_signal_event_rate.assess_signal_quality",
@@ -44,7 +49,10 @@ SIGNAL_EVENT_RATE_DECLARATIONS = {
 
 
 SIGNAL_EVENT_RATE_ALTERNATIVES = {
-    "compute_event_rate": ("compute_event_rate_smoothed",),
+    "compute_event_rate": (
+        "compute_event_rate_median_smoothed",
+        "compute_event_rate_smoothed",
+    ),
 }
 
 

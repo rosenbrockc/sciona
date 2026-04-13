@@ -341,10 +341,10 @@ class TestLoadManifestConvenience:
 
 
 class TestRuntimeSignalEventRateParams:
-    def test_returns_all_seven_params(self):
+    def test_returns_all_expected_param_specs(self):
         params = get_runtime_signal_event_rate_params()
         all_names = [p.name for specs in params.values() for p in specs]
-        assert len(all_names) == 7
+        assert len(all_names) == 8
         expected = {
             "filter_order", "clipping_scale", "low_cutoff_hz", "high_cutoff_hz",
             "prominence_scale", "refractory_scale", "smoothing_window",

@@ -155,7 +155,7 @@ class TestExpansionAssets:
 
         assert asset.asset_id == "family.signal_event_rate.expansions.v1"
         assert asset.audit.review_status == "transitional"
-        assert len(asset.operations) == 5
+        assert len(asset.operations) == 6
         assert jump is not None
         assert correction is not None
         assert jump.trigger.required_runtime_keys == ["signal"]
@@ -243,7 +243,7 @@ class TestExpansionAssets:
         assert diagnostics
         assert diagnostics[0].asset_id == "family.signal_event_rate.expansions.v1"
         assert diagnostics[0].asset_operation == "insert_jump_removal_before_filter"
-        assert diagnostics[0].asset_source_kind == "local_asset"
+        assert diagnostics[0].asset_source_kind == "shared_asset"
         assert diagnostics[0].asset_migration_readiness_status == "in_progress"
         assert diagnostics[0].asset_migration_readiness_ready is False
 
@@ -373,7 +373,7 @@ class TestExpansionAssets:
         correction = _diagnose_peak_correction_need(cdg, context)
 
         assert cleanup is not None
-        assert cleanup.rule_name == "insert_outlier_rejection_after_detection"
+        assert cleanup.rule_name == "insert_outlier_rejection_after_detection_median_smoothed"
         assert correction is None
 
     def test_asset_wrapper_supports_generic_runtime_keys_and_boundaries(self):
