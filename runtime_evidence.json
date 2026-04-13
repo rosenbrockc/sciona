@@ -1,0 +1,626 @@
+{
+  "canonical_runtime_context": {
+    "alias_resolution": {
+      "sampling_rate": "h10_ecg_sampling_rate",
+      "signal": "h10_ecg_value",
+      "time": "h10_ecg_t"
+    },
+    "canonical_inputs": {
+      "sampling_rate": {
+        "data_kind": "sampling_context",
+        "provenance": "stream_sampling_rate",
+        "raw_key": "h10_ecg_sampling_rate",
+        "stream_id": "ecg"
+      },
+      "signal": {
+        "data_kind": "waveform",
+        "provenance": "preferred_waveform_stream",
+        "raw_key": "h10_ecg_value",
+        "stream_id": "ecg"
+      },
+      "time": {
+        "data_kind": "time_axis",
+        "provenance": "stream_time_axis",
+        "raw_key": "h10_ecg_t",
+        "stream_id": "ecg"
+      }
+    },
+    "primary_stream_id": "ecg",
+    "streams": [
+      {
+        "aliases": [
+          "h10_ecg_value",
+          "h10_ecg_sampling_rate",
+          "h10_ecg_t"
+        ],
+        "data_kind": "waveform",
+        "provenance": "primary_stream",
+        "sampling_rate": 129.96,
+        "sampling_rate_key": "h10_ecg_sampling_rate",
+        "signal_key": "h10_ecg_value",
+        "stream_id": "ecg",
+        "time_key": "h10_ecg_t"
+      }
+    ]
+  },
+  "heuristic_summary": {
+    "heuristic_count": 5,
+    "heuristic_ids": [
+      "boundary_discontinuity",
+      "density_collapse",
+      "quality_instability",
+      "quality_instability",
+      "quality_instability"
+    ],
+    "max_confidence": 1.0,
+    "source_keys": [
+      "h10_ecg_value",
+      "events",
+      "signal",
+      "",
+      "h10_ecg_value"
+    ],
+    "source_sections": [
+      "signal",
+      "events",
+      "intermediates.signal",
+      "rate",
+      "signal"
+    ]
+  },
+  "heuristics": [
+    {
+      "confidence": 1.0,
+      "heuristic": {
+        "applicability_scope": "cross_family",
+        "compatibility_aliases": [],
+        "confidence": 1.0,
+        "dejargonized_meaning": "The observed boundary contains abrupt discontinuities that may need cleanup before downstream processing.",
+        "display_name": "Boundary Discontinuity",
+        "evidence_type": "scalar_score",
+        "family_notes": [],
+        "heuristic_id": "boundary_discontinuity",
+        "producer_kind": "runtime_transform",
+        "provenance_requirements": [
+          "source_section",
+          "metric_name",
+          "metric_value"
+        ],
+        "supported_action_classes": [
+          "precondition",
+          "insert_correction"
+        ],
+        "uncertainty_notes": [],
+        "value_kind": "scalar_score",
+        "value_shape": "scalar"
+      },
+      "metric_name": "discontinuity_count",
+      "metric_value": 6.0,
+      "notes": [
+        "Derived from canonical telemetry_summary discontinuity_count."
+      ],
+      "provenance": "canonical_telemetry_summary",
+      "source_key": "h10_ecg_value",
+      "source_section": "signal",
+      "summary_path": "telemetry_summary.signal",
+      "supporting_fields": {
+        "count": 12996.0,
+        "discontinuity_count": 6.0,
+        "duration_seconds": 100.0,
+        "max_abs": 0.9999995446504006,
+        "mean": 0.0013572169463282836,
+        "p01": -0.9994961382984019,
+        "p50": 0.007701060100407165,
+        "p99": 0.9994964092146742,
+        "sampling_rate": 129.96,
+        "source_key": "h10_ecg_value",
+        "std": 0.7086272514898831,
+        "stream_id": "ecg"
+      },
+      "threshold": 0.0
+    },
+    {
+      "confidence": 1.0,
+      "heuristic": {
+        "applicability_scope": "cross_family",
+        "compatibility_aliases": [],
+        "confidence": 1.0,
+        "dejargonized_meaning": "The observed structure is too sparse to support reliable downstream decisions.",
+        "display_name": "Density Collapse",
+        "evidence_type": "scalar_score",
+        "family_notes": [],
+        "heuristic_id": "density_collapse",
+        "producer_kind": "runtime_transform",
+        "provenance_requirements": [
+          "source_section",
+          "metric_name",
+          "metric_value"
+        ],
+        "supported_action_classes": [
+          "gate_or_validate",
+          "branch_and_compare"
+        ],
+        "uncertainty_notes": [],
+        "value_kind": "scalar_score",
+        "value_shape": "scalar"
+      },
+      "metric_name": "density_per_minute",
+      "metric_value": 1.7999999999999998,
+      "notes": [
+        "Derived from canonical telemetry_summary density_per_minute."
+      ],
+      "provenance": "canonical_telemetry_summary",
+      "source_key": "events",
+      "source_section": "events",
+      "summary_path": "telemetry_summary.events",
+      "supporting_fields": {
+        "count": 3.0,
+        "density_per_minute": 1.7999999999999998,
+        "duration_seconds": 100.0,
+        "interval_mad_samples": 6.0,
+        "interval_median_samples": 134.0,
+        "interval_median_seconds": 1.0310864881502,
+        "outlier_fraction": 0.0,
+        "source_key": "events",
+        "stream_id": "ecg"
+      },
+      "threshold": 5.0
+    },
+    {
+      "confidence": 0.95,
+      "heuristic": {
+        "applicability_scope": "cross_family",
+        "compatibility_aliases": [],
+        "confidence": 0.95,
+        "dejargonized_meaning": "The observed summary varies enough that a fixed downstream path may be brittle.",
+        "display_name": "Quality Instability",
+        "evidence_type": "scalar_score",
+        "family_notes": [],
+        "heuristic_id": "quality_instability",
+        "producer_kind": "runtime_transform",
+        "provenance_requirements": [
+          "source_section",
+          "metric_name",
+          "metric_value"
+        ],
+        "supported_action_classes": [
+          "gate_or_validate",
+          "branch_and_compare"
+        ],
+        "uncertainty_notes": [],
+        "value_kind": "scalar_score",
+        "value_shape": "scalar"
+      },
+      "metric_name": "dispersion",
+      "metric_value": 13.387221388079821,
+      "notes": [
+        "Derived from dispersion over canonical telemetry summary fields."
+      ],
+      "provenance": "canonical_telemetry_summary",
+      "source_key": "signal",
+      "source_section": "intermediates.signal",
+      "summary_path": "telemetry_summary.intermediates.signal",
+      "supporting_fields": {
+        "count": 38943.0,
+        "discontinuity_count": 0.0,
+        "max_abs": 963.7159841907187,
+        "mean": -2.944331271724455,
+        "p01": -410.5395553501492,
+        "p50": -9.052099532658033,
+        "p99": 606.0688328862639,
+        "std": 121.18246047062698
+      },
+      "threshold": 0.5
+    },
+    {
+      "confidence": 0.7690191849831598,
+      "heuristic": {
+        "applicability_scope": "cross_family",
+        "compatibility_aliases": [],
+        "confidence": 0.7690191849831598,
+        "dejargonized_meaning": "The observed summary varies enough that a fixed downstream path may be brittle.",
+        "display_name": "Quality Instability",
+        "evidence_type": "scalar_score",
+        "family_notes": [],
+        "heuristic_id": "quality_instability",
+        "producer_kind": "runtime_transform",
+        "provenance_requirements": [
+          "source_section",
+          "metric_name",
+          "metric_value"
+        ],
+        "supported_action_classes": [
+          "gate_or_validate",
+          "branch_and_compare"
+        ],
+        "uncertainty_notes": [],
+        "value_kind": "scalar_score",
+        "value_shape": "scalar"
+      },
+      "metric_name": "dispersion",
+      "metric_value": 1.2760767399326391,
+      "notes": [
+        "Derived from dispersion over canonical telemetry summary fields."
+      ],
+      "provenance": "canonical_telemetry_summary",
+      "source_key": "",
+      "source_section": "rate",
+      "summary_path": "telemetry_summary.rate",
+      "supporting_fields": {
+        "count": 778.0,
+        "max": 38861.0,
+        "mean": 10138.386309768921,
+        "min": 78.04427938031401,
+        "p01": 79.45015464149155,
+        "p50": 149.82872776589642,
+        "p99": 38226.01,
+        "std": 12937.358950347625
+      },
+      "threshold": 0.5
+    },
+    {
+      "confidence": 0.6271568128724708,
+      "heuristic": {
+        "applicability_scope": "cross_family",
+        "compatibility_aliases": [],
+        "confidence": 0.6271568128724708,
+        "dejargonized_meaning": "The observed summary varies enough that a fixed downstream path may be brittle.",
+        "display_name": "Quality Instability",
+        "evidence_type": "scalar_score",
+        "family_notes": [],
+        "heuristic_id": "quality_instability",
+        "producer_kind": "runtime_transform",
+        "provenance_requirements": [
+          "source_section",
+          "metric_name",
+          "metric_value"
+        ],
+        "supported_action_classes": [
+          "gate_or_validate",
+          "branch_and_compare"
+        ],
+        "uncertainty_notes": [],
+        "value_kind": "scalar_score",
+        "value_shape": "scalar"
+      },
+      "metric_name": "dispersion",
+      "metric_value": 0.7086272514898831,
+      "notes": [
+        "Derived from dispersion over canonical telemetry summary fields."
+      ],
+      "provenance": "canonical_telemetry_summary",
+      "source_key": "h10_ecg_value",
+      "source_section": "signal",
+      "summary_path": "telemetry_summary.signal",
+      "supporting_fields": {
+        "count": 12996.0,
+        "discontinuity_count": 6.0,
+        "duration_seconds": 100.0,
+        "max_abs": 0.9999995446504006,
+        "mean": 0.0013572169463282836,
+        "p01": -0.9994961382984019,
+        "p50": 0.007701060100407165,
+        "p99": 0.9994964092146742,
+        "sampling_rate": 129.96,
+        "source_key": "h10_ecg_value",
+        "std": 0.7086272514898831,
+        "stream_id": "ecg"
+      },
+      "threshold": 0.5
+    }
+  ],
+  "invocation_summary": {},
+  "runtime_context": {
+    "alias_resolution": {
+      "sampling_rate": "h10_ecg_sampling_rate",
+      "signal": "h10_ecg_value",
+      "time": "h10_ecg_t"
+    },
+    "canonical_inputs": {
+      "sampling_rate": "h10_ecg_sampling_rate",
+      "signal": "h10_ecg_value",
+      "time": "h10_ecg_t"
+    },
+    "canonical_intermediates": {
+      "events": "events"
+    },
+    "canonical_streams": {
+      "sampling_rate": "ecg",
+      "signal": "ecg",
+      "time": "ecg"
+    },
+    "primary_stream_id": "ecg",
+    "sampling_rates": {
+      "ecg": 129.96
+    },
+    "stream_count": 1,
+    "stream_ids": [
+      "ecg"
+    ],
+    "streams": [
+      {
+        "aliases": [
+          "h10_ecg_value",
+          "h10_ecg_sampling_rate",
+          "h10_ecg_t"
+        ],
+        "data_kind": "waveform",
+        "provenance": "primary_stream",
+        "sampling_rate": 129.96,
+        "sampling_rate_key": "h10_ecg_sampling_rate",
+        "signal_key": "h10_ecg_value",
+        "stream_id": "ecg",
+        "time_key": "h10_ecg_t"
+      }
+    ]
+  },
+  "telemetry_summary": {
+    "canonical": {
+      "alias_resolution": {
+        "sampling_rate": "h10_ecg_sampling_rate",
+        "signal": "h10_ecg_value",
+        "time": "h10_ecg_t"
+      },
+      "canonical_inputs": {
+        "sampling_rate": "h10_ecg_sampling_rate",
+        "signal": "h10_ecg_value",
+        "time": "h10_ecg_t"
+      },
+      "canonical_intermediates": {
+        "events": "events"
+      },
+      "canonical_streams": {
+        "sampling_rate": "ecg",
+        "signal": "ecg",
+        "time": "ecg"
+      },
+      "primary_stream_id": "ecg",
+      "sampling_rates": {
+        "ecg": 129.96
+      },
+      "stream_count": 1,
+      "stream_ids": [
+        "ecg"
+      ],
+      "streams": [
+        {
+          "aliases": [
+            "h10_ecg_value",
+            "h10_ecg_sampling_rate",
+            "h10_ecg_t"
+          ],
+          "data_kind": "waveform",
+          "provenance": "primary_stream",
+          "sampling_rate": 129.96,
+          "sampling_rate_key": "h10_ecg_sampling_rate",
+          "signal_key": "h10_ecg_value",
+          "stream_id": "ecg",
+          "time_key": "h10_ecg_t"
+        }
+      ]
+    },
+    "events": {
+      "count": 3.0,
+      "density_per_minute": 1.7999999999999998,
+      "duration_seconds": 100.0,
+      "interval_mad_samples": 6.0,
+      "interval_median_samples": 134.0,
+      "interval_median_seconds": 1.0310864881502,
+      "outlier_fraction": 0.0,
+      "source_key": "events",
+      "stream_id": "ecg"
+    },
+    "intermediates": {
+      "events": {
+        "count": 397.0,
+        "interval_mad_samples": 4.0,
+        "interval_median_samples": 86.0,
+        "outlier_fraction": 0.05555555555555555
+      },
+      "rate": {
+        "count": 778.0,
+        "max": 38861.0,
+        "mean": 10138.386309768921,
+        "min": 78.04427938031401,
+        "p01": 79.45015464149155,
+        "p50": 149.82872776589642,
+        "p99": 38226.01,
+        "std": 12937.358950347625
+      },
+      "signal": {
+        "count": 38943.0,
+        "discontinuity_count": 0.0,
+        "max_abs": 963.7159841907187,
+        "mean": -2.944331271724455,
+        "p01": -410.5395553501492,
+        "p50": -9.052099532658033,
+        "p99": 606.0688328862639,
+        "std": 121.18246047062698
+      }
+    },
+    "outputs": {
+      "rate": {
+        "count": 3.0,
+        "max": 71.0,
+        "mean": 70.16666666666667,
+        "min": 69.5,
+        "p01": 69.51,
+        "p50": 70.0,
+        "p99": 70.98,
+        "std": 0.6236095644623235
+      }
+    },
+    "rate": {
+      "count": 778.0,
+      "max": 38861.0,
+      "mean": 10138.386309768921,
+      "min": 78.04427938031401,
+      "p01": 79.45015464149155,
+      "p50": 149.82872776589642,
+      "p99": 38226.01,
+      "std": 12937.358950347625
+    },
+    "signal": {
+      "count": 12996.0,
+      "discontinuity_count": 6.0,
+      "duration_seconds": 100.0,
+      "max_abs": 0.9999995446504006,
+      "mean": 0.0013572169463282836,
+      "p01": -0.9994961382984019,
+      "p50": 0.007701060100407165,
+      "p99": 0.9994964092146742,
+      "sampling_rate": 129.96,
+      "source_key": "h10_ecg_value",
+      "std": 0.7086272514898831,
+      "stream_id": "ecg"
+    },
+    "streams": {
+      "ecg": {
+        "aliases": [
+          "h10_ecg_value",
+          "h10_ecg_sampling_rate",
+          "h10_ecg_t"
+        ],
+        "data_kind": "waveform",
+        "provenance": "primary_stream",
+        "sampling_rate": 129.96,
+        "signal": {
+          "count": 12996.0,
+          "discontinuity_count": 6.0,
+          "duration_seconds": 100.0,
+          "max_abs": 0.9999995446504006,
+          "mean": 0.0013572169463282836,
+          "p01": -0.9994961382984019,
+          "p50": 0.007701060100407165,
+          "p99": 0.9994964092146742,
+          "sampling_rate": 129.96,
+          "std": 0.7086272514898831
+        },
+        "time": {
+          "count": 12996.0,
+          "duration_seconds": 100.0,
+          "end": 100.0,
+          "start": 0.0
+        }
+      }
+    },
+    "time": {
+      "count": 12996.0,
+      "duration_seconds": 100.0,
+      "end": 100.0,
+      "source_key": "h10_ecg_t",
+      "start": 0.0,
+      "stream_id": "ecg"
+    }
+  },
+  "trace_path": "trace.jsonl",
+  "usability_assessment": {
+    "assessment_id": "runtime_usability_assessment",
+    "confidence": 0.95,
+    "family": "",
+    "final_benchmark": {
+      "blocking_reasons": [],
+      "confidence": 0.95,
+      "provenance": [
+        {
+          "kind": "runtime_assessor",
+          "note": "final_benchmark_scope",
+          "reference": "",
+          "source_id": "runtime_usability"
+        }
+      ],
+      "scope": "final_benchmark",
+      "uncertainty_notes": [
+        "Final benchmark usability is emitted from runtime evidence only."
+      ],
+      "usable": true,
+      "warning_reasons": []
+    },
+    "guidance": {
+      "blocking_reasons": [],
+      "confidence": 0.95,
+      "provenance": [
+        {
+          "kind": "runtime_assessor",
+          "note": "guidance_scope",
+          "reference": "",
+          "source_id": "runtime_usability"
+        }
+      ],
+      "scope": "guidance",
+      "uncertainty_notes": [
+        "Runtime guidance is derived only from canonical runtime evidence."
+      ],
+      "usable": true,
+      "warning_reasons": [
+        {
+          "code": "review_recommended",
+          "confidence": 0.9,
+          "kind": "warning",
+          "provenance": [
+            {
+              "kind": "runtime_assessor",
+              "note": "Heuristic support is present but still benefits from review.",
+              "reference": "",
+              "source_id": "heuristic_summary"
+            }
+          ],
+          "related_heuristic_ids": [
+            "boundary_discontinuity",
+            "density_collapse",
+            "quality_instability"
+          ],
+          "summary": "Heuristic support is present but still benefits from review.",
+          "uncertainty_notes": [
+            "Derived from runtime evidence and may require broader corroboration."
+          ]
+        }
+      ]
+    },
+    "heuristic_signature": [
+      "boundary_discontinuity",
+      "density_collapse",
+      "quality_instability"
+    ],
+    "provenance": [
+      {
+        "kind": "runtime_assessor",
+        "note": "assessment",
+        "reference": "",
+        "source_id": "runtime_usability"
+      }
+    ],
+    "required_contracts_checked": [
+      "runtime_context",
+      "canonical_runtime_context",
+      "telemetry_summary",
+      "heuristics",
+      "heuristic_summary"
+    ],
+    "scoring": {
+      "blocking_reasons": [],
+      "confidence": 0.95,
+      "provenance": [
+        {
+          "kind": "runtime_assessor",
+          "note": "scoring_scope",
+          "reference": "",
+          "source_id": "runtime_usability"
+        }
+      ],
+      "scope": "scoring",
+      "uncertainty_notes": [
+        "Scoring usability is derived from canonical telemetry summaries."
+      ],
+      "usable": true,
+      "warning_reasons": []
+    },
+    "task_intent": "runtime_artifact_emission",
+    "uncertainty_notes": [
+      "Runtime usability is derived from canonical runtime evidence only."
+    ],
+    "usable_for_final_benchmark": true,
+    "usable_for_guidance": true,
+    "usable_for_scoring": true
+  }
+}
