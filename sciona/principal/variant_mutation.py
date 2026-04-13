@@ -9,13 +9,12 @@ from typing import TYPE_CHECKING, Protocol
 
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, AlgorithmicPrimitive, NodeStatus
-from sciona.expansion_atoms.signal_event_rate_registry import (
-    SIGNAL_EVENT_RATE_DECLARATIONS,
-    next_signal_event_rate_variant,
-)
 from sciona.expansion_atoms.baseline_steps_registry import (
     BASELINE_STEPS_DECLARATIONS,
     next_baseline_analysis_variant,
+)
+from sciona.provider_expansion_declarations import (
+    load_provider_expansion_declarations,
 )
 
 if TYPE_CHECKING:
@@ -23,6 +22,28 @@ if TYPE_CHECKING:
     from sciona.principal.atom_ledger import AtomLedger
 
 logger = logging.getLogger(__name__)
+
+
+_SIGNAL_EVENT_RATE_ALTERNATIVES = {
+    "compute_event_rate": (
+        "compute_event_rate_median_smoothed",
+        "compute_event_rate_smoothed",
+    ),
+}
+
+
+def _signal_event_rate_declarations() -> dict[str, tuple[str, str, str]]:
+    return load_provider_expansion_declarations(
+        "signal_event_rate",
+        "SIGNAL_EVENT_RATE_DECLARATIONS",
+    )
+
+
+def _next_signal_event_rate_variant(primitive_name: str) -> str | None:
+    variants = _SIGNAL_EVENT_RATE_ALTERNATIVES.get(str(primitive_name or "").strip())
+    if not variants:
+        return None
+    return variants[0]
 
 
 @dataclass(frozen=True)
@@ -63,19 +84,13 @@ class SignalEventRateVariantFamily:
     # every atom to be registered.  This allows expanded CDGs (with SQI,
     # jump-removal, or cross-domain atoms) to still match the family for
     # variant swapping on the core nodes.
-    _ANCHORS = {
-        "filter_signal_for_detection",
-        "detect_peaks_in_signal",
-        "compute_event_rate",
-        "compute_event_rate_smoothed",
-    }
-
     def matches(self, cdg: CDGExport) -> bool:
+        anchors = set(_signal_event_rate_declarations())
         atomic_nodes = [node for node in cdg.nodes if node.status == NodeStatus.ATOMIC]
-        if not atomic_nodes:
+        if not atomic_nodes or not anchors:
             return False
         return any(
-            str(node.matched_primitive or "") in self._ANCHORS
+            str(node.matched_primitive or "") in anchors
             for node in atomic_nodes
         )
 
@@ -96,7 +111,7 @@ class SignalEventRateVariantFamily:
                 updated_nodes.append(node)
                 continue
             current = str(node.matched_primitive or "")
-            candidate = next_signal_event_rate_variant(current)
+            candidate = _next_signal_event_rate_variant(current)
             if not candidate:
                 updated_nodes.append(node)
                 continue

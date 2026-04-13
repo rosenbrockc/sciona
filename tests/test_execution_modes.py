@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from sciona.cli import _mode_feature_summary
-from sciona.commands import run_cmds
 from sciona.config import AgeomConfig, effective_round_provider_model, resolve_execution_mode
 
 
@@ -113,15 +112,3 @@ def test_rapid_mode_suppresses_round_defaults_but_keeps_explicit_round_override(
         execution_mode="rapid",
     )
     assert (provider, model) == ("codex_shim", "gpt-5.3-codex")
-
-
-def test_run_cmds_imports_signal_event_rate_scaffold_helper():
-    assert hasattr(run_cmds, "_is_signal_event_rate_scaffold")
-
-
-def test_config_can_disable_curated_signal_event_rate_shortcuts(monkeypatch):
-    monkeypatch.setenv("SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS", "true")
-
-    config = AgeomConfig()
-
-    assert config.disable_curated_signal_event_rate_shortcuts is True

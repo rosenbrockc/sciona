@@ -4,14 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from sciona.architect.handoff import CDGExport
-from sciona.architect.models import AlgorithmicNode, ConceptType, IOSpec, NodeStatus
-from sciona.runtime_paths import (
-    _build_signal_event_rate_match_results,
-    _is_signal_event_rate_scaffold,
-    _signal_event_rate_declarations,
+from sciona.provider_expansion_declarations import (
+    clear_provider_expansion_declaration_caches,
 )
-from sciona.types import Prover
+from sciona.runtime_paths import _declaration_source_lib, _signal_event_rate_declarations
 
 
 def _write_provider_registry(module_dir: Path) -> None:
@@ -37,57 +33,26 @@ def isolated_provider_registry(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
     registry_dir = provider_root / "src" / "sciona" / "atoms" / "expansion"
     _write_provider_registry(registry_dir)
     monkeypatch.setattr(
-        "sciona.runtime_paths.candidate_atom_provider_roots",
+        "sciona.provider_expansion_declarations.candidate_atom_provider_roots",
         lambda: (provider_root,),
     )
+    clear_provider_expansion_declaration_caches()
     _signal_event_rate_declarations.cache_clear()
     try:
         yield provider_root
     finally:
+        clear_provider_expansion_declaration_caches()
         _signal_event_rate_declarations.cache_clear()
-
-
-def _signal_event_rate_cdg() -> CDGExport:
-    node = AlgorithmicNode(
-        node_id="filt",
-        name="Filter",
-        description="filter signal",
-        concept_type=ConceptType.SIGNAL_FILTER,
-        status=NodeStatus.ATOMIC,
-        matched_primitive="filter_signal_for_detection",
-        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
-        outputs=[IOSpec(name="signal", type_desc="np.ndarray")],
-    )
-    return CDGExport(nodes=[node], edges=[])
-
 
 def test_signal_event_rate_declarations_prefer_provider_registry(
     isolated_provider_registry: Path,
 ) -> None:
     declarations = _signal_event_rate_declarations()
-    assert declarations["filter_signal_for_detection"][0] == (
+    declaration_name = declarations["filter_signal_for_detection"][0]
+    assert declaration_name == (
         "provider.signal_event_rate.filter_signal_for_detection"
     )
-
-
-def test_signal_event_rate_scaffold_uses_provider_registry(
-    isolated_provider_registry: Path,
-) -> None:
-    assert _is_signal_event_rate_scaffold(_signal_event_rate_cdg())
-
-
-def test_signal_event_rate_match_results_use_provider_registry(
-    isolated_provider_registry: Path,
-) -> None:
-    results = _build_signal_event_rate_match_results(
-        _signal_event_rate_cdg(),
-        Prover.PYTHON,
-    )
-
-    assert len(results) == 1
-    assert results[0].all_candidates[0].declaration.name == (
-        "provider.signal_event_rate.filter_signal_for_detection"
-    )
-    assert results[0].all_candidates[0].declaration.source_lib == (
-        "provider.signal_event_rate"
-    )
+    assert _declaration_source_lib(
+        declaration_name,
+        fallback="fallback.module",
+    ) == "provider.signal_event_rate"

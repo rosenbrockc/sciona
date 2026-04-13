@@ -76,8 +76,6 @@ class AgeomConfig(BaseSettings):
     telemetry_backend: str = "auto"  # "auto" | "postgres" | "file"
     execution_mode: str = "verified"  # "rapid" | "structured" | "single_agent" | "verified"
     use_monadic_rewriter: bool = False  # Feature gate for formal DPO graph rewriting
-    disable_curated_signal_event_rate_shortcuts: bool = False
-
     # Platform API
     api_url: str = "https://api.sciona.dev"
     s3_bucket: str = "sciona-platform"

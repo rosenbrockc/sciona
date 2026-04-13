@@ -34,7 +34,6 @@ from sciona.commands.shared_context_helpers import (
 )
 from sciona.runtime_paths import (
     _build_rapid_direct_cdg,
-    _is_signal_event_rate_scaffold,
     _run_rapid_direct_match,
     _run_structured_single_pass,
 )
@@ -181,9 +180,6 @@ async def _cmd_run(args: argparse.Namespace) -> None:
     hunter_shared_metrics = None
     result = None
     planner_result = None
-    allow_curated_signal_event_rate_shortcut = (
-        not config.disable_curated_signal_event_rate_shortcuts
-    )
     try:
         with telemetry_scope(run_id=telemetry_run_id):
             update_stage(stage="setup", status="running", message="loading dependencies")
@@ -433,7 +429,6 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                             args.goal,
                             prover=prover,
                             hunter=hunter,
-                            allow_curated_signal_event_rate_shortcut=allow_curated_signal_event_rate_shortcut,
                         )
                 elif mode_settings.mode == "single_agent":
                     print("Running single-agent planner...")
@@ -473,7 +468,6 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                             cdg,
                             prover=prover,
                             hunter=hunter,
-                            allow_curated_signal_event_rate_shortcut=allow_curated_signal_event_rate_shortcut,
                         )
                     update_stage(
                         stage="structured_match",
@@ -481,37 +475,20 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                         total=len(result.match_results),
                     )
                 else:
-                    if (
-                        allow_curated_signal_event_rate_shortcut
-                        and _is_signal_event_rate_scaffold(cdg)
+                    print(f"Running orchestration (max {args.max_rounds} rounds)...")
+                    with telemetry_stage(
+                        "orchestration",
+                        message="architect->hunter refine loop",
+                        total=int(args.max_rounds),
                     ):
-                        print("Running verified curated signal event-rate matching...")
-                        result = await _run_structured_single_pass(
+                        result = await run_orchestration(
                             cdg,
+                            hunter_agent=hunter,
+                            llm=llm,
                             prover=prover,
-                            hunter=hunter,
-                            allow_curated_signal_event_rate_shortcut=True,
+                            max_rounds=args.max_rounds,
+                            hunter_concurrency=config.orchestrator_hunter_concurrency,
                         )
-                        update_stage(
-                            stage="structured_match",
-                            completed=len(result.match_results),
-                            total=len(result.match_results),
-                        )
-                    else:
-                        print(f"Running orchestration (max {args.max_rounds} rounds)...")
-                        with telemetry_stage(
-                            "orchestration",
-                            message="architect->hunter refine loop",
-                            total=int(args.max_rounds),
-                        ):
-                            result = await run_orchestration(
-                                cdg,
-                                hunter_agent=hunter,
-                                llm=llm,
-                                prover=prover,
-                                max_rounds=args.max_rounds,
-                                hunter_concurrency=config.orchestrator_hunter_concurrency,
-                            )
                     update_stage(
                         stage="orchestration",
                         completed=result.rounds_used,

@@ -10,7 +10,6 @@ All diagnostics are pure functions of signal data / intermediate results.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import numpy as np
 
@@ -24,7 +23,6 @@ from sciona.architect.models import (
     NodeStatus,
 )
 from sciona.architect.semantic_rewrites import build_boundary_interposition_callback
-from sciona.atom_identity import candidate_atom_provider_roots
 from sciona.principal.expansion import (
     ExpansionContext,
     ExpansionDiagnostic,
@@ -39,7 +37,6 @@ from sciona.principal.runtime_context import summarize_waveform
 logger = logging.getLogger(__name__)
 
 _DOMAIN = "signal_event_rate"
-_LEGACY_BIOSSPY_ECG_PRIMITIVE_PREFIX = "ageoa.biosppy.ecg"
 _PILOT_BIOSSPY_ECG_PRIMITIVE_PREFIX = (
     "sciona.atoms.signal_processing.biosppy.ecg"
 )
@@ -50,17 +47,7 @@ def _signal_event_rate_asset() -> ExpansionFamilyAsset | None:
 
 
 def _biosppy_ecg_primitive_fqdn(symbol: str) -> str:
-    pilot_module_relpath = Path(
-        "sciona/atoms/signal_processing/biosppy/ecg.py"
-    )
-    for provider_root in candidate_atom_provider_roots():
-        root = Path(provider_root)
-        if any(
-            (root / prefix / pilot_module_relpath).exists()
-            for prefix in (Path("src"), Path(""))
-        ):
-            return f"{_PILOT_BIOSSPY_ECG_PRIMITIVE_PREFIX}.{symbol}"
-    return f"{_LEGACY_BIOSSPY_ECG_PRIMITIVE_PREFIX}.{symbol}"
+    return f"{_PILOT_BIOSSPY_ECG_PRIMITIVE_PREFIX}.{symbol}"
 
 
 def _diag_asset_fields(rule_name: str) -> dict[str, object]:

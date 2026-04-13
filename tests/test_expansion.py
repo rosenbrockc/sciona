@@ -546,39 +546,18 @@ class TestSignalEventRateExpansion:
             _biosppy_ecg_primitive_fqdn,
         )
 
-        pilot_ecg = (
-            tmp_path
-            / "src"
-            / "sciona"
-            / "atoms"
-            / "signal_processing"
-            / "biosppy"
-            / "ecg.py"
-        )
-        pilot_ecg.parent.mkdir(parents=True)
-        pilot_ecg.write_text("# pilot atom\n", encoding="utf-8")
-        monkeypatch.setattr(
-            "sciona.principal.expansion_rules.signal_event_rate.candidate_atom_provider_roots",
-            lambda: [tmp_path],
-        )
-
         assert _biosppy_ecg_primitive_fqdn(
             "reject_outlier_intervals"
         ) == "sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals"
 
-    def test_biosppy_ecg_primitive_fqdn_falls_back_to_legacy_namespace(self, tmp_path, monkeypatch):
+    def test_biosppy_ecg_primitive_fqdn_is_provider_namespaced(self):
         from sciona.principal.expansion_rules.signal_event_rate import (
             _biosppy_ecg_primitive_fqdn,
         )
 
-        monkeypatch.setattr(
-            "sciona.principal.expansion_rules.signal_event_rate.candidate_atom_provider_roots",
-            lambda: [tmp_path],
-        )
-
         assert _biosppy_ecg_primitive_fqdn(
             "heart_rate_computation_median_smoothed"
-        ) == "ageoa.biosppy.ecg.heart_rate_computation_median_smoothed"
+        ) == "sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed"
 
     def test_outlier_rejection_median_smoothed_variant_preserves_rate_output_tags_in_assembly(self):
         from sciona.principal.expansion_rules.signal_event_rate import (

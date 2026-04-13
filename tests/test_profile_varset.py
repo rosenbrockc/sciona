@@ -6,10 +6,7 @@ import pytest
 
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-from sciona.commands.optimize_cmds import (
-    _parse_dataset_vars,
-    _should_allow_curated_signal_event_rate_shortcut_for_optimize,
-)
+from sciona.commands.optimize_cmds import _parse_dataset_vars
 from sciona.principal.models import BenchmarkResult, NodeGradient, OptimizationMetric
 from sciona.principal.profiler import profile_algorithm_error
 from sciona.synthesizer.models import ExportBundle
@@ -25,11 +22,6 @@ def test_parse_dataset_vars_accepts_repeated_key_value_entries():
 def test_parse_dataset_vars_rejects_missing_equals():
     with pytest.raises(ValueError, match="expected KEY=VALUE"):
         _parse_dataset_vars(["tracker"])
-
-
-def test_optimize_disables_curated_signal_event_rate_shortcuts_by_default() -> None:
-    assert _should_allow_curated_signal_event_rate_shortcut_for_optimize(config=object()) is False
-
 
 @pytest.mark.asyncio
 async def test_profile_algorithm_error_passes_dataset_varset_to_adapter(

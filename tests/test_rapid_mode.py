@@ -137,30 +137,3 @@ async def test_run_rapid_direct_match_wraps_failure_as_single_round():
     assert result.match_results[0].success is False
     assert result.cdg.metadata["rapid_direct_path"] is True
     assert result.ungroundable == ["goal_0"]
-
-
-@pytest.mark.asyncio
-async def test_run_rapid_direct_match_can_disable_curated_signal_event_rate_shortcut():
-    class _FakeHunter:
-        def __init__(self) -> None:
-            self.calls = 0
-            self.last_node = None
-
-        async def find_match(self, node: PDGNode) -> MatchResult:
-            self.calls += 1
-            self.last_node = node
-            return _verified_match_result(node)
-
-    hunter = _FakeHunter()
-    result = await _run_rapid_direct_match(
-        "Detect heart rate from ECG",
-        prover=Prover.PYTHON,
-        hunter=hunter,
-        allow_curated_signal_event_rate_shortcut=False,
-    )
-
-    assert hunter.calls == 1
-    assert hunter.last_node is not None
-    assert result.cdg.metadata["matched_directly"] is True
-    assert len(result.cdg.nodes) == 1
-    assert result.cdg.nodes[0].matched_primitive == "algorithms.detect_heart_rate"

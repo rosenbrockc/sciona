@@ -100,13 +100,6 @@ if [[ "$(printf '%s' "${E2E_GENERIC_ONLY:-}" | tr '[:upper:]' '[:lower:]')" == "
     info "Generic-only mode: SCIONA_DISABLE_PHRASE_RULES=1"
 fi
 
-# E2E runs should exercise the full atom framework rather than the curated
-# signal-event-rate shortcut scaffold.
-export SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS="${E2E_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS:-1}"
-if [[ "$(printf '%s' "$SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS" | tr '[:upper:]' '[:lower:]')" == "1" || "$(printf '%s' "$SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
-    info "Full-framework mode: SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS=1"
-fi
-
 # Force FAISS semantic index — the default retrieval policy degrades to
 # lexical when catalog confidence is < 0.70 (medium band), which prevents
 # the benchmark from exercising the full semantic search pipeline.

@@ -5,16 +5,7 @@ import pytest
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
 from sciona.cli import _run_structured_single_pass
-from sciona.expansion_atoms.signal_event_rate_registry import SIGNAL_EVENT_RATE_DECLARATIONS
-from sciona.types import (
-    CandidateMatch,
-    Declaration,
-    MatchResult,
-    PDGNode,
-    Prover,
-    VerificationLevel,
-    VerificationResult,
-)
+from sciona.types import CandidateMatch, Declaration, MatchResult, PDGNode, Prover, VerificationLevel, VerificationResult
 
 
 def _make_cdg() -> CDGExport:
@@ -40,40 +31,6 @@ def _make_cdg() -> CDGExport:
         edges=[],
         metadata={"goal": "Detect heart rate from ECG"},
     )
-
-
-def _make_curated_signal_event_rate_cdg() -> CDGExport:
-    filter_primitive = next(
-        name for name in SIGNAL_EVENT_RATE_DECLARATIONS if name == "filter_signal_for_detection"
-    )
-    detect_primitive = next(
-        name for name in SIGNAL_EVENT_RATE_DECLARATIONS if name == "detect_peaks_in_signal"
-    )
-    return CDGExport(
-        nodes=[
-            AlgorithmicNode(
-                node_id="n1",
-                name="Filter Signal",
-                description="Bandpass filter ECG samples before detection.",
-                concept_type=ConceptType.SIGNAL_FILTER,
-                status=NodeStatus.ATOMIC,
-                type_signature="np.ndarray -> np.ndarray",
-                matched_primitive=filter_primitive,
-            ),
-            AlgorithmicNode(
-                node_id="n2",
-                name="Detect Peaks",
-                description="Detect ECG peaks from filtered samples.",
-                concept_type=ConceptType.SIGNAL_FILTER,
-                status=NodeStatus.ATOMIC,
-                type_signature="np.ndarray -> np.ndarray",
-                matched_primitive=detect_primitive,
-            ),
-        ],
-        edges=[],
-        metadata={"goal": "Detect heart rate from ECG"},
-    )
-
 
 def _verified_result(node: PDGNode) -> MatchResult:
     declaration = Declaration(
@@ -149,26 +106,3 @@ async def test_run_structured_single_pass_matches_each_leaf_once():
     assert sum(1 for row in result.match_results if row.success) == 1
     assert len(result.failures) == 1
     assert result.ungroundable == ["n2"]
-
-
-@pytest.mark.asyncio
-async def test_run_structured_single_pass_can_disable_curated_signal_event_rate_shortcut():
-    class _FakeHunter:
-        def __init__(self) -> None:
-            self.nodes: list[PDGNode] = []
-
-        async def find_match(self, node: PDGNode) -> MatchResult:
-            self.nodes.append(node)
-            return _verified_result(node)
-
-    hunter = _FakeHunter()
-    result = await _run_structured_single_pass(
-        _make_curated_signal_event_rate_cdg(),
-        prover=Prover.PYTHON,
-        hunter=hunter,
-        allow_curated_signal_event_rate_shortcut=False,
-    )
-
-    assert [node.predicate_id for node in hunter.nodes] == ["n1", "n2"]
-    assert len(result.match_results) == 2
-    assert all(row.success for row in result.match_results)

@@ -102,7 +102,6 @@ def test_e2e_benchmark_scripts_enforce_full_framework_mode() -> None:
     benchmark_script = (repo_root / "benchmarks" / "e2e_benchmark.sh").read_text()
     benchmark_all_script = (repo_root / "benchmarks" / "e2e_benchmark_all.sh").read_text()
 
-    assert "SCIONA_DISABLE_CURATED_SIGNAL_EVENT_RATE_SHORTCUTS" in benchmark_script
     assert "SCIONA_SEMANTIC_INDEX_BACKEND=faiss" in benchmark_script
     assert "postprocess.json" in benchmark_script
     assert "summary.json" in benchmark_script
