@@ -1,0 +1,36 @@
+{
+  "nodes": [
+    {
+      "node_id": "SVM_root",
+      "parent_id": null,
+      "name": "SVM",
+      "description": "Ingested pipeline from SVM",
+      "concept_type": "custom",
+      "inputs": [],
+      "outputs": [],
+      "status": "decomposed",
+      "children": [
+        "get_auth_rates",
+        "get_id_rates",
+        "get_subject_results",
+        "assess_classification",
+        "assess_runs",
+        "combination",
+        "majority_rule",
+        "cross_validation"
+      ],
+      "depth": 0,
+      "type_signature": "",
+      "matched_primitive": null,
+      "primitive_binding_confidence": 0.0,
+      "primitive_binding_source": "",
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "",
+      "critic_notes": "",
+      "decomposition_rationale": ""
+    }
+  ]
+}

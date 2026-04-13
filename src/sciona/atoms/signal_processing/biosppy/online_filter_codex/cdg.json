@@ -1,0 +1,28 @@
+{
+  "nodes": [
+    {
+      "node_id": "online_filter_codex_root",
+      "parent_id": null,
+      "name": "sciona.atoms.signal_processing.biosppy.online_filter_codex",
+      "description": "Chunked filtering workflow for BioSPPy's OnlineFilter class.",
+      "concept_type": "custom",
+      "inputs": [],
+      "outputs": [],
+      "status": "decomposed",
+      "children": [
+        "filterstateinit",
+        "filterstep"
+      ],
+      "depth": 0,
+      "type_signature": "module",
+      "matched_primitive": null,
+      "is_optional": false,
+      "is_opaque": false,
+      "is_external": false,
+      "parallelizable": false,
+      "conceptual_summary": "Chunked linear filtering with immutable state.",
+      "critic_notes": "",
+      "decomposition_rationale": "Leaf atom family."
+    }
+  ]
+}
