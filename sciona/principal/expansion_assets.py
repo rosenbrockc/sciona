@@ -26,9 +26,11 @@ from sciona.asset_migration import (
     MigrationReadinessAsset,
     migration_readiness_summary,
 )
+from sciona.atom_identity import candidate_atom_provider_roots
 
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets" / "expansions"
+EXTERNAL_ASSET_DIR_CANDIDATES: tuple[tuple[str, ...], ...] = (("data", "expansions"),)
 
 
 class ExpansionReference(BaseModel):
@@ -209,6 +211,32 @@ class ExpansionFamilyAsset(BaseModel):
         return None
 
 
+def _external_asset_dir_for_root(root: Path) -> Path:
+    """Return the preferred external expansion-asset directory for one provider root."""
+    for relative in EXTERNAL_ASSET_DIR_CANDIDATES:
+        candidate = root.joinpath(*relative)
+        if candidate.exists():
+            return candidate
+    return root.joinpath(*EXTERNAL_ASSET_DIR_CANDIDATES[0])
+
+
+def _expansion_asset_dirs() -> tuple[Path, ...]:
+    """Return provider and local expansion-asset directories in preference order."""
+    dirs: list[Path] = []
+    for root in candidate_atom_provider_roots():
+        dirs.append(_external_asset_dir_for_root(Path(root).expanduser().resolve()))
+    dirs.append(ASSET_DIR)
+    deduped: list[Path] = []
+    seen: set[Path] = set()
+    for directory in dirs:
+        resolved = directory.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        deduped.append(resolved)
+    return tuple(deduped)
+
+
 def expansion_asset_summary(
     asset: ExpansionFamilyAsset,
     operation: ExpansionOperationAsset,
@@ -241,15 +269,21 @@ def expansion_asset_summary(
 
 @lru_cache(maxsize=1)
 def load_local_expansion_assets() -> tuple[ExpansionFamilyAsset, ...]:
-    """Load local expansion-family assets from disk."""
+    """Load local and provider expansion-family assets from disk."""
     assets: list[ExpansionFamilyAsset] = []
-    if not ASSET_DIR.exists():
-        return tuple()
-    for path in sorted(ASSET_DIR.glob("*.json")):
-        raw = json.loads(path.read_text())
-        if not isinstance(raw, dict) or "operations" not in raw:
+    families_seen: set[str] = set()
+    for asset_dir in _expansion_asset_dirs():
+        if not asset_dir.exists():
             continue
-        assets.append(ExpansionFamilyAsset.model_validate(raw))
+        for path in sorted(asset_dir.glob("*.json")):
+            raw = json.loads(path.read_text())
+            if not isinstance(raw, dict) or "operations" not in raw:
+                continue
+            asset = ExpansionFamilyAsset.model_validate(raw)
+            if asset.family in families_seen:
+                continue
+            families_seen.add(asset.family)
+            assets.append(asset)
     return tuple(assets)
 
 
@@ -269,6 +303,12 @@ def resolve_local_expansion_asset(family: str) -> ExpansionFamilyAsset | None:
         if family in set(candidate.family_aliases):
             return candidate
     return None
+
+
+def clear_local_expansion_asset_caches() -> None:
+    """Clear cached expansion-asset loaders."""
+    load_local_expansion_assets.cache_clear()
+    load_local_expansion_assets_by_family.cache_clear()
 
 
 def _planning_constraint_categories(context: ExpansionContext) -> set[str]:

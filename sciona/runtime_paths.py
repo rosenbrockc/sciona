@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+import importlib.util
 import uuid
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from sciona.architect.handoff import CDGExport, to_pdg_nodes
 from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
-from sciona.expansion_atoms.signal_event_rate_registry import (
-    SIGNAL_EVENT_RATE_DECLARATIONS,
-)
+from sciona.atom_identity import candidate_atom_provider_roots
 from sciona.orchestrator import OrchestratorResult
 from sciona.services.hunter_service import (
     HunterBatchMatchRequest,
@@ -28,6 +29,40 @@ from sciona.types import (
 )
 
 
+@lru_cache(maxsize=1)
+def _signal_event_rate_declarations() -> dict[str, tuple[str, str, str]]:
+    """Load signal-event-rate declarations from a provider repo when available."""
+    module_relative_candidates = (
+        ("src", "sciona", "atoms", "expansion", "signal_event_rate_registry.py"),
+        ("src", "sciona", "atoms", "expansion", "signal_event_rate.py"),
+        ("sciona", "atoms", "expansion", "signal_event_rate_registry.py"),
+        ("sciona", "atoms", "expansion", "signal_event_rate.py"),
+    )
+    for provider_root in candidate_atom_provider_roots():
+        root = Path(provider_root).expanduser().resolve()
+        for relative in module_relative_candidates:
+            module_path = root.joinpath(*relative)
+            if not module_path.exists():
+                continue
+            spec = importlib.util.spec_from_file_location(
+                "_sciona_signal_event_rate_provider_"
+                + module_path.as_posix().replace("/", "_").replace(".", "_"),
+                module_path,
+            )
+            if spec is None or spec.loader is None:
+                continue
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            declarations = getattr(module, "SIGNAL_EVENT_RATE_DECLARATIONS", None)
+            if isinstance(declarations, dict) and declarations:
+                return declarations
+    from sciona.expansion_atoms.signal_event_rate_registry import (
+        SIGNAL_EVENT_RATE_DECLARATIONS,
+    )
+
+    return SIGNAL_EVENT_RATE_DECLARATIONS
+
+
 def _matches_signal_event_rate_goal(goal: str) -> bool:
     lowered = goal.lower()
     signal_terms = ("signal", "waveform", "ecg", "ppg", "eeg", "sensor")
@@ -41,6 +76,7 @@ def _matches_signal_event_rate_goal(goal: str) -> bool:
 
 
 def _is_signal_event_rate_scaffold(cdg: Any) -> bool:
+    declarations = _signal_event_rate_declarations()
     atomic_nodes = [
         node
         for node in getattr(cdg, "nodes", [])
@@ -49,7 +85,7 @@ def _is_signal_event_rate_scaffold(cdg: Any) -> bool:
     if not atomic_nodes:
         return False
     return all(
-        node.matched_primitive in SIGNAL_EVENT_RATE_DECLARATIONS
+        node.matched_primitive in declarations
         for node in atomic_nodes
     )
 
@@ -58,12 +94,13 @@ def _build_signal_event_rate_match_results(
     cdg: Any,
     prover: Prover,
 ) -> list[MatchResult]:
+    declarations = _signal_event_rate_declarations()
     match_results: list[MatchResult] = []
     for node in cdg.nodes:
         if getattr(node, "status", None).value != "atomic":
             continue
         primitive_name = str(node.matched_primitive or "").strip()
-        decl_info = SIGNAL_EVENT_RATE_DECLARATIONS.get(primitive_name)
+        decl_info = declarations.get(primitive_name)
         if decl_info is None:
             continue
         declaration_name, type_signature, docstring = decl_info
