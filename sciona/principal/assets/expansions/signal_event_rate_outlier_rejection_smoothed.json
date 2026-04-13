@@ -1,0 +1,46 @@
+{
+  "asset_id": "signal_event_rate.insert_outlier_rejection_after_detection_smoothed.v1",
+  "asset_version": "v1",
+  "family": "signal_event_rate",
+  "domain": "signal_processing",
+  "rule_name": "insert_outlier_rejection_after_detection_smoothed",
+  "name": "Insert Outlier Rejection Before Smoothed Rate",
+  "intent": "Apply the same event-cleaning refinement when the downstream rate primitive is the smoothed estimator.",
+  "expected_information_flow_effect": "Adds event cleanup between detection and the smoothed rate estimator without changing the family boundary.",
+  "applicability": {
+    "required_intermediate_keys": [
+      "events"
+    ],
+    "required_primitives": [
+      "detect_peaks_in_signal",
+      "compute_event_rate_smoothed"
+    ]
+  },
+  "trigger": {
+    "metric_name": "interval_outlier_fraction",
+    "threshold": 0.15,
+    "comparator": "gt",
+    "source_namespace": "runtime_intermediates",
+    "source_key": "events",
+    "severity_scale": 0.5
+  },
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "The smoothed rate path needs the same interval-cleanup semantics as the raw rate path.",
+    "dejargonized_summary": "Clean obviously bad beat intervals before the smoothed rate stage uses them.",
+    "uncertainty_notes": [
+      "This asset reuses the same trigger semantics as the non-smoothed rate path."
+    ],
+    "references": [
+      {
+        "title": "Signal event rate refinement inventory",
+        "citation": "Local transitional family refinement asset for smoothed event interval cleanup."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}

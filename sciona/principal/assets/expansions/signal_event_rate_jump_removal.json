@@ -1,0 +1,57 @@
+{
+  "asset_id": "signal_event_rate.insert_jump_removal_before_filter.v1",
+  "asset_version": "v1",
+  "family": "signal_event_rate",
+  "domain": "signal_processing",
+  "rule_name": "insert_jump_removal_before_filter",
+  "name": "Insert Jump Removal Before Filter",
+  "intent": "Protect event detection from large baseline steps that should be removed before waveform conditioning.",
+  "expected_information_flow_effect": "Adds a waveform-preserving cleanup stage before the filter without changing the downstream family boundary.",
+  "applicability": {
+    "required_runtime_keys": [
+      "signal"
+    ],
+    "required_boundary_requirements": [
+      {
+        "boundary_kind": "root_input",
+        "port_name": "signal",
+        "matched_primitives": [
+          "filter_signal_for_detection"
+        ]
+      }
+    ],
+    "required_primitives": [
+      "filter_signal_for_detection"
+    ],
+    "required_planning_terms": [
+      "waveform"
+    ]
+  },
+  "trigger": {
+    "metric_name": "jump_discontinuity_count",
+    "threshold": 3.0,
+    "comparator": "gt",
+    "source_namespace": "runtime_inputs",
+    "source_key": "signal",
+    "severity_scale": 20.0
+  },
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Large signal jumps can dominate detector thresholds and erase downstream event support if they are not removed first.",
+    "dejargonized_summary": "If the raw trace has big step jumps, remove those jumps before the main filter so the detector still sees real events.",
+    "uncertainty_notes": [
+      "The runtime still depends on legacy topology matching, so boundary-only graphs may not admit the rewrite yet."
+    ],
+    "references": [
+      {
+        "title": "Signal event rate refinement inventory",
+        "citation": "Local transitional family refinement asset for jump removal."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}

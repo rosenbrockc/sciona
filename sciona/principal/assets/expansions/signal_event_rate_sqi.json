@@ -1,0 +1,55 @@
+{
+  "asset_id": "signal_event_rate.insert_sqi_before_filter.v1",
+  "asset_version": "v1",
+  "family": "signal_event_rate",
+  "domain": "signal_processing",
+  "rule_name": "insert_sqi_before_filter",
+  "name": "Insert Signal Quality Gate Before Filter",
+  "intent": "Surface unstable or corrupted windows before the main detection path commits to them.",
+  "expected_information_flow_effect": "Adds a waveform-quality checkpoint ahead of filtering while preserving access to the same source stream.",
+  "applicability": {
+    "required_runtime_keys": [
+      "signal",
+      "sampling_rate"
+    ],
+    "required_boundary_requirements": [
+      {
+        "boundary_kind": "root_input",
+        "port_name": "signal",
+        "matched_primitives": [
+          "filter_signal_for_detection"
+        ]
+      }
+    ],
+    "required_primitives": [
+      "filter_signal_for_detection"
+    ]
+  },
+  "trigger": {
+    "metric_name": "signal_quality_kurtosis_cv",
+    "threshold": 1.5,
+    "comparator": "gt",
+    "source_namespace": "runtime_inputs",
+    "source_key": "signal",
+    "severity_scale": 5.0
+  },
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Quality-gating lets the framework distinguish detector failure caused by unstable windows from detector failure caused by poor atom choice.",
+    "dejargonized_summary": "Check whether parts of the signal are too messy before running the main detection pipeline on them.",
+    "uncertainty_notes": [
+      "Windowed quality metrics are heuristic and should not be treated as a universal rejection signal."
+    ],
+    "references": [
+      {
+        "title": "Signal event rate refinement inventory",
+        "citation": "Local transitional family refinement asset for signal-quality gating."
+      }
+    ],
+    "maintainers": [
+      "ageo-matcher"
+    ]
+  }
+}
