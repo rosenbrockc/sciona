@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 
+import importlib
+
 import pytest
 
 from sciona.architect.handoff import CDGExport
@@ -17,8 +19,11 @@ from sciona.synthesizer.ghost_sim import (
     GhostSimReport,
     _compute_precision_gradients,
     _build_abstract_value,
+    _candidate_ghost_package_roots,
     _declared_param_names,
+    _ensure_atoms_imported,
     _extract_atom_name,
+    _load_ghost_backend,
     _parse_raw_code_param_names,
     _resolve_source_output_name,
     _GHOST_AVAILABLE,
@@ -184,6 +189,111 @@ class TestGhostSimReport:
         assert report.passed is False
         assert report.node_count == 0
         assert report.error == ""
+
+    def test_ensure_atoms_imported_fallback_tries_recognized_prefixes(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        attempted: list[str] = []
+
+        def _fail_load_sources():
+            raise RuntimeError("missing sources config")
+
+        def _capture_import(name: str):
+            attempted.append(name)
+            raise ImportError(name)
+
+        monkeypatch.setenv("SCIONA_ATOM_PACKAGE_PREFIXES", "custom.provider")
+        monkeypatch.setattr("sciona.sources.load_sources", _fail_load_sources)
+        monkeypatch.setattr(importlib, "import_module", _capture_import)
+
+        _ensure_atoms_imported()
+
+        assert "custom.provider.numpy.fft" in attempted
+        assert "ageoa.numpy.fft" in attempted
+        assert "sciona.atoms.numpy.fft" in attempted
+
+    def test_candidate_ghost_package_roots_prioritize_configured_sources(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        class _FakeSource:
+            def __init__(self, package: str):
+                self.package = package
+
+        class _FakeConfig:
+            sources = [
+                _FakeSource("sciona.atoms.demo"),
+                _FakeSource("ageoa"),
+            ]
+
+        monkeypatch.setattr(
+            "sciona.sources.load_sources",
+            lambda: _FakeConfig(),
+        )
+        monkeypatch.setenv("SCIONA_ATOM_PACKAGE_PREFIXES", "custom.provider")
+
+        assert _candidate_ghost_package_roots() == (
+            "sciona.atoms.demo",
+            "ageoa",
+            "custom.provider",
+            "sciona.atoms",
+        )
+
+    def test_load_ghost_backend_uses_configured_provider_root_first(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        class _FakeSource:
+            def __init__(self, package: str):
+                self.package = package
+
+        class _FakeConfig:
+            sources = [_FakeSource("sciona.atoms.demo")]
+
+        attempted: list[str] = []
+
+        def _capture_import(name: str):
+            attempted.append(name)
+            if name.startswith("sciona.atoms.demo.ghost."):
+                return type(
+                    "_Module",
+                    (),
+                    {
+                        "SimNode": object,
+                        "SimResult": object,
+                        "simulate_graph": lambda *args, **kwargs: None,
+                        "PlanError": RuntimeError,
+                        "AbstractDistribution": object,
+                        "AbstractSignal": object,
+                        "AbstractMatrix": object,
+                        "list_registered": lambda: (),
+                        "AbstractFilterCoefficients": object,
+                        "AbstractGraphMeta": object,
+                    },
+                )()
+            raise ImportError(name)
+
+        monkeypatch.setattr(
+            "sciona.sources.load_sources",
+            lambda: _FakeConfig(),
+        )
+        monkeypatch.setattr(importlib, "import_module", _capture_import)
+        monkeypatch.setattr(
+            "sciona.synthesizer.ghost_sim.configure_juliacall_env",
+            lambda: None,
+        )
+
+        backend = _load_ghost_backend()
+
+        assert backend is not None
+        assert backend[0] == "sciona.atoms.demo"
+        assert attempted[:4] == [
+            "sciona.atoms.demo.ghost.simulator",
+            "sciona.atoms.demo.ghost.abstract",
+            "sciona.atoms.demo.ghost.registry",
+            "sciona.atoms.demo.ghost.witnesses",
+        ]
 
 
 # ---------------------------------------------------------------------------

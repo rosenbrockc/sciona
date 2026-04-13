@@ -4,8 +4,8 @@ Converts a CDG + MatchResults into ghost SimNodes and runs the abstract
 simulation to catch structural mismatches (shape, dtype, domain) before
 committing to expensive compilation.
 
-Requires the ``ageoa`` package (optional dependency).  If ``ageoa`` is not
-installed, the simulation pass is silently skipped.
+Requires a compatible ``<package>.ghost`` backend (optional dependency). If no
+configured provider exposes one, the simulation pass is silently skipped.
 """
 
 from __future__ import annotations
@@ -25,6 +25,8 @@ from sciona.architect.models import (
     DependencyEdge,
     NodeStatus,
 )
+from sciona.atom_identity import known_atom_package_prefixes
+from sciona.julia_runtime import configure_juliacall_env
 from sciona.synthesizer.toposort import detect_cycle_partition, toposort_nodes
 from sciona.synthesizer.uncertainty import (
     AtomUncertaintyEstimate,
@@ -32,24 +34,123 @@ from sciona.synthesizer.uncertainty import (
     UncertaintyBackend,
 )
 from sciona.types import MatchResult
-from sciona.julia_runtime import configure_juliacall_env
 
 logger = logging.getLogger(__name__)
 
-try:
-    configure_juliacall_env()
-    from ageoa.ghost.simulator import SimNode, SimResult, simulate_graph, PlanError
-    from ageoa.ghost.abstract import (
-        AbstractDistribution,
-        AbstractSignal,
-        AbstractMatrix,
-    )
-    from ageoa.ghost.registry import list_registered
-    from ageoa.ghost.witnesses import AbstractFilterCoefficients, AbstractGraphMeta
+_GHOST_PACKAGE_ROOT = ""
 
-    _GHOST_AVAILABLE = True
-except ImportError:
+
+class PlanError(Exception):
+    """Fallback placeholder when no ghost backend is available."""
+
+
+SimNode: Any = object
+SimResult: Any = object
+simulate_graph: Any = None
+AbstractDistribution: Any = object
+AbstractSignal: Any = object
+AbstractMatrix: Any = object
+AbstractFilterCoefficients: Any = object
+AbstractGraphMeta: Any = object
+list_registered: Any = lambda: ()
+
+
+def _candidate_ghost_package_roots() -> tuple[str, ...]:
+    """Return candidate package roots that may expose ``ghost`` modules."""
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    try:
+        from sciona.sources import load_sources
+
+        config = load_sources()
+        for source in config.sources:
+            package = str(source.package or "").strip()
+            if not package or package in seen:
+                continue
+            seen.add(package)
+            candidates.append(package)
+    except Exception:
+        logger.debug("Failed to load configured ghost package roots", exc_info=True)
+
+    for prefix in known_atom_package_prefixes():
+        package = str(prefix or "").strip()
+        if not package or package in seen:
+            continue
+        seen.add(package)
+        candidates.append(package)
+
+    if "ageoa" not in seen:
+        candidates.append("ageoa")
+    return tuple(candidates)
+
+
+def _load_ghost_backend() -> tuple[str, dict[str, Any]] | None:
+    """Import the first available ghost backend across configured package roots."""
+    configure_juliacall_env()
+    for root in _candidate_ghost_package_roots():
+        try:
+            simulator = importlib.import_module(f"{root}.ghost.simulator")
+            abstract = importlib.import_module(f"{root}.ghost.abstract")
+            registry = importlib.import_module(f"{root}.ghost.registry")
+            witnesses = importlib.import_module(f"{root}.ghost.witnesses")
+        except ImportError:
+            continue
+        return root, {
+            "SimNode": simulator.SimNode,
+            "SimResult": simulator.SimResult,
+            "simulate_graph": simulator.simulate_graph,
+            "PlanError": simulator.PlanError,
+            "AbstractDistribution": abstract.AbstractDistribution,
+            "AbstractSignal": abstract.AbstractSignal,
+            "AbstractMatrix": abstract.AbstractMatrix,
+            "list_registered": registry.list_registered,
+            "AbstractFilterCoefficients": witnesses.AbstractFilterCoefficients,
+            "AbstractGraphMeta": witnesses.AbstractGraphMeta,
+        }
+    return None
+
+
+_ghost_backend = _load_ghost_backend()
+if _ghost_backend is None:
     _GHOST_AVAILABLE = False
+else:
+    _GHOST_PACKAGE_ROOT, _ghost_symbols = _ghost_backend
+    SimNode = _ghost_symbols["SimNode"]
+    SimResult = _ghost_symbols["SimResult"]
+    simulate_graph = _ghost_symbols["simulate_graph"]
+    PlanError = _ghost_symbols["PlanError"]
+    AbstractDistribution = _ghost_symbols["AbstractDistribution"]
+    AbstractSignal = _ghost_symbols["AbstractSignal"]
+    AbstractMatrix = _ghost_symbols["AbstractMatrix"]
+    list_registered = _ghost_symbols["list_registered"]
+    AbstractFilterCoefficients = _ghost_symbols["AbstractFilterCoefficients"]
+    AbstractGraphMeta = _ghost_symbols["AbstractGraphMeta"]
+    _GHOST_AVAILABLE = True
+
+
+_LEGACY_ATOM_IMPORT_SUFFIXES: tuple[str, ...] = (
+    "numpy.fft",
+    "scipy.fft",
+    "scipy.signal",
+    "scipy.sparse_graph",
+    "algorithms.sorting",
+    "algorithms.graph",
+    "algorithms.search",
+)
+
+
+def _fallback_atom_modules() -> tuple[str, ...]:
+    modules: list[str] = []
+    seen: set[str] = set()
+    for prefix in known_atom_package_prefixes():
+        for suffix in _LEGACY_ATOM_IMPORT_SUFFIXES:
+            module_name = f"{prefix}.{suffix}"
+            if module_name in seen:
+                continue
+            seen.add(module_name)
+            modules.append(module_name)
+    return tuple(modules)
 
 
 @dataclass
@@ -1137,17 +1238,8 @@ def _ensure_atoms_imported() -> None:
     except Exception:
         logger.debug("Failed to load sources.yml, falling back to hardcoded imports", exc_info=True)
 
-    # Fallback: hardcoded imports for backwards compatibility
-    modules = [
-        "ageoa.numpy.fft",
-        "ageoa.scipy.fft",
-        "ageoa.scipy.signal",
-        "ageoa.scipy.sparse_graph",
-        "ageoa.algorithms.sorting",
-        "ageoa.algorithms.graph",
-        "ageoa.algorithms.search",
-    ]
-    for mod in modules:
+    # Fallback: preserve legacy imports, but try all recognized atom-package prefixes.
+    for mod in _fallback_atom_modules():
         try:
             importlib.import_module(mod)
         except ImportError:

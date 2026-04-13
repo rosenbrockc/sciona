@@ -16,7 +16,14 @@ from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 from sciona.architect.catalog import CatalogReport, PrimitiveCatalog
 from sciona.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
-from sciona.sources import AtomSource, SourcesConfig, discover_cdgs, import_atoms, load_sources, resolve_source
+from sciona.sources import (
+    AtomSource,
+    SourcesConfig,
+    discover_cdgs,
+    import_atoms,
+    load_sources,
+    resolve_package_root,
+)
 from sciona.synthesizer.uncertainty import load_uncertainty_json
 
 if TYPE_CHECKING:
@@ -629,8 +636,7 @@ def seed_catalog_from_sources(
     seen_topo_hashes: dict[str, str] = {}  # topo_hash -> first source name
 
     for source in config.sources:
-        root = resolve_source(source, base_dir).expanduser().resolve()
-        package_root = root.joinpath(*source.package.split("."))
+        package_root = resolve_package_root(source, base_dir).expanduser().resolve()
         atom_index, source_topo_hashes = _load_atomic_node_index(
             source, base_dir=base_dir
         )
@@ -737,8 +743,7 @@ def audit_source_registration_alignment(
         ast_names: set[str] = set()
         live_names: set[str] = set()
         try:
-            root = resolve_source(source, base_dir).expanduser().resolve()
-            package_root = root.joinpath(*source.package.split("."))
+            package_root = resolve_package_root(source, base_dir).expanduser().resolve()
             ast_names = set(_parse_register_atom_functions(package_root, source.package))
             try:
                 live_names = set(

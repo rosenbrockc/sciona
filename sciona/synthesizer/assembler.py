@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
+from sciona.atom_identity import known_atom_package_prefixes
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
 from sciona.synthesizer.models import AssemblyUnit, GlueEdge, SkeletonFile
@@ -284,6 +285,16 @@ def _infer_cast(source_type: str, target_type: str) -> str:
         return "Equiv.toFun"
 
     return ""
+
+
+def _uses_known_atom_package(module_name: str) -> bool:
+    text = str(module_name or "").strip()
+    if not text:
+        return False
+    for prefix in known_atom_package_prefixes():
+        if text == prefix or text.startswith(prefix + "."):
+            return True
+    return False
 
 
 class Assembler:
@@ -987,7 +998,7 @@ class Assembler:
                 if module not in imports_seen:
                     imports_seen.add(module)
                     imported_modules.append(module)
-        if any(module.startswith("ageoa.") for module in imported_modules):
+        if any(_uses_known_atom_package(module) for module in imported_modules):
             lines.append("from sciona.julia_runtime import configure_juliacall_env")
             lines.append("configure_juliacall_env()")
         for module in imported_modules:

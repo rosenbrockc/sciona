@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from sciona.atom_identity import known_atom_package_prefixes
 from sciona.principal.search_policy import (
     evaluate_asset_migration_readiness,
     evaluate_enriched_cdg_policy,
@@ -149,8 +150,9 @@ def _artifact_presence(label_dir: Path) -> dict[str, bool]:
 
 
 def _used_real_assets(matched_primitives: list[str]) -> bool:
+    atom_prefixes = tuple(f"{prefix}." for prefix in known_atom_package_prefixes())
     return any(
-        name.startswith(("ageoa.", "ageom.", "sciona.expansion_atoms."))
+        name.startswith(("ageom.", "sciona.expansion_atoms.")) or name.startswith(atom_prefixes)
         for name in matched_primitives
     )
 

@@ -1,6 +1,6 @@
 sources:
   - name: sciona-atoms-signal-processing
-    path: ../sciona-atoms
+    path: ../sciona-atoms-signal
     python_path: src
     package: sciona.atoms.signal_processing.biosppy
   - name: sciona-atoms-state-estimation
@@ -11,6 +11,26 @@ sources:
     path: ../sciona-atoms
     python_path: src
     package: sciona.atoms.algorithmic.divide_and_conquer
+  - name: sciona-atoms-ml
+    path: ../sciona-atoms-ml
+    python_path: src
+    package: sciona.atoms.ml
+  - name: sciona-atoms-bio
+    path: ../sciona-atoms-bio
+    python_path: src
+    package: sciona.atoms.bio
+  - name: sciona-atoms-fintech
+    path: ../sciona-atoms-fintech
+    python_path: src
+    package: sciona.atoms.fintech
+  - name: sciona-atoms-physics
+    path: ../sciona-atoms-physics
+    python_path: src
+    package: sciona.atoms.physics
+  - name: sciona-atoms-robotics
+    path: ../sciona-atoms-robotics
+    python_path: src
+    package: sciona.atoms.robotics
   - name: ageo-atoms
     path: ../ageo-atoms
     package: ageoa

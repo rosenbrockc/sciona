@@ -9,6 +9,10 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from sciona.atom_identity import (
+    candidate_atom_provider_roots,
+    known_atom_package_prefixes,
+)
 from sciona.judge.models import CompilerFeedback
 
 
@@ -57,6 +61,17 @@ def _looks_like_dependency_environment_failure(raw: str) -> bool:
     return any(marker in text for marker in markers)
 
 
+def _is_known_atom_module(module_name: str) -> bool:
+    """Return whether *module_name* uses a recognized atom package prefix."""
+    text = str(module_name or "").strip()
+    if not text:
+        return False
+    for prefix in known_atom_package_prefixes():
+        if text == prefix or text.startswith(prefix + "."):
+            return True
+    return False
+
+
 def _local_module_source_exists(module_name: str) -> bool:
     """Return whether a dotted module resolves to a source file in local repos."""
     parts = [part for part in module_name.split(".") if part]
@@ -64,14 +79,15 @@ def _local_module_source_exists(module_name: str) -> bool:
         return False
     rel_py = Path(*parts).with_suffix(".py")
     rel_pkg = Path(*parts) / "__init__.py"
-    search_roots = (
-        Path.cwd(),
-        Path.cwd().parent / "ageo-atoms",
-        Path.cwd().parent,
-    )
+    search_roots: list[Path] = [Path.cwd(), *candidate_atom_provider_roots(), Path.cwd().parent]
+    seen_roots: set[Path] = set()
     for root in search_roots:
+        resolved_root = root.resolve()
+        if resolved_root in seen_roots:
+            continue
+        seen_roots.add(resolved_root)
         for rel in (rel_py, rel_pkg):
-            if (root / rel).exists():
+            if (resolved_root / rel).exists():
                 return True
     return False
 
@@ -173,7 +189,7 @@ class PythonEnvironment:
             if proc.returncode == 0:
                 return True, raw.strip()
             if _looks_like_dependency_environment_failure(raw) and (
-                not mod.startswith("ageoa.") or _local_module_source_exists(mod)
+                not _is_known_atom_module(mod) or _local_module_source_exists(mod)
             ):
                 combined = raw.strip()
                 if combined:

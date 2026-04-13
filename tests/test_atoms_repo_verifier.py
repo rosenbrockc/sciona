@@ -144,3 +144,22 @@ def test_verifier_does_not_flag_comprehension_or_loop_locals(tmp_path: Path) -> 
     report = verify_atoms_repo(repo, "fakeatoms")
 
     assert report.ok
+
+
+def test_verifier_supports_dotted_namespace_package_paths(tmp_path: Path) -> None:
+    repo = tmp_path / "atoms_repo"
+    pkg = repo / "sciona" / "atoms" / "demo"
+    _write(repo / "sciona" / "__init__.py", "")
+    _write(repo / "sciona" / "atoms" / "__init__.py", "")
+    _write(pkg / "__init__.py", "")
+    _write(
+        pkg / "filters.py",
+        """
+        def bandpass_filter(signal):
+            return signal
+        """,
+    )
+
+    report = verify_atoms_repo(repo, "sciona.atoms.demo", import_smoke=True)
+
+    assert report.ok

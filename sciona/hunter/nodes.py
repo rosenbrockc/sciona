@@ -13,6 +13,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from sciona.atom_identity import logical_atom_id_from_fqdn, known_atom_package_prefixes
 from sciona.architect.models import AlgorithmicPrimitive
 from sciona.json_utils import extract_json
 
@@ -64,6 +65,50 @@ def _tokenize_candidate_text(text: str) -> set[str]:
         for token in re.findall(r"[a-z0-9_]+", text.lower())
         if len(token) >= 2
     }
+
+
+def _recognized_atom_package_prefix(label: str) -> str:
+    text = str(label or "").strip()
+    if not text:
+        return ""
+    for prefix in sorted(known_atom_package_prefixes(), key=len, reverse=True):
+        if text == prefix or text.startswith(prefix + "."):
+            return prefix
+    return ""
+
+
+def _is_atom_package_label(label: str) -> bool:
+    return bool(_recognized_atom_package_prefix(label))
+
+
+def _catalog_lookup_candidates(label: str) -> list[str]:
+    text = str(label or "").strip()
+    if not text:
+        return []
+
+    candidates = [text]
+    logical_name = logical_atom_id_from_fqdn(text)
+    if logical_name and logical_name != text:
+        candidates.append(logical_name)
+
+    raw_parts = [part for part in text.split(".") if part]
+    for start in range(1, len(raw_parts)):
+        candidates.append(".".join(raw_parts[start:]))
+
+    if logical_name and logical_name != text:
+        logical_parts = [part for part in logical_name.split(".") if part]
+        for start in range(1, len(logical_parts)):
+            candidates.append(".".join(logical_parts[start:]))
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        normalized = candidate.strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(normalized)
+    return deduped
 
 
 def _ordered_query_tokens(text: str) -> list[str]:
@@ -381,19 +426,11 @@ def _resolve_live_primitive(
     if catalog is None:
         return None
 
-    candidates = [
-        declaration.name,
-        declaration.source_lib,
-    ]
-    name_parts = [part for part in declaration.name.split(".") if part]
-    for start in range(1, len(name_parts)):
-        candidates.append(".".join(name_parts[start:]))
-    source_parts = [part for part in declaration.source_lib.split(".") if part]
-    for start in range(1, len(source_parts)):
-        candidates.append(".".join(source_parts[start:]))
-
     seen: set[str] = set()
-    for key in candidates:
+    for key in [
+        *_catalog_lookup_candidates(declaration.name),
+        *_catalog_lookup_candidates(declaration.source_lib),
+    ]:
         normalized = key.strip()
         if not normalized or normalized in seen:
             continue
@@ -428,7 +465,9 @@ def _canonicalize_candidate_match(
             retrieval_method=candidate.retrieval_method,
         )
 
-    if declaration.name.startswith("ageoa."):
+    if _is_atom_package_label(declaration.name) or _is_atom_package_label(
+        declaration.source_lib
+    ):
         return None
     return candidate
 
@@ -462,13 +501,8 @@ def _exact_matched_primitive_candidate(
     if not raw:
         return None
 
-    candidates = [raw]
-    parts = [part for part in raw.split(".") if part]
-    for start in range(1, len(parts)):
-        candidates.append(".".join(parts[start:]))
-
     primitive = None
-    for key in candidates:
+    for key in _catalog_lookup_candidates(raw):
         primitive = catalog.get(key)
         if primitive is not None:
             break

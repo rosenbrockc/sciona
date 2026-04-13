@@ -250,6 +250,55 @@ def test_python_assembler_configures_juliacall_before_ageoa_imports() -> None:
     )
 
 
+def test_python_assembler_configures_juliacall_for_recognized_atom_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SCIONA_ATOM_PACKAGE_PREFIXES", "custom.provider")
+
+    root = AlgorithmicNode(
+        node_id="root",
+        name="Root",
+        description="Root pipeline",
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.DECOMPOSED,
+        children=["leaf"],
+    )
+    leaf = AlgorithmicNode(
+        node_id="leaf",
+        parent_id="root",
+        name="Filter ECG",
+        description="Filter ECG signal.",
+        concept_type=ConceptType.SIGNAL_FILTER,
+        status=NodeStatus.ATOMIC,
+        type_signature="(signal: np.ndarray) -> np.ndarray",
+        inputs=[IOSpec(name="signal", type_desc="np.ndarray")],
+        outputs=[IOSpec(name="filtered", type_desc="np.ndarray")],
+    )
+    cdg = CDGExport(nodes=[root, leaf], edges=[])
+    match = MatchResult(
+        pdg_node=PDGNode(predicate_id="leaf", statement="(signal: np.ndarray) -> np.ndarray"),
+        verified_match=VerificationResult(
+            candidate=CandidateMatch(
+                declaration=Declaration(
+                    name="custom.provider.biosppy.ecg.bandpass_filter",
+                    type_signature="(signal: np.ndarray, *, sampling_rate: float) -> np.ndarray",
+                    prover=Prover.PYTHON,
+                ),
+                score=0.9,
+                retrieval_method="test",
+            ),
+            verified=True,
+        ),
+    )
+
+    skeleton = Assembler(Prover.PYTHON).assemble(cdg, [match])
+
+    assert "from sciona.julia_runtime import configure_juliacall_env" in skeleton.source_code
+    assert skeleton.source_code.index("configure_juliacall_env()") < skeleton.source_code.index(
+        "import custom.provider.biosppy.ecg"
+    )
+
+
 @pytest.fixture
 def sample_match_results() -> list[MatchResult]:
     return [

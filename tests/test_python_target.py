@@ -421,6 +421,86 @@ class TestPythonEnvironment:
         await env.close()
 
     @pytest.mark.asyncio
+    async def test_check_term_treats_local_sciona_atoms_dependency_failure_as_soft_success(
+        self,
+    ):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (
+            b"",
+            (
+                b"ArgumentError: Package PythonCall is required but does not seem to be installed\n"
+                b"Exception: PythonCall.jl did not start properly\n"
+            ),
+        )
+        mock_proc.returncode = 1
+
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ), patch(
+            "sciona.judge.python_env._local_module_source_exists",
+            return_value=True,
+        ):
+            success, output = await env.check_term(
+                "sciona.atoms.biosppy.ecg.bandpass_filter",
+                "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
+            )
+            assert success is True
+            assert "dependency-environment failure" in output
+
+        await env.close()
+
+    @pytest.mark.asyncio
+    async def test_check_term_keeps_missing_sciona_atoms_modules_as_failures(self):
+        from sciona.judge.python_env import PythonEnvironment
+
+        env = PythonEnvironment()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (
+            b"",
+            (
+                b"ArgumentError: Package PythonCall is required but does not seem to be installed\n"
+                b"Exception: PythonCall.jl did not start properly\n"
+            ),
+        )
+        mock_proc.returncode = 1
+
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ), patch(
+            "sciona.judge.python_env._local_module_source_exists",
+            return_value=False,
+        ):
+            success, output = await env.check_term(
+                "sciona.atoms.biosppy.ecg_hamilton_d12.atoms.hamilton_segmenter",
+                "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
+            )
+            assert success is False
+            assert "dependency-environment failure" not in output
+
+        await env.close()
+
+    def test_local_module_source_exists_checks_configured_provider_roots(
+        self, monkeypatch, tmp_path
+    ):
+        from sciona.judge.python_env import _local_module_source_exists
+
+        provider_root = tmp_path / "provider"
+        module_path = provider_root / "sciona" / "atoms" / "demo" / "filters.py"
+        module_path.parent.mkdir(parents=True, exist_ok=True)
+        module_path.write_text("def bandpass_filter(x):\n    return x\n", encoding="utf-8")
+
+        monkeypatch.setenv("SCIONA_ATOM_PROVIDER_ROOTS", str(provider_root))
+
+        assert _local_module_source_exists("sciona.atoms.demo.filters") is True
+
+    @pytest.mark.asyncio
     async def test_mypy_not_found(self):
         from sciona.judge.python_env import PythonEnvironment
 

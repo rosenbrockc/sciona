@@ -13,11 +13,12 @@ from typing import Iterable
 LEGACY_ATOM_PACKAGE_PREFIX = "ageoa"
 FEDERATED_ATOM_NAMESPACE_PREFIX = "sciona.atoms"
 DEFAULT_PROVIDER_ID = "core.ageo_atoms"
+MATCHER_REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_NAMESPACE_PROVIDER_ROOT = (
-    Path(__file__).resolve().parents[1].parent / "sciona-atoms"
+    MATCHER_REPO_ROOT.parent / "sciona-atoms"
 ).resolve()
 DEFAULT_PROVIDER_ROOT = (
-    Path(__file__).resolve().parents[1].parent / "ageo-atoms"
+    MATCHER_REPO_ROOT.parent / "ageo-atoms"
 ).resolve()
 ATOM_PROVIDER_ID_PREFIX_ENV = "SCIONA_ATOM_PROVIDER_PREFIX_TO_ID"
 ATOM_METADATA_GLOB_CANDIDATES: tuple[str, ...] = (
@@ -98,14 +99,42 @@ def known_atom_package_prefixes() -> tuple[str, ...]:
     )
 
 
+def _sources_yml_provider_roots() -> tuple[Path, ...]:
+    """Return local provider roots declared in the matcher sources config."""
+    try:
+        from sciona.sources import load_sources, resolve_source
+    except Exception:
+        return tuple()
+
+    sources_path = MATCHER_REPO_ROOT / "sources.yml"
+    if not sources_path.exists():
+        return tuple()
+
+    try:
+        config = load_sources(sources_path)
+    except Exception:
+        return tuple()
+
+    roots: list[Path] = []
+    for source in config.sources:
+        if not source.path:
+            continue
+        try:
+            roots.append(resolve_source(source, base_dir=MATCHER_REPO_ROOT))
+        except Exception:
+            continue
+    return tuple(roots)
+
+
 def candidate_atom_provider_roots() -> tuple[Path, ...]:
     """Return provider roots in precedence order.
 
     Precedence is:
     1. `SCIONA_ATOM_PROVIDER_ROOTS`
     2. `SCIONA_AGEO_ATOMS_ROOT`
-    3. the namespace pilot sibling `../sciona-atoms` root
-    4. the legacy sibling `../ageo-atoms` root
+    3. local-path provider repos declared in `sources.yml`
+    4. the namespace pilot sibling `../sciona-atoms` root
+    5. the legacy sibling `../ageo-atoms` root
     """
     roots: list[Path] = []
     configured_multi = str(os.environ.get("SCIONA_ATOM_PROVIDER_ROOTS", "") or "").strip()
@@ -118,6 +147,7 @@ def candidate_atom_provider_roots() -> tuple[Path, ...]:
     configured_legacy = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
     if configured_legacy:
         roots.append(Path(configured_legacy).expanduser())
+    roots.extend(_sources_yml_provider_roots())
     roots.append(DEFAULT_NAMESPACE_PROVIDER_ROOT)
     roots.append(DEFAULT_PROVIDER_ROOT)
     deduped: list[Path] = []

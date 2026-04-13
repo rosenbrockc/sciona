@@ -281,6 +281,72 @@ class TestHunterHappyPath:
         assert "sampling_rate" in result.verified_match.candidate.declaration.type_signature
 
     @pytest.mark.asyncio
+    async def test_live_catalog_reconciles_stale_sciona_atoms_declarations(self):
+        from sciona.hunter.graph import HunterAgent
+
+        pdg_node = PDGNode(
+            predicate_id="ecg_detect",
+            statement="Detect peaks in ECG signal",
+            informal_desc="Find R-peaks in a conditioned ECG waveform",
+            prover=Prover.PYTHON,
+        )
+        stale_dead = Declaration(
+            name="sciona.atoms.demo.ecg_hamilton.atoms.hamilton_segmentation",
+            type_signature="(signal: np.ndarray, sampling_rate: int) -> np.ndarray",
+            source_lib="sciona.atoms.demo.ecg_hamilton.atoms",
+            docstring="Dead stale declaration from an old namespace snapshot.",
+            prover=Prover.PYTHON,
+        )
+        stale_live = Declaration(
+            name="sciona.atoms.demo.ecg.r_peak_detection",
+            type_signature="(filtered: np.ndarray, state: ECGPipelineState) -> tuple[np.ndarray, ECGPipelineState]",
+            source_lib="sciona.atoms.demo.ecg",
+            docstring="Old stateful ECG declaration.",
+            prover=Prover.PYTHON,
+        )
+
+        catalog = PrimitiveCatalog()
+        catalog.add(
+            AlgorithmicPrimitive(
+                name="r_peak_detection",
+                source="sciona.atoms.demo.ecg",
+                category=ConceptType.ANALYSIS,
+                description="Detect R-peaks from a filtered ECG waveform using the sampling rate.",
+                inputs=[
+                    IOSpec(name="filtered", type_desc="np.ndarray"),
+                    IOSpec(
+                        name="sampling_rate",
+                        type_desc="float",
+                        required=False,
+                        default_value_repr="1000.0",
+                    ),
+                ],
+                outputs=[IOSpec(name="rpeaks", type_desc="np.ndarray")],
+                type_signature="(filtered: np.ndarray, sampling_rate: float? = 1000.0) -> np.ndarray",
+            )
+        )
+
+        index = _make_mock_index([stale_dead, stale_live])
+        oracle = _make_mock_oracle({"sciona.atoms.demo.ecg.r_peak_detection"})
+        llm = _make_mock_llm(rank_response="[0]")
+
+        agent = HunterAgent(
+            index=index,
+            oracle=oracle,
+            llm=llm,
+            max_iterations=1,
+            live_catalog=catalog,
+        )
+        result = await agent.find_match(pdg_node)
+
+        assert result.success
+        assert [c.declaration.name for c in result.all_candidates] == [
+            "sciona.atoms.demo.ecg.r_peak_detection"
+        ]
+        assert result.verified_match is not None
+        assert "sampling_rate" in result.verified_match.candidate.declaration.type_signature
+
+    @pytest.mark.asyncio
     async def test_matched_primitive_hint_seeds_exact_candidate_from_live_catalog(self):
         from sciona.hunter.graph import HunterAgent
 

@@ -99,26 +99,53 @@ def test_candidate_provider_roots_follow_precedence_and_dedupe(
 ) -> None:
     first = tmp_path / "provider-a"
     second = tmp_path / "provider-b"
+    third = tmp_path / "provider-c"
     first.mkdir()
     second.mkdir()
+    third.mkdir()
 
     monkeypatch.setenv(
         "SCIONA_ATOM_PROVIDER_ROOTS",
         os.pathsep.join((str(first), str(second), str(first))),
     )
     monkeypatch.setenv("SCIONA_AGEO_ATOMS_ROOT", str(second))
+    monkeypatch.setattr(
+        "sciona.atom_identity._sources_yml_provider_roots",
+        lambda: (third.resolve(), first.resolve()),
+    )
 
     assert candidate_atom_provider_roots() == (
         first.resolve(),
         second.resolve(),
+        third.resolve(),
         DEFAULT_NAMESPACE_PROVIDER_ROOT,
         DEFAULT_PROVIDER_ROOT,
     )
 
 
-def test_candidate_provider_roots_include_default_sibling_repos() -> None:
+def test_candidate_provider_roots_include_default_sibling_repos(monkeypatch) -> None:
+    monkeypatch.setattr("sciona.atom_identity._sources_yml_provider_roots", lambda: ())
     roots = candidate_atom_provider_roots()
     assert roots[:2] == (
+        DEFAULT_NAMESPACE_PROVIDER_ROOT,
+        DEFAULT_PROVIDER_ROOT,
+    )
+
+
+def test_candidate_provider_roots_include_sources_yml_roots(monkeypatch, tmp_path: Path) -> None:
+    source_root = tmp_path / "provider-from-sources"
+    source_root.mkdir()
+    monkeypatch.delenv("SCIONA_ATOM_PROVIDER_ROOTS", raising=False)
+    monkeypatch.delenv("SCIONA_AGEO_ATOMS_ROOT", raising=False)
+    monkeypatch.setattr(
+        "sciona.atom_identity._sources_yml_provider_roots",
+        lambda: (source_root.resolve(),),
+    )
+
+    roots = candidate_atom_provider_roots()
+
+    assert roots[:3] == (
+        source_root.resolve(),
         DEFAULT_NAMESPACE_PROVIDER_ROOT,
         DEFAULT_PROVIDER_ROOT,
     )

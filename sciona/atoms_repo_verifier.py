@@ -1,4 +1,4 @@
-"""Static verifier for atoms repositories such as ageoa.
+"""Static verifier for atoms repositories across supported package layouts.
 
 The verifier focuses on actionable completeness failures in generated atom
 modules: undefined witness symbols, missing state-model imports, unresolved
