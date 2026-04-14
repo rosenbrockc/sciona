@@ -9,6 +9,7 @@ from sciona.services.models import (
     HunterBatchMatchRequest,
     HunterBatchMatchResult,
     HunterDirectMatchRequest,
+    MacroMatchResult,
 )
 from sciona.types import MatchFailureReport, PDGNode, Prover
 
@@ -75,6 +76,54 @@ def build_direct_goal_cdg(
     return CDGExport(nodes=[node], edges=[], metadata=metadata)
 
 
+def build_macro_goal_cdg(
+    goal: str,
+    prover: Prover,
+    match_result: MacroMatchResult,
+    *,
+    execution_mode: str,
+    conceptual_summary: str,
+) -> CDGExport:
+    """Build a minimal one-node CDG for direct macro-artifact selection."""
+    candidate = match_result.candidate
+    success = bool(match_result.success and candidate is not None)
+    node = AlgorithmicNode(
+        node_id="goal_0",
+        name="Direct Macro Match",
+        description=goal,
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.ATOMIC if success else NodeStatus.BLOCKED,
+        type_signature="",
+        matched_primitive=(str(candidate.fqdn).strip() if candidate is not None else None),
+        critic_notes=(
+            "Macro artifact match succeeded."
+            if success
+            else str(match_result.rejection_reason or "Macro artifact match failed.")
+        ),
+        conceptual_summary=conceptual_summary,
+    )
+    metadata = {
+        "goal": goal,
+        "prover": prover.value,
+        "execution_mode": execution_mode,
+        "artifact_kind": str(candidate.artifact_kind) if candidate is not None else "cdg",
+        "artifact_fqdn": str(candidate.fqdn) if candidate is not None else "",
+        "artifact_semver": str(candidate.semver) if candidate is not None else "",
+        "artifact_content_hash": str(candidate.content_hash) if candidate is not None else "",
+        "macro_direct_path": True,
+        "matched_directly": success,
+        "num_nodes": 1,
+        "num_edges": 0,
+    }
+    if candidate is not None:
+        metadata["macro_score"] = float(match_result.score)
+    if not success:
+        metadata["architect_error"] = (
+            f"Macro artifact match failed: {match_result.rejection_reason or 'no candidate'}"
+        )
+    return CDGExport(nodes=[node], edges=[], metadata=metadata)
+
+
 class HunterService:
     """Stable service entrypoint for retrieval and verification operations."""
 
@@ -137,5 +186,33 @@ class HunterService:
             match_results=[match_result],
             rounds_used=1,
             failures=failures,
+            ungroundable=ungroundable,
+        )
+
+    def macro_match_result(
+        self,
+        goal: str,
+        prover: Prover,
+        match_result: MacroMatchResult,
+        *,
+        execution_mode: str,
+        informal_desc: str,
+        context: dict[str, str] | None = None,
+    ) -> OrchestratorResult:
+        del context
+        ungroundable: list[str] = []
+        if not match_result.success:
+            ungroundable.append("goal_0")
+        return OrchestratorResult(
+            cdg=build_macro_goal_cdg(
+                goal,
+                prover,
+                match_result,
+                execution_mode=execution_mode,
+                conceptual_summary=informal_desc,
+            ),
+            match_results=[],
+            rounds_used=1,
+            failures=[],
             ungroundable=ungroundable,
         )

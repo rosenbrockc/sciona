@@ -189,6 +189,7 @@ class UpdateTargetRequest(BaseModel):
 class CatalogEntry(BaseModel):
     fqdn: str
     description: str
+    artifact_kind: str = "atom"
     domain_tags: list[str] = Field(default_factory=list)
     latest_semver: str = ""
     status: str = "approved"

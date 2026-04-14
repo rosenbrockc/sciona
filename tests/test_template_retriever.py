@@ -192,17 +192,32 @@ async def test_find_refinement_templates_no_store():
 @pytest.mark.asyncio
 async def test_find_refinement_templates_returns_verified():
     store = MagicMock()
-    store.query_verified_exemplars = AsyncMock(
+    store.query_verified_exemplar_templates = AsyncMock(
         side_effect=[
             [
                 {
                     "fqn": "repo.good_node",
                     "repo": "repo",
+                    "name": "Good Node",
+                    "description": "determine rate from signal",
                     "verified_leaf_coverage": 0.9,
                     "topo_hash": "x",
                     "concept_type": "sorting",
                     "n_inputs": 1,
                     "n_outputs": 1,
+                    "children": [
+                        {
+                            "node_id": "child_1",
+                            "name": "Child 1",
+                            "description": "child one",
+                            "concept_type": "sorting",
+                            "status": "atomic",
+                            "n_inputs": 1,
+                            "n_outputs": 1,
+                            "type_signature": "",
+                        }
+                    ],
+                    "edges": [],
                 }
             ],
             [],
@@ -220,24 +235,29 @@ async def test_find_refinement_templates_returns_verified():
     assert len(result) == 1
     assert result[0].source == "verified_exemplar_same_family"
     assert result[0].confidence >= 0.5
-    assert store.query_verified_exemplars.await_count == 2
+    assert result[0].example.children[0].name == "Child 1"
+    assert store.query_verified_exemplar_templates.await_count == 2
 
 
 @pytest.mark.asyncio
 async def test_find_refinement_templates_falls_back_to_cross_family_structure() -> None:
     store = MagicMock()
-    store.query_verified_exemplars = AsyncMock(
+    store.query_verified_exemplar_templates = AsyncMock(
         side_effect=[
             [],
             [
                 {
                     "fqn": "repo.foreign_node",
                     "repo": "repo",
+                    "name": "Foreign Node",
+                    "description": "foreign decomposition",
                     "verified_leaf_coverage": 0.92,
                     "topo_hash": "y",
                     "concept_type": "signal_filter",
                     "n_inputs": 1,
                     "n_outputs": 1,
+                    "children": [],
+                    "edges": [],
                 }
             ],
         ]

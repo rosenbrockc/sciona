@@ -176,6 +176,7 @@ async def test_publish_atom_supabase() -> None:
         ("atom_versions", "select"),
         ("atoms", "select"),
         ("atoms", "insert"),
+        ("atom_versions", "select"),
         ("atom_versions", "update"),
         ("atom_versions", "insert"),
     ]
@@ -309,6 +310,63 @@ async def test_catalog_search_supabase_falls_back_to_served_view() -> None:
             },
         )
     ]
+
+
+@pytest.mark.asyncio
+async def test_artifact_search_uses_artifact_rpc_then_fallbacks() -> None:
+    def table_handler(query: FakeQuery) -> FakeResult:
+        raise AssertionError(f"unexpected table fallback: {query.name}")
+
+    def rpc_handler(query: FakeRpcQuery) -> FakeResult:
+        assert query.name == "search_artifacts_hybrid"
+        return FakeResult(
+            data=[
+                {
+                    "fqdn": "pkg.rate_detector",
+                    "artifact_kind": "cdg",
+                    "technical_description": "Detect heart rate from ECG",
+                    "domain_tags": ["signal"],
+                    "overall_verdict": "trusted",
+                    "risk_tier": "low",
+                    "trust_readiness": "ready",
+                }
+            ]
+        )
+
+    client = FakeSupabaseClient(table_handler=table_handler, rpc_handler=rpc_handler)
+
+    result = await catalog.artifact_search(
+        q="heart rate ecg",
+        domain_tag="signal",
+        limit=10,
+        supabase=client,
+    )
+
+    assert [entry.fqdn for entry in result] == ["pkg.rate_detector"]
+    assert result[0].artifact_kind == "cdg"
+
+
+@pytest.mark.asyncio
+async def test_get_artifact_document_falls_back_to_atom_rpc() -> None:
+    rpc_calls: list[str] = []
+
+    def table_handler(query: FakeQuery) -> FakeResult:
+        raise AssertionError(query.name)
+
+    def rpc_handler(query: FakeRpcQuery) -> FakeResult:
+        rpc_calls.append(query.name)
+        if query.name == "get_artifact_document":
+            return FakeResult(data=None)
+        if query.name == "get_atom_document":
+            return FakeResult(data={"atom": {"fqdn": "pkg.filter"}})
+        raise AssertionError(query.name)
+
+    client = FakeSupabaseClient(table_handler=table_handler, rpc_handler=rpc_handler)
+
+    result = await catalog.get_artifact_document("pkg.filter", supabase=client)
+
+    assert result["atom"]["fqdn"] == "pkg.filter"
+    assert rpc_calls == ["get_artifact_document", "get_atom_document"]
 
 
 @pytest.mark.asyncio

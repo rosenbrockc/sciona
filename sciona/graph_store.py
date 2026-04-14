@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from sciona.cdg_projection import PublishedCDGProjection
+
 
 def _topo_hash(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], root_id: str) -> str:
     """Compute a topological hash for a decomposed subtree.
@@ -271,6 +273,7 @@ class GraphStore:
         """Create uniqueness constraints and indexes (Memgraph DDL)."""
         constraints = [
             "CREATE CONSTRAINT ON (a:Atom) ASSERT a.fqn IS UNIQUE",
+            "CREATE CONSTRAINT ON (a:Artifact) ASSERT a.artifact_id IS UNIQUE",
             "CREATE CONSTRAINT ON (p:InputPort) ASSERT p.port_id IS UNIQUE",
             "CREATE CONSTRAINT ON (p:OutputPort) ASSERT p.port_id IS UNIQUE",
         ]
@@ -280,6 +283,9 @@ class GraphStore:
             "CREATE INDEX ON :Atom(repo)",
             "CREATE INDEX ON :Atom(topo_hash)",
             "CREATE INDEX ON :Atom(verified_leaf_coverage)",
+            "CREATE INDEX ON :Artifact(fqdn)",
+            "CREATE INDEX ON :Artifact(artifact_kind)",
+            "CREATE INDEX ON :Artifact(content_hash)",
         ]
         async with self._driver.session() as session:
             for stmt in constraints + indexes:
@@ -479,6 +485,61 @@ class GraphStore:
             )
             return [dict(r) async for r in result]
 
+    async def query_verified_exemplar_templates(
+        self,
+        concept_type: str = "",
+        n_inputs: int = -1,
+        n_outputs: int = -1,
+        min_coverage: float = 0.8,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """Query verified exemplars with hydrated child structure."""
+        cypher = (
+            "MATCH (p:Atom:Decomposed) "
+            "WHERE p.verified_leaf_coverage >= $min_coverage "
+            "  AND ($concept_type = '' OR p.concept_type = $concept_type) "
+            "  AND ($n_inputs < 0 OR abs(p.n_inputs - $n_inputs) <= 1) "
+            "  AND ($n_outputs < 0 OR abs(p.n_outputs - $n_outputs) <= 1) "
+            "MATCH (p)-[:PARENT_OF]->(child:Atom) "
+            "OPTIONAL MATCH (child)-[df:DATA_FLOW]->(sibling:Atom) "
+            "  WHERE (p)-[:PARENT_OF]->(sibling) "
+            "WITH p, "
+            "     collect(DISTINCT {node_id: child.node_id, name: child.name, "
+            "       description: child.description, concept_type: child.concept_type, "
+            "       status: child.status, n_inputs: child.n_inputs, n_outputs: child.n_outputs, "
+            "       type_signature: child.type_signature, "
+            "       abstract_type_class: child.abstract_type_class, "
+            "       matched_primitive: child.matched_primitive, "
+            "       witness_input_types: child.witness_input_types, "
+            "       witness_output_types: child.witness_output_types}) AS children, "
+            "     collect(DISTINCT CASE WHEN df IS NOT NULL THEN {source_id: startNode(df).node_id, "
+            "       target_id: endNode(df).node_id, output_name: df.output_name, "
+            "       input_name: df.input_name} ELSE NULL END) AS raw_edges "
+            "WITH p, children, [e IN raw_edges WHERE e IS NOT NULL] AS edges "
+            "RETURN p.fqn AS fqn, p.repo AS repo, p.name AS name, "
+            "       p.description AS description, p.concept_type AS concept_type, "
+            "       p.topo_hash AS topo_hash, p.verified_leaf_coverage AS verified_leaf_coverage, "
+            "       p.n_inputs AS p_n_inputs, p.n_outputs AS p_n_outputs, "
+            "       'atom' AS artifact_kind, '' AS content_hash, '' AS semver, "
+            "       'verified_exemplar' AS provenance_kind, children, edges "
+            "ORDER BY "
+            "       CASE WHEN $concept_type <> '' AND p.concept_type = $concept_type THEN 0 ELSE 1 END ASC, "
+            "       CASE WHEN $n_inputs >= 0 THEN abs(p.n_inputs - $n_inputs) ELSE 0 END "
+            "         + CASE WHEN $n_outputs >= 0 THEN abs(p.n_outputs - $n_outputs) ELSE 0 END ASC, "
+            "       p.verified_leaf_coverage DESC "
+            "LIMIT $limit"
+        )
+        async with self._driver.session() as session:
+            result = await session.run(
+                cypher,
+                concept_type=concept_type,
+                n_inputs=n_inputs,
+                n_outputs=n_outputs,
+                min_coverage=min_coverage,
+                limit=limit,
+            )
+            return [dict(r) async for r in result]
+
     async def upsert_cdg(
         self,
         repo: str,
@@ -652,4 +713,79 @@ class GraphStore:
                 )
                 counts["deleted"] = len(stale)
 
+        return counts
+
+    async def upsert_published_cdg(
+        self,
+        projection: PublishedCDGProjection,
+    ) -> dict[str, int]:
+        """Persist a published CDG projection into Memgraph."""
+        counts = {"artifacts": 0, "nodes": 0, "data_flow": 0, "parent_of": 0}
+        async with self._driver.session() as session:
+            await session.run(
+                "MERGE (a:Artifact {artifact_id: $artifact_id}) "
+                "SET a.fqdn = $fqdn, "
+                "    a.artifact_kind = $artifact_kind, "
+                "    a.content_hash = $content_hash, "
+                "    a.semver = $semver, "
+                "    a.repo = $repo, "
+                "    a.topo_hash = $topo_hash, "
+                "    a.verified_leaf_coverage = $verified_leaf_coverage, "
+                "    a.n_inputs = $n_inputs, "
+                "    a.n_outputs = $n_outputs, "
+                "    a.published_at = $published_at "
+                "SET a:PublishedCDG",
+                artifact_id=projection.artifact_id,
+                fqdn=projection.fqdn,
+                artifact_kind=projection.artifact_kind,
+                content_hash=projection.content_hash,
+                semver=projection.semver,
+                repo=projection.repo,
+                topo_hash=projection.topo_hash,
+                verified_leaf_coverage=projection.verified_leaf_coverage,
+                n_inputs=projection.n_inputs,
+                n_outputs=projection.n_outputs,
+                published_at=projection.published_at,
+            )
+            counts["artifacts"] += 1
+
+            for node in projection.nodes:
+                await session.run(
+                    "MERGE (n:ArtifactNode {artifact_id: $artifact_id, node_id: $node_id}) "
+                    "SET n += $props",
+                    artifact_id=projection.artifact_id,
+                    node_id=str(node.get("node_id", "")),
+                    props={
+                        "name": node.get("name", ""),
+                        "description": node.get("description", ""),
+                        "concept_type": node.get("concept_type", ""),
+                        "status": node.get("status", ""),
+                        "type_signature": node.get("type_signature", ""),
+                        "matched_primitive": node.get("matched_primitive", ""),
+                    },
+                )
+                counts["nodes"] += 1
+                if str(node.get("parent_id", "") or "").strip():
+                    await session.run(
+                        "MATCH (a:ArtifactNode {artifact_id: $artifact_id, node_id: $parent_id}) "
+                        "MATCH (b:ArtifactNode {artifact_id: $artifact_id, node_id: $child_id}) "
+                        "MERGE (a)-[:PARENT_OF]->(b)",
+                        artifact_id=projection.artifact_id,
+                        parent_id=str(node.get("parent_id", "")),
+                        child_id=str(node.get("node_id", "")),
+                    )
+                    counts["parent_of"] += 1
+
+            for edge in projection.edges:
+                await session.run(
+                    "MATCH (a:ArtifactNode {artifact_id: $artifact_id, node_id: $source_id}) "
+                    "MATCH (b:ArtifactNode {artifact_id: $artifact_id, node_id: $target_id}) "
+                    "MERGE (a)-[r:DATA_FLOW {output_name: $output_name, input_name: $input_name}]->(b)",
+                    artifact_id=projection.artifact_id,
+                    source_id=str(edge.get("source_id", "")),
+                    target_id=str(edge.get("target_id", "")),
+                    output_name=str(edge.get("output_name", "")),
+                    input_name=str(edge.get("input_name", "")),
+                )
+                counts["data_flow"] += 1
         return counts

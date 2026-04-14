@@ -16,6 +16,7 @@ from sciona.services.hunter_service import (
     HunterService,
     build_direct_goal_cdg,
 )
+from sciona.services.models import MacroMatchRequest
 from sciona.types import (
     Prover,
 )
@@ -79,6 +80,25 @@ async def _run_rapid_direct_match(
         execution_mode="rapid",
         informal_desc="Rapid-mode direct retrieval without architect decomposition.",
         context={"execution_mode": "rapid", "rapid_direct_path": "true"},
+    )
+
+
+async def _run_rapid_macro_match(
+    goal: str,
+    *,
+    prover: Prover,
+    artifact_retriever: Any,
+) -> OrchestratorResult:
+    """Run the rapid-mode direct macro retrieval path."""
+    service = HunterService(None)
+    match_result = await artifact_retriever.match_goal(MacroMatchRequest(goal=goal))
+    return service.macro_match_result(
+        goal,
+        prover,
+        match_result,
+        execution_mode="rapid",
+        informal_desc="Rapid-mode direct macro retrieval without architect decomposition.",
+        context={"execution_mode": "rapid", "rapid_macro_direct_path": "true"},
     )
 
 

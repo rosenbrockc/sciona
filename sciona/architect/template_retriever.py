@@ -15,6 +15,7 @@ from sciona.architect.graph_alignment import AlignmentScore, GraphAlignmentScore
 from sciona.architect.graph_retrieval import (
     CDGSubgraphRetriever,
     ExampleDecomposition,
+    _parse_record,
 )
 
 if TYPE_CHECKING:
@@ -152,20 +153,37 @@ class TemplateRetriever:
 
         try:
             concept_type = failed_node.concept_type.value
-            same_family_records = await self._store.query_verified_exemplars(
-                concept_type=concept_type,
-                n_inputs=len(failed_node.inputs),
-                n_outputs=len(failed_node.outputs),
-                min_coverage=0.5,
-                limit=10,
-            )
-            cross_family_records = await self._store.query_verified_exemplars(
-                concept_type="",
-                n_inputs=len(failed_node.inputs),
-                n_outputs=len(failed_node.outputs),
-                min_coverage=0.5,
-                limit=10,
-            )
+            query_templates = getattr(self._store, "query_verified_exemplar_templates", None)
+            if callable(query_templates):
+                same_family_records = await query_templates(
+                    concept_type=concept_type,
+                    n_inputs=len(failed_node.inputs),
+                    n_outputs=len(failed_node.outputs),
+                    min_coverage=0.5,
+                    limit=10,
+                )
+                cross_family_records = await query_templates(
+                    concept_type="",
+                    n_inputs=len(failed_node.inputs),
+                    n_outputs=len(failed_node.outputs),
+                    min_coverage=0.5,
+                    limit=10,
+                )
+            else:
+                same_family_records = await self._store.query_verified_exemplars(
+                    concept_type=concept_type,
+                    n_inputs=len(failed_node.inputs),
+                    n_outputs=len(failed_node.outputs),
+                    min_coverage=0.5,
+                    limit=10,
+                )
+                cross_family_records = await self._store.query_verified_exemplars(
+                    concept_type="",
+                    n_inputs=len(failed_node.inputs),
+                    n_outputs=len(failed_node.outputs),
+                    min_coverage=0.5,
+                    limit=10,
+                )
 
             merged_records: list[dict[str, Any]] = []
             seen_fqns: set[str] = set()
@@ -181,6 +199,13 @@ class TemplateRetriever:
                 return []
 
             matches: list[TemplateMatch] = []
+            description_tokens = set(
+                str(
+                    failure_context.get("description")
+                    or failure_context.get("statement")
+                    or ""
+                ).lower().split()
+            )
             for rec in merged_records:
                 coverage = float(rec.get("verified_leaf_coverage", 0.0))
                 candidate_concept = str(rec.get("concept_type", "") or "")
@@ -191,20 +216,40 @@ class TemplateRetriever:
                     candidate_n_outputs - len(failed_node.outputs)
                 )
                 io_match = max(0.0, 1.0 - 0.15 * io_delta)
-                confidence = min(0.95, coverage * (0.65 + 0.25 * io_match + 0.10 * concept_match))
+                rec_text = " ".join(
+                    str(part or "")
+                    for part in [rec.get("name"), rec.get("description"), rec.get("fqn")]
+                ).lower()
+                rec_tokens = set(rec_text.split())
+                context_overlap = (
+                    len(description_tokens & rec_tokens) / max(1, len(description_tokens))
+                    if description_tokens
+                    else 0.0
+                )
+                confidence = min(
+                    0.98,
+                    coverage * (0.60 + 0.20 * io_match + 0.10 * concept_match + 0.10 * context_overlap),
+                )
                 if confidence >= self._confidence_threshold:
-                    example = ExampleDecomposition(
-                        fqn=rec.get("fqn", ""),
-                        name="",
-                        description="",
-                        concept_type=candidate_concept or concept_type,
-                        repo=rec.get("repo", ""),
-                        topo_hash=rec.get("topo_hash", ""),
-                        children=[],
-                        edges=[],
-                        retrieval_layer=0,
-                        score=coverage,
-                    )
+                    if rec.get("children") is not None:
+                        example = _parse_record(rec, layer=0, score=coverage)
+                        if not example.concept_type:
+                            example.concept_type = candidate_concept or concept_type
+                    else:
+                        example = ExampleDecomposition(
+                            fqn=rec.get("fqn", ""),
+                            name="",
+                            description="",
+                            concept_type=candidate_concept or concept_type,
+                            repo=rec.get("repo", ""),
+                            topo_hash=rec.get("topo_hash", ""),
+                            children=[],
+                            edges=[],
+                            retrieval_layer=0,
+                            score=coverage,
+                            verified_leaf_coverage=coverage,
+                            provenance_kind="verified_exemplar",
+                        )
                     alignment = AlignmentScore(
                         total=confidence,
                         concept_type_match=concept_match,

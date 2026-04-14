@@ -84,6 +84,19 @@ async def publish_atom(
         raise HTTPException(500, "Failed to create atom")
 
     atom_id = atom_row["atom_id"]
+    semver_result = await (
+        supabase.table("atom_versions")
+        .select("version_id")
+        .eq("atom_id", atom_id)
+        .eq("semver", body.semver)
+        .maybe_single()
+        .execute()
+    )
+    if _first_row(semver_result.data):
+        raise HTTPException(
+            409,
+            f"Version {body.semver!r} already exists for {body.fqdn!r}",
+        )
     await (
         supabase.table("atom_versions")
         .update({"is_latest": False})

@@ -118,6 +118,25 @@ def _normalize_io_spec_row(row: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _normalize_benchmark_row(
+    row: Mapping[str, Any],
+    *,
+    atom_fqdn: str | None = None,
+) -> dict[str, Any]:
+    benchmark_id = row.get("benchmark_id") or row.get("benchmark_name") or ""
+    benchmark_name = row.get("benchmark_name") or benchmark_id
+    return {
+        "atom_fqdn": atom_fqdn or str(row.get("atom_fqdn", "")),
+        "content_hash": str(row.get("content_hash", "")),
+        "benchmark_id": benchmark_id,
+        "benchmark_name": benchmark_name,
+        "metric_name": str(row.get("metric_name", "")),
+        "metric_value": row.get("metric_value"),
+        "dataset_tag": str(row.get("dataset_tag", "")),
+        "measured_at": _stringify(row.get("measured_at")),
+    }
+
+
 async def _fetch_all_rows(
     base_url: str,
     access_token: str,
@@ -327,19 +346,7 @@ async def fetch_manifest_data(
             atom_fqdn = str(row.get("atom_fqdn", ""))
             if atom_fqdns and atom_fqdn not in atom_fqdns:
                 continue
-            benchmark_id = row.get("benchmark_id") or row.get("benchmark_name") or ""
-            benchmarks.append(
-                {
-                    "atom_fqdn": atom_fqdn,
-                    "content_hash": row.get("content_hash", ""),
-                    "benchmark_id": benchmark_id,
-                    "benchmark_name": row.get("benchmark_name", benchmark_id),
-                    "metric_name": row.get("metric_name", ""),
-                    "metric_value": row.get("metric_value"),
-                    "dataset_tag": row.get("dataset_tag", ""),
-                    "measured_at": row.get("measured_at", ""),
-                }
-            )
+            benchmarks.append(_normalize_benchmark_row(row, atom_fqdn=atom_fqdn))
     except httpx.HTTPStatusError:
         source_rows = await _fetch_all_rows(
             base_url,
@@ -369,18 +376,15 @@ async def fetch_manifest_data(
             atom_fqdn = str(atom.get("fqdn", ""))
             if atom_fqdns and atom_fqdn not in atom_fqdns:
                 continue
-            benchmark_id = row.get("benchmark_id") or row.get("benchmark_name") or ""
             benchmarks.append(
-                {
-                    "atom_fqdn": atom_fqdn,
-                    "content_hash": version.get("content_hash", ""),
-                    "benchmark_id": benchmark_id,
-                    "benchmark_name": row.get("benchmark_name", benchmark_id),
-                    "metric_name": row.get("metric_name", ""),
-                    "metric_value": row.get("metric_value"),
-                    "dataset_tag": row.get("dataset_tag", ""),
-                    "measured_at": row.get("measured_at", ""),
-                }
+                _normalize_benchmark_row(
+                    {
+                        **row,
+                        "atom_fqdn": atom_fqdn,
+                        "content_hash": version.get("content_hash", ""),
+                    },
+                    atom_fqdn=atom_fqdn,
+                )
             )
 
     return {

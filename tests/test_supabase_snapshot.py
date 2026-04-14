@@ -5,10 +5,11 @@ import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from fastapi import HTTPException
 
-from sciona.api.routers.catalog import get_atom_document
+from sciona.api.routers.catalog import get_artifact_document, get_atom_document
 from sciona.api.snapshot import (
     export_tiered_manifests,
     fetch_manifest_data,
@@ -140,6 +141,79 @@ async def test_fetch_manifest_data_applies_visibility_tier_filter(monkeypatch):
 
     assert data["atoms"] == []
     assert captured_filters[0]["visibility_tier"] == "in.(general,early_access)"
+
+
+@pytest.mark.asyncio
+async def test_fetch_manifest_data_falls_back_to_atom_benchmarks(monkeypatch):
+    atoms = [
+        {
+            "atom_id": "a1",
+            "fqdn": "pkg.filter",
+            "status": "approved",
+            "domain_tags": ["signal"],
+            "description": "Filter signal",
+            "visibility_tier": "general",
+            "source_kind": "hand_written",
+            "stateful_kind": "none",
+            "is_stochastic": False,
+            "is_ffi": False,
+            "namespace_root": "sciona.atoms",
+            "namespace_path": "",
+            "source_repo_id": None,
+            "source_package": "",
+            "source_module_path": "",
+            "source_symbol": "",
+            "is_publishable": True,
+        }
+    ]
+    version_rows = [{"version_id": "v1", "atom_id": "a1", "content_hash": "abc123"}]
+    benchmark_rows = [
+        {
+            "benchmark_id": "bench-1",
+            "version_id": "v1",
+            "benchmark_name": "signal_v1",
+            "metric_name": "loss",
+            "metric_value": 0.42,
+            "dataset_tag": "v1",
+            "measured_at": "2026-03-31T00:00:00Z",
+        }
+    ]
+
+    async def fake_fetch_all_rows(base_url, token, table, **kwargs):
+        del base_url, token, kwargs
+        if table == "atoms":
+            return atoms
+        if table == "hyperparams":
+            return []
+        if table == "atom_audit_rollups":
+            return []
+        if table == "atom_descriptions":
+            return []
+        if table == "atom_io_specs":
+            return []
+        if table == "atom_benchmarks":
+            return benchmark_rows
+        if table == "atom_versions":
+            return version_rows
+        raise AssertionError(f"unexpected table {table!r}")
+
+    async def fake_call_rpc(*args, **kwargs):
+        request = httpx.Request(
+            "POST",
+            "https://example.supabase.co/rest/v1/rpc/get_manifest_benchmarks",
+        )
+        response = httpx.Response(404, request=request)
+        raise httpx.HTTPStatusError("missing", request=request, response=response)
+
+    monkeypatch.setattr("sciona.api.snapshot._fetch_all_rows", fake_fetch_all_rows)
+    monkeypatch.setattr("sciona.api.snapshot._call_rpc", fake_call_rpc)
+
+    data = await fetch_manifest_data("https://example.supabase.co", "token")
+
+    assert data["benchmarks"][0]["atom_fqdn"] == "pkg.filter"
+    assert data["benchmarks"][0]["content_hash"] == "abc123"
+    assert data["benchmarks"][0]["benchmark_id"] == "bench-1"
+    assert data["benchmarks"][0]["benchmark_name"] == "signal_v1"
 
 
 def test_generate_manifest_sqlite_preserves_benchmark_id(tmp_path: Path):
@@ -350,26 +424,44 @@ def test_resolve_manifest_url_uses_tier(monkeypatch):
 
 
 class _FakeSupabase:
-    def __init__(self, value):
-        self.value = value
+    def __init__(self, payloads: dict[str, object]):
+        self.payloads = payloads
 
     def rpc(self, name: str, payload: dict[str, str]):
-        assert name == "get_atom_document"
-        return SimpleNamespace(execute=self._execute)
+        del payload
+        return SimpleNamespace(execute=lambda: self._execute(name))
 
-    async def _execute(self):
-        return SimpleNamespace(data=self.value)
+    async def _execute(self, name: str):
+        return SimpleNamespace(data=self.payloads.get(name))
 
 
 @pytest.mark.asyncio
 async def test_get_atom_document_returns_rpc_payload():
     payload = {"atom": {"fqdn": "pkg.filter"}}
-    result = await get_atom_document("pkg.filter", supabase=_FakeSupabase(payload))
+    result = await get_atom_document(
+        "pkg.filter",
+        supabase=_FakeSupabase({"get_atom_document": payload}),
+    )
     assert result == payload
 
 
 @pytest.mark.asyncio
 async def test_get_atom_document_raises_for_missing_atom():
     with pytest.raises(HTTPException) as excinfo:
-        await get_atom_document("pkg.missing", supabase=_FakeSupabase(None))
+        await get_atom_document(
+            "pkg.missing",
+            supabase=_FakeSupabase({"get_atom_document": None}),
+        )
     assert excinfo.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_artifact_document_falls_back_to_atom_document():
+    payload = {"atom": {"fqdn": "pkg.filter"}}
+    result = await get_artifact_document(
+        "pkg.filter",
+        supabase=_FakeSupabase(
+            {"get_artifact_document": None, "get_atom_document": payload}
+        ),
+    )
+    assert result == payload

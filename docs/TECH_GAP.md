@@ -26,6 +26,12 @@ Scope of this audit:
 - The second major gap is completeness: the registry publish path still writes
   only the minimal `atoms` + `atom_versions` records, not the richer
   documentation bundle required by the plan.
+- The current platform is still atom-centric. Published CDGs are not first-class
+  catalog artifacts, so macro-solution retrieval happens only indirectly.
+  See
+  [UNIFIED_ARTIFACT_MODEL_AND_MACRO_RETRIEVAL_PLAN.md](/Users/conrad/personal/sciona-matcher/docs/UNIFIED_ARTIFACT_MODEL_AND_MACRO_RETRIEVAL_PLAN.md)
+  and
+  [UNIFIED_ARTIFACT_IMPLEMENTATION_PLAN.md](/Users/conrad/personal/sciona-matcher/docs/plans/UNIFIED_ARTIFACT_IMPLEMENTATION_PLAN.md).
 - The biggest document drift is Phase 5. The repo has already removed the
   dual-write wrapper and asyncpg API dependency, so the plan should no longer be
   read as "future staged cutover"; it needs to be rebased around hardening the

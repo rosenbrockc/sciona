@@ -69,6 +69,11 @@ class ExampleDecomposition:
     abstract_type_class: str = ""
     n_inputs: int = 0
     n_outputs: int = 0
+    artifact_kind: str = "atom"
+    content_hash: str = ""
+    semver: str = ""
+    provenance_kind: str = "trace"
+    verified_leaf_coverage: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -123,6 +128,11 @@ def _parse_record(record: dict[str, Any], layer: int, score: float) -> ExampleDe
         abstract_type_class=record.get("p_abstract_type_class", ""),
         n_inputs=int(record.get("p_n_inputs", 0) or 0),
         n_outputs=int(record.get("p_n_outputs", 0) or 0),
+        artifact_kind=record.get("artifact_kind", "atom"),
+        content_hash=record.get("content_hash", ""),
+        semver=record.get("semver", ""),
+        provenance_kind=record.get("provenance_kind", "trace"),
+        verified_leaf_coverage=float(record.get("verified_leaf_coverage", 0.0) or 0.0),
     )
 
 

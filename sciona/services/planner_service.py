@@ -13,6 +13,7 @@ from sciona.services.models import (
     HunterBatchMatchRequest,
     HunterBatchMatchResult,
     HunterDirectMatchRequest,
+    MacroMatchRequest,
     OrchestrationRequest,
     PlannerBudget,
     PlannerPolicy,
@@ -57,6 +58,7 @@ class SingleAgentPlanner:
         prover: Prover,
         max_rounds: int,
         hunter_concurrency: int,
+        artifact_retriever: Any | None = None,
     ) -> None:
         self._hunter = hunter
         self._architect_factory = architect_factory
@@ -65,6 +67,7 @@ class SingleAgentPlanner:
         self._prover = prover
         self._max_rounds = max_rounds
         self._hunter_concurrency = hunter_concurrency
+        self._artifact_retriever = artifact_retriever
 
     async def run(self, goal: str) -> PlannerRunResult:
         state = PlannerState(
@@ -88,6 +91,44 @@ class SingleAgentPlanner:
         )
 
         if state.policy.direct_grounding_enabled:
+            if self._artifact_retriever is not None:
+                macro_match = await self._timed_tool_call(
+                    state,
+                    "artifact.match_goal",
+                    self._artifact_retriever.match_goal,
+                    MacroMatchRequest(goal=goal),
+                )
+                self._record_step(
+                    state,
+                    action="direct_macro_match",
+                    detail="Attempted published macro-artifact retrieval before Hunter grounding.",
+                    status="completed" if getattr(macro_match, "success", False) else "failed",
+                )
+                if getattr(macro_match, "success", False):
+                    state.current_focus = "goal_grounded"
+                    state.open_failures = []
+                    state.artifacts["cdg"] = "macro_goal_cdg"
+                    state.artifacts["macro_match"] = "artifact_direct_match"
+                    self._bump_artifact(state, "cdg")
+                    self._bump_artifact(state, "macro_match")
+                    state.verification_status = "verified"
+                    state.termination_reason = "macro_direct_verified"
+                    return self._complete(
+                        result=self._hunter.macro_match_result(
+                            goal,
+                            self._prover,
+                            macro_match,
+                            execution_mode="single_agent",
+                            informal_desc="Single-agent planner direct macro-artifact retrieval without architect decomposition.",
+                            context={
+                                "execution_mode": "single_agent",
+                                "single_agent_macro_direct_path": "true",
+                            },
+                        ),
+                        execution_path="single_agent_macro_direct",
+                        state=state,
+                    )
+
             direct_match = await self._timed_tool_call(
                 state,
                 "hunter.match_goal",

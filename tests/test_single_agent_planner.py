@@ -7,9 +7,11 @@ import pytest
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
 from sciona.orchestrator import OrchestratorResult
+from sciona.services.artifact_retrieval import MacroArtifactRetriever
 from sciona.services import (
     ArchitectDecomposeRequest,
     HunterBatchMatchResult,
+    MacroArtifactCandidate,
     OrchestrationRequest,
     SingleAgentPlanner,
 )
@@ -17,10 +19,11 @@ from sciona.types import FailureAction, MatchFailureReport, PDGNode, Prover
 
 
 class _FakeHunterService:
-    def __init__(self, *, direct_match, batch_result, direct_result) -> None:
+    def __init__(self, *, direct_match, batch_result, direct_result, macro_result=None) -> None:
         self._direct_match = direct_match
         self._batch_result = batch_result
         self._direct_result = direct_result
+        self._macro_result = macro_result if macro_result is not None else direct_result
         self.goal_calls = 0
         self.batch_calls = 0
 
@@ -40,6 +43,9 @@ class _FakeHunterService:
 
     def direct_match_result(self, *args, **kwargs):
         return self._direct_result
+
+    def macro_match_result(self, *args, **kwargs):
+        return self._macro_result
 
 
 class _FakeArchitectService:
@@ -120,6 +126,54 @@ async def test_single_agent_planner_returns_direct_result_without_decomposition(
     assert hunter.batch_calls == 0
     assert architect_called is False
     assert orchestrator.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_single_agent_planner_prefers_macro_direct_result_when_available():
+    macro_result = OrchestratorResult(cdg=SimpleNamespace(), match_results=[], rounds_used=1)
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=True),
+        batch_result=HunterBatchMatchResult(match_results=[], failures=[], ungroundable=[]),
+        direct_result=OrchestratorResult(cdg=SimpleNamespace(), match_results=[], rounds_used=1),
+        macro_result=macro_result,
+    )
+    architect_called = False
+
+    async def _architect_factory():
+        nonlocal architect_called
+        architect_called = True
+        return _FakeArchitectService(SimpleNamespace())
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=_FakeOrchestratorService(macro_result),
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+        artifact_retriever=MacroArtifactRetriever(
+            [
+                MacroArtifactCandidate(
+                    fqdn="pkg.signal.rate_detector",
+                    semver="1.0.0",
+                    content_hash="abc123",
+                    description="Detect heart rate from ECG",
+                    conceptual_summary="heart rate detector",
+                    verified_leaf_coverage=0.9,
+                )
+            ],
+            min_score=0.3,
+        ),
+    )
+
+    result = await planner.run("Detect heart rate from ECG")
+
+    assert result.execution_path == "single_agent_macro_direct"
+    assert result.result is macro_result
+    assert [step.action for step in result.steps] == ["direct_macro_match"]
+    assert hunter.goal_calls == 0
+    assert architect_called is False
 
 
 @pytest.mark.asyncio

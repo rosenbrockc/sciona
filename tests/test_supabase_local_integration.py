@@ -729,6 +729,20 @@ async def test_local_supabase_member_seed_and_publish_atom_routine(
             await registry.publish_atom(body, user=owner, supabase=supabase)
         assert excinfo.value.status_code == 409
 
+        duplicate_semver = AtomPublishRequest(
+            fqdn=body.fqdn,
+            semver=body.semver,
+            description="Different tarball, same public version",
+            domain_tags=["signal", "testing"],
+            source_tar_b64=base64.b64encode(
+                f"different content {suffix}".encode()
+            ).decode(),
+            fingerprint="b" * 64,
+        )
+        with pytest.raises(HTTPException) as semver_excinfo:
+            await registry.publish_atom(duplicate_semver, user=owner, supabase=supabase)
+        assert semver_excinfo.value.status_code == 409
+
         await _insert_publishability_requirements(
             conn,
             atom_id=str(published.atom_id),

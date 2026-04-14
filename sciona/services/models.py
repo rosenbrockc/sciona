@@ -55,6 +55,41 @@ class HunterBatchMatchResult:
 
 
 @dataclass(frozen=True)
+class MacroArtifactCandidate:
+    """Published macro artifact candidate considered before leaf grounding."""
+
+    fqdn: str
+    semver: str = ""
+    content_hash: str = ""
+    artifact_kind: str = "cdg"
+    name: str = ""
+    description: str = ""
+    conceptual_summary: str = ""
+    domain_tags: list[str] = field(default_factory=list)
+    verified_leaf_coverage: float = 0.0
+    score: float = 0.0
+    visibility_tier: str = "general"
+
+
+@dataclass(frozen=True)
+class MacroMatchRequest:
+    """Request model for direct macro-artifact matching."""
+
+    goal: str
+
+
+@dataclass(frozen=True)
+class MacroMatchResult:
+    """Deterministic ranked result for direct macro retrieval."""
+
+    success: bool
+    candidate: MacroArtifactCandidate | None = None
+    ranked_candidates: list[MacroArtifactCandidate] = field(default_factory=list)
+    score: float = 0.0
+    rejection_reason: str = ""
+
+
+@dataclass(frozen=True)
 class PlannerStep:
     """A planner-visible action taken during tool orchestration."""
 
