@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import sqlite3
 import platform
 import sys
 import types
@@ -13,6 +14,56 @@ import pytest
 
 from sciona.indexer.models import IndexEntry, IndexMetadata
 from sciona.types import Declaration, Prover
+
+
+class _FakeManifestEmbedder:
+    backend = "fastembed"
+    model_name = "fake-model"
+
+    def __init__(self) -> None:
+        self.dim = 4
+        self._vectors_by_name: dict[str, np.ndarray] = {}
+
+    def embed_batch(self, texts: list[str], batch_size: int = 32) -> np.ndarray:
+        del batch_size
+        vectors: list[np.ndarray] = []
+        for idx, text in enumerate(texts):
+            vec = np.zeros(self.dim, dtype=np.float32)
+            vec[idx % self.dim] = 1.0
+            vectors.append(vec)
+            name = text.split(" : ", 1)[0].splitlines()[0]
+            self._vectors_by_name[name] = vec
+        if not vectors:
+            return np.zeros((0, self.dim), dtype=np.float32)
+        return np.vstack(vectors)
+
+    def embed(self, text: str) -> np.ndarray:
+        for name, vec in self._vectors_by_name.items():
+            if name in text:
+                return vec
+        return np.zeros(self.dim, dtype=np.float32)
+
+
+class _StubSemanticIndex:
+    def __init__(
+        self,
+        *,
+        hits_by_query: dict[str, list[tuple[Declaration, float]]],
+        declarations: dict[str, Declaration] | None = None,
+    ) -> None:
+        self._hits_by_query = hits_by_query
+        self._declarations = declarations or {}
+
+    def search_by_embedding(
+        self, query_text: str, k: int = 10
+    ) -> list[tuple[Declaration, float]]:
+        return list(self._hits_by_query.get(query_text, []))[:k]
+
+    def search_by_type(self, type_signature: str, k: int = 10) -> list[Declaration]:
+        return [decl for decl, _score in self.search_by_embedding(type_signature, k=k)]
+
+    def get_declaration(self, name: str) -> Declaration | None:
+        return self._declarations.get(name)
 
 
 class TestIndexEntry:
@@ -193,6 +244,191 @@ class TestEmbedderFactory:
 
         assert embedder.dim == 768
         assert order == ["juliacall", "tokenizer", "model", "eval"]
+
+
+class TestManifestIndexBuilder:
+    def test_build_index_from_manifest_sqlite_uses_descriptions_and_io_specs(
+        self, tmp_path
+    ):
+        pytest.importorskip("faiss")
+        from sciona.indexer.builder import build_index_from_manifest_sqlite
+
+        db_path = tmp_path / "manifest.sqlite"
+        con = sqlite3.connect(str(db_path))
+        con.executescript(
+            """
+            CREATE TABLE atoms (
+                atom_id TEXT PRIMARY KEY,
+                fqdn TEXT UNIQUE NOT NULL,
+                status TEXT NOT NULL DEFAULT 'approved',
+                domain_tags TEXT NOT NULL DEFAULT '',
+                description TEXT NOT NULL DEFAULT '',
+                visibility_tier TEXT NOT NULL DEFAULT 'general',
+                source_kind TEXT NOT NULL DEFAULT 'hand_written',
+                stateful_kind TEXT NOT NULL DEFAULT 'none',
+                is_stochastic INTEGER NOT NULL DEFAULT 0,
+                is_ffi INTEGER NOT NULL DEFAULT 0,
+                namespace_root TEXT NOT NULL DEFAULT 'sciona.atoms',
+                namespace_path TEXT NOT NULL DEFAULT '',
+                source_repo_id TEXT NOT NULL DEFAULT '',
+                source_package TEXT NOT NULL DEFAULT '',
+                source_module_path TEXT NOT NULL DEFAULT '',
+                source_symbol TEXT NOT NULL DEFAULT '',
+                is_publishable INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE descriptions (
+                description_id TEXT PRIMARY KEY,
+                atom_id TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                content TEXT NOT NULL DEFAULT '',
+                language TEXT NOT NULL DEFAULT 'en',
+                generated_by TEXT NOT NULL DEFAULT '',
+                reviewed INTEGER NOT NULL DEFAULT 0,
+                jargon_score REAL NOT NULL DEFAULT 1.0,
+                created_at TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT ''
+            );
+            CREATE TABLE io_specs (
+                atom_id TEXT NOT NULL,
+                port_name TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                type_desc TEXT NOT NULL DEFAULT '',
+                constraints TEXT NOT NULL DEFAULT '',
+                data_kind TEXT NOT NULL DEFAULT '',
+                required INTEGER NOT NULL DEFAULT 1,
+                default_value_repr TEXT NOT NULL DEFAULT '',
+                ordinal INTEGER NOT NULL DEFAULT 0
+            );
+            """
+        )
+        con.execute(
+            """
+            INSERT INTO atoms (atom_id, fqdn, status, domain_tags, description, source_repo_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "a1",
+                "pkg.filter",
+                "approved",
+                "signal,analysis",
+                "Technical fallback description",
+                "repo-123",
+            ),
+        )
+        con.execute(
+            """
+            INSERT INTO atoms (atom_id, fqdn, status, description, source_repo_id)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            ("a2", "pkg.skipme", "draft", "Should not index", "repo-999"),
+        )
+        con.executemany(
+            """
+            INSERT INTO descriptions (
+                description_id, atom_id, kind, content, reviewed, jargon_score, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                ("d1", "a1", "technical", "Technical fallback description", 0, 1.0, "2026-01-01T00:00:00Z"),
+                ("d2", "a1", "dejargonized", "Keep the signal within range", 1, 0.1, "2026-01-02T00:00:00Z"),
+            ],
+        )
+        con.executemany(
+            """
+            INSERT INTO io_specs (
+                atom_id, port_name, direction, type_desc, required, default_value_repr, ordinal
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                ("a1", "signal", "input", "ndarray", 1, "", 0),
+                ("a1", "threshold", "input", "float", 0, "0.5", 1),
+                ("a1", "filtered", "output", "ndarray", 1, "", 0),
+            ],
+        )
+        con.commit()
+        con.close()
+
+        store = build_index_from_manifest_sqlite(db_path, embedder=_FakeManifestEmbedder())
+
+        assert store.size == 1
+        decl = next(iter(store._declarations.values()))
+        assert decl.name == "pkg.filter"
+        assert decl.source_lib == "manifest:repo-123"
+        assert decl.docstring == "Keep the signal within range"
+        assert decl.type_signature == (
+            "(signal: ndarray, threshold?: float [default=0.5]) -> filtered: ndarray"
+        )
+        assert "signal,analysis" in decl.conceptual_summary
+
+
+class TestCompositeSemanticIndex:
+    def test_merges_results_by_best_score_and_name(self):
+        from sciona.indexer.unified import CompositeSemanticIndex, SemanticIndexSource
+
+        shared_local = Declaration(name="shared", type_signature="Local")
+        shared_manifest = Declaration(name="shared", type_signature="Manifest")
+        local_only = Declaration(name="local_only", type_signature="LocalOnly")
+        manifest_only = Declaration(name="manifest_only", type_signature="ManifestOnly")
+
+        local = _StubSemanticIndex(
+            hits_by_query={"query": [(shared_local, 0.80), (local_only, 0.70)]},
+            declarations={"shared": shared_local, "local_only": local_only},
+        )
+        manifest = _StubSemanticIndex(
+            hits_by_query={"query": [(shared_manifest, 0.90), (manifest_only, 0.60)]},
+            declarations={"shared": shared_manifest, "manifest_only": manifest_only},
+        )
+
+        composite = CompositeSemanticIndex(
+            [
+                SemanticIndexSource(local, "fastembed:fake-model", name="local"),
+                SemanticIndexSource(manifest, "fastembed:fake-model", name="manifest"),
+            ]
+        )
+
+        hits = composite.search_by_embedding("query", k=3)
+        assert [decl.name for decl, _score in hits] == [
+            "shared",
+            "local_only",
+            "manifest_only",
+        ]
+        assert hits[0][1] == 0.90
+        assert composite.get_declaration("shared") is shared_local
+
+    def test_prefers_first_source_on_tie_and_rejects_space_mismatch(self):
+        from sciona.indexer.unified import CompositeSemanticIndex, SemanticIndexSource
+
+        local_decl = Declaration(name="shared", type_signature="Local")
+        manifest_decl = Declaration(name="shared", type_signature="Manifest")
+
+        local = _StubSemanticIndex(
+            hits_by_query={"query": [(local_decl, 0.80)]},
+            declarations={"shared": local_decl},
+        )
+        manifest = _StubSemanticIndex(
+            hits_by_query={"query": [(manifest_decl, 0.80)]},
+            declarations={"shared": manifest_decl},
+        )
+
+        composite = CompositeSemanticIndex(
+            [
+                SemanticIndexSource(local, "fastembed:fake-model", name="local"),
+                SemanticIndexSource(manifest, "fastembed:fake-model", name="manifest"),
+            ]
+        )
+        hits = composite.search_by_embedding("query", k=1)
+        assert hits[0][0] is local_decl
+        assert composite.get_declaration("shared") is local_decl
+
+        with pytest.raises(ValueError, match="incompatible embedding spaces"):
+            CompositeSemanticIndex(
+                [
+                    SemanticIndexSource(local, "fastembed:model-a", name="local"),
+                    SemanticIndexSource(manifest, "fastembed:model-b", name="manifest"),
+                ]
+            )
 
 
 class TestUniXcoderEmbedder:

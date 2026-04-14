@@ -295,6 +295,54 @@ class TestLoadManifestSQLite:
         result = load_hyperparams_manifest_sqlite(tmp_path / "missing.sqlite")
         assert result == {}
 
+    def test_load_sqlite_warns_when_manifest_is_stale(self, tmp_path):
+        db = tmp_path / "manifest.sqlite"
+        _create_test_db(
+            db,
+            atoms=[(1, "pkg.stale", "approved")],
+            hyperparams=[
+                (1, "cutoff", "0.5", "null", "null", "null", 0, "null", "null", "", "approved"),
+            ],
+        )
+        con = sqlite3.connect(str(db))
+        con.execute("CREATE TABLE manifest_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        con.executemany(
+            "INSERT INTO manifest_metadata (key, value) VALUES (?, ?)",
+            [
+                ("generated_at", "2020-01-01T00:00:00Z"),
+                ("content_hash", "bogus"),
+            ],
+        )
+        con.commit()
+        con.close()
+
+        with pytest.warns(UserWarning, match="Run 'sciona catalog sync' to update"):
+            load_hyperparams_manifest_sqlite(db)
+
+    def test_load_sqlite_warns_on_content_hash_mismatch(self, tmp_path):
+        db = tmp_path / "manifest.sqlite"
+        _create_test_db(
+            db,
+            atoms=[(1, "pkg.hash", "approved")],
+            hyperparams=[
+                (1, "cutoff", "0.5", "null", "null", "null", 0, "null", "null", "", "approved"),
+            ],
+        )
+        con = sqlite3.connect(str(db))
+        con.execute("CREATE TABLE manifest_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        con.executemany(
+            "INSERT INTO manifest_metadata (key, value) VALUES (?, ?)",
+            [
+                ("generated_at", "2099-01-01T00:00:00Z"),
+                ("content_hash", "bogus"),
+            ],
+        )
+        con.commit()
+        con.close()
+
+        with pytest.warns(UserWarning, match="content-hash validation"):
+            load_hyperparams_manifest_sqlite(db)
+
 
 class TestLoadManifestConvenience:
     """Tests for load_manifest() that auto-selects SQLite vs JSON."""

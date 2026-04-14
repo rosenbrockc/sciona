@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sqlite3
 from pathlib import Path
 
 from sciona.architect.catalog import PrimitiveCatalog
@@ -219,3 +220,78 @@ def test_load_architect_catalog_merges_tunables_from_multiple_sources(
     assert second is not None
     assert [param.name for param in first.tunable_params] == ["alpha"]
     assert [param.name for param in second.tunable_params] == ["beta"]
+
+
+def test_load_architect_catalog_seeds_manifest_sqlite(monkeypatch, tmp_path: Path) -> None:
+    skill_index_dir = tmp_path / "skill_index"
+    skill_index_dir.mkdir()
+
+    manifest_dir = tmp_path / ".sciona"
+    manifest_dir.mkdir()
+    manifest_path = manifest_dir / "manifest.sqlite"
+    con = sqlite3.connect(str(manifest_path))
+    con.executescript(
+        """
+        CREATE TABLE atoms (
+            atom_id TEXT PRIMARY KEY,
+            fqdn TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'approved',
+            domain_tags TEXT NOT NULL DEFAULT '',
+            description TEXT NOT NULL DEFAULT '',
+            visibility_tier TEXT NOT NULL DEFAULT 'general',
+            source_kind TEXT NOT NULL DEFAULT 'hand_written',
+            namespace_root TEXT NOT NULL DEFAULT 'sciona.atoms',
+            source_repo_id TEXT NOT NULL DEFAULT '',
+            source_package TEXT NOT NULL DEFAULT '',
+            source_module_path TEXT NOT NULL DEFAULT '',
+            source_symbol TEXT NOT NULL DEFAULT ''
+        );
+        CREATE TABLE io_specs (
+            atom_id TEXT NOT NULL,
+            port_name TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            type_desc TEXT NOT NULL DEFAULT '',
+            constraints TEXT NOT NULL DEFAULT '',
+            data_kind TEXT NOT NULL DEFAULT '',
+            required INTEGER NOT NULL DEFAULT 1,
+            default_value_repr TEXT NOT NULL DEFAULT '',
+            ordinal INTEGER NOT NULL DEFAULT 0
+        );
+        """
+    )
+    con.execute(
+        """
+        INSERT INTO atoms (atom_id, fqdn, status, domain_tags, description, source_repo_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        ("a1", "manifest_primitive", "approved", "signal_filter", "From manifest", "repo-1"),
+    )
+    con.execute(
+        """
+        INSERT INTO io_specs (
+            atom_id, port_name, direction, type_desc, constraints, data_kind, required, default_value_repr, ordinal
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("a1", "signal", "input", "float", "", "signal", 1, "", 0),
+    )
+    con.commit()
+    con.close()
+
+    monkeypatch.setattr("sciona.sources.load_sources", lambda path=None: object())
+    monkeypatch.setattr(
+        "sciona.architect.source_catalog.seed_catalog_from_sources",
+        lambda catalog, **kwargs: 0,
+    )
+    monkeypatch.setattr(
+        "sciona.architect.hyperparams.get_runtime_signal_event_rate_params",
+        lambda: {},
+    )
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+
+    config = argparse.Namespace(skill_index_dir=skill_index_dir, sources_file=tmp_path / "sources.yml")
+    args = argparse.Namespace(catalog=None, sources_only=True)
+
+    catalog, _alignment = _load_architect_catalog(args, config)
+
+    assert catalog.get("manifest_primitive") is not None

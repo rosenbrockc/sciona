@@ -2,16 +2,30 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from collections.abc import Mapping, Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 from typing import Any
 
 import httpx
 
 DEFAULT_PAGE_SIZE = 1000
+DEFAULT_MANIFEST_TIER = "general"
+DEFAULT_MANIFEST_VISIBILITY_TIER = "all"
+MANIFEST_TIERS: dict[str, tuple[str, ...]] = {
+    "general": ("general",),
+    "early_access": ("general", "early_access"),
+    "internal": ("general", "early_access", "internal"),
+}
+
+
+def manifest_artifact_key(tier: str) -> str:
+    """Return the published object key for a manifest tier."""
+    return f"manifests/manifest-{tier}.sqlite"
 
 
 def _auth_headers(access_token: str) -> dict[str, str]:
@@ -42,6 +56,66 @@ def _domain_tags_to_text(tags: Any) -> str:
 
 def _chunk(values: Sequence[str], size: int) -> list[list[str]]:
     return [list(values[i : i + size]) for i in range(0, len(values), size)]
+
+
+def _normalize_visibility_tiers(
+    visibility_tiers: Sequence[str] | None,
+) -> list[str]:
+    if visibility_tiers is None:
+        return []
+    raw = (
+        [visibility_tiers]
+        if isinstance(visibility_tiers, str)
+        else [str(tier) for tier in visibility_tiers]
+    )
+    normalized: list[str] = []
+    for tier in raw:
+        tier = str(tier).strip()
+        if tier and tier not in normalized:
+            normalized.append(tier)
+    return normalized
+
+
+def _manifest_generator_version() -> str:
+    try:
+        return f"sciona {package_version('sciona')}"
+    except PackageNotFoundError:
+        return "sciona unknown"
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _manifest_content_hash(atoms: Sequence[Mapping[str, Any]]) -> str:
+    fqdns = sorted(
+        str(row.get("fqdn", "")).strip()
+        for row in atoms
+        if str(row.get("fqdn", "")).strip()
+    )
+    payload = "\n".join(fqdns).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _normalize_io_spec_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Normalize Supabase or manifest-style IO spec rows to the SQLite shape."""
+    data = dict(row)
+    port_name = data.get("port_name")
+    if not port_name:
+        port_name = data.get("name", "")
+    return {
+        "io_spec_id": data.get("io_spec_id", ""),
+        "atom_id": data.get("atom_id", ""),
+        "version_id": data.get("version_id"),
+        "port_name": port_name,
+        "direction": data.get("direction", ""),
+        "type_desc": data.get("type_desc", "Any") or "Any",
+        "constraints": data.get("constraints", ""),
+        "data_kind": data.get("data_kind", ""),
+        "required": data.get("required", True),
+        "default_value_repr": data.get("default_value_repr", ""),
+        "ordinal": data.get("ordinal", 0),
+    }
 
 
 async def _fetch_all_rows(
@@ -117,9 +191,18 @@ async def fetch_manifest_data(
     base_url: str,
     access_token: str,
     *,
+    visibility_tiers: Sequence[str] | None = None,
     client: httpx.AsyncClient | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Fetch all manifest inputs from Supabase REST endpoints."""
+    requested_tiers = _normalize_visibility_tiers(visibility_tiers)
+    atom_filters = {
+        "status": "eq.approved",
+        "is_publishable": "eq.true",
+    }
+    if requested_tiers:
+        atom_filters["visibility_tier"] = f"in.({','.join(requested_tiers)})"
+
     atoms = await _fetch_all_rows(
         base_url,
         access_token,
@@ -130,19 +213,28 @@ async def fetch_manifest_data(
             "namespace_path,source_repo_id,source_package,source_module_path,"
             "source_symbol,is_publishable"
         ),
-        filters={
-            "status": "eq.approved",
-            "is_publishable": "eq.true",
-        },
+        filters=atom_filters,
         order="fqdn.asc",
         client=client,
     )
 
     atom_ids = [str(row["atom_id"]) for row in atoms if row.get("atom_id")]
+    atom_fqdns = {str(row["fqdn"]) for row in atoms if row.get("fqdn")}
     hyperparams: list[dict[str, Any]] = []
     rollups: list[dict[str, Any]] = []
     descriptions: list[dict[str, Any]] = []
+    io_specs: list[dict[str, Any]] = []
     benchmarks: list[dict[str, Any]] = []
+
+    if not atom_ids:
+        return {
+            "atoms": atoms,
+            "hyperparams": hyperparams,
+            "benchmarks": benchmarks,
+            "rollups": rollups,
+            "descriptions": descriptions,
+            "io_specs": io_specs,
+        }
 
     for batch in _chunk(atom_ids, DEFAULT_PAGE_SIZE):
         if not batch:
@@ -204,6 +296,19 @@ async def fetch_manifest_data(
                 client=client,
             )
         )
+        spec_rows = await _fetch_all_rows(
+            base_url,
+            access_token,
+            "atom_io_specs",
+            select=(
+                "io_spec_id,atom_id,version_id,direction,name,type_desc,"
+                "constraints,data_kind,required,default_value_repr,ordinal"
+            ),
+            filters={"atom_id": in_filter},
+            order="atom_id.asc,direction.asc,ordinal.asc,name.asc",
+            client=client,
+        )
+        io_specs.extend(_normalize_io_spec_row(row) for row in spec_rows)
 
     try:
         rpc_rows = await _call_rpc(
@@ -219,10 +324,13 @@ async def fetch_manifest_data(
         else:
             source_rows = []
         for row in source_rows:
+            atom_fqdn = str(row.get("atom_fqdn", ""))
+            if atom_fqdns and atom_fqdn not in atom_fqdns:
+                continue
             benchmark_id = row.get("benchmark_id") or row.get("benchmark_name") or ""
             benchmarks.append(
                 {
-                    "atom_fqdn": row.get("atom_fqdn", ""),
+                    "atom_fqdn": atom_fqdn,
                     "content_hash": row.get("content_hash", ""),
                     "benchmark_id": benchmark_id,
                     "benchmark_name": row.get("benchmark_name", benchmark_id),
@@ -258,10 +366,13 @@ async def fetch_manifest_data(
         for row in source_rows:
             version = version_by_id.get(str(row.get("version_id", "")), {})
             atom = atom_rows.get(str(version.get("atom_id", "")), {})
+            atom_fqdn = str(atom.get("fqdn", ""))
+            if atom_fqdns and atom_fqdn not in atom_fqdns:
+                continue
             benchmark_id = row.get("benchmark_id") or row.get("benchmark_name") or ""
             benchmarks.append(
                 {
-                    "atom_fqdn": atom.get("fqdn", ""),
+                    "atom_fqdn": atom_fqdn,
                     "content_hash": version.get("content_hash", ""),
                     "benchmark_id": benchmark_id,
                     "benchmark_name": row.get("benchmark_name", benchmark_id),
@@ -278,6 +389,7 @@ async def fetch_manifest_data(
         "benchmarks": benchmarks,
         "rollups": rollups,
         "descriptions": descriptions,
+        "io_specs": io_specs,
     }
 
 
@@ -285,15 +397,21 @@ def _coerce_manifest_data(
     atoms_or_data: list[dict[str, Any]] | Mapping[str, list[dict[str, Any]]],
     hyperparams: list[dict[str, Any]] | None,
     benchmarks: list[dict[str, Any]] | None,
-) -> dict[str, list[dict[str, Any]]]:
+) -> dict[str, Any]:
     if isinstance(atoms_or_data, Mapping) and hyperparams is None and benchmarks is None:
-        return {
+        data = {
             "atoms": list(atoms_or_data.get("atoms", [])),
             "hyperparams": list(atoms_or_data.get("hyperparams", [])),
             "benchmarks": list(atoms_or_data.get("benchmarks", [])),
             "rollups": list(atoms_or_data.get("rollups", [])),
             "descriptions": list(atoms_or_data.get("descriptions", [])),
+            "io_specs": [
+                _normalize_io_spec_row(row) for row in atoms_or_data.get("io_specs", [])
+            ],
         }
+        if "manifest_metadata" in atoms_or_data:
+            data["manifest_metadata"] = dict(atoms_or_data.get("manifest_metadata") or {})
+        return data
 
     return {
         "atoms": list(atoms_or_data),
@@ -301,6 +419,7 @@ def _coerce_manifest_data(
         "benchmarks": list(benchmarks or []),
         "rollups": [],
         "descriptions": [],
+        "io_specs": [],
     }
 
 
@@ -309,9 +428,11 @@ def _create_schema(con: sqlite3.Connection) -> None:
         """
         DROP TABLE IF EXISTS atoms;
         DROP TABLE IF EXISTS hyperparams;
+        DROP TABLE IF EXISTS io_specs;
         DROP TABLE IF EXISTS benchmarks;
         DROP TABLE IF EXISTS audit_rollups;
         DROP TABLE IF EXISTS descriptions;
+        DROP TABLE IF EXISTS manifest_metadata;
 
         CREATE TABLE atoms (
             atom_id TEXT PRIMARY KEY,
@@ -348,6 +469,19 @@ def _create_schema(con: sqlite3.Connection) -> None:
             semantic_role TEXT NOT NULL DEFAULT '',
             status TEXT NOT NULL DEFAULT 'approved',
             UNIQUE (atom_id, name)
+        );
+
+        CREATE TABLE io_specs (
+            atom_id TEXT NOT NULL,
+            port_name TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            type_desc TEXT NOT NULL DEFAULT 'Any',
+            constraints TEXT NOT NULL DEFAULT '',
+            data_kind TEXT NOT NULL DEFAULT '',
+            required INTEGER NOT NULL DEFAULT 1,
+            default_value_repr TEXT NOT NULL DEFAULT '',
+            ordinal INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (atom_id, direction, port_name)
         );
 
         CREATE TABLE benchmarks (
@@ -400,6 +534,11 @@ def _create_schema(con: sqlite3.Connection) -> None:
             jargon_score REAL NOT NULL DEFAULT 1.0,
             created_at TEXT NOT NULL DEFAULT '',
             updated_at TEXT NOT NULL DEFAULT ''
+        );
+
+        CREATE TABLE manifest_metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         );
         """
     )
@@ -462,6 +601,30 @@ def _insert_hyperparam(con: sqlite3.Connection, hp: Mapping[str, Any]) -> None:
             _stringify(hp.get("constraints_json")) if hp.get("constraints_json") is not None else None,
             hp.get("semantic_role", ""),
             hp.get("status", "approved"),
+        ),
+    )
+
+
+def _insert_io_spec(con: sqlite3.Connection, io_spec: Mapping[str, Any]) -> None:
+    data = _normalize_io_spec_row(io_spec)
+    con.execute(
+        """
+        INSERT OR REPLACE INTO io_specs (
+            atom_id, port_name, direction, type_desc, constraints, data_kind,
+            required, default_value_repr, ordinal
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            _stringify(data.get("atom_id")),
+            _stringify(data.get("port_name")),
+            _stringify(data.get("direction")),
+            _stringify(data.get("type_desc") or "Any"),
+            _stringify(data.get("constraints")),
+            _stringify(data.get("data_kind")),
+            int(bool(data.get("required", True))),
+            _stringify(data.get("default_value_repr")),
+            int(data.get("ordinal", 0)),
         ),
     )
 
@@ -558,22 +721,41 @@ def _insert_description(con: sqlite3.Connection, desc: Mapping[str, Any]) -> Non
     )
 
 
+def _insert_manifest_metadata(
+    con: sqlite3.Connection,
+    metadata: Mapping[str, Any],
+) -> None:
+    for key, value in sorted(metadata.items()):
+        con.execute(
+            """
+            INSERT OR REPLACE INTO manifest_metadata (key, value)
+            VALUES (?, ?)
+            """,
+            (str(key), _stringify(value)),
+        )
+
+
 def generate_manifest_sqlite(
     atoms_or_data: list[dict[str, Any]] | Mapping[str, list[dict[str, Any]]],
     hyperparams: list[dict[str, Any]] | None = None,
     benchmarks: list[dict[str, Any]] | None = None,
     output_path: Path | None = None,
 ) -> sqlite3.Connection:
-    """Generate a manifest.sqlite from Supabase-fetched data.
-
-    The function remains backward-compatible with the legacy
-    ``generate_manifest_sqlite(atoms, hyperparams, benchmarks, output_path)``
-    call pattern while also accepting the new manifest data mapping returned by
-    ``fetch_manifest_data()``.
-    """
+    """Generate a manifest.sqlite from Supabase-fetched data."""
     data = _coerce_manifest_data(atoms_or_data, hyperparams, benchmarks)
+    explicit_metadata = dict(data.get("manifest_metadata") or {})
+    metadata = {
+        "generated_at": explicit_metadata.get("generated_at") or _utc_now_iso(),
+        "generator_version": explicit_metadata.get("generator_version")
+        or _manifest_generator_version(),
+        "visibility_tier": explicit_metadata.get("visibility_tier")
+        or DEFAULT_MANIFEST_VISIBILITY_TIER,
+        "content_hash": _manifest_content_hash(data["atoms"]),
+    }
 
     db_str = str(output_path) if output_path else ":memory:"
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db_str)
     _create_schema(con)
 
@@ -581,12 +763,43 @@ def generate_manifest_sqlite(
         _insert_atom(con, atom)
     for hp in data["hyperparams"]:
         _insert_hyperparam(con, hp)
+    for io_spec in data["io_specs"]:
+        _insert_io_spec(con, io_spec)
     for bm in data["benchmarks"]:
         _insert_benchmark(con, bm)
     for rollup in data["rollups"]:
         _insert_rollup(con, rollup)
     for desc in data["descriptions"]:
         _insert_description(con, desc)
+    _insert_manifest_metadata(con, metadata)
 
     con.commit()
     return con
+
+
+async def export_tiered_manifests(
+    base_url: str,
+    access_token: str,
+    output_dir: Path,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict[str, Path]:
+    """Export one manifest SQLite per configured tier."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    outputs: dict[str, Path] = {}
+    for tier_name, included_tiers in MANIFEST_TIERS.items():
+        data = await fetch_manifest_data(
+            base_url,
+            access_token,
+            visibility_tiers=included_tiers,
+            client=client,
+        )
+        data["manifest_metadata"] = {"visibility_tier": tier_name}
+        output_path = output_dir / Path(manifest_artifact_key(tier_name)).name
+        con = generate_manifest_sqlite(data, output_path=output_path)
+        con.close()
+        outputs[tier_name] = output_path
+
+    return outputs

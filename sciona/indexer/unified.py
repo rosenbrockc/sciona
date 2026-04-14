@@ -6,7 +6,9 @@ the Architect and Hunter can share the same underlying index at runtime.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
 
 from sciona.indexer.embedder import DEFAULT_EMBEDDING_BACKEND, Embedder, create_embedder
 from sciona.indexer.faiss_store import FAISSStore
@@ -93,3 +95,72 @@ class UnifiedIndex:
         store = FAISSStore.load(directory)
         idx = cls(store=store)
         return idx
+
+
+@dataclass(frozen=True)
+class SemanticIndexSource:
+    """A semantic index plus the embedding space it was built in."""
+
+    index: object
+    embedding_space: str
+    name: str = ""
+
+
+class CompositeSemanticIndex:
+    """Merge multiple semantic indexes that share an embedding space."""
+
+    def __init__(self, sources: Sequence[SemanticIndexSource]) -> None:
+        self._sources = tuple(sources)
+        self._embedding_space = self._validate_sources()
+
+    def _validate_sources(self) -> str:
+        if not self._sources:
+            return ""
+        spaces = {source.embedding_space for source in self._sources}
+        if len(spaces) > 1:
+            details = ", ".join(
+                f"{source.name or f'source_{idx}'}={source.embedding_space}"
+                for idx, source in enumerate(self._sources)
+            )
+            raise ValueError(
+                "CompositeSemanticIndex cannot merge incompatible embedding spaces: "
+                f"{details}"
+            )
+        return next(iter(spaces))
+
+    @property
+    def embedding_space(self) -> str:
+        return self._embedding_space
+
+    def search_by_embedding(
+        self, query_text: str, k: int = 10
+    ) -> list[tuple[Declaration, float]]:
+        if k <= 0 or not self._sources:
+            return []
+
+        per_source_k = max(k, k * len(self._sources))
+        best: dict[str, tuple[Declaration, float, int]] = {}
+        for source_idx, source in enumerate(self._sources):
+            hits = source.index.search_by_embedding(query_text, k=per_source_k)
+            for decl, score in hits:
+                current = best.get(decl.name)
+                if current is None or score > current[1] or (
+                    score == current[1] and source_idx < current[2]
+                ):
+                    best[decl.name] = (decl, float(score), source_idx)
+
+        ranked = sorted(
+            best.values(),
+            key=lambda item: (-item[1], item[2], item[0].name),
+        )
+        return [(decl, score) for decl, score, _ in ranked[:k]]
+
+    def search_by_type(self, type_signature: str, k: int = 10) -> list[Declaration]:
+        return [decl for decl, _score in self.search_by_embedding(type_signature, k=k)]
+
+    def get_declaration(self, name: str) -> Declaration | None:
+        for source in self._sources:
+            decl = source.index.get_declaration(name)
+            if decl is not None:
+                return decl
+        return None

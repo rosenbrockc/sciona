@@ -43,10 +43,11 @@ def _load_semantic_index(
     backend_override: str | None = None,
 ) -> tuple["SemanticIndex", str]:
     """Load semantic index with FAISS, falling back to lexical mode if needed."""
-    from sciona.indexer.builder import SemanticIndexImpl
+    from sciona.indexer.builder import SemanticIndexImpl, build_index_from_manifest_sqlite
     from sciona.indexer.embedder import create_embedder
     from sciona.indexer.faiss_store import FAISSStore
     from sciona.indexer.fallback_index import LexicalSemanticIndex
+    from sciona.indexer.unified import CompositeSemanticIndex, SemanticIndexSource
 
     backend = str(
         backend_override or getattr(config, "semantic_index_backend", "auto")
@@ -67,7 +68,31 @@ def _load_semantic_index(
                 metadata.embedding_model if metadata is not None else config.embedding_model
             ),
         )
-        return SemanticIndexImpl(store, embedder), "faiss"
+        local_index = SemanticIndexImpl(store, embedder)
+        manifest_path = Path.home() / ".sciona" / "manifest.sqlite"
+        if not manifest_path.is_file():
+            return local_index, "faiss"
+
+        try:
+            manifest_store = build_index_from_manifest_sqlite(
+                manifest_path,
+                embedder=embedder,
+            )
+            manifest_index = SemanticIndexImpl(manifest_store, embedder)
+            embedding_space = f"{embedder.backend}:{embedder.model_name}"
+            composite = CompositeSemanticIndex(
+                [
+                    SemanticIndexSource(local_index, embedding_space, name="local"),
+                    SemanticIndexSource(manifest_index, embedding_space, name="manifest"),
+                ]
+            )
+            return composite, "faiss+manifest"
+        except Exception as exc:
+            print(
+                f"Warning: failed to load manifest semantic index: {exc}",
+                file=sys.stderr,
+            )
+            return local_index, "faiss"
     except (ImportError, ModuleNotFoundError) as exc:
         if backend == "faiss":
             raise
@@ -87,7 +112,10 @@ def _load_architect_catalog(
         get_runtime_signal_event_rate_params,
         load_manifest,
     )
-    from sciona.architect.source_catalog import seed_catalog_from_sources
+    from sciona.architect.source_catalog import (
+        seed_catalog_from_manifest_sqlite,
+        seed_catalog_from_sources,
+    )
     from sciona.sources import load_sources, resolve_source
 
     catalog = PrimitiveCatalog()
@@ -144,6 +172,16 @@ def _load_architect_catalog(
                 )
             if source_parts:
                 print(f"Catalog source alignment: {', '.join(source_parts)}")
+        manifest_sqlite = Path.home() / ".sciona" / "manifest.sqlite"
+        if manifest_sqlite.is_file():
+            manifest_added = seed_catalog_from_manifest_sqlite(
+                catalog,
+                manifest_sqlite,
+                skip_locally_installed=True,
+                report=report,
+            )
+            if manifest_added:
+                print(f"Catalog manifest: {manifest_added} added from {manifest_sqlite}")
     except Exception as exc:
         print(
             f"Warning: failed to derive primitives from configured sources: {exc}",

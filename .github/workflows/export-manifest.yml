@@ -1,0 +1,56 @@
+name: export-manifest
+
+# Manual-only until the manifest bucket and publish credentials are explicitly ready.
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Upload the export bundle to S3 after writing it locally.
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  export-manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install export dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . httpx boto3
+
+      - name: Export manifest bundle
+        env:
+          SCIONA_SUPABASE_URL: ${{ secrets.SCIONA_SUPABASE_URL }}
+          SCIONA_SUPABASE_SERVICE_KEY: ${{ secrets.SCIONA_SUPABASE_SERVICE_KEY }}
+          SCIONA_MANIFEST_BUCKET: ${{ secrets.SCIONA_MANIFEST_BUCKET }}
+          UPLOAD_MANIFEST_BUNDLE: ${{ inputs.upload }}
+        run: |
+          set -euo pipefail
+          args=(python scripts/export_manifest.py --output-dir build/manifest-export)
+          if [[ "${UPLOAD_MANIFEST_BUNDLE,,}" == "true" ]]; then
+            args+=(--upload)
+          fi
+          "${args[@]}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifest-export
+          path: build/manifest-export
+          if-no-files-found: error

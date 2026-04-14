@@ -886,6 +886,12 @@ def main() -> None:
         "--manifest-url", type=str, default=None, help="Manifest artifact URL override"
     )
     catalog_sync_parser.add_argument(
+        "--tier",
+        type=str,
+        default=None,
+        help="Manifest tier to download (default: general)",
+    )
+    catalog_sync_parser.add_argument(
         "--output", type=str, default=None, help="Output path for manifest.sqlite"
     )
 

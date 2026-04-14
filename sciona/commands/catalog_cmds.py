@@ -7,8 +7,9 @@ import os
 import sys
 from pathlib import Path
 
-DEFAULT_MANIFEST_KEY = "manifests/manifest.sqlite"
 DEFAULT_MANIFEST_BUCKET = "sciona-platform"
+
+from sciona.api.snapshot import DEFAULT_MANIFEST_TIER, MANIFEST_TIERS, manifest_artifact_key
 
 
 def _resolve_manifest_url(args: argparse.Namespace) -> str:
@@ -21,12 +22,19 @@ def _resolve_manifest_url(args: argparse.Namespace) -> str:
     if env_url:
         return env_url.rstrip("/")
 
+    tier = (
+        str(getattr(args, "tier", "") or "").strip()
+        or os.environ.get("SCIONA_MANIFEST_TIER", "").strip()
+    )
+    if tier not in MANIFEST_TIERS:
+        tier = DEFAULT_MANIFEST_TIER
+
     bucket = (
         os.environ.get("SCIONA_S3_BUCKET", "").strip()
         or os.environ.get("SCIONA_CATALOG_BUCKET", "").strip()
         or DEFAULT_MANIFEST_BUCKET
     )
-    key = os.environ.get("SCIONA_MANIFEST_KEY", DEFAULT_MANIFEST_KEY).lstrip("/")
+    key = os.environ.get("SCIONA_MANIFEST_KEY", manifest_artifact_key(tier)).lstrip("/")
     return f"https://{bucket}.s3.amazonaws.com/{key}"
 
 

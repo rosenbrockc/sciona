@@ -201,3 +201,86 @@ def test_cli_loader_prefers_stored_embedding_backend_metadata(tmp_path, monkeypa
     idx, mode = _load_semantic_index(tmp_path, _Cfg())
     assert mode == "faiss"
     assert idx.get_declaration("fft_forward") is not None
+
+
+def test_cli_loader_merges_manifest_index_when_present(tmp_path, monkeypatch):
+    from sciona.indexer.models import IndexMetadata
+
+    _write_msgpack_index(tmp_path)
+    manifest_dir = tmp_path / ".sciona"
+    manifest_dir.mkdir()
+    manifest_path = manifest_dir / "manifest.sqlite"
+    manifest_path.write_text("placeholder", encoding="utf-8")
+
+    local_decl = Declaration(
+        name="local_decl",
+        type_signature="ndarray -> ndarray",
+        prover=Prover.PYTHON,
+    )
+    manifest_decl = Declaration(
+        name="manifest_decl",
+        type_signature="float -> float",
+        prover=Prover.PYTHON,
+    )
+
+    class _FakeStore:
+        _declarations = {0: local_decl}
+        _metadata = IndexMetadata(
+            num_entries=1,
+            prover=Prover.PYTHON,
+            source_lib="dsp",
+            embedding_model="stored-fastembed-model",
+            embedding_backend="fastembed",
+        )
+
+        def search(self, query_vec, k=10):
+            del query_vec, k
+            return [(local_decl, 0.6)]
+
+    class _FakeManifestStore:
+        _declarations = {0: manifest_decl}
+        _metadata = IndexMetadata(
+            num_entries=1,
+            prover=Prover.PYTHON,
+            source_lib="manifest",
+            embedding_model="stored-fastembed-model",
+            embedding_backend="fastembed",
+        )
+
+        def search(self, query_vec, k=10):
+            del query_vec, k
+            return [(manifest_decl, 0.8)]
+
+    class _FakeEmbedder:
+        backend = "fastembed"
+        model_name = "stored-fastembed-model"
+
+        def embed(self, text):
+            del text
+            return np.array([1.0], dtype=np.float32)
+
+    from sciona.indexer.faiss_store import FAISSStore
+    import sciona.indexer.embedder as embedder_mod
+
+    monkeypatch.setattr(FAISSStore, "load", staticmethod(lambda _directory: _FakeStore()))
+    monkeypatch.setattr(
+        embedder_mod,
+        "create_embedder",
+        lambda backend, model_name: _FakeEmbedder()
+        if (backend, model_name) == ("fastembed", "stored-fastembed-model")
+        else (_ for _ in ()).throw(AssertionError((backend, model_name))),
+    )
+    monkeypatch.setattr(
+        "sciona.indexer.builder.build_index_from_manifest_sqlite",
+        lambda manifest_path_arg, embedder=None: _FakeManifestStore(),
+    )
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+
+    class _Cfg:
+        embedding_model = "microsoft/unixcoder-base"
+        embedding_backend = "unixcoder"
+
+    idx, mode = _load_semantic_index(tmp_path, _Cfg())
+    assert mode == "faiss+manifest"
+    hits = idx.search_by_embedding("query", k=2)
+    assert [decl.name for decl, _ in hits] == ["manifest_decl", "local_decl"]

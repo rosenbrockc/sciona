@@ -63,6 +63,31 @@ class TestBenchmarkSQLiteLoader:
         result = load_benchmarks_sqlite(db_path)
         assert result == {}
 
+    def test_warns_when_manifest_is_stale(self, tmp_path: Path):
+        db_path = tmp_path / "manifest.sqlite"
+        con = sqlite3.connect(str(db_path))
+        con.execute("CREATE TABLE atoms (fqdn TEXT)")
+        con.execute(
+            """CREATE TABLE benchmarks (
+                atom_fqdn TEXT, content_hash TEXT, benchmark_id TEXT,
+                metric_name TEXT, metric_value REAL, dataset_tag TEXT, measured_at TEXT,
+                PRIMARY KEY (atom_fqdn, content_hash, benchmark_id, metric_name)
+            )"""
+        )
+        con.execute("CREATE TABLE manifest_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        con.executemany(
+            "INSERT INTO manifest_metadata (key, value) VALUES (?, ?)",
+            [
+                ("generated_at", "2020-01-01T00:00:00Z"),
+                ("content_hash", "bogus"),
+            ],
+        )
+        con.commit()
+        con.close()
+
+        with pytest.warns(UserWarning, match="Run 'sciona catalog sync' to update"):
+            load_benchmarks_sqlite(db_path)
+
 
 class TestMetricNormalization:
     def test_minimize_small_value(self):

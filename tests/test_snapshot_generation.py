@@ -22,6 +22,8 @@ class TestSnapshotGeneration:
         assert "atoms" in tables
         assert "hyperparams" in tables
         assert "benchmarks" in tables
+        assert "io_specs" in tables
+        assert "manifest_metadata" in tables
         con.close()
 
     def test_inserts_atoms(self):
@@ -123,6 +125,68 @@ class TestSnapshotGeneration:
         assert "pkg.filter" in result
         assert len(result["pkg.filter"]) == 1
         assert result["pkg.filter"][0].name == "cutoff"
+
+    def test_inserts_io_specs_and_manifest_metadata(self):
+        con = generate_manifest_sqlite(
+            {
+                "atoms": [{"atom_id": "a1", "fqdn": "pkg.filter", "status": "approved"}],
+                "hyperparams": [],
+                "benchmarks": [],
+                "rollups": [],
+                "descriptions": [],
+                "io_specs": [
+                    {
+                        "atom_id": "a1",
+                        "port_name": "signal",
+                        "direction": "input",
+                        "type_desc": "np.ndarray",
+                        "constraints": "1D waveform",
+                        "data_kind": "signal",
+                        "required": True,
+                        "default_value_repr": "",
+                        "ordinal": 0,
+                    }
+                ],
+                "manifest_metadata": {"visibility_tier": "general"},
+            }
+        )
+        io_row = con.execute(
+            "SELECT port_name, direction, type_desc, data_kind FROM io_specs"
+        ).fetchone()
+        assert io_row == ("signal", "input", "np.ndarray", "signal")
+
+        metadata = dict(
+            con.execute("SELECT key, value FROM manifest_metadata").fetchall()
+        )
+        assert metadata["visibility_tier"] == "general"
+        assert metadata["generated_at"]
+        assert metadata["generator_version"]
+        assert metadata["content_hash"]
+        con.close()
+
+    def test_content_hash_is_deterministic_for_same_atoms(self):
+        data = {
+            "atoms": [
+                {"atom_id": "a2", "fqdn": "pkg.sort", "status": "approved"},
+                {"atom_id": "a1", "fqdn": "pkg.filter", "status": "approved"},
+            ],
+            "hyperparams": [],
+            "benchmarks": [],
+            "rollups": [],
+            "descriptions": [],
+            "io_specs": [],
+        }
+        con1 = generate_manifest_sqlite(data)
+        con2 = generate_manifest_sqlite(data)
+        hash1 = dict(con1.execute("SELECT key, value FROM manifest_metadata").fetchall())[
+            "content_hash"
+        ]
+        hash2 = dict(con2.execute("SELECT key, value FROM manifest_metadata").fetchall())[
+            "content_hash"
+        ]
+        assert hash1 == hash2
+        con1.close()
+        con2.close()
 
     def test_upsert_idempotent(self):
         atoms = [{"atom_id": "a1", "fqdn": "pkg.filter", "status": "approved"}]

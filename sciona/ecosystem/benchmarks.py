@@ -6,6 +6,7 @@ import logging
 import sqlite3
 from pathlib import Path
 
+from sciona.architect.hyperparams import _check_manifest_sqlite_health
 from sciona.ecosystem.models import BenchmarkRecord
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ def load_benchmarks_sqlite(
     con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     try:
+        _check_manifest_sqlite_health(con, db_path)
         # Check if benchmarks table exists
         tables = {
             row[0]

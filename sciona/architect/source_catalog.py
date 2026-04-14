@@ -10,6 +10,7 @@ import importlib
 import inspect
 import json
 import logging
+import sqlite3
 from pathlib import Path
 import sys
 from typing import TYPE_CHECKING, Any, get_args, get_origin
@@ -115,6 +116,17 @@ def _ports_from_callable(func: Any) -> tuple[list[IOSpec], list[IOSpec]]:
 def _signature_from_ports(inputs: list[IOSpec], outputs: list[IOSpec]) -> str:
     in_sig = ", ".join(_format_port_signature(port) for port in inputs) or "void"
     if len(outputs) == 1:
+        out_sig = outputs[0].type_desc
+    else:
+        out_sig = "tuple[" + ", ".join(port.type_desc for port in outputs) + "]"
+    return f"({in_sig}) -> {out_sig}"
+
+
+def _manifest_signature_from_ports(inputs: list[IOSpec], outputs: list[IOSpec]) -> str:
+    in_sig = ", ".join(_format_port_signature(port) for port in inputs) or "void"
+    if not outputs:
+        out_sig = "Any"
+    elif len(outputs) == 1:
         out_sig = outputs[0].type_desc
     else:
         out_sig = "tuple[" + ", ".join(port.type_desc for port in outputs) + "]"
@@ -616,6 +628,272 @@ def _add_primitive_with_aliases(
     if skill_index is not None and not result.is_duplicate:
         skill_index.add_primitive(primitive)
     return not result.is_duplicate
+
+
+def _sqlite_table_names(con: sqlite3.Connection) -> set[str]:
+    return {
+        str(row[0])
+        for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    }
+
+
+def _manifest_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="ignore").strip()
+    if isinstance(value, (list, tuple, set)):
+        return ", ".join(str(item).strip() for item in value if str(item).strip())
+    return str(value).strip()
+
+
+def _manifest_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    return _manifest_text(value).lower() in {"1", "true", "t", "yes", "y", "on"}
+
+
+def _manifest_description_map(
+    con: sqlite3.Connection,
+    tables: set[str],
+) -> dict[str, str]:
+    if "descriptions" not in tables:
+        return {}
+
+    descriptions: dict[str, str] = {}
+    try:
+        rows = con.execute(
+            """
+            SELECT atom_id, content
+            FROM descriptions
+            WHERE content IS NOT NULL AND content != ''
+            ORDER BY atom_id ASC,
+                     CASE WHEN kind = 'dejargonized' THEN 0 ELSE 1 END,
+                     reviewed DESC,
+                     updated_at DESC,
+                     description_id ASC
+            """
+        ).fetchall()
+    except sqlite3.Error:
+        return {}
+
+    for row in rows:
+        atom_id = _manifest_text(row["atom_id"])
+        content = _manifest_text(row["content"])
+        if atom_id and content:
+            descriptions.setdefault(atom_id, content)
+    return descriptions
+
+
+def _manifest_io_specs_map(
+    con: sqlite3.Connection,
+    tables: set[str],
+) -> dict[str, tuple[list[IOSpec], list[IOSpec]]]:
+    if "io_specs" not in tables:
+        return {}
+
+    grouped: dict[str, tuple[list[IOSpec], list[IOSpec]]] = {}
+    try:
+        rows = con.execute(
+            """
+            SELECT atom_id, port_name, direction, ordinal, type_desc, constraints,
+                   data_kind, required, default_value_repr
+            FROM io_specs
+            ORDER BY atom_id ASC, COALESCE(ordinal, 0) ASC, port_name ASC
+            """
+        ).fetchall()
+    except sqlite3.Error:
+        return {}
+
+    for row in rows:
+        atom_id = _manifest_text(row["atom_id"])
+        if not atom_id:
+            continue
+        port = IOSpec(
+            name=_manifest_text(row["port_name"]),
+            type_desc=_manifest_text(row["type_desc"]) or "Any",
+            constraints=_manifest_text(row["constraints"]),
+            data_kind=_manifest_text(row["data_kind"]),
+            required=_manifest_bool(row["required"]),
+            default_value_repr=_manifest_text(row["default_value_repr"]),
+        )
+        inputs, outputs = grouped.setdefault(atom_id, ([], []))
+        direction = _manifest_text(row["direction"]).lower()
+        if direction.startswith("out"):
+            outputs.append(port)
+        else:
+            inputs.append(port)
+    return grouped
+
+
+def _manifest_concept_type(
+    *,
+    fqdn: str,
+    description: str,
+    domain_tags: str,
+    source_kind: str,
+    source_package: str,
+    source_module_path: str,
+    namespace_root: str,
+    source_symbol: str,
+) -> ConceptType:
+    module_hint = ".".join(
+        part for part in (namespace_root, source_package, source_module_path) if part
+    )
+    semantic_hints = " ".join(
+        part
+        for part in (
+            domain_tags,
+            source_kind,
+            source_package,
+            source_module_path,
+            source_symbol,
+        )
+        if part
+    )
+    return _infer_concept_type(
+        name=fqdn,
+        module=module_hint,
+        description=f"{description} {semantic_hints}".strip(),
+    )
+
+
+def seed_catalog_from_manifest_sqlite(
+    catalog: PrimitiveCatalog,
+    manifest_path: Path,
+    *,
+    skip_locally_installed: bool = True,
+    dedup_threshold: float = 0.85,
+    skill_index: SkillIndex | None = None,
+    report: CatalogReport | None = None,
+) -> int:
+    """Seed the catalog from approved atoms in a manifest SQLite snapshot."""
+    path = Path(manifest_path)
+    if not path.is_file():
+        logger.warning("Manifest SQLite not found: %s", path)
+        return 0
+
+    try:
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        logger.warning("Failed to open manifest SQLite %s: %s", path, exc)
+        return 0
+
+    con.row_factory = sqlite3.Row
+    try:
+        tables = _sqlite_table_names(con)
+        if "atoms" not in tables:
+            logger.warning("Manifest SQLite missing atoms table: %s", path)
+            return 0
+
+        descriptions_by_atom = _manifest_description_map(con, tables)
+        io_specs_by_atom = _manifest_io_specs_map(con, tables)
+        rows = con.execute(
+            """
+            SELECT atom_id, fqdn, status, domain_tags, description, visibility_tier,
+                   source_kind, namespace_root, source_repo_id, source_package,
+                   source_module_path, source_symbol
+            FROM atoms
+            WHERE status = 'approved'
+            ORDER BY fqdn ASC
+            """
+        ).fetchall()
+    except sqlite3.Error as exc:
+        logger.warning("Failed to read manifest SQLite %s: %s", path, exc)
+        return 0
+    finally:
+        con.close()
+
+    added = 0
+    for row in rows:
+        fqdn = _manifest_text(row["fqdn"])
+        if not fqdn:
+            continue
+        if skip_locally_installed and catalog.get(fqdn) is not None:
+            continue
+
+        atom_id = _manifest_text(row["atom_id"])
+        description = (
+            descriptions_by_atom.get(atom_id)
+            or _manifest_text(row["description"])
+            or fqdn
+        )
+        inputs, outputs = io_specs_by_atom.get(atom_id, ([], []))
+        source_repo_id = _manifest_text(row["source_repo_id"])
+        source_package = _manifest_text(row["source_package"])
+        primitive = AlgorithmicPrimitive(
+            name=fqdn,
+            source=(
+                f"manifest:{source_repo_id}"
+                if source_repo_id
+                else f"manifest:{source_package}"
+                if source_package
+                else "manifest"
+            ),
+            category=_manifest_concept_type(
+                fqdn=fqdn,
+                description=description,
+                domain_tags=_manifest_text(row["domain_tags"]),
+                source_kind=_manifest_text(row["source_kind"]),
+                source_package=source_package,
+                source_module_path=_manifest_text(row["source_module_path"]),
+                namespace_root=_manifest_text(row["namespace_root"]),
+                source_symbol=_manifest_text(row["source_symbol"]),
+            ),
+            description=description,
+            inputs=inputs,
+            outputs=outputs,
+            type_signature=_manifest_signature_from_ports(inputs, outputs),
+        )
+
+        if report is not None:
+            report.total_candidates += 1
+            _bump_source_breakdown(
+                report,
+                source_repo_id or source_package or "manifest",
+                "manifest_candidates",
+            )
+
+        if skill_index is not None:
+            result = catalog.add_with_dedup(
+                primitive,
+                skill_index,
+                dedup_threshold,
+                report=None,
+            )
+            added_here = not result.is_duplicate
+            if report is not None:
+                if added_here:
+                    report.added += 1
+                else:
+                    report.merged += 1
+                    report.merge_details.append(
+                        (
+                            primitive.name,
+                            result.incumbent_name or primitive.name,
+                            result.similarity,
+                        )
+                    )
+        else:
+            catalog.add(primitive)
+            added_here = True
+            if report is not None:
+                report.added += 1
+
+        if added_here:
+            added += 1
+            if report is not None:
+                _bump_source_breakdown(
+                    report,
+                    source_repo_id or source_package or "manifest",
+                    "added",
+                )
+
+    return added
 
 
 def seed_catalog_from_sources(

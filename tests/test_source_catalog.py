@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
 import sciona as matcher_sciona
+import pytest
 
 from sciona.architect.catalog import CatalogReport, PrimitiveCatalog
+from sciona.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
 from sciona.architect.source_catalog import (
     _alias_candidates,
     audit_source_registration_alignment,
+    seed_catalog_from_manifest_sqlite,
     seed_catalog_from_sources,
 )
 from sciona.sources import AtomSource, SourcesConfig
@@ -21,6 +25,117 @@ from sciona.types import Declaration, Prover
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text)
+
+
+def _create_manifest_db(
+    path: Path,
+    *,
+    atoms: list[dict[str, object]],
+    descriptions: list[dict[str, object]] | None = None,
+    io_specs: list[dict[str, object]] | None = None,
+    include_io_specs: bool = True,
+) -> None:
+    con = sqlite3.connect(str(path))
+    con.executescript(
+        """
+        CREATE TABLE atoms (
+            atom_id TEXT PRIMARY KEY,
+            fqdn TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'approved',
+            domain_tags TEXT NOT NULL DEFAULT '',
+            description TEXT NOT NULL DEFAULT '',
+            visibility_tier TEXT NOT NULL DEFAULT 'general',
+            source_kind TEXT NOT NULL DEFAULT 'hand_written',
+            stateful_kind TEXT NOT NULL DEFAULT 'none',
+            is_stochastic INTEGER NOT NULL DEFAULT 0,
+            is_ffi INTEGER NOT NULL DEFAULT 0,
+            namespace_root TEXT NOT NULL DEFAULT 'sciona.atoms',
+            namespace_path TEXT NOT NULL DEFAULT '',
+            source_repo_id TEXT NOT NULL DEFAULT '',
+            source_package TEXT NOT NULL DEFAULT '',
+            source_module_path TEXT NOT NULL DEFAULT '',
+            source_symbol TEXT NOT NULL DEFAULT '',
+            is_publishable INTEGER NOT NULL DEFAULT 1
+        );
+        CREATE TABLE descriptions (
+            description_id TEXT PRIMARY KEY,
+            atom_id TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            content TEXT NOT NULL DEFAULT '',
+            language TEXT NOT NULL DEFAULT 'en',
+            reviewed INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT ''
+        );
+        """
+    )
+    if include_io_specs:
+        con.executescript(
+            """
+            CREATE TABLE io_specs (
+                atom_id TEXT NOT NULL,
+                port_name TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                ordinal INTEGER NOT NULL DEFAULT 0,
+                type_desc TEXT NOT NULL DEFAULT 'Any',
+                constraints TEXT NOT NULL DEFAULT '',
+                data_kind TEXT NOT NULL DEFAULT '',
+                required INTEGER NOT NULL DEFAULT 1,
+                default_value_repr TEXT NOT NULL DEFAULT '',
+                PRIMARY KEY (atom_id, direction, port_name)
+            );
+            """
+        )
+
+    for atom in atoms:
+        con.execute(
+            """
+            INSERT INTO atoms (
+                atom_id, fqdn, status, domain_tags, description, visibility_tier,
+                source_kind, stateful_kind, is_stochastic, is_ffi, namespace_root,
+                namespace_path, source_repo_id, source_package, source_module_path,
+                source_symbol, is_publishable
+            )
+            VALUES (
+                :atom_id, :fqdn, :status, :domain_tags, :description, :visibility_tier,
+                :source_kind, :stateful_kind, :is_stochastic, :is_ffi, :namespace_root,
+                :namespace_path, :source_repo_id, :source_package, :source_module_path,
+                :source_symbol, :is_publishable
+            )
+            """,
+            atom,
+        )
+
+    for desc in descriptions or []:
+        con.execute(
+            """
+            INSERT INTO descriptions (
+                description_id, atom_id, kind, content, language, reviewed, updated_at
+            )
+            VALUES (
+                :description_id, :atom_id, :kind, :content, :language, :reviewed, :updated_at
+            )
+            """,
+            desc,
+        )
+
+    if include_io_specs:
+        for spec in io_specs or []:
+            con.execute(
+                """
+                INSERT INTO io_specs (
+                    atom_id, port_name, direction, ordinal, type_desc, constraints,
+                    data_kind, required, default_value_repr
+                )
+                VALUES (
+                    :atom_id, :port_name, :direction, :ordinal, :type_desc, :constraints,
+                    :data_kind, :required, :default_value_repr
+                )
+                """,
+                spec,
+            )
+
+    con.commit()
+    con.close()
 
 
 def _purge_modules(prefixes: tuple[str, ...], baseline: set[str]) -> None:
@@ -237,8 +352,208 @@ def test_alias_candidates_include_full_module_path_alias():
     assert "ageoa.biosppy.ecg.detect_peaks" in aliases
 
 
+def test_seed_catalog_from_manifest_sqlite_builds_primitives_and_infers_category(
+    tmp_path: Path,
+):
+    db = tmp_path / "manifest.sqlite"
+    _create_manifest_db(
+        db,
+        atoms=[
+            {
+                "atom_id": "a1",
+                "fqdn": "pkg.manifest.bandpass",
+                "status": "approved",
+                "domain_tags": "signal_filter",
+                "description": "Generic manifest atom.",
+                "visibility_tier": "general",
+                "source_kind": "reviewed",
+                "stateful_kind": "none",
+                "is_stochastic": 0,
+                "is_ffi": 0,
+                "namespace_root": "sciona.atoms",
+                "namespace_path": "",
+                "source_repo_id": "repo-1",
+                "source_package": "pkg.manifest",
+                "source_module_path": "atoms",
+                "source_symbol": "bandpass",
+                "is_publishable": 1,
+            }
+        ],
+        descriptions=[
+            {
+                "description_id": "d1",
+                "atom_id": "a1",
+                "kind": "dejargonized",
+                "content": "Apply a bandpass filter from manifest metadata.",
+                "language": "en",
+                "reviewed": 1,
+                "updated_at": "2026-04-14T00:00:00Z",
+            }
+        ],
+        io_specs=[
+            {
+                "atom_id": "a1",
+                "port_name": "signal",
+                "direction": "input",
+                "ordinal": 0,
+                "type_desc": "np.ndarray",
+                "constraints": "1D waveform",
+                "data_kind": "signal",
+                "required": 1,
+                "default_value_repr": "",
+            },
+            {
+                "atom_id": "a1",
+                "port_name": "result",
+                "direction": "output",
+                "ordinal": 1,
+                "type_desc": "np.ndarray",
+                "constraints": "filtered waveform",
+                "data_kind": "signal",
+                "required": 1,
+                "default_value_repr": "",
+            },
+        ],
+    )
+
+    catalog = PrimitiveCatalog()
+    added = seed_catalog_from_manifest_sqlite(catalog, db)
+
+    assert added == 1
+    prim = catalog.get("pkg.manifest.bandpass")
+    assert prim is not None
+    assert prim.source == "manifest:repo-1"
+    assert prim.category == ConceptType.SIGNAL_FILTER
+    assert prim.description == "Apply a bandpass filter from manifest metadata."
+    assert [port.name for port in prim.inputs] == ["signal"]
+    assert [port.name for port in prim.outputs] == ["result"]
+    assert prim.inputs[0].constraints == "1D waveform"
+    assert prim.inputs[0].data_kind == "signal"
+    assert prim.type_signature == "(signal: np.ndarray) -> np.ndarray"
+
+
+def test_seed_catalog_from_manifest_sqlite_respects_exact_name_precedence(
+    tmp_path: Path,
+):
+    db = tmp_path / "manifest.sqlite"
+    _create_manifest_db(
+        db,
+        atoms=[
+            {
+                "atom_id": "a1",
+                "fqdn": "pkg.manifest.lookup_value",
+                "status": "approved",
+                "domain_tags": "",
+                "description": "Manifest version that should not replace local state.",
+                "visibility_tier": "general",
+                "source_kind": "reviewed",
+                "stateful_kind": "none",
+                "is_stochastic": 0,
+                "is_ffi": 0,
+                "namespace_root": "sciona.atoms",
+                "namespace_path": "",
+                "source_repo_id": "repo-2",
+                "source_package": "pkg.manifest",
+                "source_module_path": "atoms",
+                "source_symbol": "lookup_value",
+                "is_publishable": 1,
+            }
+        ],
+        descriptions=[
+            {
+                "description_id": "d1",
+                "atom_id": "a1",
+                "kind": "technical",
+                "content": "Manifest description that should be ignored.",
+                "language": "en",
+                "reviewed": 0,
+                "updated_at": "2026-04-14T00:00:00Z",
+            }
+        ],
+        io_specs=[
+            {
+                "atom_id": "a1",
+                "port_name": "value",
+                "direction": "input",
+                "ordinal": 0,
+                "type_desc": "int",
+                "constraints": "",
+                "data_kind": "",
+                "required": 1,
+                "default_value_repr": "",
+            }
+        ],
+    )
+
+    catalog = PrimitiveCatalog()
+    catalog.add(
+        AlgorithmicPrimitive(
+            name="pkg.manifest.lookup_value",
+            source="local",
+            category=ConceptType.SEARCHING,
+            description="Local primitive that must win.",
+            inputs=[IOSpec(name="value", type_desc="int")],
+            outputs=[IOSpec(name="result", type_desc="int")],
+        )
+    )
+
+    added = seed_catalog_from_manifest_sqlite(catalog, db)
+
+    assert added == 0
+    prim = catalog.get("pkg.manifest.lookup_value")
+    assert prim is not None
+    assert prim.source == "local"
+    assert prim.description == "Local primitive that must win."
+
+
+def test_seed_catalog_from_manifest_sqlite_handles_partial_manifests(
+    tmp_path: Path,
+):
+    db = tmp_path / "manifest.sqlite"
+    _create_manifest_db(
+        db,
+        atoms=[
+            {
+                "atom_id": "a1",
+                "fqdn": "pkg.manifest.helper",
+                "status": "approved",
+                "domain_tags": "",
+                "description": "Fallback atom description.",
+                "visibility_tier": "general",
+                "source_kind": "reviewed",
+                "stateful_kind": "none",
+                "is_stochastic": 0,
+                "is_ffi": 0,
+                "namespace_root": "sciona.atoms",
+                "namespace_path": "",
+                "source_repo_id": "",
+                "source_package": "",
+                "source_module_path": "",
+                "source_symbol": "",
+                "is_publishable": 1,
+            }
+        ],
+        descriptions=[],
+        include_io_specs=False,
+    )
+
+    catalog = PrimitiveCatalog()
+    added = seed_catalog_from_manifest_sqlite(catalog, db)
+
+    assert added == 1
+    prim = catalog.get("pkg.manifest.helper")
+    assert prim is not None
+    assert prim.description == "Fallback atom description."
+    assert prim.category == ConceptType.CUSTOM
+    assert prim.inputs == []
+    assert prim.outputs == []
+    assert prim.type_signature == "(void) -> Any"
+
+
 def test_seed_catalog_from_configured_ageo_atoms_source_discovers_pilot_cdgs() -> None:
     repo_root = Path(__file__).resolve().parents[1]
+    if not (repo_root.parent / "ageo-atoms").exists():
+        pytest.skip("ageo-atoms fixture repo is not present in this workspace")
     config = SourcesConfig(
         sources=[
             AtomSource(

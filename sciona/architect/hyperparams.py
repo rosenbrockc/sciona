@@ -5,11 +5,15 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sciona.architect.models import PrimitiveParamSpec
 
 logger = logging.getLogger(__name__)
+
+_MANIFEST_MAX_AGE_DAYS = 30
 
 
 def _infer_kind(value: object, has_choices: bool) -> str:
@@ -49,6 +53,82 @@ def _normalize_manifest_param(raw: dict[str, object]) -> dict[str, object]:
     return data
 
 
+def _read_manifest_metadata(con: sqlite3.Connection) -> dict[str, str]:
+    tables = {
+        row[0]
+        for row in con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+    }
+    if "manifest_metadata" not in tables:
+        return {}
+
+    columns = {
+        row[1]
+        for row in con.execute("PRAGMA table_info(manifest_metadata)").fetchall()
+    }
+    if {"key", "value"}.issubset(columns):
+        return {
+            str(row["key"]): str(row["value"])
+            for row in con.execute("SELECT key, value FROM manifest_metadata").fetchall()
+        }
+
+    row = con.execute("SELECT * FROM manifest_metadata LIMIT 1").fetchone()
+    if row is None:
+        return {}
+    return {key: str(row[key]) for key in row.keys() if row[key] is not None}
+
+
+def _manifest_atoms_content_hash(con: sqlite3.Connection) -> str | None:
+    try:
+        rows = con.execute("SELECT fqdn FROM atoms ORDER BY fqdn ASC").fetchall()
+    except sqlite3.Error:
+        return None
+    import hashlib
+
+    payload = "\n".join(str(row["fqdn"]) for row in rows if row["fqdn"]).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _check_manifest_sqlite_health(
+    con: sqlite3.Connection,
+    db_path: Path,
+    *,
+    max_age_days: int = _MANIFEST_MAX_AGE_DAYS,
+) -> None:
+    metadata = _read_manifest_metadata(con)
+    if not metadata:
+        return
+
+    generated_at = metadata.get("generated_at", "").strip()
+    if generated_at:
+        normalized = generated_at.replace("Z", "+00:00")
+        try:
+            generated = datetime.fromisoformat(normalized)
+            if generated.tzinfo is None:
+                generated = generated.replace(tzinfo=timezone.utc)
+            age = datetime.now(timezone.utc) - generated.astimezone(timezone.utc)
+            if age.days > max_age_days:
+                warnings.warn(
+                    (
+                        f"{db_path} is {age.days} days old. "
+                        "Run 'sciona catalog sync' to update."
+                    ),
+                    stacklevel=2,
+                )
+        except ValueError:
+            pass
+
+    expected_hash = metadata.get("content_hash", "").strip()
+    if expected_hash:
+        actual_hash = _manifest_atoms_content_hash(con)
+        if actual_hash and actual_hash != expected_hash:
+            warnings.warn(
+                f"{db_path} failed manifest content-hash validation.",
+                stacklevel=2,
+            )
+
+
 def load_hyperparams_manifest_sqlite(
     db_path: Path,
 ) -> dict[str, list[PrimitiveParamSpec]]:
@@ -64,6 +144,7 @@ def load_hyperparams_manifest_sqlite(
     con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     try:
+        _check_manifest_sqlite_health(con, db_path)
         rows = con.execute(
             """
             SELECT a.fqdn, h.name, h.default_value, h.min_value, h.max_value,
