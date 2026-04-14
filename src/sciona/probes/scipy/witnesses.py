@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Sequence
 
-from ageoa.ghost.abstract import AbstractArray, AbstractDistribution, AbstractScalar, AbstractSignal
+from sciona.ghost.abstract import AbstractArray, AbstractDistribution, AbstractScalar, AbstractSignal
 
 
 def _as_array_or_scalar(

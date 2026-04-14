@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ageoa.ghost.abstract import AbstractArray, AbstractScalar, AbstractSignal
+from sciona.ghost.abstract import AbstractArray, AbstractScalar, AbstractSignal
 
 
 def witness_computebeatagreementsqi(

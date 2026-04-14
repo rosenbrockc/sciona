@@ -7,7 +7,7 @@ import biosppy.biometrics as biometrics
 import icontract
 import numpy as np
 
-from ageoa.ghost.registry import register_atom
+from sciona.ghost.registry import register_atom
 
 from .witnesses import (
     witness_assess_classification,

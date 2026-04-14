@@ -6,7 +6,7 @@ import icontract
 import numpy as np
 import scipy.linalg
 
-from ageoa.ghost.registry import register_atom
+from sciona.ghost.registry import register_atom
 
 from sciona.probes.scipy.witnesses import (
     witness_scipy_linalg_det,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 import icontract
-from ageoa.ghost.registry import register_atom
+from sciona.ghost.registry import register_atom
 from biosppy.signals.ecg import ASI_segmenter
 from biosppy.signals.ecg import christov_segmenter as _christov_segmenter
 from biosppy.signals.ecg import engzee_segmenter as _engzee_segmenter

@@ -24,7 +24,7 @@ def test_verifier_reports_actionable_missing_symbols(tmp_path: Path) -> None:
         """
         from __future__ import annotations
 
-        from ageoa.ghost.registry import register_atom
+        from sciona.ghost.registry import register_atom
 
         @register_atom(witness_bandpass_filter)
         def bandpass_filter(signal: np.ndarray, state: ECGPipelineState) -> tuple[np.ndarray, ECGPipelineState]:
@@ -93,7 +93,7 @@ def test_script_json_output(tmp_path: Path) -> None:
     _write(
         pkg / "ecg.py",
         """
-        from ageoa.ghost.registry import register_atom
+        from sciona.ghost.registry import register_atom
 
         @register_atom(witness_bandpass_filter)
         def bandpass_filter(signal):

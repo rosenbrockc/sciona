@@ -6,7 +6,7 @@ import scipy.integrate as scipy_integrate
 import numpy as np
 import icontract
 
-from ageoa.ghost.registry import register_atom
+from sciona.ghost.registry import register_atom
 from biosppy.signals.ecg import ZZ2018, bSQI, fSQI, kSQI
 
 from .witnesses import (

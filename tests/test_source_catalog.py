@@ -440,7 +440,7 @@ def test_seed_catalog_from_sources_falls_back_to_ast_when_imports_are_broken(tmp
         """
 from __future__ import annotations
 
-from ageoa.ghost.registry import register_atom
+from sciona.ghost.registry import register_atom
 
 def witness_derive_feature(signal: "AbstractSignal", threshold: float = 0.5) -> "AbstractSignal":
     return signal
@@ -547,7 +547,7 @@ def test_seed_catalog_uses_witness_signature_for_ast_fallback_when_wrapper_is_ge
         """
 from __future__ import annotations
 
-from ageoa.ghost.registry import register_atom
+from sciona.ghost.registry import register_atom
 
 def witness_fft_transform(signal: "AbstractSignal", axis: int = -1) -> "AbstractSpectrum":
     \"\"\"Compute a forward spectral transform on the signal.\"\"\"
@@ -600,7 +600,7 @@ def test_seed_catalog_adds_suffix_aliases_for_dotted_registration_names(tmp_path
         """
 from __future__ import annotations
 
-from ageoa.ghost.registry import register_atom
+from sciona.ghost.registry import register_atom
 
 def witness_linear_solve(matrix: "AbstractMatrix", rhs: "AbstractVector") -> "AbstractVector":
     return rhs
@@ -742,7 +742,7 @@ def test_seed_catalog_dedup_merges_similar_primitives(tmp_path: Path):
         repo / "pkga" / "atoms.py",
         (
             "from __future__ import annotations\n"
-            "from ageoa.ghost.registry import register_atom\n"
+            "from sciona.ghost.registry import register_atom\n"
             "@register_atom(None)\n"
             "def detect_peaks(signal: 'np.ndarray') -> 'np.ndarray':\n"
             "    '''Detect salient peaks from a waveform.'''\n"
@@ -756,7 +756,7 @@ def test_seed_catalog_dedup_merges_similar_primitives(tmp_path: Path):
         repo / "pkgb" / "atoms.py",
         (
             "from __future__ import annotations\n"
-            "from ageoa.ghost.registry import register_atom\n"
+            "from sciona.ghost.registry import register_atom\n"
             "@register_atom(None)\n"
             "def find_peaks(signal: 'np.ndarray') -> 'np.ndarray':\n"
             "    '''Find peaks.'''\n"

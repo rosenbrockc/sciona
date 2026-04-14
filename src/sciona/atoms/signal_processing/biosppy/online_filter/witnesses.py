@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ageoa.ghost.abstract import AbstractArray, AbstractSignal
+from sciona.ghost.abstract import AbstractArray, AbstractSignal
 
 
 def witness_initialize_filter(
