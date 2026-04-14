@@ -25,9 +25,13 @@ class TestLocalSkeletonAssets:
 
         assert "family.divide_and_conquer.v1" in by_id
         assert "family.sequential_filter.v1" in by_id
+        assert "kalman_filter" in by_id
+        assert "particle_filter" in by_id
         assert "signal_detect_measure" in by_id
         assert by_id["family.divide_and_conquer.v1"].audit.review_status == "transitional"
         assert by_id["family.sequential_filter.v1"].family == "sequential_filter"
+        assert by_id["kalman_filter"].family == "kalman_filter"
+        assert by_id["particle_filter"].family == "particle_filter"
         assert by_id["family.sequential_filter.v1"].variant_hints == [
             "kalman_filter",
             "particle_filter",
@@ -100,8 +104,8 @@ class TestLocalSkeletonAssets:
         sequential = by_paradigm[ConceptType.SEQUENTIAL_FILTER]
 
         assert sequential.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
-        assert by_name["kalman_filter"].metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
-        assert by_name["particle_filter"].metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+        assert by_name["kalman_filter"].metadata["asset"]["asset_id"] == "kalman_filter"
+        assert by_name["particle_filter"].metadata["asset"]["asset_id"] == "particle_filter"
 
     def test_sequential_filter_asset_is_first_class_skeleton_lookup(self):
         default_filter = get_skeleton(ConceptType.SEQUENTIAL_FILTER)
@@ -115,8 +119,8 @@ class TestLocalSkeletonAssets:
         assert kalman_hint is not None
         assert particle_hint is not None
         assert default_filter.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
-        assert kalman_hint.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
-        assert particle_hint.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+        assert kalman_hint.metadata["asset"]["asset_id"] == "kalman_filter"
+        assert particle_hint.metadata["asset"]["asset_id"] == "particle_filter"
 
     def test_signal_detect_measure_stages_carry_explicit_matched_primitives(self):
         asset = next(

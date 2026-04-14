@@ -1,0 +1,194 @@
+{
+  "asset_id": "particle_filter",
+  "asset_version": "v1",
+  "family": "particle_filter",
+  "paradigm": "sequential_filter",
+  "name": "Particle Filter Skeleton",
+  "summary": "Resample particles when needed, propagate each particle through the transition model, score the observation likelihood, then normalize and summarize the posterior particle state.",
+  "dejargonized_summary": "Keep a cloud of candidate states, move them forward, compare each one against the new measurement, and keep the weighted cloud instead of collapsing uncertainty too early.",
+  "canonical_for_paradigm": false,
+  "variant_hints": [
+    "bootstrap_particle_filter",
+    "auxiliary_particle_filter",
+    "rao_blackwellized_pf"
+  ],
+  "stages": [
+    {
+      "stage_id": "preprocess",
+      "name": "Preprocess",
+      "description": "Compute effective sample size and resample the particles when the current weight distribution has become too degenerate.",
+      "dejargonized_description": "Check whether the particle cloud has collapsed too much and refresh it before the next step if needed.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "particles",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "weights",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "resampled_particles",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "ess",
+          "type_desc": "float"
+        }
+      ]
+    },
+    {
+      "stage_id": "predict",
+      "name": "Predict",
+      "description": "Propagate each particle independently through the transition model before incorporating the new observation.",
+      "dejargonized_description": "Move every candidate state forward one step before scoring it against the measurement.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "resampled_particles",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "transition_model",
+          "type_desc": "Callable[[ndarray], ndarray]"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "predicted_particles",
+          "type_desc": "ndarray"
+        }
+      ]
+    },
+    {
+      "stage_id": "reweight",
+      "name": "Reweight",
+      "description": "Score each predicted particle against the observation and convert those scores into updated particle weights.",
+      "dejargonized_description": "Ask how well each candidate state explains the new observation, then turn those answers into weights.",
+      "concept_type": "probabilistic_oracle",
+      "inputs": [
+        {
+          "name": "predicted_particles",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "observation",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "log_likelihood",
+          "type_desc": "Callable[[ndarray, ndarray], float]"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "log_weights",
+          "type_desc": "ndarray"
+        }
+      ]
+    },
+    {
+      "stage_id": "postprocess",
+      "name": "Postprocess",
+      "description": "Normalize the weights, package the posterior particle set, and compute the state estimate exposed downstream.",
+      "dejargonized_description": "Turn the weighted particle cloud back into the updated estimate and keep the particle state available for the next step.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "predicted_particles",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "log_weights",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "particles",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "weights",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "state_estimate",
+          "type_desc": "ndarray"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source_stage_id": "preprocess",
+      "target_stage_id": "predict",
+      "output_name": "resampled_particles",
+      "input_name": "resampled_particles",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "predict",
+      "target_stage_id": "reweight",
+      "output_name": "predicted_particles",
+      "input_name": "predicted_particles",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "reweight",
+      "target_stage_id": "postprocess",
+      "output_name": "log_weights",
+      "input_name": "log_weights",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "predict",
+      "target_stage_id": "postprocess",
+      "output_name": "predicted_particles",
+      "input_name": "predicted_particles",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    }
+  ],
+  "planning_constraints": [
+    {
+      "category": "stage",
+      "subject": "particle_filter",
+      "statement": "Preserve the weighted particle state until the posterior packaging stage finishes.",
+      "severity": "required",
+      "rationale": "Particle-filter families rely on particle diversity and weight evolution remaining explicit across the update boundary.",
+      "source_stage": "skeleton_asset"
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Publishes a concrete particle-filter macro scaffold while artifact ownership migrates into the provider repos.",
+    "dejargonized_summary": "A concrete sequential Monte Carlo scaffold that keeps resampling, propagation, likelihood scoring, and posterior packaging separate.",
+    "migration_readiness": {
+      "status": "in_progress",
+      "target_repository": "../sciona-atoms",
+      "target_scope": "skeleton.particle_filter",
+      "rationale": "The particle-filter topology is stable, but the canonical artifact still lives in the matcher compatibility layer."
+    },
+    "references": [
+      {
+        "title": "Sequential Monte Carlo Methods in Practice",
+        "citation": "Doucet, de Freitas, Gordon. Particle filtering reference collection."
+      }
+    ],
+    "uncertainty_notes": [
+      "This scaffold does not encode proposal-specific auxiliary branches or Rao-Blackwellized substructure."
+    ],
+    "maintainers": [
+      "sciona-matcher"
+    ]
+  }
+}

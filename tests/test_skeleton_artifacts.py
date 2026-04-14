@@ -16,6 +16,13 @@ def test_local_skeleton_macro_candidates_are_deterministic() -> None:
     assert [candidate.fqdn for candidate in candidates] == sorted(
         candidate.fqdn for candidate in candidates
     )
+    assert {
+        candidate.fqdn for candidate in candidates
+    } >= {
+        "cdg.skeleton.kalman_filter",
+        "cdg.skeleton.particle_filter",
+        "cdg.skeleton.signal_detect_measure",
+    }
     signal_candidate = next(
         candidate
         for candidate in candidates
@@ -40,4 +47,32 @@ async def test_local_skeleton_macro_retriever_matches_signal_detect_measure() ->
     assert result.success is True
     assert result.candidate is not None
     assert result.candidate.fqdn == "cdg.skeleton.signal_detect_measure"
+    assert result.candidate.terminal_on_match is False
+
+
+@pytest.mark.asyncio
+async def test_local_skeleton_macro_retriever_matches_kalman_filter() -> None:
+    retriever = build_local_skeleton_macro_retriever(min_score=0.3)
+
+    result = await retriever.match_goal(
+        MacroMatchRequest(goal="Estimate hidden state with a Kalman filter")
+    )
+
+    assert result.success is True
+    assert result.candidate is not None
+    assert result.candidate.fqdn == "cdg.skeleton.kalman_filter"
+    assert result.candidate.terminal_on_match is False
+
+
+@pytest.mark.asyncio
+async def test_local_skeleton_macro_retriever_matches_particle_filter() -> None:
+    retriever = build_local_skeleton_macro_retriever(min_score=0.3)
+
+    result = await retriever.match_goal(
+        MacroMatchRequest(goal="Track latent state with a particle filter")
+    )
+
+    assert result.success is True
+    assert result.candidate is not None
+    assert result.candidate.fqdn == "cdg.skeleton.particle_filter"
     assert result.candidate.terminal_on_match is False

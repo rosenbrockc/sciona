@@ -24,6 +24,14 @@ def _asset_fqdn(asset: SkeletonFamilyAsset) -> str:
     return f"cdg.skeleton.{asset.asset_id}"
 
 
+def _asset_candidate_score(asset: SkeletonFamilyAsset) -> float:
+    if asset.asset_id == asset.family:
+        return 1.0
+    if asset.canonical_for_paradigm:
+        return 0.85
+    return 0.9
+
+
 def build_skeleton_asset_cdg(
     asset: SkeletonFamilyAsset,
     *,
@@ -94,7 +102,7 @@ def load_local_skeleton_macro_candidates() -> list[MacroArtifactCandidate]:
                 ),
                 domain_tags=domain_tags,
                 verified_leaf_coverage=0.0,
-                score=1.0 if asset.canonical_for_paradigm else 0.8,
+                score=_asset_candidate_score(asset),
                 visibility_tier="general",
                 cdg=build_skeleton_asset_cdg(asset),
                 terminal_on_match=False,

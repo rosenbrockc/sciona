@@ -293,7 +293,7 @@ def load_local_skeleton_graphs() -> tuple[
             by_paradigm[asset.paradigm] = graph
         by_name[asset.asset_id] = graph
         for hint in asset.variant_hints:
-            by_name[hint] = graph
+            by_name.setdefault(hint, graph)
     return by_paradigm, by_name
 
 

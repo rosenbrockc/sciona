@@ -1,0 +1,279 @@
+{
+  "asset_id": "kalman_filter",
+  "asset_version": "v1",
+  "family": "kalman_filter",
+  "paradigm": "sequential_filter",
+  "name": "Kalman Filter Skeleton",
+  "summary": "Propagate the hidden state and covariance forward, compare the predicted hidden state against the observation, compute the Kalman gain, then update the posterior state and covariance.",
+  "dejargonized_summary": "Project the hidden state estimate forward, compare it with the new measurement, decide how much to trust that measurement, and update both the estimate and its uncertainty together.",
+  "canonical_for_paradigm": false,
+  "variant_hints": [
+    "extended_kalman_filter",
+    "unscented_kalman_filter"
+  ],
+  "stages": [
+    {
+      "stage_id": "predict_state",
+      "name": "Predict State",
+      "description": "Propagate the latent state estimate through the transition model before processing the next observation.",
+      "dejargonized_description": "Project the current state guess one step forward before looking at the next measurement.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "x",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "F",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "u",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "B",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "x_pred",
+          "type_desc": "ndarray"
+        }
+      ]
+    },
+    {
+      "stage_id": "predict_covariance",
+      "name": "Predict Covariance",
+      "description": "Propagate the state uncertainty through the same transition so the update step retains an explicit uncertainty channel.",
+      "dejargonized_description": "Carry the uncertainty forward along with the state prediction instead of dropping it.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "P",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "F",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "Q",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "P_pred",
+          "type_desc": "ndarray"
+        }
+      ]
+    },
+    {
+      "stage_id": "innovation",
+      "name": "Innovation",
+      "description": "Compare the predicted state against the observation to compute the measurement residual.",
+      "dejargonized_description": "Measure how different the new observation is from what the prediction expected.",
+      "concept_type": "sequential_filter",
+      "inputs": [
+        {
+          "name": "z",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "x_pred",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "H",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "y_tilde",
+          "type_desc": "ndarray"
+        }
+      ]
+    },
+    {
+      "stage_id": "kalman_gain",
+      "name": "Kalman Gain",
+      "description": "Compute how strongly the observation should influence the update given the predicted uncertainty and observation noise.",
+      "dejargonized_description": "Decide how much to trust the new measurement versus the model prediction.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "P_pred",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "H",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "R",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "K",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "S",
+          "type_desc": "ndarray"
+        }
+      ]
+    },
+    {
+      "stage_id": "update_state",
+      "name": "Update State",
+      "description": "Update the posterior state estimate using the predicted state, Kalman gain, and innovation.",
+      "dejargonized_description": "Adjust the state guess using how surprising the new measurement was.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "x_pred",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "K",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "y_tilde",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "x_updated",
+          "type_desc": "ndarray"
+        }
+      ]
+    },
+    {
+      "stage_id": "update_covariance",
+      "name": "Update Covariance",
+      "description": "Update the posterior covariance so the next step retains the revised uncertainty state.",
+      "dejargonized_description": "Update the uncertainty to reflect what the new measurement taught the filter.",
+      "concept_type": "conjugate_update",
+      "inputs": [
+        {
+          "name": "K",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "H",
+          "type_desc": "ndarray"
+        },
+        {
+          "name": "P_pred",
+          "type_desc": "ndarray"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "P_updated",
+          "type_desc": "ndarray"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source_stage_id": "predict_state",
+      "target_stage_id": "innovation",
+      "output_name": "x_pred",
+      "input_name": "x_pred",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "predict_covariance",
+      "target_stage_id": "kalman_gain",
+      "output_name": "P_pred",
+      "input_name": "P_pred",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "innovation",
+      "target_stage_id": "update_state",
+      "output_name": "y_tilde",
+      "input_name": "y_tilde",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "kalman_gain",
+      "target_stage_id": "update_state",
+      "output_name": "K",
+      "input_name": "K",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "kalman_gain",
+      "target_stage_id": "update_covariance",
+      "output_name": "K",
+      "input_name": "K",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "predict_state",
+      "target_stage_id": "update_state",
+      "output_name": "x_pred",
+      "input_name": "x_pred",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    },
+    {
+      "source_stage_id": "predict_covariance",
+      "target_stage_id": "update_covariance",
+      "output_name": "P_pred",
+      "input_name": "P_pred",
+      "source_type": "ndarray",
+      "target_type": "ndarray"
+    }
+  ],
+  "planning_constraints": [
+    {
+      "category": "stage",
+      "subject": "kalman_filter",
+      "statement": "Preserve the explicit covariance channel through the predict and update stages.",
+      "severity": "required",
+      "rationale": "Kalman-family updates depend on state and uncertainty evolving together.",
+      "source_stage": "skeleton_asset"
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Publishes a concrete Kalman-family macro scaffold while artifact ownership migrates into the provider repos.",
+    "dejargonized_summary": "A concrete state-estimation scaffold that keeps state prediction, uncertainty prediction, measurement comparison, and posterior update separate.",
+    "migration_readiness": {
+      "status": "in_progress",
+      "target_repository": "../sciona-atoms",
+      "target_scope": "skeleton.kalman_filter",
+      "rationale": "The topology is stable, but the canonical artifact still lives in the matcher compatibility layer."
+    },
+    "references": [
+      {
+        "title": "Optimal State Estimation",
+        "citation": "Dan Simon. Kalman, H Infinity, and Nonlinear Approaches."
+      }
+    ],
+    "uncertainty_notes": [
+      "This scaffold does not encode variant-specific nonlinear update details for EKF or UKF."
+    ],
+    "maintainers": [
+      "sciona-matcher"
+    ]
+  }
+}
