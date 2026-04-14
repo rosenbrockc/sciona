@@ -61,3 +61,65 @@ def test_build_published_cdg_projection_derives_deterministic_summary() -> None:
     assert projection.n_outputs == 1
     assert projection.verified_leaf_coverage == 0.75
     assert projection.topo_hash
+
+
+def test_build_published_cdg_projection_handles_rootless_template_graphs() -> None:
+    left = AlgorithmicNode(
+        node_id="left",
+        name="Left",
+        description="left stage",
+        concept_type=ConceptType.DIVIDE_AND_CONQUER,
+        status=NodeStatus.ATOMIC,
+    )
+    right = AlgorithmicNode(
+        node_id="right",
+        name="Right",
+        description="right stage",
+        concept_type=ConceptType.DIVIDE_AND_CONQUER,
+        status=NodeStatus.ATOMIC,
+    )
+    merge = AlgorithmicNode(
+        node_id="merge",
+        name="Merge",
+        description="merge stage",
+        concept_type=ConceptType.DIVIDE_AND_CONQUER,
+        status=NodeStatus.ATOMIC,
+    )
+    linear = CDGExport(
+        nodes=[left, right, merge],
+        edges=[
+            DependencyEdge(
+                source_id="left",
+                target_id="merge",
+                output_name="left_result",
+                input_name="left_result",
+                source_type="any",
+                target_type="any",
+            ),
+            DependencyEdge(
+                source_id="right",
+                target_id="merge",
+                output_name="right_result",
+                input_name="right_result",
+                source_type="any",
+                target_type="any",
+            ),
+        ],
+        metadata={},
+    )
+    disconnected = CDGExport(nodes=[left, right, merge], edges=[], metadata={})
+
+    linear_projection = build_published_cdg_projection(
+        artifact={"artifact_id": "a1", "fqdn": "cdg.skeleton.linear", "artifact_kind": "cdg"},
+        version={"artifact_version_id": "v1", "semver": "1.0.0", "content_hash": "aaa"},
+        cdg=linear,
+    )
+    disconnected_projection = build_published_cdg_projection(
+        artifact={"artifact_id": "a2", "fqdn": "cdg.skeleton.disconnected", "artifact_kind": "cdg"},
+        version={"artifact_version_id": "v2", "semver": "1.0.0", "content_hash": "bbb"},
+        cdg=disconnected,
+    )
+
+    assert linear_projection.topo_hash
+    assert disconnected_projection.topo_hash
+    assert linear_projection.topo_hash != disconnected_projection.topo_hash

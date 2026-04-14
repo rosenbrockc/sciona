@@ -12,11 +12,19 @@ from sciona.architect.handoff import CDGExport
 def _topo_hash(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], root_id: str) -> str:
     children = [node for node in nodes if node.get("parent_id") == root_id]
     child_ids = {child["node_id"] for child in children}
-    sibling_edges = [
-        edge
-        for edge in edges
-        if edge.get("source_id") in child_ids and edge.get("target_id") in child_ids
-    ]
+    if not child_ids:
+        child_ids = {str(node.get("node_id", "")) for node in nodes if str(node.get("node_id", "")).strip()}
+        sibling_edges = [
+            edge
+            for edge in edges
+            if edge.get("source_id") in child_ids and edge.get("target_id") in child_ids
+        ]
+    else:
+        sibling_edges = [
+            edge
+            for edge in edges
+            if edge.get("source_id") in child_ids and edge.get("target_id") in child_ids
+        ]
     degree_seq: list[tuple[int, int]] = []
     for child_id in sorted(child_ids):
         in_deg = sum(1 for edge in sibling_edges if edge.get("target_id") == child_id)
