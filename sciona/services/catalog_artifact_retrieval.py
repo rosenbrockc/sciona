@@ -43,6 +43,27 @@ def _artifact_domain_tags(row: dict[str, Any], document: dict[str, Any]) -> list
     return tags
 
 
+def _goal_matches_artifact_row(goal: str, row: dict[str, Any]) -> bool:
+    goal_tokens = {
+        token
+        for token in str(goal or "").lower().replace("_", " ").split()
+        if token
+    }
+    if not goal_tokens:
+        return False
+    haystack = " ".join(
+        str(value or "")
+        for value in (
+            row.get("fqdn"),
+            row.get("description"),
+            row.get("namespace_root"),
+            row.get("namespace_path"),
+            row.get("source_symbol"),
+        )
+    ).lower().replace("_", " ")
+    return bool(goal_tokens & {token for token in haystack.split() if token})
+
+
 def _artifact_document_to_cdg(document: dict[str, Any]) -> CDGExport:
     artifact = dict(document.get("artifact") or {})
     nodes = [
@@ -131,6 +152,22 @@ class CatalogMacroArtifactRetriever:
             rows = list(filtered.data or [])
             if rows:
                 return rows
+            raw = await (
+                self._supabase.table("artifacts")
+                .select(
+                    "artifact_id, artifact_kind, fqdn, description, namespace_root, namespace_path, source_symbol, verified_leaf_coverage, visibility_tier, is_publishable"
+                )
+                .eq("artifact_kind", "cdg")
+                .limit(max(self._result_limit, 50))
+                .execute()
+            )
+            raw_rows = [
+                row
+                for row in list(raw.data or [])
+                if _goal_matches_artifact_row(goal, row)
+            ]
+            if raw_rows:
+                return raw_rows[: self._result_limit]
             result = await (
                 self._supabase.table("catalog_artifacts_served")
                 .select(
@@ -173,6 +210,57 @@ class CatalogMacroArtifactRetriever:
             log.exception("Failed to fetch artifact document for %s", fqdn)
         return None
 
+    def _candidate_from_document(
+        self,
+        *,
+        row: dict[str, Any],
+        document: dict[str, Any],
+        version: dict[str, Any],
+    ) -> MacroArtifactCandidate:
+        artifact = dict(document.get("artifact") or {})
+        return MacroArtifactCandidate(
+            fqdn=str(row.get("fqdn", "") or ""),
+            semver=str(version.get("semver", "") or ""),
+            content_hash=str(version.get("content_hash", "") or ""),
+            artifact_kind="cdg",
+            name=str(
+                artifact.get("source_symbol", "")
+                or str(row.get("fqdn", "")).rsplit(".", 1)[-1]
+            ),
+            description=str(
+                row.get("technical_description", "")
+                or row.get("description", "")
+                or artifact.get("description", "")
+                or ""
+            ),
+            conceptual_summary=str(
+                next(
+                    (
+                        entry.get("content", "")
+                        for entry in (document.get("descriptions") or [])
+                        if entry.get("kind") == "dejargonized"
+                    ),
+                    artifact.get("description", ""),
+                )
+                or ""
+            ),
+            domain_tags=_artifact_domain_tags(row, document),
+            verified_leaf_coverage=float(
+                artifact.get("verified_leaf_coverage", row.get("verified_leaf_coverage", 0.0))
+                or 0.0
+            ),
+            score=float(
+                row.get("score", 0.2 if not bool(row.get("is_publishable", False)) else 0.0)
+                or 0.0
+            ),
+            visibility_tier=str(
+                artifact.get("visibility_tier", row.get("visibility_tier", "general"))
+                or "general"
+            ),
+            cdg=_artifact_document_to_cdg(document),
+            terminal_on_match=False,
+        )
+
     async def _catalog_candidates(self, goal: str) -> list[MacroArtifactCandidate]:
         rows = await self._search_rows(goal)
         candidates: list[MacroArtifactCandidate] = []
@@ -187,34 +275,11 @@ class CatalogMacroArtifactRetriever:
             if not document:
                 continue
             version = await self._latest_version(artifact_id)
-            artifact = dict(document.get("artifact") or {})
             candidates.append(
-                MacroArtifactCandidate(
-                    fqdn=fqdn,
-                    semver=str(version.get("semver", "") or ""),
-                    content_hash=str(version.get("content_hash", "") or ""),
-                    artifact_kind="cdg",
-                    name=str(artifact.get("source_symbol", "") or fqdn.rsplit(".", 1)[-1]),
-                    description=str(row.get("technical_description", "") or artifact.get("description", "") or ""),
-                    conceptual_summary=str(
-                        next(
-                            (
-                                entry.get("content", "")
-                                for entry in (document.get("descriptions") or [])
-                                if entry.get("kind") == "dejargonized"
-                            ),
-                            artifact.get("description", ""),
-                        )
-                        or ""
-                    ),
-                    domain_tags=_artifact_domain_tags(row, document),
-                    verified_leaf_coverage=float(
-                        artifact.get("verified_leaf_coverage", 0.0) or 0.0
-                    ),
-                    score=float(row.get("score", 0.0) or 0.0),
-                    visibility_tier=str(artifact.get("visibility_tier", "general") or "general"),
-                    cdg=_artifact_document_to_cdg(document),
-                    terminal_on_match=False,
+                self._candidate_from_document(
+                    row=row,
+                    document=document,
+                    version=version,
                 )
             )
         return candidates

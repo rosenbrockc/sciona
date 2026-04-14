@@ -69,11 +69,13 @@ class _FakeSupabase:
         documents: dict[str, dict[str, object]] | None = None,
         versions: dict[str, dict[str, object]] | None = None,
         catalog_rows: list[dict[str, object]] | None = None,
+        artifact_rows: list[dict[str, object]] | None = None,
     ) -> None:
         self._search_rows = list(search_rows or [])
         self._documents = dict(documents or {})
         self._versions = dict(versions or {})
         self._catalog_rows = list(catalog_rows or [])
+        self._artifact_rows = list(artifact_rows or [])
 
     def rpc(self, fn_name: str, params: dict[str, object]):
         return _FakeRpcQuery(self, fn_name, params)
@@ -107,6 +109,19 @@ class _FakeSupabase:
                 ]
             if or_clause:
                 rows = []
+            if limit is not None:
+                rows = rows[:limit]
+            return rows
+        if table_name == "artifacts":
+            rows = list(self._artifact_rows)
+            filter_map = {field: value for field, value in filters}
+            artifact_kind = str(filter_map.get("artifact_kind", "") or "").strip()
+            if artifact_kind:
+                rows = [
+                    row
+                    for row in rows
+                    if str(row.get("artifact_kind", "") or "") == artifact_kind
+                ]
             if limit is not None:
                 rows = rows[:limit]
             return rows
@@ -300,3 +315,76 @@ async def test_catalog_macro_retriever_ranks_over_catalog_rows_when_rpc_misses()
     assert result.success is True
     assert result.candidate is not None
     assert result.candidate.fqdn == "cdg.skeleton.family.divide_and_conquer.v1"
+
+
+@pytest.mark.asyncio
+async def test_catalog_macro_retriever_reads_raw_artifacts_when_served_catalog_misses() -> None:
+    document = {
+        "artifact": {
+            "artifact_id": "artifact-3",
+            "fqdn": "cdg.skeleton.kalman_filter",
+            "artifact_kind": "cdg",
+            "source_symbol": "kalman_filter",
+            "description": "Kalman family scaffold.",
+            "verified_leaf_coverage": 0.0,
+            "visibility_tier": "general",
+            "namespace_root": "sciona.architect.assets.skeletons",
+            "namespace_path": "kalman_filter",
+        },
+        "descriptions": [
+            {
+                "kind": "dejargonized",
+                "content": "Project hidden state forward and update it with new observations.",
+            }
+        ],
+        "cdg_nodes": [
+            {
+                "node_id": "predict_state",
+                "parent_node_id": "",
+                "name": "Predict State",
+                "description": "Predict the hidden state.",
+                "concept_type": "sequential_filter",
+                "status": "atomic",
+                "type_signature": "state -> state",
+            }
+        ],
+        "cdg_edges": [],
+    }
+    retriever = CatalogMacroArtifactRetriever(
+        _FakeSupabase(
+            search_rows=[],
+            catalog_rows=[],
+            artifact_rows=[
+                {
+                    "artifact_id": "artifact-3",
+                    "artifact_kind": "cdg",
+                    "fqdn": "cdg.skeleton.kalman_filter",
+                    "description": "Kalman filter scaffold for hidden state estimation.",
+                    "namespace_root": "sciona.architect.assets.skeletons",
+                    "namespace_path": "kalman_filter",
+                    "source_symbol": "kalman_filter",
+                    "verified_leaf_coverage": 0.0,
+                    "visibility_tier": "general",
+                    "is_publishable": False,
+                }
+            ],
+            documents={"cdg.skeleton.kalman_filter": document},
+            versions={
+                "artifact-3": {
+                    "version_id": "version-3",
+                    "semver": "v1",
+                    "content_hash": "hash-789",
+                }
+            },
+        ),
+        min_score=0.3,
+    )
+
+    result = await retriever.match_goal(
+        MacroMatchRequest(goal="Estimate hidden state with a Kalman filter")
+    )
+
+    assert result.success is True
+    assert result.candidate is not None
+    assert result.candidate.fqdn == "cdg.skeleton.kalman_filter"
+    assert result.candidate.semver == "v1"
