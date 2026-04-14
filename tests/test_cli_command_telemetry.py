@@ -545,9 +545,12 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
     monkeypatch.setattr("sciona.hunter.graph.HunterAgent", _FakeHunterAgent)
     monkeypatch.setattr("sciona.architect.handoff.save_json", _save_cdg)
+    async def _fake_macro_retriever_factory(*, min_score=0.55, result_limit=10):
+        return MacroArtifactRetriever([], min_score=0.99)
+
     monkeypatch.setattr(
-        "sciona.services.skeleton_artifacts.build_local_skeleton_macro_retriever",
-        lambda min_score=0.55: MacroArtifactRetriever([], min_score=0.99),
+        "sciona.services.catalog_artifact_retrieval.build_default_macro_retriever",
+        _fake_macro_retriever_factory,
     )
     monkeypatch.setattr(
         "sciona.architect.graph.DecompositionAgent",
@@ -726,9 +729,8 @@ async def test_run_single_agent_mode_uses_macro_skeleton_before_architect(
             AssertionError("orchestration should be skipped on macro structured success")
         ),
     )
-    monkeypatch.setattr(
-        "sciona.services.skeleton_artifacts.build_local_skeleton_macro_retriever",
-        lambda min_score=0.55: MacroArtifactRetriever(
+    async def _fake_macro_retriever_factory(*, min_score=0.55, result_limit=10):
+        return MacroArtifactRetriever(
             [
                 MacroArtifactCandidate(
                     fqdn="cdg.skeleton.signal_detect_measure",
@@ -742,7 +744,11 @@ async def test_run_single_agent_mode_uses_macro_skeleton_before_architect(
                 )
             ],
             min_score=0.3,
-        ),
+        )
+
+    monkeypatch.setattr(
+        "sciona.services.catalog_artifact_retrieval.build_default_macro_retriever",
+        _fake_macro_retriever_factory,
     )
 
     await _cmd_run(
