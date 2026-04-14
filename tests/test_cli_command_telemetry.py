@@ -6,6 +6,10 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
+from sciona.services.artifact_retrieval import MacroArtifactRetriever
+from sciona.services.models import MacroArtifactCandidate
 from sciona.types import (
     CandidateMatch,
     Declaration,
@@ -542,6 +546,10 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     monkeypatch.setattr("sciona.hunter.graph.HunterAgent", _FakeHunterAgent)
     monkeypatch.setattr("sciona.architect.handoff.save_json", _save_cdg)
     monkeypatch.setattr(
+        "sciona.services.skeleton_artifacts.build_local_skeleton_macro_retriever",
+        lambda min_score=0.55: MacroArtifactRetriever([], min_score=0.99),
+    )
+    monkeypatch.setattr(
         "sciona.architect.graph.DecompositionAgent",
         lambda **kwargs: (_ for _ in ()).throw(
             AssertionError("architect should be skipped on direct single-agent success")
@@ -579,9 +587,10 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     assert payload["metadata"]["single_agent"]["termination_reason"] == "direct_verified"
     assert payload["metadata"]["single_agent"]["verification_status"] == "verified"
     assert payload["metadata"]["single_agent"]["step_budget"] == 6
-    assert payload["metadata"]["single_agent"]["steps_used"] == 1
-    assert payload["metadata"]["single_agent"]["tool_dispatch_count_total"] == 1
+    assert payload["metadata"]["single_agent"]["steps_used"] == 2
+    assert payload["metadata"]["single_agent"]["tool_dispatch_count_total"] == 2
     assert payload["metadata"]["single_agent"]["tool_latency_ms_total"] >= 0.0
+    assert payload["metadata"]["single_agent"]["tool_metrics"]["artifact.match_goal"]["dispatches"] == 1
     assert payload["metadata"]["single_agent"]["tool_metrics"]["hunter.match_goal"]["dispatches"] == 1
     assert payload["metadata"]["single_agent"]["escalation_events"] == []
     assert payload["metadata"]["single_agent"]["open_failures"] == []
@@ -598,6 +607,7 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["execution_path"] == "single_agent_direct"
     assert manifest["escalation_events"] == []
+    assert manifest["tool_metrics"]["artifact.match_goal"]["dispatches"] == 1
     assert manifest["tool_metrics"]["hunter.match_goal"]["dispatches"] == 1
     assert manifest["artifacts"]["cdg"]["path"] == str(output_dir / "cdg.json")
     assert manifest["artifacts"]["cdg"]["exists"] is True
@@ -605,10 +615,163 @@ async def test_run_single_agent_mode_uses_direct_first_planner(monkeypatch, tmp_
     assert payload["metadata"]["single_agent"]["concrete_artifacts"]["cdg"]["path"] == str(
         output_dir / "cdg.json"
     )
-    assert payload["metadata"]["single_agent"]["attempt_history"] == ["direct_match"]
-    assert payload["metadata"]["single_agent"]["steps"][0]["action"] == "direct_match"
-    assert payload["metadata"]["single_agent"]["steps"][0]["status"] == "completed"
+    assert payload["metadata"]["single_agent"]["attempt_history"] == [
+        "direct_macro_match",
+        "direct_match",
+    ]
+    assert payload["metadata"]["single_agent"]["steps"][0]["action"] == "direct_macro_match"
+    assert payload["metadata"]["single_agent"]["steps"][0]["status"] == "failed"
+    assert payload["metadata"]["single_agent"]["steps"][1]["action"] == "direct_match"
+    assert payload["metadata"]["single_agent"]["steps"][1]["status"] == "completed"
     assert (output_dir / "cdg.json").exists()
     assert (output_dir / "matches.json").exists()
     assert (output_dir / "planner_artifacts.json").exists()
+    assert env.closed is True
+
+
+@pytest.mark.asyncio
+async def test_run_single_agent_mode_uses_macro_skeleton_before_architect(
+    monkeypatch,
+    tmp_path: Path,
+):
+    from sciona.cli import _cmd_run
+    from sciona.telemetry import configure_dashboard_output, reset_telemetry_runtime
+
+    reset_telemetry_runtime()
+    configure_dashboard_output(tmp_path)
+    monkeypatch.setenv("SCIONA_TELEMETRY_RUNS_DIR", str(tmp_path))
+
+    output_dir = tmp_path / "single_agent_macro_output"
+    index_dir = tmp_path / "index"
+    index_dir.mkdir()
+    metrics = _FakeMetrics("memory")
+    env = _FakeEnv()
+    macro_cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="macro_filter",
+                name="Filter Signal For Detection",
+                description="Condition the raw signal for robust event detection.",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                type_signature="signal -> conditioned_signal",
+            ),
+            AlgorithmicNode(
+                node_id="macro_rate",
+                name="Compute Event Rate",
+                description="Estimate a rate from detected events.",
+                concept_type=ConceptType.ANALYSIS,
+                status=NodeStatus.ATOMIC,
+                type_signature="events -> rate",
+            ),
+        ],
+        edges=[],
+        metadata={"artifact_kind": "cdg"},
+    )
+
+    _R = "sciona.commands.run_cmds"
+    monkeypatch.setattr(
+        f"{_R}._load_architect_catalog",
+        lambda args, config: (SimpleNamespace(size=1), {"source_candidates": 1}),
+    )
+    monkeypatch.setattr(
+        f"{_R}._resolve_retrieval_policy",
+        lambda **kwargs: SimpleNamespace(
+            catalog_confidence=0.5,
+            confidence_band="medium",
+            skill_index_enabled=False,
+            graph_retrieval_enabled=False,
+            semantic_index_backend_override="lexical",
+            hunter_mode="standard",
+        ),
+    )
+    monkeypatch.setattr(f"{_R}._load_skill_index_or_empty", lambda config, enabled=True: object())
+    monkeypatch.setattr(f"{_R}._load_semantic_index", lambda *args, **kwargs: (object(), "lexical"))
+    monkeypatch.setattr(f"{_R}._create_proof_env", lambda prover, config: env)
+    monkeypatch.setattr(
+        "sciona.judge.checker.VerificationOracleImpl",
+        lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+    monkeypatch.setattr(f"{_R}._create_llm_router", lambda *args, **kwargs: object())
+
+    async def _noop_warm(*args, **kwargs):
+        return None
+
+    async def _fake_create_shared_context(*args, **kwargs):
+        return None, metrics
+
+    class _FakeHunterAgent:
+        def __init__(self, **kwargs) -> None:
+            self.kwargs = kwargs
+
+        async def find_match(self, node):
+            return _successful_match_result(node)
+
+    def _save_cdg(cdg, path):
+        Path(path).write_text(cdg.model_dump_json(indent=2), encoding="utf-8")
+
+    monkeypatch.setattr(f"{_R}._warm_llm_if_supported", _noop_warm)
+    monkeypatch.setattr(f"{_R}._create_shared_context", _fake_create_shared_context)
+    monkeypatch.setattr("sciona.hunter.graph.HunterAgent", _FakeHunterAgent)
+    monkeypatch.setattr("sciona.architect.handoff.save_json", _save_cdg)
+    monkeypatch.setattr(
+        "sciona.architect.graph.DecompositionAgent",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("architect should be skipped when macro skeleton is selected")
+        ),
+    )
+    monkeypatch.setattr(
+        "sciona.orchestrator.run_orchestration",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("orchestration should be skipped on macro structured success")
+        ),
+    )
+    monkeypatch.setattr(
+        "sciona.services.skeleton_artifacts.build_local_skeleton_macro_retriever",
+        lambda min_score=0.55: MacroArtifactRetriever(
+            [
+                MacroArtifactCandidate(
+                    fqdn="cdg.skeleton.signal_detect_measure",
+                    semver="v1",
+                    content_hash="macro123",
+                    description="Condition a raw signal, detect events, and compute rate.",
+                    conceptual_summary="signal detect and measure family skeleton",
+                    domain_tags=["signal_detect_measure", "event_rate_estimation", "ecg"],
+                    cdg=macro_cdg,
+                    terminal_on_match=False,
+                )
+            ],
+            min_score=0.3,
+        ),
+    )
+
+    await _cmd_run(
+        argparse.Namespace(
+            goal="Detect heart rate from ECG",
+            prover="python",
+            output=str(output_dir),
+            trace=False,
+            max_rounds=2,
+            mode="single_agent",
+        )
+    )
+
+    payload = _latest_persisted_run(tmp_path)
+    assert payload["status"] == "completed"
+    assert payload["metadata"]["execution_path"] == "single_agent_macro_structured"
+    assert payload["metadata"]["single_agent"]["termination_reason"] == "macro_structured_verified"
+    assert payload["metadata"]["single_agent"]["verification_status"] == "verified"
+    assert payload["metadata"]["single_agent"]["artifacts"] == {
+        "cdg": "macro_artifact_cdg",
+        "match_results": "hunter_batch_match",
+    }
+    assert payload["metadata"]["single_agent"]["attempt_history"] == [
+        "direct_macro_match",
+        "macro_decompose",
+        "match_decomposed",
+    ]
+    assert payload["metadata"]["single_agent"]["tool_metrics"]["artifact.match_goal"]["dispatches"] == 1
+    assert payload["metadata"]["single_agent"]["tool_metrics"]["hunter.match_batch"]["dispatches"] == 1
+    assert (output_dir / "cdg.json").exists()
+    assert (output_dir / "matches.json").exists()
     assert env.closed is True

@@ -177,6 +177,87 @@ async def test_single_agent_planner_prefers_macro_direct_result_when_available()
 
 
 @pytest.mark.asyncio
+async def test_single_agent_planner_uses_nonterminal_macro_cdg_before_architect():
+    macro_cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="macro_stage_0",
+                name="Filter Signal For Detection",
+                description="Condition the raw ECG signal.",
+                concept_type=ConceptType.SIGNAL_FILTER,
+                status=NodeStatus.ATOMIC,
+                type_signature="signal -> conditioned_signal",
+            ),
+            AlgorithmicNode(
+                node_id="macro_stage_1",
+                name="Compute Event Rate",
+                description="Estimate the event rate from detected beats.",
+                concept_type=ConceptType.ANALYSIS,
+                status=NodeStatus.ATOMIC,
+                type_signature="events -> rate",
+            ),
+        ],
+        edges=[],
+        metadata={"artifact_kind": "cdg"},
+    )
+    hunter = _FakeHunterService(
+        direct_match=SimpleNamespace(success=True),
+        batch_result=HunterBatchMatchResult(match_results=[], failures=[], ungroundable=[]),
+        direct_result=OrchestratorResult(cdg=SimpleNamespace(), match_results=[], rounds_used=1),
+    )
+    architect_called = False
+
+    async def _architect_factory():
+        nonlocal architect_called
+        architect_called = True
+        return _FakeArchitectService(SimpleNamespace())
+
+    planner = SingleAgentPlanner(
+        hunter=hunter,
+        architect_factory=_architect_factory,
+        orchestrator=_FakeOrchestratorService(
+            OrchestratorResult(cdg=SimpleNamespace(), match_results=[], rounds_used=1)
+        ),
+        llm=object(),
+        prover=Prover.PYTHON,
+        max_rounds=2,
+        hunter_concurrency=1,
+        artifact_retriever=MacroArtifactRetriever(
+            [
+                MacroArtifactCandidate(
+                    fqdn="cdg.skeleton.signal_detect_measure",
+                    semver="v1",
+                    content_hash="macro123",
+                    description="Condition a raw signal, detect events, and compute rate.",
+                    conceptual_summary="signal detect and measure family skeleton",
+                    domain_tags=["signal_filter", "signal_detect_measure", "event_rate_estimation"],
+                    cdg=macro_cdg,
+                    terminal_on_match=False,
+                )
+            ],
+            min_score=0.3,
+        ),
+    )
+
+    result = await planner.run("Detect heart rate from ECG")
+
+    assert result.execution_path == "single_agent_macro_structured"
+    assert result.result.cdg is not macro_cdg
+    assert result.result.cdg.metadata["goal"] == "Detect heart rate from ECG"
+    assert result.result.cdg.nodes == macro_cdg.nodes
+    assert result.result.cdg.edges == macro_cdg.edges
+    assert [step.action for step in result.steps] == ["direct_macro_match", "macro_decompose", "match_decomposed"]
+    assert result.state.artifacts == {
+        "cdg": "macro_artifact_cdg",
+        "match_results": "hunter_batch_match",
+    }
+    assert result.state.termination_reason == "macro_structured_verified"
+    assert hunter.goal_calls == 0
+    assert hunter.batch_calls == 1
+    assert architect_called is False
+
+
+@pytest.mark.asyncio
 async def test_single_agent_planner_returns_structured_result_without_escalation():
     cdg = CDGExport(
         nodes=[

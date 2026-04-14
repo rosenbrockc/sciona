@@ -33,6 +33,7 @@ from sciona.runtime_paths import _run_rapid_direct_match, _run_structured_single
 from sciona.services.hunter_service import HunterService
 from sciona.services.orchestrator_service import OrchestratorService
 from sciona.services.planner_service import SingleAgentPlanner
+from sciona.services.skeleton_artifacts import build_local_skeleton_macro_retriever
 from sciona.types import CandidateMatch, Declaration, PDGNode, Prover, VerificationLevel, VerificationResult
 
 
@@ -329,6 +330,7 @@ async def _run_single_agent_case(
         prover=Prover.PYTHON,
         max_rounds=2,
         hunter_concurrency=1,
+        artifact_retriever=build_local_skeleton_macro_retriever(),
     )
     planner_result = await planner.run(case.prompt)
     result = planner_result.result

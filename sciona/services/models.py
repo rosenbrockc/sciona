@@ -69,6 +69,8 @@ class MacroArtifactCandidate:
     verified_leaf_coverage: float = 0.0
     score: float = 0.0
     visibility_tier: str = "general"
+    cdg: Any | None = None
+    terminal_on_match: bool = True
 
 
 @dataclass(frozen=True)

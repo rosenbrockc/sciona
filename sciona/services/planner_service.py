@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from types import SimpleNamespace
 import time
 from typing import Any
 
@@ -90,6 +91,7 @@ class SingleAgentPlanner:
             },
         )
 
+        decompose_result = None
         if state.policy.direct_grounding_enabled:
             if self._artifact_retriever is not None:
                 macro_match = await self._timed_tool_call(
@@ -105,84 +107,112 @@ class SingleAgentPlanner:
                     status="completed" if getattr(macro_match, "success", False) else "failed",
                 )
                 if getattr(macro_match, "success", False):
-                    state.current_focus = "goal_grounded"
-                    state.open_failures = []
-                    state.artifacts["cdg"] = "macro_goal_cdg"
-                    state.artifacts["macro_match"] = "artifact_direct_match"
-                    self._bump_artifact(state, "cdg")
-                    self._bump_artifact(state, "macro_match")
-                    state.verification_status = "verified"
-                    state.termination_reason = "macro_direct_verified"
-                    return self._complete(
-                        result=self._hunter.macro_match_result(
-                            goal,
-                            self._prover,
-                            macro_match,
-                            execution_mode="single_agent",
-                            informal_desc="Single-agent planner direct macro-artifact retrieval without architect decomposition.",
-                            context={
-                                "execution_mode": "single_agent",
-                                "single_agent_macro_direct_path": "true",
-                            },
-                        ),
-                        execution_path="single_agent_macro_direct",
-                        state=state,
-                    )
+                    candidate = getattr(macro_match, "candidate", None)
+                    candidate_cdg = getattr(candidate, "cdg", None)
+                    if (
+                        candidate is not None
+                        and candidate_cdg is not None
+                        and not bool(getattr(candidate, "terminal_on_match", True))
+                    ):
+                        materialized_cdg = (
+                            candidate_cdg.model_copy(deep=True)
+                            if hasattr(candidate_cdg, "model_copy")
+                            else candidate_cdg
+                        )
+                        if hasattr(materialized_cdg, "metadata"):
+                            materialized_cdg.metadata = dict(
+                                getattr(materialized_cdg, "metadata", {}) or {}
+                            )
+                            materialized_cdg.metadata["goal"] = goal
+                        state.current_focus = "macro_decomposition"
+                        state.open_failures = []
+                        state.artifacts["cdg"] = "macro_artifact_cdg"
+                        self._bump_artifact(state, "cdg")
+                        state.verification_status = "macro_selected"
+                        decompose_result = SimpleNamespace(
+                            goal=goal,
+                            cdg=materialized_cdg,
+                        )
+                    else:
+                        state.current_focus = "goal_grounded"
+                        state.open_failures = []
+                        state.artifacts["cdg"] = "macro_goal_cdg"
+                        state.artifacts["macro_match"] = "artifact_direct_match"
+                        self._bump_artifact(state, "cdg")
+                        self._bump_artifact(state, "macro_match")
+                        state.verification_status = "verified"
+                        state.termination_reason = "macro_direct_verified"
+                        return self._complete(
+                            result=self._hunter.macro_match_result(
+                                goal,
+                                self._prover,
+                                macro_match,
+                                execution_mode="single_agent",
+                                informal_desc="Single-agent planner direct macro-artifact retrieval without architect decomposition.",
+                                context={
+                                    "execution_mode": "single_agent",
+                                    "single_agent_macro_direct_path": "true",
+                                },
+                            ),
+                            execution_path="single_agent_macro_direct",
+                            state=state,
+                        )
 
-            direct_match = await self._timed_tool_call(
-                state,
-                "hunter.match_goal",
-                self._hunter.match_goal,
-                HunterDirectMatchRequest(
-                    goal=goal,
-                    prover=self._prover,
-                    informal_desc="single-agent planner direct grounding attempt",
-                    context={
-                        "execution_mode": "single_agent",
-                        "single_agent_direct_path": "true",
-                    },
-                ),
-            )
-            self._record_step(
-                state,
-                action="direct_match",
-                detail="Attempted direct Hunter grounding before decomposition.",
-                status="completed" if getattr(direct_match, "success", False) else "failed",
-            )
-            if getattr(direct_match, "success", False):
-                state.current_focus = "goal_grounded"
-                state.open_failures = []
-                state.artifacts["cdg"] = "direct_goal_cdg"
-                state.artifacts["match_results"] = "direct_match_result"
-                self._bump_artifact(state, "cdg")
-                self._bump_artifact(state, "match_results")
-                state.verification_status = "verified"
-                state.termination_reason = "direct_verified"
-                return self._complete(
-                    result=self._hunter.direct_match_result(
-                        goal,
-                        self._prover,
-                        direct_match,
-                        execution_mode="single_agent",
-                        informal_desc="Single-agent planner direct retrieval without architect decomposition.",
+            if decompose_result is None:
+                direct_match = await self._timed_tool_call(
+                    state,
+                    "hunter.match_goal",
+                    self._hunter.match_goal,
+                    HunterDirectMatchRequest(
+                        goal=goal,
+                        prover=self._prover,
+                        informal_desc="single-agent planner direct grounding attempt",
                         context={
                             "execution_mode": "single_agent",
                             "single_agent_direct_path": "true",
                         },
                     ),
-                    execution_path="single_agent_direct",
-                    state=state,
                 )
+                self._record_step(
+                    state,
+                    action="direct_match",
+                    detail="Attempted direct Hunter grounding before decomposition.",
+                    status="completed" if getattr(direct_match, "success", False) else "failed",
+                )
+                if getattr(direct_match, "success", False):
+                    state.current_focus = "goal_grounded"
+                    state.open_failures = []
+                    state.artifacts["cdg"] = "direct_goal_cdg"
+                    state.artifacts["match_results"] = "direct_match_result"
+                    self._bump_artifact(state, "cdg")
+                    self._bump_artifact(state, "match_results")
+                    state.verification_status = "verified"
+                    state.termination_reason = "direct_verified"
+                    return self._complete(
+                        result=self._hunter.direct_match_result(
+                            goal,
+                            self._prover,
+                            direct_match,
+                            execution_mode="single_agent",
+                            informal_desc="Single-agent planner direct retrieval without architect decomposition.",
+                            context={
+                                "execution_mode": "single_agent",
+                                "single_agent_direct_path": "true",
+                            },
+                        ),
+                        execution_path="single_agent_direct",
+                        state=state,
+                    )
 
-            state.current_focus = "decomposition"
-            state.open_failures = ["goal_0"]
-            state.verification_status = "needs_decomposition"
-            self._record_escalation(
-                state,
-                from_focus="direct_grounding",
-                to_focus="decomposition",
-                reason="direct_match_failed",
-            )
+                state.current_focus = "decomposition"
+                state.open_failures = ["goal_0"]
+                state.verification_status = "needs_decomposition"
+                self._record_escalation(
+                    state,
+                    from_focus="direct_grounding",
+                    to_focus="decomposition",
+                    reason="direct_match_failed",
+                )
         else:
             state.current_focus = "decomposition"
             state.verification_status = "policy_decompose_first"
@@ -192,24 +222,31 @@ class SingleAgentPlanner:
                 to_focus="decomposition",
                 reason="compound_goal_markers",
             )
-        architect = await self._architect_factory()
-        decompose_result = await self._timed_tool_call(
-            state,
-            "architect.decompose",
-            architect.decompose,
-            ArchitectDecomposeRequest(goal=goal),
-        )
-        state.artifacts["cdg"] = "architect_decompose"
-        self._bump_artifact(state, "cdg")
-        self._record_step(
-            state,
-            action="decompose",
-            detail=(
-                "Fell back to Architect decomposition after direct match failure."
-                if state.policy.direct_grounding_enabled
-                else "Selected Architect decomposition first based on planner policy."
-            ),
-        )
+        if decompose_result is None:
+            architect = await self._architect_factory()
+            decompose_result = await self._timed_tool_call(
+                state,
+                "architect.decompose",
+                architect.decompose,
+                ArchitectDecomposeRequest(goal=goal),
+            )
+            state.artifacts["cdg"] = "architect_decompose"
+            self._bump_artifact(state, "cdg")
+            self._record_step(
+                state,
+                action="decompose",
+                detail=(
+                    "Fell back to Architect decomposition after direct match failure."
+                    if state.policy.direct_grounding_enabled
+                    else "Selected Architect decomposition first based on planner policy."
+                ),
+            )
+        else:
+            self._record_step(
+                state,
+                action="macro_decompose",
+                detail="Selected a macro CDG artifact and skipped Architect decomposition.",
+            )
 
         pdg_nodes = to_pdg_nodes(decompose_result.cdg, prover=self._prover, strict=False)
         batch_result = await self._timed_tool_call(
@@ -233,7 +270,11 @@ class SingleAgentPlanner:
         )
         if not batch_result.ungroundable:
             state.current_focus = "goal_grounded"
-            state.termination_reason = "structured_verified"
+            state.termination_reason = (
+                "macro_structured_verified"
+                if state.artifacts.get("cdg") == "macro_artifact_cdg"
+                else "structured_verified"
+            )
             return self._complete(
                 result=OrchestratorResult(
                     cdg=decompose_result.cdg,
@@ -242,7 +283,11 @@ class SingleAgentPlanner:
                     failures=batch_result.failures,
                     ungroundable=batch_result.ungroundable,
                 ),
-                execution_path="single_agent_structured",
+                execution_path=(
+                    "single_agent_macro_structured"
+                    if state.artifacts.get("cdg") == "macro_artifact_cdg"
+                    else "single_agent_structured"
+                ),
                 state=state,
             )
 
