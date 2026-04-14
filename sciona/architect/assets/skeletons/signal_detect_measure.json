@@ -71,7 +71,8 @@
       ],
       "guarantees": [
         "The output remains a waveform aligned to the input time base."
-      ]
+      ],
+      "matched_primitive": "filter_signal_for_detection"
     },
     {
       "stage_id": "tpl_detect_peaks_in_signal",
@@ -106,7 +107,8 @@
       ],
       "guarantees": [
         "The output is an event sequence tied to the source waveform."
-      ]
+      ],
+      "matched_primitive": "detect_peaks_in_signal"
     },
     {
       "stage_id": "tpl_compute_event_rate",
@@ -141,7 +143,8 @@
       ],
       "guarantees": [
         "The output is a rate series backed by the detected events."
-      ]
+      ],
+      "matched_primitive": "compute_event_rate"
     }
   ],
   "edges": [

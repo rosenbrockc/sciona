@@ -26,6 +26,7 @@ from sciona.asset_migration import (
     MigrationReadinessAsset,
     migration_readiness_summary,
 )
+from sciona.asset_atom_registry import unknown_registered_atom_references
 from sciona.atom_identity import candidate_atom_provider_roots
 
 
@@ -280,6 +281,7 @@ def load_local_expansion_assets() -> tuple[ExpansionFamilyAsset, ...]:
             if not isinstance(raw, dict) or "operations" not in raw:
                 continue
             asset = ExpansionFamilyAsset.model_validate(raw)
+            _validate_registered_primitive_references(asset, path=path)
             if asset.family in families_seen:
                 continue
             families_seen.add(asset.family)
@@ -309,6 +311,25 @@ def clear_local_expansion_asset_caches() -> None:
     """Clear cached expansion-asset loaders."""
     load_local_expansion_assets.cache_clear()
     load_local_expansion_assets_by_family.cache_clear()
+
+
+def _validate_registered_primitive_references(
+    asset: ExpansionFamilyAsset,
+    *,
+    path: Path,
+) -> None:
+    references: list[str] = []
+    for operation in asset.operations:
+        references.extend(operation.trigger.required_primitives)
+        for requirement in operation.trigger.required_boundary_requirements:
+            references.extend(requirement.matched_primitives)
+    unknown = unknown_registered_atom_references(references)
+    if not unknown:
+        return
+    joined = ", ".join(unknown)
+    raise ValueError(
+        f"Expansion asset '{asset.asset_id}' at '{path}' references unknown registered atoms: {joined}"
+    )
 
 
 def _planning_constraint_categories(context: ExpansionContext) -> set[str]:

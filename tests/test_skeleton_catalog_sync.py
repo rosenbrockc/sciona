@@ -24,9 +24,11 @@ class _FakeTable:
         self.filters: list[tuple[str, str, object]] = []
         self.selected_fields = ""
 
-    def upsert(self, payload):
+    def upsert(self, payload, **kwargs):
         self.action = "upsert"
         self.payload = payload
+        if kwargs:
+            self.payload = {"rows": payload, "kwargs": kwargs}
         return self
 
     def update(self, payload):
@@ -132,15 +134,13 @@ def test_sync_bundle_to_supabase_uses_deterministic_child_table_reload(monkeypat
     sync_bundle_to_supabase(supabase, bundle)
 
     operations = [(call["table"], call["action"]) for call in supabase.calls]
-    assert operations[:3] == [
-        ("artifacts", "upsert"),
-        ("artifact_versions", "update"),
-        ("artifact_versions", "upsert"),
-    ]
+    assert operations[0] == ("artifacts", "upsert")
     assert ("artifact_descriptions", "delete") in operations
     assert ("artifact_descriptions", "upsert") in operations
     assert ("artifact_io_specs", "delete") in operations
     assert ("artifact_io_specs", "upsert") in operations
+    assert ("artifact_versions", "delete") in operations
+    assert ("artifact_versions", "upsert") in operations
     assert ("references_registry", "upsert") in operations
     assert ("artifact_references", "upsert") in operations
     assert ("artifact_audit_rollups", "upsert") in operations

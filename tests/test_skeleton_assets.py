@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+import pytest
+
+from sciona.asset_atom_registry import clear_registered_atom_identifier_cache
 from sciona.asset_migration import MigrationReadinessAsset
 from sciona.architect.models import ConceptType
 from sciona.architect.skeleton_assets import (
@@ -111,3 +117,164 @@ class TestLocalSkeletonAssets:
         assert default_filter.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
         assert kalman_hint.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
         assert particle_hint.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
+
+    def test_signal_detect_measure_stages_carry_explicit_matched_primitives(self):
+        asset = next(
+            asset for asset in load_local_skeleton_assets() if asset.asset_id == "signal_detect_measure"
+        )
+        by_stage = {stage.stage_id: stage for stage in asset.stages}
+
+        assert by_stage["tpl_filter_signal_for_detection"].matched_primitive == (
+            "filter_signal_for_detection"
+        )
+        assert by_stage["tpl_detect_peaks_in_signal"].matched_primitive == (
+            "detect_peaks_in_signal"
+        )
+        assert by_stage["tpl_compute_event_rate"].matched_primitive == (
+            "compute_event_rate"
+        )
+
+        graph = asset.to_skeleton_graph()
+        assert {
+            node.node_id: node.matched_primitive for node in graph.template_nodes
+        } == {
+            "tpl_filter_signal_for_detection": "filter_signal_for_detection",
+            "tpl_detect_peaks_in_signal": "detect_peaks_in_signal",
+            "tpl_compute_event_rate": "compute_event_rate",
+        }
+
+
+def _write_registered_atom(provider_root: Path, *, module_name: str, atom_name: str) -> None:
+    module_path = provider_root / "src" / "sciona" / "atoms" / f"{module_name}.py"
+    module_path.parent.mkdir(parents=True, exist_ok=True)
+    module_path.write_text(
+        "\n".join(
+            [
+                "from sciona.ghost.abstract import AbstractArray",
+                "from sciona.ghost.registry import register_atom",
+                "",
+                f"def witness_{atom_name}(x: AbstractArray) -> AbstractArray:",
+                "    return x",
+                "",
+                f"@register_atom(witness_{atom_name})",
+                f"def {atom_name}(x):",
+                "    return x",
+                "",
+            ]
+        )
+    )
+
+
+@pytest.fixture
+def isolated_skeleton_asset_layout(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> dict[str, Path]:
+    local_dir = tmp_path / "local" / "skeletons"
+    provider_root = tmp_path / "sciona-atoms-signal"
+    monkeypatch.setattr("sciona.architect.skeleton_assets.ASSET_DIR", local_dir)
+    monkeypatch.setattr(
+        "sciona.asset_atom_registry.candidate_atom_provider_roots",
+        lambda: (provider_root,),
+    )
+    clear_registered_atom_identifier_cache()
+    load_local_skeleton_assets.cache_clear()
+    load_local_skeleton_graphs.cache_clear()
+    try:
+        yield {"local_dir": local_dir, "provider_root": provider_root}
+    finally:
+        clear_registered_atom_identifier_cache()
+        load_local_skeleton_assets.cache_clear()
+        load_local_skeleton_graphs.cache_clear()
+
+
+def test_skeleton_asset_rejects_unknown_stage_hint(
+    isolated_skeleton_asset_layout: dict[str, Path],
+) -> None:
+    local_dir = isolated_skeleton_asset_layout["local_dir"]
+    local_dir.mkdir(parents=True, exist_ok=True)
+    (local_dir / "bad.json").write_text(
+        json.dumps(
+            {
+                "asset_id": "bad_fixture",
+                "asset_version": "v1",
+                "family": "signal_fixture",
+                "paradigm": "signal_filter",
+                "name": "Bad Fixture",
+                "summary": "Fixture skeleton.",
+                "dejargonized_summary": "Fixture skeleton.",
+                "stages": [
+                    {
+                        "stage_id": "stage_0",
+                        "name": "Stage 0",
+                        "description": "Fixture stage.",
+                        "dejargonized_description": "Fixture stage.",
+                        "concept_type": "signal_filter",
+                        "inputs": [],
+                        "outputs": [],
+                        "matched_primitive": "does_not_exist",
+                    }
+                ],
+                "edges": [],
+                "audit": {
+                    "review_status": "draft",
+                    "dejargonized_summary": "Fixture skeleton.",
+                    "references": [{"title": "Fixture Reference"}],
+                },
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="unknown registered atoms: does_not_exist"):
+        load_local_skeleton_assets()
+
+
+def test_skeleton_asset_accepts_registered_stage_hint(
+    isolated_skeleton_asset_layout: dict[str, Path],
+) -> None:
+    _write_registered_atom(
+        isolated_skeleton_asset_layout["provider_root"],
+        module_name="fixture_atoms",
+        atom_name="normalize_records",
+    )
+    local_dir = isolated_skeleton_asset_layout["local_dir"]
+    local_dir.mkdir(parents=True, exist_ok=True)
+    (local_dir / "good.json").write_text(
+        json.dumps(
+            {
+                "asset_id": "good_fixture",
+                "asset_version": "v1",
+                "family": "signal_fixture",
+                "paradigm": "signal_filter",
+                "name": "Good Fixture",
+                "summary": "Fixture skeleton.",
+                "dejargonized_summary": "Fixture skeleton.",
+                "stages": [
+                    {
+                        "stage_id": "stage_0",
+                        "name": "Stage 0",
+                        "description": "Fixture stage.",
+                        "dejargonized_description": "Fixture stage.",
+                        "concept_type": "signal_filter",
+                        "inputs": [],
+                        "outputs": [],
+                        "matched_primitive": "normalize_records",
+                    }
+                ],
+                "edges": [],
+                "audit": {
+                    "review_status": "draft",
+                    "dejargonized_summary": "Fixture skeleton.",
+                    "references": [{"title": "Fixture Reference"}],
+                },
+            }
+        )
+    )
+    clear_registered_atom_identifier_cache()
+    load_local_skeleton_assets.cache_clear()
+    load_local_skeleton_graphs.cache_clear()
+
+    assets = load_local_skeleton_assets()
+
+    assert len(assets) == 1
+    assert assets[0].stages[0].matched_primitive == "normalize_records"

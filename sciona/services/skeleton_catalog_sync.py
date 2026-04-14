@@ -129,20 +129,26 @@ def _pick_best_verification_row(rows: list[dict[str, Any]]) -> dict[str, Any] | 
 
 
 def _build_binding_hints(asset: SkeletonFamilyAsset) -> dict[str, str]:
+    hints: dict[str, str] = {
+        stage.stage_id: str(stage.matched_primitive or "").strip()
+        for stage in asset.stages
+        if str(stage.matched_primitive or "").strip()
+    }
     template = (
         NAMED_SKELETONS.get(asset.asset_id)
         or NAMED_SKELETONS.get(asset.family)
         or SKELETON_TEMPLATES.get(asset.paradigm)
     )
     if template is None:
-        return {}
+        return hints
     by_name = {
         _normalize_name(node.name): str(node.matched_primitive or "").strip()
         for node in template.template_nodes
         if str(node.matched_primitive or "").strip()
     }
-    hints: dict[str, str] = {}
     for stage in asset.stages:
+        if stage.stage_id in hints:
+            continue
         primitive = by_name.get(_normalize_name(stage.name), "")
         if not primitive and str(stage.stage_id).startswith("tpl_"):
             primitive = str(stage.stage_id)[4:]
@@ -888,15 +894,21 @@ def sync_bundle_to_supabase(
     bundle = enrich_bundle_with_catalog_verification(bundle, supabase=supabase)
     artifact_id = bundle.artifact["artifact_id"]
     version_id = bundle.version["version_id"]
-
-    supabase.table("artifacts").upsert(bundle.artifact).execute()
-    (
+    existing_versions_response = (
         supabase.table("artifact_versions")
-        .update({"is_latest": False})
+        .select("version_id")
         .eq("artifact_id", artifact_id)
         .execute()
     )
-    supabase.table("artifact_versions").upsert(bundle.version).execute()
+    existing_version_ids = sorted(
+        {
+            str(row.get("version_id", "") or "")
+            for row in (existing_versions_response.data or [])
+            if str(row.get("version_id", "") or "")
+        }
+    )
+
+    supabase.table("artifacts").upsert(bundle.artifact).execute()
 
     for table_name in (
         "artifact_descriptions",
@@ -908,8 +920,22 @@ def sync_bundle_to_supabase(
     ):
         supabase.table(table_name).delete().eq("artifact_id", artifact_id).execute()
     for table_name in ("artifact_cdg_nodes", "artifact_cdg_edges", "artifact_cdg_bindings"):
-        supabase.table(table_name).delete().eq("version_id", version_id).execute()
+        for existing_version_id in existing_version_ids:
+            (
+                supabase.table(table_name)
+                .delete()
+                .eq("version_id", existing_version_id)
+                .execute()
+            )
+        if version_id not in existing_version_ids:
+            supabase.table(table_name).delete().eq("version_id", version_id).execute()
     supabase.table("artifact_audit_rollups").delete().eq("artifact_id", artifact_id).execute()
+    supabase.table("artifact_versions").delete().eq("artifact_id", artifact_id).execute()
+    (
+        supabase.table("artifact_versions")
+        .upsert(bundle.version, on_conflict="artifact_id,semver")
+        .execute()
+    )
 
     if bundle.references_registry:
         supabase.table("references_registry").upsert(bundle.references_registry).execute()

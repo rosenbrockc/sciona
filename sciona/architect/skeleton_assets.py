@@ -20,6 +20,7 @@ from sciona.architect.planning_contract import (
     PlanningConstraint,
     PlanningConstraintCategory,
 )
+from sciona.asset_atom_registry import unknown_registered_atom_references
 from sciona.asset_migration import (
     MigrationReadinessAsset,
     migration_readiness_summary,
@@ -51,6 +52,7 @@ class SkeletonStageAsset(BaseModel):
     preconditions: list[str] = Field(default_factory=list)
     guarantees: list[str] = Field(default_factory=list)
     family_notes: list[str] = Field(default_factory=list)
+    matched_primitive: str = ""
 
 
 class SkeletonEdgeAsset(BaseModel):
@@ -159,6 +161,7 @@ class SkeletonFamilyAsset(BaseModel):
                 outputs=[port.model_copy(deep=True) for port in stage.outputs],
                 status=NodeStatus.PENDING,
                 depth=1,
+                matched_primitive=stage.matched_primitive or None,
             )
             for stage in self.stages
         ]
@@ -197,6 +200,7 @@ class SkeletonFamilyAsset(BaseModel):
                         "preconditions": list(stage.preconditions),
                         "guarantees": list(stage.guarantees),
                         "family_notes": list(stage.family_notes),
+                        "matched_primitive": stage.matched_primitive,
                     }
                     for stage in self.stages
                 ],
@@ -269,7 +273,9 @@ def load_local_skeleton_assets() -> tuple[SkeletonFamilyAsset, ...]:
     if not ASSET_DIR.exists():
         return tuple()
     for path in sorted(ASSET_DIR.glob("*.json")):
-        assets.append(SkeletonFamilyAsset.model_validate_json(path.read_text()))
+        asset = SkeletonFamilyAsset.model_validate_json(path.read_text())
+        _validate_registered_stage_hints(asset, path=path)
+        assets.append(asset)
     return tuple(assets)
 
 
@@ -304,3 +310,19 @@ def resolve_local_skeleton_asset(
             return resolved
         return None
     return by_paradigm.get(concept_type)
+
+
+def _validate_registered_stage_hints(
+    asset: SkeletonFamilyAsset,
+    *,
+    path: Path,
+) -> None:
+    unknown = unknown_registered_atom_references(
+        stage.matched_primitive for stage in asset.stages
+    )
+    if not unknown:
+        return
+    joined = ", ".join(unknown)
+    raise ValueError(
+        f"Skeleton asset '{asset.asset_id}' at '{path}' references unknown registered atoms: {joined}"
+    )
