@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import pytest
 
 from sciona.architect.skeleton_assets import load_local_skeleton_assets
 from sciona.services.skeleton_catalog_sync import (
     build_skeleton_artifact_bundle,
+    enrich_bundle_with_catalog_verification,
     load_skeleton_artifact_bundles,
     sync_bundle_to_supabase,
     sync_bundles_to_graph_store,
@@ -20,6 +22,7 @@ class _FakeTable:
         self.action = ""
         self.payload = None
         self.filters: list[tuple[str, str, object]] = []
+        self.selected_fields = ""
 
     def upsert(self, payload):
         self.action = "upsert"
@@ -36,11 +39,24 @@ class _FakeTable:
         self.payload = None
         return self
 
+    def select(self, fields: str):
+        self.action = "select"
+        self.selected_fields = fields
+        return self
+
     def eq(self, field: str, value: object):
         self.filters.append(("eq", field, value))
         return self
 
+    def in_(self, field: str, values: object):
+        self.filters.append(("in", field, values))
+        return self
+
     def execute(self):
+        if self.action == "select":
+            return SimpleNamespace(
+                data=self.client.read(self.name, list(self.filters))
+            )
         self.client.calls.append(
             {
                 "table": self.name,
@@ -53,11 +69,22 @@ class _FakeTable:
 
 
 class _FakeSupabase:
-    def __init__(self) -> None:
+    def __init__(self, *, reads: dict[str, list[dict[str, object]]] | None = None) -> None:
         self.calls: list[dict[str, object]] = []
+        self.reads = dict(reads or {})
 
     def table(self, name: str) -> _FakeTable:
         return _FakeTable(self, name)
+
+    def read(self, name: str, filters: list[tuple[str, str, object]]) -> list[dict[str, object]]:
+        rows = [dict(row) for row in self.reads.get(name, [])]
+        for op, field, value in filters:
+            if op == "eq":
+                rows = [row for row in rows if row.get(field) == value]
+            elif op == "in":
+                allowed = set(value)
+                rows = [row for row in rows if row.get(field) in allowed]
+        return rows
 
 
 @dataclass
@@ -94,9 +121,13 @@ def test_build_skeleton_artifact_bundle_signal_detect_measure() -> None:
     assert len(bundle.cdg_edges) == 2
 
 
-def test_sync_bundle_to_supabase_uses_deterministic_child_table_reload() -> None:
+def test_sync_bundle_to_supabase_uses_deterministic_child_table_reload(monkeypatch) -> None:
     bundle = build_skeleton_artifact_bundle(load_local_skeleton_assets()[0])
     supabase = _FakeSupabase()
+    monkeypatch.setattr(
+        "sciona.services.skeleton_catalog_sync.enrich_bundle_with_catalog_verification",
+        lambda bundle, *, supabase: bundle,
+    )
 
     sync_bundle_to_supabase(supabase, bundle)
 
@@ -115,6 +146,160 @@ def test_sync_bundle_to_supabase_uses_deterministic_child_table_reload() -> None
     assert ("artifact_audit_rollups", "upsert") in operations
     assert ("artifact_cdg_nodes", "upsert") in operations
     assert ("artifact_cdg_edges", "upsert") in operations
+
+
+def test_enrich_bundle_with_catalog_verification_derives_bindings_and_evidence() -> None:
+    asset = next(
+        asset for asset in load_local_skeleton_assets() if asset.asset_id == "signal_detect_measure"
+    )
+    reviewed_asset = asset.model_copy(
+        update={
+            "audit": asset.audit.model_copy(update={"review_status": "transitional"})
+        }
+    )
+    bundle = build_skeleton_artifact_bundle(reviewed_asset)
+    supabase = _FakeSupabase(
+        reads={
+            "atoms": [
+                {
+                    "atom_id": "atom-filter",
+                    "fqdn": "pkg.signal.filter_signal_for_detection",
+                    "is_publishable": True,
+                },
+                {
+                    "atom_id": "atom-detect",
+                    "fqdn": "pkg.signal.detect_peaks_in_signal",
+                    "is_publishable": True,
+                },
+                {
+                    "atom_id": "atom-rate",
+                    "fqdn": "pkg.signal.compute_event_rate",
+                    "is_publishable": True,
+                },
+            ],
+            "atom_versions": [
+                {"atom_id": "atom-filter", "content_hash": "hash-filter"},
+                {"atom_id": "atom-detect", "content_hash": "hash-detect"},
+                {"atom_id": "atom-rate", "content_hash": "hash-rate"},
+            ],
+            "atom_verification_matches": [
+                {
+                    "atom_id": "atom-filter",
+                    "candidate_name": "pkg.signal.filter_signal_for_detection",
+                    "candidate_score": 0.9,
+                    "retrieval_method": "lexical",
+                    "verified": True,
+                    "verification_level": "type_checked",
+                    "proof_term": "",
+                    "compiler_output": "",
+                    "error_message": "",
+                    "all_candidates": [],
+                    "all_verifications": [],
+                },
+                {
+                    "atom_id": "atom-detect",
+                    "candidate_name": "pkg.signal.detect_peaks_in_signal",
+                    "candidate_score": 0.9,
+                    "retrieval_method": "lexical",
+                    "verified": True,
+                    "verification_level": "contract_checked",
+                    "proof_term": "",
+                    "compiler_output": "",
+                    "error_message": "",
+                    "all_candidates": [],
+                    "all_verifications": [],
+                },
+                {
+                    "atom_id": "atom-rate",
+                    "candidate_name": "pkg.signal.compute_event_rate",
+                    "candidate_score": 0.95,
+                    "retrieval_method": "lexical",
+                    "verified": True,
+                    "verification_level": "type_checked",
+                    "proof_term": "",
+                    "compiler_output": "",
+                    "error_message": "",
+                    "all_candidates": [],
+                    "all_verifications": [],
+                },
+            ],
+            "atom_audit_evidence": [
+                {"atom_id": "atom-filter", "audit_type": "smoke_test", "passed": True, "status": "completed"},
+                {"atom_id": "atom-detect", "audit_type": "smoke_test", "passed": True, "status": "completed"},
+                {"atom_id": "atom-rate", "audit_type": "smoke_test", "passed": True, "status": "completed"},
+            ],
+            "atom_uncertainty_estimates": [
+                {
+                    "atom_id": "atom-rate",
+                    "mode": "empirical",
+                    "scalar_factor": 0.12,
+                    "confidence": 0.92,
+                    "n_trials": 8,
+                    "epsilon": 0.01,
+                    "input_regime": "ecg",
+                    "notes": "stable",
+                }
+            ],
+        }
+    )
+
+    enriched = enrich_bundle_with_catalog_verification(bundle, supabase=supabase)
+
+    assert enriched.artifact["verified_leaf_coverage"] == 1.0
+    assert enriched.artifact["is_publishable"] is True
+    assert len(enriched.cdg_bindings) == 3
+    assert len(enriched.verification_matches) == 3
+    assert len(enriched.audit_evidence) >= 4
+    assert enriched.audit_rollup["runtime_status"] == "pass"
+    assert enriched.audit_rollup["semantic_status"] == "pass"
+    assert enriched.audit_rollup["trust_readiness"] == "ready"
+    assert enriched.uncertainty_estimates[0]["mode"] == "propagated"
+
+
+def test_enrich_bundle_with_catalog_verification_allows_bindings_without_verification_rows() -> None:
+    asset = next(
+        asset for asset in load_local_skeleton_assets() if asset.asset_id == "signal_detect_measure"
+    )
+    bundle = build_skeleton_artifact_bundle(asset)
+    supabase = _FakeSupabase(
+        reads={
+            "atoms": [
+                {
+                    "atom_id": "atom-filter",
+                    "fqdn": "pkg.signal.filter_signal_for_detection",
+                    "is_publishable": True,
+                },
+                {
+                    "atom_id": "atom-detect",
+                    "fqdn": "pkg.signal.detect_peaks_in_signal",
+                    "is_publishable": True,
+                },
+                {
+                    "atom_id": "atom-rate",
+                    "fqdn": "pkg.signal.compute_event_rate",
+                    "is_publishable": True,
+                },
+            ],
+            "atom_versions": [
+                {"atom_id": "atom-filter", "content_hash": "hash-filter"},
+                {"atom_id": "atom-detect", "content_hash": "hash-detect"},
+                {"atom_id": "atom-rate", "content_hash": "hash-rate"},
+            ],
+            "atom_verification_matches": [],
+            "atom_audit_evidence": [],
+            "atom_uncertainty_estimates": [],
+        }
+    )
+
+    enriched = enrich_bundle_with_catalog_verification(bundle, supabase=supabase)
+
+    assert len(enriched.cdg_bindings) == 3
+    assert enriched.artifact["verified_leaf_coverage"] == 1.0
+    assert enriched.artifact["is_publishable"] is False
+    assert {row["retrieval_method"] for row in enriched.verification_matches} == {
+        "matched_primitive_publishable_suffix"
+    }
+    assert all(row["verified"] is False for row in enriched.verification_matches)
 
 
 @pytest.mark.asyncio
