@@ -92,9 +92,11 @@ def test_export_manifest_writes_latest_json(
         *,
         supabase_url: str,
         service_key: str,
+        developer_mode: bool,
     ) -> dict[str, Path]:
         assert supabase_url == "https://example.supabase.co"
         assert service_key == "secret"
+        assert developer_mode is False
         public_path = bundle_dir / "manifest-public.sqlite"
         internal_path = bundle_dir / "manifest-internal.sqlite"
         _write_manifest(public_path, "public bundle")
@@ -131,8 +133,9 @@ def test_export_manifest_uploads_bundle_files(
         *,
         supabase_url: str,
         service_key: str,
+        developer_mode: bool,
     ) -> dict[str, Path]:
-        del supabase_url, service_key
+        del supabase_url, service_key, developer_mode
         public_path = bundle_dir / "manifest-public.sqlite"
         _write_manifest(public_path, "public bundle")
         return {"public": public_path}
@@ -182,8 +185,10 @@ def test_export_manifest_rejects_legacy_namespace_rows(
         supabase_url: str,
         service_key: str,
         bundle_dir: Path,
+        *,
+        include_developer_manifest: bool = False,
     ) -> dict[str, Path]:
-        del supabase_url, service_key
+        del supabase_url, service_key, include_developer_manifest
         legacy_path = bundle_dir / "manifest-legacy.sqlite"
         _write_legacy_manifest(legacy_path)
         return {"public": legacy_path}
@@ -195,3 +200,36 @@ def test_export_manifest_rejects_legacy_namespace_rows(
 
     with pytest.raises(RuntimeError, match="Legacy namespace references remain"):
         export_manifest_bundle(tmp_path, upload=False)
+
+
+def test_export_manifest_developer_mode_exports_extra_manifest(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("SCIONA_SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SCIONA_SUPABASE_SERVICE_KEY", "secret")
+    monkeypatch.setenv("SCIONA_DEVELOPER_MODE", "1")
+
+    def fake_export_tiered_manifests(
+        bundle_dir: Path,
+        *,
+        supabase_url: str,
+        service_key: str,
+        developer_mode: bool,
+    ) -> dict[str, Path]:
+        assert supabase_url == "https://example.supabase.co"
+        assert service_key == "secret"
+        assert developer_mode is True
+        public_path = bundle_dir / "manifest-public.sqlite"
+        developer_path = bundle_dir / "manifest-developer.sqlite"
+        _write_manifest(public_path, "public bundle")
+        _write_manifest(developer_path, "developer bundle")
+        return {"public": public_path, "developer": developer_path}
+
+    monkeypatch.setattr(
+        "scripts.export_manifest._export_tiered_manifests",
+        fake_export_tiered_manifests,
+    )
+
+    result = export_manifest_bundle(tmp_path, upload=False)
+    assert "developer" in result

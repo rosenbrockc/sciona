@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from sciona.api.routers.catalog import get_artifact_document, get_atom_document
 from sciona.api.snapshot import (
     DEFAULT_FILTER_BATCH_SIZE,
+    DEVELOPER_MANIFEST_TIER,
     export_tiered_manifests,
     fetch_manifest_data,
     generate_manifest_sqlite,
@@ -142,6 +143,35 @@ async def test_fetch_manifest_data_applies_visibility_tier_filter(monkeypatch):
 
     assert data["atoms"] == []
     assert captured_filters[0]["visibility_tier"] == 'in.("general","early_access")'
+    assert captured_filters[0]["is_publishable"] == "eq.true"
+
+
+@pytest.mark.asyncio
+async def test_fetch_manifest_data_can_include_unpublished_in_developer_mode(monkeypatch):
+    captured_filters: list[dict[str, str]] = []
+
+    async def fake_fetch_all_rows(base_url, token, table, **kwargs):
+        del base_url, token
+        if table == "atoms":
+            captured_filters.append(dict(kwargs.get("filters") or {}))
+            return []
+        return []
+
+    monkeypatch.setattr("sciona.api.snapshot._fetch_all_rows", fake_fetch_all_rows)
+    monkeypatch.setattr(
+        "sciona.api.snapshot._call_rpc",
+        lambda *args, **kwargs: [],  # pragma: no cover - not reached
+    )
+
+    await fetch_manifest_data(
+        "https://example.supabase.co",
+        "token",
+        visibility_tiers=["internal"],
+        include_unpublished=True,
+    )
+
+    assert captured_filters[0]["visibility_tier"] == 'in.("internal")'
+    assert "is_publishable" not in captured_filters[0]
 
 
 @pytest.mark.asyncio
@@ -423,6 +453,47 @@ async def test_export_tiered_manifests_writes_one_file_per_tier(monkeypatch, tmp
 
 
 @pytest.mark.asyncio
+async def test_export_tiered_manifests_can_emit_developer_manifest(monkeypatch, tmp_path: Path):
+    calls: list[dict[str, object]] = []
+
+    async def fake_fetch_manifest_data(base_url, token, **kwargs):
+        del base_url, token
+        calls.append(dict(kwargs))
+        visibility_tiers = tuple(kwargs.get("visibility_tiers") or ())
+        suffix = visibility_tiers[-1] if visibility_tiers else "none"
+        include_unpublished = bool(kwargs.get("include_unpublished"))
+        fqdn = f"pkg.{suffix}{'.dev' if include_unpublished else ''}"
+        return {
+            "atoms": [{"atom_id": f"a-{suffix}", "fqdn": fqdn, "status": "approved"}],
+            "hyperparams": [],
+            "benchmarks": [],
+            "rollups": [],
+            "descriptions": [],
+            "io_specs": [],
+        }
+
+    monkeypatch.setattr("sciona.api.snapshot.fetch_manifest_data", fake_fetch_manifest_data)
+
+    outputs = await export_tiered_manifests(
+        "https://example.supabase.co",
+        "token",
+        tmp_path,
+        include_developer_manifest=True,
+    )
+
+    assert set(outputs) == {"general", "early_access", "internal", DEVELOPER_MANIFEST_TIER}
+    assert calls[-1]["include_unpublished"] is True
+    assert tuple(calls[-1]["visibility_tiers"]) == ("general", "early_access", "internal")
+    con = sqlite3.connect(str(outputs[DEVELOPER_MANIFEST_TIER]))
+    try:
+        metadata = dict(con.execute("SELECT key, value FROM manifest_metadata").fetchall())
+        assert metadata["visibility_tier"] == DEVELOPER_MANIFEST_TIER
+        assert metadata["publication_scope"] == "developer"
+    finally:
+        con.close()
+
+
+@pytest.mark.asyncio
 async def test_catalog_sync_downloads_manifest_sqlite(monkeypatch, tmp_path: Path, capsys):
     output = tmp_path / "manifest.sqlite"
     source = tmp_path / "source.sqlite"
@@ -486,6 +557,20 @@ def test_resolve_manifest_url_uses_tier(monkeypatch):
     )
 
     assert url == "https://bucket.example.s3.amazonaws.com/manifests/manifest-internal.sqlite"
+
+
+def test_resolve_manifest_url_uses_developer_tier_in_developer_mode(monkeypatch):
+    monkeypatch.delenv("SCIONA_MANIFEST_URL", raising=False)
+    monkeypatch.delenv("SCIONA_MANIFEST_KEY", raising=False)
+    monkeypatch.delenv("SCIONA_MANIFEST_TIER", raising=False)
+    monkeypatch.setenv("SCIONA_CATALOG_BUCKET", "bucket.example")
+    monkeypatch.setenv("SCIONA_DEVELOPER_MODE", "1")
+
+    url = _resolve_manifest_url(
+        argparse.Namespace(manifest_url=None, tier=None, output=None, api_url=None)
+    )
+
+    assert url == "https://bucket.example.s3.amazonaws.com/manifests/manifest-developer.sqlite"
 
 
 class _FakeSupabase:

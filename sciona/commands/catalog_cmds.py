@@ -9,7 +9,21 @@ from pathlib import Path
 
 DEFAULT_MANIFEST_BUCKET = "sciona-platform"
 
-from sciona.api.snapshot import DEFAULT_MANIFEST_TIER, MANIFEST_TIERS, manifest_artifact_key
+from sciona.api.snapshot import (
+    DEFAULT_MANIFEST_TIER,
+    DEVELOPER_MANIFEST_TIER,
+    MANIFEST_TIERS,
+    manifest_artifact_key,
+)
+
+
+def _developer_mode_enabled() -> bool:
+    return os.environ.get("SCIONA_DEVELOPER_MODE", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def _resolve_manifest_url(args: argparse.Namespace) -> str:
@@ -26,7 +40,11 @@ def _resolve_manifest_url(args: argparse.Namespace) -> str:
         str(getattr(args, "tier", "") or "").strip()
         or os.environ.get("SCIONA_MANIFEST_TIER", "").strip()
     )
-    if tier not in MANIFEST_TIERS:
+    if not tier and _developer_mode_enabled():
+        tier = DEVELOPER_MANIFEST_TIER
+    valid_tiers = set(MANIFEST_TIERS)
+    valid_tiers.add(DEVELOPER_MANIFEST_TIER)
+    if tier not in valid_tiers:
         tier = DEFAULT_MANIFEST_TIER
 
     bucket = (

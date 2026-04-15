@@ -37,6 +37,17 @@ _LEGACY_NAMESPACE_PREFIX = "age" + "oa."
 _LEGACY_REPO_LABEL = "ageo" + "-atoms"
 
 
+def _developer_mode_enabled(explicit: bool = False) -> bool:
+    if explicit:
+        return True
+    return os.environ.get("SCIONA_DEVELOPER_MODE", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 @dataclass(frozen=True)
 class ExportSettings:
     supabase_url: str
@@ -102,11 +113,19 @@ def _export_tiered_manifests(
     *,
     supabase_url: str,
     service_key: str,
+    developer_mode: bool,
 ) -> dict[str, Path]:
     helper = getattr(snapshot_api, "export_tiered_manifests", None)
     if callable(helper):
         tier_paths = _normalize_tier_paths(
-            asyncio.run(helper(supabase_url, service_key, bundle_dir))
+            asyncio.run(
+                helper(
+                    supabase_url,
+                    service_key,
+                    bundle_dir,
+                    include_developer_manifest=developer_mode,
+                )
+            )
         )
         for path in tier_paths.values():
             _assert_no_legacy_namespace_rows(path)
@@ -208,6 +227,7 @@ def _upload_bundle(
 
 def export_manifest_bundle(output_dir: Path, *, upload: bool) -> dict[str, Path]:
     settings = _load_export_settings()
+    developer_mode = _developer_mode_enabled()
     bundle_root = output_dir.expanduser().resolve()
     bundle_dir = bundle_root / MANIFEST_BUNDLE_DIR
     bundle_dir.mkdir(parents=True, exist_ok=True)
@@ -216,6 +236,7 @@ def export_manifest_bundle(output_dir: Path, *, upload: bool) -> dict[str, Path]
         bundle_dir,
         supabase_url=settings.supabase_url,
         service_key=settings.service_key,
+        developer_mode=developer_mode,
     )
     latest_path = _write_latest_json(bundle_root, tier_paths)
 
@@ -248,12 +269,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Upload the exported bundle to S3 after writing local files.",
     )
+    parser.add_argument(
+        "--developer-mode",
+        action="store_true",
+        default=False,
+        help="Also export a developer manifest that includes approved but unpublished atoms.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.developer_mode:
+        os.environ["SCIONA_DEVELOPER_MODE"] = "1"
 
     try:
         bundle = export_manifest_bundle(Path(args.output_dir), upload=bool(args.upload))

@@ -16,6 +16,8 @@ import httpx
 DEFAULT_PAGE_SIZE = 1000
 DEFAULT_FILTER_BATCH_SIZE = 10
 DEFAULT_MANIFEST_TIER = "general"
+DEVELOPER_MANIFEST_TIER = "developer"
+DEVELOPER_MANIFEST_INCLUDED_TIERS: tuple[str, ...] = ("general", "early_access", "internal")
 DEFAULT_MANIFEST_VISIBILITY_TIER = "all"
 MANIFEST_TIERS: dict[str, tuple[str, ...]] = {
     "general": ("general",),
@@ -217,14 +219,16 @@ async def fetch_manifest_data(
     access_token: str,
     *,
     visibility_tiers: Sequence[str] | None = None,
+    include_unpublished: bool = False,
     client: httpx.AsyncClient | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Fetch all manifest inputs from Supabase REST endpoints."""
     requested_tiers = _normalize_visibility_tiers(visibility_tiers)
     atom_filters = {
         "status": "eq.approved",
-        "is_publishable": "eq.true",
     }
+    if not include_unpublished:
+        atom_filters["is_publishable"] = "eq.true"
     if requested_tiers:
         atom_filters["visibility_tier"] = _postgrest_in_filter(requested_tiers)
 
@@ -763,6 +767,8 @@ def generate_manifest_sqlite(
         or DEFAULT_MANIFEST_VISIBILITY_TIER,
         "content_hash": _manifest_content_hash(data["atoms"]),
     }
+    for key, value in explicit_metadata.items():
+        metadata.setdefault(str(key), value)
 
     db_str = str(output_path) if output_path else ":memory:"
     if output_path is not None:
@@ -793,6 +799,7 @@ async def export_tiered_manifests(
     access_token: str,
     output_dir: Path,
     *,
+    include_developer_manifest: bool = False,
     client: httpx.AsyncClient | None = None,
 ) -> dict[str, Path]:
     """Export one manifest SQLite per configured tier."""
@@ -805,6 +812,7 @@ async def export_tiered_manifests(
             base_url,
             access_token,
             visibility_tiers=included_tiers,
+            include_unpublished=False,
             client=client,
         )
         data["manifest_metadata"] = {"visibility_tier": tier_name}
@@ -812,5 +820,22 @@ async def export_tiered_manifests(
         con = generate_manifest_sqlite(data, output_path=output_path)
         con.close()
         outputs[tier_name] = output_path
+
+    if include_developer_manifest:
+        data = await fetch_manifest_data(
+            base_url,
+            access_token,
+            visibility_tiers=DEVELOPER_MANIFEST_INCLUDED_TIERS,
+            include_unpublished=True,
+            client=client,
+        )
+        data["manifest_metadata"] = {
+            "visibility_tier": DEVELOPER_MANIFEST_TIER,
+            "publication_scope": "developer",
+        }
+        output_path = output_dir / Path(manifest_artifact_key(DEVELOPER_MANIFEST_TIER)).name
+        con = generate_manifest_sqlite(data, output_path=output_path)
+        con.close()
+        outputs[DEVELOPER_MANIFEST_TIER] = output_path
 
     return outputs
