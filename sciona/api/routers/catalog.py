@@ -23,6 +23,76 @@ def _catalog_entry_from_row(row: dict, *, default_kind: str) -> CatalogEntry:
     )
 
 
+async def _fetch_artifact_benchmarks(
+    fqdn: str,
+    *,
+    supabase,
+) -> list[dict]:
+    artifact_result = await (
+        supabase.table("artifacts")
+        .select("artifact_id")
+        .eq("fqdn", fqdn)
+        .limit(1)
+        .execute()
+    )
+    artifact_rows = artifact_result.data or []
+    if not artifact_rows:
+        return []
+    artifact_id = artifact_rows[0].get("artifact_id")
+    if not artifact_id:
+        return []
+
+    version_result = await (
+        supabase.table("artifact_versions")
+        .select("version_id,content_hash")
+        .eq("artifact_id", artifact_id)
+        .execute()
+    )
+    version_rows = version_result.data or []
+    if not version_rows:
+        return []
+    content_hash_by_version = {
+        str(row["version_id"]): str(row.get("content_hash", ""))
+        for row in version_rows
+        if row.get("version_id")
+    }
+    version_ids = sorted(content_hash_by_version)
+    if not version_ids:
+        return []
+
+    benchmark_result = await (
+        supabase.table("artifact_benchmarks")
+        .select("version_id,benchmark_name,metric_name,metric_value,dataset_tag,measured_at")
+        .in_("version_id", version_ids)
+        .execute()
+    )
+    benchmark_rows = benchmark_result.data or []
+    rows: list[dict] = []
+    for row in benchmark_rows:
+        version_id = str(row.get("version_id", ""))
+        rows.append(
+            {
+                "artifact_fqdn": fqdn,
+                "content_hash": content_hash_by_version.get(version_id, ""),
+                "benchmark_id": row.get("benchmark_name", "") or "",
+                "benchmark_name": row.get("benchmark_name", "") or "",
+                "metric_name": row.get("metric_name", "") or "",
+                "metric_value": row.get("metric_value"),
+                "dataset_tag": row.get("dataset_tag", "") or "",
+                "measured_at": row.get("measured_at", "") or "",
+            }
+        )
+    rows.sort(
+        key=lambda row: (
+            str(row.get("benchmark_name", "")),
+            str(row.get("metric_name", "")),
+            str(row.get("content_hash", "")),
+            str(row.get("measured_at", "")),
+        )
+    )
+    return rows
+
+
 @router.get("/search")
 async def catalog_search(
     q: str,
@@ -149,4 +219,12 @@ async def get_artifact_document(
         document = None
     if not document:
         return await get_atom_document(fqdn, supabase=supabase)
+    if not document.get("benchmarks"):
+        try:
+            document["benchmarks"] = await _fetch_artifact_benchmarks(
+                fqdn,
+                supabase=supabase,
+            )
+        except Exception:
+            pass
     return document

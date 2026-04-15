@@ -370,6 +370,66 @@ async def test_get_artifact_document_falls_back_to_atom_rpc() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_artifact_document_hydrates_artifact_benchmarks() -> None:
+    def table_handler(query: FakeQuery) -> FakeResult:
+        if query.name == "artifacts":
+            assert query.action == "select"
+            assert ("eq", "fqdn", "cdg.skeleton.signal_detect_measure") in query.filters
+            return FakeResult(data=[{"artifact_id": "artifact-1"}])
+        if query.name == "artifact_versions":
+            assert query.action == "select"
+            assert ("eq", "artifact_id", "artifact-1") in query.filters
+            return FakeResult(
+                data=[
+                    {"version_id": "version-1", "content_hash": "hash-1"},
+                    {"version_id": "version-2", "content_hash": "hash-2"},
+                ]
+            )
+        if query.name == "artifact_benchmarks":
+            assert query.action == "select"
+            assert ("in", "version_id", ["version-1", "version-2"]) in query.filters
+            return FakeResult(
+                data=[
+                    {
+                        "version_id": "version-2",
+                        "benchmark_name": "signal.event_rate.ecg.v1",
+                        "metric_name": "mae_bpm",
+                        "metric_value": 2.7,
+                        "dataset_tag": "ecg_event_rate_reference",
+                        "measured_at": "2026-04-14T15:10:00Z",
+                    }
+                ]
+            )
+        raise AssertionError((query.name, query.action))
+
+    def rpc_handler(query: FakeRpcQuery) -> FakeResult:
+        if query.name == "get_artifact_document":
+            return FakeResult(data={"artifact": {"fqdn": "cdg.skeleton.signal_detect_measure"}})
+        raise AssertionError(query.name)
+
+    client = FakeSupabaseClient(table_handler=table_handler, rpc_handler=rpc_handler)
+
+    result = await catalog.get_artifact_document(
+        "cdg.skeleton.signal_detect_measure",
+        supabase=client,
+    )
+
+    assert result["artifact"]["fqdn"] == "cdg.skeleton.signal_detect_measure"
+    assert result["benchmarks"] == [
+        {
+            "artifact_fqdn": "cdg.skeleton.signal_detect_measure",
+            "content_hash": "hash-2",
+            "benchmark_id": "signal.event_rate.ecg.v1",
+            "benchmark_name": "signal.event_rate.ecg.v1",
+            "metric_name": "mae_bpm",
+            "metric_value": 2.7,
+            "dataset_tag": "ecg_event_rate_reference",
+            "measured_at": "2026-04-14T15:10:00Z",
+        }
+    ]
+
+
+@pytest.mark.asyncio
 async def test_create_bounty_supabase() -> None:
     bounty_id = _uuid("44444444-4444-4444-4444-444444444444")
     user_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
