@@ -52,27 +52,50 @@ class _FakeSupabase:
 
 
 def test_namespace_from_path_strips_artifacts_boundary() -> None:
-    assert namespace_from_path(Path("ageoa/pulsar_folding/uncertainty.json")) == "ageoa.pulsar_folding"
-    assert namespace_from_path(Path("ageoa/mint/_artifacts/apc_module/uncertainty.json")) == "ageoa.mint"
-    assert namespace_from_path(Path("ageoa/tempo_jl/tai2utc/matches.json")) == "ageoa.tempo_jl.tai2utc"
+    assert (
+        namespace_from_path(Path("sciona/atoms/physics/pulsar_folding/uncertainty.json"))
+        == "sciona.atoms.physics.pulsar_folding"
+    )
+    assert (
+        namespace_from_path(Path("sciona/atoms/bio/mint/_artifacts/apc_module/uncertainty.json"))
+        == "sciona.atoms.bio.mint"
+    )
+    assert (
+        namespace_from_path(Path("sciona/atoms/physics/tempo_jl/tai2utc/matches.json"))
+        == "sciona.atoms.physics.tempo_jl.tai2utc"
+    )
+    assert (
+        namespace_from_path(
+            Path("repo/src/sciona/atoms/signal_processing/biosppy/matches.json")
+        )
+        == "sciona.atoms.signal_processing.biosppy"
+    )
 
 
 def test_resolve_atom_id_prefers_exact_match() -> None:
-    supabase = _FakeSupabase({("eq", "ageoa.tempo_jl.tai2utc.isleapyear"): [{"atom_id": "abc"}]})
-    assert resolve_atom_id(supabase, "ageoa.tempo_jl.tai2utc", "isleapyear") == "abc"
-    assert supabase.calls == [("eq", "ageoa.tempo_jl.tai2utc.isleapyear")]
+    supabase = _FakeSupabase(
+        {("eq", "sciona.atoms.physics.tempo_jl.tai2utc.isleapyear"): [{"atom_id": "abc"}]}
+    )
+    assert (
+        resolve_atom_id(supabase, "sciona.atoms.physics.tempo_jl.tai2utc", "isleapyear")
+        == "abc"
+    )
+    assert supabase.calls == [("eq", "sciona.atoms.physics.tempo_jl.tai2utc.isleapyear")]
 
 
 def test_resolve_atom_id_falls_back_to_suffix_match() -> None:
     supabase = _FakeSupabase(
         {
-            ("eq", "ageoa.tempo_jl.tai2utc.isleapyear"): [],
+            ("eq", "sciona.atoms.physics.tempo_jl.tai2utc.isleapyear"): [],
             ("like", "%.isleapyear"): [{"atom_id": "fallback"}],
         }
     )
-    assert resolve_atom_id(supabase, "ageoa.tempo_jl.tai2utc", "isleapyear") == "fallback"
+    assert (
+        resolve_atom_id(supabase, "sciona.atoms.physics.tempo_jl.tai2utc", "isleapyear")
+        == "fallback"
+    )
     assert supabase.calls == [
-        ("eq", "ageoa.tempo_jl.tai2utc.isleapyear"),
+        ("eq", "sciona.atoms.physics.tempo_jl.tai2utc.isleapyear"),
         ("like", "%.isleapyear"),
     ]
 

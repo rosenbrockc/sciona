@@ -58,8 +58,8 @@ async def _cmd_run(args: argparse.Namespace) -> None:
         OrchestratorService,
         SingleAgentPlanner,
     )
-    from sciona.services.skeleton_artifacts import (
-        build_local_skeleton_macro_retriever,
+    from sciona.services.catalog_artifact_retrieval import (
+        build_default_macro_retriever,
     )
     from sciona.telemetry import (
         configure_dashboard_output,
@@ -435,7 +435,7 @@ async def _cmd_run(args: argparse.Namespace) -> None:
                         )
                 elif mode_settings.mode == "single_agent":
                     print("Running single-agent planner...")
-                    artifact_retriever = build_local_skeleton_macro_retriever()
+                    artifact_retriever = await build_default_macro_retriever()
 
                     async def _architect_factory():
                         if architect_service is None:

@@ -505,7 +505,7 @@ async def test_smoke_validation_detector_pass_allows_publication(monkeypatch, tm
             "        raise TypeError('sampling_rate')\n"
             "    return np.array([300, 800, 1300, 1800], dtype=int)\n"
         ),
-        output_parts=("ageoa", "biosppy", "ecg_detectors"),
+        output_parts=("sciona", "biosppy", "ecg_detectors"),
     )
 
     status = json.loads((output_dir / ".ingest_status.json").read_text(encoding="utf-8"))
@@ -529,7 +529,7 @@ async def test_smoke_validation_detector_fail_blocks_publication(monkeypatch, tm
     )
     source_path = tmp_path / "source.py"
     source_path.write_text("def stub():\n    return None\n", encoding="utf-8")
-    output_dir = tmp_path / "ageoa" / "biosppy" / "ecg_detectors"
+    output_dir = tmp_path / "sciona" / "biosppy" / "ecg_detectors"
 
     with pytest.raises(SystemExit) as excinfo:
         await _cmd_ingest(

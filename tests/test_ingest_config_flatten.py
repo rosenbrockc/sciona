@@ -103,7 +103,7 @@ _REPAIR_RESPONSE = json.dumps(
         {
             "line_start": 1,
             "line_end": 1,
-            "replacement": '"""Auto-generated atom wrappers following the ageoa pattern."""',
+            "replacement": '"""Auto-generated atom wrappers following the sciona.atoms pattern."""',
         },
     ]
 )

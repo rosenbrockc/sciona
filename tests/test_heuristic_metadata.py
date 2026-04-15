@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
+import sciona.heuristic_metadata as heuristic_metadata
 from sciona.heuristic_metadata import (
     AtomHeuristicMetadata,
     AtomHeuristicReference,
@@ -21,6 +23,20 @@ from sciona.heuristics import (
     HeuristicEvidenceType,
     HeuristicProducerKind,
 )
+
+
+@pytest.fixture(autouse=True)
+def _configure_real_provider_roots(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "SCIONA_ATOM_PROVIDER_ROOTS",
+        os.pathsep.join(
+            (
+                "/Users/conrad/personal/sciona-atoms",
+                "/Users/conrad/personal/sciona-atoms-signal",
+            )
+        ),
+    )
+    heuristic_metadata.clear_atom_heuristic_metadata_caches()
 
 
 def _heuristic(heuristic_id: str) -> CanonicalHeuristic:
@@ -45,7 +61,7 @@ def _clear_metadata_caches() -> None:
 
 
 def _write_metadata(root: Path, *, atom_fqdn: str, heuristic_id: str) -> None:
-    path = root / "ageoa" / "demo" / "fixture" / "heuristic_metadata.json"
+    path = root / "sciona" / "atoms" / "demo" / "fixture" / "heuristic_metadata.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
@@ -85,7 +101,7 @@ def test_output_contract_normalizes_producer_kind_to_atom_output() -> None:
 def test_atom_heuristic_metadata_requires_unique_output_names_and_ids() -> None:
     with pytest.raises(ValueError):
         AtomHeuristicMetadata(
-            atom_fqdn="ageoa.example.quality_gate",
+            atom_fqdn="sciona.atoms.example.quality_gate",
             summary="Quality scoring helper.",
             dejargonized_summary="Produces a reusable quality score.",
             heuristic_outputs=[
@@ -97,7 +113,7 @@ def test_atom_heuristic_metadata_requires_unique_output_names_and_ids() -> None:
 
     with pytest.raises(ValueError):
         AtomHeuristicMetadata(
-            atom_fqdn="ageoa.example.quality_gate",
+            atom_fqdn="sciona.atoms.example.quality_gate",
             summary="Quality scoring helper.",
             dejargonized_summary="Produces a reusable quality score.",
             heuristic_outputs=[
@@ -110,7 +126,7 @@ def test_atom_heuristic_metadata_requires_unique_output_names_and_ids() -> None:
 
 def test_atom_heuristic_metadata_from_snapshot_maps_legacy_metric() -> None:
     metadata = atom_heuristic_metadata_from_snapshot(
-        "ageoa.example.quality_gate",
+        "sciona.atoms.example.quality_gate",
         {
             "summary": "Quality scoring helper.",
             "dejargonized_summary": "Produces a reusable quality score.",
@@ -132,26 +148,26 @@ def test_atom_heuristic_metadata_from_snapshot_maps_legacy_metric() -> None:
 
 def test_summary_reports_heuristic_ids() -> None:
     metadata = AtomHeuristicMetadata(
-        atom_fqdn="ageoa.example.quality_gate",
+        atom_fqdn="sciona.atoms.example.quality_gate",
         summary="Quality scoring helper.",
         dejargonized_summary="Produces a reusable quality score.",
         heuristic_outputs=[
             HeuristicOutputContract(output_name="quality_score", heuristic=_heuristic("quality_instability")),
         ],
         references=[AtomHeuristicReference(title="Reference")],
-        maintainers=["ageo-atoms"],
+        maintainers=["sciona-atoms"],
     )
     summary = atom_heuristic_metadata_summary(metadata)
     assert summary["heuristic_output_count"] == 1
     assert summary["heuristic_ids"] == ["quality_instability"]
     assert summary["logical_atom_id"] == "example.quality_gate"
-    assert summary["provider_id"] == "core.ageo_atoms"
+    assert summary["provider_id"] == "sciona.atoms.example"
 
 
 def test_metadata_requires_dejargonized_summary_and_reference() -> None:
     with pytest.raises(ValueError):
         AtomHeuristicMetadata(
-            atom_fqdn="ageoa.example.quality_gate",
+            atom_fqdn="sciona.atoms.example.quality_gate",
             summary="Quality scoring helper.",
             dejargonized_summary="",
             heuristic_outputs=[],
@@ -159,7 +175,7 @@ def test_metadata_requires_dejargonized_summary_and_reference() -> None:
         )
     with pytest.raises(ValueError):
         AtomHeuristicMetadata(
-            atom_fqdn="ageoa.example.quality_gate",
+            atom_fqdn="sciona.atoms.example.quality_gate",
             summary="Quality scoring helper.",
             dejargonized_summary="Produces a reusable quality score.",
             heuristic_outputs=[],
@@ -167,9 +183,9 @@ def test_metadata_requires_dejargonized_summary_and_reference() -> None:
         )
 
 
-def test_resolve_external_atom_heuristic_metadata_loads_ageo_atoms_signal_example() -> None:
+def test_resolve_external_atom_heuristic_metadata_loads_sciona_atoms_signal_example() -> None:
     metadata = resolve_external_atom_heuristic_metadata(
-        "ageoa.biosppy.ecg_zz2018_d12.assemblezz2018sqi"
+        "sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.assemblezz2018sqi"
     )
 
     assert metadata is not None
@@ -177,20 +193,53 @@ def test_resolve_external_atom_heuristic_metadata_loads_ageo_atoms_signal_exampl
     assert metadata.heuristic_outputs[0].heuristic.heuristic_id == "quality_instability"
 
 
-def test_external_metadata_supports_multiple_records_in_one_asset_file() -> None:
+def test_external_metadata_supports_multiple_records_in_one_asset_file(
+    tmp_path: Path,
+) -> None:
+    first_root = tmp_path / "provider-one"
+    second_root = tmp_path / "provider-two"
+    _write_metadata(
+        first_root,
+        atom_fqdn="sciona.atoms.demo.fixture.alpha",
+        heuristic_id="quality_instability",
+    )
+    path = (
+        first_root
+        / "sciona"
+        / "atoms"
+        / "demo"
+        / "fixture"
+        / "heuristic_metadata.json"
+    )
+    payload = json.loads(path.read_text())
+    payload["records"].append(
+        {
+            "atom_fqdn": "sciona.atoms.demo.fixture.beta",
+            "summary": "Fixture heuristic metadata.",
+            "dejargonized_summary": "Fixture heuristic metadata for precedence tests.",
+            "heuristic_outputs": [
+                {
+                    "output_name": "score",
+                    "role": "gating",
+                    "heuristic": _heuristic("alignment_error").model_dump(mode="json"),
+                }
+            ],
+            "references": [{"title": "Fixture Reference"}],
+        }
+    )
+    path.write_text(json.dumps(payload))
     metadata = resolve_external_atom_heuristic_metadata(
-        "ageoa.biosppy.ecg_zz2018.calculatefrequencypowersqi"
+        "sciona.atoms.demo.fixture.beta",
+        provider_roots=(second_root, first_root),
     )
 
     assert metadata is not None
-    assert metadata.heuristic_outputs[0].heuristic.heuristic_id == (
-        "dominant_nuisance_structure"
-    )
+    assert metadata.heuristic_outputs[0].heuristic.heuristic_id == "alignment_error"
 
 
 def test_external_metadata_loads_non_signal_family_example() -> None:
     metadata = resolve_external_atom_heuristic_metadata(
-        "ageoa.kalman_filters.filter_rs.evaluatemeasurementoracle"
+        "sciona.atoms.state_estimation.kalman_filters.filter_rs.evaluate_measurement_oracle"
     )
 
     assert metadata is not None
@@ -200,7 +249,7 @@ def test_external_metadata_loads_non_signal_family_example() -> None:
 
 
 def test_external_metadata_prefers_first_configured_provider_root(tmp_path: Path) -> None:
-    atom_fqdn = "ageoa.demo.fixture.score_atom"
+    atom_fqdn = "sciona.atoms.demo.fixture.score_atom"
     first_root = tmp_path / "provider-one"
     second_root = tmp_path / "provider-two"
     _write_metadata(
@@ -227,16 +276,16 @@ def test_external_metadata_uses_later_provider_root_when_first_is_missing(
     tmp_path: Path,
 ) -> None:
     metadata = resolve_external_atom_heuristic_metadata(
-        "ageoa.kalman_filters.filter_rs.evaluatemeasurementoracle",
+        "sciona.atoms.state_estimation.kalman_filters.filter_rs.evaluate_measurement_oracle",
         provider_roots=(
             tmp_path / "missing-provider",
-            Path(__file__).resolve().parents[1].parent / "ageo-atoms",
+            Path(__file__).resolve().parents[1].parent / "sciona-atoms",
         ),
     )
 
     assert metadata is not None
     summary = atom_heuristic_metadata_summary(metadata)
     assert summary["logical_atom_id"] == (
-        "kalman_filters.filter_rs.evaluatemeasurementoracle"
+        "state_estimation.kalman_filters.filter_rs.evaluate_measurement_oracle"
     )
     assert summary["heuristic_ids"] == ["residual_structure_after_transform"]

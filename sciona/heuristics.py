@@ -44,6 +44,9 @@ _EXPLICIT_CANONICAL_HEURISTIC_IDS = {
     "quality_instability",
     "residual_structure_after_transform",
     "resource_growth_instability",
+    "split_balance_instability",
+    "recursion_depth_pressure",
+    "merge_cost_pressure",
 }
 EXTERNAL_CANONICAL_ASSET_CANDIDATES: tuple[tuple[str, ...], ...] = (
     ("data", "heuristics", "canonical_registry.json"),

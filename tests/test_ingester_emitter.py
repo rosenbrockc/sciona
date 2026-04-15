@@ -250,9 +250,9 @@ class TestGenerateAtomWrappers:
             ghost_package_root="sciona.atoms.demo",
         )
 
-        assert "from ageoa.ghost.registry import register_atom" in default_source
+        assert "from sciona.ghost.registry import register_atom" in default_source
         assert "from sciona.atoms.demo.ghost.registry import register_atom" in source
-        assert "from ageoa.ghost.registry import register_atom" not in source
+        assert "from sciona.ghost.registry import register_atom" not in source
 
     def test_canonical_wrapper_uses_exact_signature_and_return_value(self):
         atom = MacroAtomSpec(
@@ -1135,9 +1135,9 @@ class TestGenerateGhostWitnesses:
             ghost_package_root="sciona.atoms.demo",
         )
 
-        assert "import ageoa.ghost.abstract as _ghost_abstract" in default_source
+        assert "import sciona.ghost.abstract as _ghost_abstract" in default_source
         assert "import sciona.atoms.demo.ghost.abstract as _ghost_abstract" in source
-        assert "import ageoa.ghost.abstract as _ghost_abstract" not in source
+        assert "import sciona.ghost.abstract as _ghost_abstract" not in source
 
     def test_canonical_witness_uses_exact_inputs_and_scalar_types(self):
         atom = MacroAtomSpec(
@@ -1586,5 +1586,5 @@ class TestEmitIngestionBundle:
             "from sciona.atoms.demo.ghost.registry import register_atom"
             in bundle.generated_atoms
         )
-        assert "import ageoa.ghost.abstract as _ghost_abstract" not in bundle.generated_witnesses
-        assert "from ageoa.ghost.registry import register_atom" not in bundle.generated_atoms
+        assert "import sciona.ghost.abstract as _ghost_abstract" not in bundle.generated_witnesses
+        assert "from sciona.ghost.registry import register_atom" not in bundle.generated_atoms

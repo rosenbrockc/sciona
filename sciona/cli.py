@@ -846,7 +846,7 @@ def main() -> None:
         help=(
             "Path to atoms repo directory "
             "(e.g. ~/personal/sciona-atoms/src/sciona/atoms/signal_processing/biosppy "
-            "or ~/personal/ageo-atoms/ageoa/biosppy)"
+            "or ~/personal/sciona-atoms/sciona/atoms/biosppy)"
         ),
     )
     upsert_cdg_parser.add_argument(

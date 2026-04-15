@@ -7,7 +7,7 @@ The system is organized as a four-round Agentic Development Cycle, wrapped by an
 - **Round 0 (Ingester)**: Parses existing source code (Python, C++, Julia, Rust) into data-flow graphs, chunks them into macro-atoms (deterministic AST-based splitting when confident, LLM chunking otherwise), and generates `@register_atom` wrappers, state models, ghost witnesses, and FFI bindings. Produces `IngestionBundle`s that feed directly into the Synthesizer.
 - **Round 1 (Architect)**: Decomposes a high-level goal into an atomic Conceptual Dependency Graph (CDG) via LangGraph, with PostgreSQL-backed persistence for checkpoint time-travel and forking.
 - **Round 2 (Hunter)**: Grounds each atomic CDG leaf into a verified library function in Lean 4/Mathlib, Coq/Rocq, or Python. Candidate ranking uses embedding reranking (cosine similarity + type-token bonus) before falling back to LLM. Failure analysis uses regex-based pattern matching for known error classes before falling back to LLM.
-- **Round 3 (Synthesizer)**: Assembles matched atoms into compilable skeleton files. Runs an optional ghost witness simulation pass (via `ageoa`) to catch structural mismatches before expensive compilation. Repair uses an expanded deterministic fix database (type coercions, common imports, syntax corrections) before LLM patching.
+- **Round 3 (Synthesizer)**: Assembles matched atoms into compilable skeleton files. Runs an optional ghost witness simulation pass via `sciona.atoms` to catch structural mismatches before expensive compilation. Repair uses an expanded deterministic fix database (type coercions, common imports, syntax corrections) before LLM patching.
 - **Principal (Meta-Optimizer)**: Wraps all four rounds in a NAS-style optimisation loop. Uses Optuna HPO, ghost-simulation early pruning, interval-arithmetic precision gradients, per-node credit assignment, and the Architect's checkpoint time-travel for coordinate descent over decomposition structure.
 
 ## Execution Modes
@@ -367,18 +367,18 @@ Assembles CDG + MatchResults into compilable skeleton files, optionally pre-vali
 
 `assemble_and_check()` orchestrates the full flow:
 
-1. **Ghost simulation** (optional) -- converts CDG atomic leaves to `SimNode`s and runs `simulate_graph()` from `ageoa.ghost`. Catches domain mismatches (e.g., feeding frequency-domain data into an FFT that expects time-domain), shape errors, and type violations *before* expensive compilation.
+1. **Ghost simulation** (optional) -- converts CDG atomic leaves to `SimNode`s and runs `simulate_graph()` from `sciona.atoms.ghost`. Catches domain mismatches (e.g., feeding frequency-domain data into an FFT that expects time-domain), shape errors, and type violations *before* expensive compilation.
 2. **Assembly** -- topologically sorts CDG nodes, fuses each atomic leaf with its `MatchResult`, and emits source code (Lean 4, Coq, or Python).
 3. **Compilation** -- sends the skeleton through the `ProofEnvironment` compiler.
 
-The ghost simulation is best-effort: if `ageoa` is not installed or no atoms have registered witnesses, it is silently skipped. Non-DSP atoms (those without witnesses) are also skipped. Results are attached to `skeleton.metadata["ghost_simulation"]`.
+The ghost simulation is best-effort: if `sciona.atoms` is not installed or no atoms have registered witnesses, it is silently skipped. Non-DSP atoms (those without witnesses) are also skipped. Results are attached to `skeleton.metadata["ghost_simulation"]`.
 
 #### Ghost Witness integration (`ghost_sim.py`)
 
 The ghost simulation pass bridges the two repositories:
 
 ```
-ageoa (ageo-atoms)                    sciona (sciona)
+sciona.atoms (sciona-atoms)           sciona (sciona)
   ghost/                                synthesizer/
     registry.py  REGISTRY  <-------->   ghost_sim.py  run_ghost_simulation()
     witnesses.py  witness_fft, ...        |
@@ -394,10 +394,10 @@ ageoa (ageo-atoms)                    sciona (sciona)
 
 | Module | Atoms |
 |--------|-------|
-| `ageoa.numpy.fft` | `fft`, `ifft`, `rfft`, `irfft` |
-| `ageoa.scipy.fft` | `dct`, `idct` |
-| `ageoa.scipy.signal` | `butter`, `cheby1`, `cheby2`, `firwin`, `sosfilt`, `lfilter`, `freqz` |
-| `ageoa.scipy.sparse_graph` | `graph_laplacian`, `graph_fourier_transform`, `heat_kernel_diffusion` |
+| `sciona.atoms.numpy.fft` | `fft`, `ifft`, `rfft`, `irfft` |
+| `sciona.atoms.scipy.fft` | `dct`, `idct` |
+| `sciona.atoms.scipy.signal` | `butter`, `cheby1`, `cheby2`, `firwin`, `sosfilt`, `lfilter`, `freqz` |
+| `sciona.atoms.scipy.sparse_graph` | `graph_laplacian`, `graph_fourier_transform`, `heat_kernel_diffusion` |
 
 #### Key modules
 
@@ -770,7 +770,7 @@ sciona/types.py, protocols.py, config.py    (no external deps beyond pydantic)
          |               |           |
          +-------+-------+-----+----+
                  |              |
-           synthesizer/        |               (ageoa [optional])
+           synthesizer/        |               (sciona.atoms [optional])
                  |             |
            principal/          |               (optuna)
                  |             |
@@ -781,7 +781,7 @@ sciona/types.py, protocols.py, config.py    (no external deps beyond pydantic)
 ```
 
 ```
-                 ageoa (ageo-atoms)
+                 sciona.atoms (sciona-atoms)
                    |
         ghost/     |     numpy/, scipy/
      abstract.py   |     fft.py, signal.py, ...
@@ -795,4 +795,4 @@ sciona/types.py, protocols.py, config.py    (no external deps beyond pydantic)
            sciona/ingester/emitter.py
 ```
 
-The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The ingester is independent of the hunter/indexer/judge -- it produces `IngestionBundle`s (CDG + generated source + match results) that the Synthesizer can consume directly. For non-Python sources, the ingester uses tree-sitter for extraction and generates FFI bindings (ctypes for C++/Rust, juliacall for Julia). The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `ageoa` for ghost witness simulation. If `ageoa` is not installed, the synthesizer works normally without the simulation pass. The principal depends on the architect (for time-travel forking), synthesizer (ghost simulation + assembly), and optuna for HPO. It is the outermost layer: all other components are unaware of the principal's existence.
+The indexer and judge are fully independent of each other. The hunter depends on both (through their protocol interfaces, not concrete classes). The architect is independent of the indexer/judge/hunter -- its output (CDGExport) is the input to the hunter via the handoff bridge. The ingester is independent of the hunter/indexer/judge -- it produces `IngestionBundle`s (CDG + generated source + match results) that the Synthesizer can consume directly. For non-Python sources, the ingester uses tree-sitter for extraction and generates FFI bindings (ctypes for C++/Rust, juliacall for Julia). The synthesizer depends on the hunter (MatchResult) and architect (CDGExport), and optionally on `sciona.atoms` for ghost witness simulation. If `sciona.atoms` is not installed, the synthesizer works normally without the simulation pass. The principal depends on the architect (for time-travel forking), synthesizer (ghost simulation + assembly), and optuna for HPO. It is the outermost layer: all other components are unaware of the principal's existence.

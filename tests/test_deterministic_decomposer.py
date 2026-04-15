@@ -33,6 +33,7 @@ def _prompt(
         outputs=outputs,
         depth=depth,
         max_depth=max_depth,
+        planning_context="",
         primitives="No relevant primitives found.",
         example_decompositions="",
         retry_context="",

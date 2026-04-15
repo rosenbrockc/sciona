@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import pytest
 
+import sciona.heuristics as heuristics
 from sciona.heuristics import (
     CanonicalHeuristic,
     HeuristicActionClass,
@@ -13,6 +15,20 @@ from sciona.heuristics import (
     known_heuristic_ids,
     known_heuristic_compatibility_hints,
 )
+
+
+@pytest.fixture(autouse=True)
+def _configure_real_provider_roots(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "SCIONA_ATOM_PROVIDER_ROOTS",
+        os.pathsep.join(
+            (
+                "/Users/conrad/personal/sciona-atoms",
+                "/Users/conrad/personal/sciona-atoms-signal",
+            )
+        ),
+    )
+    heuristics._external_canonical_heuristics.cache_clear()
 
 
 def test_canonical_heuristic_accepts_cross_family_identifier() -> None:
@@ -99,7 +115,7 @@ def test_canonical_heuristic_round_trip() -> None:
     assert restored.heuristic_id == "numerical_condition_instability"
 
 
-def test_known_heuristic_ids_include_external_ageo_atoms_registry_entries() -> None:
+def test_known_heuristic_ids_include_external_sciona_atoms_registry_entries() -> None:
     ids = set(known_heuristic_ids())
 
     assert "split_balance_instability" in ids

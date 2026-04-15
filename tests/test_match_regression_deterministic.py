@@ -14,6 +14,10 @@ from tests.helpers.match_regression import (
 
 @pytest.mark.match_regression_deterministic
 def test_match_case_fixture_paths_exist(match_cases):
+    match_cases = [case for case in match_cases if not case.historical]
+    if not match_cases:
+        pytest.skip("legacy regression fixtures are historical-only in this slice")
+
     for case in match_cases:
         assert case.cdg_path.exists(), f"Missing CDG fixture: {case.cdg_path}"
         assert (
@@ -25,9 +29,13 @@ def test_match_case_fixture_paths_exist(match_cases):
 @pytest.mark.asyncio
 async def test_deterministic_hunter_matches_expected(
     match_cases,
-    ageo_atoms_declarations,
+    sciona_atoms_declarations,
 ):
-    index = StaticSemanticIndex(ageo_atoms_declarations)
+    match_cases = [case for case in match_cases if not case.historical]
+    if not match_cases:
+        pytest.skip("legacy regression fixtures are historical-only in this slice")
+
+    index = StaticSemanticIndex(sciona_atoms_declarations)
     llm = DeterministicHunterLLM()
 
     for case in match_cases:

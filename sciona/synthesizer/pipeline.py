@@ -26,7 +26,7 @@ async def assemble_and_check(
 
     Optionally runs a ghost witness simulation before assembly to catch
     structural mismatches early.  The simulation is best-effort — if
-    ``ageoa`` is not installed or no witnesses are available, it is
+    ``sciona.atoms`` is not installed or no witnesses are available, it is
     silently skipped.
 
     Args:

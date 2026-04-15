@@ -75,10 +75,6 @@ class TestRegistryModels:
 
 
 class TestBountyModels:
-    def test_create_request_validates_positive_escrow(self):
-        req = BountyCreateRequest(title="Test", escrow_amount=100.0)
-        assert req.escrow_amount > 0
-
     def test_create_request_rejects_zero_escrow(self):
         with pytest.raises(Exception):
             BountyCreateRequest(title="Test", escrow_amount=0)

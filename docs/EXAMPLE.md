@@ -42,7 +42,7 @@ The Principal uses **Optuna** for HPO and **Ghost Simulation** to prune invalid 
 Once you have an optimal CDG, you need to ground its abstract nodes into actual executable code using the **Hunter** (Round 2) and **Synthesizer** (Round 3).
 
 ### Grounding and Assembly
-Run the full orchestration to match CDG nodes to verified library functions (e.g., from `numpy`, `scipy`, or `ageoa`) and assemble them into a Python script:
+Run the full orchestration to match CDG nodes to verified library functions (e.g., from `numpy`, `scipy`, or `sciona.atoms`) and assemble them into a Python script:
 
 ```bash
 sciona run "Detect heart rate from raw ECG signal" 

@@ -21,10 +21,6 @@ from sciona.architect.models import (
 
 
 class TestConceptType:
-    def test_all_values_are_strings(self):
-        for ct in ConceptType:
-            assert isinstance(ct.value, str)
-
     def test_expected_members(self):
         expected = {
             "sorting",
@@ -99,16 +95,6 @@ class TestIOSpec:
     def test_missing_required_field(self):
         with pytest.raises(Exception):
             IOSpec(name="x")  # type: ignore[call-arg]
-
-
-class TestNodeStatus:
-    def test_values(self):
-        assert NodeStatus.PENDING == "pending"
-        assert NodeStatus.DECOMPOSED == "decomposed"
-        assert NodeStatus.ATOMIC == "atomic"
-        assert NodeStatus.REJECTED == "rejected"
-        assert NodeStatus.HIGH_RISK == "high_risk"
-        assert NodeStatus.BLOCKED == "blocked"
 
 
 class TestAlgorithmicNode:

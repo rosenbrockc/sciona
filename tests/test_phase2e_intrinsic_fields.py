@@ -29,8 +29,8 @@ def test_compute_missing_pillars_and_publishable_from_sets() -> None:
 
 def test_summarize_publication_completeness_counts_mismatches() -> None:
     atoms = {
-        "a1": {"fqdn": "ageoa.one", "is_publishable": True},
-        "a2": {"fqdn": "ageoa.two", "is_publishable": False},
+        "a1": {"fqdn": "sciona.atoms.one", "is_publishable": True},
+        "a2": {"fqdn": "sciona.atoms.two", "is_publishable": False},
     }
     pillar_sets = {
         "io_specs": {"a1", "a2"},
@@ -41,36 +41,36 @@ def test_summarize_publication_completeness_counts_mismatches() -> None:
     }
     publishable_count, missing_report, mismatch_count = summarize_publication_completeness(atoms, pillar_sets)
     assert publishable_count == 1
-    assert missing_report == [("ageoa.two", ["dejargonized_description"])]
+    assert missing_report == [("sciona.atoms.two", ["dejargonized_description"])]
     assert mismatch_count == 0
 
 
 def test_parse_git_log_groups_commits_and_files() -> None:
-    raw = "sha1|a@example.com|2024-01-01T00:00:00Z\nageoa/foo/atoms.py\nsha2|b@example.com|2024-02-01T00:00:00Z\nageoa/bar/atoms.py\n"
+    raw = "sha1|a@example.com|2024-01-01T00:00:00Z\nsciona/atoms/foo/atoms.py\nsha2|b@example.com|2024-02-01T00:00:00Z\nsciona/atoms/bar/atoms.py\n"
     parsed = parse_git_log(raw)
     assert parsed[0]["sha"] == "sha1"
-    assert parsed[0]["files"] == ["ageoa/foo/atoms.py"]
+    assert parsed[0]["files"] == ["sciona/atoms/foo/atoms.py"]
     assert parsed[1]["email"] == "b@example.com"
 
 
 def test_derive_atom_family_from_path_and_matching_atoms() -> None:
-    assert derive_atom_family_from_path("ageoa/advancedvi/atoms.py") == "advancedvi"
+    assert derive_atom_family_from_path("sciona/atoms/advancedvi/atoms.py") == "advancedvi"
     assert derive_atom_family_from_path("README.md") is None
     matches = matching_atoms_for_family(
         {
-            "ageoa.advancedvi.sample": {"atom_id": "1", "fqdn": "ageoa.advancedvi.sample"},
-            "ageoa.other.sample": {"atom_id": "2", "fqdn": "ageoa.other.sample"},
+            "sciona.atoms.advancedvi.sample": {"atom_id": "1", "fqdn": "sciona.atoms.advancedvi.sample"},
+            "sciona.atoms.other.sample": {"atom_id": "2", "fqdn": "sciona.atoms.other.sample"},
         },
         "advancedvi",
     )
-    assert matches == [{"atom_id": "1", "fqdn": "ageoa.advancedvi.sample"}]
+    assert matches == [{"atom_id": "1", "fqdn": "sciona.atoms.advancedvi.sample"}]
 
 
 def test_build_user_family_events_keeps_earliest_commit_per_user_family() -> None:
     entries = [
-        {"sha": "sha2", "email": "a@example.com", "date": "2024-02-01T00:00:00Z", "files": ["ageoa/foo/atoms.py"]},
-        {"sha": "sha1", "email": "a@example.com", "date": "2024-01-01T00:00:00Z", "files": ["ageoa/foo/atoms.py"]},
-        {"sha": "sha3", "email": "other@example.com", "date": "2024-01-05T00:00:00Z", "files": ["ageoa/bar/atoms.py"]},
+        {"sha": "sha2", "email": "a@example.com", "date": "2024-02-01T00:00:00Z", "files": ["sciona/atoms/foo/atoms.py"]},
+        {"sha": "sha1", "email": "a@example.com", "date": "2024-01-01T00:00:00Z", "files": ["sciona/atoms/foo/atoms.py"]},
+        {"sha": "sha3", "email": "other@example.com", "date": "2024-01-05T00:00:00Z", "files": ["sciona/atoms/bar/atoms.py"]},
     ]
     result = build_user_family_events(entries, {"a@example.com": "user-1"})
     assert result == {("user-1", "foo"): {"sha": "sha1", "date": "2024-01-01T00:00:00Z"}}

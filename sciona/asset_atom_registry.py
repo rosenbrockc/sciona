@@ -12,7 +12,6 @@ from sciona.atom_identity import candidate_atom_provider_roots
 _ARTIFACT_ROOT_CANDIDATES: tuple[tuple[str, ...], ...] = (
     ("src", "sciona", "atoms"),
     ("sciona", "atoms"),
-    ("ageoa",),
 )
 _PY_FILE_STEM_OMIT = {"__init__", "atoms"}
 
@@ -66,8 +65,6 @@ def _namespace_prefix_for_artifact_root(artifact_root: Path) -> tuple[str, ...]:
         return ("sciona", "atoms")
     if len(parts) >= 2 and parts[-2:] == ("sciona", "atoms"):
         return ("sciona", "atoms")
-    if parts and parts[-1] == "ageoa":
-        return ("ageoa",)
     return tuple()
 
 

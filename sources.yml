@@ -31,6 +31,6 @@ sources:
     path: ../sciona-atoms-robotics
     python_path: src
     package: sciona.atoms.robotics
-  - name: ageo-atoms
-    path: ../ageo-atoms
-    package: ageoa
+  - name: sciona-atoms
+    path: ../sciona-atoms
+    package: sciona.atoms

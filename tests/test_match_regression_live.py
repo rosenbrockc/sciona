@@ -20,10 +20,14 @@ from tests.helpers.match_regression import (
 @pytest.mark.asyncio
 async def test_live_hunter_matching_is_stable(
     match_cases,
-    ageo_atoms_declarations,
+    sciona_atoms_declarations,
     llama_server,
 ):
-    index = StaticSemanticIndex(ageo_atoms_declarations)
+    match_cases = [case for case in match_cases if not case.historical]
+    if not match_cases:
+        pytest.skip("legacy regression fixtures are historical-only in this slice")
+
+    index = StaticSemanticIndex(sciona_atoms_declarations)
 
     for case in match_cases:
         pdg_nodes = load_case_pdg_nodes(case)

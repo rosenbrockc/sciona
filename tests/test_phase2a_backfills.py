@@ -15,9 +15,21 @@ from scripts.backfill_technical_descriptions import choose_technical_content
 
 
 def test_derive_atom_fqdn_uses_relative_cdg_path() -> None:
-    atoms_root = Path("/tmp/ageoa")
+    atoms_root = Path("/tmp/provider/src/sciona/atoms")
     cdg_path = atoms_root / "astroflow" / "cdg.json"
-    assert derive_atom_fqdn(cdg_path, atoms_root, "dedispersionkernel") == "ageoa.astroflow.dedispersionkernel"
+    assert (
+        derive_atom_fqdn(cdg_path, atoms_root, "dedispersionkernel")
+        == "sciona.atoms.astroflow.dedispersionkernel"
+    )
+
+
+def test_derive_atom_fqdn_supports_namespace_package_roots() -> None:
+    atoms_root = Path("/tmp/provider/src/sciona/atoms")
+    cdg_path = atoms_root / "signal_processing" / "biosppy" / "cdg.json"
+    assert (
+        derive_atom_fqdn(cdg_path, atoms_root, "online_filter")
+        == "sciona.atoms.signal_processing.biosppy.online_filter"
+    )
 
 
 def test_build_io_spec_rows_maps_inputs_and_outputs() -> None:
@@ -82,13 +94,13 @@ def test_choose_technical_content_prefers_docstring_summary() -> None:
 
 def test_build_prompt_includes_context_fields() -> None:
     prompt = build_prompt(
-        fqdn="ageoa.foo.bar",
+        fqdn="sciona.atoms.foo.bar",
         technical_content="Compute a posterior covariance estimate.",
         parameter_list="q: float, r: float",
         io_specs="input q: float, output score: float",
         domain_tags=["bayesian", "filtering"],
     )
-    assert "ageoa.foo.bar" in prompt
+    assert "sciona.atoms.foo.bar" in prompt
     assert "q: float" in prompt
     assert "bayesian, filtering" in prompt
 

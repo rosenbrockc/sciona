@@ -205,7 +205,7 @@ def test_python_assembler_emits_numpy_alias_for_np_annotations():
     assert "import numpy as np" in skeleton.source_code
 
 
-def test_python_assembler_configures_juliacall_before_ageoa_imports() -> None:
+def test_python_assembler_configures_juliacall_before_sciona_imports() -> None:
     root = AlgorithmicNode(
         node_id="root",
         name="Root",
@@ -231,7 +231,7 @@ def test_python_assembler_configures_juliacall_before_ageoa_imports() -> None:
         verified_match=VerificationResult(
             candidate=CandidateMatch(
                 declaration=Declaration(
-                    name="ageoa.biosppy.ecg.bandpass_filter",
+                    name="sciona.atoms.signal_processing.biosppy.ecg.bandpass_filter",
                     type_signature="(signal: np.ndarray, *, sampling_rate: float) -> np.ndarray",
                     prover=Prover.PYTHON,
                 ),
@@ -246,7 +246,7 @@ def test_python_assembler_configures_juliacall_before_ageoa_imports() -> None:
 
     assert "from sciona.julia_runtime import configure_juliacall_env" in skeleton.source_code
     assert skeleton.source_code.index("configure_juliacall_env()") < skeleton.source_code.index(
-        "import ageoa.biosppy.ecg"
+        "import sciona.atoms.signal_processing.biosppy.ecg"
     )
 
 
@@ -595,7 +595,7 @@ class TestAssembler:
         ]
         cdg = CDGExport(nodes=nodes, edges=[], metadata={"goal": "Design Filter"})
         decl = Declaration(
-            name="ageoa.pronto.blip_filter.atoms.bandpass_filter",
+            name="sciona.atoms.robotics.pronto.blip_filter.atoms.bandpass_filter",
             type_signature="(signal: np.ndarray) -> np.ndarray",
             prover=Prover.PYTHON,
         )
@@ -616,7 +616,7 @@ class TestAssembler:
         skeleton = assembler.assemble(cdg, matches)
 
         ast.parse(skeleton.source_code)
-        assert "import ageoa.pronto.blip_filter.atoms" in skeleton.source_code
+        assert "import sciona.atoms.robotics.pronto.blip_filter.atoms" in skeleton.source_code
         assert "spec: " in skeleton.source_code
         assert "filter specification" in skeleton.source_code
         assert "filter coefficients" in skeleton.source_code

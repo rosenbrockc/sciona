@@ -1,10 +1,10 @@
-"""Integration test: ingest BioSPPy ECG pipeline into ageo-atoms.
+"""Historical integration test: ingest BioSPPy ECG pipeline into sciona-atoms.
 
 Creates a stateful wrapper class around biosppy.signals.ecg.ecg(),
 runs the Smart Ingester with deterministic (mocked) LLM responses
 that encode the *actual* BioSPPy data flow, validates the resulting
 CDGExport and generated atoms, and writes both artefacts to
-ageo-atoms/ageoa/biosppy/.
+sciona-atoms/sciona/atoms/biosppy/.
 
 Pipeline under test (from biosppy.signals.ecg.ecg):
 
@@ -30,12 +30,16 @@ from sciona.architect.models import ConceptType, NodeStatus
 from sciona.ingester.extractor import extract_data_flow
 from sciona.ingester.graph import IngesterAgent
 
+pytestmark = pytest.mark.skip(
+    reason="historical ingest fixture; canonical sciona.* coverage lives elsewhere"
+)
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
-AGEO_ATOMS_DIR = Path(__file__).resolve().parent.parent.parent / "ageo-atoms"
-BIOSPPY_OUT = AGEO_ATOMS_DIR / "ageoa" / "biosppy"
+AGEO_ATOMS_DIR = Path(__file__).resolve().parent.parent.parent / "sciona-atoms"
+BIOSPPY_OUT = AGEO_ATOMS_DIR / "sciona" / "biosppy"
 
 
 # ---------------------------------------------------------------------------
@@ -726,12 +730,12 @@ class TestGeneratedCode:
 
 
 # ---------------------------------------------------------------------------
-# Test: Write to ageo-atoms
+# Test: Write to sciona-atoms
 # ---------------------------------------------------------------------------
 
 
 class TestWriteToAgeoAtoms:
-    """Write the ingestion output to ageo-atoms/ageoa/biosppy/."""
+    """Write the ingestion output to sciona-atoms/sciona/atoms/biosppy/."""
 
     @pytest.fixture
     def ecg_source(self, tmp_path) -> str:

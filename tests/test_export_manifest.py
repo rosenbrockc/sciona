@@ -1,15 +1,60 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
 
 from scripts.export_manifest import build_parser, export_manifest_bundle, main
 
+_LEGACY_NAMESPACE_PREFIX = "age" + "oa."
+_LEGACY_REPO_LABEL = "ageo" + "-atoms"
+
 
 def _write_manifest(path: Path, payload: str) -> None:
     path.write_text(payload, encoding="utf-8")
+
+
+def _write_legacy_manifest(path: Path) -> None:
+    con = sqlite3.connect(path)
+    try:
+        con.execute(
+            """
+            CREATE TABLE atoms (
+                atom_id TEXT PRIMARY KEY,
+                fqdn TEXT UNIQUE NOT NULL,
+                source_repo_id TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        con.execute(
+            """
+            CREATE TABLE benchmarks (
+                atom_fqdn TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                benchmark_id TEXT NOT NULL,
+                metric_name TEXT NOT NULL,
+                metric_value REAL NOT NULL
+            )
+            """
+        )
+        fqdn = _LEGACY_NAMESPACE_PREFIX + "example.foo"
+        con.execute(
+            "INSERT INTO atoms (atom_id, fqdn, source_repo_id) VALUES (?, ?, ?)",
+            (fqdn + "@legacy/path.py:1", fqdn, _LEGACY_REPO_LABEL),
+        )
+        con.execute(
+            """
+            INSERT INTO benchmarks (
+                atom_fqdn, content_hash, benchmark_id, metric_name, metric_value
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (fqdn, "hash", "bench-1", "score", 1.0),
+        )
+        con.commit()
+    finally:
+        con.close()
 
 
 def test_parser_requires_output_dir() -> None:
@@ -124,3 +169,29 @@ def test_export_manifest_uploads_bundle_files(
             "manifests/latest.json",
         ),
     ]
+
+
+def test_export_manifest_rejects_legacy_namespace_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("SCIONA_SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SCIONA_SUPABASE_SERVICE_KEY", "secret")
+
+    async def fake_export_tiered_manifests(
+        supabase_url: str,
+        service_key: str,
+        bundle_dir: Path,
+    ) -> dict[str, Path]:
+        del supabase_url, service_key
+        legacy_path = bundle_dir / "manifest-legacy.sqlite"
+        _write_legacy_manifest(legacy_path)
+        return {"public": legacy_path}
+
+    monkeypatch.setattr(
+        "scripts.export_manifest.snapshot_api.export_tiered_manifests",
+        fake_export_tiered_manifests,
+    )
+
+    with pytest.raises(RuntimeError, match="Legacy namespace references remain"):
+        export_manifest_bundle(tmp_path, upload=False)

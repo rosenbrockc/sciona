@@ -55,7 +55,7 @@ def _build_baseline_cdg() -> CDGExport:
         concept_type=ConceptType.SIGNAL_FILTER,
         status=NodeStatus.ATOMIC,
         depth=1,
-        matched_primitive="ageoa.signal.filter_signal_basic",
+        matched_primitive="sciona.atoms.signal.filter_signal_basic",
         inputs=[IOSpec(name="signal", type_desc="ndarray")],
         outputs=[IOSpec(name="filtered_signal", type_desc="ndarray")],
         type_signature="ndarray -> ndarray",
@@ -81,7 +81,7 @@ def _build_expanded_cdg() -> CDGExport:
         concept_type=ConceptType.SIGNAL_FILTER,
         status=NodeStatus.ATOMIC,
         depth=1,
-        matched_primitive="ageoa.signal.filter_signal_basic",
+        matched_primitive="sciona.atoms.signal.filter_signal_basic",
         inputs=[IOSpec(name="signal", type_desc="ndarray")],
         outputs=[IOSpec(name="filtered_signal", type_desc="ndarray")],
         type_signature="ndarray -> ndarray",
@@ -94,7 +94,7 @@ def _build_expanded_cdg() -> CDGExport:
         concept_type=ConceptType.ANALYSIS,
         status=NodeStatus.ATOMIC,
         depth=1,
-        matched_primitive="ageoa.statistics.score_signal_quality",
+        matched_primitive="sciona.atoms.statistics.score_signal_quality",
         inputs=[IOSpec(name="filtered_signal", type_desc="ndarray")],
         outputs=[IOSpec(name="quality_score", type_desc="float")],
         type_signature="ndarray -> float",
@@ -114,8 +114,8 @@ def _build_catalog() -> PrimitiveCatalog:
     catalog = PrimitiveCatalog()
     catalog.add(
         AlgorithmicPrimitive(
-            name="ageoa.signal.filter_signal_basic",
-            source="ageoa.signal",
+            name="sciona.atoms.signal.filter_signal_basic",
+            source="sciona.atoms.signal",
             category=ConceptType.SIGNAL_FILTER,
             description="Signal-family filtering primitive.",
             inputs=[IOSpec(name="signal", type_desc="ndarray")],
@@ -124,8 +124,8 @@ def _build_catalog() -> PrimitiveCatalog:
     )
     catalog.add(
         AlgorithmicPrimitive(
-            name="ageoa.statistics.score_signal_quality",
-            source="ageoa.statistics",
+            name="sciona.atoms.statistics.score_signal_quality",
+            source="sciona.atoms.statistics",
             category=ConceptType.ANALYSIS,
             description="Statistics-family signal quality primitive.",
             inputs=[IOSpec(name="filtered_signal", type_desc="ndarray")],
@@ -139,8 +139,8 @@ def _build_catalog_with_local_alternative() -> PrimitiveCatalog:
     catalog = _build_catalog()
     catalog.add(
         AlgorithmicPrimitive(
-            name="ageoa.signal.filter_signal_fast",
-            source="ageoa.signal",
+            name="sciona.atoms.signal.filter_signal_fast",
+            source="sciona.atoms.signal",
             category=ConceptType.SIGNAL_FILTER,
             description="Same-family faster filtering primitive.",
             inputs=[IOSpec(name="signal", type_desc="ndarray")],
@@ -238,7 +238,7 @@ class _ProposalPreferenceSandbox:
     ) -> BenchmarkResult:
         self.call_count += 1
         source_text = bundle.source_path.read_text()
-        if "ageoa.signal.filter_signal_fast" in source_text:
+        if "sciona.atoms.signal.filter_signal_fast" in source_text:
             loss = 40.0
             telemetry = {
                 "filter_signal": NodeTelemetry(
@@ -248,7 +248,7 @@ class _ProposalPreferenceSandbox:
                     error_expansion=0.0,
                 )
             }
-        elif "ageoa.statistics.score_signal_quality" in source_text:
+        elif "sciona.atoms.statistics.score_signal_quality" in source_text:
             loss = 60.0
             telemetry = {
                 "filter_signal": NodeTelemetry(
@@ -501,8 +501,8 @@ def principal_cross_family_preference_result():
         root = baseline.nodes[0]
         slot = compute_slot_signature(node, root)
         for trial in range(5):
-            ledger.record(slot, "ageoa.signal.filter_signal_basic", 80.0, trial=trial)
-            ledger.record(slot, "ageoa.signal.filter_signal_fast", 5.0, trial=trial)
+            ledger.record(slot, "sciona.atoms.signal.filter_signal_basic", 80.0, trial=trial)
+            ledger.record(slot, "sciona.atoms.signal.filter_signal_fast", 5.0, trial=trial)
 
         deps = PrincipalDeps(
             architect=architect,
@@ -544,7 +544,7 @@ class TestPrincipalExpansionPreferredOverFallbackE2E:
             if node.status == NodeStatus.ATOMIC
         }
         assert "Score Signal Quality" not in by_name
-        assert by_name["Filter Signal"].matched_primitive == "ageoa.signal.filter_signal_fast"
+        assert by_name["Filter Signal"].matched_primitive == "sciona.atoms.signal.filter_signal_fast"
         proposal = state.trial_history[0]["proposal_selection"]
         assert proposal["selected"] == "local_mutation"
         assert proposal["candidates"][0]["structural_delta"]["node_count_delta"] >= 0
@@ -568,7 +568,7 @@ def _build_graph_opt_cdg() -> CDGExport:
         concept_type=ConceptType.GRAPH_OPTIMIZATION,
         status=NodeStatus.ATOMIC,
         depth=1,
-        matched_primitive="ageoa.graph.relax_edges_iterative",
+        matched_primitive="sciona.atoms.graph.relax_edges_iterative",
         inputs=[IOSpec(name="state", type_desc="np.ndarray")],
         outputs=[IOSpec(name="updated_state", type_desc="np.ndarray")],
         type_signature="np.ndarray -> np.ndarray",
@@ -580,8 +580,8 @@ def _build_graph_opt_catalog() -> PrimitiveCatalog:
     catalog = PrimitiveCatalog()
     catalog.add(
         AlgorithmicPrimitive(
-            name="ageoa.graph.relax_edges_iterative",
-            source="ageoa.graph",
+            name="sciona.atoms.graph.relax_edges_iterative",
+            source="sciona.atoms.graph",
             category=ConceptType.GRAPH_OPTIMIZATION,
             description="Graph-local iterative edge relaxation.",
             inputs=[IOSpec(name="state", type_desc="np.ndarray")],
@@ -590,8 +590,8 @@ def _build_graph_opt_catalog() -> PrimitiveCatalog:
     )
     catalog.add(
         AlgorithmicPrimitive(
-            name="ageoa.linalg.solve_relaxation_system",
-            source="ageoa.linalg",
+            name="sciona.atoms.linalg.solve_relaxation_system",
+            source="sciona.atoms.linalg",
             category=ConceptType.ALGEBRA,
             description="Linear-algebra solver for a structurally equivalent state update.",
             inputs=[IOSpec(name="state", type_desc="np.ndarray")],
@@ -649,7 +649,7 @@ class _GraphOptMutationSandbox:
     ) -> BenchmarkResult:
         self.call_count += 1
         source_text = bundle.source_path.read_text()
-        if "ageoa.linalg.solve_relaxation_system" in source_text:
+        if "sciona.atoms.linalg.solve_relaxation_system" in source_text:
             return BenchmarkResult(
                 global_loss=30.0,
                 node_telemetry={
@@ -693,8 +693,8 @@ def principal_cross_family_mutation_result():
         root = cdg.nodes[0]
         slot = compute_slot_signature(node, root)
         for trial in range(5):
-            ledger.record(slot, "ageoa.graph.relax_edges_iterative", 85.0, trial=trial)
-            ledger.record(slot, "ageoa.linalg.solve_relaxation_system", 10.0, trial=trial)
+            ledger.record(slot, "sciona.atoms.graph.relax_edges_iterative", 85.0, trial=trial)
+            ledger.record(slot, "sciona.atoms.linalg.solve_relaxation_system", 10.0, trial=trial)
 
         deps = PrincipalDeps(
             architect=architect,
@@ -732,7 +732,7 @@ class TestPrincipalCrossFamilyMutationE2E:
         assert state.cdg is not None
         atomic = [node for node in state.cdg.nodes if node.status == NodeStatus.ATOMIC]
         assert len(atomic) == 1
-        assert atomic[0].matched_primitive == "ageoa.linalg.solve_relaxation_system"
+        assert atomic[0].matched_primitive == "sciona.atoms.linalg.solve_relaxation_system"
         assert state.best_loss == 30.0
 
     def test_mutation_trial_records_foreign_family_binding(
@@ -746,7 +746,7 @@ class TestPrincipalCrossFamilyMutationE2E:
         assert structure["primitive_assignment_changed"] is True
         assert structure["foreign_family_binding_count"] == 1
         assert structure["foreign_family_bindings"] == ["relax_edges"]
-        assert structure["distinct_primitive_families"] == ["ageoa.linalg"]
+        assert structure["distinct_primitive_families"] == ["sciona.atoms.linalg"]
 
 
 class _HarmfulExpansionSandbox:

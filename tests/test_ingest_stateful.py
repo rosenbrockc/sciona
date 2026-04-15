@@ -374,7 +374,7 @@ class TestStatefulWrapperGeneration:
         )
 
         assert "from sciona.atoms.demo.ghost.registry import register_atom" in source
-        assert "from ageoa.ghost.registry import register_atom" not in source
+        assert "from sciona.atoms.ghost.registry import register_atom" not in source
 
     def test_wrapper_contains_dunder_new(self):
         plan = _make_stateful_plan()
@@ -687,7 +687,7 @@ class TestStatefulGhostWitnesses:
         )
 
         assert "import sciona.atoms.demo.ghost.abstract as _ghost_abstract" in source
-        assert "import ageoa.ghost.abstract as _ghost_abstract" not in source
+        assert "import sciona.atoms.ghost.abstract as _ghost_abstract" not in source
 
     def test_canonical_witness_uses_exact_inputs_and_marks_state_preserving(self):
         plan = _make_canonical_stateful_plan()

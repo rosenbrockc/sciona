@@ -96,12 +96,12 @@ class AbstractDistribution: ...
     assert resolved == abstract_path
 
 
-def test_resolve_ghost_abstract_path_keeps_legacy_ageoa_compatibility(
+def test_resolve_ghost_abstract_path_uses_sciona_atoms_namespace(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
-    repo_root = tmp_path / "ageo-atoms"
-    abstract_path = repo_root / "ageoa" / "ghost" / "abstract.py"
+    repo_root = tmp_path / "sciona-atoms"
+    abstract_path = repo_root / "src" / "sciona" / "atoms" / "ghost" / "abstract.py"
     _write(
         abstract_path,
         """
@@ -118,7 +118,7 @@ class AbstractScalar: ...
         lambda: (repo_root,),
     )
 
-    resolved = emitter._resolve_ghost_abstract_path("ageoa")
+    resolved = emitter._resolve_ghost_abstract_path("sciona.atoms")
 
     assert resolved == abstract_path
 

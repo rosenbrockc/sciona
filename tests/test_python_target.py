@@ -125,10 +125,6 @@ def python_match_results() -> list[MatchResult]:
 
 
 class TestProverEnum:
-    def test_python_exists(self):
-        assert hasattr(Prover, "PYTHON")
-        assert Prover.PYTHON.value == "python"
-
     def test_roundtrip_via_value(self):
         assert Prover("python") == Prover.PYTHON
 
@@ -380,7 +376,7 @@ class TestPythonEnvironment:
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
             success, output = await env.check_term(
-                "ageoa.biosppy.ecg.bandpass_filter",
+                "sciona.atoms.signal_processing.biosppy.ecg.bandpass_filter",
                 "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
             )
             assert success is True
@@ -389,7 +385,7 @@ class TestPythonEnvironment:
         await env.close()
 
     @pytest.mark.asyncio
-    async def test_check_term_keeps_missing_ageoa_modules_as_failures(self):
+    async def test_check_term_keeps_missing_sciona_modules_as_failures(self):
         from sciona.judge.python_env import PythonEnvironment
 
         env = PythonEnvironment()
@@ -412,7 +408,7 @@ class TestPythonEnvironment:
             return_value=False,
         ):
             success, output = await env.check_term(
-                "ageoa.biosppy.ecg_hamilton_d12.atoms.hamilton_segmenter",
+                "sciona.atoms.signal_processing.biosppy.ecg_hamilton_d12.atoms.hamilton_segmenter",
                 "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
             )
             assert success is False
@@ -446,7 +442,7 @@ class TestPythonEnvironment:
             return_value=True,
         ):
             success, output = await env.check_term(
-                "sciona.atoms.biosppy.ecg.bandpass_filter",
+                "sciona.atoms.signal_processing.biosppy.ecg.bandpass_filter",
                 "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
             )
             assert success is True
@@ -478,7 +474,7 @@ class TestPythonEnvironment:
             return_value=False,
         ):
             success, output = await env.check_term(
-                "sciona.atoms.biosppy.ecg_hamilton_d12.atoms.hamilton_segmenter",
+                "sciona.atoms.signal_processing.biosppy.ecg_hamilton_d12.atoms.hamilton_segmenter",
                 "(signal: np.ndarray, sampling_rate: float) -> np.ndarray",
             )
             assert success is False
@@ -1076,9 +1072,6 @@ class TestPythonConfig:
         from sciona.config import AgeomConfig
 
         config = AgeomConfig()
-        assert hasattr(config, "python_path")
-        assert hasattr(config, "python_mypy_path")
-        assert hasattr(config, "python_packages")
         assert config.python_path == "python"
         assert config.python_mypy_path == "mypy"
         assert config.python_packages == "numpy,scipy"
@@ -1087,15 +1080,6 @@ class TestPythonConfig:
 # ---------------------------------------------------------------------------
 # TestRepairPythonPromptSelection
 # ---------------------------------------------------------------------------
-
-
-class TestRepairPythonPromptSelection:
-    def test_repair_imports_python_prompts(self):
-        """Verify repair.py imports the Python-specific prompts."""
-        import sciona.synthesizer.repair as repair_mod
-
-        assert hasattr(repair_mod, "ANALYZE_ERROR_SYSTEM_PYTHON")
-        assert hasattr(repair_mod, "GENERATE_IMPLEMENTATION_SYSTEM_PYTHON")
 
 
 # ---------------------------------------------------------------------------

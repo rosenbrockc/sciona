@@ -47,7 +47,7 @@ python-target = [
     "docstring-parser>=0.15",
 ]
 ghost = [
-    "ageoa>=0.1.0",
+    "sciona-atoms>=0.1.0",
 ]
 graph = [
     "neo4j>=5.0",

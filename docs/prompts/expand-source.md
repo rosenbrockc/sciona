@@ -1,6 +1,6 @@
 # Expand Catalog via External Source Registry
 
-Add hand-authored `@register_atom` atoms to the `ageo-atoms` package
+Add hand-authored `@register_atom` atoms to the `sciona.atoms` package
 (or a new external source).  Use this when you are writing atoms manually
 following the full INGESTION.md specification.
 
@@ -8,19 +8,19 @@ following the full INGESTION.md specification.
 
 ## Full reference
 
-Read `../ageo-atoms/INGESTION.md` — it is the ground truth for atom quality
+Read `../sciona-atoms/INGESTION.md` — it is the ground truth for atom quality
 and covers signatures, contracts, witnesses, CDG schema, tests, and the
 complete checklist.
 
 ## Existing packages
 
-Check `../ageo-atoms/ageoa/` for 20+ existing domain packages before
+Check `../sciona-atoms/sciona/atoms/` for existing domain packages before
 creating a new one.  See the list in the router prompt.
 
 ## Creating a new domain package
 
 ```
-../ageo-atoms/ageoa/mydomain/
+../sciona-atoms/sciona/atoms/mydomain/
     __init__.py        # re-exports atoms, __all__
     atoms.py           # @register_atom decorated functions
     witnesses.py       # ghost witnesses using abstract types
@@ -34,7 +34,7 @@ Follow `INGESTION.md` for:
 - Ghost witnesses using abstract types only
 - Google-style docstrings with `Args:` and `Returns:`
 - Tests (5 categories per atom)
-- Module exports reaching `ageoa/__init__.py`
+- Module exports reaching `sciona/atoms/__init__.py`
 
 ## How sources are loaded
 
@@ -42,16 +42,16 @@ Follow `INGESTION.md` for:
 
 ```yaml
 sources:
-  - name: ageo-atoms
-    path: ../ageo-atoms
-    package: ageoa
+  - name: sciona-atoms
+    path: ../sciona-atoms
+    package: sciona.atoms
 ```
 
-`seed_catalog_from_sources` imports `ageoa`, triggering `@register_atom`
+`seed_catalog_from_sources` imports `sciona.atoms`, triggering `@register_atom`
 decorators, scans `**/*cdg*.json` for metadata, and derives
 `AlgorithmicPrimitive` entries with de-duplication.
 
-## Adding a non-ageo-atoms source
+## Adding a non-sciona-atoms source
 
 Add to `sources.yml`:
 
@@ -62,7 +62,7 @@ Add to `sources.yml`:
 ```
 
 The package needs `ghost/registry.py` with a `REGISTRY` dict and
-`register_atom` decorator (same pattern as `ageoa`).
+`register_atom` decorator (same pattern as `sciona.atoms`).
 
 ## Verify
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sciona.architect.graph_rewriter import GraphRewriter
+from sciona.architect.graph_rewriter import GraphRewriter, Morphism, RewriteRule
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import (
     AlgorithmicNode,
@@ -20,6 +20,7 @@ from sciona.architect.semantic_graph import (
     insert_node_before_root_input_consumer,
     project_semantic_cdg,
 )
+from sciona.architect.semantic_rewrites import build_boundary_interposition_callback
 from sciona.synthesizer.assembler import Assembler
 from sciona.types import (
     CandidateMatch,
@@ -28,9 +29,6 @@ from sciona.types import (
     PDGNode,
     Prover,
     VerificationResult,
-)
-from sciona.principal.expansion_rules.signal_event_rate import (
-    _build_insert_jump_removal_before_filter,
 )
 
 
@@ -243,9 +241,99 @@ def test_project_semantic_cdg_prefers_declared_cross_family_data_kinds() -> None
     assert feature_edge.data_kind == SemanticDataKind.FEATURE_VECTOR
 
 
+def _build_synthetic_boundary_fallback_rule() -> RewriteRule:
+    """Build a synthetic DPO rule that requires boundary-fallback application.
+
+    The LHS contains a wildcard "source" node wired to the filter node via
+    an edge.  Because the CDG under test feeds the filter from a *root input
+    boundary* (not from another concrete node), ``_find_match`` will return
+    ``None``, forcing the rewriter through the ``semantic_apply`` callback
+    which uses boundary interposition.
+    """
+    _sig_in = IOSpec(name="signal", type_desc="np.ndarray")
+    _rate_in = IOSpec(name="sampling_rate", type_desc="float")
+    _sig_out = IOSpec(name="signal", type_desc="np.ndarray")
+
+    src_l = AlgorithmicNode(
+        node_id="src",
+        name="source",
+        description="source",
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.ATOMIC,
+        inputs=[],
+        outputs=[],
+    )
+    filt_l = AlgorithmicNode(
+        node_id="filt",
+        name="filter",
+        description="filter",
+        concept_type=ConceptType.SIGNAL_FILTER,
+        status=NodeStatus.ATOMIC,
+        matched_primitive="filter_signal_for_detection",
+        inputs=[],
+        outputs=[],
+    )
+    lhs = CDGExport(
+        nodes=[src_l, filt_l],
+        edges=[
+            DependencyEdge(
+                source_id="src", target_id="filt",
+                output_name="signal", input_name="signal",
+                source_type="np.ndarray", target_type="np.ndarray",
+            ),
+        ],
+    )
+    interface = CDGExport(nodes=[src_l, filt_l], edges=[])
+
+    jump_r = AlgorithmicNode(
+        node_id="jump",
+        name="Remove Signal Jumps",
+        description="Remove step discontinuities from raw signal.",
+        concept_type=ConceptType.SIGNAL_FILTER,
+        status=NodeStatus.ATOMIC,
+        matched_primitive="remove_signal_jumps",
+        inputs=[_sig_in, _rate_in],
+        outputs=[_sig_out],
+        type_signature="np.ndarray, float -> np.ndarray",
+    )
+    rhs = CDGExport(
+        nodes=[src_l, jump_r, filt_l],
+        edges=[
+            DependencyEdge(
+                source_id="src", target_id="jump",
+                output_name="signal", input_name="signal",
+                source_type="np.ndarray", target_type="np.ndarray",
+            ),
+            DependencyEdge(
+                source_id="jump", target_id="filt",
+                output_name="signal", input_name="signal",
+                source_type="np.ndarray", target_type="np.ndarray",
+            ),
+        ],
+    )
+
+    return RewriteRule(
+        name="synthetic_insert_before_filter",
+        lhs=lhs,
+        rhs=rhs,
+        interface=interface,
+        l_morphism=Morphism(node_map={"src": "src", "filt": "filt"}, edge_map={}),
+        r_morphism=Morphism(node_map={"src": "src", "filt": "filt"}, edge_map={}),
+        priority=2,
+        anchor_type="filter_signal_for_detection",
+        semantic_apply=build_boundary_interposition_callback(
+            target_primitive="filter_signal_for_detection",
+            boundary_input_name="signal",
+            insert_node=jump_r,
+            target_input_name="signal",
+            insert_output_name="signal",
+        ),
+    )
+
+
 def test_graph_rewriter_uses_boundary_fallback_for_root_input_rewrite() -> None:
     cdg = _root_boundary_signal_rate_cdg()
-    rule = _build_insert_jump_removal_before_filter()
+    rule = _build_synthetic_boundary_fallback_rule()
 
     assert GraphRewriter()._find_match(rule, cdg) is None
     result = GraphRewriter().apply_rule(rule, cdg)

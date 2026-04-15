@@ -278,3 +278,93 @@ class TestSaveLoadJSON:
             data = json.load(f)
         assert "nodes" in data
         assert "edges" in data
+
+
+class TestValidateHandoffStrictSilentFailures:
+    """Tests targeting silent-failure paths in validate_handoff_strict."""
+
+    def test_validate_handoff_strict_catches_orphan_nodes(self):
+        """An atomic node unreachable from any root must be flagged as orphan."""
+        from sciona.architect.handoff import validate_handoff_strict
+
+        root = AlgorithmicNode(
+            node_id="root",
+            name="Root Task",
+            description="Top-level task",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            status=NodeStatus.DECOMPOSED,
+            children=["child_a"],
+            depth=0,
+        )
+        child_a = AlgorithmicNode(
+            node_id="child_a",
+            parent_id="root",
+            name="Connected Child",
+            description="Reachable from root",
+            concept_type=ConceptType.SORTING,
+            status=NodeStatus.ATOMIC,
+            type_signature="list[int] -> list[int]",
+            inputs=[IOSpec(name="arr", type_desc="list[int]")],
+            outputs=[IOSpec(name="sorted", type_desc="list[int]")],
+            depth=1,
+        )
+        orphan = AlgorithmicNode(
+            node_id="orphan_node",
+            parent_id="nonexistent_parent",  # parent_id set but not in graph
+            name="Orphan Island",
+            description="Not connected to any root",
+            concept_type=ConceptType.SEARCHING,
+            status=NodeStatus.ATOMIC,
+            type_signature="int -> bool",
+            inputs=[IOSpec(name="x", type_desc="int")],
+            outputs=[IOSpec(name="found", type_desc="bool")],
+            depth=1,
+        )
+
+        cdg = CDGExport(
+            nodes=[root, child_a, orphan],
+            edges=[],
+        )
+
+        issues = validate_handoff_strict(cdg)
+        orphan_issues = [i for i in issues if "orphan" in i.lower() or "Orphan" in i]
+        assert len(orphan_issues) >= 1, f"Expected orphan issue, got: {issues}"
+        assert "orphan_node" in orphan_issues[0] or "Orphan Island" in orphan_issues[0]
+
+    def test_validate_handoff_strict_catches_missing_io_specs(self):
+        """An atomic node with no inputs and no outputs must be flagged."""
+        from sciona.architect.handoff import validate_handoff_strict
+
+        root = AlgorithmicNode(
+            node_id="root",
+            name="Root Task",
+            description="Top-level task",
+            concept_type=ConceptType.DIVIDE_AND_CONQUER,
+            status=NodeStatus.DECOMPOSED,
+            children=["bare_atom"],
+            depth=0,
+        )
+        bare_atom = AlgorithmicNode(
+            node_id="bare_atom",
+            parent_id="root",
+            name="Bare Atom",
+            description="An atomic node with no IO specs",
+            concept_type=ConceptType.CUSTOM,
+            status=NodeStatus.ATOMIC,
+            type_signature="A -> B",
+            # inputs and outputs intentionally omitted (empty lists)
+            depth=1,
+        )
+
+        cdg = CDGExport(
+            nodes=[root, bare_atom],
+            edges=[],
+        )
+
+        issues = validate_handoff_strict(cdg)
+        input_issues = [i for i in issues if "no inputs" in i]
+        output_issues = [i for i in issues if "no outputs" in i]
+        assert len(input_issues) >= 1, f"Expected 'no inputs' issue, got: {issues}"
+        assert len(output_issues) >= 1, f"Expected 'no outputs' issue, got: {issues}"
+        assert "bare_atom" in input_issues[0]
+        assert "bare_atom" in output_issues[0]

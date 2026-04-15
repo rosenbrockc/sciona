@@ -265,7 +265,7 @@ class TestCertificate:
     def test_prepare_python_package_source_adds_mypy_guards(self):
         source = (
             "from __future__ import annotations\n"
-            "import ageoa\n"
+            "import sciona\n"
             "import numpy\n"
             "import scipy\n"
             "def foo(x: np.ndarray) -> 'concept type':\n"

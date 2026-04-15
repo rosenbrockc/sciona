@@ -25,6 +25,7 @@ class MatchCase:
     case_id: str
     cdg_path: Path
     witness_test_path: Path
+    historical: bool
     expected_matches: dict[str, str]
     aliases: dict[str, set[str]]
     live_runs: int
@@ -155,6 +156,7 @@ def load_match_cases(repo_root: Path, fixture_path: Path) -> list[MatchCase]:
                 case_id=raw["id"],
                 cdg_path=(repo_root / raw["cdg_path"]).resolve(),
                 witness_test_path=(repo_root / raw["witness_test_path"]).resolve(),
+                historical=bool(raw.get("historical", False)),
                 expected_matches=dict(raw.get("expected_matches", {})),
                 aliases=aliases,
                 live_runs=int(raw.get("live_runs", 3)),
@@ -169,16 +171,16 @@ def load_case_pdg_nodes(case: MatchCase) -> list[PDGNode]:
     return to_pdg_nodes(cdg, prover=Prover.PYTHON, strict=True)
 
 
-def build_ageo_atoms_declarations(ageo_atoms_root: Path) -> list[Declaration]:
+def build_sciona_atoms_declarations(sciona_atoms_root: Path) -> list[Declaration]:
     declarations: list[Declaration] = []
-    ageoa_root = ageo_atoms_root / "ageoa"
-    for py_path in sorted(ageoa_root.rglob("*.py")):
+    sciona_atoms_root_pkg = sciona_atoms_root / "src" / "sciona" / "atoms"
+    for py_path in sorted(sciona_atoms_root_pkg.rglob("*.py")):
         if py_path.name == "__init__.py":
             continue
         if "witness" in py_path.name:
             continue
 
-        rel = py_path.relative_to(ageo_atoms_root).with_suffix("")
+        rel = py_path.relative_to(sciona_atoms_root).with_suffix("")
         module_name = ".".join(rel.parts)
 
         try:

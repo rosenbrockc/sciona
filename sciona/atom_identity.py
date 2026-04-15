@@ -1,7 +1,7 @@
 """Shared atom identity and provider helpers.
 
-This module is the thin migration seam between the current single-package
-`ageoa` world and the intended federated `sciona.atoms.*` future.
+This module manages atom-package namespace resolution across the federated
+``sciona.atoms.*`` provider ecosystem.
 """
 
 from __future__ import annotations
@@ -10,19 +10,15 @@ import os
 from pathlib import Path
 from typing import Iterable
 
-LEGACY_ATOM_PACKAGE_PREFIX = "ageoa"
 FEDERATED_ATOM_NAMESPACE_PREFIX = "sciona.atoms"
-DEFAULT_PROVIDER_ID = "core.ageo_atoms"
+DEFAULT_PROVIDER_ID = "core.sciona_atoms"
 MATCHER_REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_NAMESPACE_PROVIDER_ROOT = (
     MATCHER_REPO_ROOT.parent / "sciona-atoms"
 ).resolve()
-DEFAULT_PROVIDER_ROOT = (
-    MATCHER_REPO_ROOT.parent / "ageo-atoms"
-).resolve()
+DEFAULT_PROVIDER_ROOT = DEFAULT_NAMESPACE_PROVIDER_ROOT
 ATOM_PROVIDER_ID_PREFIX_ENV = "SCIONA_ATOM_PROVIDER_PREFIX_TO_ID"
 ATOM_METADATA_GLOB_CANDIDATES: tuple[str, ...] = (
-    "ageoa/**/heuristic_metadata.json",
     "sciona/atoms/**/heuristic_metadata.json",
     "src/sciona/atoms/**/heuristic_metadata.json",
 )
@@ -93,7 +89,6 @@ def known_atom_package_prefixes() -> tuple[str, ...]:
     return _normalized_prefixes(
         (
             *_configured_atom_package_prefixes(),
-            LEGACY_ATOM_PACKAGE_PREFIX,
             FEDERATED_ATOM_NAMESPACE_PREFIX,
         )
     )
@@ -131,10 +126,8 @@ def candidate_atom_provider_roots() -> tuple[Path, ...]:
 
     Precedence is:
     1. `SCIONA_ATOM_PROVIDER_ROOTS`
-    2. `SCIONA_AGEO_ATOMS_ROOT`
-    3. local-path provider repos declared in `sources.yml`
-    4. the namespace pilot sibling `../sciona-atoms` root
-    5. the legacy sibling `../ageo-atoms` root
+    2. local-path provider repos declared in `sources.yml`
+    3. the namespace pilot sibling `../sciona-atoms` root
     """
     roots: list[Path] = []
     configured_multi = str(os.environ.get("SCIONA_ATOM_PROVIDER_ROOTS", "") or "").strip()
@@ -144,12 +137,8 @@ def candidate_atom_provider_roots() -> tuple[Path, ...]:
             for token in configured_multi.split(os.pathsep)
             if token.strip()
         )
-    configured_legacy = str(os.environ.get("SCIONA_AGEO_ATOMS_ROOT", "") or "").strip()
-    if configured_legacy:
-        roots.append(Path(configured_legacy).expanduser())
     roots.extend(_sources_yml_provider_roots())
     roots.append(DEFAULT_NAMESPACE_PROVIDER_ROOT)
-    roots.append(DEFAULT_PROVIDER_ROOT)
     deduped: list[Path] = []
     seen: set[Path] = set()
     for root in roots:
@@ -176,8 +165,6 @@ def atom_provider_id_for_fqdn(import_fqdn: str) -> str:
             return provider_id
 
     matched_prefix, _ = _match_known_atom_prefix(text)
-    if matched_prefix == LEGACY_ATOM_PACKAGE_PREFIX:
-        return DEFAULT_PROVIDER_ID
     if matched_prefix == FEDERATED_ATOM_NAMESPACE_PREFIX:
         parts = text.split(".")
         if len(parts) >= 3:

@@ -296,7 +296,7 @@ def test_e2e_benchmark_policy_reports_enriched_cdg_and_asset_readiness(
                                 "source_kind": "shared_asset",
                                 "migration_readiness_status": "ready_for_migration",
                                 "migration_readiness_ready": True,
-                                "migration_readiness_target_repository": "../ageo-atoms",
+                                "migration_readiness_target_repository": "../sciona-atoms",
                                 "migration_readiness_target_scope": "shared_family_asset",
                                 "migration_readiness_check_count": 2,
                                 "migration_readiness_required_check_count": 2,

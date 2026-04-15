@@ -361,7 +361,7 @@ class TestDashboardAPI:
                     "source_witness_doc_fallbacks": 30,
                     "source_witness_signature_fallbacks": 18,
                     "source_breakdown": {
-                        "ageo-atoms": {
+                        "sciona-atoms": {
                             "added": 127,
                             "live_registry_candidates": 100,
                             "ast_candidates": 27,
@@ -409,7 +409,7 @@ class TestDashboardAPI:
         assert data["catalog_alignment_summary"]["source_count"] == 2
         assert data["catalog_alignment_summary"]["top_sources"] == [
             {
-                "source": "ageo-atoms",
+                "source": "sciona-atoms",
                 "added": 127,
                 "live_registry_candidates": 100,
                 "ast_candidates": 27,

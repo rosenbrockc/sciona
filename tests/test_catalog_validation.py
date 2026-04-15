@@ -14,7 +14,7 @@ from sciona.sources import AtomSource, SourcesConfig
 async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path):
     sources = SourcesConfig(
         sources=[
-            AtomSource(name="ageo-atoms", package="ageoa", path="../ageo-atoms"),
+            AtomSource(name="sciona-atoms", package="sciona", path="../sciona-atoms"),
             AtomSource(name="hpy-atoms", package="hpyatoms", path="~/codes/hpy-atoms"),
         ]
     )
@@ -30,12 +30,12 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
         report.added = 7
         report.merged = 2
         report.source_breakdown = {
-            "ageo-atoms": {"ast_candidates": 8, "added": 5},
+            "sciona-atoms": {"ast_candidates": 8, "added": 5},
             "hpy-atoms": {"ast_candidates": 3, "added": 2},
         }
         return 7
 
-    for name in ("ageo-atoms", "hpy-atoms"):
+    for name in ("sciona-atoms", "hpy-atoms"):
         (tmp_path / name).mkdir()
 
     monkeypatch.setattr("sciona.catalog_validation.resolve_source", _resolve)
@@ -79,7 +79,7 @@ async def test_run_catalog_validation_writes_report(monkeypatch, tmp_path: Path)
     assert "registry_only=1" in summary["alignment_summary"]
     assert Path(summary["report"]).exists()
     payload = json.loads(Path(summary["report"]).read_text(encoding="utf-8"))
-    assert payload["source_breakdown"]["ageo-atoms"]["ast_candidates"] == 8
+    assert payload["source_breakdown"]["sciona-atoms"]["ast_candidates"] == 8
     assert payload["alignment"]["registry_only_total"] == 1
 
 
@@ -89,7 +89,7 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
 ):
     sources = SourcesConfig(
         sources=[
-            AtomSource(name="ageo-atoms", package="ageoa", path="../ageo-atoms"),
+            AtomSource(name="sciona-atoms", package="sciona", path="../sciona-atoms"),
             AtomSource(name="missing-atoms", package="missingatoms", path="~/codes/missing-atoms"),
         ]
     )
@@ -104,12 +104,12 @@ async def test_run_catalog_validation_flags_missing_and_zero_candidate_sources(
         report.total_candidates = 3
         report.added = 3
         report.source_breakdown = {
-            "ageo-atoms": {"ast_candidates": 3, "added": 3},
+            "sciona-atoms": {"ast_candidates": 3, "added": 3},
             "missing-atoms": {"ast_candidates": 0, "added": 0},
         }
         return 3
 
-    (tmp_path / "ageo-atoms").mkdir()
+    (tmp_path / "sciona-atoms").mkdir()
     monkeypatch.setattr("sciona.catalog_validation.resolve_source", _resolve)
     monkeypatch.setattr("sciona.catalog_validation.seed_catalog_from_sources", _seed)
     monkeypatch.setattr(
@@ -154,7 +154,7 @@ async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
 ):
     sources = SourcesConfig(
         sources=[
-            AtomSource(name="ageo-atoms", package="ageoa", path="../ageo-atoms"),
+            AtomSource(name="sciona-atoms", package="sciona", path="../sciona-atoms"),
         ]
     )
 
@@ -168,11 +168,11 @@ async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
         report.total_candidates = 5
         report.added = 5
         report.source_breakdown = {
-            "ageo-atoms": {"ast_candidates": 5, "added": 5},
+            "sciona-atoms": {"ast_candidates": 5, "added": 5},
         }
         return 5
 
-    (tmp_path / "ageo-atoms").mkdir()
+    (tmp_path / "sciona-atoms").mkdir()
     monkeypatch.setattr("sciona.catalog_validation.resolve_source", _resolve)
     monkeypatch.setattr("sciona.catalog_validation.seed_catalog_from_sources", _seed)
     monkeypatch.setattr(
@@ -184,11 +184,11 @@ async def test_run_catalog_validation_fails_on_critical_alignment_drift_only(
             "ast_only_total": 1,
             "highest_severity": "critical",
             "severity_counts": {"healthy": 0, "medium": 0, "high": 0, "critical": 1},
-            "drift_sources": ["ageo-atoms"],
-            "registry_error_sources": ["ageo-atoms"],
+            "drift_sources": ["sciona-atoms"],
+            "registry_error_sources": ["sciona-atoms"],
             "rows": [
                 {
-                    "source": "ageo-atoms",
+                    "source": "sciona-atoms",
                     "severity": "critical",
                     "registry_only_count": 0,
                     "ast_only_count": 1,

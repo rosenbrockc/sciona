@@ -181,17 +181,17 @@ class TestHunterHappyPath:
             prover=Prover.PYTHON,
         )
         pronto = Declaration(
-            name="ageoa.pronto.blip_filter.atoms.r_peak_detection",
+            name="sciona.atoms.robotics.pronto.blip_filter.atoms.r_peak_detection",
             type_signature="(filtered: np.ndarray) -> np.ndarray",
-            source_lib="ageoa.pronto.blip_filter.atoms",
+            source_lib="sciona.atoms.robotics.pronto.blip_filter.atoms",
             docstring="Detect peaks in a filtered signal.",
             raw_code="def r_peak_detection(filtered):\n    fs = 360.0\n    return filtered\n",
             prover=Prover.PYTHON,
         )
         biosppy = Declaration(
-            name="ageoa.biosppy.ecg.r_peak_detection",
+            name="sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection",
             type_signature="(filtered: np.ndarray, sampling_rate: float = 1000.0) -> np.ndarray",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Detect R-peaks in an ECG waveform.",
             raw_code=(
                 "def r_peak_detection(filtered, sampling_rate=1000.0):\n"
@@ -201,7 +201,9 @@ class TestHunterHappyPath:
         )
 
         index = _make_mock_index([pronto, biosppy])
-        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.r_peak_detection"})
+        oracle = _make_mock_oracle(
+            {"sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection"}
+        )
         llm = _make_mock_llm(rank_response="[0, 1]")
 
         agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
@@ -211,11 +213,11 @@ class TestHunterHappyPath:
         assert result.verified_match is not None
         assert (
             result.verified_match.candidate.declaration.name
-            == "ageoa.biosppy.ecg.r_peak_detection"
+            == "sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection"
         )
 
     @pytest.mark.asyncio
-    async def test_live_catalog_reconciles_stale_ageoa_declarations(self):
+    async def test_live_catalog_reconciles_stale_sciona_declarations(self):
         from sciona.hunter.graph import HunterAgent
 
         pdg_node = PDGNode(
@@ -225,16 +227,16 @@ class TestHunterHappyPath:
             prover=Prover.PYTHON,
         )
         stale_dead = Declaration(
-            name="ageoa.biosppy.ecg_hamilton.atoms.hamilton_segmentation",
+            name="sciona.atoms.signal_processing.biosppy.ecg_hamilton.atoms.hamilton_segmentation",
             type_signature="(signal: np.ndarray, sampling_rate: int) -> np.ndarray",
-            source_lib="ageoa.biosppy.ecg_hamilton.atoms",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg_hamilton.atoms",
             docstring="Dead stale declaration from an old index snapshot.",
             prover=Prover.PYTHON,
         )
         stale_live = Declaration(
-            name="ageoa.biosppy.ecg.r_peak_detection",
+            name="sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection",
             type_signature="(filtered: np.ndarray, state: ECGPipelineState) -> tuple[np.ndarray, ECGPipelineState]",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Old stateful ECG declaration.",
             prover=Prover.PYTHON,
         )
@@ -243,7 +245,7 @@ class TestHunterHappyPath:
         catalog.add(
             AlgorithmicPrimitive(
                 name="r_peak_detection",
-                source="ageo-atoms",
+                source="sciona-atoms",
                 category=ConceptType.ANALYSIS,
                 description="Detect R-peaks from a filtered ECG waveform using the sampling rate.",
                 inputs=[
@@ -261,7 +263,9 @@ class TestHunterHappyPath:
         )
 
         index = _make_mock_index([stale_dead, stale_live])
-        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.r_peak_detection"})
+        oracle = _make_mock_oracle(
+            {"sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection"}
+        )
         llm = _make_mock_llm(rank_response="[0]")
 
         agent = HunterAgent(
@@ -275,7 +279,7 @@ class TestHunterHappyPath:
 
         assert result.success
         assert [c.declaration.name for c in result.all_candidates] == [
-            "ageoa.biosppy.ecg.r_peak_detection"
+            "sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection"
         ]
         assert result.verified_match is not None
         assert "sampling_rate" in result.verified_match.candidate.declaration.type_signature
@@ -355,14 +359,16 @@ class TestHunterHappyPath:
             statement="Remove implausible events before downstream rate estimation.",
             informal_desc="Clean event markers that create unstable intervals.",
             prover=Prover.PYTHON,
-            context={"matched_primitive": "ageoa.biosppy.ecg.reject_outlier_intervals"},
+            context={
+                "matched_primitive": "sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals"
+            },
         )
 
         catalog = PrimitiveCatalog()
         catalog.add(
             AlgorithmicPrimitive(
                 name="reject_outlier_intervals",
-                source="ageo-atoms",
+                source="sciona-atoms",
                 category=ConceptType.SIGNAL_FILTER,
                 description="Remove events that induce implausible adjacent intervals.",
                 inputs=[
@@ -375,7 +381,9 @@ class TestHunterHappyPath:
         )
 
         index = _make_mock_index([])
-        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.reject_outlier_intervals"})
+        oracle = _make_mock_oracle(
+            {"sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals"}
+        )
         llm = _make_mock_llm(rank_response="[0]")
 
         agent = HunterAgent(
@@ -391,7 +399,7 @@ class TestHunterHappyPath:
         assert result.verified_match is not None
         assert (
             result.verified_match.candidate.declaration.name
-            == "ageoa.biosppy.ecg.reject_outlier_intervals"
+            == "sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals"
         )
 
     @pytest.mark.asyncio
@@ -406,22 +414,24 @@ class TestHunterHappyPath:
             context={"matched_primitive": "detect_peaks_in_signal"},
         )
         detector = Declaration(
-            name="ageoa.biosppy.ecg.r_peak_detection",
+            name="sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection",
             type_signature="(filtered: np.ndarray, sampling_rate: float) -> np.ndarray",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Detect R-peaks in a filtered ECG waveform.",
             prover=Prover.PYTHON,
         )
         rate = Declaration(
-            name="ageoa.biosppy.ecg.heart_rate_computation",
+            name="sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation",
             type_signature="(rpeaks: np.ndarray, sampling_rate: float) -> tuple[np.ndarray, np.ndarray]",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Compute heart rate from R-peak intervals.",
             prover=Prover.PYTHON,
         )
 
         index = _make_mock_index([rate, detector])
-        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.r_peak_detection"})
+        oracle = _make_mock_oracle(
+            {"sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection"}
+        )
         llm = _make_mock_llm(rank_response="[0, 1]")
 
         agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
@@ -443,22 +453,24 @@ class TestHunterHappyPath:
             context={"matched_primitive": "detect_peaks_in_signal"},
         )
         detector = Declaration(
-            name="ageoa.pronto.blip_filter.atoms.r_peak_detection",
+            name="sciona.atoms.robotics.pronto.blip_filter.atoms.r_peak_detection",
             type_signature="(filtered: np.ndarray) -> np.ndarray",
-            source_lib="ageoa.pronto.blip_filter.atoms",
+            source_lib="sciona.atoms.robotics.pronto.blip_filter.atoms",
             docstring="Detect R-peaks in a filtered ECG waveform.",
             prover=Prover.PYTHON,
         )
         filt = Declaration(
-            name="ageoa.pronto.blip_filter.atoms.bandpass_filter",
+            name="sciona.atoms.robotics.pronto.blip_filter.atoms.bandpass_filter",
             type_signature="(signal: np.ndarray) -> np.ndarray",
-            source_lib="ageoa.pronto.blip_filter.atoms",
+            source_lib="sciona.atoms.robotics.pronto.blip_filter.atoms",
             docstring="Apply bandpass filtering to an ECG signal.",
             prover=Prover.PYTHON,
         )
 
         index = _make_mock_index([filt, detector])
-        oracle = _make_mock_oracle({"ageoa.pronto.blip_filter.atoms.r_peak_detection"})
+        oracle = _make_mock_oracle(
+            {"sciona.atoms.robotics.pronto.blip_filter.atoms.r_peak_detection"}
+        )
         llm = _make_mock_llm(rank_response="[0, 1]")
 
         agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
@@ -508,22 +520,24 @@ class TestHunterHappyPath:
             context={"matched_primitive": "compute_event_rate"},
         )
         template = Declaration(
-            name="ageoa.biosppy.ecg.template_extraction",
+            name="sciona.atoms.signal_processing.biosppy.ecg.template_extraction",
             type_signature="(filtered: np.ndarray, rpeaks: np.ndarray) -> tuple[np.ndarray, np.ndarray]",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Extract individual heartbeat waveform templates around each R-peak.",
             prover=Prover.PYTHON,
         )
         rate = Declaration(
-            name="ageoa.biosppy.ecg.heart_rate_computation",
+            name="sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation",
             type_signature="(rpeaks: np.ndarray, sampling_rate: float) -> tuple[np.ndarray, np.ndarray]",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Compute heart rate from R-peak intervals.",
             prover=Prover.PYTHON,
         )
 
         index = _make_mock_index([template, rate])
-        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.heart_rate_computation"})
+        oracle = _make_mock_oracle(
+            {"sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation"}
+        )
         llm = _make_mock_llm(rank_response="[0, 1]")
 
         agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
@@ -545,22 +559,24 @@ class TestHunterHappyPath:
             context={"matched_primitive": "filter_signal_for_detection"},
         )
         template = Declaration(
-            name="ageoa.biosppy.ecg.template_extraction",
+            name="sciona.atoms.signal_processing.biosppy.ecg.template_extraction",
             type_signature="(filtered: np.ndarray, rpeaks: np.ndarray) -> tuple[np.ndarray, np.ndarray]",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Extract individual heartbeat waveform templates around each R-peak.",
             prover=Prover.PYTHON,
         )
         filt = Declaration(
-            name="ageoa.biosppy.ecg.bandpass_filter",
+            name="sciona.atoms.signal_processing.biosppy.ecg.bandpass_filter",
             type_signature="(signal: np.ndarray) -> np.ndarray",
-            source_lib="ageoa.biosppy.ecg",
+            source_lib="sciona.atoms.signal_processing.biosppy.ecg",
             docstring="Apply FIR bandpass filtering to an ECG waveform.",
             prover=Prover.PYTHON,
         )
 
         index = _make_mock_index([template, filt])
-        oracle = _make_mock_oracle({"ageoa.biosppy.ecg.bandpass_filter"})
+        oracle = _make_mock_oracle(
+            {"sciona.atoms.signal_processing.biosppy.ecg.bandpass_filter"}
+        )
         llm = _make_mock_llm(rank_response="[0, 1]")
 
         agent = HunterAgent(index=index, oracle=oracle, llm=llm, max_iterations=1)
@@ -832,3 +848,116 @@ class TestHunterSharedContext:
 
         assert llm.rank_users
         assert "## Shared Context" in llm.rank_users[0]
+
+
+class TestHunterSilentFailurePaths:
+    """Tests targeting silent-failure paths on critical Hunter pipeline machinery."""
+
+    @pytest.mark.asyncio
+    async def test_verify_topk_all_already_verified_reformulates(self, pdg_node, wrong_decl):
+        """When every candidate is already verified and iteration < max_iterations,
+        VerifyTopK should route to ReformulateQuery (not End)."""
+        from sciona.hunter.nodes import VerifyTopK, ReformulateQuery
+        from pydantic_graph import GraphRunContext
+
+        from sciona.types import CandidateMatch, VerificationResult
+
+        candidate = CandidateMatch(
+            declaration=wrong_decl,
+            score=0.9,
+            retrieval_method="embedding",
+        )
+        # Pre-populate verification_results so every candidate is already verified
+        vr = VerificationResult(
+            candidate=candidate,
+            verified=False,
+            compiler_output="type mismatch",
+        )
+
+        state = HunterState(
+            pdg_node=pdg_node,
+            max_iterations=5,
+            iteration=1,  # well under max_iterations
+        )
+        state.candidates_found = [candidate]
+        state.verification_results = [vr]
+
+        index = _make_mock_index([wrong_decl])
+        oracle = _make_mock_oracle(set())
+        llm = _make_mock_llm()
+
+        from sciona.hunter.deps import HunterDeps
+        deps = HunterDeps(index=index, oracle=oracle, llm=llm)
+        ctx = GraphRunContext(state=state, deps=deps)
+
+        node = VerifyTopK()
+        result = await node.run(ctx)
+
+        assert isinstance(result, ReformulateQuery), (
+            f"Expected ReformulateQuery when all candidates already verified "
+            f"and iteration < max_iterations, got {type(result).__name__}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_reformulate_llm_parse_failure_falls_back_to_statement(
+        self, pdg_node, wrong_decl
+    ):
+        """When the reformulation LLM returns unparseable garbage,
+        ReformulateQuery should fall back to appending pdg_node.statement."""
+        from sciona.hunter.nodes import ReformulateQuery, InitialSearch
+        from pydantic_graph import GraphRunContext
+        from sciona.types import CandidateMatch, VerificationResult
+
+        candidate = CandidateMatch(
+            declaration=wrong_decl,
+            score=0.9,
+            retrieval_method="embedding",
+        )
+        vr = VerificationResult(
+            candidate=candidate,
+            verified=False,
+            compiler_output="type mismatch",
+        )
+
+        state = HunterState(
+            pdg_node=pdg_node,
+            max_iterations=5,
+            iteration=0,
+        )
+        state.queries_tried = ["initial query"]
+        state.candidates_found = [candidate]
+        state.verification_results = [vr]
+        state.compiler_feedback = ["type mismatch"]
+
+        queries_before = list(state.queries_tried)
+
+        # LLM that returns garbage for every call
+        class _GarbageLLM:
+            async def complete(self, system: str, user: str) -> str:
+                return "NOT VALID JSON {{{{garbage!!"
+
+            async def complete_with_grammar(self, system: str, user: str, grammar: str) -> str:
+                return "NOT VALID JSON {{{{garbage!!"
+
+        index = _make_mock_index([wrong_decl])
+        oracle = _make_mock_oracle(set())
+        llm = _GarbageLLM()
+
+        from sciona.hunter.deps import HunterDeps
+        deps = HunterDeps(index=index, oracle=oracle, llm=llm)
+        ctx = GraphRunContext(state=state, deps=deps)
+
+        node = ReformulateQuery()
+        result = await node.run(ctx)
+
+        assert isinstance(result, InitialSearch)
+        # queries_tried should have grown by exactly one entry
+        assert len(state.queries_tried) == len(queries_before) + 1, (
+            f"Expected queries_tried to grow by 1, was {len(queries_before)}, "
+            f"now {len(state.queries_tried)}"
+        )
+        # The fallback entry should equal pdg_node.statement
+        assert state.queries_tried[-1] == pdg_node.statement, (
+            f"Fallback query should be pdg_node.statement "
+            f"({pdg_node.statement!r}), got {state.queries_tried[-1]!r}"
+        )

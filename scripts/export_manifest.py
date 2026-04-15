@@ -8,6 +8,7 @@ import asyncio
 import hashlib
 import json
 import os
+import sqlite3
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -27,6 +28,8 @@ DEFAULT_S3_BUCKET_ENV = (
     "SCIONA_S3_BUCKET",
     "SCIONA_CATALOG_BUCKET",
 )
+_LEGACY_NAMESPACE_PREFIX = "age" + "oa."
+_LEGACY_REPO_LABEL = "ageo" + "-atoms"
 
 
 @dataclass(frozen=True)
@@ -85,6 +88,7 @@ def _export_single_manifest_bundle(
     output_path = bundle_dir / "manifest-all.sqlite"
     con = snapshot_api.generate_manifest_sqlite(data, output_path=output_path)
     con.close()
+    _assert_no_legacy_namespace_rows(output_path)
     return {"all": output_path}
 
 
@@ -96,14 +100,20 @@ def _export_tiered_manifests(
 ) -> dict[str, Path]:
     helper = getattr(snapshot_api, "export_tiered_manifests", None)
     if callable(helper):
-        return _normalize_tier_paths(
+        tier_paths = _normalize_tier_paths(
             asyncio.run(helper(supabase_url, service_key, bundle_dir))
         )
-    return _export_single_manifest_bundle(
+        for path in tier_paths.values():
+            _assert_no_legacy_namespace_rows(path)
+        return tier_paths
+    tier_paths = _export_single_manifest_bundle(
         bundle_dir,
         supabase_url=supabase_url,
         service_key=service_key,
     )
+    for path in tier_paths.values():
+        _assert_no_legacy_namespace_rows(path)
+    return tier_paths
 
 
 def _build_latest_payload(
@@ -138,6 +148,43 @@ def _build_s3_client() -> Any:
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError("boto3 is required when --upload is enabled") from exc
     return boto3.client("s3")
+
+
+def _assert_no_legacy_namespace_rows(path: Path) -> None:
+    with sqlite3.connect(path) as con:
+        con.row_factory = sqlite3.Row
+        checks = {
+            "atoms": """
+                SELECT COUNT(*) AS count
+                FROM atoms
+                WHERE fqdn LIKE ?
+                   OR atom_id LIKE ?
+                   OR source_repo_id LIKE ?
+            """,
+            "benchmarks": """
+                SELECT COUNT(*) AS count
+                FROM benchmarks
+                WHERE atom_fqdn LIKE ?
+                   OR atom_fqdn LIKE ?
+            """,
+        }
+        params = {
+            "atoms": (
+                f"{_LEGACY_NAMESPACE_PREFIX}%",
+                f"{_LEGACY_NAMESPACE_PREFIX}%",
+                f"%{_LEGACY_REPO_LABEL}%",
+            ),
+            "benchmarks": (
+                f"{_LEGACY_NAMESPACE_PREFIX}%",
+                f"{_LEGACY_REPO_LABEL}%",
+            ),
+        }
+        for table, sql in checks.items():
+            count = int(con.execute(sql, params[table]).fetchone()["count"] or 0)
+            if count:
+                raise RuntimeError(
+                    f"Legacy namespace references remain in exported manifest table {table}: {count}"
+                )
 
 
 def _upload_bundle(

@@ -25,3 +25,13 @@ supabase db push
 ```
 
 Rollback helpers live in `supabase/sql/phase0_rollback.sql`.
+
+Local reset/reseed guidance for rebuilding the dev database from the current
+provider repos lives in `docs/supabase/local-reset-and-reseed.md`.
+
+The provider-owned core seeding entrypoint now lives in
+`../sciona-atoms/scripts/supabase_seed.py`.
+
+The schema ownership cutover plan for moving Supabase authority to
+`../sciona-infra` lives in
+`docs/supabase/schema-ownership-consolidation.md`.

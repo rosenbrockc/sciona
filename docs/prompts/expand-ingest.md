@@ -8,7 +8,7 @@ you have a concrete implementation to work from.
 
 ## Full reference
 
-Read these files in `../ageo-atoms/` before proceeding:
+Read these files in `../sciona-atoms/` before proceeding:
 
 | File | What it covers |
 |------|----------------|
@@ -19,10 +19,10 @@ Read these files in `../ageo-atoms/` before proceeding:
 
 ## Ingestion targets
 
-Source repos are cloned in `../ageo-atoms/third_party/`.  The tables below
-summarize high-value targets from `../ageo-atoms/INTEREST.md` (detailed
+Source repos are cloned in `../sciona-atoms/third_party/`.  The tables below
+summarize high-value targets from `../sciona-atoms/INTEREST.md` (detailed
 rationale there).  Targets already ingested have a package in
-`../ageo-atoms/ageoa/` — check before starting.
+`../sciona-atoms/sciona/atoms/` — check before starting.
 
 ### Biosignal processing
 
@@ -84,7 +84,7 @@ rationale there).  Targets already ingested have a package in
 | mint | `RotaryEmbedding` | `third_party/mint/mint/` | RoPE positional encoding |
 | mint | `RowSelfAttention` | `third_party/mint/mint/` | Factorized MSA axial attention |
 
-All paths are relative to `../ageo-atoms/`.
+All paths are relative to `../sciona-atoms/`.
 
 ---
 
@@ -92,47 +92,47 @@ All paths are relative to `../ageo-atoms/`.
 
 ### 1. Pick a target
 
-Choose from the tables above, or check `../ageo-atoms/INTEREST.md` for
+Choose from the tables above, or check `../sciona-atoms/INTEREST.md` for
 full details on why each target is interesting.  Check
-`../ageo-atoms/PENDING.md` for additional candidates.  Verify the target
-hasn't already been ingested by checking `../ageo-atoms/ageoa/`.
+`../sciona-atoms/PENDING.md` for additional candidates.  Verify the target
+hasn't already been ingested by checking `../sciona-atoms/sciona/atoms/`.
 
 ### 2. Run the ingester
 
 ```bash
 # LLM-assisted (default)
 sciona ingest path/to/source.py --class ClassName \
-    --output ../ageo-atoms/ageoa/mydomain
+    --output ../sciona-atoms/sciona/atoms/mydomain
 
 # Deterministic (no LLM)
 sciona ingest path/to/source.py --class ClassName \
-    --procedural --output ../ageo-atoms/ageoa/mydomain
+    --procedural --output ../sciona-atoms/sciona/atoms/mydomain
 
 # With monitoring for large classes
 sciona ingest path/to/source.py --class ClassName \
-    --output ../ageo-atoms/ageoa/mydomain --monitor --trace
+    --output ../sciona-atoms/sciona/atoms/mydomain --monitor --trace
 ```
 
 Supported languages: `.py`, `.rs`, `.jl`, `.cpp`, `.h`, `.hpp` (auto-detected).
 
-Output directly into `../ageo-atoms/ageoa/` so atoms are available via the
+Output directly into `../sciona-atoms/sciona/atoms/` so atoms are available via the
 existing `sources.yml` entry without additional configuration.
 
 ### 3. Validate
 
 Both `mypy passed` and `Ghost sim passed` must be `True`.  If either fails,
-follow Task 2 in `../ageo-atoms/INGEST_PROMPT.md`.
+follow Task 2 in `../sciona-atoms/INGEST_PROMPT.md`.
 
 ### 4. Write tests
 
-5 categories per atom (see `../ageo-atoms/INGESTION.md` section 12):
+5 categories per atom (see `../sciona-atoms/INGESTION.md` section 12):
 positive path, precondition violations, postcondition verification, edge
 cases, upstream parity.
 
 ### 5. Export
 
 Ensure all atoms are imported in `__init__.py` and reachable from
-`ageoa/__init__.py`.
+`sciona/atoms/__init__.py`.
 
 ## Recursive decomposition
 
@@ -141,7 +141,7 @@ For complex classes:
 ```bash
 export SCIONA_INGESTER_MAX_DEPTH=3
 sciona ingest path/to/source.py --class LargeClass \
-    --output ../ageo-atoms/ageoa/mydomain
+    --output ../sciona-atoms/sciona/atoms/mydomain
 ```
 
 ## Batch ingestion
@@ -149,7 +149,7 @@ sciona ingest path/to/source.py --class LargeClass \
 ```bash
 for cls in ClassA ClassB ClassC; do
     sciona ingest path/to/source.py --class "$cls" \
-        --output "../ageo-atoms/ageoa/${cls,,}"
+        --output "../sciona-atoms/sciona/atoms/${cls,,}"
 done
 ```
 
@@ -164,7 +164,7 @@ Writes `catalog_*.json` to the skill index directory.
 
 ## How ingested atoms reach the catalog
 
-`sources.yml` declares `ageo-atoms` pointing at `../ageo-atoms` with
-package `ageoa`.  `seed_catalog_from_sources` imports the package
+`sources.yml` declares `sciona-atoms` pointing at `../sciona-atoms` with
+package `sciona.atoms`.  `seed_catalog_from_sources` imports the package
 (triggering `@register_atom`), scans `**/*cdg*.json`, and derives
 `AlgorithmicPrimitive` entries with full de-duplication.

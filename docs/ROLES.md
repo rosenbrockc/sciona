@@ -54,7 +54,7 @@ repair on failure.
 **Interacts with:**
 - **Synthesizer** -- `IngestionBundle` output is format-identical to what the
   Synthesizer expects (CDG + atoms + witnesses + match results)
-- **Ghost Registry** (ageoa) -- generated witnesses follow the `@register_atom`
+- **Ghost Registry** (sciona.atoms) -- generated witnesses follow the `@register_atom`
   pattern
 
 **Key files:** `sciona/ingester/graph.py`, `sciona/ingester/base_extractor.py`,
@@ -296,7 +296,7 @@ low. Nodes without witnesses are silently skipped.
 
 **Interacts with:**
 - **Assembler** -- runs on the CDG before or alongside assembly
-- **Ghost Registry** (ageoa) -- looks up witness functions for each atom
+- **Ghost Registry** (sciona.atoms) -- looks up witness functions for each atom
 
 **Key files:** `sciona/synthesizer/ghost_sim.py`
 

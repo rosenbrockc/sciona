@@ -33,6 +33,7 @@ def _prompt(
         edges=edges,
         current_depth=1,
         max_depth=8,
+        planning_context="",
         primitives="No relevant primitives found.",
     )
 

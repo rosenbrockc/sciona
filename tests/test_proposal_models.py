@@ -17,8 +17,8 @@ from sciona.architect.template_retriever import TemplateMatch
 
 def test_proposal_from_primitive_builds_passive_metadata() -> None:
     primitive = AlgorithmicPrimitive(
-        name="ageoa.signal.filter_signal_basic",
-        source="ageoa.signal",
+        name="sciona.atoms.signal.filter_signal_basic",
+        source="sciona.atoms.signal",
         category=ConceptType.SIGNAL_FILTER,
         description="Filter a signal.",
         inputs=[IOSpec(name="signal", type_desc="ndarray")],
@@ -32,8 +32,8 @@ def test_proposal_from_primitive_builds_passive_metadata() -> None:
     )
 
     assert proposal.proposal_type == ProposalType.PRIMITIVE
-    assert proposal.matched_primitive == "ageoa.signal.filter_signal_basic"
-    assert proposal.source_family == "ageoa.signal"
+    assert proposal.matched_primitive == "sciona.atoms.signal.filter_signal_basic"
+    assert proposal.source_family == "sciona.atoms.signal"
     assert proposal.delta_nodes == 0
     assert proposal.delta_edges == 0
     assert proposal.template_fqn is None
@@ -42,11 +42,11 @@ def test_proposal_from_primitive_builds_passive_metadata() -> None:
 
 def test_proposal_from_template_match_derives_shape_metadata() -> None:
     example = ExampleDecomposition(
-        fqn="ageoa.templates.signal_quality_gate",
+        fqn="sciona.atoms.templates.signal_quality_gate",
         name="Signal Quality Gate",
         description="Insert quality scoring before filtering.",
         concept_type=ConceptType.ANALYSIS.value,
-        repo="ageo-atoms",
+        repo="sciona-atoms",
         topo_hash="abc123",
         children=[
             ExampleChild(
@@ -58,7 +58,7 @@ def test_proposal_from_template_match_derives_shape_metadata() -> None:
                 n_inputs=1,
                 n_outputs=1,
                 type_signature="ndarray -> ndarray",
-                matched_primitive="ageoa.signal.filter_signal_basic",
+                matched_primitive="sciona.atoms.signal.filter_signal_basic",
             ),
             ExampleChild(
                 node_id="c2",
@@ -69,7 +69,7 @@ def test_proposal_from_template_match_derives_shape_metadata() -> None:
                 n_inputs=1,
                 n_outputs=1,
                 type_signature="ndarray -> float",
-                matched_primitive="ageoa.statistics.score_signal_quality",
+                matched_primitive="sciona.atoms.statistics.score_signal_quality",
             ),
         ],
         edges=[
@@ -101,7 +101,7 @@ def test_proposal_from_template_match_derives_shape_metadata() -> None:
     proposal = proposal_from_template_match(match)
 
     assert proposal.proposal_type == ProposalType.TEMPLATE
-    assert proposal.template_fqn == "ageoa.templates.signal_quality_gate"
+    assert proposal.template_fqn == "sciona.atoms.templates.signal_quality_gate"
     assert proposal.delta_nodes == 2
     assert proposal.delta_edges == 1
     assert proposal.delta_family_count == 2
@@ -144,8 +144,8 @@ def test_invalid_cross_field_combination_is_rejected() -> None:
     with pytest.raises(ValueError):
         EnrichmentProposal(
             proposal_type=ProposalType.PRIMITIVE,
-            matched_primitive="ageoa.signal.filter_signal_basic",
-            template_fqn="ageoa.templates.signal_quality_gate",
+            matched_primitive="sciona.atoms.signal.filter_signal_basic",
+            template_fqn="sciona.atoms.templates.signal_quality_gate",
         )
 
     with pytest.raises(ValueError):

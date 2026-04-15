@@ -27,8 +27,10 @@ def _atomic_node(
 
 
 def test_primitive_family_handles_recognized_atom_namespaces_generically() -> None:
-    assert _primitive_family("ageoa.biosppy.ecg.r_peak_detection", None) == (
-        "ageoa.biosppy.ecg"
+    assert _primitive_family(
+        "sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection", None
+    ) == (
+        "sciona.atoms.signal_processing.biosppy"
     )
     assert _primitive_family("sciona.atoms.demo.ecg.r_peak_detection", None) == (
         "sciona.atoms.demo.ecg"

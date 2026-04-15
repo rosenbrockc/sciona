@@ -24,7 +24,7 @@ from sciona.heuristics import (
 ASSET_DIR = (
     Path(__file__).resolve().parent / "principal" / "assets" / "heuristic_registries"
 )
-DEFAULT_AGEO_ATOMS_ROOT = DEFAULT_PROVIDER_ROOT
+DEFAULT_SCIONA_ATOMS_ROOT = DEFAULT_PROVIDER_ROOT
 EXTERNAL_ASSET_DIR_CANDIDATES = (
     ("data", "heuristics", "families"),
     ("data", "heuristics", "family_registries"),
@@ -168,36 +168,36 @@ def heuristic_registry_summary(
     return {}
 
 
-def heuristic_asset_root(ageo_atoms_root: str | Path | None = None) -> Path:
+def heuristic_asset_root(provider_root: str | Path | None = None) -> Path:
     """Return the canonical sibling repository root for shared heuristic assets."""
-    return heuristic_asset_roots(ageo_atoms_root)[0]
+    return heuristic_asset_roots(provider_root)[0]
 
 
 def heuristic_asset_roots(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> tuple[Path, ...]:
     """Return shared heuristic asset roots in configured precedence order."""
-    if ageo_atoms_root is not None:
-        return (Path(ageo_atoms_root).expanduser().resolve(),)
+    if provider_root is not None:
+        return (Path(provider_root).expanduser().resolve(),)
     candidates = candidate_atom_provider_roots()
     if candidates:
         return tuple(candidates)
-    return (DEFAULT_AGEO_ATOMS_ROOT,)
+    return (DEFAULT_SCIONA_ATOMS_ROOT,)
 
 
 def heuristic_registry_external_asset_dir(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> Path:
     """Return the preferred external family-registry directory path."""
-    return heuristic_registry_external_asset_dirs(ageo_atoms_root)[0]
+    return heuristic_registry_external_asset_dirs(provider_root)[0]
 
 
 def heuristic_registry_external_asset_dirs(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> tuple[Path, ...]:
     """Return external family-registry directories in configured precedence order."""
     return _heuristic_registry_external_asset_dirs_from_roots(
-        heuristic_asset_roots(ageo_atoms_root)
+        heuristic_asset_roots(provider_root)
     )
 
 
@@ -311,11 +311,11 @@ def load_local_heuristic_registries_by_family() -> dict[str, HeuristicFamilyRegi
 
 @lru_cache(maxsize=8)
 def _load_external_heuristic_registries_cached(
-    ageo_atoms_roots: tuple[str, ...],
+    provider_roots: tuple[str, ...],
 ) -> tuple[HeuristicFamilyRegistry, ...]:
     registries: list[HeuristicFamilyRegistry] = []
     families_seen: set[str] = set()
-    roots = tuple(Path(root).expanduser().resolve() for root in ageo_atoms_roots)
+    roots = tuple(Path(root).expanduser().resolve() for root in provider_roots)
     for root in roots:
         asset_dir = _heuristic_registry_external_asset_dir_for_root(root)
         for registry in _load_heuristic_registries_from_dir(
@@ -331,20 +331,20 @@ def _load_external_heuristic_registries_cached(
 
 
 def load_external_heuristic_registries(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> tuple[HeuristicFamilyRegistry, ...]:
     """Load family heuristic registries from the shared sibling repository."""
-    roots = heuristic_asset_roots(ageo_atoms_root)
+    roots = heuristic_asset_roots(provider_root)
     return _load_external_heuristic_registries_cached(tuple(str(root) for root in roots))
 
 
 def load_external_heuristic_registries_by_family(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> dict[str, HeuristicFamilyRegistry]:
     """Index external heuristic registries by family."""
     return {
         asset.family: asset
-        for asset in load_external_heuristic_registries(ageo_atoms_root)
+        for asset in load_external_heuristic_registries(provider_root)
     }
 
 
@@ -410,14 +410,14 @@ def _selected_registry(
 
 
 def load_heuristic_registries(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> tuple[HeuristicFamilyRegistry, ...]:
     """Load heuristic registries with external-first precedence and local fallback."""
     local_by_family = load_local_heuristic_registries_by_family()
-    external_by_family = load_external_heuristic_registries_by_family(ageo_atoms_root)
+    external_by_family = load_external_heuristic_registries_by_family(provider_root)
     external_dir_exists = any(
         asset_dir.exists()
-        for asset_dir in heuristic_registry_external_asset_dirs(ageo_atoms_root)
+        for asset_dir in heuristic_registry_external_asset_dirs(provider_root)
     )
     families = sorted(set(local_by_family) | set(external_by_family))
     selected: list[HeuristicFamilyRegistry] = []
@@ -433,22 +433,22 @@ def load_heuristic_registries(
 
 
 def load_heuristic_registries_by_family(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> dict[str, HeuristicFamilyRegistry]:
     """Index selected heuristic registries by family."""
-    return {asset.family: asset for asset in load_heuristic_registries(ageo_atoms_root)}
+    return {asset.family: asset for asset in load_heuristic_registries(provider_root)}
 
 
 def heuristic_registry_compatibility_report(
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> dict[str, Any]:
     """Summarize source selection and migration visibility for family registries."""
-    external_root = heuristic_asset_root(ageo_atoms_root)
-    external_roots = heuristic_asset_roots(ageo_atoms_root)
-    external_dirs = heuristic_registry_external_asset_dirs(ageo_atoms_root)
+    external_root = heuristic_asset_root(provider_root)
+    external_roots = heuristic_asset_roots(provider_root)
+    external_dirs = heuristic_registry_external_asset_dirs(provider_root)
     external_dir = external_dirs[0]
     local_by_family = load_local_heuristic_registries_by_family()
-    external_by_family = load_external_heuristic_registries_by_family(ageo_atoms_root)
+    external_by_family = load_external_heuristic_registries_by_family(provider_root)
     external_dir_exists = any(asset_dir.exists() for asset_dir in external_dirs)
     records: list[dict[str, Any]] = []
     for family in sorted(set(local_by_family) | set(external_by_family)):
@@ -471,8 +471,8 @@ def heuristic_registry_compatibility_report(
     if not external_dir_exists:
         warnings.append(f"shared_heuristic_registry_dir_missing:{external_dir}")
     return {
-        "ageo_atoms_root": str(external_root),
-        "ageo_atoms_roots": [str(root) for root in external_roots],
+        "provider_root": str(external_root),
+        "provider_roots": [str(root) for root in external_roots],
         "external_asset_dir": str(external_dir),
         "external_asset_dirs": [str(asset_dir) for asset_dir in external_dirs],
         "external_asset_dir_exists": external_dir_exists,
@@ -494,13 +494,13 @@ def resolve_heuristic_registry(
     family: str,
     *,
     skeleton_scope: str | None = None,
-    ageo_atoms_root: str | Path | None = None,
+    provider_root: str | Path | None = None,
 ) -> HeuristicFamilyRegistry | None:
     """Resolve the best registry from shared assets first, then local fallback."""
-    registries = load_heuristic_registries_by_family(ageo_atoms_root)
+    registries = load_heuristic_registries_by_family(provider_root)
     registry = registries.get(family)
     if registry is None:
-        for candidate in load_heuristic_registries(ageo_atoms_root):
+        for candidate in load_heuristic_registries(provider_root):
             if family in set(candidate.family_aliases):
                 registry = candidate
                 break

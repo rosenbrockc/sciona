@@ -12,7 +12,10 @@ Scope of this audit:
 - current Supabase migrations under `supabase/`
 - migration/backfill scripts under `scripts/`
 - current test coverage in `tests/`
-- the more detailed target state in [`docs/SUPABASE_MIGRATION_PLAN.md`](./SUPABASE_MIGRATION_PLAN.md)
+- the current implementation plans under:
+  - [docs/plans/AGEOA_DEPRECATION_IMPLEMENTATION_PLAN.md](/Users/conrad/personal/sciona-matcher/docs/plans/AGEOA_DEPRECATION_IMPLEMENTATION_PLAN.md)
+  - [docs/plans/UNIFIED_ARTIFACT_IMPLEMENTATION_PLAN.md](/Users/conrad/personal/sciona-matcher/docs/plans/UNIFIED_ARTIFACT_IMPLEMENTATION_PLAN.md)
+  - [docs/plans/BENCHMARK_MANIFEST_SCHEMA_AND_SEED_PLAN.md](/Users/conrad/personal/sciona-matcher/docs/plans/BENCHMARK_MANIFEST_SCHEMA_AND_SEED_PLAN.md)
 
 ## Executive Summary
 

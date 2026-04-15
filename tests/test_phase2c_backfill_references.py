@@ -16,10 +16,10 @@ from scripts.backfill_references_registry import build_registry_row, load_regist
 
 
 def test_extract_fqdn_handles_manifest_and_legacy_keys() -> None:
-    assert extract_fqdn("ageoa.algorithms.graph.bellman_ford@ageoa/algorithms/graph.py:174") == (
-        "ageoa.algorithms.graph.bellman_ford"
+    assert extract_fqdn("sciona.atoms.algorithms.graph.bellman_ford@sciona/atoms/algorithms/graph.py:174") == (
+        "sciona.atoms.algorithms.graph.bellman_ford"
     )
-    assert extract_fqdn("ageoa.tempo.offset_tai2tdb") == "ageoa.tempo.offset_tai2tdb"
+    assert extract_fqdn("sciona.atoms.tempo.offset_tai2tdb") == "sciona.atoms.tempo.offset_tai2tdb"
 
 
 def test_build_ref_key_prefers_doi_then_ref_id_then_title() -> None:
@@ -82,3 +82,17 @@ def test_iter_reference_files_skips_pycache(tmp_path: Path) -> None:
     (tmp_path / "__pycache__" / "references.json").write_text("{}")
     files = iter_reference_files(tmp_path)
     assert files == [tmp_path / "alpha" / "references.json"]
+
+
+def test_iter_reference_files_accepts_multiple_roots(tmp_path: Path) -> None:
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    (left / "alpha").mkdir(parents=True)
+    (right / "beta").mkdir(parents=True)
+    (left / "alpha" / "references.json").write_text("{}")
+    (right / "beta" / "references.json").write_text("{}")
+    files = iter_reference_files((left, right))
+    assert files == [
+        (left / "alpha" / "references.json").resolve(),
+        (right / "beta" / "references.json").resolve(),
+    ]

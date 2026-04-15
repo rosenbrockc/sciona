@@ -8,7 +8,7 @@ artifact.
 sequenceDiagram
     participant Orchestrator
     participant GhostSim as Ghost Simulator
-    participant Registry as Ghost Registry<br/>(ageoa)
+    participant Registry as Ghost Registry<br/>(sciona.atoms)
     participant Assembler
     participant RepairAgent as Repair Agent
     participant LLM as Synthesizer LLM

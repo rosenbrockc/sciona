@@ -76,7 +76,7 @@ def test_load_architect_catalog_default_includes_saved_catalogs(
     assert catalog.get("stale_catalog_primitive") is not None
 
 
-def test_load_architect_catalog_attaches_tunables_from_non_ageoa_source(
+def test_load_architect_catalog_attaches_tunables_from_non_sciona_source(
     monkeypatch, tmp_path: Path
 ) -> None:
     skill_index_dir = tmp_path / "skill_index"
@@ -168,7 +168,7 @@ def test_load_architect_catalog_merges_tunables_from_multiple_sources(
                 ),
                 AtomSource(
                     name="provider-two",
-                    package="ageoa.demo.two",
+                    package="sciona.atoms.demo.two",
                     path="./provider-two",
                 ),
             ]

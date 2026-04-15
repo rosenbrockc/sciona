@@ -66,7 +66,7 @@ pip install -e ".[indexer,lean,hunter]"
 # With Coq support
 pip install -e ".[indexer,coq,hunter]"
 
-# With ghost witness simulation (requires ageo-atoms)
+# With ghost witness simulation (requires sciona-atoms)
 pip install -e ".[ghost]"
 
 # Everything

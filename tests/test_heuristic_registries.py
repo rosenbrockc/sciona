@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import sciona.heuristic_registries as heuristic_registries
 from sciona.heuristic_registries import (
     EXTERNAL_ASSET_DIR_CANDIDATES,
     HeuristicFamilyRegistry,
@@ -21,6 +22,20 @@ from sciona.heuristic_registries import (
     resolve_local_heuristic_registry,
 )
 from sciona.heuristics import HeuristicActionClass, HeuristicProducerKind
+
+
+@pytest.fixture(autouse=True)
+def _configure_real_provider_roots(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "SCIONA_ATOM_PROVIDER_ROOTS",
+        os.pathsep.join(
+            (
+                "/Users/conrad/personal/sciona-atoms",
+                "/Users/conrad/personal/sciona-atoms-signal",
+            )
+        ),
+    )
+    heuristic_registries.clear_heuristic_registry_caches()
 
 
 def test_loads_reference_registries_for_signal_and_non_signal_families() -> None:
@@ -46,7 +61,7 @@ def test_signal_registry_prefers_namespace_pilot_asset_when_available() -> None:
     assert registry is not None
     summary = heuristic_registry_summary(registry)
     assert summary["source_kind"] == "shared_asset"
-    assert summary["source_repository"] == "../sciona-atoms-signal"
+    assert summary["source_repository"] == "../sciona-atoms"
     assert summary["source_path"].endswith(
         "data/heuristics/families/signal_event_rate.json"
     )
@@ -205,20 +220,20 @@ def _write_registry(
 @pytest.fixture
 def isolated_registry_layout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> dict[str, Path]:
     local_dir = tmp_path / "local" / "heuristic_registries"
-    atoms_root = tmp_path / "ageo-atoms"
-    external_dir = atoms_root.joinpath(*EXTERNAL_ASSET_DIR_CANDIDATES[0])
+    provider_root = tmp_path / "sciona-atoms"
+    external_dir = provider_root.joinpath(*EXTERNAL_ASSET_DIR_CANDIDATES[0])
     monkeypatch.setattr("sciona.heuristic_registries.ASSET_DIR", local_dir)
-    monkeypatch.setattr("sciona.heuristic_registries.DEFAULT_AGEO_ATOMS_ROOT", atoms_root)
+    monkeypatch.setattr("sciona.heuristic_registries.DEFAULT_PROVIDER_ROOT", provider_root)
     monkeypatch.setattr(
         "sciona.heuristic_registries.candidate_atom_provider_roots",
-        lambda: (atoms_root,),
+        lambda: (provider_root,),
     )
-    monkeypatch.setenv("SCIONA_AGEO_ATOMS_ROOT", str(atoms_root))
+    monkeypatch.setenv("SCIONA_ATOM_PROVIDER_ROOTS", str(provider_root))
     _clear_registry_caches()
     try:
         yield {
             "local_dir": local_dir,
-            "atoms_root": atoms_root,
+            "provider_root": provider_root,
             "external_dir": external_dir,
         }
     finally:
@@ -249,7 +264,7 @@ def test_external_registry_is_preferred_when_present(
     summary = heuristic_registry_summary(registry)
     assert registry.asset_id == "family.demo.heuristics.shared"
     assert summary["source_kind"] == "shared_asset"
-    assert summary["source_repository"] == "../ageo-atoms"
+    assert summary["source_repository"] == "../sciona-atoms"
     assert summary["compatibility_status"] == "external_preferred"
 
 
@@ -268,7 +283,6 @@ def test_external_registry_prefers_first_configured_provider_root(
         "SCIONA_ATOM_PROVIDER_ROOTS",
         os.pathsep.join((str(first_root), str(second_root))),
     )
-    monkeypatch.delenv("SCIONA_AGEO_ATOMS_ROOT", raising=False)
     _clear_registry_caches()
     try:
         _write_registry(

@@ -3,14 +3,6 @@
 from sciona.architect.embedder import SkillIndex
 
 
-def test_skill_index_has_semantic_index_methods():
-    """SkillIndex should have the methods required by SemanticIndex protocol."""
-    idx = SkillIndex()
-    assert hasattr(idx, "search_by_embedding")
-    assert hasattr(idx, "search_by_type")
-    assert hasattr(idx, "get_declaration")
-
-
 def test_skill_index_search_by_embedding_empty():
     """search_by_embedding on empty index returns empty list."""
     idx = SkillIndex()

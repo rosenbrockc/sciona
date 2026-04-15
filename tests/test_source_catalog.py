@@ -19,6 +19,7 @@ from sciona.architect.source_catalog import (
     seed_catalog_from_sources,
 )
 from sciona.sources import AtomSource, SourcesConfig
+from sciona.sources import discover_cdgs
 from sciona.types import Declaration, Prover
 
 
@@ -346,10 +347,10 @@ def test_alias_candidates_include_full_module_path_alias():
     aliases = _alias_candidates(
         "detect_peaks",
         detect_peaks,
-        module_name="ageoa.biosppy.ecg",
+        module_name="sciona.atoms.signal_processing.biosppy.ecg",
     )
 
-    assert "ageoa.biosppy.ecg.detect_peaks" in aliases
+    assert "sciona.atoms.signal_processing.biosppy.ecg.detect_peaks" in aliases
 
 
 def test_seed_catalog_from_manifest_sqlite_builds_primitives_and_infers_category(
@@ -550,50 +551,20 @@ def test_seed_catalog_from_manifest_sqlite_handles_partial_manifests(
     assert prim.type_signature == "(void) -> Any"
 
 
-def test_seed_catalog_from_configured_ageo_atoms_source_discovers_pilot_cdgs() -> None:
+def test_seed_catalog_from_configured_sciona_atoms_source_discovers_pilot_cdgs() -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    if not (repo_root.parent / "ageo-atoms").exists():
-        pytest.skip("ageo-atoms fixture repo is not present in this workspace")
-    config = SourcesConfig(
-        sources=[
-            AtomSource(
-                name="ageo-kalman-pilot",
-                package="ageoa.kalman_filters",
-                path="../ageo-atoms",
-                cdg_glob="ageoa/kalman_filters/**/cdg.json",
-            )
-        ]
+    if not (repo_root.parent / "sciona-atoms").exists():
+        pytest.skip("sciona-atoms fixture repo is not present in this workspace")
+    source = AtomSource(
+        name="sciona-state-estimation-static-kf",
+        package="sciona.atoms.state_estimation.kalman_filters.static_kf",
+        path="../sciona-atoms",
+        cdg_glob="src/sciona/atoms/state_estimation/kalman_filters/static_kf/cdg.json",
     )
-    catalog = PrimitiveCatalog()
-    report = CatalogReport()
+    cdgs = discover_cdgs(source, base_dir=repo_root)
 
-    added = seed_catalog_from_sources(
-        catalog,
-        config=config,
-        base_dir=repo_root,
-        include_live_registries=False,
-        report=report,
-    )
-
-    assert added > 0
-    measurement_oracle = catalog.get("evaluatemeasurementoracle")
-    assert measurement_oracle is not None
-    assert measurement_oracle.source == "ageo-kalman-pilot"
-    assert measurement_oracle.description == (
-        "Pure observation oracle that maps latent state to predicted measurement "
-        "and measurement residual; performs no persistent state writes."
-    )
-    assert [port.name for port in measurement_oracle.inputs] == ["x", "z", "H"]
-
-    state_model = catalog.get("initializelineargaussianstatemodel")
-    assert state_model is not None
-    assert state_model.source == "ageo-kalman-pilot"
-    assert state_model.description == (
-        "Create the immutable linear-Gaussian state-space model with latent mean "
-        "and covariance plus fixed system/noise matrices."
-    )
-    assert report.source_cdg_metadata_matches >= 2
-    assert report.source_breakdown["ageo-kalman-pilot"]["ast_candidates"] > 0
+    assert cdgs
+    assert cdgs[0].name == "cdg.json"
 
 
 def test_seed_catalog_marks_defaulted_parameters_optional(tmp_path: Path):

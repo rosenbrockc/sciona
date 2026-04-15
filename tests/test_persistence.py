@@ -473,3 +473,44 @@ class TestHandoffValidation:
         issues = cdg.handoff_issues()
         assert len(issues) > 0
         assert any("type_signature" in i for i in issues)
+
+
+# ---------------------------------------------------------------------------
+# TestCheckpointerSilentFallback — silent-failure resilience on import/connect
+# ---------------------------------------------------------------------------
+
+
+class TestCheckpointerSilentFallback:
+    @pytest.mark.asyncio
+    async def test_checkpointer_falls_back_on_import_error(self, monkeypatch):
+        """If the postgres.aio module cannot be imported, fall back to MemorySaver."""
+        import builtins
+
+        _real_import = builtins.__import__
+
+        def _blocking_import(name, *args, **kwargs):
+            if "langgraph.checkpoint.postgres" in name:
+                raise ImportError("no postgres driver")
+            return _real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _blocking_import)
+
+        async with create_checkpointer("postgresql://fake") as cp:
+            assert isinstance(cp, MemorySaver)
+
+    @pytest.mark.asyncio
+    async def test_checkpointer_falls_back_on_connection_error(self, monkeypatch):
+        """If from_conn_string raises, fall back to MemorySaver without escaping."""
+
+        @asynccontextmanager
+        async def _exploding_conn_string(_uri: str):
+            raise ConnectionError("cannot reach database")
+            yield  # pragma: no cover
+
+        monkeypatch.setattr(
+            "langgraph.checkpoint.postgres.aio.AsyncPostgresSaver.from_conn_string",
+            _exploding_conn_string,
+        )
+
+        async with create_checkpointer("postgresql://unreachable") as cp:
+            assert isinstance(cp, MemorySaver)

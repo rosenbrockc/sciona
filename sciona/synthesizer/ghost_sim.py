@@ -56,9 +56,14 @@ list_registered: Any = lambda: ()
 
 
 def _candidate_ghost_package_roots() -> tuple[str, ...]:
-    """Return candidate package roots that may expose ``ghost`` modules."""
-    candidates: list[str] = []
-    seen: set[str] = set()
+    """Return candidate package roots that may expose ``ghost`` modules.
+
+    ``sciona`` is always the first candidate (the matcher ships
+    ``sciona.ghost``).  Additional roots are drawn from configured
+    sources and known atom-package prefixes.
+    """
+    candidates: list[str] = ["sciona"]
+    seen: set[str] = {"sciona"}
 
     try:
         from sciona.sources import load_sources
@@ -80,8 +85,6 @@ def _candidate_ghost_package_roots() -> tuple[str, ...]:
         seen.add(package)
         candidates.append(package)
 
-    if "ageoa" not in seen:
-        candidates.append("ageoa")
     return tuple(candidates)
 
 
@@ -171,7 +174,7 @@ class GhostSimReport:
     """Result of the ghost simulation pass."""
 
     ran: bool = False
-    """Whether the simulation actually executed (False if ageoa not installed)."""
+    """Whether the simulation actually executed (False if no ghost backend available)."""
     passed: bool = False
     """Whether the simulation completed without errors."""
     node_count: int = 0
@@ -208,7 +211,7 @@ def _extract_atom_name(declaration_name: str) -> str:
     """Extract the short atom name from a possibly qualified declaration name.
 
     Examples:
-        "ageoa.numpy.fft.fft" -> "fft"
+        "sciona.atoms.numpy.fft.fft" -> "fft"
         "numpy.fft.fft" -> "fft"
         "fft" -> "fft"
         "scipy.signal.butter" -> "butter"
@@ -512,7 +515,7 @@ def _compute_precision_gradients(
 ) -> _PrecisionGradientResult:
     """Propagate error intervals through the CDG and return per-node expansion.
 
-    Works without ageoa — purely based on IOSpec metadata and known atom
+    Works without sciona.atoms — purely based on IOSpec metadata and known atom
     error factors.  Returns an empty result when no nodes carry error metadata.
 
     For nodes inside FIXED_POINT bodies, error intervals are scaled by
@@ -653,7 +656,7 @@ def _simulate_message_passing_iterative(
     Returns (SimResult, iterations_used, deadlocked, deadlock_node_names).
     """
     if not _GHOST_AVAILABLE:
-        raise RuntimeError("ageoa package required for iterative simulation")
+        raise RuntimeError("ghost backend required for iterative simulation")
 
     state = dict(initial_state)
     trace: list[str] = []
@@ -735,7 +738,7 @@ def _simulate_fixed_point_iterative(
     Returns (SimResult, iterations_used, deadlocked, deadlock_node_names).
     """
     if not _GHOST_AVAILABLE:
-        raise RuntimeError("ageoa package required for iterative simulation")
+        raise RuntimeError("ghost backend required for iterative simulation")
 
     state = dict(initial_state)
     trace: list[str] = []
@@ -883,7 +886,7 @@ def run_ghost_simulation(
         # Append cycle node ids at the end (they'll be simulated iteratively)
         sorted_ids.extend(sorted(cycle_ids))
 
-    # Precision gradients — runs independently of ageoa
+    # Precision gradients — runs independently of sciona.atoms
     try:
         pg_result = _compute_precision_gradients(
             cdg,
@@ -898,7 +901,7 @@ def run_ghost_simulation(
         logger.warning("Precision gradient computation failed: %s", exc)
 
     if not _GHOST_AVAILABLE:
-        logger.info("Ghost simulation skipped: ageoa package not installed")
+        logger.info("Ghost simulation skipped: no ghost backend available")
         return report
 
     # Ensure atom modules are imported so witnesses are registered
@@ -1108,7 +1111,7 @@ def run_ghost_simulation(
 
 
 # ---------------------------------------------------------------------------
-# Bayesian-aware simulation (refactored from ageo-atoms)
+# Bayesian-aware simulation (refactored from sciona-atoms)
 # ---------------------------------------------------------------------------
 
 # Witness functions that produce reparameterized outputs.

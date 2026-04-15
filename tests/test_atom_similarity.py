@@ -188,10 +188,10 @@ class TestFindOverlappingAtoms:
             def run():
                 scipy.signal.bandpass_filter(x)
         """)
-        catalog = {"ageoa.scipy_signal.bandpass.bandpass_filter"}
+        catalog = {"sciona.atoms.scipy_signal.bandpass.bandpass_filter"}
         hits = find_overlapping_atoms(src, catalog)
         assert len(hits) >= 1
-        assert hits[0].atom_name == "ageoa.scipy_signal.bandpass.bandpass_filter"
+        assert hits[0].atom_name == "sciona.atoms.scipy_signal.bandpass.bandpass_filter"
 
     def test_fingerprint_exact_match(self):
         src = "def foo(x): return x + 1"

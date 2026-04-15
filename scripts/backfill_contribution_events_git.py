@@ -1,4 +1,4 @@
-"""Generate contribution_events from git history in the ageo-atoms repository."""
+"""Generate contribution_events from git history in the sciona-atoms repository."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-DEFAULT_REPO_PATH = "../ageo-atoms"
+DEFAULT_REPO_PATH = "../sciona-atoms"
 
 
 def create_supabase_client() -> "Client":
@@ -38,7 +38,8 @@ def get_git_log(repo_path: Path) -> str:
             "--diff-filter=AM",
             "--name-only",
             "--",
-            "ageoa/*/atoms.py",
+            "sciona/atoms",
+            "src/sciona/atoms",
         ],
         capture_output=True,
         text=True,
@@ -68,10 +69,12 @@ def parse_git_log(raw_log: str) -> list[dict[str, Any]]:
 
 
 def derive_atom_family_from_path(file_path: str) -> str | None:
-    """Derive the atom family from an ageoa source path."""
+    """Derive the atom family from a canonical sciona source path."""
     parts = file_path.split("/")
-    if len(parts) >= 2 and parts[0] == "ageoa":
-        return parts[1]
+    if len(parts) >= 3 and parts[0] == "sciona" and parts[1] == "atoms":
+        return parts[2]
+    if len(parts) >= 4 and parts[0] == "src" and parts[1] == "sciona" and parts[2] == "atoms":
+        return parts[3]
     return None
 
 
@@ -108,7 +111,11 @@ def matching_atoms_for_family(fqdn_map: dict[str, dict[str, Any]], family: str) 
 def main() -> int:
     """CLI entrypoint."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    repo_path = Path(os.environ.get("AGEO_ATOMS_REPO_PATH", DEFAULT_REPO_PATH))
+    repo_path = Path(
+        os.environ.get("SCIONA_ATOMS_REPO_PATH")
+        or os.environ.get("AGEO_ATOMS_REPO_PATH")
+        or DEFAULT_REPO_PATH
+    )
     supabase = create_supabase_client()
 
     raw_log = get_git_log(repo_path)

@@ -685,3 +685,142 @@ class TestCLIParserAcceptsSynthesize:
             assert args.command == "synthesize"
             assert args.cdg_file == "cdg.json"
             assert args.matches_file == "matches.json"
+
+
+# ===========================================================================
+# TestRepairResilience — silent-failure / regression-rollback / budget paths
+# ===========================================================================
+
+
+class TestRepairResilience:
+    @pytest.mark.asyncio
+    async def test_repair_regression_rollback_restores_previous_source(self):
+        """When an LLM patch causes more errors, the graph rolls back to the
+        pre-patch snapshot and does NOT continue from the regressed version."""
+        original_source = "def foo := original\n"
+        skeleton = _make_skeleton(original_source)
+
+        # LLM returns a patch that will be applied (mutating source)
+        patch_response = json.dumps(
+            {
+                "line_start": 1,
+                "line_end": 1,
+                "replacement": "def foo := patched_worse",
+                "description": "Bad patch",
+            }
+        )
+
+        env = _make_mock_env(
+            [
+                # Iteration 0 compile: 1 error
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["type mismatch"],
+                ),
+                # Iteration 1 compile (after LLM patch applied): 3 errors (regression!)
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["type mismatch", "unknown id", "syntax error"],
+                ),
+                # Re-compile after rollback: still 1 error (back to snapshot)
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["type mismatch"],
+                ),
+                # Budget exhausted at iteration 2 — need one more compile
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["type mismatch"],
+                ),
+                # Extra safety compile in case graph routes again
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["type mismatch"],
+                ),
+            ]
+        )
+        llm = _make_mock_llm([patch_response, "invalid"] * 3)
+
+        state = RepairState(skeleton=skeleton, max_iterations=2)
+        result = await repair_graph.run(
+            CompileCheck(), state=state, deps=RepairDeps(env=env, llm=llm)
+        )
+
+        # The final source must NOT contain the regressed patch
+        assert "patched_worse" not in result.output.source_code
+        # It should have rolled back to the original (snapshot) source
+        assert "original" in result.output.source_code
+
+    @pytest.mark.asyncio
+    async def test_repair_budget_exhaustion_recovers_best_source(self):
+        """When budget exhausts, the graph returns the best-seen source (lowest
+        error count), not whatever source was current at exhaustion time."""
+        source_v0 = "def foo := v0\n"  # 3 errors
+        source_v1 = "def foo := v1\n"  # 1 error (best)
+        source_v2 = "def foo := v2\n"  # 5 errors (worst)
+
+        skeleton = _make_skeleton(source_v0)
+
+        # Patches that change source in a predictable way
+        patch_v1 = json.dumps(
+            {
+                "line_start": 1,
+                "line_end": 1,
+                "replacement": "def foo := v1",
+                "description": "Patch to v1",
+            }
+        )
+        patch_v2 = json.dumps(
+            {
+                "line_start": 1,
+                "line_end": 1,
+                "replacement": "def foo := v2",
+                "description": "Patch to v2",
+            }
+        )
+
+        env = _make_mock_env(
+            [
+                # Iteration 0 compile: v0 has 3 errors
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["e1", "e2", "e3"],
+                ),
+                # Iteration 1 compile: v1 has 1 error (improvement, no rollback)
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["e1"],
+                ),
+                # Iteration 2 compile: v2 has 5 errors (regression -> rollback to v1)
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["e1", "e2", "e3", "e4", "e5"],
+                ),
+                # Re-compile after rollback to v1: 1 error
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["e1"],
+                ),
+                # Budget exhausted at iteration 3 — extra compiles for safety
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["e1"],
+                ),
+                CompilerFeedback(
+                    raw_output="err",
+                    errors=["e1"],
+                ),
+            ]
+        )
+        llm = _make_mock_llm([patch_v1, patch_v2, "invalid"] * 3)
+
+        state = RepairState(skeleton=skeleton, max_iterations=3)
+        result = await repair_graph.run(
+            CompileCheck(), state=state, deps=RepairDeps(env=env, llm=llm)
+        )
+
+        # Best source was v1 (1 error). Budget exhaustion should recover it.
+        assert state.best_error_count == 1
+        assert "v1" in result.output.source_code
+        # Must NOT end on the v2 (regressed) version
+        assert "v2" not in result.output.source_code

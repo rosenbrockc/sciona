@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify completeness of an atoms repository such as ageoa."""
+"""Verify completeness of an atoms repository such as sciona-atoms."""
 
 from __future__ import annotations
 
@@ -21,12 +21,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "repo_root",
-        help="Path to the atoms repository root (for example ../ageo-atoms).",
+        help="Path to the atoms repository root (for example ../sciona-atoms).",
     )
     parser.add_argument(
         "--package",
         required=True,
-        help="Top-level Python package name inside the repo (for example ageoa).",
+        help="Top-level Python package name inside the repo (for example sciona.atoms).",
     )
     parser.add_argument(
         "--json",

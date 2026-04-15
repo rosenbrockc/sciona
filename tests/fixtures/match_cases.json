@@ -2,29 +2,30 @@
   "cases": [
     {
       "id": "pulsar_pipeline",
-      "source_name": "ageo-atoms",
-      "cdg_rel_path": "ageoa/pulsar/pipeline_cdg.json",
+      "historical": true,
+      "source_name": "sciona-atoms",
+      "cdg_rel_path": "sciona/atoms/pulsar/pipeline_cdg.json",
       "witness_test_rel_path": "tests/test_pulsar.py",
-      "cdg_path": "../ageo-atoms/ageoa/pulsar/pipeline_cdg.json",
-      "witness_test_path": "../ageo-atoms/tests/test_pulsar.py",
+      "cdg_path": "../sciona-atoms-physics/src/sciona/atoms/physics/pulsar/pipeline_cdg.json",
+      "witness_test_path": "../sciona-atoms-physics/tests/test_pulsar_import_smoke.py",
       "expected_matches": {
-        "delay_from_dm": "ageoa.pulsar.pipeline.delay_from_DM",
-        "de_disperse": "ageoa.pulsar.pipeline.de_disperse",
-        "fold_signal": "ageoa.pulsar.pipeline.fold_signal",
-        "snr": "ageoa.pulsar.pipeline.SNR"
+        "delay_from_dm": "sciona.atoms.physics.pulsar.pipeline.delay_from_DM",
+        "de_disperse": "sciona.atoms.physics.pulsar.pipeline.de_disperse",
+        "fold_signal": "sciona.atoms.physics.pulsar.pipeline.fold_signal",
+        "snr": "sciona.atoms.physics.pulsar.pipeline.SNR"
       },
       "aliases": {
         "delay_from_dm": [
-          "ageoa.pulsar.pipeline.delay_from_DM"
+          "sciona.atoms.physics.pulsar.pipeline.delay_from_DM"
         ],
         "de_disperse": [
-          "ageoa.pulsar.pipeline.de_disperse"
+          "sciona.atoms.physics.pulsar.pipeline.de_disperse"
         ],
         "fold_signal": [
-          "ageoa.pulsar.pipeline.fold_signal"
+          "sciona.atoms.physics.pulsar.pipeline.fold_signal"
         ],
         "snr": [
-          "ageoa.pulsar.pipeline.SNR"
+          "sciona.atoms.physics.pulsar.pipeline.SNR"
         ]
       },
       "live_runs": 3,
@@ -36,33 +37,34 @@
     },
     {
       "id": "biosppy_ecg",
-      "source_name": "ageo-atoms",
-      "cdg_rel_path": "ageoa/biosppy/ecg_cdg.json",
+      "historical": true,
+      "source_name": "sciona-atoms",
+      "cdg_rel_path": "sciona/atoms/biosppy/ecg_cdg.json",
       "witness_test_rel_path": "tests/test_biosppy_advanced.py",
-      "cdg_path": "../ageo-atoms/ageoa/biosppy/ecg_cdg.json",
-      "witness_test_path": "../ageo-atoms/tests/test_biosppy_advanced.py",
+      "cdg_path": "../sciona-atoms-signal/src/sciona/atoms/signal_processing/biosppy/ecg_zz2018/cdg.json",
+      "witness_test_path": "../sciona-atoms-signal/tests/test_biosppy_ecg_atoms.py",
       "expected_matches": {
-        "bandpass_filter": "ageoa.biosppy.ecg.bandpass_filter",
-        "r_peak_detection": "ageoa.biosppy.ecg.r_peak_detection",
-        "peak_correction": "ageoa.biosppy.ecg.peak_correction",
-        "template_extraction": "ageoa.biosppy.ecg.template_extraction",
-        "heart_rate_computation": "ageoa.biosppy.ecg.heart_rate_computation"
+        "bandpass_filter": "sciona.atoms.signal_processing.biosppy.ecg.bandpass_filter",
+        "r_peak_detection": "sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection",
+        "peak_correction": "sciona.atoms.signal_processing.biosppy.ecg.peak_correction",
+        "template_extraction": "sciona.atoms.signal_processing.biosppy.ecg.template_extraction",
+        "heart_rate_computation": "sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation"
       },
       "aliases": {
         "bandpass_filter": [
-          "ageoa.biosppy.ecg.bandpass_filter"
+          "sciona.atoms.signal_processing.biosppy.ecg.bandpass_filter"
         ],
         "r_peak_detection": [
-          "ageoa.biosppy.ecg.r_peak_detection"
+          "sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection"
         ],
         "peak_correction": [
-          "ageoa.biosppy.ecg.peak_correction"
+          "sciona.atoms.signal_processing.biosppy.ecg.peak_correction"
         ],
         "template_extraction": [
-          "ageoa.biosppy.ecg.template_extraction"
+          "sciona.atoms.signal_processing.biosppy.ecg.template_extraction"
         ],
         "heart_rate_computation": [
-          "ageoa.biosppy.ecg.heart_rate_computation"
+          "sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation"
         ]
       },
       "live_runs": 3,

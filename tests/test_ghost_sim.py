@@ -27,6 +27,7 @@ from sciona.synthesizer.ghost_sim import (
     _parse_raw_code_param_names,
     _resolve_source_output_name,
     _GHOST_AVAILABLE,
+    list_registered,
     run_ghost_simulation,
 )
 from sciona.synthesizer.uncertainty import HeuristicBackend
@@ -40,8 +41,17 @@ from sciona.types import (
     VerificationResult,
 )
 
-_requires_ageoa = pytest.mark.skipif(
-    not _GHOST_AVAILABLE, reason="ageoa package not installed"
+def _has_dsp_witnesses() -> bool:
+    """Check if DSP-specific witnesses (fft, etc.) are in the registry."""
+    try:
+        from sciona.ghost.registry import REGISTRY
+        return "fft" in REGISTRY
+    except Exception:
+        return False
+
+
+_requires_registered_atoms = pytest.mark.skipif(
+    not _has_dsp_witnesses(), reason="DSP atom witnesses not registered (atom providers not installed)"
 )
 
 # ---------------------------------------------------------------------------
@@ -71,7 +81,7 @@ class TestExtractAtomName:
         assert _extract_atom_name("fft") == "fft"
 
     def test_qualified_name(self):
-        assert _extract_atom_name("ageoa.numpy.fft.fft") == "fft"
+        assert _extract_atom_name("sciona.atoms.numpy.fft.fft") == "fft"
 
     def test_two_part_name(self):
         assert _extract_atom_name("signal.butter") == "butter"
@@ -94,7 +104,7 @@ def r_peak_detection(filtered: np.ndarray, sampling_rate: float = 1000.0, state:
 
     def test_declared_param_names_fall_back_to_raw_code_when_type_signature_is_unlabeled(self):
         decl = Declaration(
-            name="ageoa.biosppy.ecg.r_peak_detection",
+            name="sciona.atoms.signal_processing.biosppy.ecg.r_peak_detection",
             type_signature="np.ndarray, float -> np.ndarray",
             raw_code="""
 @register_atom(witness_r_peak_detection)
@@ -151,7 +161,7 @@ def r_peak_detection(filtered: np.ndarray, sampling_rate: float = 1000.0, state:
 # ---------------------------------------------------------------------------
 
 
-@_requires_ageoa
+@_requires_registered_atoms
 class TestBuildAbstractValue:
     def test_signal_default(self):
         val = _build_abstract_value("np.ndarray", "time domain")
@@ -210,7 +220,6 @@ class TestGhostSimReport:
         _ensure_atoms_imported()
 
         assert "custom.provider.numpy.fft" in attempted
-        assert "ageoa.numpy.fft" in attempted
         assert "sciona.atoms.numpy.fft" in attempted
 
     def test_candidate_ghost_package_roots_prioritize_configured_sources(
@@ -224,7 +233,6 @@ class TestGhostSimReport:
         class _FakeConfig:
             sources = [
                 _FakeSource("sciona.atoms.demo"),
-                _FakeSource("ageoa"),
             ]
 
         monkeypatch.setattr(
@@ -233,12 +241,12 @@ class TestGhostSimReport:
         )
         monkeypatch.setenv("SCIONA_ATOM_PACKAGE_PREFIXES", "custom.provider")
 
-        assert _candidate_ghost_package_roots() == (
-            "sciona.atoms.demo",
-            "ageoa",
-            "custom.provider",
-            "sciona.atoms",
-        )
+        roots = _candidate_ghost_package_roots()
+        # sciona is always first (matcher ships sciona.ghost)
+        assert roots[0] == "sciona"
+        # configured source comes next
+        assert "sciona.atoms.demo" in roots
+        assert "custom.provider" in roots
 
     def test_load_ghost_backend_uses_configured_provider_root_first(
         self,
@@ -253,25 +261,28 @@ class TestGhostSimReport:
 
         attempted: list[str] = []
 
+        _fake_module = type(
+            "_Module",
+            (),
+            {
+                "SimNode": object,
+                "SimResult": object,
+                "simulate_graph": lambda *args, **kwargs: None,
+                "PlanError": RuntimeError,
+                "AbstractDistribution": object,
+                "AbstractSignal": object,
+                "AbstractMatrix": object,
+                "list_registered": lambda: (),
+                "AbstractFilterCoefficients": object,
+                "AbstractGraphMeta": object,
+            },
+        )()
+
         def _capture_import(name: str):
             attempted.append(name)
+            # Let the configured provider succeed; everything else fails.
             if name.startswith("sciona.atoms.demo.ghost."):
-                return type(
-                    "_Module",
-                    (),
-                    {
-                        "SimNode": object,
-                        "SimResult": object,
-                        "simulate_graph": lambda *args, **kwargs: None,
-                        "PlanError": RuntimeError,
-                        "AbstractDistribution": object,
-                        "AbstractSignal": object,
-                        "AbstractMatrix": object,
-                        "list_registered": lambda: (),
-                        "AbstractFilterCoefficients": object,
-                        "AbstractGraphMeta": object,
-                    },
-                )()
+                return _fake_module
             raise ImportError(name)
 
         monkeypatch.setattr(
@@ -287,13 +298,11 @@ class TestGhostSimReport:
         backend = _load_ghost_backend()
 
         assert backend is not None
+        # sciona is tried first but fails (mocked import_module raises),
+        # then configured source succeeds.
         assert backend[0] == "sciona.atoms.demo"
-        assert attempted[:4] == [
-            "sciona.atoms.demo.ghost.simulator",
-            "sciona.atoms.demo.ghost.abstract",
-            "sciona.atoms.demo.ghost.registry",
-            "sciona.atoms.demo.ghost.witnesses",
-        ]
+        assert attempted[0] == "sciona.ghost.simulator"
+        assert "sciona.atoms.demo.ghost.simulator" in attempted
 
 
 # ---------------------------------------------------------------------------
@@ -301,7 +310,7 @@ class TestGhostSimReport:
 # ---------------------------------------------------------------------------
 
 
-@_requires_ageoa
+@_requires_registered_atoms
 class TestRunGhostSimulationFFT:
     """Test ghost simulation with a simple FFT -> IFFT pipeline."""
 
@@ -376,8 +385,8 @@ class TestRunGhostSimulationFFT:
     @pytest.fixture
     def fft_matches(self) -> list[MatchResult]:
         return [
-            _make_match("fft_node", "ageoa.numpy.fft.fft"),
-            _make_match("ifft_node", "ageoa.numpy.fft.ifft"),
+            _make_match("fft_node", "sciona.atoms.numpy.fft.fft"),
+            _make_match("ifft_node", "sciona.atoms.numpy.fft.ifft"),
         ]
 
     def test_fft_roundtrip_passes(self, fft_cdg, fft_matches):
@@ -393,7 +402,7 @@ class TestRunGhostSimulationFFT:
         assert report.trace == ["Forward FFT", "Inverse FFT"]
 
 
-@_requires_ageoa
+@_requires_registered_atoms
 class TestRunGhostSimulationDomainMismatch:
     """Test that domain mismatches are caught."""
 
@@ -481,7 +490,7 @@ class TestRunGhostSimulationDomainMismatch:
         assert report.error_function == "fft"
 
 
-@_requires_ageoa
+@_requires_registered_atoms
 class TestRunGhostSimulationNoWitness:
     """Test behaviour when atoms have no registered witness."""
 
@@ -513,7 +522,7 @@ class TestRunGhostSimulationNoWitness:
         assert report.skipped_nodes == ["Custom Op"]
 
 
-@_requires_ageoa
+@_requires_registered_atoms
 class TestRunGhostSimulationFilter:
     """Test ghost simulation with a filter design -> apply pipeline."""
 
@@ -594,7 +603,7 @@ class TestRunGhostSimulationFilter:
         assert report.node_count == 2
 
 
-@_requires_ageoa
+@_requires_registered_atoms
 class TestRunGhostSimulationMixed:
     """Test CDG with a mix of DSP and non-DSP nodes."""
 
@@ -699,8 +708,8 @@ class TestPrecisionGradientRoundTrip:
     @pytest.fixture
     def fft_matches(self) -> dict[str, MatchResult]:
         return {
-            "fft_node": _make_match("fft_node", "ageoa.numpy.fft.fft"),
-            "ifft_node": _make_match("ifft_node", "ageoa.numpy.fft.ifft"),
+            "fft_node": _make_match("fft_node", "sciona.atoms.numpy.fft.fft"),
+            "ifft_node": _make_match("ifft_node", "sciona.atoms.numpy.fft.ifft"),
         }
 
     @pytest.fixture

@@ -324,7 +324,7 @@ def _state_witness_type(
 
 def _normalized_ghost_package_root(ghost_package_root: str) -> str:
     root = str(ghost_package_root or "").strip()
-    return root or "ageoa"
+    return root or "sciona"
 
 
 def _ghost_module_name(ghost_package_root: str, module_name: str) -> str:
@@ -370,7 +370,7 @@ def _resolve_ghost_abstract_path(ghost_package_root: str) -> Path | None:
     return None
 
 
-def _available_ghost_abstract_names(*, ghost_package_root: str = "ageoa") -> set[str]:
+def _available_ghost_abstract_names(*, ghost_package_root: str = "sciona") -> set[str]:
     """Return the real exported ghost abstract names when discoverable."""
     abstract_module = _ghost_module_name(ghost_package_root, "abstract")
     try:
@@ -396,7 +396,7 @@ def _available_ghost_abstract_names(*, ghost_package_root: str = "ageoa") -> set
 def _emit_ghost_import_preamble(
     *,
     requested_names: set[str],
-    ghost_package_root: str = "ageoa",
+    ghost_package_root: str = "sciona",
 ) -> list[str]:
     """Emit a ghost import preamble that validates names against the real surface."""
     abstract_module = _ghost_module_name(ghost_package_root, "abstract")
@@ -553,7 +553,7 @@ async def generate_opaque_witnesses(
     context_namespace: str = "",
     context_budget_chars: int = 900,
     parallelism: int = 1,
-    ghost_package_root: str = "ageoa",
+    ghost_package_root: str = "sciona",
 ) -> tuple[str, dict[str, str]]:
     """Generate AbstractArray-based witnesses for opaque DL atoms.
 
@@ -1829,13 +1829,13 @@ def generate_atom_wrappers(
     class_name: str = "",
     source_file: str = "",
     plan: ValidatedMacroPlan | None = None,
-    ghost_package_root: str = "ageoa",
+    ghost_package_root: str = "sciona",
 ) -> str:
     """Generate ``@register_atom`` decorated function wrappers."""
     allowed_names = {spec.model_name for spec in state_models}
     canonical_ir = _canonical_ir(plan)
     lines = [
-        '"""Auto-generated atom wrappers following the ageoa pattern."""',
+        '"""Auto-generated atom wrappers following the sciona pattern."""',
         "",
         "from __future__ import annotations",
         "",
@@ -2093,7 +2093,7 @@ def generate_stateful_wrappers(
     source_file: str = "",
     source_language: str = "python",
     plan: ValidatedMacroPlan | None = None,
-    ghost_package_root: str = "ageoa",
+    ghost_package_root: str = "sciona",
 ) -> str:
     """Generate ``@register_atom`` wrappers with inject/run/extract state pattern.
 
@@ -2118,7 +2118,7 @@ def generate_stateful_wrappers(
     allowed_names = {spec.model_name for spec in state_models}
 
     lines = [
-        '"""Auto-generated stateful atom wrappers following the ageoa pattern."""',
+        '"""Auto-generated stateful atom wrappers following the sciona pattern."""',
         "",
         "from __future__ import annotations",
         "",
@@ -2578,7 +2578,7 @@ def generate_ghost_witnesses(
     state_models: list[StateModelSpec] | None = None,
     *,
     plan: ValidatedMacroPlan | None = None,
-    ghost_package_root: str = "ageoa",
+    ghost_package_root: str = "sciona",
 ) -> tuple[str, dict[str, str]]:
     """Generate ghost witness functions.
 
@@ -3464,7 +3464,7 @@ def emit_ingestion_bundle(
     class_name: str,
     source_file: str = "",
     source_language: str = "python",
-    ghost_package_root: str = "ageoa",
+    ghost_package_root: str = "sciona",
 ) -> IngestionBundle:
     """Assemble all Phase 3 outputs into an IngestionBundle."""
     # Conjugate updates should follow deterministic
