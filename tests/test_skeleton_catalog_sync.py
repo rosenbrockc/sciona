@@ -123,6 +123,24 @@ def test_build_skeleton_artifact_bundle_signal_detect_measure() -> None:
     assert len(bundle.cdg_edges) == 2
 
 
+def test_build_skeleton_artifact_bundle_belief_propagation() -> None:
+    bundle = next(
+        bundle
+        for bundle in load_skeleton_artifact_bundles()
+        if bundle.asset_id == "belief_propagation"
+    )
+
+    assert bundle.artifact["fqdn"] == "cdg.skeleton.belief_propagation"
+    assert bundle.version["semver"] == "v1"
+    assert bundle.artifact["top_level_input_arity"] == 2
+    assert bundle.artifact["top_level_output_arity"] == 2
+    assert bundle.artifact["topo_hash"]
+    assert any(row["kind"] == "dejargonized" for row in bundle.descriptions)
+    assert len(bundle.references_registry) == len(bundle.references) == 1
+    assert len(bundle.cdg_nodes) == 4
+    assert len(bundle.cdg_edges) == 7
+
+
 def test_sync_bundle_to_supabase_uses_deterministic_child_table_reload(monkeypatch) -> None:
     bundle = build_skeleton_artifact_bundle(load_local_skeleton_assets()[0])
     supabase = _FakeSupabase()
@@ -240,6 +258,16 @@ def test_enrich_bundle_with_catalog_verification_derives_bindings_and_evidence()
                     "notes": "stable",
                 }
             ],
+            "artifact_benchmarks": [
+                {
+                    "version_id": bundle.version["version_id"],
+                    "benchmark_name": "signal.event_rate.ecg.v1",
+                    "metric_name": "mae_bpm",
+                    "metric_value": 2.7,
+                    "dataset_tag": "ecg_event_rate_reference",
+                    "measured_at": "2026-04-14T15:10:00Z",
+                }
+            ],
         }
     )
 
@@ -253,7 +281,127 @@ def test_enrich_bundle_with_catalog_verification_derives_bindings_and_evidence()
     assert enriched.audit_rollup["runtime_status"] == "pass"
     assert enriched.audit_rollup["semantic_status"] == "pass"
     assert enriched.audit_rollup["trust_readiness"] == "ready"
-    assert enriched.uncertainty_estimates[0]["mode"] == "propagated"
+    assert {row["mode"] for row in enriched.uncertainty_estimates} >= {
+        "benchmark_evidence",
+        "propagated",
+    }
+    semantic_audit = next(
+        row for row in enriched.audit_evidence if row["audit_type"] == "semantic_audit"
+    )
+    assert semantic_audit["details"]["benchmark_pass"] is True
+
+
+def test_enrich_bundle_with_catalog_verification_requires_benchmark_evidence() -> None:
+    asset = next(
+        asset for asset in load_local_skeleton_assets() if asset.asset_id == "signal_detect_measure"
+    )
+    reviewed_asset = asset.model_copy(
+        update={
+            "audit": asset.audit.model_copy(update={"review_status": "transitional"})
+        }
+    )
+    bundle = build_skeleton_artifact_bundle(reviewed_asset)
+    supabase = _FakeSupabase(
+        reads={
+            "atoms": [
+                {
+                    "atom_id": "atom-filter",
+                    "fqdn": "pkg.signal.filter_signal_for_detection",
+                    "is_publishable": True,
+                },
+                {
+                    "atom_id": "atom-detect",
+                    "fqdn": "pkg.signal.detect_peaks_in_signal",
+                    "is_publishable": True,
+                },
+                {
+                    "atom_id": "atom-rate",
+                    "fqdn": "pkg.signal.compute_event_rate",
+                    "is_publishable": True,
+                },
+            ],
+            "atom_versions": [
+                {"atom_id": "atom-filter", "content_hash": "hash-filter"},
+                {"atom_id": "atom-detect", "content_hash": "hash-detect"},
+                {"atom_id": "atom-rate", "content_hash": "hash-rate"},
+            ],
+            "atom_verification_matches": [
+                {
+                    "atom_id": "atom-filter",
+                    "candidate_name": "pkg.signal.filter_signal_for_detection",
+                    "candidate_score": 0.9,
+                    "retrieval_method": "lexical",
+                    "verified": True,
+                    "verification_level": "type_checked",
+                    "proof_term": "",
+                    "compiler_output": "",
+                    "error_message": "",
+                    "all_candidates": [],
+                    "all_verifications": [],
+                },
+                {
+                    "atom_id": "atom-detect",
+                    "candidate_name": "pkg.signal.detect_peaks_in_signal",
+                    "candidate_score": 0.9,
+                    "retrieval_method": "lexical",
+                    "verified": True,
+                    "verification_level": "contract_checked",
+                    "proof_term": "",
+                    "compiler_output": "",
+                    "error_message": "",
+                    "all_candidates": [],
+                    "all_verifications": [],
+                },
+                {
+                    "atom_id": "atom-rate",
+                    "candidate_name": "pkg.signal.compute_event_rate",
+                    "candidate_score": 0.95,
+                    "retrieval_method": "lexical",
+                    "verified": True,
+                    "verification_level": "type_checked",
+                    "proof_term": "",
+                    "compiler_output": "",
+                    "error_message": "",
+                    "all_candidates": [],
+                    "all_verifications": [],
+                },
+            ],
+            "atom_audit_evidence": [
+                {"atom_id": "atom-filter", "audit_type": "smoke_test", "passed": True, "status": "completed"},
+                {"atom_id": "atom-detect", "audit_type": "smoke_test", "passed": True, "status": "completed"},
+                {"atom_id": "atom-rate", "audit_type": "smoke_test", "passed": True, "status": "completed"},
+            ],
+            "atom_uncertainty_estimates": [
+                {
+                    "atom_id": "atom-rate",
+                    "mode": "empirical",
+                    "scalar_factor": 0.12,
+                    "confidence": 0.92,
+                    "n_trials": 8,
+                    "epsilon": 0.01,
+                    "input_regime": "ecg",
+                    "notes": "stable",
+                }
+            ],
+            "artifact_benchmarks": [],
+        }
+    )
+
+    enriched = enrich_bundle_with_catalog_verification(bundle, supabase=supabase)
+
+    assert enriched.artifact["verified_leaf_coverage"] == 1.0
+    assert enriched.artifact["is_publishable"] is False
+    assert "benchmark_evidence_missing" in enriched.audit_rollup["trust_blockers"]
+    assert {row["audit_type"] for row in enriched.audit_evidence} >= {
+        "smoke_test",
+        "semantic_audit",
+        "structural_audit",
+        "risk_assessment",
+    }
+    semantic_audit = next(
+        row for row in enriched.audit_evidence if row["audit_type"] == "semantic_audit"
+    )
+    assert semantic_audit["details"]["benchmark_pass"] is False
 
 
 def test_enrich_bundle_with_catalog_verification_allows_bindings_without_verification_rows() -> None:

@@ -1,0 +1,177 @@
+{
+  "asset_id": "belief_propagation",
+  "asset_version": "v1",
+  "family": "belief_propagation",
+  "paradigm": "message_passing",
+  "name": "Belief Propagation Skeleton",
+  "summary": "Pass messages across a factor graph, combine them into beliefs, and retain convergence state between iterations.",
+  "dejargonized_summary": "Send information between connected nodes, combine the messages into beliefs, and keep track of whether the process has stabilized.",
+  "canonical_for_paradigm": true,
+  "variant_hints": ["sum_product", "loopy_bp"],
+  "stages": [
+    {
+      "stage_id": "variable_to_factor",
+      "name": "Variable to Factor",
+      "description": "Compute messages sent from variable nodes to factor nodes.",
+      "dejargonized_description": "Send each variable's current belief toward its neighboring factors.",
+      "concept_type": "message_passing",
+      "inputs": [
+        {"name": "incoming_messages", "type_desc": "dict[str, ndarray]"}
+      ],
+      "outputs": [
+        {"name": "var_messages", "type_desc": "dict[str, ndarray]"}
+      ]
+    },
+    {
+      "stage_id": "factor_to_variable",
+      "name": "Factor to Variable",
+      "description": "Compute messages sent from factor nodes to variable nodes.",
+      "dejargonized_description": "Let each factor explain what it thinks about the neighboring variables.",
+      "concept_type": "message_passing",
+      "inputs": [
+        {"name": "var_messages", "type_desc": "dict[str, ndarray]"},
+        {"name": "factor_potentials", "type_desc": "dict[str, ndarray]"}
+      ],
+      "outputs": [
+        {"name": "factor_messages", "type_desc": "dict[str, ndarray]"}
+      ]
+    },
+    {
+      "stage_id": "marginal_computation",
+      "name": "Marginal Computation",
+      "description": "Combine messages into marginal beliefs.",
+      "dejargonized_description": "Gather all of the messages and turn them into a belief for each variable.",
+      "concept_type": "message_passing",
+      "inputs": [
+        {"name": "factor_messages", "type_desc": "dict[str, ndarray]"},
+        {"name": "var_messages", "type_desc": "dict[str, ndarray]"}
+      ],
+      "outputs": [
+        {"name": "marginals", "type_desc": "dict[str, ndarray]"}
+      ]
+    },
+    {
+      "stage_id": "memoization_state",
+      "name": "Memoization State",
+      "description": "Cache prior message state for convergence checks.",
+      "dejargonized_description": "Remember the prior messages so the algorithm can tell when it has stabilized.",
+      "concept_type": "message_passing",
+      "inputs": [
+        {"name": "var_messages", "type_desc": "dict[str, ndarray]"},
+        {"name": "factor_messages", "type_desc": "dict[str, ndarray]"}
+      ],
+      "outputs": [
+        {"name": "memo_state", "type_desc": "dict[str, ndarray]"},
+        {"name": "converged", "type_desc": "bool"}
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source_stage_id": "variable_to_factor",
+      "target_stage_id": "factor_to_variable",
+      "output_name": "var_messages",
+      "input_name": "var_messages",
+      "source_type": "dict[str, ndarray]",
+      "target_type": "dict[str, ndarray]"
+    },
+    {
+      "source_stage_id": "factor_to_variable",
+      "target_stage_id": "marginal_computation",
+      "output_name": "factor_messages",
+      "input_name": "factor_messages",
+      "source_type": "dict[str, ndarray]",
+      "target_type": "dict[str, ndarray]"
+    },
+    {
+      "source_stage_id": "variable_to_factor",
+      "target_stage_id": "marginal_computation",
+      "output_name": "var_messages",
+      "input_name": "var_messages",
+      "source_type": "dict[str, ndarray]",
+      "target_type": "dict[str, ndarray]"
+    },
+    {
+      "source_stage_id": "variable_to_factor",
+      "target_stage_id": "memoization_state",
+      "output_name": "var_messages",
+      "input_name": "var_messages",
+      "source_type": "dict[str, ndarray]",
+      "target_type": "dict[str, ndarray]"
+    },
+    {
+      "source_stage_id": "factor_to_variable",
+      "target_stage_id": "memoization_state",
+      "output_name": "factor_messages",
+      "input_name": "factor_messages",
+      "source_type": "dict[str, ndarray]",
+      "target_type": "dict[str, ndarray]"
+    },
+    {
+      "source_stage_id": "memoization_state",
+      "target_stage_id": "variable_to_factor",
+      "output_name": "memo_state",
+      "input_name": "memo_state",
+      "source_type": "dict[str, ndarray]",
+      "target_type": "dict[str, ndarray]"
+    },
+    {
+      "source_stage_id": "memoization_state",
+      "target_stage_id": "factor_to_variable",
+      "output_name": "memo_state",
+      "input_name": "memo_state",
+      "source_type": "dict[str, ndarray]",
+      "target_type": "dict[str, ndarray]"
+    }
+  ],
+  "planning_constraints": [
+    {
+      "category": "stage",
+      "subject": "belief_propagation",
+      "statement": "Preserve the message and memoization channels until convergence is established.",
+      "severity": "required",
+      "rationale": "Message passing relies on iterative refinement and convergence tracking.",
+      "source_stage": "skeleton_asset"
+    }
+  ],
+  "audit": {
+    "provenance": "repo_local_transitional_asset",
+    "source_kind": "local_asset",
+    "review_status": "transitional",
+    "rationale": "Provides a reusable message-passing scaffold for macro-level inference tasks.",
+    "dejargonized_summary": "Pass messages between graph neighbors, merge them into beliefs, and track whether the process has stabilized.",
+    "migration_readiness": {
+      "status": "in_progress",
+      "target_repository": "../sciona-atoms",
+      "target_scope": "skeleton.belief_propagation",
+      "rationale": "The family scaffold is structurally stable and reusable.",
+      "checklist": [
+        {
+          "check_id": "schema_stable",
+          "description": "Skeleton stages and edge semantics are explicit and loadable.",
+          "required": true,
+          "satisfied": true
+        },
+        {
+          "check_id": "audit_complete",
+          "description": "References, rationale, and dejargonized documentation are present.",
+          "required": true,
+          "satisfied": true
+        },
+        {
+          "check_id": "cross_family_portability",
+          "description": "The scaffold encodes a generic family pattern rather than a local shortcut.",
+          "required": true,
+          "satisfied": true
+        }
+      ]
+    },
+    "references": [
+      {
+        "title": "Probabilistic Reasoning in Intelligent Systems",
+        "citation": "Pearl, Judea. Message passing and belief propagation foundations."
+      }
+    ],
+    "maintainers": ["ageo-matcher"]
+  }
+}

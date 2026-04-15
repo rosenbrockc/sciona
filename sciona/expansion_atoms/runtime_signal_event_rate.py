@@ -179,6 +179,24 @@ def compute_event_rate_median_smoothed(
     return midpoints, np.asarray(smoothed, dtype=np.float64)
 
 
+def estimate_event_rate_from_signal(
+    signal: np.ndarray,
+    sampling_rate: float | int,
+    *,
+    smoothing_window: int = 5,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Estimate event locations and a robust event-rate trace directly from a raw signal."""
+    conditioned = filter_signal_for_detection(signal, sampling_rate)
+    events = detect_peaks_in_signal(conditioned, sampling_rate)
+    filtered_events = reject_outlier_intervals(events, sampling_rate)
+    midpoints, event_rate = compute_event_rate_median_smoothed(
+        filtered_events,
+        sampling_rate,
+        smoothing_window=smoothing_window,
+    )
+    return filtered_events, midpoints, event_rate
+
+
 # ---------------------------------------------------------------------------
 # Expansion atoms — inserted by the DPO expansion engine
 # ---------------------------------------------------------------------------

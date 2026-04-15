@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,11 @@ from sciona.architect.skeleton_assets import SkeletonFamilyAsset, load_local_ske
 
 _MEASURED_AT = "2026-04-14T00:00:00Z"
 _RUNNER = "matcher-deterministic-benchmark-v1"
+_ATOM_BENCHMARK_TARGETS = {
+    "signal.event_rate.ecg.v1": "sciona.atoms.expansion.signal_event_rate.estimate_event_rate_from_signal",
+    "state_estimation.kalman.synthetic_tracking.v1": "sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state",
+    "state_estimation.particle.synthetic_tracking.v1": "sciona.atoms.state_estimation.particle_filters.track_particle_hidden_state",
+}
 
 
 @dataclass(frozen=True)
@@ -72,6 +78,21 @@ def _asset_by_id(asset_id: str) -> SkeletonFamilyAsset:
         if asset.asset_id == asset_id:
             return asset
     raise KeyError(f"Unknown skeleton asset {asset_id!r}")
+
+
+@lru_cache(maxsize=1)
+def _inventory_version_rows() -> dict[str, tuple[str, str]]:
+    from sciona.atoms.supabase_seed import derive_seed_inventory
+
+    repo_root = Path(__file__).resolve().parents[2]
+    inventory = derive_seed_inventory(base_dir=repo_root.parent)
+    return {row.fqdn: (row.content_hash, row.semver) for row in inventory.version_rows}
+
+
+def _atom_artifact_for_suite(suite_id: str) -> tuple[str, str, str]:
+    fqdn = _ATOM_BENCHMARK_TARGETS[suite_id]
+    content_hash, semver = _inventory_version_rows()[fqdn]
+    return fqdn, content_hash, semver
 
 
 def _f1_score(tp: int, fp: int, fn: int) -> float:
@@ -193,6 +214,65 @@ def _signal_suite_rows() -> list[BenchmarkResultRow]:
     return rows
 
 
+def _signal_atom_suite_rows() -> list[BenchmarkResultRow]:
+    from sciona.atoms.expansion.signal_event_rate import estimate_event_rate_from_signal
+
+    suite_id = "signal.event_rate.ecg.v1"
+    artifact_fqdn, content_hash, semver = _atom_artifact_for_suite(suite_id)
+    config_hash = _config_hash(
+        {
+            "suite": suite_id,
+            "samplerate": 100.0,
+            "runner": "estimate_event_rate_from_signal",
+        }
+    )
+    scenarios = {
+        "clean": dict(bpm_profile=np.full(8, 72.0), noise_scale=0.02, arrhythmia=False),
+        "noisy": dict(bpm_profile=np.full(8, 72.0), noise_scale=0.12, arrhythmia=False),
+        "arrhythmic": dict(
+            bpm_profile=np.asarray([72.0, 72.0, 88.0, 64.0, 92.0, 70.0, 84.0, 68.0]),
+            noise_scale=0.08,
+            arrhythmia=True,
+        ),
+    }
+    rows: list[BenchmarkResultRow] = []
+    for slice_key, params in scenarios.items():
+        signal, truth_events = _synthetic_ecg(**params)
+        detected, _, rate = estimate_event_rate_from_signal(signal, 100.0, smoothing_window=5)
+        tp, fp, fn = _match_events(truth_events, detected, tolerance_samples=8)
+        truth_bpm = np.mean(params["bpm_profile"])
+        mae_bpm = abs(float(np.median(rate)) - float(truth_bpm)) if rate.size else truth_bpm
+        rows.extend(
+            [
+                BenchmarkResultRow(
+                    suite_id=suite_id,
+                    artifact_fqdn=artifact_fqdn,
+                    artifact_kind="atom",
+                    content_hash=content_hash,
+                    semver=semver,
+                    metric_name="f1",
+                    metric_value=_f1_score(tp, fp, fn),
+                    slice_key=slice_key,
+                    run_config_hash=config_hash,
+                    notes="Deterministic synthetic ECG evaluation over the contract-level signal atom.",
+                ),
+                BenchmarkResultRow(
+                    suite_id=suite_id,
+                    artifact_fqdn=artifact_fqdn,
+                    artifact_kind="atom",
+                    content_hash=content_hash,
+                    semver=semver,
+                    metric_name="mae_bpm",
+                    metric_value=mae_bpm,
+                    slice_key=slice_key,
+                    run_config_hash=config_hash,
+                    notes="Deterministic synthetic ECG evaluation over the contract-level signal atom.",
+                ),
+            ]
+        )
+    return rows
+
+
 def _kalman_sequence(
     *,
     n_steps: int,
@@ -262,6 +342,45 @@ def _kalman_suite_rows() -> list[BenchmarkResultRow]:
                 slice_key=slice_key,
                 run_config_hash=config_hash,
                 notes="Deterministic linear-Gaussian tracking evaluation for the concrete Kalman skeleton.",
+            )
+        )
+    return rows
+
+
+def _kalman_atom_suite_rows() -> list[BenchmarkResultRow]:
+    from sciona.atoms.state_estimation.kalman_filters.atoms import (
+        track_linear_gaussian_state,
+    )
+
+    suite_id = "state_estimation.kalman.synthetic_tracking.v1"
+    artifact_fqdn, content_hash, semver = _atom_artifact_for_suite(suite_id)
+    config_hash = _config_hash({"suite": suite_id, "runner": "track_linear_gaussian_state"})
+    scenarios = {
+        "well_conditioned": dict(process_scale=0.05, observation_scale=0.12, abrupt_jump=False),
+        "high_noise": dict(process_scale=0.05, observation_scale=0.4, abrupt_jump=False),
+        "abrupt_transition": dict(process_scale=0.05, observation_scale=0.2, abrupt_jump=True),
+    }
+    rows: list[BenchmarkResultRow] = []
+    for slice_key, params in scenarios.items():
+        truth, observations = _kalman_sequence(n_steps=60, **params)
+        estimates, _ = track_linear_gaussian_state(
+            observations,
+            process_noise=params["process_scale"],
+            observation_noise=params["observation_scale"],
+        )
+        rmse = float(np.sqrt(np.mean((estimates - truth) ** 2)))
+        rows.append(
+            BenchmarkResultRow(
+                suite_id=suite_id,
+                artifact_fqdn=artifact_fqdn,
+                artifact_kind="atom",
+                content_hash=content_hash,
+                semver=semver,
+                metric_name="rmse_state",
+                metric_value=rmse,
+                slice_key=slice_key,
+                run_config_hash=config_hash,
+                notes="Deterministic linear-tracking evaluation over the contract-level Kalman atom.",
             )
         )
     return rows
@@ -353,6 +472,56 @@ def _particle_suite_rows() -> list[BenchmarkResultRow]:
     return rows
 
 
+def _particle_atom_suite_rows() -> list[BenchmarkResultRow]:
+    from sciona.atoms.state_estimation.particle_filters.atoms import (
+        track_particle_hidden_state,
+    )
+
+    suite_id = "state_estimation.particle.synthetic_tracking.v1"
+    artifact_fqdn, content_hash, semver = _atom_artifact_for_suite(suite_id)
+    config_hash = _config_hash({"suite": suite_id, "runner": "track_particle_hidden_state"})
+    scenarios = {
+        "mild_nonlinearity": dict(process_scale=0.08, observation_scale=0.2, nonlinearity=0.1),
+        "heavy_nonlinearity": dict(process_scale=0.12, observation_scale=0.25, nonlinearity=0.3),
+        "multimodal_observation": dict(process_scale=0.08, observation_scale=0.35, nonlinearity=0.5),
+    }
+    rows: list[BenchmarkResultRow] = []
+    for slice_key, params in scenarios.items():
+        truth, observations = _particle_sequence(n_steps=60, **params)
+        estimates, ess_fractions, _ = track_particle_hidden_state(observations, rng_seed=7)
+        rmse = float(np.sqrt(np.mean((estimates - truth) ** 2)))
+        ess_fraction = float(np.mean(ess_fractions))
+        rows.extend(
+            [
+                BenchmarkResultRow(
+                    suite_id=suite_id,
+                    artifact_fqdn=artifact_fqdn,
+                    artifact_kind="atom",
+                    content_hash=content_hash,
+                    semver=semver,
+                    metric_name="rmse_state",
+                    metric_value=rmse,
+                    slice_key=slice_key,
+                    run_config_hash=config_hash,
+                    notes="Deterministic nonlinear-tracking evaluation over the contract-level particle atom.",
+                ),
+                BenchmarkResultRow(
+                    suite_id=suite_id,
+                    artifact_fqdn=artifact_fqdn,
+                    artifact_kind="atom",
+                    content_hash=content_hash,
+                    semver=semver,
+                    metric_name="ess_fraction",
+                    metric_value=ess_fraction,
+                    slice_key=slice_key,
+                    run_config_hash=config_hash,
+                    notes="Deterministic nonlinear-tracking evaluation over the contract-level particle atom.",
+                ),
+            ]
+        )
+    return rows
+
+
 def generate_provider_benchmark_results() -> dict[Path, list[dict[str, Any]]]:
     repo_root = Path(__file__).resolve().parents[2]
     provider_root = repo_root.parent
@@ -360,11 +529,18 @@ def generate_provider_benchmark_results() -> dict[Path, list[dict[str, Any]]]:
         provider_root / "sciona-atoms" / "data" / "benchmarks" / "benchmark_results.json": [],
         provider_root / "sciona-atoms-signal" / "data" / "benchmarks" / "benchmark_results.json": [],
     }
-    grouped[next(path for path in grouped if "sciona-atoms-signal" in str(path))].extend(
-        _signal_suite_rows()
+    signal_path = next(path for path in grouped if "sciona-atoms-signal" in str(path))
+    core_path = next(
+        path
+        for path in grouped
+        if str(path).endswith("sciona-atoms/data/benchmarks/benchmark_results.json")
     )
-    grouped[next(path for path in grouped if str(path).endswith("sciona-atoms/data/benchmarks/benchmark_results.json"))].extend(
-        _kalman_suite_rows() + _particle_suite_rows()
+    grouped[signal_path].extend(_signal_suite_rows() + _signal_atom_suite_rows())
+    grouped[core_path].extend(
+        _kalman_suite_rows()
+        + _kalman_atom_suite_rows()
+        + _particle_suite_rows()
+        + _particle_atom_suite_rows()
     )
     return {
         path: [row.as_dict() for row in sorted(rows, key=lambda row: (

@@ -285,6 +285,29 @@ def _fetch_catalog_verification_state(
     )
 
 
+def _fetch_artifact_benchmarks(
+    supabase: Any,
+    *,
+    version_id: str,
+) -> list[dict[str, Any]]:
+    response = (
+        supabase.table("artifact_benchmarks")
+        .select("version_id,benchmark_name,metric_name,metric_value,dataset_tag,measured_at")
+        .eq("version_id", version_id)
+        .execute()
+    )
+    rows = [dict(row) for row in (response.data or [])]
+    rows.sort(
+        key=lambda row: (
+            str(row.get("benchmark_name", "")),
+            str(row.get("metric_name", "")),
+            str(row.get("dataset_tag", "")),
+            str(row.get("measured_at", "")),
+        )
+    )
+    return rows
+
+
 def _aggregate_audit_status(
     atom_bindings: list[_AtomBinding],
     audit_rows_by_atom_id: dict[str, list[dict[str, Any]]],
@@ -329,6 +352,10 @@ def enrich_bundle_with_catalog_verification(
 
     binding_hints = _build_binding_hints(asset)
     state = _fetch_catalog_verification_state(supabase, set(binding_hints.values()))
+    benchmark_rows = _fetch_artifact_benchmarks(
+        supabase,
+        version_id=str(bundle.version["version_id"]),
+    )
     nodes_by_id = {str(row["node_id"]): row for row in bundle.cdg_nodes}
     sorted_node_ids = sorted(nodes_by_id)
     bindings: list[dict[str, Any]] = []
@@ -336,6 +363,7 @@ def enrich_bundle_with_catalog_verification(
     bound_atoms: list[_AtomBinding] = []
     unresolved_nodes: list[str] = []
     verified_leaf_count = 0
+    benchmark_pass = bool(benchmark_rows)
 
     for node_id in sorted_node_ids:
         node = nodes_by_id[node_id]
@@ -442,9 +470,32 @@ def enrich_bundle_with_catalog_verification(
                 ),
             }
         )
+    if benchmark_rows:
+        benchmark_rows_by_name = {
+            str(row.get("benchmark_name", "") or ""): row for row in benchmark_rows
+        }
+        uncertainty_estimates.append(
+            {
+                "artifact_id": bundle.artifact["artifact_id"],
+                "version_id": bundle.version["version_id"],
+                "mode": "benchmark_evidence",
+                "scalar_factor": float(len(benchmark_rows)),
+                "confidence": 1.0,
+                "n_trials": len(benchmark_rows),
+                "epsilon": 0.0,
+                "input_regime": "artifact_benchmarks",
+                "notes": "Benchmarks available: "
+                + ", ".join(sorted(benchmark_rows_by_name)),
+            }
+        )
 
     structural_pass = bool(bundle.cdg_nodes and bundle.cdg_edges is not None and bundle.references)
-    semantic_pass = coverage == 1.0 and all(binding.is_publishable for binding in bound_atoms) and len(bound_atoms) == leaf_count
+    semantic_pass = (
+        coverage == 1.0
+        and all(binding.is_publishable for binding in bound_atoms)
+        and len(bound_atoms) == leaf_count
+        and benchmark_pass
+    )
     runtime_status, smoke_pass, smoke_details = _aggregate_audit_status(
         bound_atoms,
         state.audit_rows_by_atom_id,
@@ -477,6 +528,8 @@ def enrich_bundle_with_catalog_verification(
         trust_blockers.append("leaf_verification_missing")
     if not smoke_pass:
         trust_blockers.append("smoke_evidence_incomplete")
+    if not benchmark_pass:
+        trust_blockers.append("benchmark_evidence_missing")
 
     audit_evidence = [
         {
@@ -506,6 +559,15 @@ def enrich_bundle_with_catalog_verification(
                 "binding_coverage": coverage,
                 "bound_atoms": [binding.fqdn for binding in bound_atoms],
                 "unresolved_nodes": unresolved_nodes,
+                "benchmark_pass": benchmark_pass,
+                "benchmark_count": len(benchmark_rows),
+                "benchmark_names": sorted(
+                    {
+                        str(row.get("benchmark_name", "") or "")
+                        for row in benchmark_rows
+                        if str(row.get("benchmark_name", "") or "")
+                    }
+                ),
             },
             "source_kind": "automated",
             "runner_version": "skeleton-sync-v2",
@@ -592,7 +654,10 @@ def enrich_bundle_with_catalog_verification(
     updated_artifact = dict(bundle.artifact)
     updated_artifact["verified_leaf_coverage"] = coverage
     updated_artifact["is_publishable"] = (
-        review_status in {"approved", "transitional"} and coverage == 1.0 and any_verified
+        review_status in {"approved", "transitional"}
+        and coverage == 1.0
+        and any_verified
+        and benchmark_pass
     )
 
     updated_rollup = dict(bundle.audit_rollup)
@@ -604,7 +669,7 @@ def enrich_bundle_with_catalog_verification(
             "developer_semantics_status": "reviewed" if review_status != "draft" else "draft",
             "risk_tier": risk_tier,
             "risk_score": risk_score,
-            "acceptability_score": 85 if updated_artifact["is_publishable"] else 60 if coverage > 0 else 35,
+            "acceptability_score": 90 if updated_artifact["is_publishable"] else 65 if coverage > 0 and benchmark_pass else 35,
             "acceptability_band": (
                 "acceptable_with_limits"
                 if updated_artifact["is_publishable"]

@@ -15,18 +15,27 @@ def test_generate_provider_benchmark_results_groups_rows_by_provider_path() -> N
     assert signal_path.name == "benchmark_results.json"
     assert core_path.name == "benchmark_results.json"
     assert {row["suite_id"] for row in grouped[signal_path]} == {"signal.event_rate.ecg.v1"}
+    assert {row["artifact_kind"] for row in grouped[signal_path]} == {"atom", "cdg"}
+    assert {row["artifact_fqdn"] for row in grouped[signal_path] if row["artifact_kind"] == "atom"} == {
+        "sciona.atoms.expansion.signal_event_rate.estimate_event_rate_from_signal"
+    }
     assert {row["suite_id"] for row in grouped[core_path]} == {
         "state_estimation.kalman.synthetic_tracking.v1",
         "state_estimation.particle.synthetic_tracking.v1",
     }
+    assert {row["artifact_kind"] for row in grouped[core_path]} == {"atom", "cdg"}
+    assert {row["artifact_fqdn"] for row in grouped[core_path] if row["artifact_kind"] == "atom"} == {
+        "sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state",
+        "sciona.atoms.state_estimation.particle_filters.track_particle_hidden_state",
+    }
 
 
-def test_generated_rows_are_cdg_benchmarks_with_deterministic_fields() -> None:
+def test_generated_rows_cover_atom_and_cdg_benchmarks_with_deterministic_fields() -> None:
     grouped = generate_provider_benchmark_results()
     rows = [row for group in grouped.values() for row in group]
 
     assert rows
-    assert {row["artifact_kind"] for row in rows} == {"cdg"}
+    assert {row["artifact_kind"] for row in rows} == {"atom", "cdg"}
     assert {row["measured_at"] for row in rows} == {"2026-04-14T00:00:00Z"}
     assert all(Path(path).name == "benchmark_results.json" for path in map(str, grouped))
     assert all(len(str(row["content_hash"])) == 64 for row in rows)

@@ -28,10 +28,13 @@ class TestLocalSkeletonAssets:
         assert "kalman_filter" in by_id
         assert "particle_filter" in by_id
         assert "signal_detect_measure" in by_id
+        assert "belief_propagation" in by_id
         assert by_id["family.divide_and_conquer.v1"].audit.review_status == "transitional"
         assert by_id["family.sequential_filter.v1"].family == "sequential_filter"
         assert by_id["kalman_filter"].family == "kalman_filter"
         assert by_id["particle_filter"].family == "particle_filter"
+        assert by_id["belief_propagation"].paradigm == ConceptType.MESSAGE_PASSING
+        assert by_id["belief_propagation"].canonical_for_paradigm is True
         assert by_id["family.sequential_filter.v1"].variant_hints == [
             "kalman_filter",
             "particle_filter",
@@ -106,6 +109,19 @@ class TestLocalSkeletonAssets:
         assert sequential.metadata["asset"]["asset_id"] == "family.sequential_filter.v1"
         assert by_name["kalman_filter"].metadata["asset"]["asset_id"] == "kalman_filter"
         assert by_name["particle_filter"].metadata["asset"]["asset_id"] == "particle_filter"
+        assert by_name["belief_propagation"].metadata["asset"]["asset_id"] == "belief_propagation"
+
+    def test_message_passing_asset_is_first_class_skeleton_lookup(self):
+        default_message_passing = get_skeleton(ConceptType.MESSAGE_PASSING)
+        belief_hint = get_skeleton(
+            ConceptType.MESSAGE_PASSING,
+            variant="belief_propagation",
+        )
+
+        assert default_message_passing is not None
+        assert belief_hint is not None
+        assert default_message_passing.metadata["asset"]["asset_id"] == "belief_propagation"
+        assert belief_hint.metadata["asset"]["asset_id"] == "belief_propagation"
 
     def test_sequential_filter_asset_is_first_class_skeleton_lookup(self):
         default_filter = get_skeleton(ConceptType.SEQUENTIAL_FILTER)

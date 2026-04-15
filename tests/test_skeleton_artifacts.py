@@ -19,6 +19,7 @@ def test_local_skeleton_macro_candidates_are_deterministic() -> None:
     assert {
         candidate.fqdn for candidate in candidates
     } >= {
+        "cdg.skeleton.belief_propagation",
         "cdg.skeleton.kalman_filter",
         "cdg.skeleton.particle_filter",
         "cdg.skeleton.signal_detect_measure",
@@ -34,6 +35,20 @@ def test_local_skeleton_macro_candidates_are_deterministic() -> None:
     assert signal_candidate.cdg is not None
     assert signal_candidate.cdg.metadata["artifact_fqdn"] == signal_candidate.fqdn
     assert signal_candidate.cdg.metadata["artifact_source"] == "local_skeleton_asset"
+
+
+@pytest.mark.asyncio
+async def test_local_skeleton_macro_retriever_matches_belief_propagation() -> None:
+    retriever = build_local_skeleton_macro_retriever(min_score=0.3)
+
+    result = await retriever.match_goal(
+        MacroMatchRequest(goal="Run belief propagation over a factor graph")
+    )
+
+    assert result.success is True
+    assert result.candidate is not None
+    assert result.candidate.fqdn == "cdg.skeleton.belief_propagation"
+    assert result.candidate.terminal_on_match is False
 
 
 @pytest.mark.asyncio

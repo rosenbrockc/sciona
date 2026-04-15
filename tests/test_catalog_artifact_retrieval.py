@@ -254,6 +254,74 @@ async def test_catalog_macro_retriever_falls_back_when_catalog_misses() -> None:
 
 
 @pytest.mark.asyncio
+async def test_catalog_macro_retriever_matches_belief_propagation_from_catalog() -> None:
+    document = {
+        "artifact": {
+            "artifact_id": "artifact-4",
+            "fqdn": "cdg.skeleton.belief_propagation",
+            "artifact_kind": "cdg",
+            "source_symbol": "belief_propagation",
+            "verified_leaf_coverage": 0.0,
+            "visibility_tier": "general",
+            "namespace_root": "sciona.architect.assets.skeletons",
+            "namespace_path": "belief_propagation",
+        },
+        "descriptions": [
+            {
+                "kind": "dejargonized",
+                "content": "Pass messages around a factor graph until beliefs stabilize.",
+            }
+        ],
+        "cdg_nodes": [
+            {
+                "node_id": "variable_to_factor",
+                "parent_node_id": "",
+                "name": "Variable to Factor",
+                "description": "Send variable messages.",
+                "concept_type": "message_passing",
+                "status": "atomic",
+                "type_signature": "state -> messages",
+            }
+        ],
+        "cdg_edges": [],
+    }
+    retriever = CatalogMacroArtifactRetriever(
+        _FakeSupabase(
+            search_rows=[],
+            catalog_rows=[
+                {
+                    "artifact_id": "artifact-4",
+                    "artifact_kind": "cdg",
+                    "fqdn": "cdg.skeleton.belief_propagation",
+                    "technical_description": "Message passing family scaffold.",
+                    "domain_tags": ["belief_propagation", "message_passing"],
+                    "score": 0.0,
+                }
+            ],
+            documents={"cdg.skeleton.belief_propagation": document},
+            versions={
+                "artifact-4": {
+                    "version_id": "version-4",
+                    "semver": "v1",
+                    "content_hash": "hash-abc",
+                }
+            },
+        ),
+        min_score=0.3,
+    )
+
+    result = await retriever.match_goal(
+        MacroMatchRequest(goal="Run belief propagation over a factor graph")
+    )
+
+    assert result.success is True
+    assert result.candidate is not None
+    assert result.candidate.fqdn == "cdg.skeleton.belief_propagation"
+    assert result.candidate.semver == "v1"
+    assert result.candidate.content_hash == "hash-abc"
+
+
+@pytest.mark.asyncio
 async def test_catalog_macro_retriever_ranks_over_catalog_rows_when_rpc_misses() -> None:
     document = {
         "artifact": {
