@@ -11,6 +11,7 @@ from fastapi import HTTPException
 
 from sciona.api.routers.catalog import get_artifact_document, get_atom_document
 from sciona.api.snapshot import (
+    DEFAULT_FILTER_BATCH_SIZE,
     export_tiered_manifests,
     fetch_manifest_data,
     generate_manifest_sqlite,
@@ -140,7 +141,7 @@ async def test_fetch_manifest_data_applies_visibility_tier_filter(monkeypatch):
     )
 
     assert data["atoms"] == []
-    assert captured_filters[0]["visibility_tier"] == "in.(general,early_access)"
+    assert captured_filters[0]["visibility_tier"] == 'in.("general","early_access")'
 
 
 @pytest.mark.asyncio
@@ -214,6 +215,70 @@ async def test_fetch_manifest_data_falls_back_to_atom_benchmarks(monkeypatch):
     assert data["benchmarks"][0]["content_hash"] == "abc123"
     assert data["benchmarks"][0]["benchmark_id"] == "bench-1"
     assert data["benchmarks"][0]["benchmark_name"] == "signal_v1"
+
+
+@pytest.mark.asyncio
+async def test_fetch_manifest_data_filters_related_tables_client_side(monkeypatch):
+    atoms = [
+        {
+            "atom_id": f"a{i}",
+            "fqdn": f"pkg.atom_{i}",
+            "status": "approved",
+            "domain_tags": ["signal"],
+            "description": f"Atom {i}",
+            "visibility_tier": "general",
+            "source_kind": "hand_written",
+            "stateful_kind": "none",
+            "is_stochastic": False,
+            "is_ffi": False,
+            "namespace_root": "sciona.atoms",
+            "namespace_path": "",
+            "source_repo_id": None,
+            "source_package": "",
+            "source_module_path": "",
+            "source_symbol": "",
+            "is_publishable": True,
+        }
+        for i in range(DEFAULT_FILTER_BATCH_SIZE + 5)
+    ]
+    related_filters: dict[str, dict[str, str]] = {}
+
+    async def fake_fetch_all_rows(base_url, token, table, **kwargs):
+        del base_url, token
+        if table == "atoms":
+            return atoms
+        if table in {
+            "hyperparams",
+            "atom_audit_rollups",
+            "atom_descriptions",
+            "atom_io_specs",
+        }:
+            related_filters[table] = dict(kwargs.get("filters") or {})
+            return []
+        if table in {"atom_benchmarks", "atom_versions"}:
+            return []
+        raise AssertionError(f"unexpected table {table!r}")
+
+    async def fake_call_rpc(*args, **kwargs):
+        request = httpx.Request(
+            "POST",
+            "https://example.supabase.co/rest/v1/rpc/get_manifest_benchmarks",
+        )
+        response = httpx.Response(404, request=request)
+        raise httpx.HTTPStatusError("missing", request=request, response=response)
+
+    monkeypatch.setattr("sciona.api.snapshot._fetch_all_rows", fake_fetch_all_rows)
+    monkeypatch.setattr("sciona.api.snapshot._call_rpc", fake_call_rpc)
+
+    await fetch_manifest_data("https://example.supabase.co", "token")
+
+    assert related_filters["hyperparams"] == {"status": "eq.approved"}
+    assert related_filters["atom_audit_rollups"] == {}
+    assert related_filters["atom_descriptions"] == {
+        "kind": "eq.dejargonized",
+        "language": "eq.en",
+    }
+    assert related_filters["atom_io_specs"] == {}
 
 
 def test_generate_manifest_sqlite_preserves_benchmark_id(tmp_path: Path):

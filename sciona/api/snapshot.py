@@ -14,6 +14,7 @@ from typing import Any
 import httpx
 
 DEFAULT_PAGE_SIZE = 1000
+DEFAULT_FILTER_BATCH_SIZE = 10
 DEFAULT_MANIFEST_TIER = "general"
 DEFAULT_MANIFEST_VISIBILITY_TIER = "all"
 MANIFEST_TIERS: dict[str, tuple[str, ...]] = {
@@ -56,6 +57,11 @@ def _domain_tags_to_text(tags: Any) -> str:
 
 def _chunk(values: Sequence[str], size: int) -> list[list[str]]:
     return [list(values[i : i + size]) for i in range(0, len(values), size)]
+
+
+def _postgrest_in_filter(values: Sequence[str]) -> str:
+    quoted = ",".join(json.dumps(str(value)) for value in values)
+    return f"in.({quoted})"
 
 
 def _normalize_visibility_tiers(
@@ -220,7 +226,7 @@ async def fetch_manifest_data(
         "is_publishable": "eq.true",
     }
     if requested_tiers:
-        atom_filters["visibility_tier"] = f"in.({','.join(requested_tiers)})"
+        atom_filters["visibility_tier"] = _postgrest_in_filter(requested_tiers)
 
     atoms = await _fetch_all_rows(
         base_url,
@@ -238,6 +244,7 @@ async def fetch_manifest_data(
     )
 
     atom_ids = [str(row["atom_id"]) for row in atoms if row.get("atom_id")]
+    atom_id_set = set(atom_ids)
     atom_fqdns = {str(row["fqdn"]) for row in atoms if row.get("fqdn")}
     hyperparams: list[dict[str, Any]] = []
     rollups: list[dict[str, Any]] = []
@@ -255,79 +262,79 @@ async def fetch_manifest_data(
             "io_specs": io_specs,
         }
 
-    for batch in _chunk(atom_ids, DEFAULT_PAGE_SIZE):
-        if not batch:
-            continue
-        in_filter = f"in.({','.join(batch)})"
-        hyperparams.extend(
-            await _fetch_all_rows(
-                base_url,
-                access_token,
-                "hyperparams",
-                select=(
-                    "hp_id,atom_id,name,kind,default_value,min_value,max_value,"
-                    "step_value,log_scale,choices_json,constraints_json,"
-                    "semantic_role,status"
-                ),
-                filters={
-                    "atom_id": in_filter,
-                    "status": "eq.approved",
-                },
-                order="atom_id.asc,name.asc",
-                client=client,
-            )
-        )
-        rollups.extend(
-            await _fetch_all_rows(
-                base_url,
-                access_token,
-                "atom_audit_rollups",
-                select=(
-                    "atom_id,overall_verdict,structural_status,runtime_status,"
-                    "semantic_status,developer_semantics_status,risk_tier,"
-                    "risk_score,risk_dimensions,risk_reasons,acceptability_score,"
-                    "acceptability_band,parity_coverage_level,parity_test_status,"
-                    "parity_fixture_count,parity_case_count,review_status,"
-                    "review_semantic_verdict,review_developer_semantics_verdict,"
-                    "review_limitations,review_required_actions,trust_readiness,"
-                    "trust_blockers,updated_at"
-                ),
-                filters={"atom_id": in_filter},
-                order="atom_id.asc",
-                client=client,
-            )
-        )
-        descriptions.extend(
-            await _fetch_all_rows(
-                base_url,
-                access_token,
-                "atom_descriptions",
-                select=(
-                    "description_id,atom_id,kind,content,language,generated_by,"
-                    "reviewed,jargon_score,created_at,updated_at"
-                ),
-                filters={
-                    "atom_id": in_filter,
-                    "kind": "eq.dejargonized",
-                    "language": "eq.en",
-                },
-                order="atom_id.asc,updated_at.desc",
-                client=client,
-            )
-        )
-        spec_rows = await _fetch_all_rows(
-            base_url,
-            access_token,
-            "atom_io_specs",
-            select=(
-                "io_spec_id,atom_id,version_id,direction,name,type_desc,"
-                "constraints,data_kind,required,default_value_repr,ordinal"
-            ),
-            filters={"atom_id": in_filter},
-            order="atom_id.asc,direction.asc,ordinal.asc,name.asc",
-            client=client,
-        )
-        io_specs.extend(_normalize_io_spec_row(row) for row in spec_rows)
+    hyperparam_rows = await _fetch_all_rows(
+        base_url,
+        access_token,
+        "hyperparams",
+        select=(
+            "hp_id,atom_id,name,kind,default_value,min_value,max_value,"
+            "step_value,log_scale,choices_json,constraints_json,"
+            "semantic_role,status"
+        ),
+        filters={"status": "eq.approved"},
+        order="atom_id.asc,name.asc",
+        client=client,
+    )
+    hyperparams.extend(
+        row for row in hyperparam_rows if str(row.get("atom_id", "")) in atom_id_set
+    )
+
+    rollup_rows = await _fetch_all_rows(
+        base_url,
+        access_token,
+        "atom_audit_rollups",
+        select=(
+            "atom_id,overall_verdict,structural_status,runtime_status,"
+            "semantic_status,developer_semantics_status,risk_tier,"
+            "risk_score,risk_dimensions,risk_reasons,acceptability_score,"
+            "acceptability_band,parity_coverage_level,parity_test_status,"
+            "parity_fixture_count,parity_case_count,review_status,"
+            "review_semantic_verdict,review_developer_semantics_verdict,"
+            "review_limitations,review_required_actions,trust_readiness,"
+            "trust_blockers,updated_at"
+        ),
+        order="atom_id.asc",
+        client=client,
+    )
+    rollups.extend(
+        row for row in rollup_rows if str(row.get("atom_id", "")) in atom_id_set
+    )
+
+    description_rows = await _fetch_all_rows(
+        base_url,
+        access_token,
+        "atom_descriptions",
+        select=(
+            "description_id,atom_id,kind,content,language,generated_by,"
+            "reviewed,jargon_score,created_at,updated_at"
+        ),
+        filters={
+            "kind": "eq.dejargonized",
+            "language": "eq.en",
+        },
+        order="atom_id.asc,updated_at.desc",
+        client=client,
+    )
+    descriptions.extend(
+        row for row in description_rows if str(row.get("atom_id", "")) in atom_id_set
+    )
+
+    spec_rows = await _fetch_all_rows(
+        base_url,
+        access_token,
+        "atom_io_specs",
+        select=(
+            "io_spec_id,atom_id,version_id,direction,name,type_desc,"
+            "constraints,required,default_value_repr,ordinal"
+        ),
+        order="atom_id.asc,direction.asc,ordinal.asc,name.asc",
+        client=client,
+    )
+    io_specs.extend(
+        _normalize_io_spec_row(row)
+        for row in spec_rows
+        if str(row.get("atom_id", "")) in atom_id_set
+    )
 
     try:
         rpc_rows = await _call_rpc(
