@@ -1,88 +1,649 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T14:40:18.739760+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T20:49:06.027606+00:00.
 
-## Headline
+- Remaining unpublished atoms: `365`
+- Remaining worker batches: `71`
 
-- Unpublished atoms: `444`
-- Frozen worker batches: `79`
-- References-only atom slice: `12` atoms
-- Audit-rollup-only atom slice: `214` atoms
+## Batches
 
-## Immediate High-Leverage Slices
+### pubrev-001
 
-1. References-only atoms: `12` atoms already audit-approved and blocked only on references.
-2. Audit-rollup-only atoms: `214` atoms that already have the rest of the metadata surface and mainly need provider review completion.
-3. License/provenance focus batches: external-wrapper families in physics/numpy/scipy and finance where public publication may still need provenance or policy confirmation.
+- Repo: `sciona-atoms-fintech`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `27`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss.computeoptimaltrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.optimalexecutiontrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.riskaversioninit`
 
-### References-Only Atom Slice
+### pubrev-002
 
-- `sciona.atoms.expansion.graph_signal_processing.validate_filter_response`
-- `sciona.atoms.expansion.graph_signal_processing.validate_graph_connectivity`
-- `sciona.atoms.expansion.signal_detect_measure.estimate_false_positive_rate`
-- `sciona.atoms.expansion.signal_detect_measure.estimate_snr`
-- `sciona.atoms.expansion.signal_event_rate.compute_event_rate`
-- `sciona.atoms.expansion.signal_event_rate.filter_signal_for_detection`
-- `sciona.atoms.expansion.signal_filter.analyze_pole_stability`
-- `sciona.atoms.expansion.signal_filter.detect_transient_response`
-- `sciona.atoms.expansion.signal_transform.check_inverse_reconstruction`
-- `sciona.atoms.expansion.signal_transform.validate_parseval_energy`
-- `sciona.atoms.signal_processing.e2e_ppg.reconstruction.gan_patch_reconstruction`
-- `sciona.atoms.signal_processing.e2e_ppg.reconstruction.windowed_signal_reconstruction`
+- Repo: `sciona-atoms-fintech`
+- Wave: `wave_1_audit_completion`
+- Atoms: `18`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.avg`, `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.evolve`, `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold`
 
-## Recommended Worker Waves
+### pubrev-003
 
-- `wave_1_easy_win`: `0` batches
-- `wave_1_audit_completion`: `33` batches
-- `wave_2_metadata_and_llm_review`: `45` batches
-- `wave_3_residual_policy_or_provenance`: `1` batches
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_1_audit_completion`
+- Atoms: `15`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.bio.molecular_docking.minimize_bandwidth.aggregate_maximum_distance_as_bandwidth`, `sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_sparse_graph_view`, `sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_threshold_search_space`
 
-## Priority Queue
+### pubrev-004
 
-| Batch | Repo | Atoms | Class | Wave | Web | Human | Scope |
-| --- | --- | ---: | --- | --- | --- | --- | --- |
-| `pubrev-001` | `sciona-atoms-fintech` | `27` | `full_metadata_missing` | `wave_2_metadata_and_llm_review` | `high` | `medium` | `sciona.atoms.fintech.institutional_quant_engine.__remainder__` |
-| `pubrev-002` | `sciona-atoms-fintech` | `18` | `audit_rollup_only` | `wave_1_audit_completion` | `medium` | `medium` | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12` |
-| `pubrev-003` | `sciona-atoms-bio` | `15` | `audit_rollup_only` | `wave_1_audit_completion` | `medium` | `low` | `sciona.atoms.bio.molecular_docking.minimize_bandwidth` |
-| `pubrev-004` | `sciona-atoms-robotics` | `14` | `audit_rollup_only` | `wave_1_audit_completion` | `high` | `low` | `sciona.atoms.robotics.pronto.__remainder__` |
-| `pubrev-005` | `sciona-atoms-bio` | `13` | `audit_rollup_only` | `wave_1_audit_completion` | `high` | `medium` | `sciona.atoms.bio.molecular_docking.__remainder__` |
-| `pubrev-006` | `sciona-atoms-fintech` | `13` | `audit_rollup_only` | `wave_1_audit_completion` | `medium` | `medium` | `sciona.atoms.fintech.quantfin.rng_skip_d12` |
-| `pubrev-007` | `sciona-atoms-signal` | `12` | `audit_rollup_only` | `wave_1_audit_completion` | `medium` | `low` | `sciona.atoms.signal_processing.biosppy.__remainder__` |
-| `pubrev-008` | `sciona-atoms` | `11` | `full_metadata_missing` | `wave_2_metadata_and_llm_review` | `high` | `low` | `sciona.atoms.inference.mcmc_foundational.mini_mcmc` |
-| `pubrev-009` | `sciona-atoms-signal` | `11` | `full_metadata_missing` | `wave_2_metadata_and_llm_review` | `high` | `low` | `sciona.atoms.signal_processing.e2e_ppg.__remainder__` |
-| `pubrev-010` | `sciona-atoms-fintech` | `10` | `audit_rollup_only` | `wave_1_audit_completion` | `high` | `medium` | `sciona.atoms.fintech.quantfin.__remainder__` |
-| `pubrev-011` | `sciona-atoms-physics` | `10` | `metadata_plus_rollup` | `wave_2_metadata_and_llm_review` | `medium` | `low` | `sciona.atoms.physics.tempo_jl.find_month` |
-| `pubrev-012` | `sciona-atoms-physics` | `10` | `metadata_plus_rollup` | `wave_2_metadata_and_llm_review` | `medium` | `low` | `sciona.atoms.physics.tempo_jl.jd2cal` |
-| `pubrev-013` | `sciona-atoms` | `9` | `full_metadata_missing` | `wave_2_metadata_and_llm_review` | `high` | `low` | `sciona.atoms.expansion.signal_event_rate.__remainder__` |
-| `pubrev-014` | `sciona-atoms` | `9` | `full_metadata_missing` | `wave_2_metadata_and_llm_review` | `high` | `low` | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc` |
-| `pubrev-015` | `sciona-atoms-physics` | `9` | `audit_rollup_only` | `wave_1_audit_completion` | `high` | `medium` | `sciona.atoms.numpy.fft.__remainder__` |
-| `pubrev-016` | `sciona-atoms-robotics` | `8` | `audit_rollup_only` | `wave_1_audit_completion` | `medium` | `low` | `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics` |
-| `pubrev-017` | `sciona-atoms-signal` | `8` | `audit_rollup_only` | `wave_1_audit_completion` | `medium` | `low` | `sciona.atoms.signal_processing.biosppy.ecg_detectors` |
-| `pubrev-018` | `sciona-atoms-signal` | `8` | `audit_rollup_only` | `wave_1_audit_completion` | `medium` | `low` | `sciona.atoms.signal_processing.biosppy.svm_proc` |
-| `pubrev-019` | `sciona-atoms-bio` | `7` | `full_metadata_missing` | `wave_2_metadata_and_llm_review` | `high` | `low` | `sciona.atoms.bio.mint.__remainder__` |
-| `pubrev-020` | `sciona-atoms-physics` | `7` | `audit_rollup_only` | `wave_1_audit_completion` | `high` | `medium` | `sciona.atoms.numpy.polynomial.__remainder__` |
+- Repo: `sciona-atoms-robotics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `2`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.robotics.pronto.backlash_filter.initializebacklashfilterstate`, `sciona.atoms.robotics.pronto.backlash_filter.updatealphaparameter`, `sciona.atoms.robotics.pronto.backlash_filter.updatecrossingtimemaximum`
 
-## License/Provenance Focus Batches
+### pubrev-005
 
-- `pubrev-001` `sciona.atoms.fintech.institutional_quant_engine.__remainder__` (`sciona-atoms-fintech`, `27` atoms, human signoff `medium`)
-- `pubrev-002` `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12` (`sciona-atoms-fintech`, `18` atoms, human signoff `medium`)
-- `pubrev-005` `sciona.atoms.bio.molecular_docking.__remainder__` (`sciona-atoms-bio`, `13` atoms, human signoff `medium`)
-- `pubrev-006` `sciona.atoms.fintech.quantfin.rng_skip_d12` (`sciona-atoms-fintech`, `13` atoms, human signoff `medium`)
-- `pubrev-010` `sciona.atoms.fintech.quantfin.__remainder__` (`sciona-atoms-fintech`, `10` atoms, human signoff `medium`)
-- `pubrev-011` `sciona.atoms.physics.tempo_jl.find_month` (`sciona-atoms-physics`, `10` atoms, human signoff `low`)
-- `pubrev-012` `sciona.atoms.physics.tempo_jl.jd2cal` (`sciona-atoms-physics`, `10` atoms, human signoff `low`)
-- `pubrev-015` `sciona.atoms.numpy.fft.__remainder__` (`sciona-atoms-physics`, `9` atoms, human signoff `medium`)
-- `pubrev-020` `sciona.atoms.numpy.polynomial.__remainder__` (`sciona-atoms-physics`, `7` atoms, human signoff `medium`)
-- `pubrev-022` `sciona.atoms.scipy.signal.__remainder__` (`sciona-atoms-physics`, `7` atoms, human signoff `medium`)
-- `pubrev-023` `sciona.atoms.scipy.sparse_graph.__remainder__` (`sciona-atoms-physics`, `7` atoms, human signoff `medium`)
-- `pubrev-024` `sciona.atoms.numpy.random.__remainder__` (`sciona-atoms-physics`, `6` atoms, human signoff `medium`)
-- `pubrev-026` `sciona.atoms.scipy.optimize.__remainder__` (`sciona-atoms-physics`, `6` atoms, human signoff `medium`)
-- `pubrev-028` `sciona.atoms.bio.molecular_docking.quantum_solver_d12` (`sciona-atoms-bio`, `5` atoms, human signoff `medium`)
-- `pubrev-029` `sciona.atoms.fintech.quantfin.local_vol_d12` (`sciona-atoms-fintech`, `5` atoms, human signoff `medium`)
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_1_audit_completion`
+- Atoms: `13`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.bio.molecular_docking.add_quantum_link.addquantumlink`, `sciona.atoms.bio.molecular_docking.build_complementary.constructcomplementarygraph`, `sciona.atoms.bio.molecular_docking.build_interaction_graph.networkx_weighted_graph_materialization`
 
-## Notes
+### pubrev-006
+
+- Repo: `sciona-atoms-fintech`
+- Wave: `wave_1_audit_completion`
+- Atoms: `13`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.fintech.quantfin.rng_skip_d12.addmod64`, `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64`, `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64_inner_step`
+
+### pubrev-007
+
+- Repo: `sciona-atoms-signal`
+- Wave: `wave_1_audit_completion`
+- Atoms: `6`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatebeatagreementsqi`, `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatefrequencypowersqi`, `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatekurtosissqi`
+
+### pubrev-008
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `11`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain`
+
+### pubrev-009
+
+- Repo: `sciona-atoms-signal`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `9`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.gan_reconstruction`, `sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.generatereconstructedppg`, `sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles`
+
+### pubrev-010
+
+- Repo: `sciona-atoms-fintech`
+- Wave: `wave_1_audit_completion`
+- Atoms: `10`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.fintech.quantfin.char_func_option_d12.cf`, `sciona.atoms.fintech.quantfin.char_func_option_d12.charfuncoption`, `sciona.atoms.fintech.quantfin.char_func_option_d12.f`
+
+### pubrev-011
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `10`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.tempo_jl.find_month.date_from_offset`, `sciona.atoms.physics.tempo_jl.find_month.date_from_year_dayinyear`, `sciona.atoms.physics.tempo_jl.find_month.datetime_from_components`
+
+### pubrev-012
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `10`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.tempo_jl.jd2cal.date_from_offset`, `sciona.atoms.physics.tempo_jl.jd2cal.date_from_year_dayinyear`, `sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_components`
+
+### pubrev-013
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `7`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.signal_event_rate.assess_signal_quality`, `sciona.atoms.expansion.signal_event_rate.compute_event_rate`, `sciona.atoms.expansion.signal_event_rate.compute_event_rate_median_smoothed`
+
+### pubrev-014
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `9`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel`
+
+### pubrev-015
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `9`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.numpy.fft.fft`, `sciona.atoms.numpy.fft.fftfreq`, `sciona.atoms.numpy.fft.fftn`
+
+### pubrev-018
+
+- Repo: `sciona-atoms-signal`
+- Wave: `wave_1_audit_completion`
+- Atoms: `8`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification`, `sciona.atoms.signal_processing.biosppy.svm_proc.assess_runs`, `sciona.atoms.signal_processing.biosppy.svm_proc.combination`
+
+### pubrev-019
+
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `7`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.bio.mint.apc_module.apccoreevaluation`, `sciona.atoms.bio.mint.axial_attention.row_self_attention`, `sciona.atoms.bio.mint.axial_attention.rowselfattention`
+
+### pubrev-020
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `7`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.numpy.polynomial.polyadd`, `sciona.atoms.numpy.polynomial.polyder`, `sciona.atoms.numpy.polynomial.polyfit`
+
+### pubrev-022
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `7`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.scipy.signal.butter`, `sciona.atoms.scipy.signal.cheby1`, `sciona.atoms.scipy.signal.cheby2`
+
+### pubrev-023
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `7`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path`, `sciona.atoms.scipy.sparse_graph.graph_fourier_transform`, `sciona.atoms.scipy.sparse_graph.graph_laplacian`
+
+### pubrev-024
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `6`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.numpy.random.combinatorics_sampler`, `sciona.atoms.numpy.random.continuous_multivariate_sampler`, `sciona.atoms.numpy.random.default_rng`
+
+### pubrev-026
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `6`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.scipy.optimize.curve_fit`, `sciona.atoms.scipy.optimize.differential_evolution`, `sciona.atoms.scipy.optimize.linprog`
+
+### pubrev-027
+
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_1_audit_completion`
+- Atoms: `5`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.bio.molecular_docking.greedy_mapping.assemblestaticmappingcontext`, `sciona.atoms.bio.molecular_docking.greedy_mapping.initializefrontierfromstartnode`, `sciona.atoms.bio.molecular_docking.greedy_mapping.rungreedymappingpipeline`
+
+### pubrev-028
+
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_1_audit_completion`
+- Atoms: `5`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler`, `sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer`, `sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler`
+
+### pubrev-029
+
+- Repo: `sciona-atoms-fintech`
+- Wave: `wave_1_audit_completion`
+- Atoms: `5`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.fintech.quantfin.local_vol_d12.allfort`, `sciona.atoms.fintech.quantfin.local_vol_d12.localvol`, `sciona.atoms.fintech.quantfin.local_vol_d12.var`
+
+### pubrev-030
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `5`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.numpy.arrays.array`, `sciona.atoms.numpy.arrays.dot`, `sciona.atoms.numpy.arrays.reshape`
+
+### pubrev-031
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `5`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.numpy.emath.log`, `sciona.atoms.numpy.emath.log10`, `sciona.atoms.numpy.emath.logn`
+
+### pubrev-033
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `5`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.scipy.linalg.det`, `sciona.atoms.scipy.linalg.inv`, `sciona.atoms.scipy.linalg.lu_factor`
+
+### pubrev-034
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `5`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.scipy.stats.describe`, `sciona.atoms.scipy.stats.norm`, `sciona.atoms.scipy.stats.pearsonr`
+
+### pubrev-035
+
+- Repo: `sciona-atoms-signal`
+- Wave: `wave_1_audit_completion`
+- Atoms: `2`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.signal_processing.biosppy.ecg.christov_segmenter`, `sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed`, `sciona.atoms.signal_processing.biosppy.ecg.peak_correction`
+
+### pubrev-036
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `5`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.state_estimation.kalman_filters.static_kf.exposecovariance`, `sciona.atoms.state_estimation.kalman_filters.static_kf.exposelatentmean`, `sciona.atoms.state_estimation.kalman_filters.static_kf.initializelineargaussianstatemodel`
+
+### pubrev-037
+
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.bio.mint.fasta_dataset.dataset_item_retrieval`, `sciona.atoms.bio.mint.fasta_dataset.dataset_length_query`, `sciona.atoms.bio.mint.fasta_dataset.dataset_state_initialization`
+
+### pubrev-038
+
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_1_audit_completion`
+- Atoms: `4`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.bio.molecular_docking.mwis_sa.calculate_weight`, `sciona.atoms.bio.molecular_docking.mwis_sa.is_independent_set`, `sciona.atoms.bio.molecular_docking.mwis_sa.load_graphs_from_folder`
+
+### pubrev-039
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.belief_propagation.analyze_message_damping`, `sciona.atoms.expansion.belief_propagation.detect_graph_cycles`, `sciona.atoms.expansion.belief_propagation.monitor_message_convergence`
+
+### pubrev-040
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.divide_and_conquer.check_recursion_depth`, `sciona.atoms.expansion.divide_and_conquer.detect_subproblem_overlap`, `sciona.atoms.expansion.divide_and_conquer.measure_split_balance`
+
+### pubrev-041
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.graph_signal_processing.analyze_spectral_gap`, `sciona.atoms.expansion.graph_signal_processing.check_laplacian_symmetry`, `sciona.atoms.expansion.graph_signal_processing.validate_filter_response`
+
+### pubrev-042
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.kalman_filter.analyze_kalman_gain_magnitude`, `sciona.atoms.expansion.kalman_filter.check_innovation_consistency`, `sciona.atoms.expansion.kalman_filter.check_state_smoothness`
+
+### pubrev-043
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.particle_filter.analyze_particle_diversity`, `sciona.atoms.expansion.particle_filter.check_resampling_quality`, `sciona.atoms.expansion.particle_filter.monitor_effective_sample_size`
+
+### pubrev-044
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.sequential_filter.adapt_process_noise`, `sciona.atoms.expansion.sequential_filter.check_observability`, `sciona.atoms.expansion.sequential_filter.detect_filter_divergence`
+
+### pubrev-045
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.signal_detect_measure.analyze_peak_threshold_sensitivity`, `sciona.atoms.expansion.signal_detect_measure.check_event_rate_stationarity`, `sciona.atoms.expansion.signal_detect_measure.estimate_false_positive_rate`
+
+### pubrev-046
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.signal_filter.analyze_group_delay_variation`, `sciona.atoms.expansion.signal_filter.analyze_pole_stability`, `sciona.atoms.expansion.signal_filter.detect_transient_response`
+
+### pubrev-047
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.expansion.signal_transform.analyze_window_leakage`, `sciona.atoms.expansion.signal_transform.check_inverse_reconstruction`, `sciona.atoms.expansion.signal_transform.detect_spectral_aliasing`
+
+### pubrev-048
+
+- Repo: `sciona-atoms-fintech`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.fintech.quant_engine.calculate_ofi`, `sciona.atoms.fintech.quant_engine.execute_passive`, `sciona.atoms.fintech.quant_engine.execute_pov`
+
+### pubrev-049
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.hamiltonianphasepointtransition`, `sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.temperingfactorcomputation`, `sciona.atoms.inference.mcmc_foundational.advancedhmc.trajectory.buildnutstree`
+
+### pubrev-050
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `4`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.numpy.linalg.det`, `sciona.atoms.numpy.linalg.inv`, `sciona.atoms.numpy.linalg.norm`
+
+### pubrev-051
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.physics.pulsar.pipeline.de_disperse`, `sciona.atoms.physics.pulsar.pipeline.delay_from_DM`, `sciona.atoms.physics.pulsar.pipeline.fold_signal`
+
+### pubrev-055
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `4`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch`, `sciona.atoms.state_estimation.particle_filters.basic.hypothesis_propagation_kernel`, `sciona.atoms.state_estimation.particle_filters.basic.likelihood_reweight_kernel`
+
+### pubrev-056
+
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `3`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.bio.alphafold.coordinate_reconstruction`, `sciona.atoms.bio.alphafold.equivariant_frame_update`, `sciona.atoms.bio.alphafold.invariant_point_attention`
+
+### pubrev-057
+
+- Repo: `sciona-atoms-fintech`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `3`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.fintech.hftbacktest.evaluate_spread_conditions`, `sciona.atoms.fintech.hftbacktest.initialize_glft_state`, `sciona.atoms.fintech.hftbacktest.update_glft_coefficients`
+
+### pubrev-058
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `3`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.advancedvi.core.evaluate_log_probability_density`, `sciona.atoms.inference.advancedvi.core.gradient_oracle_evaluation`, `sciona.atoms.inference.advancedvi.core.optimizationlooporchestration`
+
+### pubrev-059
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `3`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.numpy.search_sort.binary_search_insertion`, `sciona.atoms.numpy.search_sort.lexicographic_indirect_sort`, `sciona.atoms.numpy.search_sort.partial_sort_partition`
+
+### pubrev-060
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `3`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.pasqal.docking.graph_transformer`, `sciona.atoms.physics.pasqal.docking.quantum_mwis_solver`, `sciona.atoms.physics.pasqal.docking.sub_graph_embedder`
+
+### pubrev-061
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `3`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.pulsar_folding.dm_can_brute_force`, `sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter`, `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction`
+
+### pubrev-062
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `3`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.tempo_jl.apply_offsets._zero_offset`, `sciona.atoms.physics.tempo_jl.graph_time_scale_management`, `sciona.atoms.physics.tempo_jl.high_precision_duration`
+
+### pubrev-063
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `3`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.scipy.integrate.quad`, `sciona.atoms.scipy.integrate.simpson`, `sciona.atoms.scipy.integrate.solve_ivp`
+
+### pubrev-064
+
+- Repo: `sciona-atoms-bio`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.bio.hpdb.iterate_pdb_atoms`, `sciona.atoms.bio.hpdb.iterate_pdb_residues`
+
+### pubrev-065
+
+- Repo: `sciona-atoms`
+- Wave: `wave_3_residual_policy_or_provenance`
+- Atoms: `2`
+- Blocker class: `mixed_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.belief_propagation.loopy_bp.initialize_message_passing_state`, `sciona.atoms.inference.belief_propagation.loopy_bp.run_loopy_message_passing_and_belief_query`
+
+### pubrev-066
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel`, `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel_weighted`
+
+### pubrev-067
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.jax_advi.optimize_advi.meanfieldvariationalfit`, `sciona.atoms.inference.jax_advi.optimize_advi.posteriordrawsampling`
+
+### pubrev-068
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.jFOF.find_fof_clusters`, `sciona.atoms.physics.jFOF.topo.topological_loss_computation`
+
+### pubrev-069
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.skyfield.calculate_vector_angle`, `sciona.atoms.physics.skyfield.compute_spherical_coordinate_rates`
+
+### pubrev-070
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_1_audit_completion`
+- Atoms: `2`
+- Blocker class: `audit_rollup_only`
+- Primary blocker pattern: `['publishable_rollup']`
+- Representative atoms: `sciona.atoms.scipy.fft.dct`, `sciona.atoms.scipy.fft.idct`
+
+### pubrev-071
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.scipy.interpolate.cubicsplinefit`, `sciona.atoms.scipy.interpolate.rbfinterpolatorfit`
+
+### pubrev-072
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.scipy.spatial.delaunay_triangulation`, `sciona.atoms.scipy.spatial.voronoi_tessellation`
+
+### pubrev-073
+
+- Repo: `sciona-atoms-signal`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `2`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.signal_processing.neurokit2.averageqrstemplate`, `sciona.atoms.signal_processing.neurokit2.zhao2018hrvanalysis`
+
+### pubrev-074
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `1`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.dynamic_programming.kadane.max_subarray`
+
+### pubrev-075
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `1`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle`
+
+### pubrev-076
+
+- Repo: `sciona-atoms-ml`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `1`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.ml.datadriven.discover_equations`
+
+### pubrev-077
+
+- Repo: `sciona-atoms-physics`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `1`
+- Blocker class: `metadata_plus_rollup`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
+- Representative atoms: `sciona.atoms.physics.astroflow.dedispersionkernel`
+
+### pubrev-078
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `1`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state`
+
+### pubrev-079
+
+- Repo: `sciona-atoms`
+- Wave: `wave_2_metadata_and_llm_review`
+- Atoms: `1`
+- Blocker class: `full_metadata_missing`
+- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
+- Representative atoms: `sciona.atoms.state_estimation.particle_filters.track_particle_hidden_state`
 
 - The canonical machine-readable queue is [publishability_review_batch_queue.json](/Users/conrad/personal/sciona-matcher/docs/audit/publishability_review_batch_queue.json).
-- Family batches are frozen for worker ownership, but the references-only slice should be handled as a cross-batch early win because those atoms are already approved on audit semantics.
-- Batches with `likely_human_signoff = low` should be attempted end to end with deterministic checks, LLM review, and targeted browsing before asking a human anything.
-- `numpy` and `scipy` batches are explicitly called out as provenance-sensitive even when the semantic review itself is easy.

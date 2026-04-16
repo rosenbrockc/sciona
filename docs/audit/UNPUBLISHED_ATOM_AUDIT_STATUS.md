@@ -1,51 +1,44 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-16T01:34:09.883404+00:00.
+Generated from the live local Supabase replay on 2026-04-16T20:49:06.027606+00:00.
 
-This document is a working debt register for every currently unpublished atom. Public publishability currently requires:
-
-- IO specs
-- Parameters
-- Low-jargon English description
-- References
-- An approved audit rollup that passes the stricter publication gate
+This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `60`
-- Non-publishable atoms: `444`
+- Publishable atoms: `139`
+- Non-publishable atoms: `365`
 
 ### Marginal Blocker Counts
 
-- `publishable_rollup`: `432`
-- `parameters`: `218`
-- `description`: `214`
-- `io_specs`: `196`
-- `references`: `159`
+- `description`: `211`
+- `io_specs`: `189`
+- `parameters`: `212`
+- `publishable_rollup`: `365`
+- `references`: `144`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup`: `214`
-- `publishable_rollup,io_specs,parameters,description,references`: `146`
+- `publishable_rollup`: `153`
+- `publishable_rollup,io_specs,parameters,description,references`: `143`
 - `publishable_rollup,io_specs,parameters,description`: `46`
 - `publishable_rollup,parameters,description`: `21`
-- `references`: `12`
-- `publishable_rollup,io_specs,parameters`: `4`
+- `publishable_rollup,parameters`: `1`
 - `publishable_rollup,parameters,description,references`: `1`
 
 ### Largest Non-Publishable Domains
 
 - `fintech`: `80`
 - `bio`: `58`
-- `robotics`: `52`
-- `signal_processing`: `46`
-- `expansion`: `45`
 - `numpy`: `39`
 - `scipy`: `39`
 - `physics`: `38`
+- `expansion`: `35`
 - `inference`: `34`
+- `signal_processing`: `27`
 - `state_estimation`: `11`
+- `robotics`: `2`
 - `dynamic_programming`: `1`
 - `ml`: `1`
 
@@ -91,13 +84,13 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.bio.molecular_docking.build_interaction_graph.pair_distance_compatibility_check` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.build_interaction_graph.weighted_interaction_edge_derivation` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping.assemblestaticmappingcontext` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.init_problem_context` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.orchestrate_generation_and_validate` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping.initializefrontierfromstartnode` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping.rungreedymappingpipeline` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping.scoreandextendgreedycandidates` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping.validatecurrentmapping` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
+| `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
+| `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.init_problem_context` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
+| `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.orchestrate_generation_and_validate` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_subgraph.greedy_maximum_subgraph` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.bio.molecular_docking.map_to_udg.graphtoudgmapping` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.bio.molecular_docking.minimize_bandwidth.aggregate_maximum_distance_as_bandwidth` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
@@ -120,13 +113,13 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.bio.molecular_docking.mwis_sa.load_graphs_from_folder` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.mwis_sa.to_qubo` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.quantum_solver.adiabaticquantumsampler` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
+| `sciona.atoms.bio.molecular_docking.quantum_solver.quantumproblemdefinition` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
+| `sciona.atoms.bio.molecular_docking.quantum_solver.solutionextraction` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.quantum_solver.quantumproblemdefinition` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.quantum_solver.solutionextraction` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 
 ## dynamic_programming
 
@@ -143,12 +136,12 @@ This document is a working debt register for every currently unpublished atom. P
 
 ## expansion
 
-- Non-publishable atoms: `45`
+- Non-publishable atoms: `35`
 - Missing publishable rollup: `35`
 - Missing IO specs: `35`
 - Missing parameters: `35`
 - Missing description: `35`
-- Missing references: `45`
+- Missing references: `35`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -162,8 +155,6 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.expansion.divide_and_conquer.profile_merge_cost` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.graph_signal_processing.analyze_spectral_gap` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.graph_signal_processing.check_laplacian_symmetry` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.graph_signal_processing.validate_filter_response` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.expansion.graph_signal_processing.validate_graph_connectivity` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
 | `sciona.atoms.expansion.kalman_filter.analyze_kalman_gain_magnitude` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.kalman_filter.check_innovation_consistency` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.kalman_filter.check_state_smoothness` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -178,31 +169,23 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.expansion.sequential_filter.validate_innovation_whiteness` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_detect_measure.analyze_peak_threshold_sensitivity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_detect_measure.check_event_rate_stationarity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_detect_measure.estimate_false_positive_rate` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.expansion.signal_detect_measure.estimate_snr` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
 | `sciona.atoms.expansion.signal_event_rate.assess_signal_quality` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_event_rate.compute_event_rate` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
 | `sciona.atoms.expansion.signal_event_rate.compute_event_rate_median_smoothed` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_event_rate.compute_event_rate_smoothed` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_event_rate.detect_peaks_in_signal` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_event_rate.estimate_event_rate_from_signal` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_event_rate.filter_signal_for_detection` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
 | `sciona.atoms.expansion.signal_event_rate.reject_outlier_intervals` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_event_rate.remove_signal_jumps` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_filter.analyze_group_delay_variation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_filter.analyze_pole_stability` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.expansion.signal_filter.detect_transient_response` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
 | `sciona.atoms.expansion.signal_filter.measure_passband_ripple` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_transform.analyze_window_leakage` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_transform.check_inverse_reconstruction` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
 | `sciona.atoms.expansion.signal_transform.detect_spectral_aliasing` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_transform.validate_parseval_energy` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
 
 ## fintech
 
 - Non-publishable atoms: `80`
 - Missing publishable rollup: `80`
-- Missing IO specs: `31`
+- Missing IO specs: `30`
 - Missing parameters: `37`
 - Missing description: `36`
 - Missing references: `19`
@@ -216,9 +199,9 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.optimalexecutiontrajectory` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.riskaversioninit` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.institutional_quant_engine.avellaneda_stoikov.computeinventoryadjustedquotes` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
+| `sciona.atoms.fintech.institutional_quant_engine.avellaneda_stoikov.initializemarketmakerstate` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.institutional_quant_engine.avellaneda_stoikov_d12.marketmakerstateinit` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.institutional_quant_engine.avellaneda_stoikov_d12.optimalquotecalculation` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.institutional_quant_engine.avellaneda_stoikov.initializemarketmakerstate` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.institutional_quant_engine.copula_dependence.simulate_copula_dependence` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.fintech.institutional_quant_engine.dynamic_hedge.kalman_hedge_ratio` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.fintech.institutional_quant_engine.evt_model.fit_gpd_tail` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -254,11 +237,11 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.fintech.quantfin.local_vol_d12.vol_interpolated_surface` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.avg` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.evolve` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold_alt` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_recursive` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_singleton` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.maxstep` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup, io_specs, parameters` |
+| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
+| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold_alt` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
+| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.maxstep` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup, parameters` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_base_case` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_cashflows_only` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_observation_only` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
@@ -326,15 +309,15 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rwmh.constructrandomwalkmetropoliskernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
+| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
+| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.hamiltoniantransitionkernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.initializehmckernelstate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.initializesamplerrng` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
+| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.initializenutsstate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 
 ## ml
 
@@ -417,13 +400,13 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.physics.pasqal.docking.graph_transformer` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.physics.pasqal.docking.quantum_mwis_solver` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.physics.pasqal.docking.sub_graph_embedder` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.pulsar_folding.dm_can_brute_force` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.physics.pulsar.pipeline.SNR` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.physics.pulsar.pipeline.de_disperse` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.physics.pulsar.pipeline.delay_from_DM` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.physics.pulsar.pipeline.fold_signal` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.physics.pulsar.pipeline.SNR` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
+| `sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
+| `sciona.atoms.physics.pulsar_folding.dm_can_brute_force` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.skyfield.calculate_vector_angle` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.skyfield.compute_spherical_coordinate_rates` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.tempo_jl.apply_offsets._zero_offset` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -452,67 +435,17 @@ This document is a working debt register for every currently unpublished atom. P
 
 ## robotics
 
-- Non-publishable atoms: `52`
-- Missing publishable rollup: `52`
-- Missing IO specs: `8`
-- Missing parameters: `8`
-- Missing description: `5`
-- Missing references: `5`
+- Non-publishable atoms: `2`
+- Missing publishable rollup: `2`
+- Missing IO specs: `2`
+- Missing parameters: `2`
+- Missing description: `2`
+- Missing references: `2`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.robotics.pronto.backlash_filter.initializebacklashfilterstate` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup, io_specs, parameters` |
-| `sciona.atoms.robotics.pronto.backlash_filter.updatealphaparameter` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.backlash_filter.updatecrossingtimemaximum` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.blip_filter.bandpass_filter` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.blip_filter.heart_rate_computation` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.blip_filter.peak_correction` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.blip_filter.r_peak_detection` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.blip_filter.template_extraction` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.dynamic_stance_estimator_d12.stanceestimation` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.dynamic_stance_estimator_d12.stancestateinit` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.dynamic_stance_estimator.initializefilter` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.dynamic_stance_estimator.predictstep` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.dynamic_stance_estimator.querystance` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.dynamic_stance_estimator.updatestep` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.robotics.pronto.ekf_smoother.stateestimatorinit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.robotics.pronto.flex_estimator.estimate_flex_deflection` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.robotics.pronto.foot_contact.foot_sensing_state_update` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.foot_contact.mode_snapshot_readout` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.inverse_schmitt.inverse_schmitt_trigger_transform` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.robotics.pronto.leg_odometer.posequeryaccessors` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup, io_specs, parameters` |
-| `sciona.atoms.robotics.pronto.leg_odometer.velocitystatereadout` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.state_estimator.update_state_estimate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.robotics.pronto.yaw_lock.configurecorrectionandyawslippolicy` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.yaw_lock.initializeyawlockstate` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup, io_specs, parameters` |
-| `sciona.atoms.robotics.pronto.yaw_lock.readinitialjointangles` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.yaw_lock.readrobotstandingstatus` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.yaw_lock.setjointposeandinitialangles` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.yaw_lock.setrobotstandingstatus` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.pronto.yaw_lock.setstandinglinktargets` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.bicycle_kinematic.computelinearizedstatematrices` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.bicycle_kinematic.computesideslipangle` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.bicycle_kinematic.constructgeometrymodel` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.bicycle_kinematic.evaluateandinvertdynamics` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.bicycle_kinematic.loadmodelfromfile` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.bicycle_kinematic.querygeometryparameters` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.controls.pure_pursuit` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.dijkstra_path_planning` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_aerodynamic_force` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_gravity_grade_force` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_rolling_force` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.deserialize_model_spec` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.evaluate_dynamics_derivatives` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.initialize_model` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.linearize_dynamics` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.solve_control_for_target_derivative` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.controlinputsynthesis` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.dynamicsandlinearizationkernel` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.kinematicgoalfeasibility` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.modelspecloadingandsizing` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.n_joint_arm_solver` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.robotics.rust_robotics.num_methods.rk4` | `reviewed_pending` | `reviewed_with_limits` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 
 ## scipy
 
@@ -567,38 +500,21 @@ This document is a working debt register for every currently unpublished atom. P
 
 ## signal_processing
 
-- Non-publishable atoms: `46`
-- Missing publishable rollup: `44`
+- Non-publishable atoms: `27`
+- Missing publishable rollup: `27`
 - Missing IO specs: `13`
 - Missing parameters: `13`
 - Missing description: `13`
-- Missing references: `15`
+- Missing references: `13`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.signal_processing.biosppy.ecg.christov_segmenter` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.asi_signal_segmenter` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.christov_qrs_segmenter` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.engzee_qrs_segmentation` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.engzee_signal_segmentation` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.gamboa_segmentation` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.gamboa_segmenter` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.hamilton_segmentation` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_detectors.thresholdbasedsignalsegmentation` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.biosppy.ecg.peak_correction` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.biosppy.ecg.ssf_segmenter` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatebeatagreementsqi` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatefrequencypowersqi` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatekurtosissqi` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.assemblezz2018sqi` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.computebeatagreementsqi` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.computefrequencysqi` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.online_filter.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.online_filter.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
+| `sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
+| `sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
@@ -613,12 +529,10 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.generatereconstructedppg` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.e2e_ppg.heart_cycle.heart_cycle_detection` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.normalizesignal` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.wrapperevaluate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.signalarraynormalization` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.e2e_ppg.reconstruction.gan_patch_reconstruction` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.signal_processing.e2e_ppg.reconstruction.windowed_signal_reconstruction` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
+| `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.normalizesignal` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
+| `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.wrapperevaluate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.e2e_ppg.template_matching.templatefeaturecomputation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.neurokit2.averageqrstemplate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.neurokit2.zhao2018hrvanalysis` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -645,4 +559,3 @@ This document is a working debt register for every currently unpublished atom. P
 | `sciona.atoms.state_estimation.particle_filters.basic.likelihood_reweight_kernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.state_estimation.particle_filters.basic.resample_and_hypothesis_distribution_projection` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.state_estimation.particle_filters.track_particle_hidden_state` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-

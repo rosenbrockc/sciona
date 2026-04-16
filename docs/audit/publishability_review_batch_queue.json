@@ -1,5 +1,7 @@
 {
-  "batch_count": 79,
+  "generated_at": "2026-04-16T20:49:06.027606+00:00",
+  "source": "local_supabase_filtered_existing_queue",
+  "batch_count": 71,
   "batches": [
     {
       "atom_count": 27,
@@ -831,55 +833,8 @@
       ]
     },
     {
-      "atom_count": 14,
+      "atom_count": 2,
       "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.backlash_filter.initializebacklashfilterstate",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.backlash_filter.updatealphaparameter",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.backlash_filter.updatecrossingtimemaximum",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.dynamic_stance_estimator_d12.stanceestimation",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.dynamic_stance_estimator_d12.stancestateinit",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
         {
           "blockers": [
             "publishable_rollup",
@@ -889,83 +844,6 @@
             "references"
           ],
           "fqdn": "sciona.atoms.robotics.pronto.ekf_smoother.stateestimatorinit",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.flex_estimator.estimate_flex_deflection",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.foot_contact.foot_sensing_state_update",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.foot_contact.mode_snapshot_readout",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.inverse_schmitt.inverse_schmitt_trigger_transform",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.leg_odometer.posequeryaccessors",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.leg_odometer.velocitystatereadout",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.state_estimator.update_state_estimate",
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
@@ -1403,62 +1281,8 @@
       ]
     },
     {
-      "atom_count": 12,
+      "atom_count": 6,
       "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatebeatagreementsqi",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatefrequencypowersqi",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatekurtosissqi",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.assemblezz2018sqi",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.computebeatagreementsqi",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.computefrequencysqi",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
         {
           "blockers": [
             "publishable_rollup"
@@ -1751,7 +1575,7 @@
       ]
     },
     {
-      "atom_count": 11,
+      "atom_count": 9,
       "atoms": [
         {
           "blockers": [
@@ -1856,24 +1680,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.reconstruction.gan_patch_reconstruction",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.reconstruction.windowed_signal_reconstruction",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
         },
         {
           "blockers": [
@@ -2457,7 +2263,7 @@
       ]
     },
     {
-      "atom_count": 9,
+      "atom_count": 7,
       "atoms": [
         {
           "blockers": [
@@ -2471,15 +2277,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.compute_event_rate",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
         },
         {
           "blockers": [
@@ -2532,15 +2329,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.filter_signal_for_detection",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
         },
         {
           "blockers": [
@@ -2958,238 +2746,6 @@
           "blockers": [
             "publishable_rollup"
           ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_aerodynamic_force",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_gravity_grade_force",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_rolling_force",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.deserialize_model_spec",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.evaluate_dynamics_derivatives",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.initialize_model",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.linearize_dynamics",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.solve_control_for_target_derivative",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        }
-      ],
-      "batch_id": "pubrev-016",
-      "batch_key": "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 8,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-robotics",
-      "representative_atoms": [
-        "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_aerodynamic_force",
-        "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_gravity_grade_force",
-        "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.compute_rolling_force",
-        "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.deserialize_model_spec",
-        "sciona.atoms.robotics.rust_robotics.longitudinal_dynamics.evaluate_dynamics_derivatives"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 8,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 8,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        }
-      ]
-    },
-    {
-      "atom_count": 8,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.asi_signal_segmenter",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.christov_qrs_segmenter",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.engzee_qrs_segmentation",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.engzee_signal_segmentation",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.gamboa_segmentation",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.gamboa_segmenter",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.hamilton_segmentation",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg_detectors.thresholdbasedsignalsegmentation",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-017",
-      "batch_key": "sciona.atoms.signal_processing.biosppy.ecg_detectors",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 8,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-signal",
-      "representative_atoms": [
-        "sciona.atoms.signal_processing.biosppy.ecg_detectors.asi_signal_segmenter",
-        "sciona.atoms.signal_processing.biosppy.ecg_detectors.christov_qrs_segmenter",
-        "sciona.atoms.signal_processing.biosppy.ecg_detectors.engzee_qrs_segmentation",
-        "sciona.atoms.signal_processing.biosppy.ecg_detectors.engzee_signal_segmentation",
-        "sciona.atoms.signal_processing.biosppy.ecg_detectors.gamboa_segmentation"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 8,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 8,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
-      "atom_count": 8,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
           "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
           "overall_verdict": "acceptable_with_limits",
           "review_status": "missing",
@@ -3547,123 +3103,6 @@
           "atom_count": 7,
           "review_status": "missing",
           "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
-      "atom_count": 7,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.yaw_lock.configurecorrectionandyawslippolicy",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.yaw_lock.initializeyawlockstate",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.yaw_lock.readinitialjointangles",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.yaw_lock.readrobotstandingstatus",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.yaw_lock.setjointposeandinitialangles",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.yaw_lock.setrobotstandingstatus",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.yaw_lock.setstandinglinktargets",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        }
-      ],
-      "batch_id": "pubrev-021",
-      "batch_key": "sciona.atoms.robotics.pronto.yaw_lock",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 6,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-robotics",
-      "representative_atoms": [
-        "sciona.atoms.robotics.pronto.yaw_lock.configurecorrectionandyawslippolicy",
-        "sciona.atoms.robotics.pronto.yaw_lock.initializeyawlockstate",
-        "sciona.atoms.robotics.pronto.yaw_lock.readinitialjointangles",
-        "sciona.atoms.robotics.pronto.yaw_lock.readrobotstandingstatus",
-        "sciona.atoms.robotics.pronto.yaw_lock.setjointposeandinitialangles"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 6,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "atom_count": 1,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 7,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
         }
       ]
     },
@@ -4036,104 +3475,6 @@
           "atom_count": 3,
           "review_status": "missing",
           "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
-      "atom_count": 6,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.computelinearizedstatematrices",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.computesideslipangle",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.constructgeometrymodel",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.evaluateandinvertdynamics",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.loadmodelfromfile",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.querygeometryparameters",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        }
-      ],
-      "batch_id": "pubrev-025",
-      "batch_key": "sciona.atoms.robotics.rust_robotics.bicycle_kinematic",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 6,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-robotics",
-      "representative_atoms": [
-        "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.computelinearizedstatematrices",
-        "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.computesideslipangle",
-        "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.constructgeometrymodel",
-        "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.evaluateandinvertdynamics",
-        "sciona.atoms.robotics.rust_robotics.bicycle_kinematic.loadmodelfromfile"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 6,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 6,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
         }
       ]
     },
@@ -4731,95 +4072,6 @@
           "blockers": [
             "publishable_rollup"
           ],
-          "fqdn": "sciona.atoms.robotics.pronto.blip_filter.bandpass_filter",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.blip_filter.heart_rate_computation",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.blip_filter.peak_correction",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.blip_filter.r_peak_detection",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.blip_filter.template_extraction",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        }
-      ],
-      "batch_id": "pubrev-032",
-      "batch_key": "sciona.atoms.robotics.pronto.blip_filter",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 5,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-robotics",
-      "representative_atoms": [
-        "sciona.atoms.robotics.pronto.blip_filter.bandpass_filter",
-        "sciona.atoms.robotics.pronto.blip_filter.heart_rate_computation",
-        "sciona.atoms.robotics.pronto.blip_filter.peak_correction",
-        "sciona.atoms.robotics.pronto.blip_filter.r_peak_detection",
-        "sciona.atoms.robotics.pronto.blip_filter.template_extraction"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 5,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 5,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        }
-      ]
-    },
-    {
-      "atom_count": 5,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
           "fqdn": "sciona.atoms.scipy.linalg.det",
           "overall_verdict": "acceptable_with_limits",
           "review_status": "missing",
@@ -4992,17 +4244,8 @@
       ]
     },
     {
-      "atom_count": 5,
+      "atom_count": 2,
       "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg.christov_segmenter",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
         {
           "blockers": [
             "publishable_rollup",
@@ -5018,15 +4261,6 @@
         },
         {
           "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg.peak_correction",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
             "publishable_rollup",
             "io_specs",
             "parameters",
@@ -5037,15 +4271,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg.ssf_segmenter",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
         }
       ],
       "batch_id": "pubrev-035",
@@ -5600,7 +4825,7 @@
       ]
     },
     {
-      "atom_count": 4,
+      "atom_count": 2,
       "atoms": [
         {
           "blockers": [
@@ -5627,24 +4852,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.graph_signal_processing.validate_filter_response",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.graph_signal_processing.validate_graph_connectivity",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
         }
       ],
       "batch_id": "pubrev-041",
@@ -6015,7 +5222,7 @@
       ]
     },
     {
-      "atom_count": 4,
+      "atom_count": 2,
       "atoms": [
         {
           "blockers": [
@@ -6042,24 +5249,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_detect_measure.estimate_false_positive_rate",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_detect_measure.estimate_snr",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
         }
       ],
       "batch_id": "pubrev-045",
@@ -6121,7 +5310,7 @@
       ]
     },
     {
-      "atom_count": 4,
+      "atom_count": 2,
       "atoms": [
         {
           "blockers": [
@@ -6135,24 +5324,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_filter.analyze_pole_stability",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_filter.detect_transient_response",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
         },
         {
           "blockers": [
@@ -6227,7 +5398,7 @@
       ]
     },
     {
-      "atom_count": 4,
+      "atom_count": 2,
       "atoms": [
         {
           "blockers": [
@@ -6244,15 +5415,6 @@
         },
         {
           "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_transform.check_inverse_reconstruction",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
             "publishable_rollup",
             "io_specs",
             "parameters",
@@ -6263,15 +5425,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_transform.validate_parseval_energy",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits"
         }
       ],
       "batch_id": "pubrev-047",
@@ -6707,243 +5860,6 @@
           "atom_count": 4,
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.dynamic_stance_estimator.initializefilter",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.dynamic_stance_estimator.predictstep",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.dynamic_stance_estimator.querystance",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.pronto.dynamic_stance_estimator.updatestep",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        }
-      ],
-      "batch_id": "pubrev-052",
-      "batch_key": "sciona.atoms.robotics.pronto.dynamic_stance_estimator",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-robotics",
-      "representative_atoms": [
-        "sciona.atoms.robotics.pronto.dynamic_stance_estimator.initializefilter",
-        "sciona.atoms.robotics.pronto.dynamic_stance_estimator.predictstep",
-        "sciona.atoms.robotics.pronto.dynamic_stance_estimator.querystance",
-        "sciona.atoms.robotics.pronto.dynamic_stance_estimator.updatestep"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.controls.pure_pursuit",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.dijkstra_path_planning",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.n_joint_arm_solver",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.num_methods.rk4",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        }
-      ],
-      "batch_id": "pubrev-053",
-      "batch_key": "sciona.atoms.robotics.rust_robotics.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-robotics",
-      "representative_atoms": [
-        "sciona.atoms.robotics.rust_robotics.controls.pure_pursuit",
-        "sciona.atoms.robotics.rust_robotics.dijkstra_path_planning",
-        "sciona.atoms.robotics.rust_robotics.n_joint_arm_solver",
-        "sciona.atoms.robotics.rust_robotics.num_methods.rk4"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.controlinputsynthesis",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.dynamicsandlinearizationkernel",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.kinematicgoalfeasibility",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.modelspecloadingandsizing",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        }
-      ],
-      "batch_id": "pubrev-054",
-      "batch_key": "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-robotics",
-      "representative_atoms": [
-        "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.controlinputsynthesis",
-        "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.dynamicsandlinearizationkernel",
-        "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.kinematicgoalfeasibility",
-        "sciona.atoms.robotics.rust_robotics.n_joint_arm_2d.modelspecloadingandsizing"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
         }
       ]
     },
@@ -8816,24 +7732,30 @@
       ]
     }
   ],
-  "blocker_counts": {
-    "description": 214,
-    "io_specs": 196,
-    "parameters": 218,
-    "publishable_rollup": 432,
-    "references": 159
+  "totals": {
+    "non_publishable_atoms": 365
   },
-  "generated_at": "2026-04-16T14:40:18.739760+00:00",
   "repo_counts": {
-    "sciona-atoms": 23,
-    "sciona-atoms-bio": 9,
-    "sciona-atoms-fintech": 7,
+    "sciona-atoms": 81,
+    "sciona-atoms-bio": 58,
+    "sciona-atoms-fintech": 80,
     "sciona-atoms-ml": 1,
-    "sciona-atoms-physics": 25,
-    "sciona-atoms-robotics": 8,
-    "sciona-atoms-signal": 6
+    "sciona-atoms-physics": 116,
+    "sciona-atoms-robotics": 2,
+    "sciona-atoms-signal": 27
   },
-  "source": "docs/audit/unpublished_atom_audit_status.json",
+  "wave_counts": {
+    "wave_1_audit_completion": 171,
+    "wave_2_metadata_and_llm_review": 192,
+    "wave_3_residual_policy_or_provenance": 2
+  },
+  "blocker_counts": {
+    "description": 211,
+    "io_specs": 189,
+    "parameters": 212,
+    "publishable_rollup": 365,
+    "references": 144
+  },
   "special_slices": {
     "audit_rollup_only_atoms": {
       "atom_count": 214,
@@ -8947,36 +7869,13 @@
       }
     ],
     "references_only_atoms": {
-      "atom_count": 12,
-      "atoms": [
-        "sciona.atoms.expansion.graph_signal_processing.validate_filter_response",
-        "sciona.atoms.expansion.graph_signal_processing.validate_graph_connectivity",
-        "sciona.atoms.expansion.signal_detect_measure.estimate_false_positive_rate",
-        "sciona.atoms.expansion.signal_detect_measure.estimate_snr",
-        "sciona.atoms.expansion.signal_event_rate.compute_event_rate",
-        "sciona.atoms.expansion.signal_event_rate.filter_signal_for_detection",
-        "sciona.atoms.expansion.signal_filter.analyze_pole_stability",
-        "sciona.atoms.expansion.signal_filter.detect_transient_response",
-        "sciona.atoms.expansion.signal_transform.check_inverse_reconstruction",
-        "sciona.atoms.expansion.signal_transform.validate_parseval_energy",
-        "sciona.atoms.signal_processing.e2e_ppg.reconstruction.gan_patch_reconstruction",
-        "sciona.atoms.signal_processing.e2e_ppg.reconstruction.windowed_signal_reconstruction"
-      ],
+      "atom_count": 0,
+      "atoms": [],
       "recommended_wave": "wave_1_easy_win",
       "repo_owners": [
         "sciona-atoms",
         "sciona-atoms-signal"
       ]
     }
-  },
-  "totals": {
-    "atoms": 504,
-    "non_publishable_atoms": 444,
-    "publishable_atoms": 60
-  },
-  "wave_counts": {
-    "wave_1_audit_completion": 33,
-    "wave_2_metadata_and_llm_review": 45,
-    "wave_3_residual_policy_or_provenance": 1
   }
 }
