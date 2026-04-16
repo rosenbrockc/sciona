@@ -86,6 +86,56 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _summarize_manifest_sqlite(path: Path) -> dict[str, int]:
+    if not path.exists():
+        return {
+            "total_atoms": 0,
+            "publishable_atoms": 0,
+            "non_publishable_atoms": 0,
+            "benchmark_rows": 0,
+        }
+    try:
+        with sqlite3.connect(path) as con:
+            con.row_factory = sqlite3.Row
+            tables = {
+                str(row[0])
+                for row in con.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            total_atoms = 0
+            publishable_atoms = 0
+            benchmark_rows = 0
+            if "atoms" in tables:
+                total_atoms = int(
+                    con.execute("SELECT COUNT(*) AS count FROM atoms").fetchone()["count"] or 0
+                )
+                publishable_atoms = int(
+                    con.execute(
+                        "SELECT COUNT(*) AS count FROM atoms WHERE is_publishable = 1"
+                    ).fetchone()["count"]
+                    or 0
+                )
+            if "benchmarks" in tables:
+                benchmark_rows = int(
+                    con.execute("SELECT COUNT(*) AS count FROM benchmarks").fetchone()["count"]
+                    or 0
+                )
+    except sqlite3.DatabaseError:
+        return {
+            "total_atoms": 0,
+            "publishable_atoms": 0,
+            "non_publishable_atoms": 0,
+            "benchmark_rows": 0,
+        }
+    return {
+        "total_atoms": total_atoms,
+        "publishable_atoms": publishable_atoms,
+        "non_publishable_atoms": max(total_atoms - publishable_atoms, 0),
+        "benchmark_rows": benchmark_rows,
+    }
+
+
 def _normalize_tier_paths(value: Any) -> dict[str, Path]:
     if isinstance(value, Mapping):
         return {str(tier): Path(path) for tier, path in value.items()}
@@ -152,6 +202,7 @@ def _build_latest_payload(
             "path": str(resolved.relative_to(bundle_root.resolve()).as_posix()),
             "sha256": _sha256_file(resolved),
             "size_bytes": resolved.stat().st_size,
+            "publishability": _summarize_manifest_sqlite(resolved),
         }
     return {"generated_at": generated_at, "artifacts": artifacts}
 

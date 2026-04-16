@@ -16,6 +16,50 @@ def _write_manifest(path: Path, payload: str) -> None:
     path.write_text(payload, encoding="utf-8")
 
 
+def _write_sqlite_manifest(path: Path) -> None:
+    con = sqlite3.connect(path)
+    try:
+        con.execute(
+            """
+            CREATE TABLE atoms (
+                atom_id TEXT PRIMARY KEY,
+                fqdn TEXT UNIQUE NOT NULL,
+                is_publishable INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+        con.execute(
+            """
+            CREATE TABLE benchmarks (
+                atom_fqdn TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                benchmark_id TEXT NOT NULL,
+                metric_name TEXT NOT NULL,
+                metric_value REAL NOT NULL
+            )
+            """
+        )
+        con.execute(
+            "INSERT INTO atoms (atom_id, fqdn, is_publishable) VALUES (?, ?, ?)",
+            ("atom-1", "sciona.atoms.example.one", 1),
+        )
+        con.execute(
+            "INSERT INTO atoms (atom_id, fqdn, is_publishable) VALUES (?, ?, ?)",
+            ("atom-2", "sciona.atoms.example.two", 0),
+        )
+        con.execute(
+            """
+            INSERT INTO benchmarks (
+                atom_fqdn, content_hash, benchmark_id, metric_name, metric_value
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            ("sciona.atoms.example.one", "hash", "bench-1", "score", 1.0),
+        )
+        con.commit()
+    finally:
+        con.close()
+
+
 def _write_legacy_manifest(path: Path) -> None:
     con = sqlite3.connect(path)
     try:
@@ -118,6 +162,41 @@ def test_export_manifest_writes_latest_json(
     assert payload["artifacts"]["internal"]["path"] == "manifests/manifest-internal.sqlite"
     assert payload["artifacts"]["public"]["sha256"]
     assert payload["artifacts"]["public"]["size_bytes"] == len("public bundle")
+
+
+def test_export_manifest_records_publishability_counts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("SCIONA_SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SCIONA_SUPABASE_SERVICE_KEY", "secret")
+
+    def fake_export_tiered_manifests(
+        bundle_dir: Path,
+        *,
+        supabase_url: str,
+        service_key: str,
+        developer_mode: bool,
+    ) -> dict[str, Path]:
+        del supabase_url, service_key, developer_mode
+        public_path = bundle_dir / "manifest-public.sqlite"
+        _write_sqlite_manifest(public_path)
+        return {"public": public_path}
+
+    monkeypatch.setattr(
+        "scripts.export_manifest._export_tiered_manifests",
+        fake_export_tiered_manifests,
+    )
+
+    result = export_manifest_bundle(tmp_path, upload=False)
+
+    payload = json.loads(result["latest"].read_text(encoding="utf-8"))
+    assert payload["artifacts"]["public"]["publishability"] == {
+        "total_atoms": 2,
+        "publishable_atoms": 1,
+        "non_publishable_atoms": 1,
+        "benchmark_rows": 1,
+    }
 
 
 def test_export_manifest_uploads_bundle_files(
