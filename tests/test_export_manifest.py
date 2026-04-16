@@ -24,7 +24,8 @@ def _write_sqlite_manifest(path: Path) -> None:
             CREATE TABLE atoms (
                 atom_id TEXT PRIMARY KEY,
                 fqdn TEXT UNIQUE NOT NULL,
-                is_publishable INTEGER NOT NULL DEFAULT 0
+                is_publishable INTEGER NOT NULL DEFAULT 0,
+                license_status TEXT NOT NULL DEFAULT 'unknown'
             )
             """
         )
@@ -40,12 +41,12 @@ def _write_sqlite_manifest(path: Path) -> None:
             """
         )
         con.execute(
-            "INSERT INTO atoms (atom_id, fqdn, is_publishable) VALUES (?, ?, ?)",
-            ("atom-1", "sciona.atoms.example.one", 1),
+            "INSERT INTO atoms (atom_id, fqdn, is_publishable, license_status) VALUES (?, ?, ?, ?)",
+            ("atom-1", "sciona.atoms.example.one", 1, "approved"),
         )
         con.execute(
-            "INSERT INTO atoms (atom_id, fqdn, is_publishable) VALUES (?, ?, ?)",
-            ("atom-2", "sciona.atoms.example.two", 0),
+            "INSERT INTO atoms (atom_id, fqdn, is_publishable, license_status) VALUES (?, ?, ?, ?)",
+            ("atom-2", "sciona.atoms.example.two", 0, "unknown"),
         )
         con.execute(
             """
@@ -196,6 +197,9 @@ def test_export_manifest_records_publishability_counts(
         "publishable_atoms": 1,
         "non_publishable_atoms": 1,
         "benchmark_rows": 1,
+        "approved_license_atoms": 1,
+        "unknown_license_atoms": 1,
+        "restricted_license_atoms": 0,
     }
 
 

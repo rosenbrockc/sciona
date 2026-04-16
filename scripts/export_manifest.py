@@ -93,6 +93,9 @@ def _summarize_manifest_sqlite(path: Path) -> dict[str, int]:
             "publishable_atoms": 0,
             "non_publishable_atoms": 0,
             "benchmark_rows": 0,
+            "approved_license_atoms": 0,
+            "unknown_license_atoms": 0,
+            "restricted_license_atoms": 0,
         }
     try:
         with sqlite3.connect(path) as con:
@@ -106,6 +109,9 @@ def _summarize_manifest_sqlite(path: Path) -> dict[str, int]:
             total_atoms = 0
             publishable_atoms = 0
             benchmark_rows = 0
+            approved_license_atoms = 0
+            unknown_license_atoms = 0
+            restricted_license_atoms = 0
             if "atoms" in tables:
                 total_atoms = int(
                     con.execute("SELECT COUNT(*) AS count FROM atoms").fetchone()["count"] or 0
@@ -116,6 +122,29 @@ def _summarize_manifest_sqlite(path: Path) -> dict[str, int]:
                     ).fetchone()["count"]
                     or 0
                 )
+                atom_columns = {
+                    str(row["name"])
+                    for row in con.execute("PRAGMA table_info(atoms)").fetchall()
+                }
+                if "license_status" in atom_columns:
+                    approved_license_atoms = int(
+                        con.execute(
+                            "SELECT COUNT(*) AS count FROM atoms WHERE license_status = 'approved'"
+                        ).fetchone()["count"]
+                        or 0
+                    )
+                    unknown_license_atoms = int(
+                        con.execute(
+                            "SELECT COUNT(*) AS count FROM atoms WHERE license_status = 'unknown' OR license_status = ''"
+                        ).fetchone()["count"]
+                        or 0
+                    )
+                    restricted_license_atoms = int(
+                        con.execute(
+                            "SELECT COUNT(*) AS count FROM atoms WHERE license_status IN ('restricted', 'needs_legal_review')"
+                        ).fetchone()["count"]
+                        or 0
+                    )
             if "benchmarks" in tables:
                 benchmark_rows = int(
                     con.execute("SELECT COUNT(*) AS count FROM benchmarks").fetchone()["count"]
@@ -127,12 +156,18 @@ def _summarize_manifest_sqlite(path: Path) -> dict[str, int]:
             "publishable_atoms": 0,
             "non_publishable_atoms": 0,
             "benchmark_rows": 0,
+            "approved_license_atoms": 0,
+            "unknown_license_atoms": 0,
+            "restricted_license_atoms": 0,
         }
     return {
         "total_atoms": total_atoms,
         "publishable_atoms": publishable_atoms,
         "non_publishable_atoms": max(total_atoms - publishable_atoms, 0),
         "benchmark_rows": benchmark_rows,
+        "approved_license_atoms": approved_license_atoms,
+        "unknown_license_atoms": unknown_license_atoms,
+        "restricted_license_atoms": restricted_license_atoms,
     }
 
 

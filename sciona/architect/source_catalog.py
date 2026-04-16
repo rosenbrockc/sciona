@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 from sciona.architect.catalog import CatalogReport, PrimitiveCatalog
 from sciona.architect.models import AlgorithmicPrimitive, ConceptType, IOSpec
+from sciona.license_policy import load_license_policy_from_env
 from sciona.sources import (
     AtomSource,
     SourcesConfig,
@@ -637,6 +638,16 @@ def _sqlite_table_names(con: sqlite3.Connection) -> set[str]:
     }
 
 
+def _sqlite_table_columns(con: sqlite3.Connection, table: str) -> set[str]:
+    try:
+        return {
+            str(row[1])
+            for row in con.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+    except sqlite3.Error:
+        return set()
+
+
 def _manifest_text(value: Any) -> str:
     if value is None:
         return ""
@@ -655,6 +666,24 @@ def _manifest_bool(value: Any) -> bool:
     if isinstance(value, (int, float)):
         return bool(value)
     return _manifest_text(value).lower() in {"1", "true", "t", "yes", "y", "on"}
+
+
+def _manifest_license_allowed(row: sqlite3.Row | dict[str, Any]) -> bool:
+    policy = load_license_policy_from_env(
+        developer_mode=False,
+        default_allow_unknown=True,
+        default_enforce_status=False,
+    )
+    if not policy.enabled:
+        return True
+    keys = row.keys() if hasattr(row, "keys") else set(row)
+    if "license_expression" not in keys and "license_status" not in keys and "license_family" not in keys:
+        return True
+    return policy.permits(
+        license_expression=_manifest_text(row["license_expression"]) if "license_expression" in keys else "",
+        license_status=_manifest_text(row["license_status"]) if "license_status" in keys else "unknown",
+        license_family=_manifest_text(row["license_family"]) if "license_family" in keys else "unknown",
+    )
 
 
 def _manifest_description_map(
@@ -792,11 +821,31 @@ def seed_catalog_from_manifest_sqlite(
 
         descriptions_by_atom = _manifest_description_map(con, tables)
         io_specs_by_atom = _manifest_io_specs_map(con, tables)
+        atom_columns = _sqlite_table_columns(con, "atoms")
+        select_columns = [
+            "atom_id",
+            "fqdn",
+            "status",
+            "domain_tags",
+            "description",
+            "visibility_tier",
+            "source_kind",
+            "namespace_root",
+            "source_repo_id",
+            "source_package",
+            "source_module_path",
+            "source_symbol",
+        ]
+        for optional in (
+            "license_expression",
+            "license_status",
+            "license_family",
+        ):
+            if optional in atom_columns:
+                select_columns.append(optional)
         rows = con.execute(
-            """
-            SELECT atom_id, fqdn, status, domain_tags, description, visibility_tier,
-                   source_kind, namespace_root, source_repo_id, source_package,
-                   source_module_path, source_symbol
+            f"""
+            SELECT {", ".join(select_columns)}
             FROM atoms
             WHERE status = 'approved'
             ORDER BY fqdn ASC
@@ -812,6 +861,8 @@ def seed_catalog_from_manifest_sqlite(
     for row in rows:
         fqdn = _manifest_text(row["fqdn"])
         if not fqdn:
+            continue
+        if not _manifest_license_allowed(row):
             continue
         if skip_locally_installed and catalog.get(fqdn) is not None:
             continue

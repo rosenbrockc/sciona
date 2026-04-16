@@ -84,6 +84,10 @@ async def test_fetch_manifest_data_normalizes_benchmark_names(monkeypatch):
     async def fake_fetch_all_rows(base_url, token, table, **kwargs):
         if table == "atoms":
             return atoms
+        if table == "atom_versions":
+            return []
+        if table == "atom_version_license_metadata":
+            return []
         if table == "hyperparams":
             return hyperparams
         if table == "atom_audit_rollups":
@@ -112,6 +116,7 @@ async def test_fetch_manifest_data_normalizes_benchmark_names(monkeypatch):
         "rollups",
         "descriptions",
         "io_specs",
+        "manifest_metadata",
     }
     assert data["benchmarks"][0]["benchmark_id"] == "signal_v1"
     assert data["benchmarks"][0]["benchmark_name"] == "signal_v1"
@@ -175,6 +180,111 @@ async def test_fetch_manifest_data_can_include_unpublished_in_developer_mode(mon
 
 
 @pytest.mark.asyncio
+async def test_fetch_manifest_data_filters_atoms_by_license_policy(monkeypatch):
+    atoms = [
+        {
+            "atom_id": "a1",
+            "fqdn": "pkg.mit",
+            "status": "approved",
+            "domain_tags": [],
+            "description": "MIT atom",
+            "visibility_tier": "general",
+            "source_kind": "hand_written",
+            "stateful_kind": "none",
+            "is_stochastic": False,
+            "is_ffi": False,
+            "namespace_root": "sciona.atoms",
+            "namespace_path": "",
+            "source_repo_id": None,
+            "source_package": "",
+            "source_module_path": "",
+            "source_symbol": "",
+            "is_publishable": True,
+        },
+        {
+            "atom_id": "a2",
+            "fqdn": "pkg.unknown",
+            "status": "approved",
+            "domain_tags": [],
+            "description": "Unknown atom",
+            "visibility_tier": "general",
+            "source_kind": "hand_written",
+            "stateful_kind": "none",
+            "is_stochastic": False,
+            "is_ffi": False,
+            "namespace_root": "sciona.atoms",
+            "namespace_path": "",
+            "source_repo_id": None,
+            "source_package": "",
+            "source_module_path": "",
+            "source_symbol": "",
+            "is_publishable": True,
+        },
+    ]
+    version_rows = [
+        {"version_id": "v1", "atom_id": "a1", "content_hash": "hash-1", "is_latest": True, "semver": "1.0.0"},
+        {"version_id": "v2", "atom_id": "a2", "content_hash": "hash-2", "is_latest": True, "semver": "1.0.0"},
+    ]
+    license_rows = [
+        {
+            "version_id": "v1",
+            "license_expression": "MIT",
+            "license_status": "approved",
+            "license_family": "permissive",
+            "license_source_kind": "manual_override",
+            "license_source_path": "data/licenses/provider_license.json",
+            "upstream_license_expression": "",
+            "license_confidence": "high",
+            "license_notes": "",
+        },
+        {
+            "version_id": "v2",
+            "license_expression": "NOASSERTION",
+            "license_status": "unknown",
+            "license_family": "unknown",
+            "license_source_kind": "manual_override",
+            "license_source_path": "data/licenses/provider_license.json",
+            "upstream_license_expression": "",
+            "license_confidence": "low",
+            "license_notes": "",
+        },
+    ]
+
+    async def fake_fetch_all_rows(base_url, token, table, **kwargs):
+        del base_url, token, kwargs
+        if table == "atoms":
+            return atoms
+        if table == "atom_versions":
+            return version_rows
+        if table == "atom_version_license_metadata":
+            return license_rows
+        return []
+
+    monkeypatch.setattr("sciona.api.snapshot._fetch_all_rows", fake_fetch_all_rows)
+    async def fake_call_rpc(*args, **kwargs):
+        del args, kwargs
+        return []
+
+    monkeypatch.setattr("sciona.api.snapshot._call_rpc", fake_call_rpc)
+
+    from sciona.license_policy import LicensePolicy
+
+    data = await fetch_manifest_data(
+        "https://example.supabase.co",
+        "token",
+        license_policy=LicensePolicy(
+            allowed_expressions=("MIT",),
+            allow_unknown=False,
+            enforce_status=True,
+        ),
+    )
+
+    assert [row["fqdn"] for row in data["atoms"]] == ["pkg.mit"]
+    assert data["manifest_metadata"]["license_policy_enforced"] is True
+    assert data["manifest_metadata"]["excluded_atoms"] == 1
+
+
+@pytest.mark.asyncio
 async def test_fetch_manifest_data_falls_back_to_atom_benchmarks(monkeypatch):
     atoms = [
         {
@@ -226,6 +336,8 @@ async def test_fetch_manifest_data_falls_back_to_atom_benchmarks(monkeypatch):
             return benchmark_rows
         if table == "atom_versions":
             return version_rows
+        if table == "atom_version_license_metadata":
+            return []
         raise AssertionError(f"unexpected table {table!r}")
 
     async def fake_call_rpc(*args, **kwargs):
@@ -285,7 +397,7 @@ async def test_fetch_manifest_data_filters_related_tables_client_side(monkeypatc
         }:
             related_filters[table] = dict(kwargs.get("filters") or {})
             return []
-        if table in {"atom_benchmarks", "atom_versions"}:
+        if table in {"atom_benchmarks", "atom_versions", "atom_version_license_metadata"}:
             return []
         raise AssertionError(f"unexpected table {table!r}")
 

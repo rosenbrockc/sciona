@@ -13,6 +13,12 @@ from typing import Any
 
 import httpx
 
+from sciona.license_policy import (
+    LicensePolicy,
+    load_license_policy_from_env,
+    summarize_license_rows,
+)
+
 DEFAULT_PAGE_SIZE = 1000
 DEFAULT_FILTER_BATCH_SIZE = 10
 DEFAULT_MANIFEST_TIER = "general"
@@ -145,6 +151,52 @@ def _normalize_benchmark_row(
     }
 
 
+def _normalize_license_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    data = dict(row)
+    return {
+        "version_id": _stringify(data.get("version_id")),
+        "license_expression": _stringify(data.get("license_expression")),
+        "license_status": _stringify(data.get("license_status")) or "unknown",
+        "license_family": _stringify(data.get("license_family")) or "unknown",
+        "license_source_kind": _stringify(data.get("license_source_kind")),
+        "license_source_path": _stringify(data.get("license_source_path")),
+        "upstream_license_expression": _stringify(data.get("upstream_license_expression")),
+        "license_confidence": _stringify(data.get("license_confidence")) or "unknown",
+        "license_notes": _stringify(data.get("license_notes")),
+    }
+
+
+def _filter_atoms_by_license_policy(
+    atoms: Sequence[dict[str, Any]],
+    *,
+    policy: LicensePolicy | None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    license_rows = [_normalize_license_row(atom) for atom in atoms]
+    summary = {
+        "license_policy_enforced": bool(policy and policy.enabled and license_rows),
+        "license_metadata_present": bool(license_rows),
+        "license_row_count": len(license_rows),
+        "license_status_counts": summarize_license_rows(license_rows),
+    }
+    if policy is None or not policy.enabled or not atoms or not license_rows:
+        summary["excluded_atoms"] = 0
+        return list(atoms), summary
+
+    filtered: list[dict[str, Any]] = []
+    excluded = 0
+    for atom in atoms:
+        if policy.permits(
+            license_expression=_stringify(atom.get("license_expression")),
+            license_status=_stringify(atom.get("license_status")),
+            license_family=_stringify(atom.get("license_family")),
+        ):
+            filtered.append(atom)
+        else:
+            excluded += 1
+    summary["excluded_atoms"] = excluded
+    return filtered, summary
+
+
 async def _fetch_all_rows(
     base_url: str,
     access_token: str,
@@ -220,6 +272,7 @@ async def fetch_manifest_data(
     *,
     visibility_tiers: Sequence[str] | None = None,
     include_unpublished: bool = False,
+    license_policy: LicensePolicy | None = None,
     client: httpx.AsyncClient | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Fetch all manifest inputs from Supabase REST endpoints."""
@@ -247,6 +300,72 @@ async def fetch_manifest_data(
         client=client,
     )
 
+    version_rows = await _fetch_all_rows(
+        base_url,
+        access_token,
+        "atom_versions",
+        select="version_id,atom_id,content_hash,is_latest,semver",
+        order="atom_id.asc,is_latest.desc,version_id.asc",
+        client=client,
+    )
+    latest_versions_by_atom: dict[str, dict[str, Any]] = {}
+    for row in version_rows:
+        atom_id = str(row.get("atom_id", "") or "")
+        if not atom_id or atom_id in latest_versions_by_atom:
+            continue
+        latest_versions_by_atom[atom_id] = row
+
+    license_rows: list[dict[str, Any]] = []
+    try:
+        source_rows = await _fetch_all_rows(
+            base_url,
+            access_token,
+            "atom_version_license_metadata",
+            select=(
+                "version_id,license_expression,license_status,license_family,"
+                "license_source_kind,license_source_path,upstream_license_expression,"
+                "license_confidence,license_notes"
+            ),
+            order="version_id.asc",
+            client=client,
+        )
+        license_rows = [_normalize_license_row(row) for row in source_rows]
+    except httpx.HTTPStatusError:
+        license_rows = []
+
+    license_by_version = {
+        str(row["version_id"]): row
+        for row in license_rows
+        if str(row.get("version_id", "")).strip()
+    }
+    atoms_with_versions: list[dict[str, Any]] = []
+    for row in atoms:
+        atom_id = str(row.get("atom_id", "") or "")
+        version = latest_versions_by_atom.get(atom_id, {})
+        license_row = license_by_version.get(str(version.get("version_id", "") or ""), {})
+        atoms_with_versions.append(
+            {
+                **row,
+                "content_hash": _stringify(version.get("content_hash")),
+                "version_id": _stringify(version.get("version_id")),
+                "semver": _stringify(version.get("semver")),
+                "license_expression": _stringify(license_row.get("license_expression")),
+                "license_status": _stringify(license_row.get("license_status")) or "unknown",
+                "license_family": _stringify(license_row.get("license_family")) or "unknown",
+                "license_source_kind": _stringify(license_row.get("license_source_kind")),
+                "license_source_path": _stringify(license_row.get("license_source_path")),
+                "upstream_license_expression": _stringify(
+                    license_row.get("upstream_license_expression")
+                ),
+                "license_confidence": _stringify(license_row.get("license_confidence")) or "unknown",
+                "license_notes": _stringify(license_row.get("license_notes")),
+            }
+        )
+    atoms, license_summary = _filter_atoms_by_license_policy(
+        atoms_with_versions,
+        policy=license_policy,
+    )
+
     atom_ids = [str(row["atom_id"]) for row in atoms if row.get("atom_id")]
     atom_id_set = set(atom_ids)
     atom_fqdns = {str(row["fqdn"]) for row in atoms if row.get("fqdn")}
@@ -264,6 +383,7 @@ async def fetch_manifest_data(
             "rollups": rollups,
             "descriptions": descriptions,
             "io_specs": io_specs,
+            "manifest_metadata": license_summary,
         }
 
     hyperparam_rows = await _fetch_all_rows(
@@ -370,13 +490,6 @@ async def fetch_manifest_data(
             order="benchmark_name.asc,metric_name.asc",
             client=client,
         )
-        version_rows = await _fetch_all_rows(
-            base_url,
-            access_token,
-            "atom_versions",
-            select="version_id,atom_id,content_hash",
-            client=client,
-        )
         version_by_id = {
             str(row["version_id"]): row for row in version_rows if row.get("version_id")
         }
@@ -405,6 +518,7 @@ async def fetch_manifest_data(
         "rollups": rollups,
         "descriptions": descriptions,
         "io_specs": io_specs,
+        "manifest_metadata": license_summary,
     }
 
 
@@ -466,7 +580,18 @@ def _create_schema(con: sqlite3.Connection) -> None:
             source_package TEXT NOT NULL DEFAULT '',
             source_module_path TEXT NOT NULL DEFAULT '',
             source_symbol TEXT NOT NULL DEFAULT '',
-            is_publishable INTEGER NOT NULL DEFAULT 0
+            is_publishable INTEGER NOT NULL DEFAULT 0,
+            version_id TEXT NOT NULL DEFAULT '',
+            content_hash TEXT NOT NULL DEFAULT '',
+            semver TEXT NOT NULL DEFAULT '',
+            license_expression TEXT NOT NULL DEFAULT '',
+            license_status TEXT NOT NULL DEFAULT 'unknown',
+            license_family TEXT NOT NULL DEFAULT 'unknown',
+            license_source_kind TEXT NOT NULL DEFAULT '',
+            license_source_path TEXT NOT NULL DEFAULT '',
+            upstream_license_expression TEXT NOT NULL DEFAULT '',
+            license_confidence TEXT NOT NULL DEFAULT 'unknown',
+            license_notes TEXT NOT NULL DEFAULT ''
         );
 
         CREATE TABLE hyperparams (
@@ -566,9 +691,12 @@ def _insert_atom(con: sqlite3.Connection, atom: Mapping[str, Any]) -> None:
             atom_id, fqdn, status, domain_tags, description, visibility_tier,
             source_kind, stateful_kind, is_stochastic, is_ffi, namespace_root,
             namespace_path, source_repo_id, source_package, source_module_path,
-            source_symbol, is_publishable
+            source_symbol, is_publishable, version_id, content_hash, semver,
+            license_expression, license_status, license_family,
+            license_source_kind, license_source_path, upstream_license_expression,
+            license_confidence, license_notes
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             _stringify(atom.get("atom_id")),
@@ -588,6 +716,17 @@ def _insert_atom(con: sqlite3.Connection, atom: Mapping[str, Any]) -> None:
             atom.get("source_module_path", ""),
             atom.get("source_symbol", ""),
             int(bool(atom.get("is_publishable", False))),
+            _stringify(atom.get("version_id")),
+            _stringify(atom.get("content_hash")),
+            _stringify(atom.get("semver")),
+            _stringify(atom.get("license_expression")),
+            _stringify(atom.get("license_status")) or "unknown",
+            _stringify(atom.get("license_family")) or "unknown",
+            _stringify(atom.get("license_source_kind")),
+            _stringify(atom.get("license_source_path")),
+            _stringify(atom.get("upstream_license_expression")),
+            _stringify(atom.get("license_confidence")) or "unknown",
+            _stringify(atom.get("license_notes")),
         ),
     )
 
@@ -805,6 +944,8 @@ async def export_tiered_manifests(
     """Export one manifest SQLite per configured tier."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    public_license_policy = load_license_policy_from_env(developer_mode=False)
+    developer_license_policy = load_license_policy_from_env(developer_mode=True)
 
     outputs: dict[str, Path] = {}
     for tier_name, included_tiers in MANIFEST_TIERS.items():
@@ -813,9 +954,13 @@ async def export_tiered_manifests(
             access_token,
             visibility_tiers=included_tiers,
             include_unpublished=False,
+            license_policy=public_license_policy,
             client=client,
         )
-        data["manifest_metadata"] = {"visibility_tier": tier_name}
+        data["manifest_metadata"] = {
+            **dict(data.get("manifest_metadata") or {}),
+            "visibility_tier": tier_name,
+        }
         output_path = output_dir / Path(manifest_artifact_key(tier_name)).name
         con = generate_manifest_sqlite(data, output_path=output_path)
         con.close()
@@ -827,9 +972,11 @@ async def export_tiered_manifests(
             access_token,
             visibility_tiers=DEVELOPER_MANIFEST_INCLUDED_TIERS,
             include_unpublished=True,
+            license_policy=developer_license_policy,
             client=client,
         )
         data["manifest_metadata"] = {
+            **dict(data.get("manifest_metadata") or {}),
             "visibility_tier": DEVELOPER_MANIFEST_TIER,
             "publication_scope": "developer",
         }

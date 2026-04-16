@@ -56,7 +56,10 @@ def _create_manifest_db(
             source_package TEXT NOT NULL DEFAULT '',
             source_module_path TEXT NOT NULL DEFAULT '',
             source_symbol TEXT NOT NULL DEFAULT '',
-            is_publishable INTEGER NOT NULL DEFAULT 1
+            is_publishable INTEGER NOT NULL DEFAULT 1,
+            license_expression TEXT NOT NULL DEFAULT '',
+            license_status TEXT NOT NULL DEFAULT 'unknown',
+            license_family TEXT NOT NULL DEFAULT 'unknown'
         );
         CREATE TABLE descriptions (
             description_id TEXT PRIMARY KEY,
@@ -88,22 +91,30 @@ def _create_manifest_db(
         )
 
     for atom in atoms:
+        payload = {
+            "license_expression": "",
+            "license_status": "unknown",
+            "license_family": "unknown",
+            **atom,
+        }
         con.execute(
             """
             INSERT INTO atoms (
                 atom_id, fqdn, status, domain_tags, description, visibility_tier,
                 source_kind, stateful_kind, is_stochastic, is_ffi, namespace_root,
                 namespace_path, source_repo_id, source_package, source_module_path,
-                source_symbol, is_publishable
+                source_symbol, is_publishable, license_expression, license_status,
+                license_family
             )
             VALUES (
                 :atom_id, :fqdn, :status, :domain_tags, :description, :visibility_tier,
                 :source_kind, :stateful_kind, :is_stochastic, :is_ffi, :namespace_root,
                 :namespace_path, :source_repo_id, :source_package, :source_module_path,
-                :source_symbol, :is_publishable
+                :source_symbol, :is_publishable, :license_expression, :license_status,
+                :license_family
             )
             """,
-            atom,
+            payload,
         )
 
     for desc in descriptions or []:
@@ -549,6 +560,73 @@ def test_seed_catalog_from_manifest_sqlite_handles_partial_manifests(
     assert prim.inputs == []
     assert prim.outputs == []
     assert prim.type_signature == "(void) -> Any"
+
+
+def test_seed_catalog_from_manifest_sqlite_respects_license_policy_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    db = tmp_path / "manifest.sqlite"
+    _create_manifest_db(
+        db,
+        atoms=[
+            {
+                "atom_id": "a1",
+                "fqdn": "pkg.manifest.mit_atom",
+                "status": "approved",
+                "domain_tags": "",
+                "description": "MIT atom",
+                "visibility_tier": "general",
+                "source_kind": "reviewed",
+                "stateful_kind": "none",
+                "is_stochastic": 0,
+                "is_ffi": 0,
+                "namespace_root": "sciona.atoms",
+                "namespace_path": "",
+                "source_repo_id": "repo-1",
+                "source_package": "pkg.manifest",
+                "source_module_path": "atoms",
+                "source_symbol": "mit_atom",
+                "is_publishable": 1,
+                "license_expression": "MIT",
+                "license_status": "approved",
+                "license_family": "permissive",
+            },
+            {
+                "atom_id": "a2",
+                "fqdn": "pkg.manifest.unknown_atom",
+                "status": "approved",
+                "domain_tags": "",
+                "description": "Unknown atom",
+                "visibility_tier": "general",
+                "source_kind": "reviewed",
+                "stateful_kind": "none",
+                "is_stochastic": 0,
+                "is_ffi": 0,
+                "namespace_root": "sciona.atoms",
+                "namespace_path": "",
+                "source_repo_id": "repo-2",
+                "source_package": "pkg.manifest",
+                "source_module_path": "atoms",
+                "source_symbol": "unknown_atom",
+                "is_publishable": 1,
+                "license_expression": "NOASSERTION",
+                "license_status": "unknown",
+                "license_family": "unknown",
+            },
+        ],
+        include_io_specs=False,
+    )
+
+    monkeypatch.setenv("SCIONA_ALLOWED_LICENSES", "MIT")
+    monkeypatch.setenv("SCIONA_ALLOW_UNKNOWN_LICENSES", "0")
+
+    catalog = PrimitiveCatalog()
+    added = seed_catalog_from_manifest_sqlite(catalog, db)
+
+    assert added == 1
+    assert catalog.get("pkg.manifest.mit_atom") is not None
+    assert catalog.get("pkg.manifest.unknown_atom") is None
 
 
 def test_seed_catalog_from_configured_sciona_atoms_source_discovers_pilot_cdgs() -> None:
