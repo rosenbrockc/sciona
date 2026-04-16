@@ -1,29 +1,29 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-16T21:13:07.607240+00:00.
+Generated from the live local Supabase replay on 2026-04-16T22:19:33.067369+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `142`
-- Non-publishable atoms: `362`
+- Publishable atoms: `168`
+- Non-publishable atoms: `336`
 
 ### Marginal Blocker Counts
 
-- `description`: `208`
+- `description`: `207`
 - `io_specs`: `186`
-- `parameters`: `209`
-- `publishable_rollup`: `362`
+- `parameters`: `208`
+- `publishable_rollup`: `336`
 - `references`: `141`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup`: `153`
 - `publishable_rollup,io_specs,parameters,description,references`: `140`
+- `publishable_rollup`: `128`
 - `publishable_rollup,io_specs,parameters,description`: `46`
-- `publishable_rollup,parameters,description`: `21`
+- `publishable_rollup,parameters,description`: `20`
 - `publishable_rollup,parameters`: `1`
 - `publishable_rollup,parameters,description,references`: `1`
 
@@ -32,14 +32,13 @@ This document is a working debt register for every currently unpublished atom.
 - `fintech`: `80`
 - `bio`: `58`
 - `numpy`: `39`
-- `scipy`: `39`
 - `physics`: `38`
 - `expansion`: `35`
 - `inference`: `34`
 - `signal_processing`: `25`
+- `scipy`: `14`
 - `state_estimation`: `11`
 - `dynamic_programming`: `1`
-- `ml`: `1`
 - `robotics`: `1`
 
 ## Status Legend
@@ -319,19 +318,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.initializenutsstate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 
-## ml
-
-- Non-publishable atoms: `1`
-- Missing publishable rollup: `1`
-- Missing IO specs: `0`
-- Missing parameters: `1`
-- Missing description: `1`
-- Missing references: `0`
-
-| Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
-| --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.ml.datadriven.discover_equations` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-
 ## numpy
 
 - Non-publishable atoms: `39`
@@ -448,8 +434,8 @@ This document is a working debt register for every currently unpublished atom.
 
 ## scipy
 
-- Non-publishable atoms: `39`
-- Missing publishable rollup: `39`
+- Non-publishable atoms: `14`
+- Missing publishable rollup: `14`
 - Missing IO specs: `9`
 - Missing parameters: `9`
 - Missing description: `9`
@@ -457,31 +443,10 @@ This document is a working debt register for every currently unpublished atom.
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.scipy.fft.dct` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.fft.idct` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.integrate.quad` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.integrate.simpson` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.integrate.solve_ivp` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.scipy.interpolate.cubicsplinefit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.interpolate.rbfinterpolatorfit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.scipy.linalg.det` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.linalg.inv` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.linalg.lu_factor` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.linalg.lu_solve` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.linalg.solve` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.optimize.curve_fit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.scipy.optimize.differential_evolution` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.scipy.optimize.linprog` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.optimize.minimize` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.optimize.root` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.scipy.optimize.shgo` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.scipy.signal.butter` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.signal.cheby1` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.signal.cheby2` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.signal.firwin` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.signal.freqz` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.signal.lfilter` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.signal.sosfilt` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.sparse_graph.graph_fourier_transform` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
 | `sciona.atoms.scipy.sparse_graph.graph_laplacian` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
@@ -491,11 +456,7 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.scipy.sparse_graph.single_source_shortest_path` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.spatial.delaunay_triangulation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.spatial.voronoi_tessellation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.scipy.stats.describe` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.scipy.stats.norm` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
-| `sciona.atoms.scipy.stats.pearsonr` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.stats.spearmanr` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.scipy.stats.ttest_ind` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 
 ## signal_processing
 

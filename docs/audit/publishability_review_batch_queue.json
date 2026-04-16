@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-16T21:13:07.607240+00:00",
+  "generated_at": "2026-04-16T22:19:33.067369+00:00",
   "source": "local_supabase_filtered_existing_queue",
-  "batch_count": 70,
+  "batch_count": 65,
   "batches": [
     {
       "atom_count": 27,
@@ -3098,113 +3098,6 @@
       "atoms": [
         {
           "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.signal.butter",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.signal.cheby1",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.signal.cheby2",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.signal.firwin",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.signal.freqz",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.signal.lfilter",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.signal.sosfilt",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-022",
-      "batch_key": "sciona.atoms.scipy.signal.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 7,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.scipy.signal.butter",
-        "sciona.atoms.scipy.signal.cheby1",
-        "sciona.atoms.scipy.signal.cheby2",
-        "sciona.atoms.scipy.signal.firwin",
-        "sciona.atoms.scipy.signal.freqz"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 7,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 7,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
-      "atom_count": 7,
-      "atoms": [
-        {
-          "blockers": [
             "publishable_rollup",
             "io_specs",
             "parameters",
@@ -3466,17 +3359,8 @@
       ]
     },
     {
-      "atom_count": 6,
+      "atom_count": 2,
       "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.optimize.curve_fit",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
         {
           "blockers": [
             "publishable_rollup",
@@ -3489,33 +3373,6 @@
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.optimize.linprog",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.optimize.minimize",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.optimize.root",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
         },
         {
           "blockers": [
@@ -4053,139 +3910,14 @@
       ]
     },
     {
-      "atom_count": 5,
+      "atom_count": 1,
       "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.linalg.det",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.linalg.inv",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.linalg.lu_factor",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.linalg.lu_solve",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.linalg.solve",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-033",
-      "batch_key": "sciona.atoms.scipy.linalg.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 5,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.scipy.linalg.det",
-        "sciona.atoms.scipy.linalg.inv",
-        "sciona.atoms.scipy.linalg.lu_factor",
-        "sciona.atoms.scipy.linalg.lu_solve",
-        "sciona.atoms.scipy.linalg.solve"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 5,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 5,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
-      "atom_count": 5,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.stats.describe",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
         {
           "blockers": [
             "publishable_rollup"
           ],
           "fqdn": "sciona.atoms.scipy.stats.norm",
           "overall_verdict": "misleading",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.stats.pearsonr",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.stats.spearmanr",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.stats.ttest_ind",
-          "overall_verdict": "acceptable_with_limits",
           "review_status": "missing",
           "trust_readiness": "not_reviewed"
         }
@@ -6484,75 +6216,6 @@
       ]
     },
     {
-      "atom_count": 3,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.integrate.quad",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.integrate.simpson",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.integrate.solve_ivp",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-063",
-      "batch_key": "sciona.atoms.scipy.integrate.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 3,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.scipy.integrate.quad",
-        "sciona.atoms.scipy.integrate.simpson",
-        "sciona.atoms.scipy.integrate.solve_ivp"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 3,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
       "atom_count": 2,
       "atoms": [
         {
@@ -6997,65 +6660,6 @@
       "atoms": [
         {
           "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.fft.dct",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.scipy.fft.idct",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-070",
-      "batch_key": "sciona.atoms.scipy.fft.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 2,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.scipy.fft.dct",
-        "sciona.atoms.scipy.fft.idct"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 2,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 2,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
-      "atom_count": 2,
-      "atoms": [
-        {
-          "blockers": [
             "publishable_rollup",
             "io_specs",
             "parameters",
@@ -7404,60 +7008,6 @@
         {
           "blockers": [
             "publishable_rollup",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.ml.datadriven.discover_equations",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-076",
-      "batch_key": "sciona.atoms.ml.datadriven.__remainder__",
-      "blocker_class": "metadata_plus_rollup",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "low",
-      "primary_blocker_count": 1,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "parameters",
-        "description"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms-ml",
-      "representative_atoms": [
-        "sciona.atoms.ml.datadriven.discover_equations"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 1,
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 1,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 1,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
             "io_specs",
             "parameters",
             "description"
@@ -7634,27 +7184,26 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 362
+    "non_publishable_atoms": 336
   },
   "repo_counts": {
     "sciona-atoms": 81,
     "sciona-atoms-bio": 58,
     "sciona-atoms-fintech": 80,
-    "sciona-atoms-ml": 1,
-    "sciona-atoms-physics": 116,
+    "sciona-atoms-physics": 91,
     "sciona-atoms-robotics": 1,
     "sciona-atoms-signal": 25
   },
   "wave_counts": {
-    "wave_1_audit_completion": 168,
-    "wave_2_metadata_and_llm_review": 192,
+    "wave_1_audit_completion": 143,
+    "wave_2_metadata_and_llm_review": 191,
     "wave_3_residual_policy_or_provenance": 2
   },
   "blocker_counts": {
-    "description": 208,
+    "description": 207,
     "io_specs": 186,
-    "parameters": 209,
-    "publishable_rollup": 362,
+    "parameters": 208,
+    "publishable_rollup": 336,
     "references": 141
   },
   "special_slices": {
