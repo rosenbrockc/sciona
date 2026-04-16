@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T21:02:37.452707+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T21:13:07.607240+00:00.
 
-- Remaining unpublished atoms: `364`
-- Remaining worker batches: `71`
+- Remaining unpublished atoms: `362`
+- Remaining worker batches: `70`
 
 ## Batches
 
@@ -267,15 +267,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T21:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.scipy.stats.describe`, `sciona.atoms.scipy.stats.norm`, `sciona.atoms.scipy.stats.pearsonr`
-
-### pubrev-035
-
-- Repo: `sciona-atoms-signal`
-- Wave: `wave_1_audit_completion`
-- Atoms: `2`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.signal_processing.biosppy.ecg.christov_segmenter`, `sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed`, `sciona.atoms.signal_processing.biosppy.ecg.peak_correction`
 
 ### pubrev-036
 

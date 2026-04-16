@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-16T21:02:37.452707+00:00",
+  "generated_at": "2026-04-16T21:13:07.607240+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 140,
-    "non_publishable_atoms": 364
+    "publishable_atoms": 142,
+    "non_publishable_atoms": 362
   },
   "blocker_counts": {
-    "description": 210,
-    "io_specs": 188,
-    "parameters": 211,
-    "publishable_rollup": 364,
-    "references": 143
+    "description": 208,
+    "io_specs": 186,
+    "parameters": 209,
+    "publishable_rollup": 362,
+    "references": 141
   },
   "top_blocker_combinations": [
     {
@@ -28,7 +28,7 @@
         "description",
         "references"
       ],
-      "atom_count": 142
+      "atom_count": 140
     },
     {
       "blockers": [
@@ -68,7 +68,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 210
+      "atom_count": 208
     },
     {
       "review_status": "missing",
@@ -4777,45 +4777,13 @@
     },
     {
       "domain": "signal_processing",
-      "atom_count": 27,
-      "missing_publishable_rollup": 27,
-      "missing_io_specs": 13,
-      "missing_parameters": 13,
-      "missing_description": 13,
-      "missing_references": 13,
+      "atom_count": 25,
+      "missing_publishable_rollup": 25,
+      "missing_io_specs": 11,
+      "missing_parameters": 11,
+      "missing_description": 11,
+      "missing_references": 11,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter.filterstateinit",
           "domain": "signal_processing",
@@ -5376,7 +5344,7 @@
     },
     {
       "domain": "signal_processing",
-      "atom_count": 27
+      "atom_count": 25
     },
     {
       "domain": "state_estimation",

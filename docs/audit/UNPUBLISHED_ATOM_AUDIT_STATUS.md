@@ -1,27 +1,27 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-16T21:02:37.452707+00:00.
+Generated from the live local Supabase replay on 2026-04-16T21:13:07.607240+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `140`
-- Non-publishable atoms: `364`
+- Publishable atoms: `142`
+- Non-publishable atoms: `362`
 
 ### Marginal Blocker Counts
 
-- `description`: `210`
-- `io_specs`: `188`
-- `parameters`: `211`
-- `publishable_rollup`: `364`
-- `references`: `143`
+- `description`: `208`
+- `io_specs`: `186`
+- `parameters`: `209`
+- `publishable_rollup`: `362`
+- `references`: `141`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup`: `153`
-- `publishable_rollup,io_specs,parameters,description,references`: `142`
+- `publishable_rollup,io_specs,parameters,description,references`: `140`
 - `publishable_rollup,io_specs,parameters,description`: `46`
 - `publishable_rollup,parameters,description`: `21`
 - `publishable_rollup,parameters`: `1`
@@ -36,7 +36,7 @@ This document is a working debt register for every currently unpublished atom.
 - `physics`: `38`
 - `expansion`: `35`
 - `inference`: `34`
-- `signal_processing`: `27`
+- `signal_processing`: `25`
 - `state_estimation`: `11`
 - `dynamic_programming`: `1`
 - `ml`: `1`
@@ -499,17 +499,15 @@ This document is a working debt register for every currently unpublished atom.
 
 ## signal_processing
 
-- Non-publishable atoms: `27`
-- Missing publishable rollup: `27`
-- Missing IO specs: `13`
-- Missing parameters: `13`
-- Missing description: `13`
-- Missing references: `13`
+- Non-publishable atoms: `25`
+- Missing publishable rollup: `25`
+- Missing IO specs: `11`
+- Missing parameters: `11`
+- Missing description: `11`
+- Missing references: `11`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.biosppy.online_filter.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.online_filter.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |

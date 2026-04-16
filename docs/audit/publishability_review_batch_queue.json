@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-16T21:02:37.452707+00:00",
+  "generated_at": "2026-04-16T21:13:07.607240+00:00",
   "source": "local_supabase_filtered_existing_queue",
-  "batch_count": 71,
+  "batch_count": 70,
   "batches": [
     {
       "atom_count": 27,
@@ -4231,92 +4231,6 @@
       ]
     },
     {
-      "atom_count": 2,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-035",
-      "batch_key": "sciona.atoms.signal_processing.biosppy.ecg",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 3,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-signal",
-      "representative_atoms": [
-        "sciona.atoms.signal_processing.biosppy.ecg.christov_segmenter",
-        "sciona.atoms.signal_processing.biosppy.ecg.heart_rate_computation_median_smoothed",
-        "sciona.atoms.signal_processing.biosppy.ecg.peak_correction",
-        "sciona.atoms.signal_processing.biosppy.ecg.reject_outlier_intervals",
-        "sciona.atoms.signal_processing.biosppy.ecg.ssf_segmenter"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "atom_count": 2,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 3,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "atom_count": 2,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
       "atom_count": 5,
       "atoms": [
         {
@@ -7720,7 +7634,7 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 364
+    "non_publishable_atoms": 362
   },
   "repo_counts": {
     "sciona-atoms": 81,
@@ -7729,19 +7643,19 @@
     "sciona-atoms-ml": 1,
     "sciona-atoms-physics": 116,
     "sciona-atoms-robotics": 1,
-    "sciona-atoms-signal": 27
+    "sciona-atoms-signal": 25
   },
   "wave_counts": {
-    "wave_1_audit_completion": 170,
+    "wave_1_audit_completion": 168,
     "wave_2_metadata_and_llm_review": 192,
     "wave_3_residual_policy_or_provenance": 2
   },
   "blocker_counts": {
-    "description": 210,
-    "io_specs": 188,
-    "parameters": 211,
-    "publishable_rollup": 364,
-    "references": 143
+    "description": 208,
+    "io_specs": 186,
+    "parameters": 209,
+    "publishable_rollup": 362,
+    "references": 141
   },
   "special_slices": {
     "audit_rollup_only_atoms": {
