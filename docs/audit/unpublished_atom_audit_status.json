@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-16T22:19:33.067369+00:00",
+  "generated_at": "2026-04-16T22:54:06.140164+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 168,
-    "non_publishable_atoms": 336
+    "publishable_atoms": 170,
+    "non_publishable_atoms": 334
   },
   "blocker_counts": {
-    "description": 207,
-    "io_specs": 186,
-    "parameters": 208,
-    "publishable_rollup": 336,
-    "references": 141
+    "description": 205,
+    "io_specs": 184,
+    "parameters": 206,
+    "publishable_rollup": 334,
+    "references": 139
   },
   "top_blocker_combinations": [
     {
@@ -22,7 +22,7 @@
         "description",
         "references"
       ],
-      "atom_count": 140
+      "atom_count": 138
     },
     {
       "blockers": [
@@ -68,7 +68,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 207
+      "atom_count": 205
     },
     {
       "review_status": "missing",
@@ -4237,45 +4237,13 @@
     },
     {
       "domain": "scipy",
-      "atom_count": 14,
-      "missing_publishable_rollup": 14,
-      "missing_io_specs": 9,
-      "missing_parameters": 9,
-      "missing_description": 9,
-      "missing_references": 9,
+      "atom_count": 12,
+      "missing_publishable_rollup": 12,
+      "missing_io_specs": 7,
+      "missing_parameters": 7,
+      "missing_description": 7,
+      "missing_references": 7,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.scipy.interpolate.cubicsplinefit",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.interpolate.rbfinterpolatorfit",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.scipy.optimize.differential_evolution",
           "domain": "scipy",
@@ -5019,7 +4987,7 @@
     },
     {
       "domain": "scipy",
-      "atom_count": 14
+      "atom_count": 12
     },
     {
       "domain": "state_estimation",

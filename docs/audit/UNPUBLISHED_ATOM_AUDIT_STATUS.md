@@ -1,26 +1,26 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-16T22:19:33.067369+00:00.
+Generated from the live local Supabase replay on 2026-04-16T22:54:06.140164+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `168`
-- Non-publishable atoms: `336`
+- Publishable atoms: `170`
+- Non-publishable atoms: `334`
 
 ### Marginal Blocker Counts
 
-- `description`: `207`
-- `io_specs`: `186`
-- `parameters`: `208`
-- `publishable_rollup`: `336`
-- `references`: `141`
+- `description`: `205`
+- `io_specs`: `184`
+- `parameters`: `206`
+- `publishable_rollup`: `334`
+- `references`: `139`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `140`
+- `publishable_rollup,io_specs,parameters,description,references`: `138`
 - `publishable_rollup`: `128`
 - `publishable_rollup,io_specs,parameters,description`: `46`
 - `publishable_rollup,parameters,description`: `20`
@@ -36,7 +36,7 @@ This document is a working debt register for every currently unpublished atom.
 - `expansion`: `35`
 - `inference`: `34`
 - `signal_processing`: `25`
-- `scipy`: `14`
+- `scipy`: `12`
 - `state_estimation`: `11`
 - `dynamic_programming`: `1`
 - `robotics`: `1`
@@ -434,17 +434,15 @@ This document is a working debt register for every currently unpublished atom.
 
 ## scipy
 
-- Non-publishable atoms: `14`
-- Missing publishable rollup: `14`
-- Missing IO specs: `9`
-- Missing parameters: `9`
-- Missing description: `9`
-- Missing references: `9`
+- Non-publishable atoms: `12`
+- Missing publishable rollup: `12`
+- Missing IO specs: `7`
+- Missing parameters: `7`
+- Missing description: `7`
+- Missing references: `7`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.scipy.interpolate.cubicsplinefit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.scipy.interpolate.rbfinterpolatorfit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.optimize.differential_evolution` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.optimize.shgo` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
