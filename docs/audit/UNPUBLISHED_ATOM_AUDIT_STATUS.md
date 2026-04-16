@@ -1,26 +1,26 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-16T22:54:06.140164+00:00.
+Generated from the live local Supabase replay on 2026-04-16T22:57:46.970574+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `170`
-- Non-publishable atoms: `334`
+- Publishable atoms: `172`
+- Non-publishable atoms: `332`
 
 ### Marginal Blocker Counts
 
-- `description`: `205`
-- `io_specs`: `184`
-- `parameters`: `206`
-- `publishable_rollup`: `334`
-- `references`: `139`
+- `description`: `203`
+- `io_specs`: `182`
+- `parameters`: `204`
+- `publishable_rollup`: `332`
+- `references`: `137`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `138`
+- `publishable_rollup,io_specs,parameters,description,references`: `136`
 - `publishable_rollup`: `128`
 - `publishable_rollup,io_specs,parameters,description`: `46`
 - `publishable_rollup,parameters,description`: `20`
@@ -36,8 +36,8 @@ This document is a working debt register for every currently unpublished atom.
 - `expansion`: `35`
 - `inference`: `34`
 - `signal_processing`: `25`
-- `scipy`: `12`
 - `state_estimation`: `11`
+- `scipy`: `10`
 - `dynamic_programming`: `1`
 - `robotics`: `1`
 
@@ -434,12 +434,12 @@ This document is a working debt register for every currently unpublished atom.
 
 ## scipy
 
-- Non-publishable atoms: `12`
-- Missing publishable rollup: `12`
-- Missing IO specs: `7`
-- Missing parameters: `7`
-- Missing description: `7`
-- Missing references: `7`
+- Non-publishable atoms: `10`
+- Missing publishable rollup: `10`
+- Missing IO specs: `5`
+- Missing parameters: `5`
+- Missing description: `5`
+- Missing references: `5`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -452,8 +452,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.scipy.sparse_graph.inverse_graph_fourier_transform` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
 | `sciona.atoms.scipy.sparse_graph.minimum_spanning_tree` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.sparse_graph.single_source_shortest_path` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.scipy.spatial.delaunay_triangulation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.scipy.spatial.voronoi_tessellation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.scipy.stats.norm` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
 
 ## signal_processing

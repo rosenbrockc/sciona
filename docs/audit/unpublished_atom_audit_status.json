@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-16T22:54:06.140164+00:00",
+  "generated_at": "2026-04-16T22:57:46.970574+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 170,
-    "non_publishable_atoms": 334
+    "publishable_atoms": 172,
+    "non_publishable_atoms": 332
   },
   "blocker_counts": {
-    "description": 205,
-    "io_specs": 184,
-    "parameters": 206,
-    "publishable_rollup": 334,
-    "references": 139
+    "description": 203,
+    "io_specs": 182,
+    "parameters": 204,
+    "publishable_rollup": 332,
+    "references": 137
   },
   "top_blocker_combinations": [
     {
@@ -22,7 +22,7 @@
         "description",
         "references"
       ],
-      "atom_count": 138
+      "atom_count": 136
     },
     {
       "blockers": [
@@ -68,7 +68,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 205
+      "atom_count": 203
     },
     {
       "review_status": "missing",
@@ -4237,12 +4237,12 @@
     },
     {
       "domain": "scipy",
-      "atom_count": 12,
-      "missing_publishable_rollup": 12,
-      "missing_io_specs": 7,
-      "missing_parameters": 7,
-      "missing_description": 7,
-      "missing_references": 7,
+      "atom_count": 10,
+      "missing_publishable_rollup": 10,
+      "missing_io_specs": 5,
+      "missing_parameters": 5,
+      "missing_description": 5,
+      "missing_references": 5,
       "atoms": [
         {
           "fqdn": "sciona.atoms.scipy.optimize.differential_evolution",
@@ -4358,38 +4358,6 @@
         },
         {
           "fqdn": "sciona.atoms.scipy.sparse_graph.single_source_shortest_path",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.spatial.delaunay_triangulation",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.spatial.voronoi_tessellation",
           "domain": "scipy",
           "review_status": "missing_row",
           "trust_readiness": "missing_row",
@@ -4986,12 +4954,12 @@
       "atom_count": 25
     },
     {
-      "domain": "scipy",
-      "atom_count": 12
-    },
-    {
       "domain": "state_estimation",
       "atom_count": 11
+    },
+    {
+      "domain": "scipy",
+      "atom_count": 10
     },
     {
       "domain": "dynamic_programming",

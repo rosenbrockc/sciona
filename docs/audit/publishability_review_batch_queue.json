@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-16T22:54:06.140164+00:00",
+  "generated_at": "2026-04-16T22:57:46.970574+00:00",
   "source": "local_supabase_filtered_existing_queue",
-  "batch_count": 64,
+  "batch_count": 63,
   "batches": [
     {
       "atom_count": 27,
@@ -6666,82 +6666,6 @@
             "description",
             "references"
           ],
-          "fqdn": "sciona.atoms.scipy.spatial.delaunay_triangulation",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.scipy.spatial.voronoi_tessellation",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-072",
-      "batch_key": "sciona.atoms.scipy.spatial.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 2,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.scipy.spatial.delaunay_triangulation",
-        "sciona.atoms.scipy.spatial.voronoi_tessellation"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 2,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 2,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 2,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
           "fqdn": "sciona.atoms.signal_processing.neurokit2.averageqrstemplate",
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
@@ -7108,27 +7032,27 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 334
+    "non_publishable_atoms": 332
   },
   "repo_counts": {
     "sciona-atoms": 81,
     "sciona-atoms-bio": 58,
     "sciona-atoms-fintech": 80,
-    "sciona-atoms-physics": 89,
+    "sciona-atoms-physics": 87,
     "sciona-atoms-robotics": 1,
     "sciona-atoms-signal": 25
   },
   "wave_counts": {
     "wave_1_audit_completion": 143,
-    "wave_2_metadata_and_llm_review": 189,
+    "wave_2_metadata_and_llm_review": 187,
     "wave_3_residual_policy_or_provenance": 2
   },
   "blocker_counts": {
-    "description": 205,
-    "io_specs": 184,
-    "parameters": 206,
-    "publishable_rollup": 334,
-    "references": 139
+    "description": 203,
+    "io_specs": 182,
+    "parameters": 204,
+    "publishable_rollup": 332,
+    "references": 137
   },
   "special_slices": {
     "audit_rollup_only_atoms": {

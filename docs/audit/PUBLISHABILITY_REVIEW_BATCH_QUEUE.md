@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T22:54:06.140164+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T22:57:46.970574+00:00.
 
-- Remaining unpublished atoms: `334`
-- Remaining worker batches: `64`
+- Remaining unpublished atoms: `332`
+- Remaining worker batches: `63`
 
 ## Batches
 
@@ -519,15 +519,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T22:
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.physics.skyfield.calculate_vector_angle`, `sciona.atoms.physics.skyfield.compute_spherical_coordinate_rates`
-
-### pubrev-072
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.scipy.spatial.delaunay_triangulation`, `sciona.atoms.scipy.spatial.voronoi_tessellation`
 
 ### pubrev-073
 
