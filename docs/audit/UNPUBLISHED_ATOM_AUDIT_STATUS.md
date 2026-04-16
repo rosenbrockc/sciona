@@ -1,27 +1,27 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-16T20:49:06.027606+00:00.
+Generated from the live local Supabase replay on 2026-04-16T21:02:37.452707+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `139`
-- Non-publishable atoms: `365`
+- Publishable atoms: `140`
+- Non-publishable atoms: `364`
 
 ### Marginal Blocker Counts
 
-- `description`: `211`
-- `io_specs`: `189`
-- `parameters`: `212`
-- `publishable_rollup`: `365`
-- `references`: `144`
+- `description`: `210`
+- `io_specs`: `188`
+- `parameters`: `211`
+- `publishable_rollup`: `364`
+- `references`: `143`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup`: `153`
-- `publishable_rollup,io_specs,parameters,description,references`: `143`
+- `publishable_rollup,io_specs,parameters,description,references`: `142`
 - `publishable_rollup,io_specs,parameters,description`: `46`
 - `publishable_rollup,parameters,description`: `21`
 - `publishable_rollup,parameters`: `1`
@@ -38,9 +38,9 @@ This document is a working debt register for every currently unpublished atom.
 - `inference`: `34`
 - `signal_processing`: `27`
 - `state_estimation`: `11`
-- `robotics`: `2`
 - `dynamic_programming`: `1`
 - `ml`: `1`
+- `robotics`: `1`
 
 ## Status Legend
 
@@ -435,16 +435,15 @@ This document is a working debt register for every currently unpublished atom.
 
 ## robotics
 
-- Non-publishable atoms: `2`
-- Missing publishable rollup: `2`
-- Missing IO specs: `2`
-- Missing parameters: `2`
-- Missing description: `2`
-- Missing references: `2`
+- Non-publishable atoms: `1`
+- Missing publishable rollup: `1`
+- Missing IO specs: `1`
+- Missing parameters: `1`
+- Missing description: `1`
+- Missing references: `1`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.robotics.pronto.ekf_smoother.stateestimatorinit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 
 ## scipy

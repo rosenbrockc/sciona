@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-16T20:49:06.027606+00:00",
+  "generated_at": "2026-04-16T21:02:37.452707+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 139,
-    "non_publishable_atoms": 365
+    "publishable_atoms": 140,
+    "non_publishable_atoms": 364
   },
   "blocker_counts": {
-    "description": 211,
-    "io_specs": 189,
-    "parameters": 212,
-    "publishable_rollup": 365,
-    "references": 144
+    "description": 210,
+    "io_specs": 188,
+    "parameters": 211,
+    "publishable_rollup": 364,
+    "references": 143
   },
   "top_blocker_combinations": [
     {
@@ -28,7 +28,7 @@
         "description",
         "references"
       ],
-      "atom_count": 143
+      "atom_count": 142
     },
     {
       "blockers": [
@@ -68,7 +68,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 211
+      "atom_count": 210
     },
     {
       "review_status": "missing",
@@ -4235,29 +4235,13 @@
     },
     {
       "domain": "robotics",
-      "atom_count": 2,
-      "missing_publishable_rollup": 2,
-      "missing_io_specs": 2,
-      "missing_parameters": 2,
-      "missing_description": 2,
-      "missing_references": 2,
+      "atom_count": 1,
+      "missing_publishable_rollup": 1,
+      "missing_io_specs": 1,
+      "missing_parameters": 1,
+      "missing_description": 1,
+      "missing_references": 1,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.robotics.pronto.ekf_smoother.stateestimatorinit",
-          "domain": "robotics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
           "domain": "robotics",
@@ -5399,15 +5383,15 @@
       "atom_count": 11
     },
     {
-      "domain": "robotics",
-      "atom_count": 2
-    },
-    {
       "domain": "dynamic_programming",
       "atom_count": 1
     },
     {
       "domain": "ml",
+      "atom_count": 1
+    },
+    {
+      "domain": "robotics",
       "atom_count": 1
     }
   ]

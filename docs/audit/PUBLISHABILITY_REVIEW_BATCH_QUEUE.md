@@ -1,8 +1,8 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T20:49:06.027606+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T21:02:37.452707+00:00.
 
-- Remaining unpublished atoms: `365`
+- Remaining unpublished atoms: `364`
 - Remaining worker batches: `71`
 
 ## Batches
@@ -38,7 +38,7 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-16T20:
 
 - Repo: `sciona-atoms-robotics`
 - Wave: `wave_1_audit_completion`
-- Atoms: `2`
+- Atoms: `1`
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.robotics.pronto.backlash_filter.initializebacklashfilterstate`, `sciona.atoms.robotics.pronto.backlash_filter.updatealphaparameter`, `sciona.atoms.robotics.pronto.backlash_filter.updatecrossingtimemaximum`
