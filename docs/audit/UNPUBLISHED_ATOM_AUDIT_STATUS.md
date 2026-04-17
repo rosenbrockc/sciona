@@ -1,34 +1,34 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T16:45:18.089344+00:00.
+Generated from the live local Supabase replay on 2026-04-17T19:19:15.341683+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `227`
-- Non-publishable atoms: `277`
+- Publishable atoms: `229`
+- Non-publishable atoms: `275`
 
 ### Marginal Blocker Counts
 
-- `description`: `179`
-- `io_specs`: `165`
-- `parameters`: `179`
-- `publishable_rollup`: `277`
+- `description`: `177`
+- `io_specs`: `163`
+- `parameters`: `177`
+- `publishable_rollup`: `275`
 - `references`: `126`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup,io_specs,parameters,description,references`: `125`
 - `publishable_rollup`: `98`
-- `publishable_rollup,io_specs,parameters,description`: `40`
+- `publishable_rollup,io_specs,parameters,description`: `38`
 - `publishable_rollup,parameters,description`: `13`
 - `publishable_rollup,parameters,description,references`: `1`
 
 ### Largest Non-Publishable Domains
 
-- `fintech`: `59`
+- `fintech`: `57`
 - `bio`: `55`
 - `expansion`: `35`
 - `inference`: `34`
@@ -178,11 +178,11 @@ This document is a working debt register for every currently unpublished atom.
 
 ## fintech
 
-- Non-publishable atoms: `59`
-- Missing publishable rollup: `59`
-- Missing IO specs: `29`
-- Missing parameters: `33`
-- Missing description: `33`
+- Non-publishable atoms: `57`
+- Missing publishable rollup: `57`
+- Missing IO specs: `27`
+- Missing parameters: `31`
+- Missing description: `31`
 - Missing references: `19`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
@@ -218,8 +218,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.fintech.quant_engine.execute_passive` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.fintech.quant_engine.execute_pov` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.fintech.quant_engine.execute_vwap` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.fintech.quantfin.local_vol_d12.vol_flat_surface` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.fintech.quantfin.local_vol_d12.vol_interpolated_surface` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_recursive` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_singleton` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |

@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-17T16:45:18.089344+00:00",
+  "generated_at": "2026-04-17T19:19:15.341683+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 227,
-    "non_publishable_atoms": 277
+    "publishable_atoms": 229,
+    "non_publishable_atoms": 275
   },
   "blocker_counts": {
-    "description": 179,
-    "io_specs": 165,
-    "parameters": 179,
-    "publishable_rollup": 277,
+    "description": 177,
+    "io_specs": 163,
+    "parameters": 177,
+    "publishable_rollup": 275,
     "references": 126
   },
   "top_blocker_combinations": [
@@ -37,7 +37,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 40
+      "atom_count": 38
     },
     {
       "blockers": [
@@ -61,7 +61,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 179
+      "atom_count": 177
     },
     {
       "review_status": "reviewed_pending",
@@ -1418,11 +1418,11 @@
     },
     {
       "domain": "fintech",
-      "atom_count": 59,
-      "missing_publishable_rollup": 59,
-      "missing_io_specs": 29,
-      "missing_parameters": 33,
-      "missing_description": 33,
+      "atom_count": 57,
+      "missing_publishable_rollup": 57,
+      "missing_io_specs": 27,
+      "missing_parameters": 31,
+      "missing_description": 31,
       "missing_references": 19,
       "atoms": [
         {
@@ -1865,36 +1865,6 @@
           "overall_verdict": "missing_row",
           "blockers": [
             "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.vol_flat_surface",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.vol_interpolated_surface",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
             "parameters",
             "description"
           ]
@@ -4183,7 +4153,7 @@
   "largest_non_publishable_domains": [
     {
       "domain": "fintech",
-      "atom_count": 59
+      "atom_count": 57
     },
     {
       "domain": "bio",

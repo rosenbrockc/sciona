@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-17T16:45:18.089344+00:00",
+  "generated_at": "2026-04-17T19:19:15.341683+00:00",
   "source": "local_supabase_filtered_existing_queue",
-  "batch_count": 55,
+  "batch_count": 54,
   "batches": [
     {
       "atom_count": 27,
@@ -3216,88 +3216,6 @@
       ]
     },
     {
-      "atom_count": 2,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.vol_flat_surface",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.vol_interpolated_surface",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-029",
-      "batch_key": "sciona.atoms.fintech.quantfin.local_vol_d12",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 3,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-fintech",
-      "representative_atoms": [
-        "sciona.atoms.fintech.quantfin.local_vol_d12.allfort",
-        "sciona.atoms.fintech.quantfin.local_vol_d12.localvol",
-        "sciona.atoms.fintech.quantfin.local_vol_d12.var",
-        "sciona.atoms.fintech.quantfin.local_vol_d12.vol_flat_surface",
-        "sciona.atoms.fintech.quantfin.local_vol_d12.vol_interpolated_surface"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "atom_count": 2,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 3,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "atom_count": 2,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
       "atom_count": 5,
       "atoms": [
         {
@@ -6074,26 +5992,26 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 277
+    "non_publishable_atoms": 275
   },
   "repo_counts": {
     "sciona-atoms": 76,
     "sciona-atoms-bio": 55,
-    "sciona-atoms-fintech": 59,
+    "sciona-atoms-fintech": 57,
     "sciona-atoms-physics": 74,
     "sciona-atoms-robotics": 1,
     "sciona-atoms-signal": 12
   },
   "wave_counts": {
-    "wave_1_audit_completion": 112,
+    "wave_1_audit_completion": 110,
     "wave_2_metadata_and_llm_review": 163,
     "wave_3_residual_policy_or_provenance": 2
   },
   "blocker_counts": {
-    "description": 179,
-    "io_specs": 165,
-    "parameters": 179,
-    "publishable_rollup": 277,
+    "description": 177,
+    "io_specs": 163,
+    "parameters": 177,
+    "publishable_rollup": 275,
     "references": 126
   },
   "special_slices": {
