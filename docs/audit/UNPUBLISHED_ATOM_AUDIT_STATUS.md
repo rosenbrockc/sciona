@@ -1,43 +1,42 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T15:44:24.925476+00:00.
+Generated from the live local Supabase replay on 2026-04-17T16:45:18.089344+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `197`
-- Non-publishable atoms: `307`
+- Publishable atoms: `227`
+- Non-publishable atoms: `277`
 
 ### Marginal Blocker Counts
 
-- `description`: `184`
-- `io_specs`: `170`
-- `parameters`: `185`
-- `publishable_rollup`: `307`
+- `description`: `179`
+- `io_specs`: `165`
+- `parameters`: `179`
+- `publishable_rollup`: `277`
 - `references`: `126`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup,io_specs,parameters,description,references`: `125`
-- `publishable_rollup`: `122`
-- `publishable_rollup,io_specs,parameters,description`: `45`
+- `publishable_rollup`: `98`
+- `publishable_rollup,io_specs,parameters,description`: `40`
 - `publishable_rollup,parameters,description`: `13`
-- `publishable_rollup,parameters`: `1`
 - `publishable_rollup,parameters,description,references`: `1`
 
 ### Largest Non-Publishable Domains
 
-- `fintech`: `77`
+- `fintech`: `59`
 - `bio`: `55`
-- `numpy`: `39`
 - `expansion`: `35`
 - `inference`: `34`
+- `numpy`: `32`
 - `physics`: `32`
 - `signal_processing`: `12`
-- `state_estimation`: `11`
 - `scipy`: `10`
+- `state_estimation`: `6`
 - `dynamic_programming`: `1`
 - `robotics`: `1`
 
@@ -179,10 +178,10 @@ This document is a working debt register for every currently unpublished atom.
 
 ## fintech
 
-- Non-publishable atoms: `77`
-- Missing publishable rollup: `77`
+- Non-publishable atoms: `59`
+- Missing publishable rollup: `59`
 - Missing IO specs: `29`
-- Missing parameters: `34`
+- Missing parameters: `33`
 - Missing description: `33`
 - Missing references: `19`
 
@@ -219,33 +218,16 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.fintech.quant_engine.execute_passive` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.fintech.quant_engine.execute_pov` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.fintech.quant_engine.execute_vwap` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.fintech.quantfin.char_func_option_d12.cf` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.char_func_option_d12.charfuncoption` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.char_func_option_d12.f` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.functional_monte_carlo` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.local_vol_d12.allfort` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.local_vol_d12.localvol` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.local_vol_d12.var` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.local_vol_d12.vol_flat_surface` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.local_vol_d12.vol_interpolated_surface` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.avg` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.evolve` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_recursive` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_singleton` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold_alt` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.maxstep` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup, parameters` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_base_case` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_cashflows_only` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_observation_only` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_pending_cashflows` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.quicksim` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.quicksimanti` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runmc` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runsim` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runsimulation` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runsimulationanti` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.simulatestate` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.montecarlo.quick_sim_anti` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.fintech.quantfin.montecarlo.run_simulation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.fintech.quantfin.montecarlo.run_simulation_anti` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -264,7 +246,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.fintech.quantfin.rng_skip_d12.split` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.volatility_surface_modeling` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 
 ## inference
 
@@ -314,8 +295,8 @@ This document is a working debt register for every currently unpublished atom.
 
 ## numpy
 
-- Non-publishable atoms: `39`
-- Missing publishable rollup: `39`
+- Non-publishable atoms: `32`
+- Missing publishable rollup: `32`
 - Missing IO specs: `9`
 - Missing parameters: `9`
 - Missing description: `9`
@@ -346,13 +327,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.numpy.linalg.inv` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.numpy.linalg.norm` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.numpy.linalg.solve` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.polynomial.polyadd` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.polynomial.polyder` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.polynomial.polyfit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.polynomial.polyint` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.polynomial.polymul` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.polynomial.polyroots` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.polynomial.polyval` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.numpy.random.combinatorics_sampler` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.numpy.random.continuous_multivariate_sampler` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.numpy.random.default_rng` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
@@ -468,20 +442,15 @@ This document is a working debt register for every currently unpublished atom.
 
 ## state_estimation
 
-- Non-publishable atoms: `11`
-- Missing publishable rollup: `11`
-- Missing IO specs: `11`
-- Missing parameters: `11`
-- Missing description: `11`
+- Non-publishable atoms: `6`
+- Missing publishable rollup: `6`
+- Missing IO specs: `6`
+- Missing parameters: `6`
+- Missing description: `6`
 - Missing references: `6`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.state_estimation.kalman_filters.static_kf.exposecovariance` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.state_estimation.kalman_filters.static_kf.exposelatentmean` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.state_estimation.kalman_filters.static_kf.initializelineargaussianstatemodel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.state_estimation.kalman_filters.static_kf.predictlatentstate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.state_estimation.kalman_filters.static_kf.updatewithmeasurement` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.state_estimation.particle_filters.basic.hypothesis_propagation_kernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |

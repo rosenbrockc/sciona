@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-17T15:44:24.925476+00:00",
+  "generated_at": "2026-04-17T16:45:18.089344+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 197,
-    "non_publishable_atoms": 307
+    "publishable_atoms": 227,
+    "non_publishable_atoms": 277
   },
   "blocker_counts": {
-    "description": 184,
-    "io_specs": 170,
-    "parameters": 185,
-    "publishable_rollup": 307,
+    "description": 179,
+    "io_specs": 165,
+    "parameters": 179,
+    "publishable_rollup": 277,
     "references": 126
   },
   "top_blocker_combinations": [
@@ -28,7 +28,7 @@
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 122
+      "atom_count": 98
     },
     {
       "blockers": [
@@ -37,7 +37,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 45
+      "atom_count": 40
     },
     {
       "blockers": [
@@ -46,13 +46,6 @@
         "description"
       ],
       "atom_count": 13
-    },
-    {
-      "blockers": [
-        "publishable_rollup",
-        "parameters"
-      ],
-      "atom_count": 1
     },
     {
       "blockers": [
@@ -68,12 +61,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 184
-    },
-    {
-      "review_status": "missing",
-      "trust_readiness": "not_reviewed",
-      "atom_count": 43
+      "atom_count": 179
     },
     {
       "review_status": "reviewed_pending",
@@ -81,14 +69,19 @@
       "atom_count": 36
     },
     {
-      "review_status": "reviewed_pending",
-      "trust_readiness": "reviewed_with_limits",
-      "atom_count": 27
+      "review_status": "missing",
+      "trust_readiness": "not_reviewed",
+      "atom_count": 36
     },
     {
       "review_status": "reviewed_pending",
       "trust_readiness": "conditional",
       "atom_count": 17
+    },
+    {
+      "review_status": "reviewed_pending",
+      "trust_readiness": "reviewed_with_limits",
+      "atom_count": 9
     }
   ],
   "domains": [
@@ -1425,10 +1418,10 @@
     },
     {
       "domain": "fintech",
-      "atom_count": 77,
-      "missing_publishable_rollup": 77,
+      "atom_count": 59,
+      "missing_publishable_rollup": 59,
       "missing_io_specs": 29,
-      "missing_parameters": 34,
+      "missing_parameters": 33,
       "missing_description": 33,
       "missing_references": 19,
       "atoms": [
@@ -1877,90 +1870,6 @@
           ]
         },
         {
-          "fqdn": "sciona.atoms.fintech.quantfin.char_func_option_d12.cf",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.char_func_option_d12.charfuncoption",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.char_func_option_d12.f",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.functional_monte_carlo",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.allfort",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.localvol",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.var",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
           "fqdn": "sciona.atoms.fintech.quantfin.local_vol_d12.vol_flat_surface",
           "domain": "fintech",
           "review_status": "missing_row",
@@ -1988,30 +1897,6 @@
             "io_specs",
             "parameters",
             "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.avg",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.evolve",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
           ]
         },
         {
@@ -2075,19 +1960,6 @@
           ]
         },
         {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.maxstep",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup",
-            "parameters"
-          ]
-        },
-        {
           "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_base_case",
           "domain": "fintech",
           "review_status": "missing_row",
@@ -2145,90 +2017,6 @@
             "io_specs",
             "parameters",
             "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.quicksim",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.quicksimanti",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runmc",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runsim",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runsimulation",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.runsimulationanti",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.simulatestate",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
           ]
         },
         {
@@ -2455,18 +2243,6 @@
           "semantic_verdict": "unknown",
           "developer_semantic_verdict": "pass",
           "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.volatility_surface_modeling",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "acceptable_with_limits",
           "blockers": [
             "publishable_rollup"
           ]
@@ -3029,8 +2805,8 @@
     },
     {
       "domain": "numpy",
-      "atom_count": 39,
-      "missing_publishable_rollup": 39,
+      "atom_count": 32,
+      "missing_publishable_rollup": 32,
       "missing_io_specs": 9,
       "missing_parameters": 9,
       "missing_description": 9,
@@ -3314,90 +3090,6 @@
         },
         {
           "fqdn": "sciona.atoms.numpy.linalg.solve",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.polynomial.polyadd",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.polynomial.polyder",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.polynomial.polyfit",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.polynomial.polyint",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.polynomial.polymul",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.polynomial.polyroots",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.polynomial.polyval",
           "domain": "numpy",
           "review_status": "missing",
           "trust_readiness": "not_reviewed",
@@ -4382,88 +4074,13 @@
     },
     {
       "domain": "state_estimation",
-      "atom_count": 11,
-      "missing_publishable_rollup": 11,
-      "missing_io_specs": 11,
-      "missing_parameters": 11,
-      "missing_description": 11,
+      "atom_count": 6,
+      "missing_publishable_rollup": 6,
+      "missing_io_specs": 6,
+      "missing_parameters": 6,
+      "missing_description": 6,
       "missing_references": 6,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.state_estimation.kalman_filters.static_kf.exposecovariance",
-          "domain": "state_estimation",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.state_estimation.kalman_filters.static_kf.exposelatentmean",
-          "domain": "state_estimation",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.state_estimation.kalman_filters.static_kf.initializelineargaussianstatemodel",
-          "domain": "state_estimation",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.state_estimation.kalman_filters.static_kf.predictlatentstate",
-          "domain": "state_estimation",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.state_estimation.kalman_filters.static_kf.updatewithmeasurement",
-          "domain": "state_estimation",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state",
           "domain": "state_estimation",
@@ -4566,15 +4183,11 @@
   "largest_non_publishable_domains": [
     {
       "domain": "fintech",
-      "atom_count": 77
+      "atom_count": 59
     },
     {
       "domain": "bio",
       "atom_count": 55
-    },
-    {
-      "domain": "numpy",
-      "atom_count": 39
     },
     {
       "domain": "expansion",
@@ -4585,6 +4198,10 @@
       "atom_count": 34
     },
     {
+      "domain": "numpy",
+      "atom_count": 32
+    },
+    {
       "domain": "physics",
       "atom_count": 32
     },
@@ -4593,12 +4210,12 @@
       "atom_count": 12
     },
     {
-      "domain": "state_estimation",
-      "atom_count": 11
-    },
-    {
       "domain": "scipy",
       "atom_count": 10
+    },
+    {
+      "domain": "state_estimation",
+      "atom_count": 6
     },
     {
       "domain": "dynamic_programming",

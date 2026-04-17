@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:44:24.925476+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T16:45:18.089344+00:00.
 
-- Remaining unpublished atoms: `307`
-- Remaining worker batches: `57`
+- Remaining unpublished atoms: `277`
+- Remaining worker batches: `55`
 
 ## Batches
 
@@ -20,7 +20,7 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:
 
 - Repo: `sciona-atoms-fintech`
 - Wave: `wave_1_audit_completion`
-- Atoms: `18`
+- Atoms: `8`
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.avg`, `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.evolve`, `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold`
@@ -83,7 +83,7 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:
 
 - Repo: `sciona-atoms-fintech`
 - Wave: `wave_1_audit_completion`
-- Atoms: `10`
+- Atoms: `5`
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.fintech.quantfin.char_func_option_d12.cf`, `sciona.atoms.fintech.quantfin.char_func_option_d12.charfuncoption`, `sciona.atoms.fintech.quantfin.char_func_option_d12.f`
@@ -151,15 +151,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.bio.mint.apc_module.apccoreevaluation`, `sciona.atoms.bio.mint.axial_attention.row_self_attention`, `sciona.atoms.bio.mint.axial_attention.rowselfattention`
 
-### pubrev-020
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_1_audit_completion`
-- Atoms: `7`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.numpy.polynomial.polyadd`, `sciona.atoms.numpy.polynomial.polyder`, `sciona.atoms.numpy.polynomial.polyfit`
-
 ### pubrev-023
 
 - Repo: `sciona-atoms-physics`
@@ -209,7 +200,7 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:
 
 - Repo: `sciona-atoms-fintech`
 - Wave: `wave_1_audit_completion`
-- Atoms: `5`
+- Atoms: `2`
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.fintech.quantfin.local_vol_d12.allfort`, `sciona.atoms.fintech.quantfin.local_vol_d12.localvol`, `sciona.atoms.fintech.quantfin.local_vol_d12.var`
@@ -240,15 +231,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.scipy.stats.describe`, `sciona.atoms.scipy.stats.norm`, `sciona.atoms.scipy.stats.pearsonr`
-
-### pubrev-036
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `5`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.state_estimation.kalman_filters.static_kf.exposecovariance`, `sciona.atoms.state_estimation.kalman_filters.static_kf.exposelatentmean`, `sciona.atoms.state_estimation.kalman_filters.static_kf.initializelineargaussianstatemodel`
 
 ### pubrev-037
 
