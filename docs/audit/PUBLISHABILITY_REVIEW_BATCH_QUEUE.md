@@ -1,9 +1,17 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:39:14.306708+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T20:16:08.413983+00:00.
 
-- Remaining unpublished atoms: `242`
-- Remaining worker batches: `51`
+- Remaining unpublished atoms: `223`
+- Remediation-excluded atoms: `17`
+- Remaining worker batches: `46`
+
+## Remediation Exclusions
+
+- `biosppy.svm_proc`: excluded `8` unpublished atoms via `prefix` match
+- `pronto.torque_adjustment`: excluded `1` unpublished atoms via `prefix` match
+- `scipy.sparse_graph`: excluded `7` unpublished atoms via `prefix` match
+- `scipy.stats.norm`: excluded `1` unpublished atoms via `exact` match
 
 ## Batches
 
@@ -33,15 +41,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.bio.molecular_docking.minimize_bandwidth.aggregate_maximum_distance_as_bandwidth`, `sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_sparse_graph_view`, `sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_threshold_search_space`
-
-### pubrev-004
-
-- Repo: `sciona-atoms-robotics`
-- Wave: `wave_1_audit_completion`
-- Atoms: `1`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.robotics.pronto.backlash_filter.initializebacklashfilterstate`, `sciona.atoms.robotics.pronto.backlash_filter.updatealphaparameter`, `sciona.atoms.robotics.pronto.backlash_filter.updatecrossingtimemaximum`
 
 ### pubrev-005
 
@@ -106,15 +105,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.numpy.fft.fft`, `sciona.atoms.numpy.fft.fftfreq`, `sciona.atoms.numpy.fft.fftn`
 
-### pubrev-018
-
-- Repo: `sciona-atoms-signal`
-- Wave: `wave_1_audit_completion`
-- Atoms: `8`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification`, `sciona.atoms.signal_processing.biosppy.svm_proc.assess_runs`, `sciona.atoms.signal_processing.biosppy.svm_proc.combination`
-
 ### pubrev-019
 
 - Repo: `sciona-atoms-bio`
@@ -123,15 +113,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.bio.mint.apc_module.apccoreevaluation`, `sciona.atoms.bio.mint.axial_attention.row_self_attention`, `sciona.atoms.bio.mint.axial_attention.rowselfattention`
-
-### pubrev-023
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_1_audit_completion`
-- Atoms: `7`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path`, `sciona.atoms.scipy.sparse_graph.graph_fourier_transform`, `sciona.atoms.scipy.sparse_graph.graph_laplacian`
 
 ### pubrev-024
 
@@ -186,15 +167,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.numpy.emath.log`, `sciona.atoms.numpy.emath.log10`, `sciona.atoms.numpy.emath.logn`
-
-### pubrev-034
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_1_audit_completion`
-- Atoms: `1`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.scipy.stats.describe`, `sciona.atoms.scipy.stats.norm`, `sciona.atoms.scipy.stats.pearsonr`
 
 ### pubrev-037
 
@@ -411,15 +383,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.jax_advi.optimize_advi.meanfieldvariationalfit`, `sciona.atoms.inference.jax_advi.optimize_advi.posteriordrawsampling`
-
-### pubrev-068
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.physics.jFOF.find_fof_clusters`, `sciona.atoms.physics.jFOF.topo.topological_loss_computation`
 
 ### pubrev-074
 

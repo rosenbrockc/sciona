@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,10 +16,20 @@ STATUS_JSON_PATH = AUDIT_DIR / "unpublished_atom_audit_status.json"
 STATUS_MD_PATH = AUDIT_DIR / "UNPUBLISHED_ATOM_AUDIT_STATUS.md"
 QUEUE_JSON_PATH = AUDIT_DIR / "publishability_review_batch_queue.json"
 QUEUE_MD_PATH = AUDIT_DIR / "PUBLISHABILITY_REVIEW_BATCH_QUEUE.md"
+REMEDIATION_PATH = REPO_ROOT.parent / "sciona-atoms" / "REMEDIATION.md"
 
 DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 TRUST_READY = {"ready_for_manifest_merge", "ready_for_publication", "trust_ready"}
 REVIEW_PASS = {"pass", "pass_with_limits"}
+REMEDIATION_DOMAIN_PREFIXES = {
+    "Signal Processing": "sciona.atoms.signal_processing",
+    "Robotics": "sciona.atoms.robotics",
+    "SciPy": "sciona.atoms.scipy",
+    "Bio": "sciona.atoms.bio",
+    "ML": "sciona.atoms.ml",
+    "Fintech": "sciona.atoms.fintech",
+    "Physics": "sciona.atoms.physics",
+}
 
 
 def _domain_from_fqdn(fqdn: str) -> str:
@@ -77,6 +88,90 @@ def _fetch_rows() -> tuple[list[dict[str, Any]], dict[str, int], int]:
     return rows, totals, totals["publishable_atoms"]
 
 
+def _parse_remediation_targets(markdown: str) -> list[dict[str, str]]:
+    targets: list[dict[str, str]] = []
+    domain_prefix: str | None = None
+
+    for raw_line in markdown.splitlines():
+        line = raw_line.strip()
+        if line.startswith("## "):
+            heading = line[3:].strip()
+            domain_prefix = REMEDIATION_DOMAIN_PREFIXES.get(heading)
+            continue
+        if not line.startswith("### "):
+            continue
+        match = re.match(r"###\s+`([^`]+)`", line)
+        if not match or domain_prefix is None:
+            continue
+        label = match.group(1).strip()
+        domain_slug = domain_prefix.removeprefix("sciona.atoms.")
+        if label.startswith("sciona.atoms."):
+            candidate = label
+        elif label.startswith(domain_slug + "."):
+            candidate = f"sciona.atoms.{label}"
+        else:
+            candidate = f"{domain_prefix}.{label}"
+        targets.append(
+            {
+                "label": label,
+                "candidate": candidate,
+                "domain_prefix": domain_prefix,
+            }
+        )
+
+    return targets
+
+
+def _load_remediation_exclusions(
+    rows: list[dict[str, Any]],
+    remediation_path: Path = REMEDIATION_PATH,
+) -> dict[str, Any]:
+    markdown = remediation_path.read_text()
+    targets = _parse_remediation_targets(markdown)
+    row_fqdns = {row["fqdn"] for row in rows}
+    row_by_fqdn = {row["fqdn"]: row for row in rows}
+    excluded_fqdns: set[str] = set()
+    excluded_unpublished_fqdns: set[str] = set()
+    matched_targets: list[dict[str, Any]] = []
+
+    for target in targets:
+        candidate = target["candidate"]
+        if candidate in row_fqdns:
+            match_type = "exact"
+            matched = [candidate]
+        else:
+            match_type = "prefix"
+            prefix = candidate + "."
+            matched = sorted(fqdn for fqdn in row_fqdns if fqdn.startswith(prefix))
+        if not matched:
+            continue
+        matched_unpublished = [
+            fqdn for fqdn in matched if not row_by_fqdn[fqdn]["is_publishable"]
+        ]
+        excluded_fqdns.update(matched)
+        excluded_unpublished_fqdns.update(matched_unpublished)
+        matched_targets.append(
+            {
+                "label": target["label"],
+                "candidate": candidate,
+                "match_type": match_type,
+                "matched_atom_count": len(matched),
+                "matched_unpublished_atom_count": len(matched_unpublished),
+                "matched_atoms": matched,
+            }
+        )
+
+    return {
+        "path": str(remediation_path),
+        "matched_target_count": len(matched_targets),
+        "matched_targets": matched_targets,
+        "excluded_fqdns": sorted(excluded_fqdns),
+        "excluded_unpublished_fqdns": sorted(excluded_unpublished_fqdns),
+        "excluded_atom_count": len(excluded_fqdns),
+        "excluded_unpublished_atom_count": len(excluded_unpublished_fqdns),
+    }
+
+
 def _is_publishable_rollup(row: dict[str, Any]) -> bool:
     if row["review_status"] != "approved":
         return False
@@ -118,8 +213,18 @@ def _normalize_row(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _build_status_payload(rows: list[dict[str, Any]], totals: dict[str, int], generated_at: str) -> dict[str, Any]:
-    unpublished = [_normalize_row(row) for row in rows if not row["is_publishable"]]
+def _build_status_payload(
+    rows: list[dict[str, Any]],
+    totals: dict[str, int],
+    generated_at: str,
+    remediation: dict[str, Any],
+) -> dict[str, Any]:
+    excluded_unpublished = set(remediation["excluded_unpublished_fqdns"])
+    unpublished = [
+        _normalize_row(row)
+        for row in rows
+        if not row["is_publishable"] and row["fqdn"] not in excluded_unpublished
+    ]
 
     blocker_counts: Counter[str] = Counter()
     combo_counts: Counter[tuple[str, ...]] = Counter()
@@ -157,8 +262,13 @@ def _build_status_payload(rows: list[dict[str, Any]], totals: dict[str, int], ge
 
     return {
         "generated_at": generated_at,
-        "source": "local_supabase",
+        "source": "local_supabase_remediation_filtered",
         "totals": totals,
+        "backlog_totals": {
+            "review_backlog_non_publishable_atoms": len(unpublished),
+            "remediation_excluded_non_publishable_atoms": remediation["excluded_unpublished_atom_count"],
+        },
+        "remediation_exclusions": remediation,
         "blocker_counts": dict(sorted(blocker_counts.items())),
         "top_blocker_combinations": [
             {"blockers": list(combo), "atom_count": count}
@@ -188,11 +298,22 @@ def _render_status_md(payload: dict[str, Any]) -> str:
         "",
         f"- Total atoms in local catalog: `{payload['totals']['atoms']}`",
         f"- Publishable atoms: `{payload['totals']['publishable_atoms']}`",
-        f"- Non-publishable atoms: `{payload['totals']['non_publishable_atoms']}`",
-        "",
-        "### Marginal Blocker Counts",
+        f"- Total non-publishable atoms in local catalog: `{payload['totals']['non_publishable_atoms']}`",
+        f"- Remediation-excluded non-publishable atoms: `{payload['backlog_totals']['remediation_excluded_non_publishable_atoms']}`",
+        f"- Non-publishable atoms remaining in matcher backlog: `{payload['backlog_totals']['review_backlog_non_publishable_atoms']}`",
         "",
     ]
+    if payload["remediation_exclusions"]["matched_targets"]:
+        lines.extend(["", "### Remediation Exclusions", ""])
+        lines.append(
+            f"- Source: `{payload['remediation_exclusions']['path']}`"
+        )
+        for item in payload["remediation_exclusions"]["matched_targets"]:
+            lines.append(
+                f"- `{item['label']}`: excluded `{item['matched_unpublished_atom_count']}` "
+                f"unpublished atoms via `{item['match_type']}` match"
+            )
+    lines.extend(["", "### Marginal Blocker Counts", ""])
     for blocker, count in payload["blocker_counts"].items():
         lines.append(f"- `{blocker}`: `{count}`")
     lines.extend(["", "### Top Exact Blocker Combinations", ""])
@@ -247,6 +368,7 @@ def _refresh_queue(
     unpublished_fqdns: set[str],
     generated_at: str,
     blocker_counts: dict[str, int],
+    remediation: dict[str, Any],
 ) -> tuple[dict[str, Any], str]:
     queue = json.loads(QUEUE_JSON_PATH.read_text())
     new_batches = []
@@ -265,6 +387,9 @@ def _refresh_queue(
         repo_counts[new_batch["repo_owner"]] += len(atoms)
         wave_counts[new_batch["recommended_wave"]] += len(atoms)
 
+    remaining_batch_ids = {batch.get("batch_id") for batch in new_batches}
+    remaining_batch_keys = {batch.get("batch_key") for batch in new_batches if batch.get("batch_key")}
+
     filtered_special_slices: dict[str, Any] = {}
     for key, value in special_slices.items():
         if isinstance(value, dict) and isinstance(value.get("atoms"), list):
@@ -274,21 +399,48 @@ def _refresh_queue(
                 "atoms": kept_atoms,
                 "atom_count": len(kept_atoms),
             }
+        elif isinstance(value, dict) and isinstance(value.get("batches"), list):
+            kept_batches = [
+                batch
+                for batch in value["batches"]
+                if isinstance(batch, dict)
+                and (
+                    batch.get("batch_id") in remaining_batch_ids
+                    or batch.get("batch_key") in remaining_batch_keys
+                )
+            ]
+            filtered_special_slices[key] = {
+                **value,
+                "batches": kept_batches,
+                "batch_count": len(kept_batches),
+            }
+        elif isinstance(value, list):
+            filtered_special_slices[key] = [
+                batch
+                for batch in value
+                if not isinstance(batch, dict)
+                or (
+                    batch.get("batch_id") in remaining_batch_ids
+                    or batch.get("batch_key") in remaining_batch_keys
+                )
+            ]
         else:
             filtered_special_slices[key] = value
 
     refreshed = {
         "generated_at": generated_at,
-        "source": "local_supabase_filtered_existing_queue",
+        "source": "local_supabase_remediation_filtered_existing_queue",
         "batch_count": len(new_batches),
         "batches": new_batches,
         "totals": {
             "non_publishable_atoms": len(unpublished_fqdns),
+            "remediation_excluded_atoms": remediation["excluded_unpublished_atom_count"],
         },
         "repo_counts": dict(sorted(repo_counts.items())),
         "wave_counts": dict(sorted(wave_counts.items())),
         "blocker_counts": blocker_counts,
         "special_slices": filtered_special_slices,
+        "remediation_exclusions": remediation,
     }
 
     lines = [
@@ -297,11 +449,27 @@ def _refresh_queue(
         f"Generated from `docs/audit/unpublished_atom_audit_status.json` on {generated_at}.",
         "",
         f"- Remaining unpublished atoms: `{len(unpublished_fqdns)}`",
+        f"- Remediation-excluded atoms: `{remediation['excluded_unpublished_atom_count']}`",
         f"- Remaining worker batches: `{len(new_batches)}`",
         "",
-        "## Batches",
+        "## Remediation Exclusions",
         "",
     ]
+    if remediation["matched_targets"]:
+        for item in remediation["matched_targets"]:
+            lines.append(
+                f"- `{item['label']}`: excluded `{item['matched_unpublished_atom_count']}` "
+                f"unpublished atoms via `{item['match_type']}` match"
+            )
+    else:
+        lines.append("- None")
+    lines.extend(
+        [
+            "",
+        "## Batches",
+        "",
+        ]
+    )
     for batch in new_batches:
         reps = ", ".join(f"`{fqdn}`" for fqdn in batch["representative_atoms"][:3])
         lines.extend(
@@ -324,7 +492,8 @@ def _refresh_queue(
 def main() -> int:
     generated_at = datetime.now(timezone.utc).isoformat()
     rows, totals, _ = _fetch_rows()
-    payload = _build_status_payload(rows, totals, generated_at)
+    remediation = _load_remediation_exclusions(rows)
+    payload = _build_status_payload(rows, totals, generated_at, remediation)
     STATUS_JSON_PATH.write_text(json.dumps(payload, indent=2) + "\n")
     STATUS_MD_PATH.write_text(_render_status_md(payload))
 
@@ -337,6 +506,7 @@ def main() -> int:
         unpublished_fqdns,
         generated_at,
         payload["blocker_counts"],
+        remediation,
     )
     QUEUE_JSON_PATH.write_text(json.dumps(queue_payload, indent=2) + "\n")
     QUEUE_MD_PATH.write_text(queue_md)

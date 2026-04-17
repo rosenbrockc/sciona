@@ -1,17 +1,120 @@
 {
-  "generated_at": "2026-04-17T19:39:14.306708+00:00",
-  "source": "local_supabase",
+  "generated_at": "2026-04-17T20:16:08.413983+00:00",
+  "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 262,
-    "non_publishable_atoms": 242
+    "publishable_atoms": 264,
+    "non_publishable_atoms": 240
+  },
+  "backlog_totals": {
+    "review_backlog_non_publishable_atoms": 223,
+    "remediation_excluded_non_publishable_atoms": 17
+  },
+  "remediation_exclusions": {
+    "path": "/Users/conrad/personal/sciona-atoms/REMEDIATION.md",
+    "matched_target_count": 4,
+    "matched_targets": [
+      {
+        "label": "biosppy.svm_proc",
+        "candidate": "sciona.atoms.signal_processing.biosppy.svm_proc",
+        "match_type": "prefix",
+        "matched_atom_count": 8,
+        "matched_unpublished_atom_count": 8,
+        "matched_atoms": [
+          "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
+          "sciona.atoms.signal_processing.biosppy.svm_proc.assess_runs",
+          "sciona.atoms.signal_processing.biosppy.svm_proc.combination",
+          "sciona.atoms.signal_processing.biosppy.svm_proc.cross_validation",
+          "sciona.atoms.signal_processing.biosppy.svm_proc.get_auth_rates",
+          "sciona.atoms.signal_processing.biosppy.svm_proc.get_id_rates",
+          "sciona.atoms.signal_processing.biosppy.svm_proc.get_subject_results",
+          "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule"
+        ]
+      },
+      {
+        "label": "pronto.torque_adjustment",
+        "candidate": "sciona.atoms.robotics.pronto.torque_adjustment",
+        "match_type": "prefix",
+        "matched_atom_count": 1,
+        "matched_unpublished_atom_count": 1,
+        "matched_atoms": [
+          "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage"
+        ]
+      },
+      {
+        "label": "scipy.sparse_graph",
+        "candidate": "sciona.atoms.scipy.sparse_graph",
+        "match_type": "prefix",
+        "matched_atom_count": 7,
+        "matched_unpublished_atom_count": 7,
+        "matched_atoms": [
+          "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
+          "sciona.atoms.scipy.sparse_graph.graph_fourier_transform",
+          "sciona.atoms.scipy.sparse_graph.graph_laplacian",
+          "sciona.atoms.scipy.sparse_graph.heat_kernel_diffusion",
+          "sciona.atoms.scipy.sparse_graph.inverse_graph_fourier_transform",
+          "sciona.atoms.scipy.sparse_graph.minimum_spanning_tree",
+          "sciona.atoms.scipy.sparse_graph.single_source_shortest_path"
+        ]
+      },
+      {
+        "label": "scipy.stats.norm",
+        "candidate": "sciona.atoms.scipy.stats.norm",
+        "match_type": "exact",
+        "matched_atom_count": 1,
+        "matched_unpublished_atom_count": 1,
+        "matched_atoms": [
+          "sciona.atoms.scipy.stats.norm"
+        ]
+      }
+    ],
+    "excluded_fqdns": [
+      "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
+      "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
+      "sciona.atoms.scipy.sparse_graph.graph_fourier_transform",
+      "sciona.atoms.scipy.sparse_graph.graph_laplacian",
+      "sciona.atoms.scipy.sparse_graph.heat_kernel_diffusion",
+      "sciona.atoms.scipy.sparse_graph.inverse_graph_fourier_transform",
+      "sciona.atoms.scipy.sparse_graph.minimum_spanning_tree",
+      "sciona.atoms.scipy.sparse_graph.single_source_shortest_path",
+      "sciona.atoms.scipy.stats.norm",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.assess_runs",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.combination",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.cross_validation",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.get_auth_rates",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.get_id_rates",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.get_subject_results",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule"
+    ],
+    "excluded_unpublished_fqdns": [
+      "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
+      "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
+      "sciona.atoms.scipy.sparse_graph.graph_fourier_transform",
+      "sciona.atoms.scipy.sparse_graph.graph_laplacian",
+      "sciona.atoms.scipy.sparse_graph.heat_kernel_diffusion",
+      "sciona.atoms.scipy.sparse_graph.inverse_graph_fourier_transform",
+      "sciona.atoms.scipy.sparse_graph.minimum_spanning_tree",
+      "sciona.atoms.scipy.sparse_graph.single_source_shortest_path",
+      "sciona.atoms.scipy.stats.norm",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.assess_runs",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.combination",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.cross_validation",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.get_auth_rates",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.get_id_rates",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.get_subject_results",
+      "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule"
+    ],
+    "excluded_atom_count": 17,
+    "excluded_unpublished_atom_count": 17
   },
   "blocker_counts": {
-    "description": 157,
-    "io_specs": 143,
-    "parameters": 157,
-    "publishable_rollup": 242,
-    "references": 126
+    "description": 151,
+    "io_specs": 137,
+    "parameters": 151,
+    "publishable_rollup": 223,
+    "references": 122
   },
   "top_blocker_combinations": [
     {
@@ -22,13 +125,13 @@
         "description",
         "references"
       ],
-      "atom_count": 125
+      "atom_count": 121
     },
     {
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 85
+      "atom_count": 72
     },
     {
       "blockers": [
@@ -37,7 +140,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 18
+      "atom_count": 16
     },
     {
       "blockers": [
@@ -61,7 +164,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 157
+      "atom_count": 151
     },
     {
       "review_status": "reviewed_pending",
@@ -71,7 +174,7 @@
     {
       "review_status": "missing",
       "trust_readiness": "not_reviewed",
-      "atom_count": 36
+      "atom_count": 23
     },
     {
       "review_status": "reviewed_pending",
@@ -3050,45 +3153,15 @@
     },
     {
       "domain": "physics",
-      "atom_count": 12,
-      "missing_publishable_rollup": 12,
-      "missing_io_specs": 8,
-      "missing_parameters": 12,
-      "missing_description": 12,
+      "atom_count": 10,
+      "missing_publishable_rollup": 10,
+      "missing_io_specs": 6,
+      "missing_parameters": 10,
+      "missing_description": 10,
       "missing_references": 2,
       "atoms": [
         {
           "fqdn": "sciona.atoms.physics.astroflow.dedispersionkernel",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.jFOF.find_fof_clusters",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.jFOF.topo.topological_loss_computation",
           "domain": "physics",
           "review_status": "missing_row",
           "trust_readiness": "missing_row",
@@ -3238,40 +3311,13 @@
       ]
     },
     {
-      "domain": "robotics",
-      "atom_count": 1,
-      "missing_publishable_rollup": 1,
-      "missing_io_specs": 1,
-      "missing_parameters": 1,
-      "missing_description": 1,
-      "missing_references": 1,
-      "atoms": [
-        {
-          "fqdn": "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
-          "domain": "robotics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ]
-    },
-    {
       "domain": "scipy",
-      "atom_count": 10,
-      "missing_publishable_rollup": 10,
-      "missing_io_specs": 5,
-      "missing_parameters": 5,
-      "missing_description": 5,
-      "missing_references": 5,
+      "atom_count": 2,
+      "missing_publishable_rollup": 2,
+      "missing_io_specs": 2,
+      "missing_parameters": 2,
+      "missing_description": 2,
+      "missing_references": 2,
       "atoms": [
         {
           "fqdn": "sciona.atoms.scipy.optimize.differential_evolution",
@@ -3304,222 +3350,18 @@
             "description",
             "references"
           ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.sparse_graph.graph_fourier_transform",
-          "domain": "scipy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "misleading",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.sparse_graph.graph_laplacian",
-          "domain": "scipy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "misleading",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.sparse_graph.heat_kernel_diffusion",
-          "domain": "scipy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "misleading",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.sparse_graph.inverse_graph_fourier_transform",
-          "domain": "scipy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "misleading",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.sparse_graph.minimum_spanning_tree",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.sparse_graph.single_source_shortest_path",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.stats.norm",
-          "domain": "scipy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "misleading",
-          "blockers": [
-            "publishable_rollup"
-          ]
         }
       ]
     },
     {
       "domain": "signal_processing",
-      "atom_count": 12,
-      "missing_publishable_rollup": 12,
+      "atom_count": 4,
+      "missing_publishable_rollup": 4,
       "missing_io_specs": 4,
       "missing_parameters": 4,
       "missing_description": 4,
       "missing_references": 4,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.assess_runs",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.combination",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.cross_validation",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.get_auth_rates",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.get_id_rates",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.get_subject_results",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles",
           "domain": "signal_processing",
@@ -3717,14 +3559,6 @@
     },
     {
       "domain": "physics",
-      "atom_count": 12
-    },
-    {
-      "domain": "signal_processing",
-      "atom_count": 12
-    },
-    {
-      "domain": "scipy",
       "atom_count": 10
     },
     {
@@ -3732,11 +3566,15 @@
       "atom_count": 6
     },
     {
-      "domain": "dynamic_programming",
-      "atom_count": 1
+      "domain": "signal_processing",
+      "atom_count": 4
     },
     {
-      "domain": "robotics",
+      "domain": "scipy",
+      "atom_count": 2
+    },
+    {
+      "domain": "dynamic_programming",
       "atom_count": 1
     }
   ]
