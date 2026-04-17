@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-17T14:23:56.498671+00:00",
+  "generated_at": "2026-04-17T15:15:28.704514+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 180,
-    "non_publishable_atoms": 324
+    "publishable_atoms": 189,
+    "non_publishable_atoms": 315
   },
   "blocker_counts": {
-    "description": 201,
-    "io_specs": 182,
-    "parameters": 202,
-    "publishable_rollup": 324,
-    "references": 137
+    "description": 192,
+    "io_specs": 175,
+    "parameters": 193,
+    "publishable_rollup": 315,
+    "references": 131
   },
   "top_blocker_combinations": [
     {
@@ -22,7 +22,7 @@
         "description",
         "references"
       ],
-      "atom_count": 136
+      "atom_count": 130
     },
     {
       "blockers": [
@@ -37,7 +37,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 46
+      "atom_count": 45
     },
     {
       "blockers": [
@@ -45,7 +45,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 18
+      "atom_count": 16
     },
     {
       "blockers": [
@@ -68,7 +68,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 201
+      "atom_count": 192
     },
     {
       "review_status": "missing",
@@ -1467,56 +1467,13 @@
     },
     {
       "domain": "fintech",
-      "atom_count": 80,
-      "missing_publishable_rollup": 80,
-      "missing_io_specs": 30,
-      "missing_parameters": 37,
-      "missing_description": 36,
+      "atom_count": 77,
+      "missing_publishable_rollup": 77,
+      "missing_io_specs": 29,
+      "missing_parameters": 34,
+      "missing_description": 33,
       "missing_references": 19,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.fintech.hftbacktest.evaluate_spread_conditions",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.hftbacktest.initialize_glft_state",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.hftbacktest.update_glft_coefficients",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.fintech.institutional_quant_engine.almgren_chriss.computeoptimaltrajectory",
           "domain": "fintech",
@@ -3629,12 +3586,12 @@
     },
     {
       "domain": "physics",
-      "atom_count": 36,
-      "missing_publishable_rollup": 36,
-      "missing_io_specs": 32,
-      "missing_parameters": 36,
-      "missing_description": 36,
-      "missing_references": 6,
+      "atom_count": 32,
+      "missing_publishable_rollup": 32,
+      "missing_io_specs": 28,
+      "missing_parameters": 32,
+      "missing_description": 32,
+      "missing_references": 2,
       "atoms": [
         {
           "fqdn": "sciona.atoms.physics.astroflow.dedispersionkernel",
@@ -3724,70 +3681,6 @@
             "io_specs",
             "parameters",
             "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pulsar.pipeline.SNR",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pulsar.pipeline.de_disperse",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pulsar.pipeline.delay_from_DM",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pulsar.pipeline.fold_signal",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
           ]
         },
         {
@@ -4360,12 +4253,12 @@
     },
     {
       "domain": "signal_processing",
-      "atom_count": 19,
-      "missing_publishable_rollup": 19,
-      "missing_io_specs": 11,
-      "missing_parameters": 11,
-      "missing_description": 11,
-      "missing_references": 11,
+      "atom_count": 17,
+      "missing_publishable_rollup": 17,
+      "missing_io_specs": 9,
+      "missing_parameters": 9,
+      "missing_description": 9,
+      "missing_references": 9,
       "atoms": [
         {
           "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
@@ -4606,38 +4499,6 @@
             "description",
             "references"
           ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.neurokit2.averageqrstemplate",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.neurokit2.zhao2018hrvanalysis",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
         }
       ]
     },
@@ -4827,7 +4688,7 @@
   "largest_non_publishable_domains": [
     {
       "domain": "fintech",
-      "atom_count": 80
+      "atom_count": 77
     },
     {
       "domain": "bio",
@@ -4838,10 +4699,6 @@
       "atom_count": 39
     },
     {
-      "domain": "physics",
-      "atom_count": 36
-    },
-    {
       "domain": "expansion",
       "atom_count": 35
     },
@@ -4850,8 +4707,12 @@
       "atom_count": 34
     },
     {
+      "domain": "physics",
+      "atom_count": 32
+    },
+    {
       "domain": "signal_processing",
-      "atom_count": 19
+      "atom_count": 17
     },
     {
       "domain": "state_estimation",

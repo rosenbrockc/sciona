@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T14:23:56.498671+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:15:28.704514+00:00.
 
-- Remaining unpublished atoms: `324`
-- Remaining worker batches: `61`
+- Remaining unpublished atoms: `315`
+- Remaining worker batches: `58`
 
 ## Batches
 
@@ -376,15 +376,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T14:
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.numpy.linalg.det`, `sciona.atoms.numpy.linalg.inv`, `sciona.atoms.numpy.linalg.norm`
 
-### pubrev-051
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.physics.pulsar.pipeline.de_disperse`, `sciona.atoms.physics.pulsar.pipeline.delay_from_DM`, `sciona.atoms.physics.pulsar.pipeline.fold_signal`
-
 ### pubrev-055
 
 - Repo: `sciona-atoms`
@@ -402,15 +393,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T14:
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.bio.alphafold.coordinate_reconstruction`, `sciona.atoms.bio.alphafold.equivariant_frame_update`, `sciona.atoms.bio.alphafold.invariant_point_attention`
-
-### pubrev-057
-
-- Repo: `sciona-atoms-fintech`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `3`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.fintech.hftbacktest.evaluate_spread_conditions`, `sciona.atoms.fintech.hftbacktest.initialize_glft_state`, `sciona.atoms.fintech.hftbacktest.update_glft_coefficients`
 
 ### pubrev-058
 
@@ -501,15 +483,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T14:
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.physics.jFOF.find_fof_clusters`, `sciona.atoms.physics.jFOF.topo.topological_loss_computation`
-
-### pubrev-073
-
-- Repo: `sciona-atoms-signal`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.signal_processing.neurokit2.averageqrstemplate`, `sciona.atoms.signal_processing.neurokit2.zhao2018hrvanalysis`
 
 ### pubrev-074
 

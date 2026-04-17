@@ -1,41 +1,41 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T14:23:56.498671+00:00.
+Generated from the live local Supabase replay on 2026-04-17T15:15:28.704514+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `180`
-- Non-publishable atoms: `324`
+- Publishable atoms: `189`
+- Non-publishable atoms: `315`
 
 ### Marginal Blocker Counts
 
-- `description`: `201`
-- `io_specs`: `182`
-- `parameters`: `202`
-- `publishable_rollup`: `324`
-- `references`: `137`
+- `description`: `192`
+- `io_specs`: `175`
+- `parameters`: `193`
+- `publishable_rollup`: `315`
+- `references`: `131`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `136`
+- `publishable_rollup,io_specs,parameters,description,references`: `130`
 - `publishable_rollup`: `122`
-- `publishable_rollup,io_specs,parameters,description`: `46`
-- `publishable_rollup,parameters,description`: `18`
+- `publishable_rollup,io_specs,parameters,description`: `45`
+- `publishable_rollup,parameters,description`: `16`
 - `publishable_rollup,parameters`: `1`
 - `publishable_rollup,parameters,description,references`: `1`
 
 ### Largest Non-Publishable Domains
 
-- `fintech`: `80`
+- `fintech`: `77`
 - `bio`: `58`
 - `numpy`: `39`
-- `physics`: `36`
 - `expansion`: `35`
 - `inference`: `34`
-- `signal_processing`: `19`
+- `physics`: `32`
+- `signal_processing`: `17`
 - `state_estimation`: `11`
 - `scipy`: `10`
 - `dynamic_programming`: `1`
@@ -182,18 +182,15 @@ This document is a working debt register for every currently unpublished atom.
 
 ## fintech
 
-- Non-publishable atoms: `80`
-- Missing publishable rollup: `80`
-- Missing IO specs: `30`
-- Missing parameters: `37`
-- Missing description: `36`
+- Non-publishable atoms: `77`
+- Missing publishable rollup: `77`
+- Missing IO specs: `29`
+- Missing parameters: `34`
+- Missing description: `33`
 - Missing references: `19`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.fintech.hftbacktest.evaluate_spread_conditions` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.fintech.hftbacktest.initialize_glft_state` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.fintech.hftbacktest.update_glft_coefficients` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss.computeoptimaltrajectory` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.optimalexecutiontrajectory` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.riskaversioninit` | `reviewed_pending` | `reviewed_with_limits` | `pass` | `pass` | `acceptable_with_limits` | `publishable_rollup` |
@@ -371,12 +368,12 @@ This document is a working debt register for every currently unpublished atom.
 
 ## physics
 
-- Non-publishable atoms: `36`
-- Missing publishable rollup: `36`
-- Missing IO specs: `32`
-- Missing parameters: `36`
-- Missing description: `36`
-- Missing references: `6`
+- Non-publishable atoms: `32`
+- Missing publishable rollup: `32`
+- Missing IO specs: `28`
+- Missing parameters: `32`
+- Missing description: `32`
+- Missing references: `2`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -386,10 +383,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.physics.pasqal.docking.graph_transformer` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.physics.pasqal.docking.quantum_mwis_solver` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.physics.pasqal.docking.sub_graph_embedder` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.pulsar.pipeline.SNR` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.physics.pulsar.pipeline.de_disperse` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.physics.pulsar.pipeline.delay_from_DM` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.physics.pulsar.pipeline.fold_signal` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.physics.pulsar_folding.dm_can_brute_force` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
@@ -454,12 +447,12 @@ This document is a working debt register for every currently unpublished atom.
 
 ## signal_processing
 
-- Non-publishable atoms: `19`
-- Missing publishable rollup: `19`
-- Missing IO specs: `11`
-- Missing parameters: `11`
-- Missing description: `11`
-- Missing references: `11`
+- Non-publishable atoms: `17`
+- Missing publishable rollup: `17`
+- Missing IO specs: `9`
+- Missing parameters: `9`
+- Missing description: `9`
+- Missing references: `9`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -480,8 +473,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.normalizesignal` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.wrapperevaluate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.signal_processing.e2e_ppg.template_matching.templatefeaturecomputation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.neurokit2.averageqrstemplate` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.signal_processing.neurokit2.zhao2018hrvanalysis` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 
 ## state_estimation
 
