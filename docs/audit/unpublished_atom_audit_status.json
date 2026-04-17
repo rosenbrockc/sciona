@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-17T12:34:24.782976+00:00",
+  "generated_at": "2026-04-17T14:23:56.498671+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 178,
-    "non_publishable_atoms": 326
+    "publishable_atoms": 180,
+    "non_publishable_atoms": 324
   },
   "blocker_counts": {
-    "description": 203,
+    "description": 201,
     "io_specs": 182,
-    "parameters": 204,
-    "publishable_rollup": 326,
+    "parameters": 202,
+    "publishable_rollup": 324,
     "references": 137
   },
   "top_blocker_combinations": [
@@ -45,7 +45,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 20
+      "atom_count": 18
     },
     {
       "blockers": [
@@ -68,7 +68,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 203
+      "atom_count": 201
     },
     {
       "review_status": "missing",
@@ -3629,11 +3629,11 @@
     },
     {
       "domain": "physics",
-      "atom_count": 38,
-      "missing_publishable_rollup": 38,
+      "atom_count": 36,
+      "missing_publishable_rollup": 36,
       "missing_io_specs": 32,
-      "missing_parameters": 38,
-      "missing_description": 38,
+      "missing_parameters": 36,
+      "missing_description": 36,
       "missing_references": 6,
       "atoms": [
         {
@@ -3822,34 +3822,6 @@
         },
         {
           "fqdn": "sciona.atoms.physics.pulsar_folding.spline_bandpass_correction",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.skyfield.calculate_vector_angle",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.skyfield.compute_spherical_coordinate_rates",
           "domain": "physics",
           "review_status": "missing_row",
           "trust_readiness": "missing_row",
@@ -4867,7 +4839,7 @@
     },
     {
       "domain": "physics",
-      "atom_count": 38
+      "atom_count": 36
     },
     {
       "domain": "expansion",

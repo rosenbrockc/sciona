@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-17T12:34:24.782976+00:00",
+  "generated_at": "2026-04-17T14:23:56.498671+00:00",
   "source": "local_supabase_filtered_existing_queue",
-  "batch_count": 62,
+  "batch_count": 61,
   "batches": [
     {
       "atom_count": 27,
@@ -6496,73 +6496,6 @@
         {
           "blockers": [
             "publishable_rollup",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.physics.skyfield.calculate_vector_angle",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.physics.skyfield.compute_spherical_coordinate_rates",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-069",
-      "batch_key": "sciona.atoms.physics.skyfield.__remainder__",
-      "blocker_class": "metadata_plus_rollup",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 2,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "parameters",
-        "description"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.physics.skyfield.calculate_vector_angle",
-        "sciona.atoms.physics.skyfield.compute_spherical_coordinate_rates"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 2,
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 2,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 2,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
             "io_specs",
             "parameters",
             "description",
@@ -6934,26 +6867,26 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 326
+    "non_publishable_atoms": 324
   },
   "repo_counts": {
     "sciona-atoms": 81,
     "sciona-atoms-bio": 58,
     "sciona-atoms-fintech": 80,
-    "sciona-atoms-physics": 87,
+    "sciona-atoms-physics": 85,
     "sciona-atoms-robotics": 1,
     "sciona-atoms-signal": 19
   },
   "wave_counts": {
     "wave_1_audit_completion": 137,
-    "wave_2_metadata_and_llm_review": 187,
+    "wave_2_metadata_and_llm_review": 185,
     "wave_3_residual_policy_or_provenance": 2
   },
   "blocker_counts": {
-    "description": 203,
+    "description": 201,
     "io_specs": 182,
-    "parameters": 204,
-    "publishable_rollup": 326,
+    "parameters": 202,
+    "publishable_rollup": 324,
     "references": 137
   },
   "special_slices": {

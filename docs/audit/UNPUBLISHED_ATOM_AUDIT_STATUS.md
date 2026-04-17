@@ -1,21 +1,21 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T12:34:24.782976+00:00.
+Generated from the live local Supabase replay on 2026-04-17T14:23:56.498671+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `178`
-- Non-publishable atoms: `326`
+- Publishable atoms: `180`
+- Non-publishable atoms: `324`
 
 ### Marginal Blocker Counts
 
-- `description`: `203`
+- `description`: `201`
 - `io_specs`: `182`
-- `parameters`: `204`
-- `publishable_rollup`: `326`
+- `parameters`: `202`
+- `publishable_rollup`: `324`
 - `references`: `137`
 
 ### Top Exact Blocker Combinations
@@ -23,7 +23,7 @@ This document is a working debt register for every currently unpublished atom.
 - `publishable_rollup,io_specs,parameters,description,references`: `136`
 - `publishable_rollup`: `122`
 - `publishable_rollup,io_specs,parameters,description`: `46`
-- `publishable_rollup,parameters,description`: `20`
+- `publishable_rollup,parameters,description`: `18`
 - `publishable_rollup,parameters`: `1`
 - `publishable_rollup,parameters,description,references`: `1`
 
@@ -32,7 +32,7 @@ This document is a working debt register for every currently unpublished atom.
 - `fintech`: `80`
 - `bio`: `58`
 - `numpy`: `39`
-- `physics`: `38`
+- `physics`: `36`
 - `expansion`: `35`
 - `inference`: `34`
 - `signal_processing`: `19`
@@ -371,11 +371,11 @@ This document is a working debt register for every currently unpublished atom.
 
 ## physics
 
-- Non-publishable atoms: `38`
-- Missing publishable rollup: `38`
+- Non-publishable atoms: `36`
+- Missing publishable rollup: `36`
 - Missing IO specs: `32`
-- Missing parameters: `38`
-- Missing description: `38`
+- Missing parameters: `36`
+- Missing description: `36`
 - Missing references: `6`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
@@ -393,8 +393,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.physics.pulsar_folding.dm_can_brute_force` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.physics.skyfield.calculate_vector_angle` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.physics.skyfield.compute_spherical_coordinate_rates` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.tempo_jl.apply_offsets._zero_offset` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.physics.tempo_jl.find_month.date_from_offset` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.physics.tempo_jl.find_month.date_from_year_dayinyear` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
