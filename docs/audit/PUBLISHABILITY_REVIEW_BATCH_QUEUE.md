@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T00:53:34.086732+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T12:34:24.782976+00:00.
 
-- Remaining unpublished atoms: `332`
-- Remaining worker batches: `63`
+- Remaining unpublished atoms: `326`
+- Remaining worker batches: `62`
 
 ## Batches
 
@@ -60,15 +60,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T00:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.fintech.quantfin.rng_skip_d12.addmod64`, `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64`, `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64_inner_step`
-
-### pubrev-007
-
-- Repo: `sciona-atoms-signal`
-- Wave: `wave_1_audit_completion`
-- Atoms: `6`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatebeatagreementsqi`, `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatefrequencypowersqi`, `sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatekurtosissqi`
 
 ### pubrev-008
 

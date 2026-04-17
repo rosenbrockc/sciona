@@ -1,27 +1,27 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T00:53:34.086732+00:00.
+Generated from the live local Supabase replay on 2026-04-17T12:34:24.782976+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `172`
-- Non-publishable atoms: `332`
+- Publishable atoms: `178`
+- Non-publishable atoms: `326`
 
 ### Marginal Blocker Counts
 
 - `description`: `203`
 - `io_specs`: `182`
 - `parameters`: `204`
-- `publishable_rollup`: `332`
+- `publishable_rollup`: `326`
 - `references`: `137`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup,io_specs,parameters,description,references`: `136`
-- `publishable_rollup`: `128`
+- `publishable_rollup`: `122`
 - `publishable_rollup,io_specs,parameters,description`: `46`
 - `publishable_rollup,parameters,description`: `20`
 - `publishable_rollup,parameters`: `1`
@@ -35,7 +35,7 @@ This document is a working debt register for every currently unpublished atom.
 - `physics`: `38`
 - `expansion`: `35`
 - `inference`: `34`
-- `signal_processing`: `25`
+- `signal_processing`: `19`
 - `state_estimation`: `11`
 - `scipy`: `10`
 - `dynamic_programming`: `1`
@@ -456,8 +456,8 @@ This document is a working debt register for every currently unpublished atom.
 
 ## signal_processing
 
-- Non-publishable atoms: `25`
-- Missing publishable rollup: `25`
+- Non-publishable atoms: `19`
+- Missing publishable rollup: `19`
 - Missing IO specs: `11`
 - Missing parameters: `11`
 - Missing description: `11`
@@ -465,12 +465,6 @@ This document is a working debt register for every currently unpublished atom.
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.signal_processing.biosppy.online_filter.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.online_filter.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstateinit` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstep` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.svm_proc.assess_runs` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.signal_processing.biosppy.svm_proc.combination` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |

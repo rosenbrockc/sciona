@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-17T00:53:34.086732+00:00",
+  "generated_at": "2026-04-17T12:34:24.782976+00:00",
   "source": "local_supabase_filtered_existing_queue",
-  "batch_count": 63,
+  "batch_count": 62,
   "batches": [
     {
       "atom_count": 27,
@@ -1264,104 +1264,6 @@
           "atom_count": 13,
           "review_status": "reviewed_pending",
           "trust_readiness": "conditional"
-        }
-      ]
-    },
-    {
-      "atom_count": 6,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstateinit",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstep",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter.filterstateinit",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter.filterstep",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstateinit",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstep",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-007",
-      "batch_key": "sciona.atoms.signal_processing.biosppy.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 12,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-signal",
-      "representative_atoms": [
-        "sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatebeatagreementsqi",
-        "sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatefrequencypowersqi",
-        "sciona.atoms.signal_processing.biosppy.ecg_zz2018.calculatekurtosissqi",
-        "sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.assemblezz2018sqi",
-        "sciona.atoms.signal_processing.biosppy.ecg_zz2018_d12.computebeatagreementsqi"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 12,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 12,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
         }
       ]
     },
@@ -7032,7 +6934,7 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 332
+    "non_publishable_atoms": 326
   },
   "repo_counts": {
     "sciona-atoms": 81,
@@ -7040,10 +6942,10 @@
     "sciona-atoms-fintech": 80,
     "sciona-atoms-physics": 87,
     "sciona-atoms-robotics": 1,
-    "sciona-atoms-signal": 25
+    "sciona-atoms-signal": 19
   },
   "wave_counts": {
-    "wave_1_audit_completion": 143,
+    "wave_1_audit_completion": 137,
     "wave_2_metadata_and_llm_review": 187,
     "wave_3_residual_policy_or_provenance": 2
   },
@@ -7051,7 +6953,7 @@
     "description": 203,
     "io_specs": 182,
     "parameters": 204,
-    "publishable_rollup": 332,
+    "publishable_rollup": 326,
     "references": 137
   },
   "special_slices": {

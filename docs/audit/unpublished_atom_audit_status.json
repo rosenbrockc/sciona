@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-17T00:53:34.086732+00:00",
+  "generated_at": "2026-04-17T12:34:24.782976+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 172,
-    "non_publishable_atoms": 332
+    "publishable_atoms": 178,
+    "non_publishable_atoms": 326
   },
   "blocker_counts": {
     "description": 203,
     "io_specs": 182,
     "parameters": 204,
-    "publishable_rollup": 332,
+    "publishable_rollup": 326,
     "references": 137
   },
   "top_blocker_combinations": [
@@ -28,7 +28,7 @@
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 128
+      "atom_count": 122
     },
     {
       "blockers": [
@@ -73,7 +73,7 @@
     {
       "review_status": "missing",
       "trust_readiness": "not_reviewed",
-      "atom_count": 49
+      "atom_count": 43
     },
     {
       "review_status": "reviewed_pending",
@@ -4388,85 +4388,13 @@
     },
     {
       "domain": "signal_processing",
-      "atom_count": 25,
-      "missing_publishable_rollup": 25,
+      "atom_count": 19,
+      "missing_publishable_rollup": 19,
       "missing_io_specs": 11,
       "missing_parameters": 11,
       "missing_description": 11,
       "missing_references": 11,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter.filterstateinit",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter.filterstep",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstateinit",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_codex.filterstep",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstateinit",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.biosppy.online_filter_v2.filterstep",
-          "domain": "signal_processing",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
           "domain": "signal_processing",
@@ -4951,7 +4879,7 @@
     },
     {
       "domain": "signal_processing",
-      "atom_count": 25
+      "atom_count": 19
     },
     {
       "domain": "state_estimation",
