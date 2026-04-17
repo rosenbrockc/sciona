@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-17T19:19:15.341683+00:00",
+  "generated_at": "2026-04-17T19:29:57.751305+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 229,
-    "non_publishable_atoms": 275
+    "publishable_atoms": 249,
+    "non_publishable_atoms": 255
   },
   "blocker_counts": {
-    "description": 177,
-    "io_specs": 163,
-    "parameters": 177,
-    "publishable_rollup": 275,
+    "description": 157,
+    "io_specs": 143,
+    "parameters": 157,
+    "publishable_rollup": 255,
     "references": 126
   },
   "top_blocker_combinations": [
@@ -37,7 +37,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 38
+      "atom_count": 18
     },
     {
       "blockers": [
@@ -61,7 +61,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 177
+      "atom_count": 157
     },
     {
       "review_status": "reviewed_pending",
@@ -3206,11 +3206,11 @@
     },
     {
       "domain": "physics",
-      "atom_count": 32,
-      "missing_publishable_rollup": 32,
-      "missing_io_specs": 28,
-      "missing_parameters": 32,
-      "missing_description": 32,
+      "atom_count": 12,
+      "missing_publishable_rollup": 12,
+      "missing_io_specs": 8,
+      "missing_parameters": 12,
+      "missing_description": 12,
       "missing_references": 2,
       "atoms": [
         {
@@ -3364,156 +3364,6 @@
           ]
         },
         {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.date_from_offset",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.date_from_year_dayinyear",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.datetime_from_components",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.datetime_from_seconds",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.datetime_from_string",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.show_date",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.show_time",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.time_from_hms",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.time_from_secondinday",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.find_month.time_from_secondinday_fraction",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
           "fqdn": "sciona.atoms.physics.tempo_jl.graph_time_scale_management",
           "domain": "physics",
           "review_status": "missing_row",
@@ -3537,156 +3387,6 @@
           "overall_verdict": "missing_row",
           "blockers": [
             "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.date_from_offset",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.date_from_year_dayinyear",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_components",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_seconds",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_string",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.show_date",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.show_time",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.time_from_hms",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.time_from_secondinday",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.jd2cal.time_from_secondinday_fraction",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
             "parameters",
             "description"
           ]
@@ -4173,7 +3873,7 @@
     },
     {
       "domain": "physics",
-      "atom_count": 32
+      "atom_count": 12
     },
     {
       "domain": "signal_processing",

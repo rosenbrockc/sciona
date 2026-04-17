@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:19:15.341683+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:29:57.751305+00:00.
 
-- Remaining unpublished atoms: `275`
-- Remaining worker batches: `54`
+- Remaining unpublished atoms: `255`
+- Remaining worker batches: `52`
 
 ## Batches
 
@@ -87,24 +87,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.fintech.quantfin.char_func_option_d12.cf`, `sciona.atoms.fintech.quantfin.char_func_option_d12.charfuncoption`, `sciona.atoms.fintech.quantfin.char_func_option_d12.f`
-
-### pubrev-011
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `10`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.physics.tempo_jl.find_month.date_from_offset`, `sciona.atoms.physics.tempo_jl.find_month.date_from_year_dayinyear`, `sciona.atoms.physics.tempo_jl.find_month.datetime_from_components`
-
-### pubrev-012
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `10`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.physics.tempo_jl.jd2cal.date_from_offset`, `sciona.atoms.physics.tempo_jl.jd2cal.date_from_year_dayinyear`, `sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_components`
 
 ### pubrev-013
 

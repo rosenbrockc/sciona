@@ -1,28 +1,28 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T19:19:15.341683+00:00.
+Generated from the live local Supabase replay on 2026-04-17T19:29:57.751305+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `229`
-- Non-publishable atoms: `275`
+- Publishable atoms: `249`
+- Non-publishable atoms: `255`
 
 ### Marginal Blocker Counts
 
-- `description`: `177`
-- `io_specs`: `163`
-- `parameters`: `177`
-- `publishable_rollup`: `275`
+- `description`: `157`
+- `io_specs`: `143`
+- `parameters`: `157`
+- `publishable_rollup`: `255`
 - `references`: `126`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup,io_specs,parameters,description,references`: `125`
 - `publishable_rollup`: `98`
-- `publishable_rollup,io_specs,parameters,description`: `38`
+- `publishable_rollup,io_specs,parameters,description`: `18`
 - `publishable_rollup,parameters,description`: `13`
 - `publishable_rollup,parameters,description,references`: `1`
 
@@ -33,7 +33,7 @@ This document is a working debt register for every currently unpublished atom.
 - `expansion`: `35`
 - `inference`: `34`
 - `numpy`: `32`
-- `physics`: `32`
+- `physics`: `12`
 - `signal_processing`: `12`
 - `scipy`: `10`
 - `state_estimation`: `6`
@@ -337,11 +337,11 @@ This document is a working debt register for every currently unpublished atom.
 
 ## physics
 
-- Non-publishable atoms: `32`
-- Missing publishable rollup: `32`
-- Missing IO specs: `28`
-- Missing parameters: `32`
-- Missing description: `32`
+- Non-publishable atoms: `12`
+- Missing publishable rollup: `12`
+- Missing IO specs: `8`
+- Missing parameters: `12`
+- Missing description: `12`
 - Missing references: `2`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
@@ -356,28 +356,8 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.physics.pulsar_folding.dm_can_brute_force` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.tempo_jl.apply_offsets._zero_offset` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.physics.tempo_jl.find_month.date_from_offset` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.date_from_year_dayinyear` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.datetime_from_components` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.datetime_from_seconds` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.datetime_from_string` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.show_date` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.show_time` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.time_from_hms` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.time_from_secondinday` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.find_month.time_from_secondinday_fraction` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 | `sciona.atoms.physics.tempo_jl.graph_time_scale_management` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.physics.tempo_jl.high_precision_duration` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.date_from_offset` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.date_from_year_dayinyear` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_components` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_seconds` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.datetime_from_string` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.show_date` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.show_time` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.time_from_hms` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.time_from_secondinday` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.physics.tempo_jl.jd2cal.time_from_secondinday_fraction` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 
 ## robotics
 
