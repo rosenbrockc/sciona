@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-17T15:15:28.704514+00:00",
+  "generated_at": "2026-04-17T15:44:24.925476+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 189,
-    "non_publishable_atoms": 315
+    "publishable_atoms": 197,
+    "non_publishable_atoms": 307
   },
   "blocker_counts": {
-    "description": 192,
-    "io_specs": 175,
-    "parameters": 193,
-    "publishable_rollup": 315,
-    "references": 131
+    "description": 184,
+    "io_specs": 170,
+    "parameters": 185,
+    "publishable_rollup": 307,
+    "references": 126
   },
   "top_blocker_combinations": [
     {
@@ -22,7 +22,7 @@
         "description",
         "references"
       ],
-      "atom_count": 130
+      "atom_count": 125
     },
     {
       "blockers": [
@@ -45,7 +45,7 @@
         "parameters",
         "description"
       ],
-      "atom_count": 16
+      "atom_count": 13
     },
     {
       "blockers": [
@@ -68,7 +68,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 192
+      "atom_count": 184
     },
     {
       "review_status": "missing",
@@ -94,55 +94,13 @@
   "domains": [
     {
       "domain": "bio",
-      "atom_count": 58,
-      "missing_publishable_rollup": 58,
+      "atom_count": 55,
+      "missing_publishable_rollup": 55,
       "missing_io_specs": 14,
-      "missing_parameters": 22,
-      "missing_description": 22,
+      "missing_parameters": 19,
+      "missing_description": 19,
       "missing_references": 11,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.bio.alphafold.coordinate_reconstruction",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.alphafold.equivariant_frame_update",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.alphafold.invariant_point_attention",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.bio.hpdb.iterate_pdb_atoms",
           "domain": "bio",
@@ -4253,12 +4211,12 @@
     },
     {
       "domain": "signal_processing",
-      "atom_count": 17,
-      "missing_publishable_rollup": 17,
-      "missing_io_specs": 9,
-      "missing_parameters": 9,
-      "missing_description": 9,
-      "missing_references": 9,
+      "atom_count": 12,
+      "missing_publishable_rollup": 12,
+      "missing_io_specs": 4,
+      "missing_parameters": 4,
+      "missing_description": 4,
+      "missing_references": 4,
       "atoms": [
         {
           "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.assess_classification",
@@ -4357,38 +4315,6 @@
           ]
         },
         {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.gan_reconstruction",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.generatereconstructedppg",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
           "fqdn": "sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles",
           "domain": "signal_processing",
           "review_status": "missing_row",
@@ -4438,54 +4364,6 @@
         },
         {
           "fqdn": "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.normalizesignal",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper_d12.wrapperevaluate",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.template_matching.templatefeaturecomputation",
           "domain": "signal_processing",
           "review_status": "missing_row",
           "trust_readiness": "missing_row",
@@ -4692,7 +4570,7 @@
     },
     {
       "domain": "bio",
-      "atom_count": 58
+      "atom_count": 55
     },
     {
       "domain": "numpy",
@@ -4712,7 +4590,7 @@
     },
     {
       "domain": "signal_processing",
-      "atom_count": 17
+      "atom_count": 12
     },
     {
       "domain": "state_estimation",

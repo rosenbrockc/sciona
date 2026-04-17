@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:15:28.704514+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:44:24.925476+00:00.
 
-- Remaining unpublished atoms: `315`
-- Remaining worker batches: `58`
+- Remaining unpublished atoms: `307`
+- Remaining worker batches: `57`
 
 ## Batches
 
@@ -74,7 +74,7 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:
 
 - Repo: `sciona-atoms-signal`
 - Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `9`
+- Atoms: `4`
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.gan_reconstruction`, `sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.generatereconstructedppg`, `sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles`
@@ -384,15 +384,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T15:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch`, `sciona.atoms.state_estimation.particle_filters.basic.hypothesis_propagation_kernel`, `sciona.atoms.state_estimation.particle_filters.basic.likelihood_reweight_kernel`
-
-### pubrev-056
-
-- Repo: `sciona-atoms-bio`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `3`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.bio.alphafold.coordinate_reconstruction`, `sciona.atoms.bio.alphafold.equivariant_frame_update`, `sciona.atoms.bio.alphafold.invariant_point_attention`
 
 ### pubrev-058
 
