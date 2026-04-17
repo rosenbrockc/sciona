@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T20:16:08.413983+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T23:47:56.284004+00:00.
 
-- Remaining unpublished atoms: `223`
+- Remaining unpublished atoms: `206`
 - Remediation-excluded atoms: `17`
-- Remaining worker batches: `46`
+- Remaining worker batches: `44`
 
 ## Remediation Exclusions
 
@@ -19,7 +19,7 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T20:
 
 - Repo: `sciona-atoms-fintech`
 - Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `27`
+- Atoms: `18`
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss.computeoptimaltrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.optimalexecutiontrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.riskaversioninit`
@@ -177,15 +177,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T20:
 - Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.bio.mint.fasta_dataset.dataset_item_retrieval`, `sciona.atoms.bio.mint.fasta_dataset.dataset_length_query`, `sciona.atoms.bio.mint.fasta_dataset.dataset_state_initialization`
 
-### pubrev-038
-
-- Repo: `sciona-atoms-bio`
-- Wave: `wave_1_audit_completion`
-- Atoms: `4`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.bio.molecular_docking.mwis_sa.calculate_weight`, `sciona.atoms.bio.molecular_docking.mwis_sa.is_independent_set`, `sciona.atoms.bio.molecular_docking.mwis_sa.load_graphs_from_folder`
-
 ### pubrev-039
 
 - Repo: `sciona-atoms`
@@ -266,15 +257,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T20:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.expansion.signal_transform.analyze_window_leakage`, `sciona.atoms.expansion.signal_transform.check_inverse_reconstruction`, `sciona.atoms.expansion.signal_transform.detect_spectral_aliasing`
-
-### pubrev-048
-
-- Repo: `sciona-atoms-fintech`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.fintech.quant_engine.calculate_ofi`, `sciona.atoms.fintech.quant_engine.execute_passive`, `sciona.atoms.fintech.quant_engine.execute_pov`
 
 ### pubrev-049
 
