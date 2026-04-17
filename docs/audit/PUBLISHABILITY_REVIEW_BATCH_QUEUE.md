@@ -1,9 +1,9 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:29:57.751305+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:39:14.306708+00:00.
 
-- Remaining unpublished atoms: `255`
-- Remaining worker batches: `52`
+- Remaining unpublished atoms: `242`
+- Remaining worker batches: `51`
 
 ## Batches
 
@@ -51,15 +51,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T19:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.bio.molecular_docking.add_quantum_link.addquantumlink`, `sciona.atoms.bio.molecular_docking.build_complementary.constructcomplementarygraph`, `sciona.atoms.bio.molecular_docking.build_interaction_graph.networkx_weighted_graph_materialization`
-
-### pubrev-006
-
-- Repo: `sciona-atoms-fintech`
-- Wave: `wave_1_audit_completion`
-- Atoms: `13`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.fintech.quantfin.rng_skip_d12.addmod64`, `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64`, `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64_inner_step`
 
 ### pubrev-008
 

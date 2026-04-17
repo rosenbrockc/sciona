@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-17T19:29:57.751305+00:00",
+  "generated_at": "2026-04-17T19:39:14.306708+00:00",
   "source": "local_supabase_filtered_existing_queue",
-  "batch_count": 52,
+  "batch_count": 51,
   "batches": [
     {
       "atom_count": 27,
@@ -1011,167 +1011,6 @@
           "atom_count": 4,
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 13,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.addmod64",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64_inner_step",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.next",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.powmod64",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.powmod64_inner_step",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomdouble",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomint",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomint64",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomword32",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomword64",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.skip",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.split",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        }
-      ],
-      "batch_id": "pubrev-006",
-      "batch_key": "sciona.atoms.fintech.quantfin.rng_skip_d12",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 13,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-fintech",
-      "representative_atoms": [
-        "sciona.atoms.fintech.quantfin.rng_skip_d12.addmod64",
-        "sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64",
-        "sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64_inner_step",
-        "sciona.atoms.fintech.quantfin.rng_skip_d12.next",
-        "sciona.atoms.fintech.quantfin.rng_skip_d12.powmod64"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 13,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 13,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
         }
       ]
     },
@@ -5652,18 +5491,18 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 255
+    "non_publishable_atoms": 242
   },
   "repo_counts": {
     "sciona-atoms": 76,
     "sciona-atoms-bio": 55,
-    "sciona-atoms-fintech": 57,
+    "sciona-atoms-fintech": 44,
     "sciona-atoms-physics": 54,
     "sciona-atoms-robotics": 1,
     "sciona-atoms-signal": 12
   },
   "wave_counts": {
-    "wave_1_audit_completion": 110,
+    "wave_1_audit_completion": 97,
     "wave_2_metadata_and_llm_review": 143,
     "wave_3_residual_policy_or_provenance": 2
   },
@@ -5671,7 +5510,7 @@
     "description": 157,
     "io_specs": 143,
     "parameters": 157,
-    "publishable_rollup": 255,
+    "publishable_rollup": 242,
     "references": 126
   },
   "special_slices": {

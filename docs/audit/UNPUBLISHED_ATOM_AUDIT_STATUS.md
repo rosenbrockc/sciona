@@ -1,35 +1,35 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T19:29:57.751305+00:00.
+Generated from the live local Supabase replay on 2026-04-17T19:39:14.306708+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `249`
-- Non-publishable atoms: `255`
+- Publishable atoms: `262`
+- Non-publishable atoms: `242`
 
 ### Marginal Blocker Counts
 
 - `description`: `157`
 - `io_specs`: `143`
 - `parameters`: `157`
-- `publishable_rollup`: `255`
+- `publishable_rollup`: `242`
 - `references`: `126`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup,io_specs,parameters,description,references`: `125`
-- `publishable_rollup`: `98`
+- `publishable_rollup`: `85`
 - `publishable_rollup,io_specs,parameters,description`: `18`
 - `publishable_rollup,parameters,description`: `13`
 - `publishable_rollup,parameters,description,references`: `1`
 
 ### Largest Non-Publishable Domains
 
-- `fintech`: `57`
 - `bio`: `55`
+- `fintech`: `44`
 - `expansion`: `35`
 - `inference`: `34`
 - `numpy`: `32`
@@ -178,8 +178,8 @@ This document is a working debt register for every currently unpublished atom.
 
 ## fintech
 
-- Non-publishable atoms: `57`
-- Missing publishable rollup: `57`
+- Non-publishable atoms: `44`
+- Missing publishable rollup: `44`
 - Missing IO specs: `27`
 - Missing parameters: `31`
 - Missing description: `31`
@@ -229,19 +229,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.fintech.quantfin.montecarlo.quick_sim_anti` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.fintech.quantfin.montecarlo.run_simulation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.fintech.quantfin.montecarlo.run_simulation_anti` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.addmod64` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64_inner_step` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.next` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.powmod64` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.powmod64_inner_step` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.randomdouble` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.randomint` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.randomint64` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.randomword32` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.randomword64` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.skip` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.fintech.quantfin.rng_skip_d12.split` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver` | `reviewed_pending` | `conditional` | `unknown` | `pass` | `unknown` | `publishable_rollup` |
 

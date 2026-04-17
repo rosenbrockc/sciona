@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-17T19:29:57.751305+00:00",
+  "generated_at": "2026-04-17T19:39:14.306708+00:00",
   "source": "local_supabase",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 249,
-    "non_publishable_atoms": 255
+    "publishable_atoms": 262,
+    "non_publishable_atoms": 242
   },
   "blocker_counts": {
     "description": 157,
     "io_specs": 143,
     "parameters": 157,
-    "publishable_rollup": 255,
+    "publishable_rollup": 242,
     "references": 126
   },
   "top_blocker_combinations": [
@@ -28,7 +28,7 @@
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 98
+      "atom_count": 85
     },
     {
       "blockers": [
@@ -75,13 +75,13 @@
     },
     {
       "review_status": "reviewed_pending",
-      "trust_readiness": "conditional",
-      "atom_count": 17
+      "trust_readiness": "reviewed_with_limits",
+      "atom_count": 9
     },
     {
       "review_status": "reviewed_pending",
-      "trust_readiness": "reviewed_with_limits",
-      "atom_count": 9
+      "trust_readiness": "conditional",
+      "atom_count": 4
     }
   ],
   "domains": [
@@ -1418,8 +1418,8 @@
     },
     {
       "domain": "fintech",
-      "atom_count": 57,
-      "missing_publishable_rollup": 57,
+      "atom_count": 44,
+      "missing_publishable_rollup": 44,
       "missing_io_specs": 27,
       "missing_parameters": 31,
       "missing_description": 31,
@@ -2035,162 +2035,6 @@
             "parameters",
             "description",
             "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.addmod64",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.mulmod64_inner_step",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.next",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.powmod64",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.powmod64_inner_step",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomdouble",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomint",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomint64",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomword32",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.randomword64",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.skip",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.rng_skip_d12.split",
-          "domain": "fintech",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "pass",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
           ]
         },
         {
@@ -3852,12 +3696,12 @@
   ],
   "largest_non_publishable_domains": [
     {
-      "domain": "fintech",
-      "atom_count": 57
-    },
-    {
       "domain": "bio",
       "atom_count": 55
+    },
+    {
+      "domain": "fintech",
+      "atom_count": 44
     },
     {
       "domain": "expansion",
