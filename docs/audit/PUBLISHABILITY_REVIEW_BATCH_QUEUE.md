@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T13:00:00.401482+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T21:46:12.423400+00:00.
 
-- Remaining unpublished atoms: `191`
+- Remaining unpublished atoms: `179`
 - Remediation-excluded atoms: `17`
-- Remaining worker batches: `39`
+- Remaining worker batches: `36`
 
 ## Remediation Exclusions
 
@@ -167,33 +167,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T13:
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.bio.mint.fasta_dataset.dataset_item_retrieval`, `sciona.atoms.bio.mint.fasta_dataset.dataset_length_query`, `sciona.atoms.bio.mint.fasta_dataset.dataset_state_initialization`
-
-### pubrev-040
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.divide_and_conquer.check_recursion_depth`, `sciona.atoms.expansion.divide_and_conquer.detect_subproblem_overlap`, `sciona.atoms.expansion.divide_and_conquer.measure_split_balance`
-
-### pubrev-042
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.kalman_filter.analyze_kalman_gain_magnitude`, `sciona.atoms.expansion.kalman_filter.check_innovation_consistency`, `sciona.atoms.expansion.kalman_filter.check_state_smoothness`
-
-### pubrev-043
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.particle_filter.analyze_particle_diversity`, `sciona.atoms.expansion.particle_filter.check_resampling_quality`, `sciona.atoms.expansion.particle_filter.monitor_effective_sample_size`
 
 ### pubrev-044
 

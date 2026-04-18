@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-18T13:00:00.401482+00:00",
+  "generated_at": "2026-04-18T21:46:12.423400+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
-  "batch_count": 39,
+  "batch_count": 36,
   "batches": [
     {
       "atom_count": 18,
@@ -2502,315 +2502,6 @@
             "description",
             "references"
           ],
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.check_recursion_depth",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.detect_subproblem_overlap",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.measure_split_balance",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.profile_merge_cost",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-040",
-      "batch_key": "sciona.atoms.expansion.divide_and_conquer.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.expansion.divide_and_conquer.check_recursion_depth",
-        "sciona.atoms.expansion.divide_and_conquer.detect_subproblem_overlap",
-        "sciona.atoms.expansion.divide_and_conquer.measure_split_balance",
-        "sciona.atoms.expansion.divide_and_conquer.profile_merge_cost"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.kalman_filter.analyze_kalman_gain_magnitude",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.kalman_filter.check_innovation_consistency",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.kalman_filter.check_state_smoothness",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.kalman_filter.validate_covariance_pd",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-042",
-      "batch_key": "sciona.atoms.expansion.kalman_filter.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.expansion.kalman_filter.analyze_kalman_gain_magnitude",
-        "sciona.atoms.expansion.kalman_filter.check_innovation_consistency",
-        "sciona.atoms.expansion.kalman_filter.check_state_smoothness",
-        "sciona.atoms.expansion.kalman_filter.validate_covariance_pd"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.particle_filter.analyze_particle_diversity",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.particle_filter.check_resampling_quality",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.particle_filter.monitor_effective_sample_size",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.particle_filter.track_weight_variance",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-043",
-      "batch_key": "sciona.atoms.expansion.particle_filter.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.expansion.particle_filter.analyze_particle_diversity",
-        "sciona.atoms.expansion.particle_filter.check_resampling_quality",
-        "sciona.atoms.expansion.particle_filter.monitor_effective_sample_size",
-        "sciona.atoms.expansion.particle_filter.track_weight_variance"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
           "fqdn": "sciona.atoms.expansion.sequential_filter.adapt_process_noise",
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
@@ -4350,11 +4041,11 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 191,
+    "non_publishable_atoms": 179,
     "remediation_excluded_atoms": 17
   },
   "repo_counts": {
-    "sciona-atoms": 68,
+    "sciona-atoms": 56,
     "sciona-atoms-bio": 46,
     "sciona-atoms-fintech": 31,
     "sciona-atoms-physics": 42,
@@ -4362,14 +4053,14 @@
   },
   "wave_counts": {
     "wave_1_audit_completion": 71,
-    "wave_2_metadata_and_llm_review": 120
+    "wave_2_metadata_and_llm_review": 108
   },
   "blocker_counts": {
-    "description": 137,
-    "io_specs": 128,
-    "parameters": 137,
-    "publishable_rollup": 191,
-    "references": 113
+    "description": 125,
+    "io_specs": 116,
+    "parameters": 125,
+    "publishable_rollup": 179,
+    "references": 101
   },
   "special_slices": {
     "audit_rollup_only_atoms": {

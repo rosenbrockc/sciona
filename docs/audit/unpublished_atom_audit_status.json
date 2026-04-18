@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-18T13:00:00.401482+00:00",
+  "generated_at": "2026-04-18T21:46:12.423400+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 296,
-    "non_publishable_atoms": 208
+    "publishable_atoms": 308,
+    "non_publishable_atoms": 196
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 191,
+    "review_backlog_non_publishable_atoms": 179,
     "remediation_excluded_non_publishable_atoms": 17
   },
   "remediation_exclusions": {
@@ -110,11 +110,11 @@
     "excluded_unpublished_atom_count": 17
   },
   "blocker_counts": {
-    "description": 137,
-    "io_specs": 128,
-    "parameters": 137,
-    "publishable_rollup": 191,
-    "references": 113
+    "description": 125,
+    "io_specs": 116,
+    "parameters": 125,
+    "publishable_rollup": 179,
+    "references": 101
   },
   "top_blocker_combinations": [
     {
@@ -125,7 +125,7 @@
         "description",
         "references"
       ],
-      "atom_count": 113
+      "atom_count": 101
     },
     {
       "blockers": [
@@ -155,7 +155,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 137
+      "atom_count": 125
     },
     {
       "review_status": "reviewed_pending",
@@ -828,205 +828,13 @@
     },
     {
       "domain": "expansion",
-      "atom_count": 29,
-      "missing_publishable_rollup": 29,
-      "missing_io_specs": 29,
-      "missing_parameters": 29,
-      "missing_description": 29,
-      "missing_references": 29,
+      "atom_count": 17,
+      "missing_publishable_rollup": 17,
+      "missing_io_specs": 17,
+      "missing_parameters": 17,
+      "missing_description": 17,
+      "missing_references": 17,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.check_recursion_depth",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.detect_subproblem_overlap",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.measure_split_balance",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.divide_and_conquer.profile_merge_cost",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.kalman_filter.analyze_kalman_gain_magnitude",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.kalman_filter.check_innovation_consistency",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.kalman_filter.check_state_smoothness",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.kalman_filter.validate_covariance_pd",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.particle_filter.analyze_particle_diversity",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.particle_filter.check_resampling_quality",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.particle_filter.monitor_effective_sample_size",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.particle_filter.track_weight_variance",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.expansion.sequential_filter.adapt_process_noise",
           "domain": "expansion",
@@ -3111,7 +2919,7 @@
     },
     {
       "domain": "expansion",
-      "atom_count": 29
+      "atom_count": 17
     },
     {
       "domain": "physics",
