@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-18T01:54:34.863653+00:00",
+  "generated_at": "2026-04-18T02:11:41.869227+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 293,
-    "non_publishable_atoms": 211
+    "publishable_atoms": 294,
+    "non_publishable_atoms": 210
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 194,
+    "review_backlog_non_publishable_atoms": 193,
     "remediation_excluded_non_publishable_atoms": 17
   },
   "remediation_exclusions": {
@@ -110,11 +110,11 @@
     "excluded_unpublished_atom_count": 17
   },
   "blocker_counts": {
-    "description": 140,
-    "io_specs": 130,
-    "parameters": 140,
-    "publishable_rollup": 194,
-    "references": 116
+    "description": 139,
+    "io_specs": 129,
+    "parameters": 139,
+    "publishable_rollup": 193,
+    "references": 115
   },
   "top_blocker_combinations": [
     {
@@ -125,7 +125,7 @@
         "description",
         "references"
       ],
-      "atom_count": 115
+      "atom_count": 114
     },
     {
       "blockers": [
@@ -164,7 +164,7 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 140
+      "atom_count": 139
     },
     {
       "review_status": "reviewed_pending",
@@ -2780,12 +2780,12 @@
     },
     {
       "domain": "physics",
-      "atom_count": 9,
-      "missing_publishable_rollup": 9,
-      "missing_io_specs": 5,
-      "missing_parameters": 9,
-      "missing_description": 9,
-      "missing_references": 2,
+      "atom_count": 8,
+      "missing_publishable_rollup": 8,
+      "missing_io_specs": 4,
+      "missing_parameters": 8,
+      "missing_description": 8,
+      "missing_references": 1,
       "atoms": [
         {
           "fqdn": "sciona.atoms.physics.pasqal.docking.graph_transformer",
@@ -2830,22 +2830,6 @@
             "io_specs",
             "parameters",
             "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
           ]
         },
         {
@@ -3171,7 +3155,7 @@
     },
     {
       "domain": "physics",
-      "atom_count": 9
+      "atom_count": 8
     },
     {
       "domain": "state_estimation",

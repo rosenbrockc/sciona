@@ -1,8 +1,8 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T01:54:34.863653+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T02:11:41.869227+00:00.
 
-- Remaining unpublished atoms: `194`
+- Remaining unpublished atoms: `193`
 - Remediation-excluded atoms: `17`
 - Remaining worker batches: `40`
 
@@ -289,7 +289,7 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T01:
 
 - Repo: `sciona-atoms-physics`
 - Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `3`
+- Atoms: `2`
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.physics.pulsar_folding.dm_can_brute_force`, `sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter`, `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction`

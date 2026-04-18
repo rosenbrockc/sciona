@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-18T01:54:34.863653+00:00",
+  "generated_at": "2026-04-18T02:11:41.869227+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
   "batch_count": 40,
   "batches": [
@@ -3718,7 +3718,7 @@
       ]
     },
     {
-      "atom_count": 3,
+      "atom_count": 2,
       "atoms": [
         {
           "blockers": [
@@ -3727,19 +3727,6 @@
             "description"
           ],
           "fqdn": "sciona.atoms.physics.pulsar_folding.dm_can_brute_force",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter",
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
@@ -4446,27 +4433,27 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 194,
+    "non_publishable_atoms": 193,
     "remediation_excluded_atoms": 17
   },
   "repo_counts": {
     "sciona-atoms": 70,
     "sciona-atoms-bio": 46,
     "sciona-atoms-fintech": 31,
-    "sciona-atoms-physics": 43,
+    "sciona-atoms-physics": 42,
     "sciona-atoms-signal": 4
   },
   "wave_counts": {
     "wave_1_audit_completion": 71,
-    "wave_2_metadata_and_llm_review": 121,
+    "wave_2_metadata_and_llm_review": 120,
     "wave_3_residual_policy_or_provenance": 2
   },
   "blocker_counts": {
-    "description": 140,
-    "io_specs": 130,
-    "parameters": 140,
-    "publishable_rollup": 194,
-    "references": 116
+    "description": 139,
+    "io_specs": 129,
+    "parameters": 139,
+    "publishable_rollup": 193,
+    "references": 115
   },
   "special_slices": {
     "audit_rollup_only_atoms": {
