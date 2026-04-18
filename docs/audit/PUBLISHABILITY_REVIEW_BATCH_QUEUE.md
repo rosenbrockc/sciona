@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T02:11:41.869227+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T13:00:00.401482+00:00.
 
-- Remaining unpublished atoms: `193`
+- Remaining unpublished atoms: `191`
 - Remediation-excluded atoms: `17`
-- Remaining worker batches: `40`
+- Remaining worker batches: `39`
 
 ## Remediation Exclusions
 
@@ -311,15 +311,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T02:
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.bio.hpdb.iterate_pdb_atoms`, `sciona.atoms.bio.hpdb.iterate_pdb_residues`
-
-### pubrev-065
-
-- Repo: `sciona-atoms`
-- Wave: `wave_3_residual_policy_or_provenance`
-- Atoms: `2`
-- Blocker class: `mixed_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.belief_propagation.loopy_bp.initialize_message_passing_state`, `sciona.atoms.inference.belief_propagation.loopy_bp.run_loopy_message_passing_and_belief_query`
 
 ### pubrev-066
 

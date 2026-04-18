@@ -1,16 +1,16 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-18T02:11:41.869227+00:00.
+Generated from the live local Supabase replay on 2026-04-18T13:00:00.401482+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `294`
-- Total non-publishable atoms in local catalog: `210`
+- Publishable atoms: `296`
+- Total non-publishable atoms in local catalog: `208`
 - Remediation-excluded non-publishable atoms: `17`
-- Non-publishable atoms remaining in matcher backlog: `193`
+- Non-publishable atoms remaining in matcher backlog: `191`
 
 
 ### Remediation Exclusions
@@ -23,24 +23,23 @@ This document is a working debt register for every currently unpublished atom.
 
 ### Marginal Blocker Counts
 
-- `description`: `139`
-- `io_specs`: `129`
-- `parameters`: `139`
-- `publishable_rollup`: `193`
-- `references`: `115`
+- `description`: `137`
+- `io_specs`: `128`
+- `parameters`: `137`
+- `publishable_rollup`: `191`
+- `references`: `113`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `114`
+- `publishable_rollup,io_specs,parameters,description,references`: `113`
 - `publishable_rollup`: `54`
 - `publishable_rollup,io_specs,parameters,description`: `15`
 - `publishable_rollup,parameters,description`: `9`
-- `publishable_rollup,parameters,description,references`: `1`
 
 ### Largest Non-Publishable Domains
 
 - `bio`: `46`
-- `inference`: `34`
+- `inference`: `32`
 - `numpy`: `32`
 - `fintech`: `31`
 - `expansion`: `29`
@@ -216,12 +215,12 @@ This document is a working debt register for every currently unpublished atom.
 
 ## inference
 
-- Non-publishable atoms: `34`
-- Missing publishable rollup: `34`
-- Missing IO specs: `33`
-- Missing parameters: `34`
-- Missing description: `34`
-- Missing references: `34`
+- Non-publishable atoms: `32`
+- Missing publishable rollup: `32`
+- Missing IO specs: `32`
+- Missing parameters: `32`
+- Missing description: `32`
+- Missing references: `32`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -229,8 +228,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.inference.advancedvi.core.gradient_oracle_evaluation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.advancedvi.core.optimizationlooporchestration` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.belief_propagation.loopy_bp.initialize_message_passing_state` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description, references` |
-| `sciona.atoms.inference.belief_propagation.loopy_bp.run_loopy_message_passing_and_belief_query` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel_weighted` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.jax_advi.optimize_advi.meanfieldvariationalfit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |

@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-18T02:11:41.869227+00:00",
+  "generated_at": "2026-04-18T13:00:00.401482+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
-  "batch_count": 40,
+  "batch_count": 39,
   "batches": [
     {
       "atom_count": 18,
@@ -3961,89 +3961,6 @@
         {
           "blockers": [
             "publishable_rollup",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.belief_propagation.loopy_bp.initialize_message_passing_state",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.belief_propagation.loopy_bp.run_loopy_message_passing_and_belief_query",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-065",
-      "batch_key": "sciona.atoms.inference.belief_propagation.__remainder__",
-      "blocker_class": "mixed_rollup",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 1,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_3_residual_policy_or_provenance",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.inference.belief_propagation.loopy_bp.initialize_message_passing_state",
-        "sciona.atoms.inference.belief_propagation.loopy_bp.run_loopy_message_passing_and_belief_query"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 1,
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "atom_count": 1,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 2,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 2,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
             "io_specs",
             "parameters",
             "description",
@@ -4433,11 +4350,11 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 193,
+    "non_publishable_atoms": 191,
     "remediation_excluded_atoms": 17
   },
   "repo_counts": {
-    "sciona-atoms": 70,
+    "sciona-atoms": 68,
     "sciona-atoms-bio": 46,
     "sciona-atoms-fintech": 31,
     "sciona-atoms-physics": 42,
@@ -4445,15 +4362,14 @@
   },
   "wave_counts": {
     "wave_1_audit_completion": 71,
-    "wave_2_metadata_and_llm_review": 120,
-    "wave_3_residual_policy_or_provenance": 2
+    "wave_2_metadata_and_llm_review": 120
   },
   "blocker_counts": {
-    "description": 139,
-    "io_specs": 129,
-    "parameters": 139,
-    "publishable_rollup": 193,
-    "references": 115
+    "description": 137,
+    "io_specs": 128,
+    "parameters": 137,
+    "publishable_rollup": 191,
+    "references": 113
   },
   "special_slices": {
     "audit_rollup_only_atoms": {

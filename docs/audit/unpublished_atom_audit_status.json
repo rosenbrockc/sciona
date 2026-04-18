@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-18T02:11:41.869227+00:00",
+  "generated_at": "2026-04-18T13:00:00.401482+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 294,
-    "non_publishable_atoms": 210
+    "publishable_atoms": 296,
+    "non_publishable_atoms": 208
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 193,
+    "review_backlog_non_publishable_atoms": 191,
     "remediation_excluded_non_publishable_atoms": 17
   },
   "remediation_exclusions": {
@@ -110,11 +110,11 @@
     "excluded_unpublished_atom_count": 17
   },
   "blocker_counts": {
-    "description": 139,
-    "io_specs": 129,
-    "parameters": 139,
-    "publishable_rollup": 193,
-    "references": 115
+    "description": 137,
+    "io_specs": 128,
+    "parameters": 137,
+    "publishable_rollup": 191,
+    "references": 113
   },
   "top_blocker_combinations": [
     {
@@ -125,7 +125,7 @@
         "description",
         "references"
       ],
-      "atom_count": 114
+      "atom_count": 113
     },
     {
       "blockers": [
@@ -149,22 +149,13 @@
         "description"
       ],
       "atom_count": 9
-    },
-    {
-      "blockers": [
-        "publishable_rollup",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "atom_count": 1
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 139
+      "atom_count": 137
     },
     {
       "review_status": "reviewed_pending",
@@ -1795,12 +1786,12 @@
     },
     {
       "domain": "inference",
-      "atom_count": 34,
-      "missing_publishable_rollup": 34,
-      "missing_io_specs": 33,
-      "missing_parameters": 34,
-      "missing_description": 34,
-      "missing_references": 34,
+      "atom_count": 32,
+      "missing_publishable_rollup": 32,
+      "missing_io_specs": 32,
+      "missing_parameters": 32,
+      "missing_description": 32,
+      "missing_references": 32,
       "atoms": [
         {
           "fqdn": "sciona.atoms.inference.advancedvi.core.evaluate_log_probability_density",
@@ -1852,37 +1843,6 @@
         },
         {
           "fqdn": "sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.belief_propagation.loopy_bp.initialize_message_passing_state",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.belief_propagation.loopy_bp.run_loopy_message_passing_and_belief_query",
           "domain": "inference",
           "review_status": "missing_row",
           "trust_readiness": "missing_row",
@@ -3139,7 +3099,7 @@
     },
     {
       "domain": "inference",
-      "atom_count": 34
+      "atom_count": 32
     },
     {
       "domain": "numpy",
