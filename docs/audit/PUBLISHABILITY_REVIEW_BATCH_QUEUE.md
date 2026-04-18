@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T01:26:11.747527+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T01:54:34.863653+00:00.
 
-- Remaining unpublished atoms: `197`
+- Remaining unpublished atoms: `194`
 - Remediation-excluded atoms: `17`
-- Remaining worker batches: `42`
+- Remaining worker batches: `40`
 
 ## Remediation Exclusions
 
@@ -176,15 +176,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T01:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.expansion.divide_and_conquer.check_recursion_depth`, `sciona.atoms.expansion.divide_and_conquer.detect_subproblem_overlap`, `sciona.atoms.expansion.divide_and_conquer.measure_split_balance`
-
-### pubrev-041
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.graph_signal_processing.analyze_spectral_gap`, `sciona.atoms.expansion.graph_signal_processing.check_laplacian_symmetry`, `sciona.atoms.expansion.graph_signal_processing.validate_filter_response`
 
 ### pubrev-042
 
@@ -365,15 +356,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T01:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle`
-
-### pubrev-077
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `1`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.physics.astroflow.dedispersionkernel`
 
 ### pubrev-078
 
