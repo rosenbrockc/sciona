@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T23:47:56.284004+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T01:26:11.747527+00:00.
 
-- Remaining unpublished atoms: `206`
+- Remaining unpublished atoms: `197`
 - Remediation-excluded atoms: `17`
-- Remaining worker batches: `44`
+- Remaining worker batches: `42`
 
 ## Remediation Exclusions
 
@@ -132,15 +132,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T23:
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.scipy.optimize.curve_fit`, `sciona.atoms.scipy.optimize.differential_evolution`, `sciona.atoms.scipy.optimize.linprog`
 
-### pubrev-027
-
-- Repo: `sciona-atoms-bio`
-- Wave: `wave_1_audit_completion`
-- Atoms: `5`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.bio.molecular_docking.greedy_mapping.assemblestaticmappingcontext`, `sciona.atoms.bio.molecular_docking.greedy_mapping.initializefrontierfromstartnode`, `sciona.atoms.bio.molecular_docking.greedy_mapping.rungreedymappingpipeline`
-
 ### pubrev-028
 
 - Repo: `sciona-atoms-bio`
@@ -176,15 +167,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-17T23:
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.bio.mint.fasta_dataset.dataset_item_retrieval`, `sciona.atoms.bio.mint.fasta_dataset.dataset_length_query`, `sciona.atoms.bio.mint.fasta_dataset.dataset_state_initialization`
-
-### pubrev-039
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.belief_propagation.analyze_message_damping`, `sciona.atoms.expansion.belief_propagation.detect_graph_cycles`, `sciona.atoms.expansion.belief_propagation.monitor_message_convergence`
 
 ### pubrev-040
 

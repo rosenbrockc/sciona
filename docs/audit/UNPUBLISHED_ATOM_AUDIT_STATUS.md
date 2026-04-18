@@ -1,16 +1,16 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-17T23:47:56.284004+00:00.
+Generated from the live local Supabase replay on 2026-04-18T01:26:11.747527+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `504`
-- Publishable atoms: `281`
-- Total non-publishable atoms in local catalog: `223`
+- Publishable atoms: `290`
+- Total non-publishable atoms in local catalog: `214`
 - Remediation-excluded non-publishable atoms: `17`
-- Non-publishable atoms remaining in matcher backlog: `206`
+- Non-publishable atoms remaining in matcher backlog: `197`
 
 
 ### Remediation Exclusions
@@ -23,26 +23,26 @@ This document is a working debt register for every currently unpublished atom.
 
 ### Marginal Blocker Counts
 
-- `description`: `147`
-- `io_specs`: `137`
-- `parameters`: `147`
-- `publishable_rollup`: `206`
-- `references`: `122`
+- `description`: `143`
+- `io_specs`: `133`
+- `parameters`: `143`
+- `publishable_rollup`: `197`
+- `references`: `118`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `121`
-- `publishable_rollup`: `59`
+- `publishable_rollup,io_specs,parameters,description,references`: `117`
+- `publishable_rollup`: `54`
 - `publishable_rollup,io_specs,parameters,description`: `16`
 - `publishable_rollup,parameters,description`: `9`
 - `publishable_rollup,parameters,description,references`: `1`
 
 ### Largest Non-Publishable Domains
 
-- `bio`: `51`
-- `expansion`: `35`
+- `bio`: `46`
 - `inference`: `34`
 - `numpy`: `32`
+- `expansion`: `31`
 - `fintech`: `31`
 - `physics`: `10`
 - `state_estimation`: `6`
@@ -61,8 +61,8 @@ This document is a working debt register for every currently unpublished atom.
 
 ## bio
 
-- Non-publishable atoms: `51`
-- Missing publishable rollup: `51`
+- Non-publishable atoms: `46`
+- Missing publishable rollup: `46`
 - Missing IO specs: `14`
 - Missing parameters: `19`
 - Missing description: `19`
@@ -88,11 +88,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.bio.molecular_docking.build_interaction_graph.networkx_weighted_graph_materialization` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.build_interaction_graph.pair_distance_compatibility_check` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.build_interaction_graph.weighted_interaction_edge_derivation` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping.assemblestaticmappingcontext` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping.initializefrontierfromstartnode` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping.rungreedymappingpipeline` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping.scoreandextendgreedycandidates` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
-| `sciona.atoms.bio.molecular_docking.greedy_mapping.validatecurrentmapping` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.init_problem_context` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
 | `sciona.atoms.bio.molecular_docking.greedy_mapping_d12.orchestrate_generation_and_validate` | `reviewed_pending` | `blocked_on_uncertainty_backfill` | `unknown` | `unknown` | `unknown` | `publishable_rollup` |
@@ -137,19 +132,15 @@ This document is a working debt register for every currently unpublished atom.
 
 ## expansion
 
-- Non-publishable atoms: `35`
-- Missing publishable rollup: `35`
-- Missing IO specs: `35`
-- Missing parameters: `35`
-- Missing description: `35`
-- Missing references: `35`
+- Non-publishable atoms: `31`
+- Missing publishable rollup: `31`
+- Missing IO specs: `31`
+- Missing parameters: `31`
+- Missing description: `31`
+- Missing references: `31`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.expansion.belief_propagation.analyze_message_damping` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.belief_propagation.detect_graph_cycles` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.belief_propagation.monitor_message_convergence` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.belief_propagation.validate_belief_normalization` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.divide_and_conquer.check_recursion_depth` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.divide_and_conquer.detect_subproblem_overlap` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.divide_and_conquer.measure_split_balance` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |

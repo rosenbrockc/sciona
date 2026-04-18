@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-17T23:47:56.284004+00:00",
+  "generated_at": "2026-04-18T01:26:11.747527+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
-  "batch_count": 44,
+  "batch_count": 42,
   "batches": [
     {
       "atom_count": 18,
@@ -2130,95 +2130,6 @@
           "blockers": [
             "publishable_rollup"
           ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.assemblestaticmappingcontext",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.initializefrontierfromstartnode",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.rungreedymappingpipeline",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.scoreandextendgreedycandidates",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.validatecurrentmapping",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        }
-      ],
-      "batch_id": "pubrev-027",
-      "batch_key": "sciona.atoms.bio.molecular_docking.greedy_mapping",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 5,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-bio",
-      "representative_atoms": [
-        "sciona.atoms.bio.molecular_docking.greedy_mapping.assemblestaticmappingcontext",
-        "sciona.atoms.bio.molecular_docking.greedy_mapping.initializefrontierfromstartnode",
-        "sciona.atoms.bio.molecular_docking.greedy_mapping.rungreedymappingpipeline",
-        "sciona.atoms.bio.molecular_docking.greedy_mapping.scoreandextendgreedycandidates",
-        "sciona.atoms.bio.molecular_docking.greedy_mapping.validatecurrentmapping"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 5,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 5,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        }
-      ]
-    },
-    {
-      "atom_count": 5,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
           "fqdn": "sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler",
           "overall_verdict": "unknown",
           "review_status": "reviewed_pending",
@@ -2569,109 +2480,6 @@
             "io_specs",
             "parameters",
             "description"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.belief_propagation.analyze_message_damping",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.belief_propagation.detect_graph_cycles",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.belief_propagation.monitor_message_convergence",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.belief_propagation.validate_belief_normalization",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-039",
-      "batch_key": "sciona.atoms.expansion.belief_propagation.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.expansion.belief_propagation.analyze_message_damping",
-        "sciona.atoms.expansion.belief_propagation.detect_graph_cycles",
-        "sciona.atoms.expansion.belief_propagation.monitor_message_convergence",
-        "sciona.atoms.expansion.belief_propagation.validate_belief_normalization"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
           ]
         }
       ],
@@ -4784,27 +4592,27 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 206,
+    "non_publishable_atoms": 197,
     "remediation_excluded_atoms": 17
   },
   "repo_counts": {
-    "sciona-atoms": 76,
-    "sciona-atoms-bio": 51,
+    "sciona-atoms": 72,
+    "sciona-atoms-bio": 46,
     "sciona-atoms-fintech": 31,
     "sciona-atoms-physics": 44,
     "sciona-atoms-signal": 4
   },
   "wave_counts": {
-    "wave_1_audit_completion": 76,
-    "wave_2_metadata_and_llm_review": 128,
+    "wave_1_audit_completion": 71,
+    "wave_2_metadata_and_llm_review": 124,
     "wave_3_residual_policy_or_provenance": 2
   },
   "blocker_counts": {
-    "description": 147,
-    "io_specs": 137,
-    "parameters": 147,
-    "publishable_rollup": 206,
-    "references": 122
+    "description": 143,
+    "io_specs": 133,
+    "parameters": 143,
+    "publishable_rollup": 197,
+    "references": 118
   },
   "special_slices": {
     "audit_rollup_only_atoms": {

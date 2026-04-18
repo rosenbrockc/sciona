@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-17T23:47:56.284004+00:00",
+  "generated_at": "2026-04-18T01:26:11.747527+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 281,
-    "non_publishable_atoms": 223
+    "publishable_atoms": 290,
+    "non_publishable_atoms": 214
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 206,
+    "review_backlog_non_publishable_atoms": 197,
     "remediation_excluded_non_publishable_atoms": 17
   },
   "remediation_exclusions": {
@@ -110,11 +110,11 @@
     "excluded_unpublished_atom_count": 17
   },
   "blocker_counts": {
-    "description": 147,
-    "io_specs": 137,
-    "parameters": 147,
-    "publishable_rollup": 206,
-    "references": 122
+    "description": 143,
+    "io_specs": 133,
+    "parameters": 143,
+    "publishable_rollup": 197,
+    "references": 118
   },
   "top_blocker_combinations": [
     {
@@ -125,13 +125,13 @@
         "description",
         "references"
       ],
-      "atom_count": 121
+      "atom_count": 117
     },
     {
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 59
+      "atom_count": 54
     },
     {
       "blockers": [
@@ -164,12 +164,12 @@
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 147
+      "atom_count": 143
     },
     {
       "review_status": "reviewed_pending",
       "trust_readiness": "blocked_on_uncertainty_backfill",
-      "atom_count": 32
+      "atom_count": 27
     },
     {
       "review_status": "missing",
@@ -185,8 +185,8 @@
   "domains": [
     {
       "domain": "bio",
-      "atom_count": 51,
-      "missing_publishable_rollup": 51,
+      "atom_count": 46,
+      "missing_publishable_rollup": 46,
       "missing_io_specs": 14,
       "missing_parameters": 19,
       "missing_description": 19,
@@ -447,66 +447,6 @@
         },
         {
           "fqdn": "sciona.atoms.bio.molecular_docking.build_interaction_graph.weighted_interaction_edge_derivation",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.assemblestaticmappingcontext",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.initializefrontierfromstartnode",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.rungreedymappingpipeline",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.scoreandextendgreedycandidates",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.greedy_mapping.validatecurrentmapping",
           "domain": "bio",
           "review_status": "reviewed_pending",
           "trust_readiness": "blocked_on_uncertainty_backfill",
@@ -897,77 +837,13 @@
     },
     {
       "domain": "expansion",
-      "atom_count": 35,
-      "missing_publishable_rollup": 35,
-      "missing_io_specs": 35,
-      "missing_parameters": 35,
-      "missing_description": 35,
-      "missing_references": 35,
+      "atom_count": 31,
+      "missing_publishable_rollup": 31,
+      "missing_io_specs": 31,
+      "missing_parameters": 31,
+      "missing_description": 31,
+      "missing_references": 31,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.expansion.belief_propagation.analyze_message_damping",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.belief_propagation.detect_graph_cycles",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.belief_propagation.monitor_message_convergence",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.belief_propagation.validate_belief_normalization",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.expansion.divide_and_conquer.check_recursion_depth",
           "domain": "expansion",
@@ -3322,11 +3198,7 @@
   "largest_non_publishable_domains": [
     {
       "domain": "bio",
-      "atom_count": 51
-    },
-    {
-      "domain": "expansion",
-      "atom_count": 35
+      "atom_count": 46
     },
     {
       "domain": "inference",
@@ -3335,6 +3207,10 @@
     {
       "domain": "numpy",
       "atom_count": 32
+    },
+    {
+      "domain": "expansion",
+      "atom_count": 31
     },
     {
       "domain": "fintech",
