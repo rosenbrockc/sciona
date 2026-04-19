@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T16:18:39.371698+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:03:34.765377+00:00.
 
-- Remaining unpublished atoms: `107`
-- Remediation-excluded atoms: `30`
-- Remaining worker batches: `26`
+- Remaining unpublished atoms: `83`
+- Remediation-excluded atoms: `37`
+- Remaining worker batches: `23`
 
 ## Remediation Exclusions
 
@@ -17,6 +17,8 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T16:
 - `molecular_docking.quantum_solver.adiabaticquantumsampler`: excluded `1` unpublished atoms via `exact` match
 - `molecular_docking.quantum_solver.quantumproblemdefinition`: excluded `1` unpublished atoms via `exact` match
 - `molecular_docking.quantum_solver.solutionextraction`: excluded `1` unpublished atoms via `exact` match
+- `molecular_docking.quantum_solver_d12`: excluded `5` unpublished atoms via `prefix` match
+- `quantfin.tdma_solver_d12`: excluded `2` unpublished atoms via `prefix` match
 - `institutional_quant_engine.fractional_diff.fractional_differentiator`: excluded `1` unpublished atoms via `exact` match
 - `institutional_quant_engine.pin_model.pinlikelihoodevaluation`: excluded `1` unpublished atoms via `exact` match
 - `institutional_quant_engine.pin_model.pinlikelihoodevaluator`: excluded `1` unpublished atoms via `exact` match
@@ -37,20 +39,11 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T16:
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain`
 
-### pubrev-010
-
-- Repo: `sciona-atoms-fintech`
-- Wave: `wave_1_audit_completion`
-- Atoms: `5`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.fintech.quantfin.char_func_option_d12.cf`, `sciona.atoms.fintech.quantfin.char_func_option_d12.charfuncoption`, `sciona.atoms.fintech.quantfin.char_func_option_d12.f`
-
 ### pubrev-013
 
 - Repo: `sciona-atoms`
 - Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `7`
+- Atoms: `2`
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.expansion.signal_event_rate.assess_signal_quality`, `sciona.atoms.expansion.signal_event_rate.compute_event_rate`, `sciona.atoms.expansion.signal_event_rate.compute_event_rate_median_smoothed`
@@ -63,15 +56,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T16:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel`
-
-### pubrev-015
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_1_audit_completion`
-- Atoms: `9`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.numpy.fft.fft`, `sciona.atoms.numpy.fft.fftfreq`, `sciona.atoms.numpy.fft.fftn`
 
 ### pubrev-019
 
@@ -99,15 +83,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T16:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.scipy.optimize.curve_fit`, `sciona.atoms.scipy.optimize.differential_evolution`, `sciona.atoms.scipy.optimize.linprog`
-
-### pubrev-028
-
-- Repo: `sciona-atoms-bio`
-- Wave: `wave_1_audit_completion`
-- Atoms: `5`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler`, `sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer`, `sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler`
 
 ### pubrev-030
 

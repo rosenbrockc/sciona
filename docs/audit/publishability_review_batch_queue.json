@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-19T16:18:39.371698+00:00",
+  "generated_at": "2026-04-19T17:03:34.765377+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
-  "batch_count": 26,
+  "batch_count": 23,
   "batches": [
     {
       "atom_count": 5,
@@ -122,195 +122,8 @@
       ]
     },
     {
-      "atom_count": 5,
+      "atom_count": 2,
       "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.montecarlo.quick_sim_anti",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.montecarlo.run_simulation",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.montecarlo.run_simulation_anti",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        }
-      ],
-      "batch_id": "pubrev-010",
-      "batch_key": "sciona.atoms.fintech.quantfin.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 7,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-fintech",
-      "representative_atoms": [
-        "sciona.atoms.fintech.quantfin.char_func_option_d12.cf",
-        "sciona.atoms.fintech.quantfin.char_func_option_d12.charfuncoption",
-        "sciona.atoms.fintech.quantfin.char_func_option_d12.f",
-        "sciona.atoms.fintech.quantfin.functional_monte_carlo",
-        "sciona.atoms.fintech.quantfin.montecarlo.quick_sim_anti"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 7,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 5,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "reviewed_with_limits"
-        },
-        {
-          "atom_count": 3,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "atom_count": 2,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "conditional"
-        }
-      ]
-    },
-    {
-      "atom_count": 7,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.assess_signal_quality",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.compute_event_rate_median_smoothed",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.compute_event_rate_smoothed",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.detect_peaks_in_signal",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.estimate_event_rate_from_signal",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
         {
           "blockers": [
             "publishable_rollup",
@@ -562,159 +375,6 @@
       "top_review_statuses": [
         {
           "atom_count": 9,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 9,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.fft",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.fftfreq",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.fftn",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.fftshift",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.hfft",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.ifft",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.ifftn",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.irfft",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.fft.rfft",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-015",
-      "batch_key": "sciona.atoms.numpy.fft.__remainder__",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 6,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.numpy.fft.fft",
-        "sciona.atoms.numpy.fft.fftfreq",
-        "sciona.atoms.numpy.fft.fftn",
-        "sciona.atoms.numpy.fft.fftshift",
-        "sciona.atoms.numpy.fft.hfft"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 6,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 6,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "atom_count": 3,
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
         }
@@ -1077,95 +737,6 @@
           "atom_count": 2,
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 5,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator",
-          "overall_verdict": "unknown",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
-        }
-      ],
-      "batch_id": "pubrev-028",
-      "batch_key": "sciona.atoms.bio.molecular_docking.quantum_solver_d12",
-      "blocker_class": "audit_rollup_only",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "medium",
-      "primary_blocker_count": 5,
-      "primary_blocker_pattern": [
-        "publishable_rollup"
-      ],
-      "recommended_wave": "wave_1_audit_completion",
-      "repo_owner": "sciona-atoms-bio",
-      "representative_atoms": [
-        "sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler",
-        "sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer",
-        "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler",
-        "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor",
-        "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 5,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 5,
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill"
         }
       ]
     },
@@ -2621,25 +2192,24 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 107,
-    "remediation_excluded_atoms": 30
+    "non_publishable_atoms": 83,
+    "remediation_excluded_atoms": 37
   },
   "repo_counts": {
-    "sciona-atoms": 48,
-    "sciona-atoms-bio": 18,
-    "sciona-atoms-fintech": 5,
-    "sciona-atoms-physics": 34
+    "sciona-atoms": 43,
+    "sciona-atoms-bio": 13,
+    "sciona-atoms-physics": 25
   },
   "wave_counts": {
-    "wave_1_audit_completion": 35,
-    "wave_2_metadata_and_llm_review": 70
+    "wave_1_audit_completion": 16,
+    "wave_2_metadata_and_llm_review": 65
   },
   "blocker_counts": {
-    "description": 77,
-    "io_specs": 72,
-    "parameters": 77,
-    "publishable_rollup": 107,
-    "references": 65
+    "description": 66,
+    "io_specs": 61,
+    "parameters": 66,
+    "publishable_rollup": 83,
+    "references": 54
   },
   "special_slices": {
     "audit_rollup_only_atoms": {
@@ -2647,20 +2217,6 @@
       "recommended_wave": "wave_1_audit_completion"
     },
     "license_or_provenance_focus_batches": [
-      {
-        "atom_count": 10,
-        "batch_id": "pubrev-010",
-        "batch_key": "sciona.atoms.fintech.quantfin.__remainder__",
-        "likely_human_signoff": "medium",
-        "repo_owner": "sciona-atoms-fintech"
-      },
-      {
-        "atom_count": 9,
-        "batch_id": "pubrev-015",
-        "batch_key": "sciona.atoms.numpy.fft.__remainder__",
-        "likely_human_signoff": "medium",
-        "repo_owner": "sciona-atoms-physics"
-      },
       {
         "atom_count": 6,
         "batch_id": "pubrev-024",
@@ -2674,13 +2230,6 @@
         "batch_key": "sciona.atoms.scipy.optimize.__remainder__",
         "likely_human_signoff": "medium",
         "repo_owner": "sciona-atoms-physics"
-      },
-      {
-        "atom_count": 5,
-        "batch_id": "pubrev-028",
-        "batch_key": "sciona.atoms.bio.molecular_docking.quantum_solver_d12",
-        "likely_human_signoff": "medium",
-        "repo_owner": "sciona-atoms-bio"
       }
     ],
     "references_only_atoms": {
@@ -2695,7 +2244,7 @@
   },
   "remediation_exclusions": {
     "path": "/Users/conrad/personal/sciona-atoms/REMEDIATION.md",
-    "matched_target_count": 17,
+    "matched_target_count": 19,
     "matched_targets": [
       {
         "label": "e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation",
@@ -2795,6 +2344,31 @@
         ]
       },
       {
+        "label": "molecular_docking.quantum_solver_d12",
+        "candidate": "sciona.atoms.bio.molecular_docking.quantum_solver_d12",
+        "match_type": "prefix",
+        "matched_atom_count": 5,
+        "matched_unpublished_atom_count": 5,
+        "matched_atoms": [
+          "sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler",
+          "sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer",
+          "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler",
+          "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor",
+          "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator"
+        ]
+      },
+      {
+        "label": "quantfin.tdma_solver_d12",
+        "candidate": "sciona.atoms.fintech.quantfin.tdma_solver_d12",
+        "match_type": "prefix",
+        "matched_atom_count": 2,
+        "matched_unpublished_atom_count": 2,
+        "matched_atoms": [
+          "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
+          "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver"
+        ]
+      },
+      {
         "label": "institutional_quant_engine.fractional_diff.fractional_differentiator",
         "candidate": "sciona.atoms.fintech.institutional_quant_engine.fractional_diff.fractional_differentiator",
         "match_type": "exact",
@@ -2889,10 +2463,17 @@
       "sciona.atoms.bio.molecular_docking.quantum_solver.adiabaticquantumsampler",
       "sciona.atoms.bio.molecular_docking.quantum_solver.quantumproblemdefinition",
       "sciona.atoms.bio.molecular_docking.quantum_solver.solutionextraction",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator",
       "sciona.atoms.fintech.institutional_quant_engine.fractional_diff.fractional_differentiator",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluation",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluator",
       "sciona.atoms.fintech.institutional_quant_engine.wash_trade.detect_wash_trade_rings",
+      "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
+      "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver",
       "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
       "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
       "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
@@ -2921,10 +2502,17 @@
       "sciona.atoms.bio.molecular_docking.quantum_solver.adiabaticquantumsampler",
       "sciona.atoms.bio.molecular_docking.quantum_solver.quantumproblemdefinition",
       "sciona.atoms.bio.molecular_docking.quantum_solver.solutionextraction",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.adiabaticpulseassembler",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.interactionboundscomputer",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor",
+      "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator",
       "sciona.atoms.fintech.institutional_quant_engine.fractional_diff.fractional_differentiator",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluation",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluator",
       "sciona.atoms.fintech.institutional_quant_engine.wash_trade.detect_wash_trade_rings",
+      "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
+      "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver",
       "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
       "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
       "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
@@ -2945,7 +2533,7 @@
       "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule",
       "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation"
     ],
-    "excluded_atom_count": 30,
-    "excluded_unpublished_atom_count": 30
+    "excluded_atom_count": 37,
+    "excluded_unpublished_atom_count": 37
   }
 }
