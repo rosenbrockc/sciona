@@ -1,19 +1,29 @@
 {
-  "generated_at": "2026-04-19T02:14:15.503692+00:00",
+  "generated_at": "2026-04-19T15:48:06.134710+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 514,
-    "publishable_atoms": 321,
-    "non_publishable_atoms": 193
+    "publishable_atoms": 349,
+    "non_publishable_atoms": 165
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 176,
-    "remediation_excluded_non_publishable_atoms": 17
+    "review_backlog_non_publishable_atoms": 146,
+    "remediation_excluded_non_publishable_atoms": 19
   },
   "remediation_exclusions": {
     "path": "/Users/conrad/personal/sciona-atoms/REMEDIATION.md",
-    "matched_target_count": 4,
+    "matched_target_count": 6,
     "matched_targets": [
+      {
+        "label": "e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation",
+        "candidate": "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation",
+        "match_type": "exact",
+        "matched_atom_count": 1,
+        "matched_unpublished_atom_count": 1,
+        "matched_atoms": [
+          "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation"
+        ]
+      },
       {
         "label": "biosppy.svm_proc",
         "candidate": "sciona.atoms.signal_processing.biosppy.svm_proc",
@@ -39,6 +49,16 @@
         "matched_unpublished_atom_count": 1,
         "matched_atoms": [
           "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage"
+        ]
+      },
+      {
+        "label": "physics.pasqal.docking.quantum_mwis_solver",
+        "candidate": "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
+        "match_type": "exact",
+        "matched_atom_count": 1,
+        "matched_unpublished_atom_count": 1,
+        "matched_atoms": [
+          "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver"
         ]
       },
       {
@@ -69,6 +89,7 @@
       }
     ],
     "excluded_fqdns": [
+      "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
       "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
       "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
       "sciona.atoms.scipy.sparse_graph.graph_fourier_transform",
@@ -85,9 +106,11 @@
       "sciona.atoms.signal_processing.biosppy.svm_proc.get_auth_rates",
       "sciona.atoms.signal_processing.biosppy.svm_proc.get_id_rates",
       "sciona.atoms.signal_processing.biosppy.svm_proc.get_subject_results",
-      "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule"
+      "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule",
+      "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation"
     ],
     "excluded_unpublished_fqdns": [
+      "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
       "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
       "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
       "sciona.atoms.scipy.sparse_graph.graph_fourier_transform",
@@ -104,17 +127,18 @@
       "sciona.atoms.signal_processing.biosppy.svm_proc.get_auth_rates",
       "sciona.atoms.signal_processing.biosppy.svm_proc.get_id_rates",
       "sciona.atoms.signal_processing.biosppy.svm_proc.get_subject_results",
-      "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule"
+      "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule",
+      "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation"
     ],
-    "excluded_atom_count": 17,
-    "excluded_unpublished_atom_count": 17
+    "excluded_atom_count": 19,
+    "excluded_unpublished_atom_count": 19
   },
   "blocker_counts": {
-    "description": 120,
-    "io_specs": 115,
-    "parameters": 120,
-    "publishable_rollup": 176,
-    "references": 102
+    "description": 105,
+    "io_specs": 100,
+    "parameters": 105,
+    "publishable_rollup": 146,
+    "references": 96
   },
   "top_blocker_combinations": [
     {
@@ -125,22 +149,13 @@
         "description",
         "references"
       ],
-      "atom_count": 100
+      "atom_count": 96
     },
     {
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 54
-    },
-    {
-      "blockers": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description"
-      ],
-      "atom_count": 15
+      "atom_count": 41
     },
     {
       "blockers": [
@@ -153,21 +168,18 @@
     {
       "blockers": [
         "publishable_rollup",
-        "references"
+        "io_specs",
+        "parameters",
+        "description"
       ],
-      "atom_count": 2
+      "atom_count": 4
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 120
-    },
-    {
-      "review_status": "reviewed_pending",
-      "trust_readiness": "blocked_on_uncertainty_backfill",
-      "atom_count": 27
+      "atom_count": 105
     },
     {
       "review_status": "missing",
@@ -176,23 +188,23 @@
     },
     {
       "review_status": "reviewed_pending",
-      "trust_readiness": "conditional",
-      "atom_count": 4
+      "trust_readiness": "blocked_on_uncertainty_backfill",
+      "atom_count": 14
     },
     {
-      "review_status": "approved",
-      "trust_readiness": "reviewed_with_limits",
-      "atom_count": 2
+      "review_status": "reviewed_pending",
+      "trust_readiness": "conditional",
+      "atom_count": 4
     }
   ],
   "domains": [
     {
       "domain": "bio",
-      "atom_count": 46,
-      "missing_publishable_rollup": 46,
-      "missing_io_specs": 14,
-      "missing_parameters": 19,
-      "missing_description": 19,
+      "atom_count": 31,
+      "missing_publishable_rollup": 31,
+      "missing_io_specs": 12,
+      "missing_parameters": 17,
+      "missing_description": 17,
       "missing_references": 11,
       "atoms": [
         {
@@ -526,192 +538,6 @@
             "parameters",
             "description",
             "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.aggregate_maximum_distance_as_bandwidth",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_sparse_graph_view",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_threshold_search_space",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.compute_absolute_weighted_index_distances",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.compute_symmetric_bandwidth_reducing_order",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.enforce_threshold_sparsity",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.enumerate_threshold_based_permutations",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.extract_final_permutation",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.initialize_reduction_state",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.propose_greedy_permutation_step",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.select_minimum_bandwidth_permutation",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.update_state_with_improvement_criterion",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.validate_square_matrix_shape",
-          "domain": "bio",
-          "review_status": "reviewed_pending",
-          "trust_readiness": "blocked_on_uncertainty_backfill",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "unknown",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.validate_symmetric_input_dense",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.molecular_docking.minimize_bandwidth.validate_symmetric_input_thresholded",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
           ]
         },
         {
@@ -1123,11 +949,11 @@
     },
     {
       "domain": "fintech",
-      "atom_count": 31,
-      "missing_publishable_rollup": 31,
-      "missing_io_specs": 27,
-      "missing_parameters": 27,
-      "missing_description": 27,
+      "atom_count": 23,
+      "missing_publishable_rollup": 23,
+      "missing_io_specs": 19,
+      "missing_parameters": 19,
+      "missing_description": 19,
       "missing_references": 19,
       "atoms": [
         {
@@ -1408,126 +1234,6 @@
             "parameters",
             "description",
             "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_recursive",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcf_singleton",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold_alt",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_base_case",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_cashflows_only",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_observation_only",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.process_with_pending_cashflows",
-          "domain": "fintech",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
           ]
         },
         {
@@ -2603,30 +2309,15 @@
     },
     {
       "domain": "physics",
-      "atom_count": 4,
-      "missing_publishable_rollup": 4,
-      "missing_io_specs": 4,
-      "missing_parameters": 4,
-      "missing_description": 4,
-      "missing_references": 1,
+      "atom_count": 2,
+      "missing_publishable_rollup": 2,
+      "missing_io_specs": 2,
+      "missing_parameters": 2,
+      "missing_description": 2,
+      "missing_references": 0,
       "atoms": [
         {
           "fqdn": "sciona.atoms.physics.pasqal.docking.graph_transformer",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
           "domain": "physics",
           "review_status": "missing_row",
           "trust_readiness": "missing_row",
@@ -2653,22 +2344,6 @@
             "io_specs",
             "parameters",
             "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.apply_offsets._zero_offset",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
           ]
         }
       ]
@@ -2717,82 +2392,13 @@
       ]
     },
     {
-      "domain": "signal_processing",
+      "domain": "state_estimation",
       "atom_count": 4,
       "missing_publishable_rollup": 4,
-      "missing_io_specs": 2,
-      "missing_parameters": 2,
-      "missing_description": 2,
+      "missing_io_specs": 4,
+      "missing_parameters": 4,
+      "missing_description": 4,
       "missing_references": 4,
-      "atoms": [
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles",
-          "domain": "signal_processing",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass_with_limits",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.heart_cycle.heart_cycle_detection",
-          "domain": "signal_processing",
-          "review_status": "approved",
-          "trust_readiness": "reviewed_with_limits",
-          "semantic_verdict": "pass",
-          "developer_semantic_verdict": "pass_with_limits",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.signalarraynormalization",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation",
-          "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ]
-    },
-    {
-      "domain": "state_estimation",
-      "atom_count": 5,
-      "missing_publishable_rollup": 5,
-      "missing_io_specs": 5,
-      "missing_parameters": 5,
-      "missing_description": 5,
-      "missing_references": 5,
       "atoms": [
         {
           "fqdn": "sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch",
@@ -2857,31 +2463,11 @@
             "description",
             "references"
           ]
-        },
-        {
-          "fqdn": "sciona.atoms.state_estimation.particle_filters.track_particle_hidden_state",
-          "domain": "state_estimation",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
         }
       ]
     }
   ],
   "largest_non_publishable_domains": [
-    {
-      "domain": "bio",
-      "atom_count": 46
-    },
     {
       "domain": "inference",
       "atom_count": 32
@@ -2891,8 +2477,12 @@
       "atom_count": 32
     },
     {
-      "domain": "fintech",
+      "domain": "bio",
       "atom_count": 31
+    },
+    {
+      "domain": "fintech",
+      "atom_count": 23
     },
     {
       "domain": "expansion",
@@ -2900,18 +2490,14 @@
     },
     {
       "domain": "state_estimation",
-      "atom_count": 5
-    },
-    {
-      "domain": "physics",
-      "atom_count": 4
-    },
-    {
-      "domain": "signal_processing",
       "atom_count": 4
     },
     {
       "domain": "medical_imaging_3d",
+      "atom_count": 2
+    },
+    {
+      "domain": "physics",
       "atom_count": 2
     },
     {

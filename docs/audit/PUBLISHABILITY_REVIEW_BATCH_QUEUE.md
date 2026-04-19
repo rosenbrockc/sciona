@@ -1,15 +1,17 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T02:14:15.503692+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T15:48:06.134710+00:00.
 
-- Remaining unpublished atoms: `176`
-- Remediation-excluded atoms: `17`
-- Remaining worker batches: `34`
+- Remaining unpublished atoms: `146`
+- Remediation-excluded atoms: `19`
+- Remaining worker batches: `29`
 
 ## Remediation Exclusions
 
+- `e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation`: excluded `1` unpublished atoms via `exact` match
 - `biosppy.svm_proc`: excluded `8` unpublished atoms via `prefix` match
 - `pronto.torque_adjustment`: excluded `1` unpublished atoms via `prefix` match
+- `physics.pasqal.docking.quantum_mwis_solver`: excluded `1` unpublished atoms via `exact` match
 - `scipy.sparse_graph`: excluded `7` unpublished atoms via `prefix` match
 - `scipy.stats.norm`: excluded `1` unpublished atoms via `exact` match
 
@@ -23,24 +25,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T02:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss.computeoptimaltrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.optimalexecutiontrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.riskaversioninit`
-
-### pubrev-002
-
-- Repo: `sciona-atoms-fintech`
-- Wave: `wave_1_audit_completion`
-- Atoms: `8`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.avg`, `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.evolve`, `sciona.atoms.fintech.quantfin.monte_carlo_anti_d12.insertcflist_fold`
-
-### pubrev-003
-
-- Repo: `sciona-atoms-bio`
-- Wave: `wave_1_audit_completion`
-- Atoms: `15`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.bio.molecular_docking.minimize_bandwidth.aggregate_maximum_distance_as_bandwidth`, `sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_sparse_graph_view`, `sciona.atoms.bio.molecular_docking.minimize_bandwidth.build_threshold_search_space`
 
 ### pubrev-005
 
@@ -59,15 +43,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T02:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain`
-
-### pubrev-009
-
-- Repo: `sciona-atoms-signal`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.gan_reconstruction`, `sciona.atoms.signal_processing.e2e_ppg.gan_reconstruction.generatereconstructedppg`, `sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles`
 
 ### pubrev-010
 
@@ -253,19 +228,10 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T02:
 
 - Repo: `sciona-atoms-physics`
 - Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `3`
+- Atoms: `2`
 - Blocker class: `metadata_plus_rollup`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.physics.pasqal.docking.graph_transformer`, `sciona.atoms.physics.pasqal.docking.quantum_mwis_solver`, `sciona.atoms.physics.pasqal.docking.sub_graph_embedder`
-
-### pubrev-062
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `1`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.physics.tempo_jl.apply_offsets._zero_offset`, `sciona.atoms.physics.tempo_jl.graph_time_scale_management`, `sciona.atoms.physics.tempo_jl.high_precision_duration`
 
 ### pubrev-064
 
@@ -311,14 +277,5 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T02:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle`
-
-### pubrev-079
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `1`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.state_estimation.particle_filters.track_particle_hidden_state`
 
 - The canonical machine-readable queue is [publishability_review_batch_queue.json](/Users/conrad/personal/sciona-matcher/docs/audit/publishability_review_batch_queue.json).

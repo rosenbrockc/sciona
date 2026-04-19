@@ -19,7 +19,14 @@ QUEUE_MD_PATH = AUDIT_DIR / "PUBLISHABILITY_REVIEW_BATCH_QUEUE.md"
 REMEDIATION_PATH = REPO_ROOT.parent / "sciona-atoms" / "REMEDIATION.md"
 
 DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-TRUST_READY = {"ready_for_manifest_merge", "ready_for_publication", "trust_ready"}
+TRUST_READY = {
+    "catalog_ready",
+    "ready",
+    "ready_for_manifest_merge",
+    "ready_for_publication",
+    "reviewed_with_limits",
+    "trust_ready",
+}
 REVIEW_PASS = {"pass", "pass_with_limits"}
 REMEDIATION_DOMAIN_PREFIXES = {
     "Signal Processing": "sciona.atoms.signal_processing",
