@@ -1,5 +1,10 @@
 # Local Supabase Reset And Reseed
 
+> Current canonical replay instructions live in
+> `/Users/conrad/personal/sciona-atoms/docs/SUPABASE_REPLAY.md`.
+> This matcher-local document is historical and may reference older per-table
+> backfill scripts.
+
 This runbook resets the local Supabase instance, reapplies the checked-in schema,
 and repopulates it from the current sibling atom-provider repos before any
 SQLite manifest build.

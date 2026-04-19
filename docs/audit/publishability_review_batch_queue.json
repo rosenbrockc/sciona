@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-19T01:25:35.016265+00:00",
+  "generated_at": "2026-04-19T02:14:15.503692+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
   "batch_count": 34,
   "batches": [
@@ -3409,7 +3409,7 @@
       ]
     },
     {
-      "atom_count": 3,
+      "atom_count": 1,
       "atoms": [
         {
           "blockers": [
@@ -3420,28 +3420,6 @@
             "references"
           ],
           "fqdn": "sciona.atoms.physics.tempo_jl.apply_offsets._zero_offset",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.physics.tempo_jl.graph_time_scale_management",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.physics.tempo_jl.high_precision_duration",
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
@@ -3908,19 +3886,19 @@
     "sciona-atoms": 55,
     "sciona-atoms-bio": 46,
     "sciona-atoms-fintech": 31,
-    "sciona-atoms-physics": 40,
+    "sciona-atoms-physics": 38,
     "sciona-atoms-signal": 4
   },
   "wave_counts": {
     "wave_1_audit_completion": 71,
-    "wave_2_metadata_and_llm_review": 105
+    "wave_2_metadata_and_llm_review": 103
   },
   "blocker_counts": {
-    "description": 122,
+    "description": 120,
     "io_specs": 115,
-    "parameters": 122,
+    "parameters": 120,
     "publishable_rollup": 176,
-    "references": 100
+    "references": 102
   },
   "special_slices": {
     "audit_rollup_only_atoms": {

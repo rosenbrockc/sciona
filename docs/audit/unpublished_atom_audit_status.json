@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-19T01:25:35.016265+00:00",
+  "generated_at": "2026-04-19T02:14:15.503692+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
-    "atoms": 504,
-    "publishable_atoms": 311,
+    "atoms": 514,
+    "publishable_atoms": 321,
     "non_publishable_atoms": 193
   },
   "backlog_totals": {
@@ -110,11 +110,11 @@
     "excluded_unpublished_atom_count": 17
   },
   "blocker_counts": {
-    "description": 122,
+    "description": 120,
     "io_specs": 115,
-    "parameters": 122,
+    "parameters": 120,
     "publishable_rollup": 176,
-    "references": 100
+    "references": 102
   },
   "top_blocker_combinations": [
     {
@@ -148,14 +148,21 @@
         "parameters",
         "description"
       ],
-      "atom_count": 7
+      "atom_count": 5
+    },
+    {
+      "blockers": [
+        "publishable_rollup",
+        "references"
+      ],
+      "atom_count": 2
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 122
+      "atom_count": 120
     },
     {
       "review_status": "reviewed_pending",
@@ -171,6 +178,11 @@
       "review_status": "reviewed_pending",
       "trust_readiness": "conditional",
       "atom_count": 4
+    },
+    {
+      "review_status": "approved",
+      "trust_readiness": "reviewed_with_limits",
+      "atom_count": 2
     }
   ],
   "domains": [
@@ -2116,6 +2128,49 @@
       ]
     },
     {
+      "domain": "medical_imaging_3d",
+      "atom_count": 2,
+      "missing_publishable_rollup": 2,
+      "missing_io_specs": 2,
+      "missing_parameters": 2,
+      "missing_description": 2,
+      "missing_references": 2,
+      "atoms": [
+        {
+          "fqdn": "sciona.atoms.medical_imaging_3d.aggregation.casenet",
+          "domain": "medical_imaging_3d",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "io_specs",
+            "parameters",
+            "description",
+            "references"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.medical_imaging_3d.aggregation.debug_atoms.casenet",
+          "domain": "medical_imaging_3d",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "io_specs",
+            "parameters",
+            "description",
+            "references"
+          ]
+        }
+      ]
+    },
+    {
       "domain": "numpy",
       "atom_count": 32,
       "missing_publishable_rollup": 32,
@@ -2548,11 +2603,11 @@
     },
     {
       "domain": "physics",
-      "atom_count": 6,
-      "missing_publishable_rollup": 6,
+      "atom_count": 4,
+      "missing_publishable_rollup": 4,
       "missing_io_specs": 4,
-      "missing_parameters": 6,
-      "missing_description": 6,
+      "missing_parameters": 4,
+      "missing_description": 4,
       "missing_references": 1,
       "atoms": [
         {
@@ -2615,34 +2670,6 @@
             "description",
             "references"
           ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.graph_time_scale_management",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.tempo_jl.high_precision_duration",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
         }
       ]
     },
@@ -2693,40 +2720,34 @@
       "domain": "signal_processing",
       "atom_count": 4,
       "missing_publishable_rollup": 4,
-      "missing_io_specs": 4,
-      "missing_parameters": 4,
-      "missing_description": 4,
+      "missing_io_specs": 2,
+      "missing_parameters": 2,
+      "missing_description": 2,
       "missing_references": 4,
       "atoms": [
         {
           "fqdn": "sciona.atoms.signal_processing.e2e_ppg.heart_cycle.detect_heart_cycles",
           "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
+          "review_status": "approved",
+          "trust_readiness": "reviewed_with_limits",
+          "semantic_verdict": "pass",
+          "developer_semantic_verdict": "pass_with_limits",
+          "overall_verdict": "acceptable_with_limits",
           "blockers": [
             "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
             "references"
           ]
         },
         {
           "fqdn": "sciona.atoms.signal_processing.e2e_ppg.heart_cycle.heart_cycle_detection",
           "domain": "signal_processing",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
+          "review_status": "approved",
+          "trust_readiness": "reviewed_with_limits",
+          "semantic_verdict": "pass",
+          "developer_semantic_verdict": "pass_with_limits",
+          "overall_verdict": "acceptable_with_limits",
           "blockers": [
             "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
             "references"
           ]
         },
@@ -2878,16 +2899,20 @@
       "atom_count": 17
     },
     {
-      "domain": "physics",
-      "atom_count": 6
-    },
-    {
       "domain": "state_estimation",
       "atom_count": 5
     },
     {
+      "domain": "physics",
+      "atom_count": 4
+    },
+    {
       "domain": "signal_processing",
       "atom_count": 4
+    },
+    {
+      "domain": "medical_imaging_3d",
+      "atom_count": 2
     },
     {
       "domain": "scipy",
