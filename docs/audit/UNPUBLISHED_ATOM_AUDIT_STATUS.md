@@ -1,16 +1,16 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-19T18:54:40.299870+00:00.
+Generated from the live local Supabase replay on 2026-04-19T19:35:15.794049+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `527`
-- Publishable atoms: `428`
-- Total non-publishable atoms in local catalog: `99`
+- Publishable atoms: `450`
+- Total non-publishable atoms in local catalog: `77`
 - Remediation-excluded non-publishable atoms: `48`
-- Non-publishable atoms remaining in matcher backlog: `51`
+- Non-publishable atoms remaining in matcher backlog: `29`
 
 
 ### Remediation Exclusions
@@ -42,25 +42,20 @@ This document is a working debt register for every currently unpublished atom.
 
 ### Marginal Blocker Counts
 
-- `description`: `43`
-- `io_specs`: `43`
-- `parameters`: `43`
-- `publishable_rollup`: `46`
-- `references`: `48`
+- `description`: `29`
+- `io_specs`: `29`
+- `parameters`: `29`
+- `publishable_rollup`: `29`
+- `references`: `29`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `43`
-- `references`: `5`
-- `publishable_rollup`: `3`
+- `publishable_rollup,io_specs,parameters,description,references`: `29`
 
 ### Largest Non-Publishable Domains
 
 - `inference`: `21`
-- `expansion`: `10`
-- `numpy`: `9`
-- `particle_tracking`: `5`
-- `state_estimation`: `4`
+- `expansion`: `6`
 - `medical_imaging_3d`: `2`
 
 ## Status Legend
@@ -74,19 +69,15 @@ This document is a working debt register for every currently unpublished atom.
 
 ## expansion
 
-- Non-publishable atoms: `10`
-- Missing publishable rollup: `10`
-- Missing IO specs: `10`
-- Missing parameters: `10`
-- Missing description: `10`
-- Missing references: `10`
+- Non-publishable atoms: `6`
+- Missing publishable rollup: `6`
+- Missing IO specs: `6`
+- Missing parameters: `6`
+- Missing description: `6`
+- Missing references: `6`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.expansion.sequential_filter.adapt_process_noise` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.sequential_filter.check_observability` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.sequential_filter.detect_filter_divergence` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.sequential_filter.validate_innovation_whiteness` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_detect_measure.analyze_peak_threshold_sensitivity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_detect_measure.check_event_rate_stationarity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_filter.analyze_group_delay_variation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -140,57 +131,3 @@ This document is a working debt register for every currently unpublished atom.
 | --- | --- | --- | --- | --- | --- | --- |
 | `sciona.atoms.medical_imaging_3d.aggregation.casenet` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.medical_imaging_3d.aggregation.debug_atoms.casenet` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-
-## numpy
-
-- Non-publishable atoms: `9`
-- Missing publishable rollup: `9`
-- Missing IO specs: `6`
-- Missing parameters: `6`
-- Missing description: `6`
-- Missing references: `6`
-
-| Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
-| --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.numpy.random.combinatorics_sampler` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.numpy.random.continuous_multivariate_sampler` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.numpy.random.default_rng` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.random.discrete_event_sampler` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.numpy.random.rand` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
-| `sciona.atoms.numpy.random.uniform` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
-| `sciona.atoms.numpy.search_sort.binary_search_insertion` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.numpy.search_sort.lexicographic_indirect_sort` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.numpy.search_sort.partial_sort_partition` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-
-## particle_tracking
-
-- Non-publishable atoms: `5`
-- Missing publishable rollup: `0`
-- Missing IO specs: `0`
-- Missing parameters: `0`
-- Missing description: `0`
-- Missing references: `5`
-
-| Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
-| --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.particle_tracking.helix_geometry.circle_from_three_points` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.particle_tracking.helix_geometry.helix_direction_from_two_points` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.particle_tracking.helix_geometry.helix_nearest_point_distance` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.particle_tracking.helix_geometry.helix_pitch_from_two_points` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-| `sciona.atoms.particle_tracking.helix_geometry.helix_pitch_least_squares` | `approved` | `reviewed_with_limits` | `pass` | `pass_with_limits` | `acceptable_with_limits` | `references` |
-
-## state_estimation
-
-- Non-publishable atoms: `4`
-- Missing publishable rollup: `4`
-- Missing IO specs: `4`
-- Missing parameters: `4`
-- Missing description: `4`
-- Missing references: `4`
-
-| Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
-| --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.state_estimation.particle_filters.basic.hypothesis_propagation_kernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.state_estimation.particle_filters.basic.likelihood_reweight_kernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.state_estimation.particle_filters.basic.resample_and_hypothesis_distribution_projection` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |

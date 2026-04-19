@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-19T18:54:40.299870+00:00",
+  "generated_at": "2026-04-19T19:35:15.794049+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
-  "batch_count": 13,
+  "batch_count": 9,
   "batches": [
     {
       "atom_count": 9,
@@ -168,239 +168,6 @@
       "top_review_statuses": [
         {
           "atom_count": 9,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 6,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.random.combinatorics_sampler",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.random.continuous_multivariate_sampler",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.random.default_rng",
-          "overall_verdict": "acceptable_with_limits",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.random.discrete_event_sampler",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.random.rand",
-          "overall_verdict": "misleading",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        },
-        {
-          "blockers": [
-            "publishable_rollup"
-          ],
-          "fqdn": "sciona.atoms.numpy.random.uniform",
-          "overall_verdict": "misleading",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ],
-      "batch_id": "pubrev-024",
-      "batch_key": "sciona.atoms.numpy.random.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 3,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.numpy.random.combinatorics_sampler",
-        "sciona.atoms.numpy.random.continuous_multivariate_sampler",
-        "sciona.atoms.numpy.random.default_rng",
-        "sciona.atoms.numpy.random.discrete_event_sampler",
-        "sciona.atoms.numpy.random.rand"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 3,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "atom_count": 3,
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed"
-        }
-      ]
-    },
-    {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.sequential_filter.adapt_process_noise",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.sequential_filter.check_observability",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.sequential_filter.detect_filter_divergence",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.expansion.sequential_filter.validate_innovation_whiteness",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-044",
-      "batch_key": "sciona.atoms.expansion.sequential_filter.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.expansion.sequential_filter.adapt_process_noise",
-        "sciona.atoms.expansion.sequential_filter.check_observability",
-        "sciona.atoms.expansion.sequential_filter.detect_filter_divergence",
-        "sciona.atoms.expansion.sequential_filter.validate_innovation_whiteness"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
           "review_status": "missing_row",
           "trust_readiness": "missing_row"
         }
@@ -775,109 +542,6 @@
       ]
     },
     {
-      "atom_count": 4,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.state_estimation.particle_filters.basic.hypothesis_propagation_kernel",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.state_estimation.particle_filters.basic.likelihood_reweight_kernel",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.state_estimation.particle_filters.basic.resample_and_hypothesis_distribution_projection",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-055",
-      "batch_key": "sciona.atoms.state_estimation.particle_filters.basic",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 4,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch",
-        "sciona.atoms.state_estimation.particle_filters.basic.hypothesis_propagation_kernel",
-        "sciona.atoms.state_estimation.particle_filters.basic.likelihood_reweight_kernel",
-        "sciona.atoms.state_estimation.particle_filters.basic.resample_and_hypothesis_distribution_projection"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 4,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 4,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
       "atom_count": 3,
       "atoms": [
         {
@@ -946,96 +610,6 @@
         "sciona.atoms.inference.advancedvi.core.evaluate_log_probability_density",
         "sciona.atoms.inference.advancedvi.core.gradient_oracle_evaluation",
         "sciona.atoms.inference.advancedvi.core.optimizationlooporchestration"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 3,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 3,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 3,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.search_sort.binary_search_insertion",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.search_sort.lexicographic_indirect_sort",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.numpy.search_sort.partial_sort_partition",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-059",
-      "batch_key": "sciona.atoms.numpy.search_sort.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "upstream package docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "medium",
-      "likely_web_review": "high",
-      "primary_blocker_count": 3,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.numpy.search_sort.binary_search_insertion",
-        "sciona.atoms.numpy.search_sort.lexicographic_indirect_sort",
-        "sciona.atoms.numpy.search_sort.partial_sort_partition"
       ],
       "top_blocker_patterns": [
         {
@@ -1273,37 +847,28 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 51,
+    "non_publishable_atoms": 29,
     "remediation_excluded_atoms": 48
   },
   "repo_counts": {
-    "sciona-atoms": 35,
-    "sciona-atoms-physics": 9
+    "sciona-atoms": 27
   },
   "wave_counts": {
-    "wave_2_metadata_and_llm_review": 44
+    "wave_2_metadata_and_llm_review": 27
   },
   "blocker_counts": {
-    "description": 43,
-    "io_specs": 43,
-    "parameters": 43,
-    "publishable_rollup": 46,
-    "references": 48
+    "description": 29,
+    "io_specs": 29,
+    "parameters": 29,
+    "publishable_rollup": 29,
+    "references": 29
   },
   "special_slices": {
     "audit_rollup_only_atoms": {
       "atom_count": 214,
       "recommended_wave": "wave_1_audit_completion"
     },
-    "license_or_provenance_focus_batches": [
-      {
-        "atom_count": 6,
-        "batch_id": "pubrev-024",
-        "batch_key": "sciona.atoms.numpy.random.__remainder__",
-        "likely_human_signoff": "medium",
-        "repo_owner": "sciona-atoms-physics"
-      }
-    ],
+    "license_or_provenance_focus_batches": [],
     "references_only_atoms": {
       "atom_count": 0,
       "atoms": [],
