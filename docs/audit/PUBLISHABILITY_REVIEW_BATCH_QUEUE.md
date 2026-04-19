@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:22:08.107048+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:40:02.607786+00:00.
 
-- Remaining unpublished atoms: `74`
+- Remaining unpublished atoms: `65`
 - Remediation-excluded atoms: `46`
-- Remaining worker batches: `18`
+- Remaining worker batches: `16`
 
 ## Remediation Exclusions
 
@@ -69,15 +69,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.scipy.optimize.curve_fit`, `sciona.atoms.scipy.optimize.differential_evolution`, `sciona.atoms.scipy.optimize.linprog`
 
-### pubrev-030
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_1_audit_completion`
-- Atoms: `5`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.numpy.arrays.array`, `sciona.atoms.numpy.arrays.dot`, `sciona.atoms.numpy.arrays.reshape`
-
 ### pubrev-031
 
 - Repo: `sciona-atoms-physics`
@@ -86,15 +77,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:
 - Blocker class: `audit_rollup_only`
 - Primary blocker pattern: `['publishable_rollup']`
 - Representative atoms: `sciona.atoms.numpy.emath.log`, `sciona.atoms.numpy.emath.log10`, `sciona.atoms.numpy.emath.logn`
-
-### pubrev-037
-
-- Repo: `sciona-atoms-bio`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.bio.mint.fasta_dataset.dataset_item_retrieval`, `sciona.atoms.bio.mint.fasta_dataset.dataset_length_query`, `sciona.atoms.bio.mint.fasta_dataset.dataset_state_initialization`
 
 ### pubrev-044
 

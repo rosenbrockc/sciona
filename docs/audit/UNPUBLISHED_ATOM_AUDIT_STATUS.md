@@ -1,16 +1,16 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-19T17:22:08.107048+00:00.
+Generated from the live local Supabase replay on 2026-04-19T17:40:02.607786+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
 - Total atoms in local catalog: `527`
-- Publishable atoms: `407`
-- Total non-publishable atoms in local catalog: `120`
+- Publishable atoms: `416`
+- Total non-publishable atoms in local catalog: `111`
 - Remediation-excluded non-publishable atoms: `46`
-- Non-publishable atoms remaining in matcher backlog: `74`
+- Non-publishable atoms remaining in matcher backlog: `65`
 
 
 ### Remediation Exclusions
@@ -41,26 +41,24 @@ This document is a working debt register for every currently unpublished atom.
 
 ### Marginal Blocker Counts
 
-- `description`: `61`
-- `io_specs`: `53`
-- `parameters`: `61`
-- `publishable_rollup`: `74`
+- `description`: `57`
+- `io_specs`: `52`
+- `parameters`: `57`
+- `publishable_rollup`: `65`
 - `references`: `57`
 
 ### Top Exact Blocker Combinations
 
 - `publishable_rollup,io_specs,parameters,description,references`: `52`
-- `publishable_rollup`: `13`
+- `publishable_rollup`: `8`
 - `publishable_rollup,parameters,description,references`: `5`
-- `publishable_rollup,parameters,description`: `3`
-- `publishable_rollup,io_specs,parameters,description`: `1`
 
 ### Largest Non-Publishable Domains
 
 - `inference`: `21`
-- `numpy`: `19`
-- `bio`: `11`
+- `numpy`: `14`
 - `expansion`: `10`
+- `bio`: `7`
 - `particle_tracking`: `5`
 - `state_estimation`: `4`
 - `medical_imaging_3d`: `2`
@@ -77,11 +75,11 @@ This document is a working debt register for every currently unpublished atom.
 
 ## bio
 
-- Non-publishable atoms: `11`
-- Missing publishable rollup: `11`
-- Missing IO specs: `8`
-- Missing parameters: `11`
-- Missing description: `11`
+- Non-publishable atoms: `7`
+- Missing publishable rollup: `7`
+- Missing IO specs: `7`
+- Missing parameters: `7`
+- Missing description: `7`
 - Missing references: `7`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
@@ -90,10 +88,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.bio.mint.axial_attention.row_self_attention` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.bio.mint.axial_attention.rowselfattention` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.bio.mint.encoding_dist_mat.encodedistancematrix` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.bio.mint.fasta_dataset.dataset_item_retrieval` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.bio.mint.fasta_dataset.dataset_length_query` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
-| `sciona.atoms.bio.mint.fasta_dataset.dataset_state_initialization` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.bio.mint.fasta_dataset.token_budget_batch_planning` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
 | `sciona.atoms.bio.mint.incremental_attention.enable_incremental_state_configuration` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.bio.mint.rotary_embedding.rotaryembedding_numpy` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.bio.mint.rotary_embedding.rotaryembedding_torch` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -169,8 +163,8 @@ This document is a working debt register for every currently unpublished atom.
 
 ## numpy
 
-- Non-publishable atoms: `19`
-- Missing publishable rollup: `19`
+- Non-publishable atoms: `14`
+- Missing publishable rollup: `14`
 - Missing IO specs: `6`
 - Missing parameters: `6`
 - Missing description: `6`
@@ -178,11 +172,6 @@ This document is a working debt register for every currently unpublished atom.
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.numpy.arrays.array` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.arrays.dot` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.arrays.reshape` | `missing` | `not_reviewed` | `unknown` | `unknown` | `misleading` | `publishable_rollup` |
-| `sciona.atoms.numpy.arrays.vstack` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
-| `sciona.atoms.numpy.arrays.zeros` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.numpy.emath.log` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.numpy.emath.log10` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |
 | `sciona.atoms.numpy.emath.logn` | `missing` | `not_reviewed` | `unknown` | `unknown` | `acceptable_with_limits` | `publishable_rollup` |

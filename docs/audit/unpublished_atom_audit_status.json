@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-19T17:22:08.107048+00:00",
+  "generated_at": "2026-04-19T17:40:02.607786+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 527,
-    "publishable_atoms": 407,
-    "non_publishable_atoms": 120
+    "publishable_atoms": 416,
+    "non_publishable_atoms": 111
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 74,
+    "review_backlog_non_publishable_atoms": 65,
     "remediation_excluded_non_publishable_atoms": 46
   },
   "remediation_exclusions": {
@@ -385,10 +385,10 @@
     "excluded_unpublished_atom_count": 46
   },
   "blocker_counts": {
-    "description": 61,
-    "io_specs": 53,
-    "parameters": 61,
-    "publishable_rollup": 74,
+    "description": 57,
+    "io_specs": 52,
+    "parameters": 57,
+    "publishable_rollup": 65,
     "references": 57
   },
   "top_blocker_combinations": [
@@ -406,7 +406,7 @@
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 13
+      "atom_count": 8
     },
     {
       "blockers": [
@@ -416,45 +416,28 @@
         "references"
       ],
       "atom_count": 5
-    },
-    {
-      "blockers": [
-        "publishable_rollup",
-        "parameters",
-        "description"
-      ],
-      "atom_count": 3
-    },
-    {
-      "blockers": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description"
-      ],
-      "atom_count": 1
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 61
+      "atom_count": 57
     },
     {
       "review_status": "missing",
       "trust_readiness": "not_reviewed",
-      "atom_count": 13
+      "atom_count": 8
     }
   ],
   "domains": [
     {
       "domain": "bio",
-      "atom_count": 11,
-      "missing_publishable_rollup": 11,
-      "missing_io_specs": 8,
-      "missing_parameters": 11,
-      "missing_description": 11,
+      "atom_count": 7,
+      "missing_publishable_rollup": 7,
+      "missing_io_specs": 7,
+      "missing_parameters": 7,
+      "missing_description": 7,
       "missing_references": 7,
       "atoms": [
         {
@@ -519,63 +502,6 @@
             "parameters",
             "description",
             "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.fasta_dataset.dataset_item_retrieval",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.fasta_dataset.dataset_length_query",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.fasta_dataset.dataset_state_initialization",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.fasta_dataset.token_budget_batch_planning",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
           ]
         },
         {
@@ -1191,73 +1117,13 @@
     },
     {
       "domain": "numpy",
-      "atom_count": 19,
-      "missing_publishable_rollup": 19,
+      "atom_count": 14,
+      "missing_publishable_rollup": 14,
       "missing_io_specs": 6,
       "missing_parameters": 6,
       "missing_description": 6,
       "missing_references": 6,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.numpy.arrays.array",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.arrays.dot",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.arrays.reshape",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "misleading",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.arrays.vstack",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.arrays.zeros",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.numpy.emath.log",
           "domain": "numpy",
@@ -1664,15 +1530,15 @@
     },
     {
       "domain": "numpy",
-      "atom_count": 19
-    },
-    {
-      "domain": "bio",
-      "atom_count": 11
+      "atom_count": 14
     },
     {
       "domain": "expansion",
       "atom_count": 10
+    },
+    {
+      "domain": "bio",
+      "atom_count": 7
     },
     {
       "domain": "particle_tracking",
