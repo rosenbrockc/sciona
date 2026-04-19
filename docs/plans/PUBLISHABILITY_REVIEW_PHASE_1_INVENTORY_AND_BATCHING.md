@@ -7,8 +7,8 @@ without stepping on each other.
 
 ## Inputs
 
-- [UNPUBLISHED_ATOM_AUDIT_STATUS.md](/Users/conrad/personal/sciona-matcher/docs/audit/UNPUBLISHED_ATOM_AUDIT_STATUS.md)
-- [unpublished_atom_audit_status.json](/Users/conrad/personal/sciona-matcher/docs/audit/unpublished_atom_audit_status.json)
+- [UNPUBLISHED_ATOM_AUDIT_STATUS.md](/Users/conrad/personal/sciona-atoms/docs/audit/UNPUBLISHED_ATOM_AUDIT_STATUS.md)
+- [unpublished_atom_audit_status.json](/Users/conrad/personal/sciona-atoms/docs/audit/unpublished_atom_audit_status.json)
 - current license metadata replay summaries
 
 ## Tasks
@@ -39,8 +39,8 @@ A canonical execution inventory that later phases use as their source of truth.
 
 Current generated outputs:
 
-- [PUBLISHABILITY_REVIEW_BATCH_QUEUE.md](/Users/conrad/personal/sciona-matcher/docs/audit/PUBLISHABILITY_REVIEW_BATCH_QUEUE.md)
-- [publishability_review_batch_queue.json](/Users/conrad/personal/sciona-matcher/docs/audit/publishability_review_batch_queue.json)
+- [PUBLISHABILITY_REVIEW_BATCH_QUEUE.md](/Users/conrad/personal/sciona-atoms/docs/audit/PUBLISHABILITY_REVIEW_BATCH_QUEUE.md)
+- [publishability_review_batch_queue.json](/Users/conrad/personal/sciona-atoms/docs/audit/publishability_review_batch_queue.json)
 
 ## Parallelization
 

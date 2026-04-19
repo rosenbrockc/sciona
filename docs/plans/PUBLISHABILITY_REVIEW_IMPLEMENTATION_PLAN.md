@@ -54,8 +54,8 @@ If the answer to 1-3 is yes, do not ask a human.
 
 Reference inventory:
 
-- [UNPUBLISHED_ATOM_AUDIT_STATUS.md](/Users/conrad/personal/sciona-matcher/docs/audit/UNPUBLISHED_ATOM_AUDIT_STATUS.md)
-- [unpublished_atom_audit_status.json](/Users/conrad/personal/sciona-matcher/docs/audit/unpublished_atom_audit_status.json)
+- [UNPUBLISHED_ATOM_AUDIT_STATUS.md](/Users/conrad/personal/sciona-atoms/docs/audit/UNPUBLISHED_ATOM_AUDIT_STATUS.md)
+- [unpublished_atom_audit_status.json](/Users/conrad/personal/sciona-atoms/docs/audit/unpublished_atom_audit_status.json)
 
 Current known state:
 
