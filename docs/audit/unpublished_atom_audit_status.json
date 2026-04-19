@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-19T17:03:34.765377+00:00",
+  "generated_at": "2026-04-19T17:06:53.617143+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 522,
@@ -7,13 +7,51 @@
     "non_publishable_atoms": 120
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 83,
-    "remediation_excluded_non_publishable_atoms": 37
+    "review_backlog_non_publishable_atoms": 76,
+    "remediation_excluded_non_publishable_atoms": 44
   },
   "remediation_exclusions": {
     "path": "/Users/conrad/personal/sciona-atoms/REMEDIATION.md",
-    "matched_target_count": 19,
+    "matched_target_count": 21,
     "matched_targets": [
+      {
+        "label": "mcmc_foundational.mini_mcmc",
+        "candidate": "sciona.atoms.inference.mcmc_foundational.mini_mcmc",
+        "match_type": "prefix",
+        "matched_atom_count": 11,
+        "matched_unpublished_atom_count": 5,
+        "matched_atoms": [
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.hamiltoniantransitionkernel",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.initializehmckernelstate",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.initializesamplerrng",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.initializenutsstate",
+          "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions"
+        ]
+      },
+      {
+        "label": "sciona.atoms.expansion.signal_event_rate",
+        "candidate": "sciona.atoms.expansion.signal_event_rate",
+        "match_type": "prefix",
+        "matched_atom_count": 9,
+        "matched_unpublished_atom_count": 2,
+        "matched_atoms": [
+          "sciona.atoms.expansion.signal_event_rate.assess_signal_quality",
+          "sciona.atoms.expansion.signal_event_rate.compute_event_rate",
+          "sciona.atoms.expansion.signal_event_rate.compute_event_rate_median_smoothed",
+          "sciona.atoms.expansion.signal_event_rate.compute_event_rate_smoothed",
+          "sciona.atoms.expansion.signal_event_rate.detect_peaks_in_signal",
+          "sciona.atoms.expansion.signal_event_rate.estimate_event_rate_from_signal",
+          "sciona.atoms.expansion.signal_event_rate.filter_signal_for_detection",
+          "sciona.atoms.expansion.signal_event_rate.reject_outlier_intervals",
+          "sciona.atoms.expansion.signal_event_rate.remove_signal_jumps"
+        ]
+      },
       {
         "label": "e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation",
         "candidate": "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation",
@@ -236,12 +274,32 @@
       "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler",
       "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor",
       "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator",
+      "sciona.atoms.expansion.signal_event_rate.assess_signal_quality",
+      "sciona.atoms.expansion.signal_event_rate.compute_event_rate",
+      "sciona.atoms.expansion.signal_event_rate.compute_event_rate_median_smoothed",
+      "sciona.atoms.expansion.signal_event_rate.compute_event_rate_smoothed",
+      "sciona.atoms.expansion.signal_event_rate.detect_peaks_in_signal",
+      "sciona.atoms.expansion.signal_event_rate.estimate_event_rate_from_signal",
+      "sciona.atoms.expansion.signal_event_rate.filter_signal_for_detection",
+      "sciona.atoms.expansion.signal_event_rate.reject_outlier_intervals",
+      "sciona.atoms.expansion.signal_event_rate.remove_signal_jumps",
       "sciona.atoms.fintech.institutional_quant_engine.fractional_diff.fractional_differentiator",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluation",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluator",
       "sciona.atoms.fintech.institutional_quant_engine.wash_trade.detect_wash_trade_rings",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.hamiltoniantransitionkernel",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.initializehmckernelstate",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.initializesamplerrng",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.initializenutsstate",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions",
       "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
       "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
       "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
@@ -275,12 +333,19 @@
       "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumcircuitsampler",
       "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolutionextractor",
       "sciona.atoms.bio.molecular_docking.quantum_solver_d12.quantumsolverorchestrator",
+      "sciona.atoms.expansion.signal_event_rate.reject_outlier_intervals",
+      "sciona.atoms.expansion.signal_event_rate.remove_signal_jumps",
       "sciona.atoms.fintech.institutional_quant_engine.fractional_diff.fractional_differentiator",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluation",
       "sciona.atoms.fintech.institutional_quant_engine.pin_model.pinlikelihoodevaluator",
       "sciona.atoms.fintech.institutional_quant_engine.wash_trade.detect_wash_trade_rings",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build",
+      "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions",
       "sciona.atoms.physics.pasqal.docking.quantum_mwis_solver",
       "sciona.atoms.robotics.pronto.torque_adjustment.torqueadjustmentidentitystage",
       "sciona.atoms.scipy.sparse_graph.all_pairs_shortest_path",
@@ -301,15 +366,15 @@
       "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule",
       "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation"
     ],
-    "excluded_atom_count": 37,
-    "excluded_unpublished_atom_count": 37
+    "excluded_atom_count": 57,
+    "excluded_unpublished_atom_count": 44
   },
   "blocker_counts": {
-    "description": 66,
-    "io_specs": 61,
-    "parameters": 66,
-    "publishable_rollup": 83,
-    "references": 54
+    "description": 59,
+    "io_specs": 54,
+    "parameters": 59,
+    "publishable_rollup": 76,
+    "references": 52
   },
   "top_blocker_combinations": [
     {
@@ -320,7 +385,7 @@
         "description",
         "references"
       ],
-      "atom_count": 54
+      "atom_count": 52
     },
     {
       "blockers": [
@@ -331,26 +396,26 @@
     {
       "blockers": [
         "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description"
-      ],
-      "atom_count": 7
-    },
-    {
-      "blockers": [
-        "publishable_rollup",
         "parameters",
         "description"
       ],
       "atom_count": 5
+    },
+    {
+      "blockers": [
+        "publishable_rollup",
+        "io_specs",
+        "parameters",
+        "description"
+      ],
+      "atom_count": 2
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 66
+      "atom_count": 59
     },
     {
       "review_status": "missing",
@@ -595,12 +660,12 @@
     },
     {
       "domain": "expansion",
-      "atom_count": 12,
-      "missing_publishable_rollup": 12,
-      "missing_io_specs": 12,
-      "missing_parameters": 12,
-      "missing_description": 12,
-      "missing_references": 12,
+      "atom_count": 10,
+      "missing_publishable_rollup": 10,
+      "missing_io_specs": 10,
+      "missing_parameters": 10,
+      "missing_description": 10,
+      "missing_references": 10,
       "atoms": [
         {
           "fqdn": "sciona.atoms.expansion.sequential_filter.adapt_process_noise",
@@ -699,38 +764,6 @@
           ]
         },
         {
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.reject_outlier_intervals",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.signal_event_rate.remove_signal_jumps",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
           "fqdn": "sciona.atoms.expansion.signal_filter.analyze_group_delay_variation",
           "domain": "expansion",
           "review_status": "missing_row",
@@ -798,11 +831,11 @@
     },
     {
       "domain": "inference",
-      "atom_count": 26,
-      "missing_publishable_rollup": 26,
-      "missing_io_specs": 26,
-      "missing_parameters": 26,
-      "missing_description": 26,
+      "atom_count": 21,
+      "missing_publishable_rollup": 21,
+      "missing_io_specs": 21,
+      "missing_parameters": 21,
+      "missing_description": 21,
       "missing_references": 21,
       "atoms": [
         {
@@ -1139,81 +1172,6 @@
             "parameters",
             "description",
             "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description"
           ]
         }
       ]
@@ -1693,12 +1651,12 @@
   ],
   "largest_non_publishable_domains": [
     {
-      "domain": "inference",
-      "atom_count": 26
-    },
-    {
       "domain": "numpy",
       "atom_count": 23
+    },
+    {
+      "domain": "inference",
+      "atom_count": 21
     },
     {
       "domain": "bio",
@@ -1706,7 +1664,7 @@
     },
     {
       "domain": "expansion",
-      "atom_count": 12
+      "atom_count": 10
     },
     {
       "domain": "state_estimation",

@@ -1,13 +1,15 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:03:34.765377+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:06:53.617143+00:00.
 
-- Remaining unpublished atoms: `83`
-- Remediation-excluded atoms: `37`
-- Remaining worker batches: `23`
+- Remaining unpublished atoms: `76`
+- Remediation-excluded atoms: `44`
+- Remaining worker batches: `21`
 
 ## Remediation Exclusions
 
+- `mcmc_foundational.mini_mcmc`: excluded `5` unpublished atoms via `prefix` match
+- `sciona.atoms.expansion.signal_event_rate`: excluded `2` unpublished atoms via `prefix` match
 - `e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation`: excluded `1` unpublished atoms via `exact` match
 - `biosppy.svm_proc`: excluded `8` unpublished atoms via `prefix` match
 - `molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion`: excluded `1` unpublished atoms via `exact` match
@@ -29,24 +31,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T17:
 - `scipy.stats.norm`: excluded `1` unpublished atoms via `exact` match
 
 ## Batches
-
-### pubrev-008
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `5`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain`
-
-### pubrev-013
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.signal_event_rate.assess_signal_quality`, `sciona.atoms.expansion.signal_event_rate.compute_event_rate`, `sciona.atoms.expansion.signal_event_rate.compute_event_rate_median_smoothed`
 
 ### pubrev-014
 

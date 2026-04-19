@@ -1,6 +1,6 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-19T17:03:34.765377+00:00.
+Generated from the live local Supabase replay on 2026-04-19T17:06:53.617143+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
@@ -9,13 +9,15 @@ This document is a working debt register for every currently unpublished atom.
 - Total atoms in local catalog: `522`
 - Publishable atoms: `402`
 - Total non-publishable atoms in local catalog: `120`
-- Remediation-excluded non-publishable atoms: `37`
-- Non-publishable atoms remaining in matcher backlog: `83`
+- Remediation-excluded non-publishable atoms: `44`
+- Non-publishable atoms remaining in matcher backlog: `76`
 
 
 ### Remediation Exclusions
 
 - Source: `/Users/conrad/personal/sciona-atoms/REMEDIATION.md`
+- `mcmc_foundational.mini_mcmc`: excluded `5` unpublished atoms via `prefix` match
+- `sciona.atoms.expansion.signal_event_rate`: excluded `2` unpublished atoms via `prefix` match
 - `e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation`: excluded `1` unpublished atoms via `exact` match
 - `biosppy.svm_proc`: excluded `8` unpublished atoms via `prefix` match
 - `molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion`: excluded `1` unpublished atoms via `exact` match
@@ -38,25 +40,25 @@ This document is a working debt register for every currently unpublished atom.
 
 ### Marginal Blocker Counts
 
-- `description`: `66`
-- `io_specs`: `61`
-- `parameters`: `66`
-- `publishable_rollup`: `83`
-- `references`: `54`
+- `description`: `59`
+- `io_specs`: `54`
+- `parameters`: `59`
+- `publishable_rollup`: `76`
+- `references`: `52`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `54`
+- `publishable_rollup,io_specs,parameters,description,references`: `52`
 - `publishable_rollup`: `17`
-- `publishable_rollup,io_specs,parameters,description`: `7`
 - `publishable_rollup,parameters,description`: `5`
+- `publishable_rollup,io_specs,parameters,description`: `2`
 
 ### Largest Non-Publishable Domains
 
-- `inference`: `26`
 - `numpy`: `23`
+- `inference`: `21`
 - `bio`: `13`
-- `expansion`: `12`
+- `expansion`: `10`
 - `state_estimation`: `4`
 - `medical_imaging_3d`: `2`
 - `scipy`: `2`
@@ -111,12 +113,12 @@ This document is a working debt register for every currently unpublished atom.
 
 ## expansion
 
-- Non-publishable atoms: `12`
-- Missing publishable rollup: `12`
-- Missing IO specs: `12`
-- Missing parameters: `12`
-- Missing description: `12`
-- Missing references: `12`
+- Non-publishable atoms: `10`
+- Missing publishable rollup: `10`
+- Missing IO specs: `10`
+- Missing parameters: `10`
+- Missing description: `10`
+- Missing references: `10`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -126,8 +128,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.expansion.sequential_filter.validate_innovation_whiteness` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_detect_measure.analyze_peak_threshold_sensitivity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_detect_measure.check_event_rate_stationarity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_event_rate.reject_outlier_intervals` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_event_rate.remove_signal_jumps` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_filter.analyze_group_delay_variation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_filter.measure_passband_ripple` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.expansion.signal_transform.analyze_window_leakage` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -135,11 +135,11 @@ This document is a working debt register for every currently unpublished atom.
 
 ## inference
 
-- Non-publishable atoms: `26`
-- Missing publishable rollup: `26`
-- Missing IO specs: `26`
-- Missing parameters: `26`
-- Missing description: `26`
+- Non-publishable atoms: `21`
+- Missing publishable rollup: `21`
+- Missing IO specs: `21`
+- Missing parameters: `21`
+- Missing description: `21`
 - Missing references: `21`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
@@ -165,11 +165,6 @@ This document is a working debt register for every currently unpublished atom.
 | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.nuts.nuts_recursive_tree_build` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rmhmc.buildrmhmctransitionkernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rwmh.constructrandomwalkmetropoliskernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
-| `sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description` |
 
 ## medical_imaging_3d
 

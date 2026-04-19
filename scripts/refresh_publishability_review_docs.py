@@ -29,13 +29,19 @@ TRUST_READY = {
 }
 REVIEW_PASS = {"pass", "pass_with_limits"}
 REMEDIATION_DOMAIN_PREFIXES = {
+    "Bio": "sciona.atoms.bio",
+    "Dynamic Programming": "sciona.atoms.dynamic_programming",
+    "Expansion": "sciona.atoms.expansion",
+    "Fintech": "sciona.atoms.fintech",
+    "Inference": "sciona.atoms.inference",
+    "Medical Imaging 3D": "sciona.atoms.medical_imaging_3d",
+    "ML": "sciona.atoms.ml",
+    "NumPy": "sciona.atoms.numpy",
+    "Physics": "sciona.atoms.physics",
     "Signal Processing": "sciona.atoms.signal_processing",
     "Robotics": "sciona.atoms.robotics",
     "SciPy": "sciona.atoms.scipy",
-    "Bio": "sciona.atoms.bio",
-    "ML": "sciona.atoms.ml",
-    "Fintech": "sciona.atoms.fintech",
-    "Physics": "sciona.atoms.physics",
+    "State Estimation": "sciona.atoms.state_estimation",
 }
 
 
