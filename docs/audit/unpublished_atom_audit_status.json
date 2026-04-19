@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-04-19T17:40:02.607786+00:00",
+  "generated_at": "2026-04-19T18:54:40.299870+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 527,
-    "publishable_atoms": 416,
-    "non_publishable_atoms": 111
+    "publishable_atoms": 428,
+    "non_publishable_atoms": 99
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 65,
-    "remediation_excluded_non_publishable_atoms": 46
+    "review_backlog_non_publishable_atoms": 51,
+    "remediation_excluded_non_publishable_atoms": 48
   },
   "remediation_exclusions": {
     "path": "/Users/conrad/personal/sciona-atoms/REMEDIATION.md",
-    "matched_target_count": 22,
+    "matched_target_count": 23,
     "matched_targets": [
       {
         "label": "mcmc_foundational.mini_mcmc",
@@ -88,6 +88,17 @@
         "matched_atoms": [
           "sciona.atoms.bio.hpdb.iterate_pdb_atoms",
           "sciona.atoms.bio.hpdb.iterate_pdb_residues"
+        ]
+      },
+      {
+        "label": "sciona.atoms.bio.mint.axial_attention",
+        "candidate": "sciona.atoms.bio.mint.axial_attention",
+        "match_type": "prefix",
+        "matched_atom_count": 2,
+        "matched_unpublished_atom_count": 2,
+        "matched_atoms": [
+          "sciona.atoms.bio.mint.axial_attention.row_self_attention",
+          "sciona.atoms.bio.mint.axial_attention.rowselfattention"
         ]
       },
       {
@@ -275,6 +286,8 @@
     "excluded_fqdns": [
       "sciona.atoms.bio.hpdb.iterate_pdb_atoms",
       "sciona.atoms.bio.hpdb.iterate_pdb_residues",
+      "sciona.atoms.bio.mint.axial_attention.row_self_attention",
+      "sciona.atoms.bio.mint.axial_attention.rowselfattention",
       "sciona.atoms.bio.molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion",
       "sciona.atoms.bio.molecular_docking.greedy_mapping_d12.orchestrate_generation_and_validate",
       "sciona.atoms.bio.molecular_docking.greedy_subgraph.greedy_maximum_subgraph",
@@ -336,6 +349,8 @@
     "excluded_unpublished_fqdns": [
       "sciona.atoms.bio.hpdb.iterate_pdb_atoms",
       "sciona.atoms.bio.hpdb.iterate_pdb_residues",
+      "sciona.atoms.bio.mint.axial_attention.row_self_attention",
+      "sciona.atoms.bio.mint.axial_attention.rowselfattention",
       "sciona.atoms.bio.molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion",
       "sciona.atoms.bio.molecular_docking.greedy_mapping_d12.orchestrate_generation_and_validate",
       "sciona.atoms.bio.molecular_docking.greedy_subgraph.greedy_maximum_subgraph",
@@ -381,15 +396,15 @@
       "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule",
       "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation"
     ],
-    "excluded_atom_count": 59,
-    "excluded_unpublished_atom_count": 46
+    "excluded_atom_count": 61,
+    "excluded_unpublished_atom_count": 48
   },
   "blocker_counts": {
-    "description": 57,
-    "io_specs": 52,
-    "parameters": 57,
-    "publishable_rollup": 65,
-    "references": 57
+    "description": 43,
+    "io_specs": 43,
+    "parameters": 43,
+    "publishable_rollup": 46,
+    "references": 48
   },
   "top_blocker_combinations": [
     {
@@ -400,160 +415,39 @@
         "description",
         "references"
       ],
-      "atom_count": 52
+      "atom_count": 43
+    },
+    {
+      "blockers": [
+        "references"
+      ],
+      "atom_count": 5
     },
     {
       "blockers": [
         "publishable_rollup"
       ],
-      "atom_count": 8
-    },
-    {
-      "blockers": [
-        "publishable_rollup",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "atom_count": 5
+      "atom_count": 3
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 57
+      "atom_count": 43
+    },
+    {
+      "review_status": "approved",
+      "trust_readiness": "reviewed_with_limits",
+      "atom_count": 5
     },
     {
       "review_status": "missing",
       "trust_readiness": "not_reviewed",
-      "atom_count": 8
+      "atom_count": 3
     }
   ],
   "domains": [
-    {
-      "domain": "bio",
-      "atom_count": 7,
-      "missing_publishable_rollup": 7,
-      "missing_io_specs": 7,
-      "missing_parameters": 7,
-      "missing_description": 7,
-      "missing_references": 7,
-      "atoms": [
-        {
-          "fqdn": "sciona.atoms.bio.mint.apc_module.apccoreevaluation",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.axial_attention.row_self_attention",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.axial_attention.rowselfattention",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.encoding_dist_mat.encodedistancematrix",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.incremental_attention.enable_incremental_state_configuration",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.rotary_embedding.rotaryembedding_numpy",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.bio.mint.rotary_embedding.rotaryembedding_torch",
-          "domain": "bio",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ]
-    },
     {
       "domain": "expansion",
       "atom_count": 10,
@@ -1117,73 +1011,13 @@
     },
     {
       "domain": "numpy",
-      "atom_count": 14,
-      "missing_publishable_rollup": 14,
+      "atom_count": 9,
+      "missing_publishable_rollup": 9,
       "missing_io_specs": 6,
       "missing_parameters": 6,
       "missing_description": 6,
       "missing_references": 6,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.numpy.emath.log",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.emath.log10",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.emath.logn",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.emath.power",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.numpy.emath.sqrt",
-          "domain": "numpy",
-          "review_status": "missing",
-          "trust_readiness": "not_reviewed",
-          "semantic_verdict": "unknown",
-          "developer_semantic_verdict": "unknown",
-          "overall_verdict": "acceptable_with_limits",
-          "blockers": [
-            "publishable_rollup"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.numpy.random.combinatorics_sampler",
           "domain": "numpy",
@@ -1321,127 +1155,69 @@
     {
       "domain": "particle_tracking",
       "atom_count": 5,
-      "missing_publishable_rollup": 5,
+      "missing_publishable_rollup": 0,
       "missing_io_specs": 0,
-      "missing_parameters": 5,
-      "missing_description": 5,
+      "missing_parameters": 0,
+      "missing_description": 0,
       "missing_references": 5,
       "atoms": [
         {
           "fqdn": "sciona.atoms.particle_tracking.helix_geometry.circle_from_three_points",
           "domain": "particle_tracking",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
+          "review_status": "approved",
+          "trust_readiness": "reviewed_with_limits",
+          "semantic_verdict": "pass",
+          "developer_semantic_verdict": "pass_with_limits",
+          "overall_verdict": "acceptable_with_limits",
           "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description",
             "references"
           ]
         },
         {
           "fqdn": "sciona.atoms.particle_tracking.helix_geometry.helix_direction_from_two_points",
           "domain": "particle_tracking",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
+          "review_status": "approved",
+          "trust_readiness": "reviewed_with_limits",
+          "semantic_verdict": "pass",
+          "developer_semantic_verdict": "pass_with_limits",
+          "overall_verdict": "acceptable_with_limits",
           "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description",
             "references"
           ]
         },
         {
           "fqdn": "sciona.atoms.particle_tracking.helix_geometry.helix_nearest_point_distance",
           "domain": "particle_tracking",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
+          "review_status": "approved",
+          "trust_readiness": "reviewed_with_limits",
+          "semantic_verdict": "pass",
+          "developer_semantic_verdict": "pass_with_limits",
+          "overall_verdict": "acceptable_with_limits",
           "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description",
             "references"
           ]
         },
         {
           "fqdn": "sciona.atoms.particle_tracking.helix_geometry.helix_pitch_from_two_points",
           "domain": "particle_tracking",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
+          "review_status": "approved",
+          "trust_readiness": "reviewed_with_limits",
+          "semantic_verdict": "pass",
+          "developer_semantic_verdict": "pass_with_limits",
+          "overall_verdict": "acceptable_with_limits",
           "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description",
             "references"
           ]
         },
         {
           "fqdn": "sciona.atoms.particle_tracking.helix_geometry.helix_pitch_least_squares",
           "domain": "particle_tracking",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
+          "review_status": "approved",
+          "trust_readiness": "reviewed_with_limits",
+          "semantic_verdict": "pass",
+          "developer_semantic_verdict": "pass_with_limits",
+          "overall_verdict": "acceptable_with_limits",
           "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ]
-    },
-    {
-      "domain": "scipy",
-      "atom_count": 2,
-      "missing_publishable_rollup": 2,
-      "missing_io_specs": 2,
-      "missing_parameters": 2,
-      "missing_description": 2,
-      "missing_references": 2,
-      "atoms": [
-        {
-          "fqdn": "sciona.atoms.scipy.optimize.differential_evolution",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.scipy.optimize.shgo",
-          "domain": "scipy",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
             "references"
           ]
         }
@@ -1529,16 +1305,12 @@
       "atom_count": 21
     },
     {
-      "domain": "numpy",
-      "atom_count": 14
-    },
-    {
       "domain": "expansion",
       "atom_count": 10
     },
     {
-      "domain": "bio",
-      "atom_count": 7
+      "domain": "numpy",
+      "atom_count": 9
     },
     {
       "domain": "particle_tracking",
@@ -1550,10 +1322,6 @@
     },
     {
       "domain": "medical_imaging_3d",
-      "atom_count": 2
-    },
-    {
-      "domain": "scipy",
       "atom_count": 2
     }
   ]
