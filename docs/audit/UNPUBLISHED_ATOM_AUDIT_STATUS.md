@@ -1,6 +1,6 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-19T20:13:16.590994+00:00.
+Generated from the live local Supabase replay on 2026-04-19T20:24:24.387355+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
@@ -9,14 +9,15 @@ This document is a working debt register for every currently unpublished atom.
 - Total atoms in local catalog: `537`
 - Publishable atoms: `468`
 - Total non-publishable atoms in local catalog: `69`
-- Remediation-excluded non-publishable atoms: `48`
-- Non-publishable atoms remaining in matcher backlog: `21`
+- Remediation-excluded non-publishable atoms: `57`
+- Non-publishable atoms remaining in matcher backlog: `12`
 
 
 ### Remediation Exclusions
 
 - Source: `/Users/conrad/personal/sciona-atoms/REMEDIATION.md`
 - `mcmc_foundational.mini_mcmc`: excluded `5` unpublished atoms via `prefix` match
+- `mcmc_foundational.kthohr_mcmc`: excluded `9` unpublished atoms via `prefix` match
 - `sciona.atoms.expansion.signal_event_rate`: excluded `2` unpublished atoms via `prefix` match
 - `e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation`: excluded `1` unpublished atoms via `exact` match
 - `biosppy.svm_proc`: excluded `8` unpublished atoms via `prefix` match
@@ -42,21 +43,20 @@ This document is a working debt register for every currently unpublished atom.
 
 ### Marginal Blocker Counts
 
-- `description`: `21`
-- `io_specs`: `11`
-- `parameters`: `21`
-- `publishable_rollup`: `21`
-- `references`: `11`
+- `description`: `12`
+- `io_specs`: `2`
+- `parameters`: `12`
+- `publishable_rollup`: `12`
+- `references`: `2`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `11`
 - `publishable_rollup,parameters,description`: `10`
+- `publishable_rollup,io_specs,parameters,description,references`: `2`
 
 ### Largest Non-Publishable Domains
 
 - `ml`: `10`
-- `inference`: `9`
 - `medical_imaging_3d`: `2`
 
 ## Status Legend
@@ -67,27 +67,6 @@ This document is a working debt register for every currently unpublished atom.
 - `description`: no English low-jargon description
 - `references`: no atom references rows
 - `missing_row`: there is no audit rollup row for the atom yet
-
-## inference
-
-- Non-publishable atoms: `9`
-- Missing publishable rollup: `9`
-- Missing IO specs: `9`
-- Missing parameters: `9`
-- Missing description: `9`
-- Missing references: `9`
-
-| Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
-| --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.hmc.buildhmckernelfromlogdensityoracle` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mala.mala_proposal_adjustment` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mcmc_algos.dispatch_mcmc_algorithm` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.nuts.nuts_recursive_tree_build` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rmhmc.buildrmhmctransitionkernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rwmh.constructrandomwalkmetropoliskernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 
 ## medical_imaging_3d
 

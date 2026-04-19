@@ -1,195 +1,20 @@
 {
-  "generated_at": "2026-04-19T20:13:16.590994+00:00",
+  "generated_at": "2026-04-19T20:24:24.387355+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
-  "batch_count": 1,
-  "batches": [
-    {
-      "atom_count": 9,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.hmc.buildhmckernelfromlogdensityoracle",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mala.mala_proposal_adjustment",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mcmc_algos.dispatch_mcmc_algorithm",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.nuts.nuts_recursive_tree_build",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rmhmc.buildrmhmctransitionkernel",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rwmh.constructrandomwalkmetropoliskernel",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-014",
-      "batch_key": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 9,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel",
-        "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle",
-        "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel",
-        "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.hmc.buildhmckernelfromlogdensityoracle",
-        "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mala.mala_proposal_adjustment"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 9,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 9,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    }
-  ],
+  "batch_count": 0,
+  "batches": [],
   "totals": {
-    "non_publishable_atoms": 21,
-    "remediation_excluded_atoms": 48
+    "non_publishable_atoms": 12,
+    "remediation_excluded_atoms": 57
   },
-  "repo_counts": {
-    "sciona-atoms": 9
-  },
-  "wave_counts": {
-    "wave_2_metadata_and_llm_review": 9
-  },
+  "repo_counts": {},
+  "wave_counts": {},
   "blocker_counts": {
-    "description": 21,
-    "io_specs": 11,
-    "parameters": 21,
-    "publishable_rollup": 21,
-    "references": 11
+    "description": 12,
+    "io_specs": 2,
+    "parameters": 12,
+    "publishable_rollup": 12,
+    "references": 2
   },
   "special_slices": {
     "audit_rollup_only_atoms": {
@@ -209,7 +34,7 @@
   },
   "remediation_exclusions": {
     "path": "/Users/conrad/personal/sciona-atoms/REMEDIATION.md",
-    "matched_target_count": 23,
+    "matched_target_count": 24,
     "matched_targets": [
       {
         "label": "mcmc_foundational.mini_mcmc",
@@ -229,6 +54,24 @@
           "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts.nuts_recursive_tree_build",
           "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.initializenutsstate",
           "sciona.atoms.inference.mcmc_foundational.mini_mcmc.nuts_llm.runnutstransitions"
+        ]
+      },
+      {
+        "label": "mcmc_foundational.kthohr_mcmc",
+        "candidate": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc",
+        "match_type": "prefix",
+        "matched_atom_count": 9,
+        "matched_unpublished_atom_count": 9,
+        "matched_atoms": [
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.hmc.buildhmckernelfromlogdensityoracle",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mala.mala_proposal_adjustment",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mcmc_algos.dispatch_mcmc_algorithm",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.nuts.nuts_recursive_tree_build",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rmhmc.buildrmhmctransitionkernel",
+          "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rwmh.constructrandomwalkmetropoliskernel"
         ]
       },
       {
@@ -512,6 +355,15 @@
       "sciona.atoms.fintech.institutional_quant_engine.wash_trade.detect_wash_trade_rings",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.hmc.buildhmckernelfromlogdensityoracle",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mala.mala_proposal_adjustment",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mcmc_algos.dispatch_mcmc_algorithm",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.nuts.nuts_recursive_tree_build",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rmhmc.buildrmhmctransitionkernel",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rwmh.constructrandomwalkmetropoliskernel",
       "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate",
       "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel",
       "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition",
@@ -568,6 +420,15 @@
       "sciona.atoms.fintech.institutional_quant_engine.wash_trade.detect_wash_trade_rings",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.cotraversevec",
       "sciona.atoms.fintech.quantfin.tdma_solver_d12.tdmasolver",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.hmc.buildhmckernelfromlogdensityoracle",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mala.mala_proposal_adjustment",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.mcmc_algos.dispatch_mcmc_algorithm",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.nuts.nuts_recursive_tree_build",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rmhmc.buildrmhmctransitionkernel",
+      "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.rwmh.constructrandomwalkmetropoliskernel",
       "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.metropolishmctransition",
       "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.runsamplingloop",
       "sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain",
@@ -593,7 +454,7 @@
       "sciona.atoms.signal_processing.biosppy.svm_proc.majority_rule",
       "sciona.atoms.signal_processing.e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation"
     ],
-    "excluded_atom_count": 61,
-    "excluded_unpublished_atom_count": 48
+    "excluded_atom_count": 70,
+    "excluded_unpublished_atom_count": 57
   }
 }

@@ -1,14 +1,15 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T20:13:16.590994+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T20:24:24.387355+00:00.
 
-- Remaining unpublished atoms: `21`
-- Remediation-excluded atoms: `48`
-- Remaining worker batches: `1`
+- Remaining unpublished atoms: `12`
+- Remediation-excluded atoms: `57`
+- Remaining worker batches: `0`
 
 ## Remediation Exclusions
 
 - `mcmc_foundational.mini_mcmc`: excluded `5` unpublished atoms via `prefix` match
+- `mcmc_foundational.kthohr_mcmc`: excluded `9` unpublished atoms via `prefix` match
 - `sciona.atoms.expansion.signal_event_rate`: excluded `2` unpublished atoms via `prefix` match
 - `e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation`: excluded `1` unpublished atoms via `exact` match
 - `biosppy.svm_proc`: excluded `8` unpublished atoms via `prefix` match
@@ -33,14 +34,5 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T20:
 - `scipy.stats.norm`: excluded `1` unpublished atoms via `exact` match
 
 ## Batches
-
-### pubrev-014
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `9`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel`
 
 - The canonical machine-readable queue is [publishability_review_batch_queue.json](/Users/conrad/personal/sciona-matcher/docs/audit/publishability_review_batch_queue.json).
