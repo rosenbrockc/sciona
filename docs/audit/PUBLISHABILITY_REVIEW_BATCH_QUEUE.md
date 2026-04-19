@@ -1,15 +1,26 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T15:48:06.134710+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T16:18:39.371698+00:00.
 
-- Remaining unpublished atoms: `146`
-- Remediation-excluded atoms: `19`
-- Remaining worker batches: `29`
+- Remaining unpublished atoms: `107`
+- Remediation-excluded atoms: `30`
+- Remaining worker batches: `26`
 
 ## Remediation Exclusions
 
 - `e2e_ppg.kazemi_wrapper.wrapperpredictionsignalcomputation`: excluded `1` unpublished atoms via `exact` match
 - `biosppy.svm_proc`: excluded `8` unpublished atoms via `prefix` match
+- `molecular_docking.greedy_mapping_d12.construct_mapping_state_via_greedy_expansion`: excluded `1` unpublished atoms via `exact` match
+- `molecular_docking.greedy_mapping_d12.orchestrate_generation_and_validate`: excluded `1` unpublished atoms via `exact` match
+- `molecular_docking.greedy_subgraph.greedy_maximum_subgraph`: excluded `1` unpublished atoms via `exact` match
+- `molecular_docking.map_to_udg.graphtoudgmapping`: excluded `1` unpublished atoms via `exact` match
+- `molecular_docking.quantum_solver.adiabaticquantumsampler`: excluded `1` unpublished atoms via `exact` match
+- `molecular_docking.quantum_solver.quantumproblemdefinition`: excluded `1` unpublished atoms via `exact` match
+- `molecular_docking.quantum_solver.solutionextraction`: excluded `1` unpublished atoms via `exact` match
+- `institutional_quant_engine.fractional_diff.fractional_differentiator`: excluded `1` unpublished atoms via `exact` match
+- `institutional_quant_engine.pin_model.pinlikelihoodevaluation`: excluded `1` unpublished atoms via `exact` match
+- `institutional_quant_engine.pin_model.pinlikelihoodevaluator`: excluded `1` unpublished atoms via `exact` match
+- `institutional_quant_engine.wash_trade.detect_wash_trade_rings`: excluded `1` unpublished atoms via `exact` match
 - `pronto.torque_adjustment`: excluded `1` unpublished atoms via `prefix` match
 - `physics.pasqal.docking.quantum_mwis_solver`: excluded `1` unpublished atoms via `exact` match
 - `scipy.sparse_graph`: excluded `7` unpublished atoms via `prefix` match
@@ -17,29 +28,11 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T15:
 
 ## Batches
 
-### pubrev-001
-
-- Repo: `sciona-atoms-fintech`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `18`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss.computeoptimaltrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.optimalexecutiontrajectory`, `sciona.atoms.fintech.institutional_quant_engine.almgren_chriss_v2.riskaversioninit`
-
-### pubrev-005
-
-- Repo: `sciona-atoms-bio`
-- Wave: `wave_1_audit_completion`
-- Atoms: `13`
-- Blocker class: `audit_rollup_only`
-- Primary blocker pattern: `['publishable_rollup']`
-- Representative atoms: `sciona.atoms.bio.molecular_docking.add_quantum_link.addquantumlink`, `sciona.atoms.bio.molecular_docking.build_complementary.constructcomplementarygraph`, `sciona.atoms.bio.molecular_docking.build_interaction_graph.networkx_weighted_graph_materialization`
-
 ### pubrev-008
 
 - Repo: `sciona-atoms`
 - Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `11`
+- Atoms: `5`
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.initializehmcstate`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc.leapfrogproposalkernel`, `sciona.atoms.inference.mcmc_foundational.mini_mcmc.hmc_llm.collectposteriorchain`
@@ -223,15 +216,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T15:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.numpy.search_sort.binary_search_insertion`, `sciona.atoms.numpy.search_sort.lexicographic_indirect_sort`, `sciona.atoms.numpy.search_sort.partial_sort_partition`
-
-### pubrev-060
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.physics.pasqal.docking.graph_transformer`, `sciona.atoms.physics.pasqal.docking.quantum_mwis_solver`, `sciona.atoms.physics.pasqal.docking.sub_graph_embedder`
 
 ### pubrev-064
 
