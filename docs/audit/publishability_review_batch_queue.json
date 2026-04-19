@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-18T21:46:12.423400+00:00",
+  "generated_at": "2026-04-19T01:25:35.016265+00:00",
   "source": "local_supabase_remediation_filtered_existing_queue",
-  "batch_count": 36,
+  "batch_count": 34,
   "batches": [
     {
       "atom_count": 18,
@@ -3409,85 +3409,6 @@
       ]
     },
     {
-      "atom_count": 2,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.physics.pulsar_folding.dm_can_brute_force",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        },
-        {
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ],
-          "fqdn": "sciona.atoms.physics.pulsar_folding.spline_bandpass_correction",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-061",
-      "batch_key": "sciona.atoms.physics.pulsar_folding.__remainder__",
-      "blocker_class": "metadata_plus_rollup",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "papers or algorithm docs",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 2,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "parameters",
-        "description"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms-physics",
-      "representative_atoms": [
-        "sciona.atoms.physics.pulsar_folding.dm_can_brute_force",
-        "sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter",
-        "sciona.atoms.physics.pulsar_folding.spline_bandpass_correction"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 2,
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "atom_count": 1,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 3,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
       "atom_count": 3,
       "atoms": [
         {
@@ -3928,67 +3849,6 @@
             "description",
             "references"
           ],
-          "fqdn": "sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state",
-          "overall_verdict": "missing_row",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ],
-      "batch_id": "pubrev-078",
-      "batch_key": "sciona.atoms.state_estimation.kalman_filters.__remainder__",
-      "blocker_class": "full_metadata_missing",
-      "evidence_sources": [
-        "local implementation",
-        "provider audit/reference artifacts",
-        "local tests",
-        "web/source provenance confirmation"
-      ],
-      "likely_human_signoff": "low",
-      "likely_web_review": "high",
-      "primary_blocker_count": 1,
-      "primary_blocker_pattern": [
-        "publishable_rollup",
-        "io_specs",
-        "parameters",
-        "description",
-        "references"
-      ],
-      "recommended_wave": "wave_2_metadata_and_llm_review",
-      "repo_owner": "sciona-atoms",
-      "representative_atoms": [
-        "sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state"
-      ],
-      "top_blocker_patterns": [
-        {
-          "atom_count": 1,
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ],
-      "top_review_statuses": [
-        {
-          "atom_count": 1,
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row"
-        }
-      ]
-    },
-    {
-      "atom_count": 1,
-      "atoms": [
-        {
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ],
           "fqdn": "sciona.atoms.state_estimation.particle_filters.track_particle_hidden_state",
           "overall_verdict": "missing_row",
           "review_status": "missing_row",
@@ -4041,26 +3901,26 @@
     }
   ],
   "totals": {
-    "non_publishable_atoms": 179,
+    "non_publishable_atoms": 176,
     "remediation_excluded_atoms": 17
   },
   "repo_counts": {
-    "sciona-atoms": 56,
+    "sciona-atoms": 55,
     "sciona-atoms-bio": 46,
     "sciona-atoms-fintech": 31,
-    "sciona-atoms-physics": 42,
+    "sciona-atoms-physics": 40,
     "sciona-atoms-signal": 4
   },
   "wave_counts": {
     "wave_1_audit_completion": 71,
-    "wave_2_metadata_and_llm_review": 108
+    "wave_2_metadata_and_llm_review": 105
   },
   "blocker_counts": {
-    "description": 125,
-    "io_specs": 116,
-    "parameters": 125,
-    "publishable_rollup": 179,
-    "references": 101
+    "description": 122,
+    "io_specs": 115,
+    "parameters": 122,
+    "publishable_rollup": 176,
+    "references": 100
   },
   "special_slices": {
     "audit_rollup_only_atoms": {

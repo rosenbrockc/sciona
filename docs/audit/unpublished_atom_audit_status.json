@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-18T21:46:12.423400+00:00",
+  "generated_at": "2026-04-19T01:25:35.016265+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
     "atoms": 504,
-    "publishable_atoms": 308,
-    "non_publishable_atoms": 196
+    "publishable_atoms": 311,
+    "non_publishable_atoms": 193
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 179,
+    "review_backlog_non_publishable_atoms": 176,
     "remediation_excluded_non_publishable_atoms": 17
   },
   "remediation_exclusions": {
@@ -110,11 +110,11 @@
     "excluded_unpublished_atom_count": 17
   },
   "blocker_counts": {
-    "description": 125,
-    "io_specs": 116,
-    "parameters": 125,
-    "publishable_rollup": 179,
-    "references": 101
+    "description": 122,
+    "io_specs": 115,
+    "parameters": 122,
+    "publishable_rollup": 176,
+    "references": 100
   },
   "top_blocker_combinations": [
     {
@@ -125,7 +125,7 @@
         "description",
         "references"
       ],
-      "atom_count": 101
+      "atom_count": 100
     },
     {
       "blockers": [
@@ -148,14 +148,14 @@
         "parameters",
         "description"
       ],
-      "atom_count": 9
+      "atom_count": 7
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 125
+      "atom_count": 122
     },
     {
       "review_status": "reviewed_pending",
@@ -2548,11 +2548,11 @@
     },
     {
       "domain": "physics",
-      "atom_count": 8,
-      "missing_publishable_rollup": 8,
+      "atom_count": 6,
+      "missing_publishable_rollup": 6,
       "missing_io_specs": 4,
-      "missing_parameters": 8,
-      "missing_description": 8,
+      "missing_parameters": 6,
+      "missing_description": 6,
       "missing_references": 1,
       "atoms": [
         {
@@ -2596,34 +2596,6 @@
           "blockers": [
             "publishable_rollup",
             "io_specs",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pulsar_folding.dm_can_brute_force",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "parameters",
-            "description"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.physics.pulsar_folding.spline_bandpass_correction",
-          "domain": "physics",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
             "parameters",
             "description"
           ]
@@ -2794,29 +2766,13 @@
     },
     {
       "domain": "state_estimation",
-      "atom_count": 6,
-      "missing_publishable_rollup": 6,
-      "missing_io_specs": 6,
-      "missing_parameters": 6,
-      "missing_description": 6,
-      "missing_references": 6,
+      "atom_count": 5,
+      "missing_publishable_rollup": 5,
+      "missing_io_specs": 5,
+      "missing_parameters": 5,
+      "missing_description": 5,
+      "missing_references": 5,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state",
-          "domain": "state_estimation",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.state_estimation.particle_filters.basic.filter_step_preparation_and_dispatch",
           "domain": "state_estimation",
@@ -2923,11 +2879,11 @@
     },
     {
       "domain": "physics",
-      "atom_count": 8
+      "atom_count": 6
     },
     {
       "domain": "state_estimation",
-      "atom_count": 6
+      "atom_count": 5
     },
     {
       "domain": "signal_processing",

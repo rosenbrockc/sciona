@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T21:46:12.423400+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T01:25:35.016265+00:00.
 
-- Remaining unpublished atoms: `179`
+- Remaining unpublished atoms: `176`
 - Remediation-excluded atoms: `17`
-- Remaining worker batches: `36`
+- Remaining worker batches: `34`
 
 ## Remediation Exclusions
 
@@ -258,15 +258,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T21:
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description']`
 - Representative atoms: `sciona.atoms.physics.pasqal.docking.graph_transformer`, `sciona.atoms.physics.pasqal.docking.quantum_mwis_solver`, `sciona.atoms.physics.pasqal.docking.sub_graph_embedder`
 
-### pubrev-061
-
-- Repo: `sciona-atoms-physics`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `metadata_plus_rollup`
-- Primary blocker pattern: `['publishable_rollup', 'parameters', 'description']`
-- Representative atoms: `sciona.atoms.physics.pulsar_folding.dm_can_brute_force`, `sciona.atoms.physics.pulsar_folding.dm_can.dm_candidate_filter`, `sciona.atoms.physics.pulsar_folding.spline_bandpass_correction`
-
 ### pubrev-062
 
 - Repo: `sciona-atoms-physics`
@@ -320,15 +311,6 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-18T21:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle`
-
-### pubrev-078
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `1`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.state_estimation.kalman_filters.track_linear_gaussian_state`
 
 ### pubrev-079
 
