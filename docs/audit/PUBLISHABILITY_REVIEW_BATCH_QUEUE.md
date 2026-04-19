@@ -1,10 +1,10 @@
 # Publishability Review Batch Queue
 
-Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T19:35:15.794049+00:00.
+Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T20:13:16.590994+00:00.
 
-- Remaining unpublished atoms: `29`
+- Remaining unpublished atoms: `21`
 - Remediation-excluded atoms: `48`
-- Remaining worker batches: `9`
+- Remaining worker batches: `1`
 
 ## Remediation Exclusions
 
@@ -42,77 +42,5 @@ Generated from `docs/audit/unpublished_atom_audit_status.json` on 2026-04-19T19:
 - Blocker class: `full_metadata_missing`
 - Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
 - Representative atoms: `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle`, `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel`
-
-### pubrev-045
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.signal_detect_measure.analyze_peak_threshold_sensitivity`, `sciona.atoms.expansion.signal_detect_measure.check_event_rate_stationarity`, `sciona.atoms.expansion.signal_detect_measure.estimate_false_positive_rate`
-
-### pubrev-046
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.signal_filter.analyze_group_delay_variation`, `sciona.atoms.expansion.signal_filter.analyze_pole_stability`, `sciona.atoms.expansion.signal_filter.detect_transient_response`
-
-### pubrev-047
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.expansion.signal_transform.analyze_window_leakage`, `sciona.atoms.expansion.signal_transform.check_inverse_reconstruction`, `sciona.atoms.expansion.signal_transform.detect_spectral_aliasing`
-
-### pubrev-049
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `4`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.hamiltonianphasepointtransition`, `sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.temperingfactorcomputation`, `sciona.atoms.inference.mcmc_foundational.advancedhmc.trajectory.buildnutstree`
-
-### pubrev-058
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `3`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.advancedvi.core.evaluate_log_probability_density`, `sciona.atoms.inference.advancedvi.core.gradient_oracle_evaluation`, `sciona.atoms.inference.advancedvi.core.optimizationlooporchestration`
-
-### pubrev-066
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel`, `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel_weighted`
-
-### pubrev-067
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `2`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.jax_advi.optimize_advi.meanfieldvariationalfit`, `sciona.atoms.inference.jax_advi.optimize_advi.posteriordrawsampling`
-
-### pubrev-075
-
-- Repo: `sciona-atoms`
-- Wave: `wave_2_metadata_and_llm_review`
-- Atoms: `1`
-- Blocker class: `full_metadata_missing`
-- Primary blocker pattern: `['publishable_rollup', 'io_specs', 'parameters', 'description', 'references']`
-- Representative atoms: `sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle`
 
 - The canonical machine-readable queue is [publishability_review_batch_queue.json](/Users/conrad/personal/sciona-matcher/docs/audit/publishability_review_batch_queue.json).

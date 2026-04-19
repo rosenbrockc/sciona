@@ -1,16 +1,16 @@
 # Unpublished Atom Audit Status
 
-Generated from the live local Supabase replay on 2026-04-19T19:35:15.794049+00:00.
+Generated from the live local Supabase replay on 2026-04-19T20:13:16.590994+00:00.
 
 This document is a working debt register for every currently unpublished atom.
 
 ## Summary
 
-- Total atoms in local catalog: `527`
-- Publishable atoms: `450`
-- Total non-publishable atoms in local catalog: `77`
+- Total atoms in local catalog: `537`
+- Publishable atoms: `468`
+- Total non-publishable atoms in local catalog: `69`
 - Remediation-excluded non-publishable atoms: `48`
-- Non-publishable atoms remaining in matcher backlog: `29`
+- Non-publishable atoms remaining in matcher backlog: `21`
 
 
 ### Remediation Exclusions
@@ -42,20 +42,21 @@ This document is a working debt register for every currently unpublished atom.
 
 ### Marginal Blocker Counts
 
-- `description`: `29`
-- `io_specs`: `29`
-- `parameters`: `29`
-- `publishable_rollup`: `29`
-- `references`: `29`
+- `description`: `21`
+- `io_specs`: `11`
+- `parameters`: `21`
+- `publishable_rollup`: `21`
+- `references`: `11`
 
 ### Top Exact Blocker Combinations
 
-- `publishable_rollup,io_specs,parameters,description,references`: `29`
+- `publishable_rollup,io_specs,parameters,description,references`: `11`
+- `publishable_rollup,parameters,description`: `10`
 
 ### Largest Non-Publishable Domains
 
-- `inference`: `21`
-- `expansion`: `6`
+- `ml`: `10`
+- `inference`: `9`
 - `medical_imaging_3d`: `2`
 
 ## Status Legend
@@ -67,47 +68,17 @@ This document is a working debt register for every currently unpublished atom.
 - `references`: no atom references rows
 - `missing_row`: there is no audit rollup row for the atom yet
 
-## expansion
-
-- Non-publishable atoms: `6`
-- Missing publishable rollup: `6`
-- Missing IO specs: `6`
-- Missing parameters: `6`
-- Missing description: `6`
-- Missing references: `6`
-
-| Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
-| --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.expansion.signal_detect_measure.analyze_peak_threshold_sensitivity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_detect_measure.check_event_rate_stationarity` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_filter.analyze_group_delay_variation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_filter.measure_passband_ripple` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_transform.analyze_window_leakage` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.expansion.signal_transform.detect_spectral_aliasing` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-
 ## inference
 
-- Non-publishable atoms: `21`
-- Missing publishable rollup: `21`
-- Missing IO specs: `21`
-- Missing parameters: `21`
-- Missing description: `21`
-- Missing references: `21`
+- Non-publishable atoms: `9`
+- Missing publishable rollup: `9`
+- Missing IO specs: `9`
+- Missing parameters: `9`
+- Missing description: `9`
+- Missing references: `9`
 
 | Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
-| `sciona.atoms.inference.advancedvi.core.evaluate_log_probability_density` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.advancedvi.core.gradient_oracle_evaluation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.advancedvi.core.optimizationlooporchestration` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel_weighted` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.jax_advi.optimize_advi.meanfieldvariationalfit` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.jax_advi.optimize_advi.posteriordrawsampling` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.hamiltonianphasepointtransition` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.temperingfactorcomputation` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.advancedhmc.trajectory.buildnutstree` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
-| `sciona.atoms.inference.mcmc_foundational.advancedhmc.trajectory.nutstransitionkernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.targetlogkerneloracle` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.de.build_de_transition_kernel` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
@@ -131,3 +102,25 @@ This document is a working debt register for every currently unpublished atom.
 | --- | --- | --- | --- | --- | --- | --- |
 | `sciona.atoms.medical_imaging_3d.aggregation.casenet` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
 | `sciona.atoms.medical_imaging_3d.aggregation.debug_atoms.casenet` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, io_specs, parameters, description, references` |
+
+## ml
+
+- Non-publishable atoms: `10`
+- Missing publishable rollup: `10`
+- Missing IO specs: `0`
+- Missing parameters: `10`
+- Missing description: `10`
+- Missing references: `0`
+
+| Atom | Review | Trust | Semantic | Dev Semantic | Verdict | Blockers |
+| --- | --- | --- | --- | --- | --- | --- |
+| `sciona.atoms.ml.sklearn.covariance.empirical_covariance` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.covariance.shrunk_covariance` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.feature_selection.chi2` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.feature_selection.f_classif` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.feature_selection.f_regression` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.feature_selection.r_regression` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.images.extract_patches_2d` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.images.grid_to_graph` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.images.img_to_graph` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |
+| `sciona.atoms.ml.sklearn.images.reconstruct_from_patches_2d` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `missing_row` | `publishable_rollup, parameters, description` |

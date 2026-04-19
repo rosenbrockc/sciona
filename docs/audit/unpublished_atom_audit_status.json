@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-19T19:35:15.794049+00:00",
+  "generated_at": "2026-04-19T20:13:16.590994+00:00",
   "source": "local_supabase_remediation_filtered",
   "totals": {
-    "atoms": 527,
-    "publishable_atoms": 450,
-    "non_publishable_atoms": 77
+    "atoms": 537,
+    "publishable_atoms": 468,
+    "non_publishable_atoms": 69
   },
   "backlog_totals": {
-    "review_backlog_non_publishable_atoms": 29,
+    "review_backlog_non_publishable_atoms": 21,
     "remediation_excluded_non_publishable_atoms": 48
   },
   "remediation_exclusions": {
@@ -400,11 +400,11 @@
     "excluded_unpublished_atom_count": 48
   },
   "blocker_counts": {
-    "description": 29,
-    "io_specs": 29,
-    "parameters": 29,
-    "publishable_rollup": 29,
-    "references": 29
+    "description": 21,
+    "io_specs": 11,
+    "parameters": 21,
+    "publishable_rollup": 21,
+    "references": 11
   },
   "top_blocker_combinations": [
     {
@@ -415,325 +415,34 @@
         "description",
         "references"
       ],
-      "atom_count": 29
+      "atom_count": 11
+    },
+    {
+      "blockers": [
+        "publishable_rollup",
+        "parameters",
+        "description"
+      ],
+      "atom_count": 10
     }
   ],
   "top_review_statuses": [
     {
       "review_status": "missing_row",
       "trust_readiness": "missing_row",
-      "atom_count": 29
+      "atom_count": 21
     }
   ],
   "domains": [
     {
-      "domain": "expansion",
-      "atom_count": 6,
-      "missing_publishable_rollup": 6,
-      "missing_io_specs": 6,
-      "missing_parameters": 6,
-      "missing_description": 6,
-      "missing_references": 6,
-      "atoms": [
-        {
-          "fqdn": "sciona.atoms.expansion.signal_detect_measure.analyze_peak_threshold_sensitivity",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.signal_detect_measure.check_event_rate_stationarity",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.signal_filter.analyze_group_delay_variation",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.signal_filter.measure_passband_ripple",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.signal_transform.analyze_window_leakage",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.expansion.signal_transform.detect_spectral_aliasing",
-          "domain": "expansion",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        }
-      ]
-    },
-    {
       "domain": "inference",
-      "atom_count": 21,
-      "missing_publishable_rollup": 21,
-      "missing_io_specs": 21,
-      "missing_parameters": 21,
-      "missing_description": 21,
-      "missing_references": 21,
+      "atom_count": 9,
+      "missing_publishable_rollup": 9,
+      "missing_io_specs": 9,
+      "missing_parameters": 9,
+      "missing_description": 9,
+      "missing_references": 9,
       "atoms": [
-        {
-          "fqdn": "sciona.atoms.inference.advancedvi.core.evaluate_log_probability_density",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.advancedvi.core.gradient_oracle_evaluation",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.advancedvi.core.optimizationlooporchestration",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.bayes_rs.bernoulli.bernoulli_probabilistic_oracle",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.conjugate_priors.beta_binom.posterior_randmodel_weighted",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.jax_advi.optimize_advi.meanfieldvariationalfit",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.jax_advi.optimize_advi.posteriordrawsampling",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.hamiltonianphasepointtransition",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.advancedhmc.integrator.temperingfactorcomputation",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.advancedhmc.trajectory.buildnutstree",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
-        {
-          "fqdn": "sciona.atoms.inference.mcmc_foundational.advancedhmc.trajectory.nutstransitionkernel",
-          "domain": "inference",
-          "review_status": "missing_row",
-          "trust_readiness": "missing_row",
-          "semantic_verdict": "missing_row",
-          "developer_semantic_verdict": "missing_row",
-          "overall_verdict": "missing_row",
-          "blockers": [
-            "publishable_rollup",
-            "io_specs",
-            "parameters",
-            "description",
-            "references"
-          ]
-        },
         {
           "fqdn": "sciona.atoms.inference.mcmc_foundational.kthohr_mcmc.aees.metropolishastingstransitionkernel",
           "domain": "inference",
@@ -922,16 +631,167 @@
           ]
         }
       ]
+    },
+    {
+      "domain": "ml",
+      "atom_count": 10,
+      "missing_publishable_rollup": 10,
+      "missing_io_specs": 0,
+      "missing_parameters": 10,
+      "missing_description": 10,
+      "missing_references": 0,
+      "atoms": [
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.covariance.empirical_covariance",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.covariance.shrunk_covariance",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.feature_selection.chi2",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.feature_selection.f_classif",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.feature_selection.f_regression",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.feature_selection.r_regression",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.images.extract_patches_2d",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.images.grid_to_graph",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.images.img_to_graph",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        },
+        {
+          "fqdn": "sciona.atoms.ml.sklearn.images.reconstruct_from_patches_2d",
+          "domain": "ml",
+          "review_status": "missing_row",
+          "trust_readiness": "missing_row",
+          "semantic_verdict": "missing_row",
+          "developer_semantic_verdict": "missing_row",
+          "overall_verdict": "missing_row",
+          "blockers": [
+            "publishable_rollup",
+            "parameters",
+            "description"
+          ]
+        }
+      ]
     }
   ],
   "largest_non_publishable_domains": [
     {
-      "domain": "inference",
-      "atom_count": 21
+      "domain": "ml",
+      "atom_count": 10
     },
     {
-      "domain": "expansion",
-      "atom_count": 6
+      "domain": "inference",
+      "atom_count": 9
     },
     {
       "domain": "medical_imaging_3d",
