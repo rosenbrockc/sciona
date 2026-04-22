@@ -58,6 +58,8 @@ class ConceptType(str, Enum):
     FIXED_POINT = "fixed_point"
     MAP_OVER = "map_over"
     BASELINE_ANALYSIS = "baseline_analysis"
+    # ML model selection
+    ML_MODEL_SELECTION = "ml_model_selection"
     # Data flow / orchestration
     STATE_INIT = "state_init"
     DATA_ASSEMBLY = "data_assembly"

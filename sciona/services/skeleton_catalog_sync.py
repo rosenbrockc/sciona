@@ -39,6 +39,7 @@ class SkeletonArtifactBundle:
     cdg_nodes: list[dict[str, Any]] = field(default_factory=list)
     cdg_edges: list[dict[str, Any]] = field(default_factory=list)
     cdg_bindings: list[dict[str, Any]] = field(default_factory=list)
+    binding_evidence: list[dict[str, Any]] = field(default_factory=list)
     projection: PublishedCDGProjection | None = None
     source_asset: SkeletonFamilyAsset | None = None
 
@@ -1024,6 +1025,10 @@ def sync_bundle_to_supabase(
         supabase.table("artifact_cdg_edges").upsert(bundle.cdg_edges).execute()
     if bundle.cdg_bindings:
         supabase.table("artifact_cdg_bindings").upsert(bundle.cdg_bindings).execute()
+    if bundle.binding_evidence:
+        supabase.table("artifact_cdg_binding_evidence").insert(
+            bundle.binding_evidence
+        ).execute()
 
 
 async def sync_bundles_to_graph_store(

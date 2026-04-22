@@ -98,6 +98,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.clustering import (
         ClusteringExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.ml_model_selection import (
+        MLModelSelectionRuleSet,
+    )
     from sciona.principal.expansion_rules.dimensionality_reduction import (
         DimensionalityReductionExpansionRuleSet,
     )
@@ -145,6 +148,7 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         CombinatoricsExpansionRuleSet(),
         NeuralNetworkExpansionRuleSet(),
         ClusteringExpansionRuleSet(),
+        MLModelSelectionRuleSet(),
         DimensionalityReductionExpansionRuleSet(),
         ODESolverExpansionRuleSet(),
         QuadratureExpansionRuleSet(),

@@ -260,11 +260,211 @@ def _derive_from_summary(
     return observations
 
 
+_MODEL_SELECTION_DIAGNOSTICS: list[
+    tuple[str, str, str, str, float, list[HeuristicActionClass]]
+] = [
+    # (intermediates_key, heuristic_id, display_name, meaning, threshold, action_classes)
+    (
+        "condition_number",
+        "numerical_condition_instability",
+        "Numerical Condition Instability",
+        "Design matrix ill-conditioning degrades estimator stability.",
+        30.0,
+        [HeuristicActionClass.PRECONDITION, HeuristicActionClass.REPLACE_STAGE],
+    ),
+    (
+        "n_p_ratio",
+        "coverage_fragmentation",
+        "Sample Coverage Fragmentation",
+        "Insufficient samples relative to features requires regularization.",
+        10.0,
+        [HeuristicActionClass.PRECONDITION, HeuristicActionClass.REPLACE_STAGE],
+    ),
+    (
+        "mutual_incoherence",
+        "constraint_violation_risk",
+        "Feature Incoherence Risk",
+        "High mutual incoherence breaks Lasso recovery guarantees.",
+        1.0,
+        [HeuristicActionClass.REPLACE_STAGE],
+    ),
+    (
+        "excess_kurtosis",
+        "residual_structure_after_transform",
+        "Target Kurtosis",
+        "Heavy-tailed target suggests robust loss function.",
+        1.0,
+        [HeuristicActionClass.REPLACE_STAGE],
+    ),
+    (
+        "residual_kurtosis",
+        "residual_structure_after_transform",
+        "Residual Kurtosis",
+        "Heavy-tailed residuals suggest robust loss function.",
+        1.0,
+        [HeuristicActionClass.REPLACE_STAGE],
+    ),
+    (
+        "noise_level",
+        "quality_instability",
+        "Noise Level",
+        "High noise favors bagging (RandomForest) over boosting.",
+        0.5,
+        [HeuristicActionClass.REPLACE_STAGE],
+    ),
+    (
+        "dispersion_index",
+        "density_collapse",
+        "Dispersion Index",
+        "Mean-variance relationship deviates from Gaussian assumption.",
+        1.1,
+        [HeuristicActionClass.REPLACE_STAGE],
+    ),
+    (
+        "vif_max",
+        "numerical_condition_instability",
+        "Variance Inflation Factor",
+        "Severe multicollinearity requires PCA or feature removal.",
+        10.0,
+        [HeuristicActionClass.PRECONDITION, HeuristicActionClass.INSERT_CORRECTION],
+    ),
+    (
+        "skewness_max",
+        "residual_structure_after_transform",
+        "Feature Skewness",
+        "Highly skewed features need power transform.",
+        1.0,
+        [HeuristicActionClass.PRECONDITION],
+    ),
+    (
+        "explained_variance",
+        "coverage_fragmentation",
+        "Explained Variance",
+        "Low explained variance indicates need for dimensionality reduction.",
+        0.95,
+        [HeuristicActionClass.PRECONDITION],
+    ),
+]
+
+_MODEL_SELECTION_PREFIX = "model_selection"
+
+
+def _derive_from_model_selection_intermediates(
+    intermediates: Mapping[str, Any],
+) -> list[RuntimeHeuristicObservation]:
+    """Derive heuristic observations from model-selection diagnostic atom outputs."""
+    observations: list[RuntimeHeuristicObservation] = []
+
+    for (
+        key, heuristic_id, display_name, meaning, threshold, action_classes,
+    ) in _MODEL_SELECTION_DIAGNOSTICS:
+        value = intermediates.get(f"{_MODEL_SELECTION_PREFIX}.{key}")
+        if value is None:
+            continue
+        try:
+            metric_value = float(value)
+        except (ValueError, TypeError):
+            continue
+        # For explained_variance, trigger when BELOW threshold; others when above
+        if key == "explained_variance":
+            if metric_value >= threshold:
+                continue
+            confidence = _clamp01(0.6 + (threshold - metric_value) * 2.0)
+        else:
+            if metric_value <= threshold:
+                continue
+            gap = (metric_value - threshold) / max(threshold, 1.0)
+            confidence = _clamp01(0.6 + min(gap, 1.0) * 0.35)
+
+        observations.append(
+            _observation(
+                heuristic_id=heuristic_id,
+                display_name=display_name,
+                meaning=meaning,
+                evidence_type=HeuristicEvidenceType.SCALAR_SCORE,
+                action_classes=action_classes,
+                source_section=_MODEL_SELECTION_PREFIX,
+                metric_name=key,
+                metric_value=metric_value,
+                confidence=confidence,
+                threshold=threshold,
+                notes=[f"Derived from model selection diagnostic atom output {key}."],
+            )
+        )
+
+    # Boolean diagnostics
+    is_ts = intermediates.get(f"{_MODEL_SELECTION_PREFIX}.is_time_series")
+    if is_ts is True or is_ts == 1:
+        observations.append(
+            _observation(
+                heuristic_id="cv_strategy_selection",
+                display_name="Time Series Detection",
+                meaning="Temporal structure detected — TimeSeriesSplit mandatory.",
+                evidence_type=HeuristicEvidenceType.BOOLEAN_FLAG,
+                action_classes=[HeuristicActionClass.GATE_OR_VALIDATE],
+                source_section=_MODEL_SELECTION_PREFIX,
+                metric_name="is_time_series",
+                metric_value=1.0,
+                confidence=0.95,
+                threshold=0.0,
+                notes=["First column is strictly monotonically increasing."],
+            )
+        )
+
+    is_sparse = intermediates.get(f"{_MODEL_SELECTION_PREFIX}.is_sparse")
+    if is_sparse is True or is_sparse == 1:
+        observations.append(
+            _observation(
+                heuristic_id="preprocessing_selection",
+                display_name="Sparse Matrix Detection",
+                meaning="Sparse input requires sparse-safe preprocessing and solvers.",
+                evidence_type=HeuristicEvidenceType.BOOLEAN_FLAG,
+                action_classes=[
+                    HeuristicActionClass.PRECONDITION,
+                    HeuristicActionClass.REPLACE_STAGE,
+                ],
+                source_section=_MODEL_SELECTION_PREFIX,
+                metric_name="is_sparse",
+                metric_value=1.0,
+                confidence=0.90,
+                threshold=0.0,
+                notes=["Input X is a scipy sparse matrix."],
+            )
+        )
+
+    return observations
+
+
 def derive_runtime_heuristics(
     runtime_evidence: Mapping[str, Any] | None,
+    intermediates: Mapping[str, Any] | None = None,
 ) -> RuntimeHeuristicEvidence:
-    """Derive generic heuristics from canonical runtime evidence summaries."""
+    """Derive generic heuristics from canonical runtime evidence summaries.
+
+    Parameters
+    ----------
+    runtime_evidence
+        Canonical telemetry summaries (signal, events, rate, etc.).
+    intermediates
+        Expansion context intermediates containing model-selection atom
+        outputs under the ``model_selection.*`` prefix.
+    """
+    all_observations: list[RuntimeHeuristicObservation] = []
+
+    # Model-selection observations from intermediates
+    if isinstance(intermediates, Mapping):
+        has_ms = any(
+            k.startswith(f"{_MODEL_SELECTION_PREFIX}.")
+            for k in intermediates
+        )
+        if has_ms:
+            all_observations.extend(
+                _derive_from_model_selection_intermediates(intermediates)
+            )
+
     if not isinstance(runtime_evidence, Mapping):
+        if all_observations:
+            return _build_evidence(all_observations)
         return RuntimeHeuristicEvidence()
 
     telemetry_summary = runtime_evidence.get("telemetry_summary", runtime_evidence)
@@ -300,6 +500,14 @@ def derive_runtime_heuristics(
         for name, summary in outputs.items():
             extend_from(f"outputs.{name}", summary, source_key=str(name))
 
+    all_observations.extend(observations)
+    return _build_evidence(all_observations)
+
+
+def _build_evidence(
+    observations: list[RuntimeHeuristicObservation],
+) -> RuntimeHeuristicEvidence:
+    """Deduplicate, sort, and wrap observations into an evidence bundle."""
     deduped: dict[tuple[str, str, str], RuntimeHeuristicObservation] = {}
     for observation in observations:
         key = (

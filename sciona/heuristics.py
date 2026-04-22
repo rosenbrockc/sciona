@@ -47,6 +47,15 @@ _EXPLICIT_CANONICAL_HEURISTIC_IDS = {
     "split_balance_instability",
     "recursion_depth_pressure",
     "merge_cost_pressure",
+    # ML model selection (from sciona-atoms-ml diagnostics/recommendations)
+    "regularization_selection",
+    "loss_function_selection",
+    "linear_model_selection",
+    "tree_ensemble_selection",
+    "preprocessing_selection",
+    "dimensionality_reduction_selection",
+    "hyperparameter_range_selection",
+    "cv_strategy_selection",
 }
 EXTERNAL_CANONICAL_ASSET_CANDIDATES: tuple[tuple[str, ...], ...] = (
     ("data", "heuristics", "canonical_registry.json"),
