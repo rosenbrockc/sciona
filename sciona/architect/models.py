@@ -68,6 +68,10 @@ class ConceptType(str, Enum):
     # Presentation / observability
     VISUALIZATION = "visualization"
     OBSERVABILITY = "observability"
+    # Loss / objective functions (passed as callables to optimizers/trainers)
+    LOSS_FUNCTION = "loss_function"
+    # Domain knowledge not derivable from code (e.g., physics-specific feature sets)
+    EXTERNAL_KNOWLEDGE = "external_knowledge"
     CUSTOM = "custom"
     EXTERNAL_TOOL = "external_tool"
 
@@ -144,8 +148,29 @@ class EdgeLossClass(str, Enum):
     IRREVERSIBLE = "irreversible"
 
 
+class EdgeKind(str, Enum):
+    """How the source node's output is consumed by the target node.
+
+    DATA_FLOW (default): the source produces data that the target consumes
+        as input.  Standard pipeline edge.
+    CALLABLE_INJECTION: the source node is a pure function that the target
+        node accepts as a callable parameter (e.g., a loss function passed
+        to an optimizer, a kernel function passed to a GP, a custom
+        objective passed to XGBoost).  The source node is not *called
+        before* the target — it is *passed to* the target for the target
+        to call repeatedly during its own execution.
+
+    The synthesizer uses this to decide whether to wire data or pass a
+    function reference.  Both kinds participate in topological ordering
+    (the callable must be defined before the caller can reference it).
+    """
+
+    DATA_FLOW = "data_flow"
+    CALLABLE_INJECTION = "callable_injection"
+
+
 class DependencyEdge(BaseModel):
-    """A data-flow edge between CDG nodes."""
+    """A data-flow or callable-injection edge between CDG nodes."""
 
     source_id: str
     target_id: str
@@ -153,6 +178,7 @@ class DependencyEdge(BaseModel):
     input_name: str  # which input of target
     source_type: str  # type of the data flowing
     target_type: str  # expected type at target
+    edge_kind: EdgeKind = EdgeKind.DATA_FLOW
     requires_glue: bool = False  # True if types don't match
     data_kind: str = ""
     provenance: str = ""

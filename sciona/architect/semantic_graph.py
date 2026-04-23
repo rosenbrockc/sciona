@@ -40,6 +40,7 @@ class SemanticDataKind(str, Enum):
     SCALAR_STATISTIC = "scalar_statistic"
     TIME_AXIS = "time_axis"
     SAMPLING_CONTEXT = "sampling_context"
+    CALLABLE = "callable"  # function reference (loss, kernel, objective)
 
 
 class SemanticLossClass(str, Enum):
