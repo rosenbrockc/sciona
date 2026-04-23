@@ -1,0 +1,246 @@
+{
+  "asset_id": "map_over",
+  "asset_version": "phase2.v1",
+  "family": "map_over",
+  "paradigm": "map_over",
+  "name": "MAP Over Combinator",
+  "description": "Slice input into windows or parameter sets, apply a body subgraph to each slice independently, and aggregate the per-slice results into a combined output.",
+  "dejargonized_summary": "Break the input into pieces, process each piece the same way, and combine all the piece-level results into one answer.",
+  "canonical_for_paradigm": true,
+  "variant_hints": [
+    "map_over",
+    "sliding_window",
+    "chunked_map",
+    "strided_apply",
+    "threshold_sweep",
+    "parameter_grid_ensemble",
+    "per_layer_processing",
+    "windowed_analysis"
+  ],
+  "inputs": [
+    {
+      "name": "data",
+      "type_desc": "np.ndarray | list[any]",
+      "constraints": "Sliceable input. Can be a signal (windowed by position), a parameter list (iterated per value), or a collection (processed per element).",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "combined_results",
+      "type_desc": "np.ndarray | list[any]",
+      "constraints": "Aggregated output from all slices. Shape depends on the collect strategy (stack, average, concatenate, etc.).",
+      "required": true
+    }
+  ],
+  "planning_constraints": [
+    {
+      "category": "stage",
+      "subject": "slice_independence",
+      "statement": "Each slice must be processable independently of other slices.",
+      "rationale": "MAP semantics require that body_process has no cross-slice state dependencies. If slices depend on each other, use FIXED_POINT or SEQUENTIAL_FILTER instead.",
+      "confidence": 1.0,
+      "source_stage": "combinator_definition",
+      "source_reference": "MAP combinator semantics"
+    },
+    {
+      "category": "stage",
+      "subject": "collect_strategy",
+      "statement": "The collect_results stage must define how per-slice outputs are combined.",
+      "rationale": "Common strategies: weighted average (threshold ensembles), concatenation (windowed transforms), max/voting (detection sweeps). The choice affects downstream semantics.",
+      "confidence": 1.0,
+      "source_stage": "combinator_definition",
+      "source_reference": "MAP combinator semantics"
+    }
+  ],
+  "stages": [
+    {
+      "stage_id": "tpl_window_slicer",
+      "name": "Window Slicer",
+      "description": "Produce overlapping windows, parameter grid entries, or element-wise slices from the input data.",
+      "dejargonized_description": "Break the input into the pieces that will each be processed separately.",
+      "concept_type": "map_over",
+      "inputs": [
+        {
+          "name": "data",
+          "type_desc": "np.ndarray | list[any]",
+          "constraints": "Full input to be sliced.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "window",
+          "type_desc": "np.ndarray | any",
+          "constraints": "A single slice for body processing. Iterated over all slices.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "Input data is available and has a sliceable structure."
+      ],
+      "guarantees": [
+        "Each output window is a well-formed independent slice of the input."
+      ],
+      "matched_primitive": ""
+    },
+    {
+      "stage_id": "tpl_body_init",
+      "name": "Body Init",
+      "description": "Initialize per-window processing state. May be trivial (pass-through) or set up local context.",
+      "dejargonized_description": "Set up any local state needed before processing each piece.",
+      "concept_type": "state_init",
+      "inputs": [
+        {
+          "name": "window",
+          "type_desc": "np.ndarray | any",
+          "constraints": "A single slice from the slicer.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "state",
+          "type_desc": "any",
+          "constraints": "Initialized per-window state.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "Window slice is available."
+      ],
+      "guarantees": [
+        "State is initialized for body processing."
+      ],
+      "matched_primitive": ""
+    },
+    {
+      "stage_id": "tpl_body_process",
+      "name": "Body Process",
+      "description": "Process a single window or parameter configuration. This is the stage the architect decomposes further — it represents the per-slice computation that is applied identically to every slice.",
+      "dejargonized_description": "Do the actual work on each piece. This is where the real computation happens.",
+      "concept_type": "custom",
+      "inputs": [
+        {
+          "name": "state",
+          "type_desc": "any",
+          "constraints": "Per-window state from body_init.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type_desc": "any",
+          "constraints": "Per-window result to be collected.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "Per-window state is initialized."
+      ],
+      "guarantees": [
+        "Output is independent of other windows."
+      ],
+      "family_notes": [
+        "This stage is abstract — the architect must decompose it into concrete atoms based on the problem domain.",
+        "Example: for a threshold sweep ensemble, body_process is the full preprocessing + model + scoring sub-pipeline."
+      ],
+      "matched_primitive": ""
+    },
+    {
+      "stage_id": "tpl_collect_results",
+      "name": "Collect Results",
+      "description": "Aggregate per-window results into the final combined output. Strategy depends on the problem: weighted average for ensembles, concatenation for transforms, voting for classification.",
+      "dejargonized_description": "Combine all the piece-level results into one final answer.",
+      "concept_type": "data_assembly",
+      "inputs": [
+        {
+          "name": "result",
+          "type_desc": "any",
+          "constraints": "Per-window result from body_process.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "combined_results",
+          "type_desc": "np.ndarray | list[any]",
+          "constraints": "Aggregated output.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "All per-window results are available."
+      ],
+      "guarantees": [
+        "Output combines all per-window results according to the chosen strategy."
+      ],
+      "matched_primitive": ""
+    }
+  ],
+  "edges": [
+    {
+      "source_stage_id": "tpl_window_slicer",
+      "target_stage_id": "tpl_body_init",
+      "output_name": "window",
+      "input_name": "window",
+      "source_type": "np.ndarray | any",
+      "target_type": "np.ndarray | any",
+      "data_kind": "slice",
+      "provenance": "One slice per MAP iteration.",
+      "loss_class": "preserving"
+    },
+    {
+      "source_stage_id": "tpl_body_init",
+      "target_stage_id": "tpl_body_process",
+      "output_name": "state",
+      "input_name": "state",
+      "source_type": "any",
+      "target_type": "any",
+      "data_kind": "per_window_state",
+      "provenance": "Initialized state for body processing.",
+      "loss_class": "preserving"
+    },
+    {
+      "source_stage_id": "tpl_body_process",
+      "target_stage_id": "tpl_collect_results",
+      "output_name": "result",
+      "input_name": "result",
+      "source_type": "any",
+      "target_type": "any",
+      "data_kind": "per_window_result",
+      "provenance": "Independent per-window result for aggregation.",
+      "loss_class": "preserving"
+    }
+  ],
+  "audit": {
+    "source_kind": "local_asset",
+    "review_status": "draft",
+    "rationale": "MAP_OVER combinator pattern surfaced as a systematic gap in solution CDG analysis: both the Connectomics threshold sweep ensemble (120 thresholds x 4 filters) and Cause-Effect asymmetric feature difference (compute both directions, subtract) require this pattern.",
+    "dejargonized_summary": "Break the input into pieces, process each piece the same way, and combine the results. Used for parameter sweeps, sliding windows, and per-element processing.",
+    "provenance_notes": [
+      "Python skeleton template exists at sciona/architect/skeletons.py:_build_map_over.",
+      "This JSON asset replaces the Python-only definition with an auditable, versioned asset."
+    ],
+    "uncertainty_notes": [
+      "The body_process stage is deliberately abstract (concept_type=custom) — the architect must decompose it per-problem.",
+      "The collect_results strategy (average vs concat vs vote) is not constrained by this skeleton; the architect must choose."
+    ],
+    "references": [
+      {
+        "title": "Solution CDG Gap Analysis",
+        "url": "docs/SOLUTION_GAPS.md",
+        "note": "S-2 orchestration gap: threshold_sweep_ensemble and asymmetric_feature_difference require MAP_OVER."
+      },
+      {
+        "title": "MAP combinator pattern",
+        "url": "https://en.wikipedia.org/wiki/Map_(higher-order_function)",
+        "note": "Standard higher-order function semantics for independent per-element processing."
+      }
+    ],
+    "maintainers": [
+      "sciona-matcher"
+    ]
+  }
+}

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import deque
 from typing import Any
 
-from sciona.architect.models import AlgorithmicNode, DependencyEdge, NodeStatus
+from sciona.architect.models import AlgorithmicNode, ConceptType, DependencyEdge, NodeStatus
 
 
 def _is_any_type(type_desc: str) -> bool:
@@ -190,6 +190,66 @@ def _check_output_reachability(
     return issues
 
 
+def _check_combinator_structure(
+    parent: AlgorithmicNode,
+    children: list[AlgorithmicNode],
+) -> list[str]:
+    """Validate structural invariants for MAP_OVER and FIXED_POINT combinators."""
+    issues: list[str] = []
+
+    if parent.concept_type == ConceptType.MAP_OVER:
+        if parent.map_window_size < 1 and parent.map_hop_size < 1:
+            # Only warn if the parent explicitly declares MAP_OVER but has no
+            # window parameters — children may carry them instead.
+            child_has_map = any(
+                c.concept_type == ConceptType.MAP_OVER or c.map_window_size > 0
+                for c in children
+            )
+            if not child_has_map:
+                issues.append(
+                    "MAP_OVER parent has map_window_size=0 and no child carries "
+                    "window parameters; set map_window_size > 0 on the parent or "
+                    "a window_slicer child."
+                )
+
+        collect_types = {ConceptType.DATA_ASSEMBLY, ConceptType.CUSTOM}
+        child_names_lower = {c.name.lower() for c in children}
+        has_collector = any(
+            c.concept_type in collect_types
+            and any(
+                kw in c.name.lower()
+                for kw in ("collect", "aggregate", "combine", "results")
+            )
+            for c in children
+        )
+        if not has_collector and "collect" not in " ".join(child_names_lower):
+            issues.append(
+                "MAP_OVER decomposition has no collect/aggregate child; "
+                "per-window results need a combination stage."
+            )
+
+    if parent.concept_type == ConceptType.FIXED_POINT:
+        if parent.fixed_point_max_iterations < 1:
+            child_has_fp = any(c.fixed_point_max_iterations > 0 for c in children)
+            if not child_has_fp:
+                issues.append(
+                    "FIXED_POINT parent has fixed_point_max_iterations=0; "
+                    "set a finite iteration budget to prevent unbounded loops."
+                )
+
+        convergence_keywords = {"convergence", "converge", "stopping", "check"}
+        has_convergence = any(
+            convergence_keywords & _tokenize(c.name) for c in children
+        )
+        if not has_convergence:
+            issues.append(
+                "FIXED_POINT decomposition has no convergence_check child; "
+                "iterations need a stopping criterion."
+            )
+
+    return issues
+
+
 def structural_critique_issues(
     parent: AlgorithmicNode,
     children: list[AlgorithmicNode],
@@ -212,4 +272,5 @@ def structural_critique_issues(
     issues.extend(_check_io_coverage(parent, children))
     issues.extend(_check_duplicate_children(children))
     issues.extend(_check_output_reachability(parent, children, child_edges))
+    issues.extend(_check_combinator_structure(parent, children))
     return issues

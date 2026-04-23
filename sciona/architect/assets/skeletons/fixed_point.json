@@ -1,0 +1,209 @@
+{
+  "asset_id": "fixed_point",
+  "asset_version": "phase2.v1",
+  "family": "fixed_point",
+  "paradigm": "fixed_point",
+  "name": "Fixed-Point Iteration Combinator",
+  "description": "Initialize state, apply a body step repeatedly, and check convergence after each iteration until the stopping criterion is met or the iteration budget is exhausted.",
+  "dejargonized_summary": "Start with an initial guess, keep improving it one step at a time, and stop when it stops changing or you run out of tries.",
+  "canonical_for_paradigm": true,
+  "variant_hints": [
+    "fixed_point",
+    "iterative_solver",
+    "convergence_loop",
+    "fixed_point_combinator",
+    "iterative_refinement",
+    "self_training_loop"
+  ],
+  "inputs": [
+    {
+      "name": "initial_state",
+      "type_desc": "any",
+      "constraints": "Seed state for the first iteration. Type depends on the problem domain.",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "converged_state",
+      "type_desc": "any",
+      "constraints": "Final state after convergence or iteration budget exhaustion.",
+      "required": true
+    }
+  ],
+  "planning_constraints": [
+    {
+      "category": "stage",
+      "subject": "convergence_guarantee",
+      "statement": "The body_step must be contractive or the iteration budget must be finite.",
+      "rationale": "Without a convergence guarantee or a hard iteration limit, the loop may run indefinitely. Set fixed_point_max_iterations > 0 as a safety bound.",
+      "confidence": 1.0,
+      "source_stage": "combinator_definition",
+      "source_reference": "Fixed-point iteration theory (Banach contraction mapping)"
+    },
+    {
+      "category": "stage",
+      "subject": "state_threading",
+      "statement": "The output of body_step must be type-compatible with its input for the next iteration.",
+      "rationale": "The iteration feeds next_state back as the input to body_step. Type mismatch between iterations will cause runtime failures.",
+      "confidence": 1.0,
+      "source_stage": "combinator_definition",
+      "source_reference": "Fixed-point combinator type signature"
+    }
+  ],
+  "stages": [
+    {
+      "stage_id": "tpl_body_init",
+      "name": "Body Init",
+      "description": "Seed the iteration state from the external input. May involve preprocessing, default initialization, or warm-starting from a prior solution.",
+      "dejargonized_description": "Set up the starting point for the iterative improvement process.",
+      "concept_type": "state_init",
+      "inputs": [
+        {
+          "name": "initial_state",
+          "type_desc": "any",
+          "constraints": "External seed state.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "state",
+          "type_desc": "any",
+          "constraints": "Initialized iteration state.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "Seed state is available."
+      ],
+      "guarantees": [
+        "Output state is well-formed for body_step."
+      ],
+      "matched_primitive": ""
+    },
+    {
+      "stage_id": "tpl_body_step",
+      "name": "Body Step",
+      "description": "Perform one iteration step: take the current state and produce a refined next state. This is the stage the architect decomposes further — it represents the core computation that is repeated.",
+      "dejargonized_description": "Do one round of improvement on the current best guess.",
+      "concept_type": "custom",
+      "inputs": [
+        {
+          "name": "state",
+          "type_desc": "any",
+          "constraints": "Current iteration state.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "next_state",
+          "type_desc": "any",
+          "constraints": "Refined state after one step. Must be type-compatible with input for iteration.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "Current state is well-formed."
+      ],
+      "guarantees": [
+        "Output is a refined version of the input state."
+      ],
+      "family_notes": [
+        "This stage is abstract — the architect must decompose it into concrete atoms.",
+        "Example: for unsupervised MDM refinement (Barachant DecMeg), body_step is predict-labels → retrain-subject-model → reclassify."
+      ],
+      "matched_primitive": ""
+    },
+    {
+      "stage_id": "tpl_convergence_check",
+      "name": "Convergence Check",
+      "description": "Test whether the iteration should stop. Compares previous and next states to determine if the stopping criterion is met (e.g., state change below threshold, loss plateaued, max iterations reached).",
+      "dejargonized_description": "Check whether the improvement is small enough to stop iterating.",
+      "concept_type": "analysis",
+      "inputs": [
+        {
+          "name": "prev_state",
+          "type_desc": "any",
+          "constraints": "State before the current step.",
+          "required": true
+        },
+        {
+          "name": "next_state",
+          "type_desc": "any",
+          "constraints": "State after the current step.",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "converged",
+          "type_desc": "bool",
+          "constraints": "True if the iteration should stop.",
+          "required": true
+        }
+      ],
+      "preconditions": [
+        "Both states are available and type-compatible."
+      ],
+      "guarantees": [
+        "Returns a boolean convergence signal."
+      ],
+      "matched_primitive": ""
+    }
+  ],
+  "edges": [
+    {
+      "source_stage_id": "tpl_body_init",
+      "target_stage_id": "tpl_body_step",
+      "output_name": "state",
+      "input_name": "state",
+      "source_type": "any",
+      "target_type": "any",
+      "data_kind": "iteration_state",
+      "provenance": "Initialized state feeds into first iteration.",
+      "loss_class": "preserving"
+    },
+    {
+      "source_stage_id": "tpl_body_step",
+      "target_stage_id": "tpl_convergence_check",
+      "output_name": "next_state",
+      "input_name": "next_state",
+      "source_type": "any",
+      "target_type": "any",
+      "data_kind": "iteration_state",
+      "provenance": "Refined state checked for convergence.",
+      "loss_class": "preserving"
+    }
+  ],
+  "audit": {
+    "source_kind": "local_asset",
+    "review_status": "draft",
+    "rationale": "Fixed-point iteration is a fundamental combinator needed for self-training loops (Barachant DecMeg unsupervised MDM refinement), iterative solvers, and convergence-based algorithms.",
+    "dejargonized_summary": "Start with an initial guess, keep improving it one step at a time, and stop when it stops changing or you run out of tries.",
+    "provenance_notes": [
+      "Python skeleton template exists at sciona/architect/skeletons.py:_build_fixed_point.",
+      "This JSON asset replaces the Python-only definition with an auditable, versioned asset."
+    ],
+    "uncertainty_notes": [
+      "The body_step stage is deliberately abstract (concept_type=custom) — the architect must decompose it per-problem.",
+      "Convergence is not guaranteed for non-contractive body steps; the max_iterations safety bound is critical."
+    ],
+    "references": [
+      {
+        "title": "Banach fixed-point theorem",
+        "url": "https://en.wikipedia.org/wiki/Banach_fixed-point_theorem",
+        "note": "Theoretical foundation for contraction-based convergence guarantees."
+      },
+      {
+        "title": "Solution CDG Gap Analysis",
+        "url": "docs/SOLUTION_GAPS.md",
+        "note": "S-2 orchestration gap: iterative refinement patterns require FIXED_POINT combinator."
+      }
+    ],
+    "maintainers": [
+      "sciona-matcher"
+    ]
+  }
+}

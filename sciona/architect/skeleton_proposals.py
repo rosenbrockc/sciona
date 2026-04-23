@@ -18,6 +18,8 @@ MAX_SKELETON_PROPOSAL_EDGES = 8
 ALLOWED_SKELETON_PROPOSALS: tuple[str, ...] = (
     "signal_detect_measure",
     "kalman_filter",
+    "map_over",
+    "fixed_point",
 )
 
 
