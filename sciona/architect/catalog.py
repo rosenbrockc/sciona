@@ -394,6 +394,18 @@ class PrimitiveCatalog:
     # Search
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _tokenize(text: str) -> set[str]:
+        """Split text into keyword tokens on whitespace, underscores, and hyphens.
+
+        Underscore-delimited identifiers like ``helix_cylinder_intersection``
+        produce ``{"helix", "cylinder", "intersection"}`` so that they match
+        natural-language descriptions that use the same words with spaces.
+        """
+        import re
+
+        return set(re.split(r"[\s_\-]+", text.lower())) - {"", "a", "the", "of", "in", "for", "and", "or", "to", "is", "by", "on", "at", "an"}
+
     def find_matching_primitives(
         self, node: AlgorithmicNode, k: int = 5
     ) -> list[AlgorithmicPrimitive]:
@@ -403,16 +415,32 @@ class PrimitiveCatalog:
         candidates remain eligible. This keeps cross-family grounding visible
         when a node description clearly matches a foreign-family primitive.
 
+        Scoring includes:
+        - keyword overlap between node (name + description) and primitive
+          (name + description), with underscore/hyphen splitting
+        - name-exact-match bonus (3.0) when normalized names match
+        - category bonus (0.75) when concept_types align
+        - arity match bonus based on input/output count compatibility
+
         For full semantic search, use SkillIndex.search() instead.
         """
-        node_words = set((node.name + " " + node.description).lower().split())
+        node_words = self._tokenize(node.name + " " + node.description)
+        node_name_normalized = node.node_id.strip().lower().replace("-", "_")
         scored: list[tuple[float, AlgorithmicPrimitive]] = []
         for prim in self._primitives.values():
-            prim_words = set(prim.description.lower().split())
+            prim_words = self._tokenize(prim.name + " " + prim.description)
             overlap = len(node_words & prim_words)
             category_bonus = 0.75 if prim.category == node.concept_type else 0.0
+            prim_name_normalized = prim.name.strip().lower().replace("-", "_")
+            name_bonus = 3.0 if node_name_normalized == prim_name_normalized else 0.0
             scored.append(
-                (overlap + self._arity_match_bonus(node, prim) + category_bonus, prim)
+                (
+                    overlap
+                    + self._arity_match_bonus(node, prim)
+                    + category_bonus
+                    + name_bonus,
+                    prim,
+                )
             )
 
         scored.sort(key=lambda x: x[0], reverse=True)
