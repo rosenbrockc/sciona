@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,6 +24,79 @@ if TYPE_CHECKING:
     from sciona.synthesizer.uncertainty import AtomUncertaintyEstimate
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Retrieval scoring constants
+# ---------------------------------------------------------------------------
+
+_STOP_WORDS: frozenset[str] = frozenset({
+    # English function words
+    "a", "the", "of", "in", "for", "and", "or", "to", "is", "by", "on", "at",
+    "an", "it", "as", "be", "if", "so", "no", "do", "up", "we", "he",
+    # Domain-generic terms that appear in >5% of atom descriptions
+    "compute", "apply", "return", "returns", "input", "output",
+    "data", "array", "value", "values", "result", "results",
+    "function", "method", "using", "from", "with", "into",
+    "each", "that", "this", "given", "based", "use", "used",
+    "set", "get", "new", "per", "one", "two", "all", "can",
+    "when", "then", "than", "also", "same", "only", "not", "are",
+    "has", "have", "will", "been", "were", "was", "its", "may",
+    # Type names that leak into descriptions
+    "ndarray", "float", "int", "str", "bool",
+    "list", "dict", "tuple", "none", "type",
+    # Library names
+    "sklearn", "scipy", "numpy",
+})
+
+_CATEGORY_GROUPS: dict[str, frozenset[ConceptType]] = {
+    "signal": frozenset({
+        ConceptType.SIGNAL_FILTER,
+        ConceptType.SIGNAL_TRANSFORM,
+        ConceptType.GRAPH_SIGNAL_PROCESSING,
+    }),
+    "graph": frozenset({
+        ConceptType.GRAPH_TRAVERSAL,
+        ConceptType.GRAPH_OPTIMIZATION,
+    }),
+    "bayesian": frozenset({
+        ConceptType.SAMPLER, ConceptType.LOG_PROB,
+        ConceptType.POSTERIOR_UPDATE, ConceptType.PRIOR_INIT,
+        ConceptType.PRIOR_DISTRIBUTION, ConceptType.LIKELIHOOD_EVALUATION,
+        ConceptType.PROBABILISTIC_ORACLE, ConceptType.ORACLE_GRADIENT,
+        ConceptType.MCMC_KERNEL, ConceptType.MCMC_PROPOSAL,
+        ConceptType.VI_ELBO, ConceptType.SEQUENTIAL_FILTER,
+        ConceptType.SMC_REWEIGHT, ConceptType.CONJUGATE_UPDATE,
+        ConceptType.VARIATIONAL_INFERENCE,
+    }),
+    "optimization": frozenset({
+        ConceptType.OPTIMIZATION,
+        ConceptType.GREEDY,
+        ConceptType.DYNAMIC_PROGRAMMING,
+    }),
+    "ml": frozenset({
+        ConceptType.NEURAL_NETWORK,
+        ConceptType.CLUSTERING,
+        ConceptType.DIMENSIONALITY_REDUCTION,
+        ConceptType.ML_MODEL_SELECTION,
+    }),
+    "algebra": frozenset({
+        ConceptType.ALGEBRA,
+        ConceptType.ARITHMETIC,
+        ConceptType.NUMBER_THEORY,
+    }),
+    "data_flow": frozenset({
+        ConceptType.STATE_INIT,
+        ConceptType.DATA_ASSEMBLY,
+        ConceptType.CONDITIONAL_ROUTING,
+        ConceptType.DATA_EXTRACTION,
+    }),
+}
+
+# Pre-compute reverse lookup: ConceptType -> group name
+_CATEGORY_TO_GROUP: dict[ConceptType, str] = {}
+for _group_name, _group_members in _CATEGORY_GROUPS.items():
+    for _ct in _group_members:
+        _CATEGORY_TO_GROUP[_ct] = _group_name
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +155,9 @@ class PrimitiveCatalog:
         self._primitives: dict[str, AlgorithmicPrimitive] = {}
         self._by_category: dict[ConceptType, list[AlgorithmicPrimitive]] = {}
         self._aliases: dict[str, str] = {}
+        # TF-IDF scoring caches (lazily built, invalidated on add)
+        self._idf: dict[str, float] | None = None
+        self._prim_token_cache: dict[str, frozenset[str]] = {}
 
     @staticmethod
     def _normalize_key(name: str) -> str:
@@ -106,6 +183,9 @@ class PrimitiveCatalog:
             self._normalize_key(primitive.name),
             primitive.name,
         )
+        # Invalidate TF-IDF caches
+        self._idf = None
+        self._prim_token_cache.pop(primitive.name, None)
 
     def add_alias(self, alias: str, primitive_name: str) -> None:
         """Register an alternate lookup key for an existing primitive."""
@@ -395,53 +475,156 @@ class PrimitiveCatalog:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _tokenize(text: str) -> set[str]:
+    def _tokenize(text: str) -> frozenset[str]:
         """Split text into keyword tokens on whitespace, underscores, and hyphens.
 
         Underscore-delimited identifiers like ``helix_cylinder_intersection``
         produce ``{"helix", "cylinder", "intersection"}`` so that they match
         natural-language descriptions that use the same words with spaces.
-        """
-        import re
 
-        return set(re.split(r"[\s_\-]+", text.lower())) - {"", "a", "the", "of", "in", "for", "and", "or", "to", "is", "by", "on", "at", "an"}
+        Filters domain-generic stop words that appear in many atom descriptions
+        and contribute noise to keyword overlap scoring.
+        """
+        tokens = set(re.split(r"[\s_\-]+", text.lower())) - _STOP_WORDS
+        tokens.discard("")
+        return frozenset(t for t in tokens if len(t) >= 2)
+
+    # ------------------------------------------------------------------
+    # TF-IDF infrastructure
+    # ------------------------------------------------------------------
+
+    def _ensure_idf(self) -> None:
+        """Lazily build the IDF table from current primitives."""
+        if self._idf is not None:
+            return
+        n = len(self._primitives)
+        if n == 0:
+            self._idf = {}
+            return
+
+        # Build document frequency: how many primitives contain each token
+        df: dict[str, int] = {}
+        for prim in self._primitives.values():
+            tokens = self._tokenize(prim.name + " " + prim.description)
+            self._prim_token_cache[prim.name] = tokens
+            for token in tokens:
+                df[token] = df.get(token, 0) + 1
+
+        # IDF = log(N / df).  Tokens in 1 doc get max weight; tokens in all
+        # docs get ~0.  Add 1 to df denominator to avoid division by zero
+        # for query-only tokens (handled by .get default below).
+        self._idf = {
+            token: math.log(n / count)
+            for token, count in df.items()
+        }
+
+    def _get_prim_tokens(self, prim: AlgorithmicPrimitive) -> frozenset[str]:
+        """Get cached token set for a primitive."""
+        cached = self._prim_token_cache.get(prim.name)
+        if cached is not None:
+            return cached
+        tokens = self._tokenize(prim.name + " " + prim.description)
+        self._prim_token_cache[prim.name] = tokens
+        return tokens
+
+    # ------------------------------------------------------------------
+    # Scoring components
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _port_name_bonus(
+        node: AlgorithmicNode, prim: AlgorithmicPrimitive
+    ) -> float:
+        """Bonus for overlapping IO port names (Jaccard-scaled, max 2.0)."""
+        node_ports = {
+            io.name.strip().lower().replace(" ", "_")
+            for io in list(node.inputs) + list(node.outputs)
+            if io.name
+        }
+        prim_ports = {
+            io.name.strip().lower().replace(" ", "_")
+            for io in list(prim.inputs) + list(prim.outputs)
+            if io.name
+        }
+        if not node_ports or not prim_ports:
+            return 0.0
+        overlap = len(node_ports & prim_ports)
+        if overlap == 0:
+            return 0.0
+        jaccard = overlap / len(node_ports | prim_ports)
+        return jaccard * 2.0
+
+    @staticmethod
+    def _category_bonus(
+        node_type: ConceptType, prim_type: ConceptType
+    ) -> float:
+        """Category bonus with proximity groups.
+
+        Exact match: 1.5.  Same semantic group (e.g. SIGNAL_FILTER and
+        SIGNAL_TRANSFORM): 0.5.  Unrelated: 0.0.
+        """
+        if node_type == prim_type:
+            return 1.5
+        node_group = _CATEGORY_TO_GROUP.get(node_type)
+        prim_group = _CATEGORY_TO_GROUP.get(prim_type)
+        if node_group is not None and node_group == prim_group:
+            return 0.5
+        return 0.0
 
     def find_matching_primitives(
         self, node: AlgorithmicNode, k: int = 5
     ) -> list[AlgorithmicPrimitive]:
-        """Find primitives matching a node by compatibility and keyword overlap.
+        """Find primitives matching a node by TF-IDF keyword overlap and structure.
 
-        Same-category matches get a modest prior, but strong cross-category
-        candidates remain eligible. This keeps cross-family grounding visible
-        when a node description clearly matches a foreign-family primitive.
-
-        Scoring includes:
-        - keyword overlap between node (name + description) and primitive
-          (name + description), with underscore/hyphen splitting
-        - name-exact-match bonus (3.0) when normalized names match
-        - category bonus (0.75) when concept_types align
-        - arity match bonus based on input/output count compatibility
+        Scoring combines:
+        - TF-IDF weighted keyword overlap (rare terms count more)
+        - IO port name alignment (Jaccard-scaled, max 2.0)
+        - category proximity (exact 1.5, same-group 0.5, else 0.0)
+        - arity match bonus (input/output count compatibility)
+        - name/alias exact-match bonus (20.0) when normalized names match
 
         For full semantic search, use SkillIndex.search() instead.
         """
+        self._ensure_idf()
+        assert self._idf is not None
+
         node_words = self._tokenize(node.name + " " + node.description)
         node_name_normalized = node.node_id.strip().lower().replace("-", "_")
+        node_display_normalized = self._normalize_key(node.name)
         scored: list[tuple[float, AlgorithmicPrimitive]] = []
+
         for prim in self._primitives.values():
-            prim_words = self._tokenize(prim.name + " " + prim.description)
-            overlap = len(node_words & prim_words)
-            category_bonus = 0.75 if prim.category == node.concept_type else 0.0
-            prim_name_normalized = prim.name.strip().lower().replace("-", "_")
-            name_bonus = 3.0 if node_name_normalized == prim_name_normalized else 0.0
-            scored.append(
-                (
-                    overlap
-                    + self._arity_match_bonus(node, prim)
-                    + category_bonus
-                    + name_bonus,
-                    prim,
-                )
+            prim_words = self._get_prim_tokens(prim)
+
+            # TF-IDF weighted overlap
+            overlap_tokens = node_words & prim_words
+            tfidf_score = sum(
+                self._idf.get(t, 0.0) for t in overlap_tokens
             )
+
+            # Port name alignment
+            port_bonus = self._port_name_bonus(node, prim)
+
+            # Category proximity
+            cat_bonus = self._category_bonus(node.concept_type, prim.category)
+
+            # Name exact match
+            prim_name_normalized = prim.name.strip().lower().replace("-", "_")
+            alias_match = (
+                self._aliases.get(node_name_normalized) == prim.name
+                or self._aliases.get(node_display_normalized) == prim.name
+            )
+            name_bonus = (
+                20.0
+                if node_name_normalized == prim_name_normalized or alias_match
+                else 0.0
+            )
+
+            # Arity compatibility
+            arity_bonus = self._arity_match_bonus(node, prim)
+
+            score = tfidf_score + port_bonus + cat_bonus + name_bonus + arity_bonus
+            scored.append((score, prim))
 
         scored.sort(key=lambda x: x[0], reverse=True)
         return [prim for _, prim in scored[:k]]
@@ -1509,3 +1692,89 @@ def seed_builtin_primitives(catalog: PrimitiveCatalog) -> None:
                 catalog.add(prim)
             for alias in aliases:
                 catalog.add_alias(alias, prim.name)
+
+
+_SOLUTION_RETRIEVAL_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "temporal_difference",
+        (
+            "difference_features",
+            "time_series_difference_features",
+            "temporal_difference_features",
+        ),
+    ),
+    (
+        "create_lag_features",
+        (
+            "lag_difference_features",
+            "lagged_features",
+        ),
+    ),
+    (
+        "standard_scaler_fit",
+        (
+            "target_scaling_fit",
+            "fit_target_scaler",
+        ),
+    ),
+    (
+        "standard_scaler_transform",
+        (
+            "target_scaling",
+            "target_scaling_transform",
+            "standardize_target",
+        ),
+    ),
+    (
+        "forward_fill",
+        (
+            "streaming_imputation",
+            "forward_fill_imputation",
+        ),
+    ),
+    (
+        "label_smoothing_ce",
+        (
+            "label_smoothing",
+            "label_smoothing_loss",
+        ),
+    ),
+    (
+        "dicom_window",
+        (
+            "dicom_windowing",
+            "hounsfield_window",
+        ),
+    ),
+    (
+        "rolling_window_features",
+        (
+            "feature_aggregation",
+            "rolling_feature_aggregation",
+        ),
+    ),
+    (
+        "temporal_unroll",
+        (
+            "temporal_unrolling",
+            "repeat_aggregated_predictions",
+        ),
+    ),
+    (
+        "resample_volume",
+        (
+            "multi_resolution_upsampling",
+            "spatial_resampling",
+        ),
+    ),
+)
+
+
+def seed_solution_retrieval_aliases(catalog: PrimitiveCatalog) -> None:
+    """Add CDG-stage vocabulary aliases for provider atoms already loaded."""
+
+    for primitive_name, aliases in _SOLUTION_RETRIEVAL_ALIASES:
+        if catalog.get(primitive_name) is None:
+            continue
+        for alias in aliases:
+            catalog.add_alias(alias, primitive_name)

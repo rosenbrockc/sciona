@@ -41,6 +41,11 @@ from sciona.architect.planning_contract import (
     summarize_planning_artifact,
 )
 from sciona.architect.skeleton_assets import skeleton_asset_summary
+from sciona.architect.stage_resolution import (
+    StageActionClass,
+    classify_generic_data_op,
+    is_non_atom_resolved_node,
+)
 from sciona.architect.prompts import (
     CRITIQUE_SYSTEM,
     CRITIQUE_USER,
@@ -394,6 +399,26 @@ def _format_primitives(prims: list) -> str:
             line += f"  (type: {p.type_signature[:60]})"
         lines.append(line)
     return "\n".join(lines)
+
+
+def _resolved_node_update(
+    node: AlgorithmicNode,
+    resolution_action: StageActionClass,
+    reason: str,
+    confidence: float,
+) -> AlgorithmicNode:
+    return node.model_copy(
+        update={
+            "status": NodeStatus.ATOMIC,
+            "matched_primitive": None,
+            "primitive_binding_confidence": confidence,
+            "primitive_binding_source": "stage_resolution:v1",
+            "action_class": resolution_action.value,
+            "resolution_reason": reason,
+            "resolved_by": "generic_data_op_policy",
+            "critic_notes": reason,
+        }
+    )
 
 
 def _is_any_type(type_desc: str) -> bool:
@@ -963,6 +988,15 @@ async def select_strategy(
     for i, node in enumerate(nodes):
         if node.node_id == root_id:
             continue
+        resolution = classify_generic_data_op(node)
+        if resolution is not None:
+            nodes[i] = _resolved_node_update(
+                node,
+                resolution.action_class,
+                resolution.reason,
+                resolution.confidence,
+            )
+            continue
         if deps.catalog.is_atomic(node):
             # Find the matching primitive name
             prim_name = node.matched_primitive
@@ -1081,6 +1115,46 @@ async def decompose_node(
             "done": True,
             "history": [
                 {"step": "decompose_node", "error": f"Node {current_id} not found"}
+            ],
+        }
+
+    resolution = classify_generic_data_op(node)
+    if resolution is not None:
+        resolved_node = _resolved_node_update(
+            node,
+            resolution.action_class,
+            resolution.reason,
+            resolution.confidence,
+        )
+        await _put_context(
+            deps,
+            config,
+            channel="decompose",
+            text=(
+                f"Parent: {node.name}\n"
+                f"Resolved action_class: {resolution.action_class.value}\n"
+                f"Reason: {resolution.reason}"
+            ),
+            metadata={
+                "node_id": current_id,
+                "node_name": node.name,
+                "action_class": resolution.action_class.value,
+                "resolved_by": "generic_data_op_policy",
+            },
+        )
+        return {
+            "nodes": [resolved_node],
+            "edges": [],
+            "critique_passed": True,
+            "critique_reason": resolution.reason,
+            "history": [
+                {
+                    "step": "decompose_node",
+                    "node_id": current_id,
+                    "policy_resolved": True,
+                    "action_class": resolution.action_class.value,
+                    "reason": resolution.reason,
+                }
             ],
         }
 
@@ -1458,6 +1532,22 @@ async def critique_decomposition(
             "history": [{"step": "critique", "error": "parent not found"}],
         }
 
+    if parent.status == NodeStatus.ATOMIC and is_non_atom_resolved_node(parent):
+        reason = parent.resolution_reason or "Resolved by non-atom stage policy"
+        return {
+            "critique_passed": True,
+            "critique_reason": reason,
+            "history": [
+                {
+                    "step": "critique",
+                    "phase": "policy_resolution",
+                    "approved": True,
+                    "action_class": parent.action_class,
+                    "reason": reason,
+                }
+            ],
+        }
+
     # Find children of current node
     children = [
         n
@@ -1756,48 +1846,52 @@ async def advance_node(
     updated_nodes: list[AlgorithmicNode] = []
 
     if critique_passed and parent:
-        # Update parent: mark as DECOMPOSED with children
-        children = [
-            n
-            for n in all_nodes
-            if n.parent_id == current_id and n.status != NodeStatus.REJECTED
-        ]
-        child_ids = [c.node_id for c in children]
-        updated_nodes.append(
-            parent.model_copy(
-                update={
-                    "status": NodeStatus.DECOMPOSED,
-                    "children": child_ids,
-                }
+        if parent.status == NodeStatus.ATOMIC and is_non_atom_resolved_node(parent):
+            children = []
+            new_pending = []
+        else:
+            # Update parent: mark as DECOMPOSED with children
+            children = [
+                n
+                for n in all_nodes
+                if n.parent_id == current_id and n.status != NodeStatus.REJECTED
+            ]
+            child_ids = [c.node_id for c in children]
+            updated_nodes.append(
+                parent.model_copy(
+                    update={
+                        "status": NodeStatus.DECOMPOSED,
+                        "children": child_ids,
+                    }
+                )
             )
-        )
 
-        # Add non-atomic children to pending
-        new_pending = [c.node_id for c in children if c.status == NodeStatus.PENDING]
-        child_summaries = [
-            (
-                f"{child.name}"
-                f"{f' [{child.matched_primitive}]' if child.matched_primitive else ''}"
+            # Add non-atomic children to pending
+            new_pending = [c.node_id for c in children if c.status == NodeStatus.PENDING]
+            child_summaries = [
+                (
+                    f"{child.name}"
+                    f"{f' [{child.matched_primitive}]' if child.matched_primitive else ''}"
+                )
+                for child in children
+            ]
+            await _put_template_context(
+                deps,
+                config,
+                text=(
+                    f"Parent: {parent.name}\n"
+                    f"Description: {parent.description}\n"
+                    f"Children: {', '.join(child_summaries) or '(none)'}\n"
+                    f"Outputs: {', '.join(port.name for port in parent.outputs) or '(none)'}"
+                ),
+                metadata={
+                    "node_id": current_id,
+                    "node_name": parent.name,
+                    "child_count": len(children),
+                    "approved": True,
+                    "channel": "templates",
+                },
             )
-            for child in children
-        ]
-        await _put_template_context(
-            deps,
-            config,
-            text=(
-                f"Parent: {parent.name}\n"
-                f"Description: {parent.description}\n"
-                f"Children: {', '.join(child_summaries) or '(none)'}\n"
-                f"Outputs: {', '.join(port.name for port in parent.outputs) or '(none)'}"
-            ),
-            metadata={
-                "node_id": current_id,
-                "node_name": parent.name,
-                "child_count": len(children),
-                "approved": True,
-                "channel": "templates",
-            },
-        )
     else:
         new_pending = []
 

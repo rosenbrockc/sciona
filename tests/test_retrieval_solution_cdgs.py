@@ -16,7 +16,12 @@ from pathlib import Path
 
 import pytest
 
-from sciona.architect.catalog import PrimitiveCatalog, seed_builtin_primitives
+from sciona.architect.catalog import (
+    PrimitiveCatalog,
+    seed_builtin_primitives,
+    seed_solution_retrieval_aliases,
+)
+from sciona.architect.stage_resolution import NON_ATOM_ACTION_CLASSES
 from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
@@ -36,16 +41,18 @@ ATOM_REPOS = [
         "sciona-atoms",
         "sciona-atoms-ml",
         "sciona-atoms-dl",
+        "sciona-atoms-cs",
         "sciona-atoms-bio",
         "sciona-atoms-physics",
         "sciona-atoms-signal",
+        "sciona-atoms-geo",
     ]
 ]
 
-SOLUTION_CDG_DIR = PERSONAL / "sciona-atoms-ml" / "data" / "solution_cdgs"
+SOLUTION_CDG_DIR = PERSONAL / "sciona-atoms" / "data" / "solution_cdgs"
 
 # Stages resolved without atom retrieval — skip them.
-SKIP_ACTION_CLASSES = {"orchestration", "trivial_inline", "external_knowledge"}
+SKIP_ACTION_CLASSES = set(NON_ATOM_ACTION_CLASSES)
 
 # Stages where the keyword path is expected to fail at top-5 because
 # the atom name and stage description have near-zero lexical overlap.
@@ -147,8 +154,12 @@ def _load_test_cases() -> list[RetrievalTestCase]:
         for stage_id, binding in binding_map.items():
             if binding.get("action_class") in SKIP_ACTION_CLASSES:
                 continue
-            fqdn = binding.get("bound_artifact_fqdn")
-            if not fqdn:
+            fqdns = []
+            if binding.get("bound_artifact_fqdn"):
+                fqdns.append(binding["bound_artifact_fqdn"])
+            elif binding.get("bound_artifact_fqdns"):
+                fqdns.extend(binding.get("bound_artifact_fqdns", []) or [])
+            if not fqdns:
                 continue
 
             stage = stage_map.get(stage_id)
@@ -166,15 +177,16 @@ def _load_test_cases() -> list[RetrievalTestCase]:
                 outputs=[IOSpec(**out) for out in stage.get("outputs", [])],
             )
 
-            cases.append(
-                RetrievalTestCase(
-                    solution_id=sol_name,
-                    stage_id=stage_id,
-                    node=node,
-                    expected_atom_name=_fqdn_to_atom_name(fqdn),
-                    action_class=binding.get("action_class", "replace_stage"),
+            for fqdn in fqdns:
+                cases.append(
+                    RetrievalTestCase(
+                        solution_id=sol_name,
+                        stage_id=stage_id,
+                        node=node,
+                        expected_atom_name=_fqdn_to_atom_name(str(fqdn)),
+                        action_class=binding.get("action_class", "replace_stage"),
+                    )
                 )
-            )
     return cases
 
 
@@ -196,6 +208,7 @@ def full_catalog() -> PrimitiveCatalog:
     seed_builtin_primitives(catalog)
     for prim in _load_all_atom_primitives():
         catalog.add(prim)
+    seed_solution_retrieval_aliases(catalog)
     return catalog
 
 

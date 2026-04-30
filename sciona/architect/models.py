@@ -126,6 +126,9 @@ class AlgorithmicNode(BaseModel):
     matched_primitive: str | None = None  # e.g., "Nat.add_comm" or "heapsort"
     primitive_binding_confidence: float = 0.0
     primitive_binding_source: str = ""
+    action_class: str = "replace_stage"
+    resolution_reason: str = ""
+    resolved_by: str = ""
     is_optional: bool = False  # Config-gated branches
     is_opaque: bool = False  # DL boundary: skip internal decomposition
     is_external: bool = False  # External tool call

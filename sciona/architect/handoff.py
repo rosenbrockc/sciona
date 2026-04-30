@@ -18,6 +18,7 @@ from sciona.architect.models import (
     DependencyEdge,
     NodeStatus,
 )
+from sciona.architect.stage_resolution import is_non_atom_resolved_node
 from sciona.types import PDGNode, Prover
 
 import ast
@@ -162,6 +163,8 @@ def validate_handoff(cdg: CDGExport) -> list[str]:
             continue
 
         if node.status == NodeStatus.ATOMIC:
+            if is_non_atom_resolved_node(node):
+                continue
             if not node.description:
                 issues.append(
                     f"Atomic leaf '{node.name}' ({node.node_id}) has empty description"
@@ -392,6 +395,8 @@ def to_pdg_nodes(
 
     pdg_nodes: list[PDGNode] = []
     for node in cdg.leaf_nodes():
+        if is_non_atom_resolved_node(node):
+            continue
         statement = node.type_signature or node.description
         context = {
             "concept_type": node.concept_type.value,

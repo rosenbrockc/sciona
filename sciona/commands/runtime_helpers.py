@@ -107,7 +107,12 @@ def _load_architect_catalog(
     config: "AgeomConfig",
 ):
     """Load the architect primitive catalog from built-ins, JSON catalogs, and source registries."""
-    from sciona.architect.catalog import CatalogReport, PrimitiveCatalog, seed_builtin_primitives
+    from sciona.architect.catalog import (
+        CatalogReport,
+        PrimitiveCatalog,
+        seed_builtin_primitives,
+        seed_solution_retrieval_aliases,
+    )
     from sciona.architect.hyperparams import (
         get_runtime_signal_event_rate_params,
         load_manifest,
@@ -187,6 +192,7 @@ def _load_architect_catalog(
             f"Warning: failed to derive primitives from configured sources: {exc}",
             file=sys.stderr,
         )
+    seed_solution_retrieval_aliases(catalog)
 
     tunables_map: dict[str, list[Any]] = {}
     try:
