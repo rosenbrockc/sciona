@@ -11,6 +11,28 @@ from typing import Tuple
 
 from pydantic import BaseModel, Field
 
+from sciona.ghost.dimensions import DimensionalSignature
+
+
+class _DimMixin:
+    """Shared dimensional-analysis helpers for abstract value types."""
+
+    dim: DimensionalSignature | None
+
+    def assert_dim_compatible(self, other: "_DimMixin") -> None:
+        """Assert dimensional compatibility.
+
+        No-op when either side has ``dim=None`` (not tracked).
+        Raises ``ValueError`` when both sides are set and differ.
+        """
+        if self.dim is None or other.dim is None:
+            return
+        if not self.dim.is_compatible(other.dim):
+            raise ValueError(
+                f"Dimensional mismatch: {self.dim.to_compact()} vs "
+                f"{other.dim.to_compact()}"
+            )
+
 
 class AbstractSignal(BaseModel):
     """The 'Ghost' representation of a signal array.
@@ -25,6 +47,7 @@ class AbstractSignal(BaseModel):
     sampling_rate: float = Field(..., gt=0, description="Sampling frequency in Hz")
     domain: str = Field(default="time", description="Signal domain: 'time', 'freq', 'quefrency', 'index'")
     units: str = Field(default="volts", description="Physical units of the signal")
+    dim: DimensionalSignature | None = Field(default=None, description="Dimensional signature (None = not tracked)")
 
     @property
     def duration(self) -> float:
@@ -42,7 +65,7 @@ class AbstractSignal(BaseModel):
         """Assert that two signals are compatible for element-wise operations.
 
         Raises:
-            ValueError: If sampling rates or shapes don't match.
+            ValueError: If sampling rates, shapes, or dimensions don't match.
         """
         if self.sampling_rate != other.sampling_rate:
             raise ValueError(
@@ -52,6 +75,12 @@ class AbstractSignal(BaseModel):
             raise ValueError(
                 f"Shape mismatch: {self.shape} vs {other.shape}"
             )
+        if self.dim is not None and other.dim is not None:
+            if not self.dim.is_compatible(other.dim):
+                raise ValueError(
+                    f"Dimensional mismatch: {self.dim.to_compact()} vs "
+                    f"{other.dim.to_compact()}"
+                )
 
     def assert_domain(self, expected: str) -> None:
         """Assert that the signal is in the expected domain.
@@ -77,6 +106,7 @@ class AbstractArray(BaseModel):
     is_sorted: bool = Field(default=False, description="Whether elements are sorted")
     min_val: float | None = Field(default=None, description="Minimum value constraint")
     max_val: float | None = Field(default=None, description="Maximum value constraint")
+    dim: DimensionalSignature | None = Field(default=None, description="Dimensional signature (None = not tracked)")
 
     def assert_shape_compatible(self, other: "AbstractArray") -> None:
         """Assert shapes are compatible for element-wise operations."""
@@ -96,6 +126,7 @@ class AbstractScalar(BaseModel):
     min_val: float | None = Field(default=None, description="Minimum value")
     max_val: float | None = Field(default=None, description="Maximum value")
     is_index: bool = Field(default=False, description="Whether this is an array index")
+    dim: DimensionalSignature | None = Field(default=None, description="Dimensional signature (None = not tracked)")
 
 
 class AbstractMatrix(BaseModel):
@@ -108,6 +139,7 @@ class AbstractMatrix(BaseModel):
 
     shape: Tuple[str, str] = Field(..., description="Symbolic shape, e.g. ('N', 'M')")
     dtype: str = Field(default="float64", description="NumPy dtype string")
+    dim: DimensionalSignature | None = Field(default=None, description="Dimensional signature (None = not tracked)")
 
 
 class AbstractBeatPool(BaseModel):

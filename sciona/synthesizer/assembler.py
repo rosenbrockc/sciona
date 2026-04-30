@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 
 from sciona.atom_identity import known_atom_package_prefixes
+from sciona.ghost.registry import REGISTRY as _GHOST_REGISTRY
 from sciona.architect.handoff import CDGExport
 from sciona.architect.models import AlgorithmicNode, ConceptType, NodeStatus
 from sciona.synthesizer.models import AssemblyUnit, GlueEdge, SkeletonFile
@@ -361,10 +362,28 @@ class Assembler:
                 )
             )
 
-        # Build GlueEdges with cast inference
+        # Build GlueEdges with cast inference and dim propagation
+        node_map_for_dim = {n.node_id: n for n in cdg.nodes}
         glue_edges: list[GlueEdge] = []
         for edge in cdg.edges:
             cast = _infer_cast(edge.source_type, edge.target_type)
+
+            # Propagate dim_signature from source output / target input IOSpecs
+            src_dim = ""
+            tgt_dim = ""
+            src_node = node_map_for_dim.get(edge.source_id)
+            tgt_node = node_map_for_dim.get(edge.target_id)
+            if src_node:
+                for out in src_node.outputs:
+                    if _port_names_compatible(out.name, edge.output_name) and out.dim_signature:
+                        src_dim = out.dim_signature
+                        break
+            if tgt_node:
+                for inp in tgt_node.inputs:
+                    if _port_names_compatible(inp.name, edge.input_name) and inp.dim_signature:
+                        tgt_dim = inp.dim_signature
+                        break
+
             glue_edges.append(
                 GlueEdge(
                     source_id=edge.source_id,
@@ -374,6 +393,8 @@ class Assembler:
                     source_type=edge.source_type,
                     target_type=edge.target_type,
                     cast_expr=cast,
+                    source_dim=src_dim,
+                    target_dim=tgt_dim,
                 )
             )
 
@@ -1101,6 +1122,35 @@ class Assembler:
             sname = sanitize_name(unit.name)
             lines.append(f"# Node: {unit.name} ({unit.node_id})")
 
+            # --- AOT path: if unit has a symbolic expression, emit inline NumPy ---
+            _reg_entry = (
+                _GHOST_REGISTRY.get(unit.declaration_name)
+                or _GHOST_REGISTRY.get(unit.name)
+            )
+            _symbolic = _reg_entry.get("symbolic") if _reg_entry else None
+            if _symbolic is not None:
+                try:
+                    from sciona.synthesizer.numpy_codegen import (
+                        sympy_to_numpy_source,
+                    )
+                    aot_src = sympy_to_numpy_source(
+                        _symbolic,
+                        sname,
+                        input_vars=[inp.name for inp in unit.inputs],
+                        docstring=f"AOT-compiled: {unit.name} ({unit.node_id})",
+                    )
+                    lines.append(f"# AOT-compiled from SymPy (zero sympy runtime dependency)")
+                    lines.append(aot_src)
+                    lines.append("")
+                    lines.append("")
+                    continue
+                except Exception as _aot_exc:
+                    logger.debug(
+                        "AOT codegen failed for %s, falling back to _sciona_call: %s",
+                        unit.name, _aot_exc,
+                    )
+
+            # --- Standard path: delegate to the registered implementation ---
             # Build function signature from unit inputs/outputs
             params: list[str] = []
             for inp in unit.inputs:

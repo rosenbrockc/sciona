@@ -87,6 +87,7 @@ class IOSpec(BaseModel):
     provenance: str = ""
     required: bool = True
     default_value_repr: str = ""
+    dim_signature: str = ""  # compact dimensional signature, e.g. "M1L2T-3" for Power
 
 
 class NodeStatus(str, Enum):

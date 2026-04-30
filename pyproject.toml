@@ -46,6 +46,9 @@ python-target = [
     "icontract>=2.6",
     "docstring-parser>=0.15",
 ]
+sympy = [
+    "sympy>=1.12",
+]
 ghost = [
     "sciona-atoms>=0.1.0",
 ]
@@ -68,7 +71,7 @@ dev = [
     "temporalio>=1.5",
 ]
 all = [
-    "sciona[indexer,lean,coq,hunter,architect,synthesizer,python-target,ghost,graph,dev]",
+    "sciona[indexer,lean,coq,hunter,architect,synthesizer,python-target,ghost,graph,sympy,dev]",
 ]
 
 [project.scripts]

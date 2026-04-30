@@ -9,16 +9,24 @@ calls the heavy function, only its witness.
 from __future__ import annotations
 
 import inspect
-from typing import Any, Callable, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict
 
 import numpy as np
 
+if TYPE_CHECKING:
+    from sciona.ghost.dimensions import DimensionalSignature
 
-# Global registry: function_name -> { impl, witness, doc, signature }
+
+# Global registry: function_name -> { impl, witness, doc, signature, ... }
 REGISTRY: Dict[str, Dict[str, Any]] = {}
 
 
-def register_atom(witness: Callable, *, name: str | None = None) -> Callable:
+def register_atom(
+    witness: Callable,
+    *,
+    name: str | None = None,
+    dim_map: dict[str, "DimensionalSignature"] | None = None,
+) -> Callable:
     """Decorator that binds a heavy implementation to a Ghost Witness.
 
     The heavy function is stored in the registry alongside its witness.
@@ -30,6 +38,9 @@ def register_atom(witness: Callable, *, name: str | None = None) -> Callable:
             (e.g. ``AbstractSignal``).  Must have type annotations.
         name: Optional explicit registry key. If omitted, the heavy function
             name is used.
+        dim_map: Optional mapping of parameter/output names to their
+            ``DimensionalSignature``.  When provided, the compiler can
+            enforce dimensional consistency on CDG edges.
 
     Returns:
         A decorator that registers the heavy function and returns it
@@ -55,6 +66,8 @@ def register_atom(witness: Callable, *, name: str | None = None) -> Callable:
             "heavy_signature": dict(heavy_func.__annotations__),
             "module": getattr(heavy_func, "__module__", ""),
             "name": atom_name,
+            "dim_signature": dim_map or {},
+            "symbolic": None,
         }
         return heavy_func
     return decorator

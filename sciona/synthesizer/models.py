@@ -35,6 +35,8 @@ class GlueEdge(BaseModel):
     source_type: str
     target_type: str
     cast_expr: str = ""
+    source_dim: str = ""  # compact dimensional signature of source output
+    target_dim: str = ""  # compact dimensional signature of target input
 
 
 class SkeletonFile(BaseModel):
