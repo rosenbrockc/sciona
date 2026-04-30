@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from fractions import Fraction
+
 import pytest
 
 from sciona.ghost.dimensions import (
@@ -22,6 +24,7 @@ from sciona.ghost.dimensions import (
     PASCAL,
     POWER,
     SECOND,
+    UNKNOWN_DIMENSION,
     VELOCITY,
     VOLT,
     WATT,
@@ -69,6 +72,16 @@ class TestArithmetic:
         assert METER.power(2) == DimensionalSignature(L=2)
         assert METER.power(0) == DIMENSIONLESS
 
+    def test_fractional_power(self):
+        sqrt_meter = METER.power(Fraction(1, 2))
+        assert sqrt_meter == DimensionalSignature(L=Fraction(1, 2))
+        assert sqrt_meter.multiply(sqrt_meter) == METER
+
+    def test_unknown_dimension_propagates_through_arithmetic(self):
+        assert UNKNOWN_DIMENSION.multiply(METER).is_unknown
+        assert METER.divide(UNKNOWN_DIMENSION).is_unknown
+        assert UNKNOWN_DIMENSION.power(2).is_unknown
+
     def test_force_composition(self):
         # F = m * a => kg * m/s²
         assert KILOGRAM.multiply(ACCELERATION) == NEWTON
@@ -108,6 +121,10 @@ class TestCompatibility:
     def test_dimensionless_self_compatible(self):
         assert DIMENSIONLESS.is_compatible(DimensionalSignature())
 
+    def test_unknown_not_compatible_with_known_or_unknown(self):
+        assert not UNKNOWN_DIMENSION.is_compatible(METER)
+        assert not UNKNOWN_DIMENSION.is_compatible(UNKNOWN_DIMENSION)
+
 
 # ---------------------------------------------------------------------------
 # Serialisation roundtrip
@@ -131,6 +148,16 @@ class TestCompactSerialization:
                      NEWTON, PASCAL, JOULE, WATT, COULOMB, VOLT,
                      FARAD, OHM, VELOCITY, ACCELERATION]:
             assert DimensionalSignature.from_compact(dim.to_compact()) == dim
+
+    def test_fractional_compact_roundtrip(self):
+        dim = DimensionalSignature(L=Fraction(1, 2), T=Fraction(-3, 2))
+        assert dim.to_compact() == "L1/2T-3/2"
+        assert DimensionalSignature.from_compact("L1/2T-3/2") == dim
+
+    def test_unknown_compact_roundtrip(self):
+        assert UNKNOWN_DIMENSION.to_compact() == "?"
+        assert DimensionalSignature.from_compact("?") == UNKNOWN_DIMENSION
+        assert DimensionalSignature.from_compact("unknown") == UNKNOWN_DIMENSION
 
     def test_empty_string(self):
         assert DimensionalSignature.from_compact("") == DIMENSIONLESS

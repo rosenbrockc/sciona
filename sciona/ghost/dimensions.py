@@ -9,8 +9,47 @@ and verify dimensional consistency across CDG edges.
 from __future__ import annotations
 
 import re
+from fractions import Fraction
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+DimensionExponent = Fraction
+
+
+def _coerce_exponent(value: Any) -> Fraction:
+    """Coerce supported exponent representations to an exact Fraction."""
+    if isinstance(value, Fraction):
+        return value
+    if isinstance(value, bool):
+        return Fraction(int(value), 1)
+    if isinstance(value, int):
+        return Fraction(value, 1)
+    if isinstance(value, float):
+        return Fraction(str(value))
+    if isinstance(value, str):
+        return Fraction(value.strip())
+
+    # SymPy Rational/Integer expose exact ``p``/``q`` attributes.
+    numerator = getattr(value, "p", None)
+    denominator = getattr(value, "q", None)
+    if numerator is not None and denominator is not None:
+        return Fraction(int(numerator), int(denominator))
+
+    numerator = getattr(value, "numerator", None)
+    denominator = getattr(value, "denominator", None)
+    if numerator is not None and denominator is not None:
+        return Fraction(int(numerator), int(denominator))
+
+    return Fraction(value)
+
+
+def _format_exponent(exp: Fraction) -> str:
+    """Deterministic compact representation for an exact exponent."""
+    if exp.denominator == 1:
+        return str(exp.numerator)
+    return f"{exp.numerator}/{exp.denominator}"
 
 
 class DimensionalSignature(BaseModel, frozen=True):
@@ -19,21 +58,34 @@ class DimensionalSignature(BaseModel, frozen=True):
     For example, Power (W = kg·m²·s⁻³) is represented as
     ``DimensionalSignature(M=1, L=2, T=-3)``.
 
-    All exponents default to 0 (dimensionless).
+    All exponents default to 0 (dimensionless).  Exponents are exact
+    rational numbers so signatures such as sqrt(length) can be represented
+    without float drift.
     """
 
-    M: int = Field(default=0, description="Mass (kg)")
-    L: int = Field(default=0, description="Length (m)")
-    T: int = Field(default=0, description="Time (s)")
-    I: int = Field(default=0, description="Electric current (A)")
-    Theta: int = Field(default=0, description="Temperature (K)")
-    N: int = Field(default=0, description="Amount of substance (mol)")
-    J: int = Field(default=0, description="Luminous intensity (cd)")
+    M: DimensionExponent = Field(default=Fraction(0), description="Mass (kg)")
+    L: DimensionExponent = Field(default=Fraction(0), description="Length (m)")
+    T: DimensionExponent = Field(default=Fraction(0), description="Time (s)")
+    I: DimensionExponent = Field(default=Fraction(0), description="Electric current (A)")
+    Theta: DimensionExponent = Field(default=Fraction(0), description="Temperature (K)")
+    N: DimensionExponent = Field(default=Fraction(0), description="Amount of substance (mol)")
+    J: DimensionExponent = Field(default=Fraction(0), description="Luminous intensity (cd)")
+    unknown: bool = Field(
+        default=False,
+        description="True when a source explicitly marks dimensionality as unknown.",
+    )
+
+    @field_validator("M", "L", "T", "I", "Theta", "N", "J", mode="before")
+    @classmethod
+    def _validate_exponent(cls, value: Any) -> Fraction:
+        return _coerce_exponent(value)
 
     # ----- arithmetic -----
 
     def multiply(self, other: DimensionalSignature) -> DimensionalSignature:
         """Dimension of ``self * other`` (add exponents)."""
+        if self.is_unknown or other.is_unknown:
+            return UNKNOWN_DIMENSION
         return DimensionalSignature(
             M=self.M + other.M,
             L=self.L + other.L,
@@ -46,6 +98,8 @@ class DimensionalSignature(BaseModel, frozen=True):
 
     def divide(self, other: DimensionalSignature) -> DimensionalSignature:
         """Dimension of ``self / other`` (subtract exponents)."""
+        if self.is_unknown or other.is_unknown:
+            return UNKNOWN_DIMENSION
         return DimensionalSignature(
             M=self.M - other.M,
             L=self.L - other.L,
@@ -56,20 +110,25 @@ class DimensionalSignature(BaseModel, frozen=True):
             J=self.J - other.J,
         )
 
-    def power(self, n: int) -> DimensionalSignature:
+    def power(self, n: int | Fraction | str | float) -> DimensionalSignature:
         """Dimension of ``self ** n`` (scale exponents)."""
+        if self.is_unknown:
+            return UNKNOWN_DIMENSION
+        exponent = _coerce_exponent(n)
         return DimensionalSignature(
-            M=self.M * n,
-            L=self.L * n,
-            T=self.T * n,
-            I=self.I * n,
-            Theta=self.Theta * n,
-            N=self.N * n,
-            J=self.J * n,
+            M=self.M * exponent,
+            L=self.L * exponent,
+            T=self.T * exponent,
+            I=self.I * exponent,
+            Theta=self.Theta * exponent,
+            N=self.N * exponent,
+            J=self.J * exponent,
         )
 
     def is_compatible(self, other: DimensionalSignature) -> bool:
         """True when both signatures have identical exponents."""
+        if self.is_unknown or other.is_unknown:
+            return False
         return (
             self.M == other.M
             and self.L == other.L
@@ -82,12 +141,21 @@ class DimensionalSignature(BaseModel, frozen=True):
 
     @property
     def is_dimensionless(self) -> bool:
-        return self == DIMENSIONLESS
+        return (
+            not self.is_unknown
+            and self.M == self.L == self.T == self.I == self.Theta == self.N == self.J == 0
+        )
+
+    @property
+    def is_unknown(self) -> bool:
+        return self.unknown
 
     # ----- serialisation -----
 
     def to_compact(self) -> str:
         """Compact string like ``"M1L2T-3"`` for storage in IOSpec."""
+        if self.is_unknown:
+            return "?"
         if self.is_dimensionless:
             return "1"
         parts: list[str] = []
@@ -96,7 +164,7 @@ class DimensionalSignature(BaseModel, frozen=True):
             ("I", self.I), ("Th", self.Theta), ("N", self.N), ("J", self.J),
         ]:
             if exp != 0:
-                parts.append(f"{label}{exp}")
+                parts.append(f"{label}{_format_exponent(exp)}")
         return "".join(parts) or "1"
 
     @classmethod
@@ -105,11 +173,13 @@ class DimensionalSignature(BaseModel, frozen=True):
         s = s.strip()
         if not s or s == "1":
             return DIMENSIONLESS
-        pattern = re.compile(r"(Th|[MLTNIJ])(-?\d+)")
-        kwargs: dict[str, int] = {}
+        if s in {"?", "unknown", "UNKNOWN"}:
+            return UNKNOWN_DIMENSION
+        pattern = re.compile(r"(Th|[MLTNIJ])(-?\d+(?:/\d+)?)")
+        kwargs: dict[str, Fraction] = {}
         label_map = {"M": "M", "L": "L", "T": "T", "I": "I", "Th": "Theta", "N": "N", "J": "J"}
         for match in pattern.finditer(s):
-            label, exp = match.group(1), int(match.group(2))
+            label, exp = match.group(1), _coerce_exponent(match.group(2))
             field = label_map[label]
             kwargs[field] = exp
         return cls(**kwargs)
@@ -123,6 +193,7 @@ class DimensionalSignature(BaseModel, frozen=True):
 # ---------------------------------------------------------------------------
 
 DIMENSIONLESS = DimensionalSignature()
+UNKNOWN_DIMENSION = DimensionalSignature(unknown=True)
 
 # Base dimensions
 METER = DimensionalSignature(L=1)

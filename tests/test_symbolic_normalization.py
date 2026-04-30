@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from fractions import Fraction
+
 import sympy as sp
 
 from sciona.ghost.dimensions import (
@@ -93,6 +95,33 @@ def test_expression_hash_is_exact_but_topology_hash_ignores_symbol_names():
     assert right.parse_status == "parsed"
     assert left.expression_hash != right.expression_hash
     assert left.topology_hash == right.topology_hash
+
+
+def test_dimensional_hash_uses_fractional_compact_dimensions():
+    first = normalize_symbolic_candidate(
+        {
+            "formula": "y = sqrt(x)",
+            "variables": {
+                "x": {"dim_signature": "L1"},
+                "y": {"dim_signature": {"L": Fraction(1, 2)}},
+            },
+        }
+    )
+    second = normalize_symbolic_candidate(
+        {
+            "formula": "y = sqrt(x)",
+            "variables": {
+                "x": {"dim_signature": "L1"},
+                "y": {"dim_signature": "L1/2"},
+            },
+        }
+    )
+
+    assert first.parse_status == "parsed"
+    assert second.parse_status == "parsed"
+    assert first.topology_hash == second.topology_hash
+    assert first.dimensional_hash == second.dimensional_hash
+    assert first.variables["y"].dim_signature.to_compact() == "L1/2"
 
 
 def test_srepr_input_round_trips():

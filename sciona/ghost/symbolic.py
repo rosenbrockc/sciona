@@ -15,11 +15,16 @@ produced by ``to_numpy_lambda`` and the source strings produced by
 from __future__ import annotations
 
 import logging
+from fractions import Fraction
 from typing import Any, Callable, Sequence
 
 from pydantic import BaseModel, Field
 
-from sciona.ghost.dimensions import DIMENSIONLESS, DimensionalSignature
+from sciona.ghost.dimensions import (
+    DIMENSIONLESS,
+    UNKNOWN_DIMENSION,
+    DimensionalSignature,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +140,11 @@ class SymbolicExpression(BaseModel):
             return errors
 
         try:
-            _infer_dim(expr, self.dim_map, sp)
+            inferred = _infer_dim(expr, self.dim_map, sp)
+            if inferred.is_unknown:
+                errors.append(
+                    "Cannot verify dimensional consistency: inferred unknown dimension"
+                )
         except DimensionalError as e:
             errors.append(str(e))
         return errors
@@ -210,9 +219,11 @@ def _infer_dim(
     if isinstance(expr, sp.Symbol):
         name = str(expr)
         if name in dim_map:
-            return dim_map[name]
-        # Unknown symbol – treat as dimensionless (could be a pure number)
-        return DIMENSIONLESS
+            dim = dim_map[name]
+            if dim.is_unknown:
+                raise DimensionalError(f"Unknown dimension for symbol '{name}'")
+            return dim
+        raise DimensionalError(f"Unknown dimension for symbol '{name}'")
 
     # Numeric literals are dimensionless
     from sympy.core.numbers import (
@@ -228,6 +239,8 @@ def _infer_dim(
     # Addition / Subtraction: all terms must have the same dimension
     if isinstance(expr, sp.Add):
         dims = [_infer_dim(arg, dim_map, sp) for arg in expr.args]
+        if any(dim.is_unknown for dim in dims):
+            return UNKNOWN_DIMENSION
         base = dims[0]
         for i, d in enumerate(dims[1:], 1):
             if not base.is_compatible(d):
@@ -256,7 +269,14 @@ def _infer_dim(
             )
         # If exponent is a numeric constant, scale the base dimension
         if exp_expr.is_number:
-            n = int(exp_expr)
+            if base_dim.is_dimensionless:
+                return DIMENSIONLESS
+            n = _sympy_number_to_fraction(exp_expr)
+            if n is None:
+                raise DimensionalError(
+                    "Exponent for a dimensioned quantity must be rational, "
+                    f"got {exp_expr}"
+                )
             return base_dim.power(n)
         # If exponent is symbolic but dimensionless, base must also be dimensionless
         if not base_dim.is_dimensionless:
@@ -270,6 +290,8 @@ def _infer_dim(
     if isinstance(expr, sp.Eq):
         lhs_dim = _infer_dim(expr.lhs, dim_map, sp)
         rhs_dim = _infer_dim(expr.rhs, dim_map, sp)
+        if lhs_dim.is_unknown or rhs_dim.is_unknown:
+            return UNKNOWN_DIMENSION
         if not lhs_dim.is_compatible(rhs_dim):
             raise DimensionalError(
                 f"Equation sides have incompatible dimensions: "
@@ -289,6 +311,10 @@ def _infer_dim(
     if expr_class_name in _TRANSCENDENTAL_NAMES:
         for arg in expr.args:
             arg_dim = _infer_dim(arg, dim_map, sp)
+            if arg_dim.is_unknown:
+                raise DimensionalError(
+                    f"Argument to {expr_class_name} has unknown dimension"
+                )
             if not arg_dim.is_dimensionless:
                 raise DimensionalError(
                     f"Argument to {expr_class_name} must be "
@@ -309,20 +335,23 @@ def _infer_dim(
                 func_dim = func_dim.divide(var_dim)
         return func_dim
 
-    # Fallback: if we can't determine, return dimensionless with a warning
-    logger.debug("Cannot infer dimension for %s (%s), assuming dimensionless",
+    # Fallback: if we can't determine, keep the uncertainty explicit.
+    logger.debug("Cannot infer dimension for %s (%s), marking unknown",
                  expr, type(expr).__name__)
-    return DIMENSIONLESS
+    return UNKNOWN_DIMENSION
+
+
+def _sympy_number_to_fraction(expr: Any) -> Fraction | None:
+    """Convert a rational SymPy numeric expression to an exact Fraction."""
+    if getattr(expr, "is_Rational", False):
+        return Fraction(int(expr.p), int(expr.q))
+    if getattr(expr, "is_Integer", False):
+        return Fraction(int(expr), 1)
+    if getattr(expr, "is_Float", False):
+        return Fraction(str(expr))
+    return None
 
 
 def _try_sqrt_dim(dim: DimensionalSignature) -> DimensionalSignature:
-    """Try to compute sqrt of a dimensional signature (all exponents must be even)."""
-    if (dim.M % 2 or dim.L % 2 or dim.T % 2 or dim.I % 2 or
-            dim.Theta % 2 or dim.N % 2 or dim.J % 2):
-        raise DimensionalError(
-            f"Cannot take sqrt of {dim.to_compact()}: not all exponents are even"
-        )
-    return DimensionalSignature(
-        M=dim.M // 2, L=dim.L // 2, T=dim.T // 2, I=dim.I // 2,
-        Theta=dim.Theta // 2, N=dim.N // 2, J=dim.J // 2,
-    )
+    """Compute sqrt of a dimensional signature using exact half powers."""
+    return dim.power(Fraction(1, 2))

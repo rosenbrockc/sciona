@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from fractions import Fraction
 import math
 
 import numpy as np
@@ -246,6 +247,50 @@ class TestDimensionalConsistency:
         expr = x**2
         dim = _infer_dim(expr, {"x": METER}, sp)
         assert dim == DimensionalSignature(L=2)
+
+    def test_power_with_rational_exponent(self):
+        """sqrt(x) preserves exact half-power dimensions."""
+        x = sp.Symbol("x")
+        expr = x ** sp.Rational(1, 2)
+        dim = _infer_dim(expr, {"x": METER}, sp)
+        assert dim == DimensionalSignature(L=Fraction(1, 2))
+        assert dim.to_compact() == "L1/2"
+
+    def test_sqrt_area_equals_length_equation(self):
+        """sqrt(area) = length is dimensionally consistent."""
+        a, x = sp.symbols("a x")
+        eq = sp.Eq(sp.sqrt(a), x)
+        se = SymbolicExpression(
+            srepr_str=serialize_expr(eq),
+            variables={"a": "input", "x": "output"},
+            dim_map={"a": DimensionalSignature(L=2), "x": METER},
+        )
+        assert se.check_dimensional_consistency() == []
+
+    def test_unknown_symbol_dimension_is_reported(self):
+        """Partial dimension maps do not silently treat symbols as dimensionless."""
+        x, y = sp.symbols("x y")
+        expr = x + y
+        se = SymbolicExpression(
+            srepr_str=serialize_expr(expr),
+            variables={"x": "input", "y": "input"},
+            dim_map={"x": METER},
+        )
+        errors = se.check_dimensional_consistency()
+        assert len(errors) == 1
+        assert "Unknown dimension for symbol 'y'" in errors[0]
+
+    def test_irrational_power_of_dimensioned_quantity_errors(self):
+        x = sp.Symbol("x")
+        expr = x ** sp.pi
+        se = SymbolicExpression(
+            srepr_str=serialize_expr(expr),
+            variables={"x": "input"},
+            dim_map={"x": METER},
+        )
+        errors = se.check_dimensional_consistency()
+        assert len(errors) == 1
+        assert "must be rational" in errors[0]
 
     def test_derivative_dimension(self):
         """d(position)/d(time) = velocity."""
