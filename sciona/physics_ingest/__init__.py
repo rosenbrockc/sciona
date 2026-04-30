@@ -5,6 +5,14 @@ from sciona.physics_ingest.pdg_cdg import (
     PDGRelationshipIngestResult,
     build_pdg_relationship_ingest,
 )
+from sciona.physics_ingest.publication import (
+    ArtifactBinding,
+    PublicationDiagnostic,
+    PublicationLoadResult,
+    SymbolicVariableRow,
+    ValidityBoundRow,
+    load_symbolic_publication_manifest,
+)
 from sciona.physics_ingest.review import (
     ReviewAssessment,
     ReviewGateResult,
@@ -41,10 +49,13 @@ from sciona.physics_ingest.staging import (
 
 __all__ = [
     "ArtifactRelationshipRow",
+    "ArtifactBinding",
     "PDGExpressionBinding",
     "PDGRelationshipIngestResult",
     "PhysicsEquationCandidateRow",
     "PhysicsIngestSnapshotRow",
+    "PublicationDiagnostic",
+    "PublicationLoadResult",
     "ReviewAssessment",
     "ReviewGateResult",
     "RawTrustPolicy",
@@ -54,12 +65,15 @@ __all__ = [
     "SymbolicRelationship",
     "SymbolicRetrievalQuery",
     "SymbolicValidityBound",
+    "SymbolicVariableRow",
+    "ValidityBoundRow",
     "WORKFLOW_STATUSES",
     "Wave0ContractError",
     "attach_snapshot_id",
     "assess_publishability",
     "build_pdg_relationship_ingest",
     "candidates_from_rows",
+    "load_symbolic_publication_manifest",
     "rank_symbolic_candidates",
     "require_publishable",
     "score_symbolic_candidate",
