@@ -143,6 +143,58 @@ class ReviewTrustReport:
         }
 
 
+@dataclass(frozen=True)
+class ReviewPublicationDiagnostic:
+    """One non-fatal status-row publication diagnostic."""
+
+    table: str
+    reason: str
+    row_id: str = ""
+    severity: str = "skipped"
+    detail: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "table": self.table,
+            "reason": self.reason,
+            "row_id": self.row_id,
+            "severity": self.severity,
+            "detail": self.detail,
+        }
+
+
+@dataclass(frozen=True)
+class ReviewPublicationRows:
+    """Side-effect-free status row patches derived from a review decision."""
+
+    artifact_symbolic_expressions: tuple[dict[str, Any], ...] = ()
+    physics_equation_candidates: tuple[dict[str, Any], ...] = ()
+    diagnostics: tuple[ReviewPublicationDiagnostic, ...] = ()
+
+    def to_upsert_rows(self) -> dict[str, list[dict[str, Any]]]:
+        rows: dict[str, list[dict[str, Any]]] = {}
+        if self.physics_equation_candidates:
+            rows["physics_equation_candidates"] = [
+                dict(row) for row in self.physics_equation_candidates
+            ]
+        if self.artifact_symbolic_expressions:
+            rows["artifact_symbolic_expressions"] = [
+                dict(row) for row in self.artifact_symbolic_expressions
+            ]
+        return rows
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "artifact_symbolic_expressions": [
+                dict(row) for row in self.artifact_symbolic_expressions
+            ],
+            "physics_equation_candidates": [
+                dict(row) for row in self.physics_equation_candidates
+            ],
+            "diagnostics": [diagnostic.to_dict() for diagnostic in self.diagnostics],
+        }
+
+
 def assess_publishability(
     *,
     candidate: Mapping[str, Any] | Any | None = None,
@@ -201,6 +253,94 @@ def build_review_trust_report(**kwargs: Any) -> dict[str, Any]:
     return assess_publishability(**kwargs).to_report().to_dict()
 
 
+def build_review_publication_status_rows(
+    review: ReviewAssessment | ReviewTrustReport | Mapping[str, Any],
+    *,
+    candidate: Mapping[str, Any] | Any | None = None,
+    expression: Mapping[str, Any] | Any | None = None,
+) -> ReviewPublicationRows:
+    """Build deterministic publication status patches from a review decision.
+
+    The returned rows are intentionally minimal and inert. They include only the
+    table conflict key plus status columns that callers may choose to upsert:
+    ``artifact_symbolic_expressions.review_status`` and
+    ``physics_equation_candidates.candidate_status``. Rows are omitted when the
+    target ID is unavailable or the review decision is not actionable.
+    """
+
+    review_row = _review_row(review)
+    review_status = _publication_review_status(review, review_row)
+    diagnostics: list[ReviewPublicationDiagnostic] = []
+    expression_rows: list[dict[str, Any]] = []
+    candidate_rows: list[dict[str, Any]] = []
+
+    if review_status == "unreviewed":
+        diagnostics.append(
+            ReviewPublicationDiagnostic(
+                table="review",
+                reason="non_actionable_assessment",
+                severity="info",
+                detail="review decision did not progress beyond unreviewed",
+            )
+        )
+        return ReviewPublicationRows(diagnostics=tuple(diagnostics))
+
+    expression_row = _row(expression)
+    expression_id = _text(expression_row, "expression_id")
+    if expression_row:
+        if expression_id:
+            expression_rows.append(
+                {
+                    "expression_id": expression_id,
+                    "review_status": review_status,
+                }
+            )
+        else:
+            diagnostics.append(
+                ReviewPublicationDiagnostic(
+                    table="artifact_symbolic_expressions",
+                    reason="missing_expression_id",
+                    detail="review_status patch requires expression_id",
+                )
+            )
+
+    candidate_row = _row(candidate)
+    candidate_id = _text(candidate_row, "candidate_id")
+    if candidate_row:
+        if candidate_id:
+            candidate_rows.append(
+                {
+                    "candidate_id": candidate_id,
+                    "candidate_status": _candidate_status_for_review(
+                        review_row, review_status
+                    ),
+                }
+            )
+        else:
+            diagnostics.append(
+                ReviewPublicationDiagnostic(
+                    table="physics_equation_candidates",
+                    reason="missing_candidate_id",
+                    detail="candidate_status patch requires candidate_id",
+                )
+            )
+
+    if not expression_row and not candidate_row:
+        diagnostics.append(
+            ReviewPublicationDiagnostic(
+                table="review",
+                reason="missing_target_rows",
+                detail="provide candidate and/or expression rows to build status patches",
+            )
+        )
+
+    return ReviewPublicationRows(
+        artifact_symbolic_expressions=tuple(expression_rows),
+        physics_equation_candidates=tuple(candidate_rows),
+        diagnostics=tuple(diagnostics),
+    )
+
+
 def require_publishable(**kwargs: Any) -> ReviewAssessment:
     """Return an assessment or raise ``ValueError`` with gate blockers."""
 
@@ -208,6 +348,70 @@ def require_publishable(**kwargs: Any) -> ReviewAssessment:
     if not assessment.publishable:
         raise ValueError("; ".join(assessment.blockers))
     return assessment
+
+
+def _review_row(
+    review: ReviewAssessment | ReviewTrustReport | Mapping[str, Any],
+) -> Mapping[str, Any]:
+    if isinstance(review, ReviewAssessment):
+        return review.to_report().to_dict()
+    if isinstance(review, ReviewTrustReport):
+        return review.to_dict()
+    if isinstance(review, Mapping):
+        return review
+    raise TypeError(f"cannot treat {type(review)!r} as a review decision")
+
+
+def _publication_review_status(
+    review: ReviewAssessment | ReviewTrustReport | Mapping[str, Any],
+    review_row: Mapping[str, Any],
+) -> str:
+    trust_status = _text(review_row, "trust_status")
+    if trust_status in REVIEW_STATUSES:
+        if trust_status == "needs_human" and _automated_gates_passed(review_row):
+            return "automated_pass"
+        return trust_status
+    if _bool(review_row.get("blocked")):
+        return "blocked"
+    if _bool(review_row.get("human_reviewed")):
+        return "human_reviewed"
+    if _bool(review_row.get("needs_human")):
+        return "automated_pass" if _automated_gates_passed(review_row) else "needs_human"
+    if _bool(review_row.get("publishable")):
+        return "human_reviewed"
+    if isinstance(review, ReviewAssessment):
+        return "needs_human"
+    return "unreviewed"
+
+
+def _automated_gates_passed(review_row: Mapping[str, Any]) -> bool:
+    gates = review_row.get("gates")
+    if not isinstance(gates, Sequence) or isinstance(gates, (str, bytes)):
+        return False
+    passed_by_status: dict[str, bool] = {}
+    for gate in gates:
+        if isinstance(gate, Mapping):
+            status = _text(gate, "status")
+            if status:
+                passed_by_status[status] = _bool(gate.get("passed"))
+    automated_statuses = WORKFLOW_STATUSES[:5]
+    return all(passed_by_status.get(status) is True for status in automated_statuses)
+
+
+def _candidate_status_for_review(
+    review_row: Mapping[str, Any],
+    review_status: str,
+) -> str:
+    if review_status == "blocked":
+        return "blocked"
+    if review_status == "human_reviewed":
+        return "human_reviewed"
+    achieved_status = _text(review_row, "achieved_status")
+    if achieved_status in _STATUS_RANK and achieved_status != "published":
+        return achieved_status
+    if review_status == "automated_pass":
+        return "source_verified"
+    return "raw_imported"
 
 
 def _raw_imported_gate(

@@ -9,6 +9,7 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from sciona.physics_ingest.normalization import NormalizedExpressionDraft
 from sciona.physics_ingest.staging import (
     SymbolicExpressionRow,
     validate_symbolic_expression_row,
@@ -16,6 +17,8 @@ from sciona.physics_ingest.staging import (
 
 
 _EXPRESSION_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.publication")
+_VARIABLE_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.publication.variable")
+_BOUND_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.publication.bound")
 _VARIABLE_ROLES = frozenset(
     {"input", "output", "parameter", "constant", "state", "intermediate"}
 )
@@ -348,6 +351,215 @@ def load_symbolic_publication_manifest(
     )
 
 
+def build_publication_load_result_from_normalized_drafts(
+    drafts: Iterable[NormalizedExpressionDraft | Mapping[str, Any] | Any],
+) -> PublicationLoadResult:
+    """Convert normalized expression drafts into validated publication rows.
+
+    The helper performs no database IO and intentionally preserves failed or
+    ``needs_human`` expression drafts in ``artifact_symbolic_expressions``.
+    Variable and bound rows are best-effort: malformed partial metadata is
+    reported through diagnostics without dropping the parent expression row.
+    """
+
+    expressions: list[SymbolicExpressionRow] = []
+    variables: list[SymbolicVariableRow] = []
+    bounds: list[ValidityBoundRow] = []
+    diagnostics: list[PublicationDiagnostic] = []
+    variable_ids_by_expression_symbol: dict[tuple[str, str], str] = {}
+
+    for draft_index, draft in enumerate(drafts):
+        try:
+            row = _draft_expression_row(draft)
+        except (TypeError, ValueError) as exc:
+            diagnostics.append(
+                PublicationDiagnostic(
+                    table="artifact_symbolic_expressions",
+                    reason="validation_error",
+                    severity="error",
+                    detail=str(exc),
+                )
+            )
+            continue
+
+        expression_id = row.expression_id or _stable_draft_expression_id(row, draft_index)
+        expression = row.model_copy(update={"expression_id": expression_id})
+        try:
+            expression = validate_symbolic_expression_row(expression.to_insert_dict())
+        except ValueError as exc:
+            diagnostics.append(
+                PublicationDiagnostic(
+                    table="artifact_symbolic_expressions",
+                    reason="validation_error",
+                    artifact_key=row.source_expression_id,
+                    severity="error",
+                    detail=str(exc),
+                )
+            )
+            continue
+        expressions.append(expression)
+
+        normalized_candidate = _draft_normalized_candidate(draft)
+        for ordinal, variable in enumerate(
+            _normalized_candidate_variables(normalized_candidate)
+        ):
+            symbol = _field_text(variable, "symbol", "symbol_name", "name")
+            variable_id = _field_text(variable, "variable_id") or str(
+                uuid5(_VARIABLE_NAMESPACE, f"{expression_id}:{symbol}")
+            )
+            try:
+                variable_row = SymbolicVariableRow.model_validate(
+                    {
+                        "variable_id": variable_id,
+                        "expression_id": expression_id,
+                        "symbol_name": symbol,
+                        "source_symbol": _field_text(variable, "source_symbol")
+                        or symbol,
+                        "aliases": _field_string_list(variable, "aliases", "alias"),
+                        "variable_role": _field_text(variable, "role", "variable_role")
+                        or "input",
+                        "quantity_kind_uri": _field_text(
+                            variable,
+                            "quantity_kind_uri",
+                            "qudt_uri",
+                        ),
+                        "quantity_kind_label": _field_text(
+                            variable,
+                            "quantity_kind_label",
+                            "quantity_kind",
+                        ),
+                        "unit_uri": _field_text(variable, "unit_uri"),
+                        "unit_label": _field_text(variable, "unit_label", "unit"),
+                        "dim_signature": _compact_dim_signature(
+                            _field_value(
+                                variable,
+                                "dim_signature",
+                                "dimension",
+                                "dimensions",
+                            )
+                        ),
+                        "dimension_source": _field_text(variable, "dimension_source")
+                        or "inferred",
+                        "assumptions_json": _field_dict(
+                            variable,
+                            "assumptions_json",
+                            "assumptions",
+                        ),
+                        "evidence_json": {
+                            **_field_dict(variable, "evidence_json", "evidence"),
+                            "normalized_draft": {
+                                "source_expression_id": expression.source_expression_id,
+                                "parse_status": expression.parse_status,
+                                "review_status": expression.review_status,
+                            },
+                        },
+                        "ordinal": _field_int(variable, "ordinal", default=ordinal),
+                    }
+                )
+            except ValueError as exc:
+                diagnostics.append(
+                    PublicationDiagnostic(
+                        table="artifact_symbolic_variables",
+                        reason="validation_error",
+                        artifact_key=expression.source_expression_id,
+                        severity="error",
+                        detail=str(exc),
+                    )
+                )
+                continue
+            variables.append(variable_row)
+            variable_ids_by_expression_symbol[(expression_id, variable_row.symbol_name)] = (
+                variable_row.variable_id or variable_id
+            )
+
+        for bound in _normalized_candidate_bounds(normalized_candidate):
+            symbol = _field_text(bound, "variable_name", "symbol", "name")
+            lower = _field_value(bound, "lower_value", "min_value", "lower", "min")
+            upper = _field_value(bound, "upper_value", "max_value", "upper", "max")
+            bound_kind = _field_text(bound, "bound_kind", "kind") or "domain"
+            bound_id = _field_text(bound, "bound_id") or str(
+                uuid5(
+                    _BOUND_NAMESPACE,
+                    f"{expression_id}:{symbol}:{bound_kind}:{lower}:{upper}:"
+                    f"{_field_text(bound, 'validity_statement')}",
+                )
+            )
+            try:
+                bounds.append(
+                    ValidityBoundRow.model_validate(
+                        {
+                            "bound_id": bound_id,
+                            "artifact_id": expression.artifact_id,
+                            "version_id": expression.version_id,
+                            "expression_id": expression_id,
+                            "variable_id": _field_text(bound, "variable_id")
+                            or variable_ids_by_expression_symbol.get(
+                                (expression_id, symbol)
+                            ),
+                            "scope": _field_text(bound, "scope") or "expression",
+                            "variable_name": symbol,
+                            "bound_kind": bound_kind,
+                            "lower_value": lower,
+                            "upper_value": upper,
+                            "lower_inclusive": _field_value(bound, "lower_inclusive")
+                            if _field_value(bound, "lower_inclusive") is not None
+                            else True,
+                            "upper_inclusive": _field_value(bound, "upper_inclusive")
+                            if _field_value(bound, "upper_inclusive") is not None
+                            else True,
+                            "unit_uri": _field_text(bound, "unit_uri"),
+                            "dim_signature": _compact_dim_signature(
+                                _field_value(
+                                    bound,
+                                    "dim_signature",
+                                    "dimension",
+                                    "dimensions",
+                                )
+                            ),
+                            "regime_label": _field_text(bound, "regime_label"),
+                            "validity_statement": _field_text(
+                                bound,
+                                "validity_statement",
+                                "statement",
+                            )
+                            or _validity_statement(symbol, lower, upper),
+                            "replacement_artifact_fqdn": _field_text(
+                                bound,
+                                "replacement_artifact_fqdn",
+                            ),
+                            "evidence_ref_key": _field_text(bound, "evidence_ref_key"),
+                            "confidence": _field_text(bound, "confidence"),
+                            "review_status": _field_text(bound, "review_status")
+                            or expression.review_status,
+                            "metadata": {
+                                **_field_dict(bound, "metadata"),
+                                "evidence": _field_dict(bound, "evidence_json", "evidence"),
+                                "normalized_draft": {
+                                    "source_expression_id": expression.source_expression_id,
+                                },
+                            },
+                        }
+                    )
+                )
+            except ValueError as exc:
+                diagnostics.append(
+                    PublicationDiagnostic(
+                        table="artifact_validity_bounds",
+                        reason="validation_error",
+                        artifact_key=expression.source_expression_id,
+                        severity="error",
+                        detail=str(exc),
+                    )
+                )
+
+    return PublicationLoadResult(
+        artifact_symbolic_expressions=tuple(expressions),
+        artifact_symbolic_variables=tuple(variables),
+        artifact_validity_bounds=tuple(bounds),
+        diagnostics=tuple(diagnostics),
+    )
+
+
 def _load_variables(
     manifest: Mapping[str, Any],
     expression_by_key: Mapping[str, SymbolicExpressionRow],
@@ -558,6 +770,17 @@ def _stable_expression_id(row: Mapping[str, Any], binding: ArtifactBinding) -> s
     return str(uuid5(_EXPRESSION_NAMESPACE, f"{binding.artifact_id}:{binding.version_id}:{key}"))
 
 
+def _stable_draft_expression_id(row: SymbolicExpressionRow, draft_index: int) -> str:
+    key = (
+        row.source_expression_id
+        or row.candidate_id
+        or row.canonical_expr_hash
+        or row.raw_formula
+        or str(draft_index)
+    )
+    return str(uuid5(_EXPRESSION_NAMESPACE, f"{row.artifact_id}:{row.version_id}:{key}"))
+
+
 def _unique_expressions(
     rows: Iterable[SymbolicExpressionRow],
 ) -> tuple[SymbolicExpressionRow, ...]:
@@ -625,3 +848,114 @@ def _number(value: Any, default: float) -> float:
     if value is None:
         return default
     return float(value)
+
+
+def _draft_expression_row(
+    draft: NormalizedExpressionDraft | Mapping[str, Any] | Any,
+) -> SymbolicExpressionRow:
+    row = _field_value(draft, "row")
+    if isinstance(row, SymbolicExpressionRow):
+        return row
+    if isinstance(row, Mapping):
+        return validate_symbolic_expression_row(row)
+    if isinstance(draft, SymbolicExpressionRow):
+        return draft
+    if isinstance(draft, Mapping):
+        source = draft.get("artifact_symbolic_expression") or draft.get("expression") or draft
+        if isinstance(source, SymbolicExpressionRow):
+            return source
+        if isinstance(source, Mapping):
+            return validate_symbolic_expression_row(source)
+    raise TypeError("normalized draft must provide a SymbolicExpressionRow row")
+
+
+def _draft_normalized_candidate(
+    draft: NormalizedExpressionDraft | Mapping[str, Any] | Any,
+) -> Any:
+    return _field_value(draft, "normalized_candidate", "candidate") or {}
+
+
+def _normalized_candidate_variables(normalized_candidate: Any) -> tuple[Any, ...]:
+    variables = _field_value(normalized_candidate, "variables")
+    if isinstance(variables, Mapping):
+        rows = []
+        for symbol, variable in variables.items():
+            if isinstance(variable, Mapping):
+                rows.append({"symbol": symbol, **dict(variable)})
+            else:
+                rows.append(variable)
+        return tuple(rows)
+    if isinstance(variables, list | tuple):
+        return tuple(variables)
+    return ()
+
+
+def _normalized_candidate_bounds(normalized_candidate: Any) -> tuple[Any, ...]:
+    bounds = _field_value(normalized_candidate, "validity_bounds", "bounds")
+    if isinstance(bounds, Mapping):
+        rows = []
+        for symbol, bound in bounds.items():
+            if isinstance(bound, Mapping):
+                rows.append({"variable_name": symbol, **dict(bound)})
+            else:
+                try:
+                    lower, upper = bound
+                except (TypeError, ValueError):
+                    rows.append({"variable_name": symbol})
+                else:
+                    rows.append(
+                        {
+                            "variable_name": symbol,
+                            "lower_value": lower,
+                            "upper_value": upper,
+                        }
+                    )
+        return tuple(rows)
+    if isinstance(bounds, list | tuple):
+        return tuple(bounds)
+    return ()
+
+
+def _field_value(source: Any, *keys: str) -> Any:
+    for key in keys:
+        value = getattr(source, key, None)
+        if value is not None:
+            return value
+    if isinstance(source, BaseModel):
+        data = source.model_dump()
+    elif isinstance(source, Mapping):
+        data = source
+    else:
+        data = None
+    if data is not None:
+        for key in keys:
+            if key in data and data[key] is not None:
+                return data[key]
+    return None
+
+
+def _field_text(source: Any, *keys: str) -> str:
+    value = _field_value(source, *keys)
+    return "" if value is None else str(value)
+
+
+def _field_dict(source: Any, *keys: str) -> dict[str, Any]:
+    value = _field_value(source, *keys)
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _field_string_list(source: Any, *keys: str) -> list[str]:
+    return _string_list(_field_value(source, *keys))
+
+
+def _field_int(source: Any, *keys: str, default: int) -> int:
+    value = _field_value(source, *keys)
+    return default if value in (None, "") else int(value)
+
+
+def _compact_dim_signature(value: Any) -> str:
+    if value is None:
+        return ""
+    if hasattr(value, "to_compact"):
+        return str(value.to_compact())
+    return str(value)

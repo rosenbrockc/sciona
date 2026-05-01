@@ -11,6 +11,8 @@ from sciona.physics_ingest.write_plan import (
 def test_write_plan_orders_publication_batches_with_conflict_metadata() -> None:
     rows = {
         "artifact_symbolic_variables": [{"variable_id": "var-1"}],
+        "artifact_versions": [{"version_id": "ver-1"}],
+        "artifacts": [{"artifact_id": "art-1"}],
         "artifact_relationships": [{"relationship_id": "rel-1"}],
         "physics_equation_candidates": [{"candidate_id": "cand-1"}],
         "artifact_validity_bounds": [{"bound_id": "bound-1"}],
@@ -26,6 +28,8 @@ def test_write_plan_orders_publication_batches_with_conflict_metadata() -> None:
     assert [batch.table for batch in plan.batches] == [
         "physics_ingest_snapshots",
         "physics_equation_candidates",
+        "artifacts",
+        "artifact_versions",
         "artifact_symbolic_expressions",
         "artifact_symbolic_variables",
         "artifact_validity_bounds",
@@ -39,6 +43,8 @@ def test_write_plan_orders_publication_batches_with_conflict_metadata() -> None:
     } == {
         "physics_ingest_snapshots": ("snapshot_id",),
         "physics_equation_candidates": ("candidate_id",),
+        "artifacts": ("artifact_id",),
+        "artifact_versions": ("version_id",),
         "artifact_symbolic_expressions": ("expression_id",),
         "artifact_symbolic_variables": ("variable_id",),
         "artifact_validity_bounds": ("bound_id",),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sciona.physics_ingest.pdg_cdg import (
+    PDGCDGArtifactEnvelope,
     build_pdg_publication_write_rows,
     build_pdg_relationship_ingest,
 )
@@ -253,3 +254,82 @@ def test_pdg_phase4_publication_rows_are_deterministic() -> None:
 
     assert first.to_insert_rows() == second.to_insert_rows()
     assert first.diagnostics == second.diagnostics
+
+
+def test_pdg_phase4_publication_can_emit_cdg_artifact_envelope_rows() -> None:
+    result = build_pdg_relationship_ingest(
+        _bundle(),
+        expression_bindings_by_pdg_node_id={
+            "eq:base": EXPR_BASE,
+            "eq:solved": EXPR_SOLVED,
+            "eq:force": EXPR_FORCE,
+        },
+    )
+
+    publication_rows = build_pdg_publication_write_rows(
+        result,
+        cdg_artifact_envelope=PDGCDGArtifactEnvelope(
+            fqdn_prefix="physics.pdg.cdg",
+            semver="2026.5.1",
+            namespace_root="physics",
+            namespace_path="pdg/cdg",
+            source_repo_id="40000000-0000-0000-0000-000000000001",
+            source_package="pdg",
+            source_module_path="pdg.derivations",
+            status="draft",
+            visibility_tier="internal",
+            is_latest=True,
+            s3_key_prefix="physics/pdg/cdg",
+        ),
+    )
+    insert_rows = publication_rows.to_insert_rows()
+    plan = build_publication_write_plan(insert_rows)
+
+    assert plan.ordered_tables() == (
+        "artifacts",
+        "artifact_versions",
+        "artifact_relationships",
+        "artifact_cdg_nodes",
+        "artifact_cdg_edges",
+    )
+    artifact = insert_rows["artifacts"][0]
+    version = insert_rows["artifact_versions"][0]
+    cdg_node = insert_rows["artifact_cdg_nodes"][0]
+
+    assert artifact["artifact_kind"] == "cdg"
+    assert artifact["fqdn"].startswith("physics.pdg.cdg.pdg_cdg_candidate_")
+    assert artifact["source_repo_id"] == "40000000-0000-0000-0000-000000000001"
+    assert artifact["namespace_root"] == "physics"
+    assert artifact["namespace_path"] == "pdg/cdg"
+    assert artifact["source_kind"] == "generated"
+    assert artifact["is_publishable"] is False
+    assert version["artifact_id"] == artifact["artifact_id"]
+    assert version["version_id"] == cdg_node["version_id"]
+    assert version["semver"] == "2026.5.1"
+    assert version["is_latest"] is True
+    assert version["s3_key"] == f"physics/pdg/cdg/{artifact['fqdn']}.json"
+    assert len(version["content_hash"]) == 64
+    assert version["fingerprint"] == version["content_hash"]
+    assert plan.batches_by_table()["artifacts"].conflict_keys == ("artifact_id",)
+    assert plan.batches_by_table()["artifact_versions"].conflict_keys == ("version_id",)
+
+
+def test_pdg_phase4_artifact_envelope_requires_fqdn_identity() -> None:
+    result = build_pdg_relationship_ingest(
+        _bundle(),
+        expression_bindings_by_pdg_node_id={
+            "eq:base": EXPR_BASE,
+            "eq:solved": EXPR_SOLVED,
+            "eq:force": EXPR_FORCE,
+        },
+    )
+
+    try:
+        build_pdg_publication_write_rows(
+            result,
+            cdg_artifact_envelope=PDGCDGArtifactEnvelope(),
+        )
+    except ValueError as exc:
+        assert "fqdn_prefix" in str(exc)
+    else:
+        raise AssertionError("expected missing fqdn identity to fail")

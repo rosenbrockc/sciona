@@ -13,6 +13,8 @@ WriteMode = Literal["insert", "upsert"]
 PUBLICATION_TABLE_ORDER = (
     "physics_ingest_snapshots",
     "physics_equation_candidates",
+    "artifacts",
+    "artifact_versions",
     "artifact_symbolic_expressions",
     "artifact_symbolic_variables",
     "artifact_validity_bounds",
@@ -25,6 +27,8 @@ PUBLICATION_TABLE_ORDER = (
 CONFLICT_KEYS_BY_TABLE: Mapping[str, tuple[str, ...]] = {
     "physics_ingest_snapshots": ("snapshot_id",),
     "physics_equation_candidates": ("candidate_id",),
+    "artifacts": ("artifact_id",),
+    "artifact_versions": ("version_id",),
     "artifact_symbolic_expressions": ("expression_id",),
     "artifact_symbolic_variables": ("variable_id",),
     "artifact_validity_bounds": ("bound_id",),

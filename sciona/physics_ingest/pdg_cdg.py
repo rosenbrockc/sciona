@@ -29,6 +29,7 @@ JSONDict = dict[str, Any]
 
 PHASE4_SCAFFOLD_VERSION = "phase4.pdg_cdg_scaffold.v1"
 _CDG_VERSION_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.pdg_cdg.version")
+_CDG_ARTIFACT_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.pdg_cdg.artifact")
 
 _CHAIN_OPERATIONS = frozenset(
     {
@@ -151,6 +152,39 @@ class PDGPublicationWriteRows:
         }
 
 
+@dataclass(frozen=True)
+class PDGCDGArtifactEnvelope:
+    """Opt-in artifact registry metadata for CDG candidate publication."""
+
+    fqdn_prefix: str = ""
+    semver: str = "0.1.0"
+    namespace_root: str = ""
+    namespace_path: str = ""
+    owner_id: str = ""
+    source_repo_id: str = ""
+    source_package: str = ""
+    source_module_path: str = ""
+    source_symbol_prefix: str = "pdg_cdg_candidate"
+    status: str = "draft"
+    visibility_tier: str = "internal"
+    description: str = "PDG candidate derivation CDG manifest"
+    source_kind: str = "generated"
+    is_publishable: bool = False
+    is_latest: bool = False
+    s3_key_prefix: str = ""
+
+    @classmethod
+    def from_value(
+        cls,
+        value: "PDGCDGArtifactEnvelope | Mapping[str, Any]",
+    ) -> "PDGCDGArtifactEnvelope":
+        if isinstance(value, cls):
+            return value
+        allowed = cls.__dataclass_fields__
+        kwargs = {key: raw for key, raw in value.items() if key in allowed}
+        return cls(**kwargs)
+
+
 def build_pdg_relationship_ingest(
     bundle: PDGIngestBundle,
     *,
@@ -220,6 +254,8 @@ def build_pdg_relationship_ingest(
 
 def build_pdg_publication_write_rows(
     result: PDGRelationshipIngestResult,
+    *,
+    cdg_artifact_envelope: PDGCDGArtifactEnvelope | Mapping[str, Any] | None = None,
 ) -> PDGPublicationWriteRows:
     """Adapt PDG relationship/CDG results into write-plan-ready rows.
 
@@ -230,12 +266,24 @@ def build_pdg_publication_write_rows(
     skipped diagnostic records the unsupported publication gap.
     """
 
+    envelope = (
+        PDGCDGArtifactEnvelope.from_value(cdg_artifact_envelope)
+        if cdg_artifact_envelope is not None
+        else None
+    )
     rows: dict[str, list[JSONDict]] = {
         "artifact_relationships": result.relationship_insert_rows(),
     }
     diagnostics: list[JSONDict] = []
 
     for manifest in result.cdg_candidate_manifests:
+        if envelope is not None:
+            artifact_row, version_row = _candidate_manifest_artifact_rows(
+                manifest,
+                envelope=envelope,
+            )
+            rows.setdefault("artifacts", []).append(artifact_row)
+            rows.setdefault("artifact_versions", []).append(version_row)
         cdg_rows, cdg_diagnostics = _candidate_manifest_to_cdg_rows(manifest)
         diagnostics.extend(cdg_diagnostics)
         for table, table_rows in cdg_rows.items():
@@ -249,6 +297,122 @@ def build_pdg_publication_write_rows(
         },
         diagnostics=tuple(diagnostics),
     )
+
+
+def _candidate_manifest_artifact_rows(
+    manifest: Mapping[str, Any],
+    *,
+    envelope: PDGCDGArtifactEnvelope,
+) -> tuple[JSONDict, JSONDict]:
+    manifest_id = str(manifest.get("manifest_id") or _stable_id("pdg_cdg_candidate", manifest))
+    artifact_id = _manifest_artifact_id(manifest)
+    version_id = _manifest_version_id(manifest)
+    fqdn = _manifest_artifact_fqdn(manifest, envelope=envelope)
+    content_hash = hashlib.sha256(_canonical_json(manifest).encode("utf-8")).hexdigest()
+    source_symbol = _manifest_source_symbol(manifest_id, envelope=envelope)
+
+    artifact_row: JSONDict = {
+        "artifact_id": artifact_id,
+        "artifact_kind": "cdg",
+        "fqdn": fqdn,
+        "namespace_root": envelope.namespace_root,
+        "namespace_path": envelope.namespace_path,
+        "source_package": envelope.source_package,
+        "source_module_path": envelope.source_module_path,
+        "source_symbol": source_symbol,
+        "status": envelope.status,
+        "visibility_tier": envelope.visibility_tier,
+        "description": envelope.description,
+        "source_kind": envelope.source_kind,
+        "is_stochastic": False,
+        "is_ffi": False,
+        "is_publishable": envelope.is_publishable,
+        "topo_hash": str(manifest.get("topology_hash") or ""),
+        "top_level_input_arity": _manifest_top_level_input_arity(manifest),
+        "top_level_output_arity": 1,
+        "leaf_count": len(_manifest_rows(manifest, "nodes")),
+        "verified_leaf_coverage": 0.0,
+    }
+    if envelope.owner_id:
+        artifact_row["owner_id"] = envelope.owner_id
+    if envelope.source_repo_id:
+        artifact_row["source_repo_id"] = envelope.source_repo_id
+
+    version_row: JSONDict = {
+        "version_id": version_id,
+        "artifact_id": artifact_id,
+        "content_hash": content_hash,
+        "semver": _manifest_semver(manifest, envelope=envelope),
+        "is_latest": envelope.is_latest,
+        "s3_key": _manifest_s3_key(fqdn, envelope=envelope),
+        "fingerprint": content_hash,
+    }
+    return artifact_row, version_row
+
+
+def _manifest_artifact_id(manifest: Mapping[str, Any]) -> str:
+    explicit = str(manifest.get("artifact_id") or "")
+    if explicit:
+        return explicit
+    manifest_id = str(manifest.get("manifest_id") or _canonical_json(manifest))
+    return str(uuid5(_CDG_ARTIFACT_NAMESPACE, manifest_id))
+
+
+def _manifest_artifact_fqdn(
+    manifest: Mapping[str, Any],
+    *,
+    envelope: PDGCDGArtifactEnvelope,
+) -> str:
+    explicit = str(manifest.get("artifact_fqdn") or "")
+    if explicit:
+        return explicit
+    manifest_id = str(manifest.get("manifest_id") or "")
+    if not envelope.fqdn_prefix:
+        raise ValueError(
+            "cdg_artifact_envelope.fqdn_prefix is required when manifests do not "
+            "carry artifact_fqdn"
+        )
+    return f"{envelope.fqdn_prefix}.{_fqdn_token(manifest_id)}"
+
+
+def _fqdn_token(value: str) -> str:
+    token = "".join(character if character.isalnum() else "_" for character in value.lower())
+    token = "_".join(part for part in token.split("_") if part)
+    return token or "manifest"
+
+
+def _manifest_source_symbol(
+    manifest_id: str,
+    *,
+    envelope: PDGCDGArtifactEnvelope,
+) -> str:
+    if not envelope.source_symbol_prefix:
+        return ""
+    return f"{envelope.source_symbol_prefix}_{_fqdn_token(manifest_id)}"
+
+
+def _manifest_s3_key(fqdn: str, *, envelope: PDGCDGArtifactEnvelope) -> str:
+    if not envelope.s3_key_prefix:
+        return ""
+    return f"{envelope.s3_key_prefix.rstrip('/')}/{fqdn}.json"
+
+
+def _manifest_semver(
+    manifest: Mapping[str, Any],
+    *,
+    envelope: PDGCDGArtifactEnvelope,
+) -> str:
+    semver = str(manifest.get("semver") or envelope.semver)
+    if not semver:
+        raise ValueError("cdg_artifact_envelope.semver is required")
+    return semver
+
+
+def _manifest_top_level_input_arity(manifest: Mapping[str, Any]) -> int:
+    refs = manifest.get("referenced_expressions")
+    if isinstance(refs, (list, tuple)):
+        return len(refs)
+    return 0
 
 
 def _normalize_bindings(
@@ -553,6 +717,7 @@ def _cdg_diagnostic(
 
 __all__ = [
     "PDGExpressionBinding",
+    "PDGCDGArtifactEnvelope",
     "PDGPublicationWriteRows",
     "PDGRelationshipIngestResult",
     "PHASE4_SCAFFOLD_VERSION",
