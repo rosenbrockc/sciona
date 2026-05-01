@@ -5,6 +5,11 @@ from sciona.physics_ingest.bindings import (
     BindingResolutionResult,
     resolve_publication_artifact_bindings,
 )
+from sciona.physics_ingest.cli import (
+    REPORT_KIND,
+    build_publication_dry_run_report,
+    build_publication_dry_run_report_from_payload,
+)
 from sciona.physics_ingest.ids import (
     DeterministicIdError,
     attach_deterministic_candidate_ids,
@@ -23,6 +28,11 @@ from sciona.physics_ingest.pdg_cdg import (
     PDGExpressionBinding,
     PDGRelationshipIngestResult,
     build_pdg_relationship_ingest,
+)
+from sciona.physics_ingest.pipeline import (
+    PublicationPipelineResult,
+    PublicationPipelineSummary,
+    run_physics_publication_pipeline,
 )
 from sciona.physics_ingest.publication import (
     ArtifactBinding,
@@ -94,6 +104,8 @@ __all__ = [
     "PublicationDiagnostic",
     "PublicationLoadResult",
     "PublicationOrchestrationResult",
+    "PublicationPipelineResult",
+    "PublicationPipelineSummary",
     "PublicationTableClient",
     "PublicationTableWriteResult",
     "PublicationWriteBatch",
@@ -105,6 +117,7 @@ __all__ = [
     "ReviewAssessment",
     "ReviewGateResult",
     "RawTrustPolicy",
+    "REPORT_KIND",
     "SymbolicArtifactCandidate",
     "SymbolicExpressionRow",
     "SymbolicRankingResult",
@@ -118,6 +131,8 @@ __all__ = [
     "attach_deterministic_candidate_ids",
     "attach_snapshot_id",
     "assess_publishability",
+    "build_publication_dry_run_report",
+    "build_publication_dry_run_report_from_payload",
     "build_publication_write_plan",
     "build_pdg_relationship_ingest",
     "build_snapshot_id_bindings",
@@ -128,6 +143,7 @@ __all__ = [
     "rank_symbolic_candidates",
     "require_publishable",
     "resolve_publication_artifact_bindings",
+    "run_physics_publication_pipeline",
     "score_symbolic_candidate",
     "source_candidate_id",
     "source_snapshot_id",
