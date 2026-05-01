@@ -1,0 +1,47 @@
+{
+  "fixture_id": "pdg_nondimensionalize_approximate_chain",
+  "validation_subject": "pdg_fixture:nondimensionalize_approximate_chain",
+  "description": "Offline PDG payload fixture covering nondimensionalize and approximate derivation operations.",
+  "equations": [
+    {
+      "id": "eq:dimensional_decay",
+      "label": "Dimensional exponential decay",
+      "latex": "\\frac{dN}{dt} = -\\lambda N"
+    },
+    {
+      "id": "eq:nondimensional_decay",
+      "label": "Nondimensional exponential decay",
+      "latex": "\\frac{du}{d\\tau} = -u"
+    },
+    {
+      "id": "eq:first_order_decay",
+      "label": "First order small-time decay approximation",
+      "latex": "u(\\tau) \\approx 1 - \\tau"
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:nondimensionalize_decay",
+      "source": "eq:dimensional_decay",
+      "target": "eq:nondimensional_decay",
+      "rule": "nondimensionalize using u = N / N_0 and tau = lambda t",
+      "confidence": 0.89,
+      "bindings": {
+        "dimensionless_state": "u",
+        "dimensionless_time": "\\tau"
+      }
+    },
+    {
+      "id": "edge:first_order_approximation_decay",
+      "source": "eq:nondimensional_decay",
+      "target": "eq:first_order_decay",
+      "rule": "first order approximation for small tau",
+      "confidence": 0.84,
+      "assumptions": ["tau is near zero"],
+      "bindings": {
+        "approximation_order": "1",
+        "expansion_point": "tau = 0"
+      }
+    }
+  ]
+}

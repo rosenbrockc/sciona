@@ -422,3 +422,90 @@ def test_symbolic_synthesis_report_blocks_reviewed_candidate_without_dimensions(
     assert blocked["candidate_key"] == "reviewed-no-dimensions"
     assert blocked["compiler_contract"]["can_compile"] is False
     assert blocked["compiler_contract"]["blockers"] == ["missing_dimensional_metadata"]
+
+
+def test_symbolic_ranker_scores_source_domain_analogues_and_data_artifacts() -> None:
+    results = rank_symbolic_candidates(
+        {
+            "topology_hash": "topo-fluid",
+            "source_domain": "fluid_dynamics",
+            "known_analogues": ["navier-stokes"],
+            "data_artifact_dependencies": ["opb-wave-benchmark"],
+        },
+        [
+            {
+                "artifact_id": "without-phase6-metadata",
+                "fqdn": "physics.fluid.generic",
+                "topology_hash": "topo-fluid",
+                "dimensional_hash": "dim-fluid",
+                "review_status": "human_reviewed",
+            },
+            {
+                "artifact_id": "with-phase6-metadata",
+                "fqdn": "physics.fluid.benchmark_backed",
+                "topology_hash": "topo-fluid",
+                "dimensional_hash": "dim-fluid",
+                "source_domains": ["fluid_dynamics", "continuum_mechanics"],
+                "known_analogues": [{"artifact_fqdn": "navier-stokes"}],
+                "data_artifact_dependencies": [
+                    {"artifact_key": "opb-wave-benchmark"}
+                ],
+                "review_status": "human_reviewed",
+                "validation_status": "passed",
+            },
+        ],
+    )
+
+    assert results[0].candidate.artifact_id == "with-phase6-metadata"
+    assert results[0].components["source_domains"] == 0.4
+    assert results[0].components["known_analogues"] == 0.7
+    assert results[0].components["data_artifact_dependencies"] == 0.7
+    assert "source_domain_overlap" in results[0].reasons
+    assert "known_analogue_overlap" in results[0].reasons
+    assert "data_artifact_dependency_overlap" in results[0].reasons
+
+
+def test_symbolic_synthesis_report_can_require_data_artifact_dependencies() -> None:
+    report = build_symbolic_synthesis_retrieval_report(
+        {
+            "topology_hash": "topo-benchmark",
+            "data_artifact_dependencies": ["artifact-dataset-1"],
+            "require_data_artifact_dependencies": True,
+        },
+        [
+            {
+                "artifact_id": "reviewed-with-data",
+                "topology_hash": "topo-benchmark",
+                "dimensional_hash": "dim-benchmark",
+                "source_domains": "materials,benchmarks",
+                "data_artifacts": [{"artifact_id": "artifact-dataset-1"}],
+                "relationships": [
+                    {
+                        "relationship_kind": "mechanism_analogue_of",
+                        "relationship_label": "spring_mass_reference",
+                        "verified": True,
+                    }
+                ],
+                "review_status": "human_reviewed",
+            },
+            {
+                "artifact_id": "reviewed-without-data",
+                "topology_hash": "topo-benchmark",
+                "dimensional_hash": "dim-benchmark",
+                "review_status": "human_reviewed",
+            },
+        ],
+    )
+
+    assert report["executable_candidate_count"] == 1
+    executable = report["executable_candidates"][0]
+    assert executable["candidate_key"] == "reviewed-with-data"
+    assert executable["data_artifact_dependencies"] == ["artifact-dataset-1"]
+    assert executable["known_analogues"] == ["spring_mass_reference"]
+    assert executable["provenance"]["source_domains"] == ["materials", "benchmarks"]
+
+    blocked = report["blocked_candidates"][0]
+    assert blocked["candidate_key"] == "reviewed-without-data"
+    assert "missing_required_data_artifact_dependencies" in blocked[
+        "compiler_contract"
+    ]["blockers"]

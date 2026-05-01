@@ -49,6 +49,10 @@ _DERIVATION_OPERATIONS = {
     "substitution",
     "limit",
     "take_limit",
+    "nondimensionalize",
+    "nondimensionalization",
+    "non_dimensionalize",
+    "non_dimensionalization",
     "approximate",
     "approximation",
     "simplify",
@@ -63,6 +67,15 @@ _CDG_CHAIN_OPERATIONS = {
     "substitution",
     "limit",
     "take_limit",
+    "nondimensionalize",
+    "approximate",
+}
+
+_OPERATION_ALIASES = {
+    "approximation": "approximate",
+    "nondimensionalization": "nondimensionalize",
+    "non_dimensionalize": "nondimensionalize",
+    "non_dimensionalization": "nondimensionalize",
 }
 
 
@@ -171,7 +184,7 @@ def _operation_kind_for_rule(rule_id: str, rule_label: str) -> str:
     text = _compact_rule_id(f"{rule_id}_{rule_label}")
     for operation in sorted(_DERIVATION_OPERATIONS, key=len, reverse=True):
         if operation in text:
-            return operation
+            return _OPERATION_ALIASES.get(operation, operation)
     return "derive"
 
 

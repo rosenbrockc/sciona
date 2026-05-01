@@ -15,6 +15,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from sciona.physics_ingest.validation import (  # noqa: E402
     build_physics_ingestion_validation_report,
+    discover_changed_pdg_payload_fixture_paths,
+    discover_changed_symbolic_fixture_paths,
     discover_pdg_payload_fixture_paths,
     discover_symbolic_fixture_paths,
 )
@@ -43,6 +45,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=[],
         help="Specific PDG payload JSON file to validate. May be repeated.",
+    )
+    parser.add_argument(
+        "--changed-only",
+        action="store_true",
+        help=(
+            "Validate only git-changed discovered fixture files. Explicit "
+            "--fixture and --pdg-json paths are still validated; source "
+            "execution and adapter coverage checks remain enabled unless "
+            "their skip flags are passed."
+        ),
     )
     parser.add_argument(
         "--skip-atoms",
@@ -91,10 +103,30 @@ def main(argv: Sequence[str] | None = None) -> int:
     fixture_paths = tuple(args.fixture)
     pdg_payload_paths = tuple(args.pdg_json)
     atoms_repo = None if args.skip_atoms else args.atoms_repo
-    if not args.skip_atoms and not fixture_paths and args.atoms_repo.exists():
-        fixture_paths = discover_symbolic_fixture_paths(args.atoms_repo)
-    if not args.skip_pdg and not pdg_payload_paths:
-        pdg_payload_paths = discover_pdg_payload_fixture_paths(REPO_ROOT)
+    if not args.skip_atoms:
+        if args.changed_only:
+            fixture_paths = _unique_paths(
+                (
+                    *fixture_paths,
+                    *discover_changed_symbolic_fixture_paths(args.atoms_repo),
+                )
+            )
+        elif not fixture_paths and args.atoms_repo.exists():
+            fixture_paths = discover_symbolic_fixture_paths(args.atoms_repo)
+    if not args.skip_pdg:
+        if args.changed_only:
+            pdg_payload_paths = _unique_paths(
+                (
+                    *pdg_payload_paths,
+                    *discover_changed_pdg_payload_fixture_paths(REPO_ROOT),
+                )
+            )
+        elif not pdg_payload_paths:
+            pdg_payload_paths = discover_pdg_payload_fixture_paths(REPO_ROOT)
+
+    # Changed-only narrows fixture and payload discovery only. Source execution
+    # readiness and adapter coverage are fast global contracts, so they stay on
+    # unless the caller uses the existing skip flags.
 
     report = build_physics_ingestion_validation_report(
         fixture_paths=fixture_paths,
@@ -113,6 +145,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         _print_text_report(report)
     return 0 if report["ok"] else 1
+
+
+def _unique_paths(paths: Sequence[Path]) -> tuple[Path, ...]:
+    unique_paths: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path.resolve(strict=False))
+        if key not in seen:
+            seen.add(key)
+            unique_paths.append(path)
+    return tuple(unique_paths)
 
 
 def _print_text_report(report: dict[str, object]) -> None:

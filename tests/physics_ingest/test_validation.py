@@ -8,6 +8,8 @@ from pathlib import Path
 from sciona.physics_ingest.validation import (
     VALIDATION_REPORT_KIND,
     build_physics_ingestion_validation_report,
+    discover_changed_pdg_payload_fixture_paths,
+    discover_changed_symbolic_fixture_paths,
     discover_pdg_payload_fixture_paths,
     validate_pdg_payload,
     validate_pdg_payload_file,
@@ -76,8 +78,57 @@ def test_discovers_default_pdg_payload_fixtures() -> None:
     assert paths == (
         PDG_FIXTURE_DIR / "differentiate_integrate_chain.pdg.json",
         PDG_FIXTURE_DIR / "limit_nondimensionalization_chain.pdg.json",
+        PDG_FIXTURE_DIR / "nondimensionalize_approximate_chain.pdg.json",
         PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",
     )
+
+
+def test_changed_only_pdg_discovery_filters_git_changed_fixture_paths(
+    tmp_path,
+) -> None:
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    pdg_dir = repo / "tests" / "physics_ingest" / "fixtures" / "pdg_payloads"
+    docs_pdg_dir = repo / "docs" / "physics_ingest" / "fixtures" / "pdg_payloads"
+    pdg_dir.mkdir(parents=True)
+    docs_pdg_dir.mkdir(parents=True)
+    (pdg_dir / "changed.pdg.json").write_text("{}", encoding="utf-8")
+    (docs_pdg_dir / "docs_changed.pdg.json").write_text("{}", encoding="utf-8")
+    (pdg_dir / "skipped_missing_endpoint.json").write_text("{}", encoding="utf-8")
+    docs_dir = repo / "docs"
+    docs_dir.mkdir(exist_ok=True)
+    (docs_dir / "symbolic_math.pdf").write_text("not a fixture", encoding="utf-8")
+
+    paths = discover_changed_pdg_payload_fixture_paths(repo)
+
+    assert paths == (
+        docs_pdg_dir / "docs_changed.pdg.json",
+        pdg_dir / "changed.pdg.json",
+    )
+
+
+def test_changed_only_symbolic_discovery_filters_git_changed_fixture_paths(
+    tmp_path,
+) -> None:
+    atoms_repo = tmp_path / "atoms"
+    _init_git_repo(atoms_repo)
+    fixture_dir = atoms_repo / "data" / "publication_fixtures"
+    fixture_dir.mkdir(parents=True)
+    (fixture_dir / "force.publication_manifest.json").write_text(
+        "{}",
+        encoding="utf-8",
+    )
+    (fixture_dir / "not_a_publication_fixture.json").write_text(
+        "{}",
+        encoding="utf-8",
+    )
+    docs_dir = atoms_repo / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "symbolic_math.pdf").write_text("not a fixture", encoding="utf-8")
+
+    paths = discover_changed_symbolic_fixture_paths(atoms_repo)
+
+    assert paths == (fixture_dir / "force.publication_manifest.json",)
 
 
 def test_pdg_payload_file_uses_stable_fixture_subject() -> None:
@@ -283,6 +334,58 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
     assert coverage_checks[0]["metadata"]["report"]["summary"]["total_jobs"] == 11
 
 
+def test_validation_script_changed_only_keeps_source_checks_in_json_mode() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--changed-only",
+            "--skip-atoms",
+            "--skip-pdg",
+            "--source-max-jobs",
+            "1",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    assert report["ok"] is True
+    assert [check["check_id"] for check in report["checks"]] == [
+        "source_execution_readiness",
+        "source_adapter_coverage",
+    ]
+    assert report["checks"][0]["metadata"]["report"]["summary"]["total_steps"] == 1
+
+
+def test_validation_script_changed_only_json_accepts_explicit_pdg_fixture() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--changed-only",
+            "--skip-atoms",
+            "--skip-source-execution",
+            "--skip-source-adapter-coverage",
+            "--pdg-json",
+            str(PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json"),
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    subjects = [check["subject"] for check in report["checks"]]
+    assert "pdg_fixture:solve_substitute_chain" in subjects
+    assert "default_pdg_validation_fixture" in subjects
+
+
 def test_validation_script_can_skip_source_checks_in_json_mode() -> None:
     result = subprocess.run(
         [
@@ -303,6 +406,17 @@ def test_validation_script_can_skip_source_checks_in_json_mode() -> None:
     report = json.loads(result.stdout)
     assert report["ok"] is True
     assert report["checks"] == []
+
+
+def _init_git_repo(path: Path) -> None:
+    path.mkdir()
+    subprocess.run(
+        ["git", "init"],
+        cwd=path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def _symbolic_manifest() -> dict[str, object]:

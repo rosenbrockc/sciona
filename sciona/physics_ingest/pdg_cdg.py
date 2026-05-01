@@ -43,6 +43,8 @@ _CHAIN_OPERATIONS = frozenset(
         "simplify",
         "differentiate",
         "integrate",
+        "nondimensionalize",
+        "approximate",
     }
 )
 
@@ -64,6 +66,14 @@ def _manifest_operation_kind(edge: PDGInferenceEdge) -> str:
         return "substitute"
     if operation == "take_limit":
         return "limit"
+    if operation == "approximation":
+        return "approximate"
+    if operation in {
+        "nondimensionalization",
+        "non_dimensionalize",
+        "non_dimensionalization",
+    }:
+        return "nondimensionalize"
     return operation
 
 

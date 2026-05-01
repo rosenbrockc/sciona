@@ -132,6 +132,9 @@ class SymbolicArtifactCandidate:
     relationships: tuple[SymbolicRelationship, ...] = ()
     source_system: str = ""
     source_kind: str = ""
+    source_domains: tuple[str, ...] = ()
+    known_analogues: tuple[str, ...] = ()
+    data_artifact_dependencies: tuple[str, ...] = ()
     review_status: str = ""
     validation_status: str = ""
     publish_status: str = ""
@@ -252,6 +255,24 @@ class SymbolicArtifactCandidate:
             ),
             source_system=_text(merged, "source_system"),
             source_kind=_text(merged, "source_kind"),
+            source_domains=_strings(
+                merged.get("source_domains")
+                or merged.get("source_domain")
+                or (document or {}).get("source_domains")
+                or (document or {}).get("source_domain")
+            ),
+            known_analogues=_known_analogues(merged, scoped_relationships, document),
+            data_artifact_dependencies=_row_references(
+                merged,
+                document,
+                keys=(
+                    "data_artifact_dependencies",
+                    "data_artifacts",
+                    "data_artifact_ids",
+                    "artifact_dependencies",
+                    "future_data_artifact",
+                ),
+            ),
             review_status=_text(merged, "review_status"),
             validation_status=_text(merged, "validation_status"),
             publish_status=_text(merged, "publish_status", "status"),
@@ -337,8 +358,12 @@ class SymbolicRetrievalQuery:
     relationship_kinds: tuple[str, ...] = ()
     source_systems: tuple[str, ...] = ()
     source_kinds: tuple[str, ...] = ()
+    source_domains: tuple[str, ...] = ()
+    known_analogues: tuple[str, ...] = ()
+    data_artifact_dependencies: tuple[str, ...] = ()
     require_validity_bounds: bool = False
     require_reviewed_bounds: bool = False
+    require_data_artifact_dependencies: bool = False
     raw_trust_policy: RawTrustPolicy = "prefer_reviewed"
 
     @classmethod
@@ -356,8 +381,27 @@ class SymbolicRetrievalQuery:
             relationship_kinds=_strings(row.get("relationship_kinds")),
             source_systems=_strings(row.get("source_systems") or row.get("source_system")),
             source_kinds=_strings(row.get("source_kinds") or row.get("source_kind")),
+            source_domains=_strings(row.get("source_domains") or row.get("source_domain")),
+            known_analogues=_strings(
+                row.get("known_analogues")
+                or row.get("known_analogue")
+                or row.get("analogue_artifact_fqdns")
+            ),
+            data_artifact_dependencies=_row_references(
+                row,
+                keys=(
+                    "data_artifact_dependencies",
+                    "data_artifacts",
+                    "data_artifact_ids",
+                    "artifact_dependencies",
+                    "future_data_artifact",
+                ),
+            ),
             require_validity_bounds=_bool(row.get("require_validity_bounds")),
             require_reviewed_bounds=_bool(row.get("require_reviewed_bounds")),
+            require_data_artifact_dependencies=_bool(
+                row.get("require_data_artifact_dependencies")
+            ),
             raw_trust_policy=_raw_trust_policy(
                 row.get("raw_trust_policy") or "prefer_reviewed"
             ),
@@ -494,6 +538,30 @@ def score_symbolic_candidate(
     if query.relationship_kinds and set(query.relationship_kinds) <= verified_requested:
         components["verified_relationships"] = 0.4
         reasons.append("requested_relationships_verified")
+
+    analogue_score = _overlap_score(
+        query.known_analogues,
+        candidate.known_analogues,
+        weight=0.7,
+    )
+    if analogue_score:
+        components["known_analogues"] = analogue_score
+        reasons.append("known_analogue_overlap")
+
+    artifact_score = _overlap_score(
+        query.data_artifact_dependencies,
+        candidate.data_artifact_dependencies,
+        weight=0.7,
+    )
+    if artifact_score:
+        components["data_artifact_dependencies"] = artifact_score
+        reasons.append("data_artifact_dependency_overlap")
+    elif query.require_data_artifact_dependencies and (
+        not candidate.data_artifact_dependencies
+        or bool(query.data_artifact_dependencies)
+    ):
+        eligible = False
+        reasons.append("missing_required_data_artifact_dependencies")
 
     provenance_component, provenance_reasons = _provenance_score(query, candidate)
     components.update(provenance_component)
@@ -669,6 +737,7 @@ def build_symbolic_synthesis_retrieval_report(
                 "missing_dimensional_metadata",
                 "missing_required_validity_bounds",
                 "missing_reviewed_validity_bounds",
+                "missing_required_data_artifact_dependencies",
                 "raw_excluded_by_policy",
             ],
         },
@@ -741,6 +810,14 @@ def _provenance_score(
     if candidate.source_kind and candidate.source_kind in query.source_kinds:
         components["source_kind"] = 0.3
         reasons.append("source_kind_match")
+    source_domain_score = _overlap_score(
+        query.source_domains,
+        candidate.source_domains,
+        weight=0.4,
+    )
+    if source_domain_score:
+        components["source_domains"] = source_domain_score
+        reasons.append("source_domain_overlap")
     if candidate.source_system and candidate.source_kind:
         components["provenance_present"] = 0.2
         reasons.append("provenance_present")
@@ -786,6 +863,8 @@ def _synthesis_candidate_payload(
             "behavioral_archetypes": list(candidate.behavioral_archetypes),
         },
         "mechanism": {"mechanism_tags": list(candidate.mechanism_tags)},
+        "known_analogues": list(candidate.known_analogues),
+        "data_artifact_dependencies": list(candidate.data_artifact_dependencies),
         "dimensions": {
             "dimensional_hash": candidate.dimensional_hash,
             "dim_signatures": list(candidate.dim_signatures),
@@ -805,6 +884,7 @@ def _synthesis_candidate_payload(
         "provenance": {
             "source_system": candidate.source_system,
             "source_kind": candidate.source_kind,
+            "source_domains": list(candidate.source_domains),
             "review_status": candidate.review_status,
             "validation_status": candidate.validation_status,
             "publish_status": candidate.publish_status,
@@ -869,6 +949,7 @@ def _compiler_blockers(
         if reason in {
             "missing_required_validity_bounds",
             "missing_reviewed_validity_bounds",
+            "missing_required_data_artifact_dependencies",
             "raw_excluded_by_policy",
         }:
             blockers.append(reason)
@@ -922,6 +1003,9 @@ def _reference_queries(candidate: SymbolicArtifactCandidate) -> tuple[str, ...]:
         candidate.fqdn.replace(".", " "),
         *candidate.mechanism_tags,
         *candidate.behavioral_archetypes,
+        *candidate.source_domains,
+        *candidate.known_analogues,
+        *candidate.data_artifact_dependencies,
     )
     queries = []
     for seed in seeds:
@@ -983,6 +1067,96 @@ def _scoped_rows(
         if not any(ids) or expression_id in ids:
             scoped.append(row)
     return tuple(scoped)
+
+
+def _known_analogues(
+    row: Mapping[str, Any],
+    relationships: Sequence[Mapping[str, Any]],
+    document: Mapping[str, Any] | None = None,
+) -> tuple[str, ...]:
+    values = list(
+        _row_references(
+            row,
+            document,
+            keys=(
+                "known_analogues",
+                "known_analogue",
+                "analogue_artifact_fqdns",
+                "analogues",
+            ),
+        )
+    )
+    for relationship in relationships:
+        if _text(relationship, "relationship_kind", "kind") != "mechanism_analogue_of":
+            continue
+        values.extend(
+            _row_reference_values(
+                relationship,
+                keys=(
+                    "target_artifact_fqdn",
+                    "target_fqdn",
+                    "target_artifact_id",
+                    "relationship_label",
+                    "label",
+                ),
+            )
+        )
+    return _unique(values)
+
+
+def _row_references(
+    *rows: Mapping[str, Any] | None,
+    keys: Sequence[str],
+) -> tuple[str, ...]:
+    values: list[str] = []
+    for row in rows:
+        if not row:
+            continue
+        values.extend(_row_reference_values(row, keys=keys))
+    return _unique(values)
+
+
+def _row_reference_values(
+    row: Mapping[str, Any],
+    *,
+    keys: Sequence[str],
+) -> tuple[str, ...]:
+    values: list[str] = []
+    for key in keys:
+        values.extend(_reference_values(row.get(key)))
+    return _unique(values)
+
+
+def _reference_values(value: Any) -> tuple[str, ...]:
+    if isinstance(value, Mapping):
+        text = _text(
+            value,
+            "artifact_id",
+            "artifact_key",
+            "artifact_fqdn",
+            "fqdn",
+            "source_candidate_id",
+            "reference_id",
+            "id",
+            "key",
+            "name",
+        )
+        return (text,) if text else ()
+    if isinstance(value, str):
+        return _strings(value)
+    if isinstance(value, Iterable):
+        references: list[str] = []
+        for item in value:
+            if isinstance(item, Mapping):
+                references.extend(_reference_values(item))
+            elif item is not None:
+                text = str(item).strip()
+                if text:
+                    references.append(text)
+        return _unique(references)
+    if value is None:
+        return ()
+    return (str(value).strip(),) if str(value).strip() else ()
 
 
 def _sequence_of_mappings(value: Any) -> tuple[Mapping[str, Any], ...]:

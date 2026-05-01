@@ -22,6 +22,9 @@ EXPR_LIMIT = "10000000-0000-0000-0000-000000000006"
 EXPR_POSITION = "10000000-0000-0000-0000-000000000007"
 EXPR_VELOCITY = "10000000-0000-0000-0000-000000000008"
 EXPR_POSITION_FROM_VELOCITY = "10000000-0000-0000-0000-000000000009"
+EXPR_DIMENSIONAL_DECAY = "10000000-0000-0000-0000-000000000010"
+EXPR_NONDIMENSIONAL_DECAY = "10000000-0000-0000-0000-000000000011"
+EXPR_FIRST_ORDER_DECAY = "10000000-0000-0000-0000-000000000012"
 ARTIFACT_BASE = "20000000-0000-0000-0000-000000000001"
 VERSION_BASE = "30000000-0000-0000-0000-000000000001"
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "pdg_payloads"
@@ -376,6 +379,80 @@ def test_pdg_phase4_extracts_differentiate_and_integrate_derivations() -> None:
     assert manifest["metadata"]["relationship_edge_ids"] == [
         "edge:differentiate_position",
         "edge:integrate_velocity",
+    ]
+
+    publication_rows = build_pdg_publication_write_rows(result)
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
+def test_pdg_phase4_extracts_nondimensionalize_and_approximate_derivations() -> None:
+    bundle = _fixture_bundle("nondimensionalize_approximate_chain.pdg.json")
+    result = build_pdg_relationship_ingest(
+        bundle,
+        expression_bindings_by_pdg_node_id={
+            "eq:dimensional_decay": {
+                "expression_id": EXPR_DIMENSIONAL_DECAY,
+                "label": "dimensional decay",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.decay.dimensional",
+                    "bound_version_content_hash": "hash-dimensional-decay",
+                },
+            },
+            "eq:nondimensional_decay": {
+                "expression_id": EXPR_NONDIMENSIONAL_DECAY,
+                "label": "nondimensional decay",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.decay.nondimensional",
+                    "bound_version_content_hash": "hash-nondimensional-decay",
+                },
+            },
+            "eq:first_order_decay": {
+                "expression_id": EXPR_FIRST_ORDER_DECAY,
+                "label": "first order decay approximation",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.decay.first_order",
+                    "bound_version_content_hash": "hash-first-order-decay",
+                },
+            },
+        },
+    )
+
+    rows = result.relationship_insert_rows()
+    manifest = result.cdg_candidate_manifests[0]
+
+    assert [edge.operation_kind for edge in bundle.inference_edges] == [
+        "nondimensionalize",
+        "approximate",
+    ]
+    assert result.skipped_edges == ()
+    assert [row["relationship_kind"] for row in rows] == [
+        "derives_from",
+        "approximation_of",
+    ]
+    assert [row["evidence_json"]["operation_kind"] for row in rows] == [
+        "nondimensionalize",
+        "approximate",
+    ]
+    assert [node["operation_kind"] for node in manifest["nodes"]] == [
+        "nondimensionalize",
+        "approximate",
+    ]
+    assert [node["relationship_kind"] for node in manifest["nodes"]] == [
+        "derives_from",
+        "approximation_of",
+    ]
+    assert manifest["edges"] == [
+        {
+            "source_id": "pdg_step_1",
+            "target_id": "pdg_step_2",
+            "edge_kind": "symbolic_equation_flow",
+            "pdg_node_id": "eq:nondimensional_decay",
+            "expression_id": EXPR_NONDIMENSIONAL_DECAY,
+        }
+    ]
+    assert manifest["metadata"]["relationship_edge_ids"] == [
+        "edge:nondimensionalize_decay",
+        "edge:first_order_approximation_decay",
     ]
 
     publication_rows = build_pdg_publication_write_rows(result)

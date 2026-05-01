@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+import fnmatch
 import json
 from pathlib import Path
+import subprocess
 import sys
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
@@ -30,6 +32,8 @@ _DEFAULT_PDG_FIXTURE_GLOBS = (
     Path("tests") / "physics_ingest" / "fixtures" / "pdg_payloads" / "*.pdg.json",
     Path("docs") / "physics_ingest" / "fixtures" / "pdg_payloads" / "*.pdg.json",
 )
+_SYMBOLIC_FIXTURE_DIR = Path("data") / "publication_fixtures"
+_SYMBOLIC_FIXTURE_SUFFIX = ".publication_manifest.json"
 _ARTIFACT_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.validation.artifact")
 _VERSION_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.validation.version")
 _EXPRESSION_NAMESPACE = uuid5(
@@ -549,8 +553,19 @@ def discover_symbolic_fixture_paths(atoms_repo: Path | str) -> tuple[Path, ...]:
     """Return checked-in publication manifest fixtures from an atoms repo."""
 
     root = Path(atoms_repo)
-    fixture_dir = root / "data" / "publication_fixtures"
-    return tuple(sorted(fixture_dir.glob("*.publication_manifest.json")))
+    fixture_dir = root / _SYMBOLIC_FIXTURE_DIR
+    return tuple(sorted(fixture_dir.glob(f"*{_SYMBOLIC_FIXTURE_SUFFIX}")))
+
+
+def discover_changed_symbolic_fixture_paths(atoms_repo: Path | str) -> tuple[Path, ...]:
+    """Return git-changed symbolic publication fixtures from an atoms repo."""
+
+    root = Path(atoms_repo)
+    return tuple(
+        path
+        for path in discover_git_changed_paths(root)
+        if _is_symbolic_fixture_path(path, root)
+    )
 
 
 def discover_pdg_payload_fixture_paths(
@@ -563,6 +578,92 @@ def discover_pdg_payload_fixture_paths(
     for pattern in _DEFAULT_PDG_FIXTURE_GLOBS:
         paths.extend(repo_root.glob(str(pattern)))
     return tuple(sorted(path for path in paths if path.is_file()))
+
+
+def discover_changed_pdg_payload_fixture_paths(
+    root: Path | str | None = None,
+) -> tuple[Path, ...]:
+    """Return git-changed local PDG payload fixtures for offline validation.
+
+    Changed-only discovery intentionally follows the normal PDG fixture globs and
+    the ``*.pdg.json`` suffix. Intentionally invalid neighboring ``*.json`` files
+    stay out of the developer-loop mode unless passed explicitly with
+    ``--pdg-json``.
+    """
+
+    repo_root = Path(root) if root is not None else _REPO_ROOT
+    return tuple(
+        path
+        for path in discover_git_changed_paths(repo_root)
+        if _is_pdg_payload_fixture_path(path, repo_root)
+    )
+
+
+def discover_git_changed_paths(root: Path | str) -> tuple[Path, ...]:
+    """Return existing files changed in a local git worktree.
+
+    The helper is deterministic and offline: it combines local unstaged changes,
+    staged changes, and untracked files without requiring a clean working tree.
+    Deleted paths are omitted because discovered validation inputs must be
+    readable; explicit CLI paths are still validated by the normal loaders.
+    """
+
+    repo_root = Path(root)
+    if not repo_root.exists():
+        return ()
+
+    relative_paths: set[Path] = set()
+    for git_args in (
+        ("diff", "--name-only", "--diff-filter=ACMR"),
+        ("diff", "--cached", "--name-only", "--diff-filter=ACMR"),
+        ("ls-files", "--others", "--exclude-standard"),
+    ):
+        try:
+            completed = subprocess.run(
+                ("git", "-C", str(repo_root), *git_args),
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            return ()
+        for line in completed.stdout.splitlines():
+            if line:
+                relative_paths.add(Path(line))
+
+    return tuple(
+        sorted(
+            (
+                repo_root / relative_path
+                for relative_path in relative_paths
+                if (repo_root / relative_path).is_file()
+            ),
+            key=lambda path: path.as_posix(),
+        )
+    )
+
+
+def _is_symbolic_fixture_path(path: Path, root: Path) -> bool:
+    try:
+        relative_path = path.relative_to(root)
+    except ValueError:
+        return False
+    return (
+        relative_path.parent == _SYMBOLIC_FIXTURE_DIR
+        and relative_path.name.endswith(_SYMBOLIC_FIXTURE_SUFFIX)
+    )
+
+
+def _is_pdg_payload_fixture_path(path: Path, root: Path) -> bool:
+    try:
+        relative_path = path.relative_to(root)
+    except ValueError:
+        return False
+    relative_posix = relative_path.as_posix()
+    return any(
+        fnmatch.fnmatchcase(relative_posix, pattern.as_posix())
+        for pattern in _DEFAULT_PDG_FIXTURE_GLOBS
+    )
 
 
 def _symbolic_expression_standard_issues(
@@ -903,6 +1004,9 @@ __all__ = [
     "ValidationCheck",
     "ValidationIssue",
     "build_physics_ingestion_validation_report",
+    "discover_changed_pdg_payload_fixture_paths",
+    "discover_changed_symbolic_fixture_paths",
+    "discover_git_changed_paths",
     "discover_pdg_payload_fixture_paths",
     "discover_symbolic_fixture_paths",
     "validate_pdg_payload",
