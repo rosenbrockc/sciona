@@ -11,15 +11,19 @@ from sciona.physics_ingest.validation import (
     discover_pdg_payload_fixture_paths,
     validate_pdg_payload,
     validate_pdg_payload_file,
+    validate_source_execution_readiness,
     validate_symbolic_publication_fixture,
 )
+from sciona.physics_ingest.sources import build_physics_source_retrieval_run_plan_dict
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PDG_FIXTURE_DIR = REPO_ROOT / "tests" / "physics_ingest" / "fixtures" / "pdg_payloads"
 
 
-def test_symbolic_publication_fixture_validator_accepts_complete_fixture(tmp_path) -> None:
+def test_symbolic_publication_fixture_validator_accepts_complete_fixture(
+    tmp_path,
+) -> None:
     fixture_path = tmp_path / "fixture.publication_manifest.json"
     fixture_path.write_text(json.dumps(_symbolic_manifest()), encoding="utf-8")
 
@@ -72,7 +76,9 @@ def test_discovers_default_pdg_payload_fixtures() -> None:
 
 
 def test_pdg_payload_file_uses_stable_fixture_subject() -> None:
-    check = validate_pdg_payload_file(PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json")
+    check = validate_pdg_payload_file(
+        PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json"
+    )
 
     assert check.ok is True
     assert check.subject == "pdg_fixture:solve_substitute_chain"
@@ -102,7 +108,7 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
     assert report["report_kind"] == VALIDATION_REPORT_KIND
     assert report["ok"] is False
     assert report["summary"] == {
-        "check_count": 2,
+        "check_count": 3,
         "failed_check_count": 1,
         "error_count": 1,
     }
@@ -117,11 +123,61 @@ def test_validation_report_includes_explicit_pdg_fixture_path() -> None:
 
     assert report["ok"] is True
     checks = report["checks"]
-    assert len(checks) == 1
+    assert len(checks) == 2
     assert checks[0]["subject"] == "pdg_fixture:solve_substitute_chain"
     assert checks[0]["metadata"]["fixture_path"].endswith(
         "solve_substitute_chain.pdg.json"
     )
+    assert checks[1]["check_id"] == "source_execution_readiness"
+
+
+def test_validation_report_includes_source_execution_by_default() -> None:
+    report = build_physics_ingestion_validation_report(
+        include_default_pdg=False,
+        source_max_jobs=1,
+    )
+
+    assert report["ok"] is True
+    checks = report["checks"]
+    assert [check["check_id"] for check in checks] == ["source_execution_readiness"]
+    source_check = checks[0]
+    assert source_check["metadata"]["total_steps"] == 1
+    assert source_check["metadata"]["diagnostic_count"] == 0
+    assert source_check["metadata"]["report"]["summary"]["total_steps"] == 1
+    json.dumps(report, sort_keys=True)
+
+
+def test_validation_report_can_skip_source_execution() -> None:
+    report = build_physics_ingestion_validation_report(
+        include_default_pdg=False,
+        include_source_execution=False,
+    )
+
+    assert report["ok"] is True
+    assert report["summary"] == {
+        "check_count": 0,
+        "failed_check_count": 0,
+        "error_count": 0,
+    }
+    assert report["checks"] == []
+
+
+def test_source_execution_diagnostics_convert_to_validation_issues() -> None:
+    plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+    plan["dry_run"] = False
+    plan["steps"][0]["adapter_module"] = ""
+    plan["steps"][0]["adapter_name"] = ""
+
+    check = validate_source_execution_readiness(plan)
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "source_execution_non_dry_run_plan",
+        "source_execution_non_dry_run_plan",
+        "source_execution_missing_adapter_name",
+    ]
+    assert all(issue.table == "source_execution_readiness" for issue in check.issues)
+    assert check.metadata["diagnostic_count"] == 3
 
 
 def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None:
@@ -130,6 +186,8 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
             sys.executable,
             "scripts/validate_physics_ingestion.py",
             "--skip-atoms",
+            "--source-max-jobs",
+            "1",
             "--json",
         ],
         cwd=REPO_ROOT,
@@ -142,6 +200,34 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
     subjects = [check["subject"] for check in report["checks"]]
     assert "pdg_fixture:solve_substitute_chain" in subjects
     assert "default_pdg_validation_fixture" in subjects
+    source_checks = [
+        check
+        for check in report["checks"]
+        if check["check_id"] == "source_execution_readiness"
+    ]
+    assert len(source_checks) == 1
+    assert source_checks[0]["metadata"]["report"]["summary"]["total_steps"] == 1
+
+
+def test_validation_script_can_skip_source_execution_in_json_mode() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--skip-atoms",
+            "--skip-pdg",
+            "--skip-source-execution",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    assert report["ok"] is True
+    assert report["checks"] == []
 
 
 def _symbolic_manifest() -> dict[str, object]:

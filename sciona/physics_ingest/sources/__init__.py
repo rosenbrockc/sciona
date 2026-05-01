@@ -1,5 +1,12 @@
 """Source adapters for physics knowledge ingestion."""
 
+from sciona.physics_ingest.sources.adapter_coverage import (
+    SourceAdapterCoverageDiagnostic,
+    SourceAdapterCoverageJob,
+    SourceAdapterCoverageReport,
+    build_source_adapter_coverage_report,
+    build_source_adapter_coverage_report_dict,
+)
 from sciona.physics_ingest.sources.execution_plan import (
     SourceExecutionDiagnostic,
     SourceExecutionReadinessReport,
@@ -32,6 +39,9 @@ __all__ = [
     "RetrievalRunPlan",
     "RetrievalRunStep",
     "RetryPolicy",
+    "SourceAdapterCoverageDiagnostic",
+    "SourceAdapterCoverageJob",
+    "SourceAdapterCoverageReport",
     "SourceExecutionDiagnostic",
     "SourceExecutionReadinessReport",
     "SourceExecutionReadinessStep",
@@ -40,6 +50,8 @@ __all__ = [
     "build_physics_source_retrieval_manifest_dict",
     "build_physics_source_retrieval_run_plan",
     "build_physics_source_retrieval_run_plan_dict",
+    "build_source_adapter_coverage_report",
+    "build_source_adapter_coverage_report_dict",
     "build_source_execution_readiness_report",
     "build_source_execution_readiness_report_dict",
 ]

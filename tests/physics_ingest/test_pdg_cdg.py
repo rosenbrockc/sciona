@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from sciona.physics_ingest.pdg_cdg import (
     PDGCDGArtifactEnvelope,
@@ -15,8 +16,12 @@ from sciona.physics_ingest.write_plan import build_publication_write_plan
 EXPR_BASE = "10000000-0000-0000-0000-000000000001"
 EXPR_SOLVED = "10000000-0000-0000-0000-000000000002"
 EXPR_FORCE = "10000000-0000-0000-0000-000000000003"
+EXPR_DIMENSIONAL = "10000000-0000-0000-0000-000000000004"
+EXPR_NONDIMENSIONAL = "10000000-0000-0000-0000-000000000005"
+EXPR_LIMIT = "10000000-0000-0000-0000-000000000006"
 ARTIFACT_BASE = "20000000-0000-0000-0000-000000000001"
 VERSION_BASE = "30000000-0000-0000-0000-000000000001"
+FIXTURE_DIR = Path(__file__).parent / "fixtures" / "pdg_payloads"
 
 
 def _bundle():
@@ -59,6 +64,10 @@ def _bundle():
             ],
         }
     )
+
+
+def _fixture_bundle(name: str):
+    return parse_pdg_document(json.loads((FIXTURE_DIR / name).read_text()))
 
 
 def test_pdg_phase4_builds_validated_artifact_relationship_rows() -> None:
@@ -237,6 +246,71 @@ def test_pdg_phase4_publication_rows_merge_relationships_and_cdg_tables() -> Non
     assert {
         diagnostic["reason"] for diagnostic in publication_rows.diagnostics
     } == {"missing_cdg_binding_artifact_metadata"}
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
+def test_pdg_phase4_extracts_limit_and_nondimensionalization_derivations() -> None:
+    result = build_pdg_relationship_ingest(
+        _fixture_bundle("limit_nondimensionalization_chain.json"),
+        expression_bindings_by_pdg_node_id={
+            "eq:damped_oscillator_dimensional": {
+                "expression_id": EXPR_DIMENSIONAL,
+                "label": "dimensional oscillator",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.oscillator.dimensional",
+                    "bound_version_content_hash": "hash-dimensional",
+                },
+            },
+            "eq:damped_oscillator_nondim": {
+                "expression_id": EXPR_NONDIMENSIONAL,
+                "label": "nondimensional oscillator",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.oscillator.nondimensional",
+                    "bound_version_content_hash": "hash-nondim",
+                },
+            },
+            "eq:undamped_limit": {
+                "expression_id": EXPR_LIMIT,
+                "label": "undamped limit",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.oscillator.undamped_limit",
+                    "bound_version_content_hash": "hash-limit",
+                },
+            },
+        },
+    )
+
+    rows = result.relationship_insert_rows()
+    manifest = result.cdg_candidate_manifests[0]
+
+    assert result.skipped_edges == ()
+    assert [row["relationship_kind"] for row in rows] == [
+        "derives_from",
+        "limit_case_of",
+    ]
+    assert [node["operation_kind"] for node in manifest["nodes"]] == [
+        "derive",
+        "limit",
+    ]
+    assert [node["relationship_kind"] for node in manifest["nodes"]] == [
+        "derives_from",
+        "limit_case_of",
+    ]
+    assert manifest["edges"] == [
+        {
+            "source_id": "pdg_step_1",
+            "target_id": "pdg_step_2",
+            "edge_kind": "symbolic_equation_flow",
+            "pdg_node_id": "eq:damped_oscillator_nondim",
+            "expression_id": EXPR_NONDIMENSIONAL,
+        }
+    ]
+    assert manifest["metadata"]["relationship_edge_ids"] == [
+        "edge:nondimensionalize_oscillator",
+        "edge:zero_damping_limit",
+    ]
+
+    publication_rows = build_pdg_publication_write_rows(result)
     assert validate_pdg_cdg_publication_graph(publication_rows) == ()
 
 

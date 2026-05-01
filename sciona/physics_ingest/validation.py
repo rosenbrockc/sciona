@@ -16,6 +16,10 @@ from sciona.physics_ingest.pdg_cdg import (
     validate_pdg_cdg_publication_graph,
 )
 from sciona.physics_ingest.publication import load_symbolic_publication_manifest
+from sciona.physics_ingest.sources import (
+    build_physics_source_retrieval_run_plan,
+    build_source_execution_readiness_report,
+)
 from sciona.physics_ingest.sources.pdg import parse_pdg_document
 
 
@@ -82,6 +86,10 @@ def build_physics_ingestion_validation_report(
     atoms_repo: Path | str | None = None,
     pdg_payload_paths: Iterable[Path | str] = (),
     include_default_pdg: bool = True,
+    include_source_execution: bool = True,
+    source_retrieval_run_plan: Any | None = None,
+    source_max_jobs: int | None = None,
+    source_job_id: str | Iterable[str] | None = None,
     strict: bool = False,
 ) -> dict[str, Any]:
     """Build a JSON-safe offline validation report.
@@ -129,6 +137,15 @@ def build_physics_ingestion_validation_report(
             )
         )
 
+    if include_source_execution:
+        checks.append(
+            validate_source_execution_readiness(
+                source_retrieval_run_plan,
+                source_max_jobs=source_max_jobs,
+                source_job_id=source_job_id,
+            )
+        )
+
     report = {
         "report_kind": VALIDATION_REPORT_KIND,
         "ok": all(check.ok for check in checks),
@@ -146,6 +163,53 @@ def build_physics_ingestion_validation_report(
     }
     _assert_json_serializable(report)
     return report
+
+
+def validate_source_execution_readiness(
+    source_retrieval_run_plan: Any | None = None,
+    *,
+    source_max_jobs: int | None = None,
+    source_job_id: str | Iterable[str] | None = None,
+) -> ValidationCheck:
+    """Validate that source retrieval steps are executor-ready offline."""
+
+    subject = "source_execution_readiness"
+    try:
+        plan = source_retrieval_run_plan
+        if plan is None:
+            plan = build_physics_source_retrieval_run_plan(
+                max_jobs=source_max_jobs,
+                job_id=source_job_id,
+            )
+        readiness_report = build_source_execution_readiness_report(plan).to_dict()
+    except Exception as exc:
+        return ValidationCheck(
+            check_id="source_execution_readiness",
+            subject=subject,
+            issues=(
+                ValidationIssue(
+                    reason="source_execution_report_build_error",
+                    detail=str(exc),
+                    subject=subject,
+                ),
+            ),
+        )
+
+    issues = tuple(
+        _source_execution_diagnostic_issue(diagnostic)
+        for diagnostic in readiness_report.get("diagnostics", ())
+        if isinstance(diagnostic, Mapping)
+    )
+    return ValidationCheck(
+        check_id="source_execution_readiness",
+        subject=subject,
+        issues=issues,
+        metadata={
+            "report": readiness_report,
+            "total_steps": readiness_report["summary"]["total_steps"],
+            "diagnostic_count": readiness_report["summary"]["diagnostic_count"],
+        },
+    )
 
 
 def validate_symbolic_publication_fixture(
@@ -208,7 +272,9 @@ def validate_symbolic_publication_fixture(
 
     issues.extend(_symbolic_expression_standard_issues(expressions, subject=subject))
     issues.extend(_symbolic_variable_standard_issues(variables, subject=subject))
-    issues.extend(_duplicate_value_issues(expressions, "expression_id", subject=subject))
+    issues.extend(
+        _duplicate_value_issues(expressions, "expression_id", subject=subject)
+    )
     issues.extend(_duplicate_value_issues(expressions, "artifact_key", subject=subject))
 
     bindings = _artifact_bindings_for_manifest(expressions)
@@ -217,7 +283,9 @@ def validate_symbolic_publication_fixture(
         issues.append(
             ValidationIssue(
                 reason=f"publication_loader_{diagnostic.reason}",
-                severity=diagnostic.severity if diagnostic.severity == "error" else "error",
+                severity=(
+                    diagnostic.severity if diagnostic.severity == "error" else "error"
+                ),
                 detail=diagnostic.detail,
                 table=diagnostic.table,
                 subject=diagnostic.artifact_key or subject,
@@ -350,7 +418,9 @@ def validate_pdg_payload(
     if not bundle.equations:
         issues.append(ValidationIssue(reason="missing_pdg_equations", subject=subject))
     if not bundle.inference_edges:
-        issues.append(ValidationIssue(reason="missing_pdg_inference_edges", subject=subject))
+        issues.append(
+            ValidationIssue(reason="missing_pdg_inference_edges", subject=subject)
+        )
 
     bindings = {
         equation.node_id: _pdg_expression_binding(subject, equation.node_id)
@@ -416,7 +486,9 @@ def validate_pdg_payload(
         metadata={
             "equation_count": len(bundle.equations),
             "inference_edge_count": len(bundle.inference_edges),
-            "relationship_row_count": len(insert_rows.get("artifact_relationships", ())),
+            "relationship_row_count": len(
+                insert_rows.get("artifact_relationships", ())
+            ),
             "cdg_node_count": len(insert_rows.get("artifact_cdg_nodes", ())),
             "cdg_edge_count": len(insert_rows.get("artifact_cdg_edges", ())),
             "cdg_binding_count": len(insert_rows.get("artifact_cdg_bindings", ())),
@@ -432,7 +504,9 @@ def discover_symbolic_fixture_paths(atoms_repo: Path | str) -> tuple[Path, ...]:
     return tuple(sorted(fixture_dir.glob("*.publication_manifest.json")))
 
 
-def discover_pdg_payload_fixture_paths(root: Path | str | None = None) -> tuple[Path, ...]:
+def discover_pdg_payload_fixture_paths(
+    root: Path | str | None = None,
+) -> tuple[Path, ...]:
     """Return checked-in local PDG payload fixtures for offline validation."""
 
     repo_root = Path(root) if root is not None else _REPO_ROOT
@@ -573,6 +647,24 @@ def _duplicate_value_issues(
     return tuple(issues)
 
 
+def _source_execution_diagnostic_issue(
+    diagnostic: Mapping[str, Any],
+) -> ValidationIssue:
+    code = _reason_token(str(diagnostic.get("code") or "diagnostic"))
+    subject_parts = [
+        "source_execution_readiness",
+        str(diagnostic.get("job_id") or ""),
+        str(diagnostic.get("step_index") or ""),
+    ]
+    return ValidationIssue(
+        reason=f"source_execution_{code}",
+        severity=str(diagnostic.get("severity") or "error"),
+        detail=str(diagnostic.get("message") or ""),
+        table="source_execution_readiness",
+        subject=":".join(part for part in subject_parts if part),
+    )
+
+
 def _artifact_bindings_for_manifest(
     expressions: Sequence[Mapping[str, Any]],
 ) -> dict[str, dict[str, str]]:
@@ -687,7 +779,9 @@ def _assert_json_serializable(report: Mapping[str, Any]) -> None:
 
 
 def _fqdn_token(value: str) -> str:
-    token = "".join(character if character.isalnum() else "_" for character in value.lower())
+    token = "".join(
+        character if character.isalnum() else "_" for character in value.lower()
+    )
     return "_".join(part for part in token.split("_") if part) or "pdg"
 
 
@@ -747,5 +841,6 @@ __all__ = [
     "discover_symbolic_fixture_paths",
     "validate_pdg_payload",
     "validate_pdg_payload_file",
+    "validate_source_execution_readiness",
     "validate_symbolic_publication_fixture",
 ]

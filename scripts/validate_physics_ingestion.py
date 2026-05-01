@@ -55,6 +55,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Skip the built-in PDG validation fixture and any --pdg-json payloads.",
     )
     parser.add_argument(
+        "--skip-source-execution",
+        action="store_true",
+        help="Skip source retrieval execution readiness validation.",
+    )
+    parser.add_argument(
+        "--source-max-jobs",
+        type=int,
+        default=None,
+        help="Limit source retrieval jobs included in the execution readiness check.",
+    )
+    parser.add_argument(
+        "--source-job-id",
+        action="append",
+        default=[],
+        help="Restrict source execution readiness to a retrieval job id. May be repeated.",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="Fail when expected local fixture inventories are absent.",
@@ -79,6 +96,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         atoms_repo=atoms_repo,
         pdg_payload_paths=() if args.skip_pdg else pdg_payload_paths,
         include_default_pdg=not args.skip_pdg,
+        include_source_execution=not args.skip_source_execution,
+        source_max_jobs=args.source_max_jobs,
+        source_job_id=tuple(args.source_job_id) or None,
         strict=args.strict,
     )
 

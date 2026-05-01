@@ -1,0 +1,43 @@
+{
+  "fixture_id": "pdg_limit_nondimensionalization_chain",
+  "validation_subject": "pdg_fixture:limit_nondimensionalization_chain",
+  "description": "Offline PDG payload fixture covering a limit derivation and nondimensionalization-style derivation.",
+  "equations": [
+    {
+      "id": "eq:damped_oscillator_dimensional",
+      "label": "Dimensional damped oscillator",
+      "latex": "m \\frac{d^2 x}{dt^2} + c \\frac{dx}{dt} + kx = 0"
+    },
+    {
+      "id": "eq:damped_oscillator_nondim",
+      "label": "Nondimensional damped oscillator",
+      "latex": "\\frac{d^2 y}{d\\tau^2} + 2\\zeta \\frac{dy}{d\\tau} + y = 0"
+    },
+    {
+      "id": "eq:undamped_limit",
+      "label": "Undamped oscillator limit",
+      "latex": "\\frac{d^2 y}{d\\tau^2} + y = 0"
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:nondimensionalize_oscillator",
+      "source": "eq:damped_oscillator_dimensional",
+      "target": "eq:damped_oscillator_nondim",
+      "rule": "derive nondimensional form using y = x / x_0 and tau = omega_0 t",
+      "confidence": 0.86,
+      "bindings": {
+        "dimensionless_time": "\\tau",
+        "dimensionless_displacement": "y"
+      }
+    },
+    {
+      "id": "edge:zero_damping_limit",
+      "source": "eq:damped_oscillator_nondim",
+      "target": "eq:undamped_limit",
+      "rule": "take limit as zeta approaches zero",
+      "confidence": 0.9,
+      "assumptions": ["zeta >= 0"]
+    }
+  ]
+}
