@@ -3,8 +3,10 @@ from __future__ import annotations
 import pytest
 
 from sciona.physics_ingest.review import (
+    REVIEW_STATUSES,
     WORKFLOW_STATUSES,
     assess_publishability,
+    build_review_trust_report,
     require_publishable,
 )
 
@@ -25,6 +27,17 @@ def test_phase5_review_marks_fully_evidenced_bundle_publishable() -> None:
     assert assessment.achieved_status == "published"
     assert [gate.status for gate in assessment.gates] == list(WORKFLOW_STATUSES)
     assert all(gate.passed for gate in assessment.gates)
+    assert REVIEW_STATUSES == (
+        "unreviewed",
+        "automated_pass",
+        "needs_human",
+        "human_reviewed",
+        "blocked",
+    )
+    assert assessment.trust_status == "human_reviewed"
+    assert assessment.human_reviewed is True
+    assert assessment.needs_human is False
+    assert assessment.blocked is False
     assert assessment.gate("symbolically_validated").evidence == {
         "numpy_runtime_checked": True
     }
@@ -77,6 +90,26 @@ def test_phase5_review_blocks_dimension_gaps_and_missing_bounds() -> None:
     assert "variables missing dimension_source: m" in assessment.blockers
     assert "dimensional consistency evidence must pass" in assessment.blockers
     assert "validity bounds are required or must be explicitly waived" in assessment.blockers
+
+
+def test_phase5_review_blocks_explicit_unknown_dimension_signatures() -> None:
+    bundle = _publishable_bundle()
+    bundle["variables"] = [
+        {**bundle["variables"][0], "dim_signature": "unknown"},
+        {**bundle["variables"][1], "dim_signature": "?"},
+        bundle["variables"][2],
+    ]
+    bundle["io_specs"] = [
+        {**bundle["io_specs"][0], "dim_signature": "unresolved"},
+        *bundle["io_specs"][1:],
+    ]
+
+    assessment = assess_publishability(**bundle)
+
+    assert assessment.publishable is False
+    assert assessment.needs_human is True
+    assert "variables missing dim_signature: F, m" in assessment.blockers
+    assert "io_specs missing dim_signature: m" in assessment.blockers
 
 
 def test_phase5_review_blocks_unverified_sources_and_dependencies() -> None:
@@ -139,6 +172,44 @@ def test_require_publishable_raises_with_ordered_blockers() -> None:
 
     with pytest.raises(ValueError, match="review_status must be human_reviewed"):
         require_publishable(**bundle)
+
+
+def test_phase5_review_reports_needs_human_and_blocked_trust_states() -> None:
+    needs_human_bundle = _publishable_bundle()
+    needs_human_bundle["expression"] = {
+        **needs_human_bundle["expression"],
+        "review_status": "needs_human",
+        "evidence_json": {
+            key: value
+            for key, value in needs_human_bundle["expression"]["evidence_json"].items()
+            if key != "human_review"
+        },
+    }
+
+    report = build_review_trust_report(**needs_human_bundle)
+
+    assert report["publishable"] is False
+    assert report["trust_status"] == "needs_human"
+    assert report["needs_human"] is True
+    assert "expression review_status needs human review" in report["blockers"]
+
+    blocked_bundle = _publishable_bundle()
+    blocked_bundle["candidate"] = {
+        **blocked_bundle["candidate"],
+        "candidate_status": "blocked",
+    }
+    blocked_bundle["expression"] = {
+        **blocked_bundle["expression"],
+        "review_status": "blocked",
+    }
+
+    blocked = assess_publishability(**blocked_bundle)
+
+    assert blocked.publishable is False
+    assert blocked.trust_status == "blocked"
+    assert blocked.blocked is True
+    assert "candidate_status is blocked" in blocked.blockers
+    assert "expression review_status is blocked" in blocked.blockers
 
 
 def _publishable_bundle() -> dict[str, object]:

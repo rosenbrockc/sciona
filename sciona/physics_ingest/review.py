@@ -12,6 +12,14 @@ from dataclasses import dataclass
 from typing import Any
 
 
+REVIEW_STATUSES: tuple[str, ...] = (
+    "unreviewed",
+    "automated_pass",
+    "needs_human",
+    "human_reviewed",
+    "blocked",
+)
+
 WORKFLOW_STATUSES: tuple[str, ...] = (
     "raw_imported",
     "parsed",
@@ -27,6 +35,9 @@ _PARSED_PARSE_STATUSES = {"parsed", "normalized"}
 _PASS_VALUES = {"pass", "passed", "ok", "success", "succeeded", "true", True}
 _REVIEWED_BOUND_STATUSES = {"automated_pass", "human_reviewed"}
 _DEPENDENCY_KINDS = {"uses_constant", "uses_data_artifact"}
+_BLOCKED_STATUSES = {"blocked", "failed", "parse_failed"}
+_UNKNOWN_DIM_SIGNATURES = {"", "?", "unknown", "unresolved", "tbd"}
+_UNKNOWN_DIMENSION_SOURCES = {"", "unknown", "unresolved", "tbd"}
 
 
 @dataclass(frozen=True)
@@ -46,6 +57,7 @@ class ReviewAssessment:
     achieved_status: str
     publishable: bool
     gates: tuple[ReviewGateResult, ...]
+    trust_status: str = "needs_human"
 
     @property
     def blockers(self) -> tuple[str, ...]:
@@ -65,6 +77,70 @@ class ReviewAssessment:
             if gate.status == status:
                 return gate
         raise KeyError(status)
+
+    @property
+    def blocked(self) -> bool:
+        return self.trust_status == "blocked"
+
+    @property
+    def needs_human(self) -> bool:
+        return self.trust_status == "needs_human"
+
+    @property
+    def human_reviewed(self) -> bool:
+        return self.trust_status == "human_reviewed"
+
+    def to_report(self) -> "ReviewTrustReport":
+        """Return a JSON-friendly, side-effect-free review report."""
+
+        return ReviewTrustReport.from_assessment(self)
+
+
+@dataclass(frozen=True)
+class ReviewTrustReport:
+    """Compact trust report for CLI and pipeline callers."""
+
+    achieved_status: str
+    trust_status: str
+    publishable: bool
+    blocked: bool
+    needs_human: bool
+    human_reviewed: bool
+    blockers: tuple[str, ...]
+    gates: tuple[Mapping[str, Any], ...]
+
+    @classmethod
+    def from_assessment(cls, assessment: ReviewAssessment) -> "ReviewTrustReport":
+        return cls(
+            achieved_status=assessment.achieved_status,
+            trust_status=assessment.trust_status,
+            publishable=assessment.publishable,
+            blocked=assessment.blocked,
+            needs_human=assessment.needs_human,
+            human_reviewed=assessment.human_reviewed,
+            blockers=assessment.blockers,
+            gates=tuple(
+                {
+                    "status": gate.status,
+                    "passed": gate.passed,
+                    "blockers": list(gate.blockers),
+                    "evidence": dict(gate.evidence or {}),
+                }
+                for gate in assessment.gates
+            ),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "achieved_status": self.achieved_status,
+            "trust_status": self.trust_status,
+            "publishable": self.publishable,
+            "blocked": self.blocked,
+            "needs_human": self.needs_human,
+            "human_reviewed": self.human_reviewed,
+            "blockers": list(self.blockers),
+            "gates": [dict(gate) for gate in self.gates],
+        }
 
 
 def assess_publishability(
@@ -115,7 +191,14 @@ def assess_publishability(
         achieved_status=achieved_status,
         publishable=published_gate.passed,
         gates=all_gates,
+        trust_status=_trust_status(candidate_row, expression_row, bound_rows, all_gates),
     )
+
+
+def build_review_trust_report(**kwargs: Any) -> dict[str, Any]:
+    """Build a JSON-serializable Phase 5 review report without database access."""
+
+    return assess_publishability(**kwargs).to_report().to_dict()
 
 
 def require_publishable(**kwargs: Any) -> ReviewAssessment:
@@ -132,6 +215,7 @@ def _raw_imported_gate(
     expression: Mapping[str, Any],
 ) -> ReviewGateResult:
     blockers = []
+    blockers.extend(_blocked_status_blockers(candidate, expression))
     if not (
         _text(candidate, "raw_formula")
         or _text(expression, "raw_formula")
@@ -139,8 +223,6 @@ def _raw_imported_gate(
         or _mapping(candidate.get("source_payload"))
     ):
         blockers.append("raw import payload is missing")
-    if _text(candidate, "candidate_status") in {"parse_failed", "blocked"}:
-        blockers.append("candidate is parse_failed or blocked")
     return _gate("raw_imported", blockers)
 
 
@@ -165,6 +247,8 @@ def _parsed_gate(
 
     if parse_status not in _PARSED_PARSE_STATUSES:
         blockers.append("expression parse_status must be parsed or normalized")
+    if parse_status in _BLOCKED_STATUSES:
+        blockers.append(f"expression parse_status is {parse_status}")
     if parse_confidence < min_parse_confidence:
         blockers.append(
             f"parse_confidence must be >= {min_parse_confidence:g}"
@@ -197,13 +281,13 @@ def _dimension_resolved_gate(
             _text(variable, "symbol_name") or "<unnamed>"
             for variable in variables
             if _text(variable, "variable_role") != "intermediate"
-            and not _text(variable, "dim_signature")
+            and _unknown_dimension_signature(_text(variable, "dim_signature"))
         ]
         unknown_sources = [
             _text(variable, "symbol_name") or "<unnamed>"
             for variable in variables
             if _text(variable, "dim_signature")
-            and _text(variable, "dimension_source") in {"", "unknown"}
+            and _text(variable, "dimension_source") in _UNKNOWN_DIMENSION_SOURCES
         ]
         if missing_dims:
             blockers.append(
@@ -219,7 +303,7 @@ def _dimension_resolved_gate(
     io_missing = [
         _text(row, "name") or _text(row, "symbol_name") or _text(row, "label") or "<io>"
         for row in io_specs
-        if not _text(row, "dim_signature")
+        if _unknown_dimension_signature(_text(row, "dim_signature"))
     ]
     if io_missing:
         blockers.append("io_specs missing dim_signature: " + ", ".join(io_missing))
@@ -246,6 +330,8 @@ def _symbolically_validated_gate(
 
     if _text(expression, "validation_status") != "passed":
         blockers.append("validation_status must be passed")
+    if _text(expression, "validation_status") in _BLOCKED_STATUSES:
+        blockers.append(f"validation_status is {_text(expression, 'validation_status')}")
     if not _text(expression, "canonical_expr_hash"):
         blockers.append("canonical_expr_hash is missing")
     if not _text(expression, "topology_hash"):
@@ -330,7 +416,12 @@ def _human_reviewed_gate(
     blockers = []
     evidence = _evidence(expression)
     human_review = _mapping(evidence.get("human_review"))
-    if _text(expression, "review_status") != "human_reviewed":
+    review_status = _text(expression, "review_status") or "unreviewed"
+    if review_status == "blocked":
+        blockers.append("expression review_status is blocked")
+    elif review_status == "needs_human":
+        blockers.append("expression review_status needs human review")
+    elif review_status != "human_reviewed":
         blockers.append("expression review_status must be human_reviewed")
     if not (human_review.get("reviewer_id") or human_review.get("reviewed_by")):
         blockers.append("human review evidence must identify a reviewer")
@@ -341,6 +432,40 @@ def _human_reviewed_gate(
             label = _text(bound, "variable_name") or _text(bound, "regime_label") or str(index)
             blockers.append(f"validity bound {label} must be reviewed")
     return _gate("human_reviewed", blockers)
+
+
+def _trust_status(
+    candidate: Mapping[str, Any],
+    expression: Mapping[str, Any],
+    bounds: Sequence[Mapping[str, Any]],
+    gates: Sequence[ReviewGateResult],
+) -> str:
+    statuses = {
+        _text(candidate, "candidate_status"),
+        _text(expression, "parse_status"),
+        _text(expression, "review_status"),
+        _text(expression, "validation_status"),
+        *(_text(bound, "review_status") for bound in bounds),
+    }
+    if statuses & _BLOCKED_STATUSES:
+        return "blocked"
+    if all(gate.passed for gate in gates) and _text(expression, "review_status") == "human_reviewed":
+        return "human_reviewed"
+    return "needs_human"
+
+
+def _blocked_status_blockers(
+    candidate: Mapping[str, Any],
+    expression: Mapping[str, Any],
+) -> list[str]:
+    blockers: list[str] = []
+    candidate_status = _text(candidate, "candidate_status")
+    expression_status = _text(expression, "review_status")
+    if candidate_status in _BLOCKED_STATUSES:
+        blockers.append(f"candidate_status is {candidate_status}")
+    if expression_status == "blocked":
+        blockers.append("expression review_status is blocked")
+    return blockers
 
 
 def _published_gate(gates: Sequence[ReviewGateResult]) -> ReviewGateResult:
@@ -388,6 +513,10 @@ def _evidence(row: Mapping[str, Any]) -> Mapping[str, Any]:
 def _text(row: Mapping[str, Any], key: str) -> str:
     value = row.get(key)
     return value if isinstance(value, str) else ""
+
+
+def _unknown_dimension_signature(value: str) -> bool:
+    return value.strip().lower() in _UNKNOWN_DIM_SIGNATURES
 
 
 def _float(value: Any) -> float:

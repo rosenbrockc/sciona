@@ -27,7 +27,9 @@ from sciona.physics_ingest.orchestration import (
 )
 from sciona.physics_ingest.pdg_cdg import (
     PDGExpressionBinding,
+    PDGPublicationWriteRows,
     PDGRelationshipIngestResult,
+    build_pdg_publication_write_rows,
     build_pdg_relationship_ingest,
 )
 from sciona.physics_ingest.pipeline import (
@@ -44,22 +46,28 @@ from sciona.physics_ingest.publication import (
     load_symbolic_publication_manifest,
 )
 from sciona.physics_ingest.review import (
+    REVIEW_STATUSES,
     ReviewAssessment,
     ReviewGateResult,
+    ReviewTrustReport,
     WORKFLOW_STATUSES,
     assess_publishability,
+    build_review_trust_report,
     require_publishable,
 )
 from sciona.physics_ingest.retrieval import (
     RawTrustPolicy,
+    RawCandidateExternalKnowledgeSuggestion,
     SymbolicArtifactCandidate,
     SymbolicRankingResult,
     SymbolicRelationship,
     SymbolicRetrievalQuery,
     SymbolicValidityBound,
+    build_symbolic_retrieval_report,
     candidates_from_rows,
     rank_symbolic_candidates,
     score_symbolic_candidate,
+    suggest_raw_candidate_external_knowledge,
 )
 from sciona.physics_ingest.staging import (
     ArtifactRelationshipRow,
@@ -85,6 +93,7 @@ from sciona.physics_ingest.write_plan import (
     PublicationWritePlan,
     PublicationWritePlanAuditSummary,
     build_publication_write_plan,
+    merge_publication_insert_rows,
 )
 from sciona.physics_ingest.writer import (
     PublicationTableClient,
@@ -102,6 +111,7 @@ __all__ = [
     "BindingResolutionResult",
     "DeterministicIdError",
     "PDGExpressionBinding",
+    "PDGPublicationWriteRows",
     "PDGRelationshipIngestResult",
     "PhysicsEquationCandidateRow",
     "PhysicsIngestSnapshotRow",
@@ -120,8 +130,11 @@ __all__ = [
     "PublicationWritePlanAuditSummary",
     "PublicationWriteResult",
     "PublicationWriter",
+    "REVIEW_STATUSES",
+    "RawCandidateExternalKnowledgeSuggestion",
     "ReviewAssessment",
     "ReviewGateResult",
+    "ReviewTrustReport",
     "RawTrustPolicy",
     "REPORT_KIND",
     "SymbolicArtifactCandidate",
@@ -141,11 +154,15 @@ __all__ = [
     "build_publication_dry_run_report",
     "build_publication_dry_run_report_from_payload",
     "build_publication_write_plan",
+    "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
+    "build_review_trust_report",
+    "build_symbolic_retrieval_report",
     "build_snapshot_id_bindings",
     "candidates_from_rows",
     "load_symbolic_publication_manifest",
     "main",
+    "merge_publication_insert_rows",
     "orchestrate_physics_publication",
     "plan_source_bundle_ids",
     "rank_symbolic_candidates",
@@ -153,6 +170,7 @@ __all__ = [
     "resolve_publication_artifact_bindings",
     "run_physics_publication_pipeline",
     "score_symbolic_candidate",
+    "suggest_raw_candidate_external_knowledge",
     "source_candidate_id",
     "source_snapshot_id",
     "stage_source_rows",

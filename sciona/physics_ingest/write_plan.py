@@ -17,6 +17,9 @@ PUBLICATION_TABLE_ORDER = (
     "artifact_symbolic_variables",
     "artifact_validity_bounds",
     "artifact_relationships",
+    "artifact_cdg_nodes",
+    "artifact_cdg_edges",
+    "artifact_cdg_bindings",
 )
 
 CONFLICT_KEYS_BY_TABLE: Mapping[str, tuple[str, ...]] = {
@@ -26,6 +29,15 @@ CONFLICT_KEYS_BY_TABLE: Mapping[str, tuple[str, ...]] = {
     "artifact_symbolic_variables": ("variable_id",),
     "artifact_validity_bounds": ("bound_id",),
     "artifact_relationships": ("relationship_id",),
+    "artifact_cdg_nodes": ("version_id", "node_id"),
+    "artifact_cdg_edges": (
+        "version_id",
+        "source_id",
+        "target_id",
+        "output_name",
+        "input_name",
+    ),
+    "artifact_cdg_bindings": ("version_id", "node_id", "bound_artifact_fqdn"),
 }
 
 
@@ -153,6 +165,21 @@ def build_publication_write_plan(
         audit_summary=summary,
         table_modes=dict(table_modes or {}),
     )
+
+
+def merge_publication_insert_rows(
+    *rows_by_table_values: Mapping[str, Iterable[Mapping[str, Any]]] | None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Copy and concatenate publication rows from multiple producers."""
+
+    merged: dict[str, list[dict[str, Any]]] = {}
+    for rows_by_table in rows_by_table_values:
+        if rows_by_table is None:
+            continue
+        normalized = _normalize_insert_rows_by_table(rows_by_table)
+        for table, rows in normalized.items():
+            merged.setdefault(table, []).extend(dict(row) for row in rows)
+    return merged
 
 
 def _normalize_insert_rows_by_table(

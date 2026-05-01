@@ -115,6 +115,51 @@ def test_pipeline_can_stop_at_side_effect_free_plan_without_client() -> None:
     assert result.diagnostics == ()
 
 
+def test_pipeline_merges_additional_publication_rows_into_write_plan() -> None:
+    result = run_physics_publication_pipeline(
+        publication_manifests=[_publication_manifest()],
+        additional_insert_rows={
+            "artifact_relationships": [{"relationship_id": "rel-1"}],
+            "artifact_cdg_nodes": [{"version_id": VERSION_ID, "node_id": "step-1"}],
+        },
+        additional_diagnostics=[
+            {
+                "stage": "pdg_cdg_publication",
+                "table": "artifact_cdg_bindings",
+                "reason": "missing_cdg_binding_artifact_metadata",
+                "severity": "skipped",
+                "artifact_key": "pdg-cdg",
+            }
+        ],
+        artifact_bindings={
+            "local:fixture.force": {
+                "artifact_id": ARTIFACT_ID,
+                "version_id": VERSION_ID,
+            }
+        },
+        dry_run=False,
+    )
+
+    assert result.write_plan.ordered_tables() == (
+        "artifact_symbolic_expressions",
+        "artifact_symbolic_variables",
+        "artifact_relationships",
+        "artifact_cdg_nodes",
+    )
+    assert result.write_plan.audit_summary.total_row_count == 4
+    assert result.diagnostics == (
+        {
+            "stage": "pdg_cdg_publication",
+            "table": "artifact_cdg_bindings",
+            "reason": "missing_cdg_binding_artifact_metadata",
+            "severity": "skipped",
+            "artifact_key": "pdg-cdg",
+            "atom_name": "",
+            "detail": "",
+        },
+    )
+
+
 def _source_bundle() -> dict[str, Any]:
     return {
         "bundle_key": "fixture-bundle",

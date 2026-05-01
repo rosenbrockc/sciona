@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 import hashlib
 import json
 from typing import Any, Iterable, Mapping
+from uuid import NAMESPACE_URL, uuid5
 
 from sciona.physics_ingest.sources.pdg import (
     PDGIngestBundle,
@@ -27,6 +28,7 @@ from sciona.physics_ingest.staging import (
 JSONDict = dict[str, Any]
 
 PHASE4_SCAFFOLD_VERSION = "phase4.pdg_cdg_scaffold.v1"
+_CDG_VERSION_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.pdg_cdg.version")
 
 _CHAIN_OPERATIONS = frozenset(
     {
@@ -135,6 +137,20 @@ class PDGRelationshipIngestResult:
         }
 
 
+@dataclass(frozen=True)
+class PDGPublicationWriteRows:
+    """PDG relationship/CDG rows ready for publication write planning."""
+
+    insert_rows_by_table: Mapping[str, tuple[JSONDict, ...]]
+    diagnostics: tuple[JSONDict, ...] = ()
+
+    def to_insert_rows(self) -> dict[str, list[JSONDict]]:
+        return {
+            table: [dict(row) for row in rows]
+            for table, rows in self.insert_rows_by_table.items()
+        }
+
+
 def build_pdg_relationship_ingest(
     bundle: PDGIngestBundle,
     *,
@@ -199,6 +215,39 @@ def build_pdg_relationship_ingest(
         artifact_relationship_rows=tuple(relationship_rows),
         cdg_candidate_manifests=tuple(manifests),
         skipped_edges=tuple(skipped_edges),
+    )
+
+
+def build_pdg_publication_write_rows(
+    result: PDGRelationshipIngestResult,
+) -> PDGPublicationWriteRows:
+    """Adapt PDG relationship/CDG results into write-plan-ready rows.
+
+    The adapter is intentionally narrow and side-effect free. CDG node and edge
+    rows are deterministic for each candidate manifest. Binding rows are emitted
+    only when expression refs carry reusable artifact binding metadata
+    (``bound_artifact_fqdn`` and ``bound_version_content_hash``), otherwise a
+    skipped diagnostic records the unsupported publication gap.
+    """
+
+    rows: dict[str, list[JSONDict]] = {
+        "artifact_relationships": result.relationship_insert_rows(),
+    }
+    diagnostics: list[JSONDict] = []
+
+    for manifest in result.cdg_candidate_manifests:
+        cdg_rows, cdg_diagnostics = _candidate_manifest_to_cdg_rows(manifest)
+        diagnostics.extend(cdg_diagnostics)
+        for table, table_rows in cdg_rows.items():
+            rows.setdefault(table, []).extend(table_rows)
+
+    return PDGPublicationWriteRows(
+        insert_rows_by_table={
+            table: tuple(table_rows)
+            for table, table_rows in rows.items()
+            if table_rows
+        },
+        diagnostics=tuple(diagnostics),
     )
 
 
@@ -291,9 +340,222 @@ def _build_cdg_candidate_manifests(
     ]
 
 
+def _candidate_manifest_to_cdg_rows(
+    manifest: Mapping[str, Any],
+) -> tuple[dict[str, list[JSONDict]], list[JSONDict]]:
+    manifest_id = str(manifest.get("manifest_id") or "")
+    version_id = _manifest_version_id(manifest)
+    rows: dict[str, list[JSONDict]] = {
+        "artifact_cdg_nodes": [],
+        "artifact_cdg_edges": [],
+        "artifact_cdg_bindings": [],
+    }
+    diagnostics: list[JSONDict] = []
+
+    for node in _manifest_rows(manifest, "nodes"):
+        node_id = str(node.get("node_id") or "")
+        if not node_id:
+            diagnostics.append(
+                _cdg_diagnostic(
+                    table="artifact_cdg_nodes",
+                    reason="missing_node_id",
+                    manifest_id=manifest_id,
+                    severity="error",
+                )
+            )
+            continue
+
+        rows["artifact_cdg_nodes"].append(
+            {
+                "version_id": version_id,
+                "node_id": node_id,
+                "parent_node_id": str(node.get("parent_node_id") or ""),
+                "name": str(node.get("label") or node_id),
+                "description": _node_description(node),
+                "concept_type": "pdg_derivation_step",
+                "status": "candidate",
+                "type_signature": _node_type_signature(node),
+                "matched_primitive": str(node.get("operation_kind") or ""),
+            }
+        )
+        binding_rows, binding_diagnostics = _node_binding_rows(
+            node,
+            version_id=version_id,
+            manifest_id=manifest_id,
+        )
+        rows["artifact_cdg_bindings"].extend(binding_rows)
+        diagnostics.extend(binding_diagnostics)
+
+    for edge in _manifest_rows(manifest, "edges"):
+        source_id = str(edge.get("source_id") or "")
+        target_id = str(edge.get("target_id") or "")
+        if not source_id or not target_id:
+            diagnostics.append(
+                _cdg_diagnostic(
+                    table="artifact_cdg_edges",
+                    reason="missing_edge_endpoint",
+                    manifest_id=manifest_id,
+                    severity="error",
+                    detail=_canonical_json(edge),
+                )
+            )
+            continue
+        rows["artifact_cdg_edges"].append(
+            {
+                "version_id": version_id,
+                "source_id": source_id,
+                "target_id": target_id,
+                "output_name": str(edge.get("output_name") or edge.get("expression_id") or "output"),
+                "input_name": str(edge.get("input_name") or "input"),
+            }
+        )
+
+    return rows, diagnostics
+
+
+def _manifest_version_id(manifest: Mapping[str, Any]) -> str:
+    explicit = str(manifest.get("version_id") or "")
+    if explicit:
+        return explicit
+    manifest_id = str(manifest.get("manifest_id") or _canonical_json(manifest))
+    return str(uuid5(_CDG_VERSION_NAMESPACE, manifest_id))
+
+
+def _manifest_rows(manifest: Mapping[str, Any], key: str) -> tuple[Mapping[str, Any], ...]:
+    return tuple(row for row in manifest.get(key, ()) if isinstance(row, Mapping))
+
+
+def _node_description(node: Mapping[str, Any]) -> str:
+    return (
+        f"PDG {node.get('relationship_kind', 'derivation')} step"
+        f" from edge {node.get('pdg_edge_id', '')}"
+    ).strip()
+
+
+def _node_type_signature(node: Mapping[str, Any]) -> str:
+    inputs = [
+        str(ref.get("expression_id") or "")
+        for ref in _expression_refs(node.get("input_expressions"))
+    ]
+    output = _expression_ref(node.get("output_expression"))
+    return _canonical_json(
+        {
+            "inputs": [value for value in inputs if value],
+            "output": "" if output is None else str(output.get("expression_id") or ""),
+            "operation_kind": str(node.get("operation_kind") or ""),
+        }
+    )
+
+
+def _node_binding_rows(
+    node: Mapping[str, Any],
+    *,
+    version_id: str,
+    manifest_id: str,
+) -> tuple[list[JSONDict], list[JSONDict]]:
+    rows: list[JSONDict] = []
+    diagnostics: list[JSONDict] = []
+    seen: set[tuple[str, str]] = set()
+    node_id = str(node.get("node_id") or "")
+    refs = [
+        ("input", ref)
+        for ref in _expression_refs(node.get("input_expressions"))
+    ]
+    output_ref = _expression_ref(node.get("output_expression"))
+    if output_ref is not None:
+        refs.append(("output", output_ref))
+
+    for role, ref in refs:
+        bound_fqdn = _ref_text(ref, "bound_artifact_fqdn")
+        content_hash = _ref_text(ref, "bound_version_content_hash")
+        if not bound_fqdn or not content_hash:
+            diagnostics.append(
+                _cdg_diagnostic(
+                    table="artifact_cdg_bindings",
+                    reason="missing_cdg_binding_artifact_metadata",
+                    manifest_id=manifest_id,
+                    detail=_canonical_json(
+                        {
+                            "node_id": node_id,
+                            "role": role,
+                            "expression_id": str(ref.get("expression_id") or ""),
+                            "required": [
+                                "bound_artifact_fqdn",
+                                "bound_version_content_hash",
+                            ],
+                        }
+                    ),
+                )
+            )
+            continue
+        key = (node_id, bound_fqdn)
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(
+            {
+                "version_id": version_id,
+                "node_id": node_id,
+                "bound_artifact_fqdn": bound_fqdn,
+                "bound_version_content_hash": content_hash,
+                "binding_confidence": _ref_number(ref, "binding_confidence", 0.0),
+                "binding_source": _ref_text(ref, "binding_source")
+                or f"pdg_candidate_manifest:{role}",
+            }
+        )
+    return rows, diagnostics
+
+
+def _expression_refs(value: Any) -> tuple[Mapping[str, Any], ...]:
+    if not isinstance(value, (list, tuple)):
+        return ()
+    return tuple(ref for ref in value if isinstance(ref, Mapping))
+
+
+def _expression_ref(value: Any) -> Mapping[str, Any] | None:
+    return value if isinstance(value, Mapping) else None
+
+
+def _ref_text(ref: Mapping[str, Any], key: str) -> str:
+    value = ref.get(key)
+    if value in (None, "") and isinstance(ref.get("metadata"), Mapping):
+        value = ref["metadata"].get(key)
+    return "" if value is None else str(value)
+
+
+def _ref_number(ref: Mapping[str, Any], key: str, default: float) -> float:
+    value = ref.get(key)
+    if value in (None, "") and isinstance(ref.get("metadata"), Mapping):
+        value = ref["metadata"].get(key)
+    if value in (None, ""):
+        return default
+    return float(value)
+
+
+def _cdg_diagnostic(
+    *,
+    table: str,
+    reason: str,
+    manifest_id: str,
+    severity: str = "skipped",
+    detail: str = "",
+) -> JSONDict:
+    return {
+        "stage": "pdg_cdg_publication",
+        "table": table,
+        "reason": reason,
+        "severity": severity,
+        "artifact_key": manifest_id,
+        "atom_name": PDG_SOURCE_SYSTEM,
+        "detail": detail,
+    }
+
+
 __all__ = [
     "PDGExpressionBinding",
+    "PDGPublicationWriteRows",
     "PDGRelationshipIngestResult",
     "PHASE4_SCAFFOLD_VERSION",
+    "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
 ]

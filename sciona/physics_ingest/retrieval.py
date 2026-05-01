@@ -16,6 +16,8 @@ RawTrustPolicy = Literal["prefer_reviewed", "reviewed_only", "allow_raw"]
 
 _BLOCKED_STATUSES = {"blocked", "failed", "parse_failed"}
 _REVIEWED_STATUSES = {"human_reviewed", "automated_pass", "source_verified"}
+_HUMAN_REVIEWED_STATUSES = {"human_reviewed", "published", "approved"}
+_NEEDS_HUMAN_STATUSES = {"needs_human"}
 _PUBLISHED_STATUSES = {"published", "approved"}
 _RAW_STATUSES = {"", "raw_imported", "unreviewed", "parsed"}
 _VERIFIED_RELATIONSHIP_KINDS = {
@@ -86,6 +88,28 @@ class SymbolicRelationship:
             verified=_bool(row.get("verified")),
             source_kind=_text(row, "source_kind", "relationship_source_kind"),
         )
+
+
+@dataclass(frozen=True)
+class RawCandidateExternalKnowledgeSuggestion:
+    """Side-effect-free review suggestion for an untrusted symbolic candidate."""
+
+    candidate_key: str
+    trust_status: str
+    reason: str
+    raw_formula: str = ""
+    suggested_relationship_kinds: tuple[str, ...] = ()
+    suggested_reference_queries: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "candidate_key": self.candidate_key,
+            "trust_status": self.trust_status,
+            "reason": self.reason,
+            "raw_formula": self.raw_formula,
+            "suggested_relationship_kinds": list(self.suggested_relationship_kinds),
+            "suggested_reference_queries": list(self.suggested_reference_queries),
+        }
 
 
 @dataclass(frozen=True)
@@ -255,6 +279,22 @@ class SymbolicArtifactCandidate:
         )
 
     @property
+    def human_reviewed(self) -> bool:
+        return (
+            self.published
+            or self.review_status in _HUMAN_REVIEWED_STATUSES
+            or self.candidate_status in _HUMAN_REVIEWED_STATUSES
+        )
+
+    @property
+    def needs_human(self) -> bool:
+        return (
+            self.review_status in _NEEDS_HUMAN_STATUSES
+            or self.candidate_status in _NEEDS_HUMAN_STATUSES
+            or self.trust_readiness in _NEEDS_HUMAN_STATUSES
+        )
+
+    @property
     def blocked(self) -> bool:
         statuses = {
             self.review_status,
@@ -263,6 +303,18 @@ class SymbolicArtifactCandidate:
             self.candidate_status,
         }
         return bool(statuses & _BLOCKED_STATUSES)
+
+    @property
+    def trust_status(self) -> str:
+        if self.blocked:
+            return "blocked"
+        if self.human_reviewed:
+            return "human_reviewed"
+        if self.needs_human or self.raw_like:
+            return "needs_human"
+        if self.reviewed:
+            return "automated_pass"
+        return "unreviewed"
 
     @property
     def raw_like(self) -> bool:
@@ -318,6 +370,16 @@ class SymbolicRankingResult:
     reasons: tuple[str, ...]
     components: Mapping[str, float]
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "candidate_key": _candidate_key(self.candidate),
+            "score": self.score,
+            "eligible": self.eligible,
+            "reasons": list(self.reasons),
+            "components": dict(self.components),
+            "trust_status": self.candidate.trust_status,
+        }
+
 
 def rank_symbolic_candidates(
     query: SymbolicRetrievalQuery | Mapping[str, Any],
@@ -365,6 +427,8 @@ def score_symbolic_candidate(
     if candidate.blocked:
         eligible = False
         reasons.append("blocked_status")
+    if candidate.needs_human:
+        reasons.append("needs_human_review")
     if query.raw_trust_policy == "reviewed_only" and not candidate.reviewed:
         eligible = False
         reasons.append("raw_excluded_by_policy")
@@ -473,6 +537,71 @@ def candidates_from_rows(
     return tuple(candidates)
 
 
+def suggest_raw_candidate_external_knowledge(
+    candidates: Iterable[SymbolicArtifactCandidate | Mapping[str, Any]],
+) -> tuple[RawCandidateExternalKnowledgeSuggestion, ...]:
+    """Suggest external-knowledge checks for raw or needs-human candidates.
+
+    This helper only inspects already-fetched rows. Callers can render the
+    suggestions in CLI reports or decide which source adapters to run.
+    """
+
+    suggestions: list[RawCandidateExternalKnowledgeSuggestion] = []
+    for value in candidates:
+        candidate = _candidate(value)
+        if candidate.blocked or candidate.reviewed:
+            continue
+        if not (candidate.raw_like or candidate.needs_human):
+            continue
+
+        verified_kinds = {
+            relationship.relationship_kind
+            for relationship in candidate.relationships
+            if relationship.verified
+        }
+        missing_kinds = tuple(
+            kind
+            for kind in ("physical_grounding_of", "derives_from", "uses_constant")
+            if kind not in verified_kinds
+        )
+        reason = (
+            "raw_candidate_needs_external_knowledge"
+            if candidate.raw_like
+            else "candidate_needs_human_external_knowledge"
+        )
+        suggestions.append(
+            RawCandidateExternalKnowledgeSuggestion(
+                candidate_key=_candidate_key(candidate),
+                trust_status=candidate.trust_status,
+                reason=reason,
+                raw_formula=candidate.raw_formula,
+                suggested_relationship_kinds=missing_kinds,
+                suggested_reference_queries=_reference_queries(candidate),
+            )
+        )
+    return tuple(suggestions)
+
+
+def build_symbolic_retrieval_report(
+    query: SymbolicRetrievalQuery | Mapping[str, Any],
+    candidates: Iterable[SymbolicArtifactCandidate | Mapping[str, Any]],
+    *,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """Return ranking and raw-candidate review suggestions without IO."""
+
+    candidate_tuple = tuple(_candidate(candidate) for candidate in candidates)
+    results = rank_symbolic_candidates(query, candidate_tuple, limit=limit)
+    suggestions = suggest_raw_candidate_external_knowledge(candidate_tuple)
+    return {
+        "result_count": len(results),
+        "results": [result.to_dict() for result in results],
+        "raw_candidate_external_knowledge_suggestions": [
+            suggestion.to_dict() for suggestion in suggestions
+        ],
+    }
+
+
 def _validity_score(
     query: SymbolicRetrievalQuery,
     candidate: SymbolicArtifactCandidate,
@@ -505,6 +634,9 @@ def _trust_score(
     if candidate.published:
         components["published"] = 2.0
         reasons.append("published_or_publishable")
+    elif candidate.human_reviewed:
+        components["human_reviewed"] = 1.6
+        reasons.append("human_reviewed")
     elif candidate.reviewed:
         components["reviewed"] = 1.2
         reasons.append("reviewed")
@@ -530,6 +662,31 @@ def _candidate(
     if isinstance(value, SymbolicArtifactCandidate):
         return value
     return SymbolicArtifactCandidate.from_catalog_row(value)
+
+
+def _candidate_key(candidate: SymbolicArtifactCandidate) -> str:
+    return (
+        candidate.expression_id
+        or candidate.version_id
+        or candidate.artifact_id
+        or candidate.fqdn
+        or "<candidate>"
+    )
+
+
+def _reference_queries(candidate: SymbolicArtifactCandidate) -> tuple[str, ...]:
+    seeds = (
+        candidate.raw_formula,
+        candidate.fqdn.replace(".", " "),
+        *candidate.mechanism_tags,
+        *candidate.behavioral_archetypes,
+    )
+    queries = []
+    for seed in seeds:
+        text = seed.strip()
+        if text:
+            queries.append(text)
+    return _unique(queries)
 
 
 def _overlap_score(

@@ -21,6 +21,7 @@ from sciona.physics_ingest.write_plan import (
     PublicationWritePlan,
     WriteMode,
     build_publication_write_plan,
+    merge_publication_insert_rows,
 )
 from sciona.physics_ingest.writer import (
     PublicationTableClient,
@@ -97,6 +98,8 @@ def run_physics_publication_pipeline(
     *,
     source_bundles: Iterable[Any] = (),
     publication_manifests: Iterable[Mapping[str, Any]] = (),
+    additional_insert_rows: Mapping[str, Iterable[Mapping[str, Any]]] | None = None,
+    additional_diagnostics: Iterable[Mapping[str, Any]] = (),
     artifact_bindings: Mapping[str, Mapping[str, Any] | ArtifactBinding] | None = None,
     client: PublicationTableClient | None = None,
     table_modes: Mapping[str, WriteMode] | None = None,
@@ -121,8 +124,12 @@ def run_physics_publication_pipeline(
         artifact_bindings=artifact_bindings or {},
         snapshot_id_bindings=deterministic_bindings,
     )
-    write_plan = build_publication_write_plan(
+    insert_rows = merge_publication_insert_rows(
         orchestration_result.insert_rows_by_table,
+        additional_insert_rows,
+    )
+    write_plan = build_publication_write_plan(
+        insert_rows,
         table_modes=table_modes,
     )
 
@@ -135,7 +142,11 @@ def run_physics_publication_pipeline(
             dry_run=dry_run,
         )
 
-    diagnostics = _diagnostics(orchestration_result, write_result)
+    diagnostics = _diagnostics(
+        orchestration_result,
+        write_result,
+        additional_diagnostics=additional_diagnostics,
+    )
     summary = PublicationPipelineSummary(
         dry_run=dry_run,
         source_bundle_count=len(planned_bundles),
@@ -172,6 +183,8 @@ class _DryRunOnlyPublicationClient:
 def _diagnostics(
     orchestration_result: PublicationOrchestrationResult,
     write_result: PublicationWriteResult | None,
+    *,
+    additional_diagnostics: Iterable[Mapping[str, Any]] = (),
 ) -> tuple[dict[str, Any], ...]:
     rows: list[dict[str, Any]] = [
         {
@@ -196,4 +209,16 @@ def _diagnostics(
             }
             for row in write_result.diagnostics
         )
+    rows.extend(
+        {
+            "stage": str(row.get("stage") or "publication_extension"),
+            "table": str(row.get("table") or ""),
+            "reason": str(row.get("reason") or ""),
+            "severity": str(row.get("severity") or "info"),
+            "artifact_key": str(row.get("artifact_key") or ""),
+            "atom_name": str(row.get("atom_name") or ""),
+            "detail": str(row.get("detail") or ""),
+        }
+        for row in additional_diagnostics
+    )
     return tuple(rows)

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from sciona.physics_ingest.retrieval import (
     SymbolicRetrievalQuery,
+    build_symbolic_retrieval_report,
     candidates_from_rows,
     rank_symbolic_candidates,
+    suggest_raw_candidate_external_knowledge,
 )
 
 
@@ -233,3 +235,77 @@ def test_blocked_candidate_is_ineligible_even_with_exact_hash_match() -> None:
     assert results[0].eligible is False
     assert results[0].score == 0.0
     assert "blocked_status" in results[0].reasons
+
+
+def test_needs_human_candidate_is_explicitly_flagged_but_ranked() -> None:
+    results = rank_symbolic_candidates(
+        SymbolicRetrievalQuery(topology_hashes=("topo",)),
+        [
+            {
+                "fqdn": "physics.needs_human",
+                "topology_hash": "topo",
+                "review_status": "needs_human",
+                "validation_status": "passed",
+            }
+        ],
+    )
+
+    assert results[0].candidate.trust_status == "needs_human"
+    assert results[0].eligible is True
+    assert "needs_human_review" in results[0].reasons
+
+
+def test_raw_candidate_external_knowledge_suggestions_are_side_effect_free() -> None:
+    candidates = candidates_from_rows(
+        [
+            {
+                "artifact_id": "raw-force",
+                "fqdn": "physics.raw.force",
+                "raw_formula": "F = m a",
+                "review_status": "unreviewed",
+                "candidate_status": "raw_imported",
+                "mechanism_tags": ["transport"],
+            },
+            {
+                "artifact_id": "reviewed-force",
+                "fqdn": "physics.reviewed.force",
+                "raw_formula": "F = m a",
+                "review_status": "human_reviewed",
+            },
+        ]
+    )
+
+    suggestions = suggest_raw_candidate_external_knowledge(candidates)
+
+    assert len(suggestions) == 1
+    assert suggestions[0].candidate_key == "raw-force"
+    assert suggestions[0].trust_status == "needs_human"
+    assert suggestions[0].reason == "raw_candidate_needs_external_knowledge"
+    assert suggestions[0].suggested_relationship_kinds == (
+        "physical_grounding_of",
+        "derives_from",
+        "uses_constant",
+    )
+    assert suggestions[0].suggested_reference_queries == (
+        "F = m a",
+        "physics raw force",
+        "transport",
+    )
+
+
+def test_symbolic_retrieval_report_includes_trust_and_raw_suggestions() -> None:
+    report = build_symbolic_retrieval_report(
+        {"topology_hash": "topo"},
+        [
+            {
+                "artifact_id": "raw",
+                "topology_hash": "topo",
+                "review_status": "unreviewed",
+                "raw_formula": "E = m c^2",
+            }
+        ],
+    )
+
+    assert report["result_count"] == 1
+    assert report["results"][0]["trust_status"] == "needs_human"
+    assert report["raw_candidate_external_knowledge_suggestions"][0]["candidate_key"] == "raw"

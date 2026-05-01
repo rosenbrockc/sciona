@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-from sciona.physics_ingest.pdg_cdg import build_pdg_relationship_ingest
+from sciona.physics_ingest.pdg_cdg import (
+    build_pdg_publication_write_rows,
+    build_pdg_relationship_ingest,
+)
 from sciona.physics_ingest.sources.pdg import parse_pdg_document
+from sciona.physics_ingest.write_plan import build_publication_write_plan
 
 
 EXPR_BASE = "10000000-0000-0000-0000-000000000001"
@@ -168,3 +172,84 @@ def test_pdg_phase4_can_scope_to_named_chain_edges() -> None:
     assert rows[0]["inference_rule_id"] == "substitution"
     assert [node["pdg_edge_id"] for node in manifest["nodes"]] == ["edge:substitute"]
     assert manifest["edges"] == []
+
+
+def test_pdg_phase4_publication_rows_merge_relationships_and_cdg_tables() -> None:
+    result = build_pdg_relationship_ingest(
+        _bundle(),
+        expression_bindings_by_pdg_node_id={
+            "eq:base": {
+                "expression_id": EXPR_BASE,
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.newton.base",
+                    "bound_version_content_hash": "hash-base",
+                    "binding_confidence": 0.92,
+                    "binding_source": "fixture",
+                },
+            },
+            "eq:solved": {
+                "expression_id": EXPR_SOLVED,
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.newton.solved",
+                    "bound_version_content_hash": "hash-solved",
+                },
+            },
+            "eq:force": EXPR_FORCE,
+        },
+    )
+
+    publication_rows = build_pdg_publication_write_rows(result)
+    insert_rows = publication_rows.to_insert_rows()
+    plan = build_publication_write_plan(insert_rows)
+
+    assert plan.ordered_tables() == (
+        "artifact_relationships",
+        "artifact_cdg_nodes",
+        "artifact_cdg_edges",
+        "artifact_cdg_bindings",
+    )
+    assert len(insert_rows["artifact_relationships"]) == 2
+    assert [row["node_id"] for row in insert_rows["artifact_cdg_nodes"]] == [
+        "pdg_step_1",
+        "pdg_step_2",
+    ]
+    assert insert_rows["artifact_cdg_edges"] == [
+        {
+            "version_id": insert_rows["artifact_cdg_nodes"][0]["version_id"],
+            "source_id": "pdg_step_1",
+            "target_id": "pdg_step_2",
+            "output_name": EXPR_SOLVED,
+            "input_name": "input",
+        }
+    ]
+    assert insert_rows["artifact_cdg_bindings"][0] == {
+        "version_id": insert_rows["artifact_cdg_nodes"][0]["version_id"],
+        "node_id": "pdg_step_1",
+        "bound_artifact_fqdn": "physics.newton.base",
+        "bound_version_content_hash": "hash-base",
+        "binding_confidence": 0.92,
+        "binding_source": "fixture",
+    }
+    assert {
+        diagnostic["reason"] for diagnostic in publication_rows.diagnostics
+    } == {"missing_cdg_binding_artifact_metadata"}
+
+
+def test_pdg_phase4_publication_rows_are_deterministic() -> None:
+    kwargs = {
+        "expression_bindings_by_pdg_node_id": {
+            "eq:base": EXPR_BASE,
+            "eq:solved": EXPR_SOLVED,
+            "eq:force": EXPR_FORCE,
+        }
+    }
+
+    first = build_pdg_publication_write_rows(
+        build_pdg_relationship_ingest(_bundle(), **kwargs)
+    )
+    second = build_pdg_publication_write_rows(
+        build_pdg_relationship_ingest(_bundle(), **kwargs)
+    )
+
+    assert first.to_insert_rows() == second.to_insert_rows()
+    assert first.diagnostics == second.diagnostics

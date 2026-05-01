@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from sciona.physics_ingest.write_plan import build_publication_write_plan
+from sciona.physics_ingest.write_plan import (
+    build_publication_write_plan,
+    merge_publication_insert_rows,
+)
 
 
 def test_write_plan_orders_publication_batches_with_conflict_metadata() -> None:
@@ -13,6 +16,9 @@ def test_write_plan_orders_publication_batches_with_conflict_metadata() -> None:
         "artifact_validity_bounds": [{"bound_id": "bound-1"}],
         "artifact_symbolic_expressions": [{"expression_id": "expr-1"}],
         "physics_ingest_snapshots": [{"snapshot_id": "snap-1"}],
+        "artifact_cdg_edges": [{"version_id": "ver-1", "source_id": "a"}],
+        "artifact_cdg_bindings": [{"version_id": "ver-1", "node_id": "a"}],
+        "artifact_cdg_nodes": [{"version_id": "ver-1", "node_id": "a"}],
     }
 
     plan = build_publication_write_plan(rows)
@@ -24,6 +30,9 @@ def test_write_plan_orders_publication_batches_with_conflict_metadata() -> None:
         "artifact_symbolic_variables",
         "artifact_validity_bounds",
         "artifact_relationships",
+        "artifact_cdg_nodes",
+        "artifact_cdg_edges",
+        "artifact_cdg_bindings",
     ]
     assert {
         batch.table: batch.conflict_keys for batch in plan.batches
@@ -34,6 +43,15 @@ def test_write_plan_orders_publication_batches_with_conflict_metadata() -> None:
         "artifact_symbolic_variables": ("variable_id",),
         "artifact_validity_bounds": ("bound_id",),
         "artifact_relationships": ("relationship_id",),
+        "artifact_cdg_nodes": ("version_id", "node_id"),
+        "artifact_cdg_edges": (
+            "version_id",
+            "source_id",
+            "target_id",
+            "output_name",
+            "input_name",
+        ),
+        "artifact_cdg_bindings": ("version_id", "node_id", "bound_artifact_fqdn"),
     }
 
 
@@ -80,6 +98,27 @@ def test_write_plan_places_unknown_tables_after_known_tables() -> None:
         "z_extra_table",
     ]
     assert plan.batches_by_table()["a_extra_table"].conflict_keys == ()
+
+
+def test_merge_publication_insert_rows_concatenates_and_copies_rows() -> None:
+    source_row = {"relationship_id": "rel-1"}
+    merged = merge_publication_insert_rows(
+        {"artifact_relationships": [source_row]},
+        {
+            "artifact_relationships": [{"relationship_id": "rel-2"}],
+            "artifact_cdg_nodes": [{"version_id": "ver-1", "node_id": "step-1"}],
+        },
+    )
+
+    source_row["relationship_id"] = "changed"
+
+    assert merged == {
+        "artifact_relationships": [
+            {"relationship_id": "rel-1"},
+            {"relationship_id": "rel-2"},
+        ],
+        "artifact_cdg_nodes": [{"version_id": "ver-1", "node_id": "step-1"}],
+    }
 
 
 @pytest.mark.parametrize(
