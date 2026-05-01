@@ -155,6 +155,8 @@ def _load_test_cases() -> list[RetrievalTestCase]:
         for stage_id, binding in binding_map.items():
             if binding.get("action_class") in SKIP_ACTION_CLASSES:
                 continue
+            if binding.get("status") not in (None, "active"):
+                continue
             fqdns = []
             if binding.get("bound_artifact_fqdn"):
                 fqdns.append(binding["bound_artifact_fqdn"])
