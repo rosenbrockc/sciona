@@ -11,6 +11,7 @@ from sciona.physics_ingest.sources.qudt import (
     extract_qudt_resource_record,
     parse_qudt_dimension_vector,
     qudt_dimension_vector_to_compact,
+    qudt_record_to_publication_variable_dimension_metadata,
 )
 
 
@@ -177,6 +178,73 @@ def test_qudt_records_build_side_effect_free_symbolic_variable_dimension_updates
             "unit_label": "square root metre",
         }
     ]
+
+
+def test_qudt_record_builds_publication_variable_metadata_with_rational_signature() -> None:
+    record = extract_qudt_resource_record(
+        {
+            "@id": "http://qudt.org/vocab/quantitykind/Fractional",
+            "@type": ["qudt:QuantityKind"],
+            "rdfs:label": "Fractional dimension fixture",
+            "qudt:hasDimensionVector": "A1/3E-2/5L1/2I3/7M5/3H-4/9T-3/2D0",
+        }
+    )
+
+    metadata = qudt_record_to_publication_variable_dimension_metadata(record)
+
+    assert metadata == {
+        "dim_signature": "M5/3L1/2T-3/2I-2/5Th-4/9N1/3J3/7",
+        "dimension_source": "qudt",
+        "evidence_json": {
+            "qudt_dimension_resolution": {
+                "source_entity_uri": "http://qudt.org/vocab/quantitykind/Fractional",
+                "source_label": "Fractional dimension fixture",
+                "resource_kind": "quantity_kind",
+                "qudt_dimension_vector": (
+                    "A1/3E-2/5L1/2I3/7M5/3H-4/9T-3/2D0"
+                ),
+                "qudt_exponents": {
+                    "A": "1/3",
+                    "E": "-2/5",
+                    "L": "1/2",
+                    "I": "3/7",
+                    "M": "5/3",
+                    "H": "-4/9",
+                    "T": "-3/2",
+                    "D": "0",
+                },
+                "qudt_exponent_payloads": {
+                    "A": "1/3",
+                    "E": "-2/5",
+                    "L": "1/2",
+                    "I": "3/7",
+                    "M": "5/3",
+                    "H": "-4/9",
+                    "T": "-3/2",
+                    "D": "0",
+                },
+                "dim_signature": "M5/3L1/2T-3/2I-2/5Th-4/9N1/3J3/7",
+            }
+        },
+    }
+
+
+def test_unresolved_qudt_record_stays_out_of_publication_variable_metadata() -> None:
+    record = extract_qudt_resource_record(
+        {
+            "@id": "http://qudt.org/vocab/unit/UNRESOLVED",
+            "@type": ["qudt:Unit"],
+            "rdfs:label": "Unresolved unit",
+            "qudt:hasDimensionVector": "A0E0LbadI0M0H0T0D0",
+        }
+    )
+
+    assert qudt_record_to_publication_variable_dimension_metadata(record) is None
+
+    row = record.as_candidate_row()
+    assert row["candidate_status"] == "raw_imported"
+    assert row["source_payload"]["dimension_status"] == "unresolved"
+    assert "dim_signature" not in row["source_payload"]
 
 
 def test_build_snapshot_manifest_is_wave0_snapshot_compatible_and_deterministic() -> None:

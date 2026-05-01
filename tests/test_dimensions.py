@@ -11,9 +11,7 @@ from sciona.ghost.dimensions import (
     AMPERE,
     COULOMB,
     DIMENSIONLESS,
-    ENERGY,
     FARAD,
-    FORCE,
     HERTZ,
     JOULE,
     KELVIN,
@@ -153,6 +151,28 @@ class TestCompactSerialization:
         dim = DimensionalSignature(L=Fraction(1, 2), T=Fraction(-3, 2))
         assert dim.to_compact() == "L1/2T-3/2"
         assert DimensionalSignature.from_compact("L1/2T-3/2") == dim
+
+    def test_rational_compact_roundtrip_preserves_all_axes(self):
+        dim = DimensionalSignature(
+            M=Fraction(5, 3),
+            L=Fraction(-1, 2),
+            T=Fraction(7, 4),
+            I=Fraction(-2, 5),
+            Theta=Fraction(3, 8),
+            N=Fraction(-4, 9),
+            J=Fraction(11, 6),
+        )
+
+        compact = dim.to_compact()
+
+        assert compact == "M5/3L-1/2T7/4I-2/5Th3/8N-4/9J11/6"
+        assert DimensionalSignature.from_compact(compact) == dim
+
+    def test_invalid_compact_signature_does_not_become_dimensionless(self):
+        with pytest.raises(ValueError):
+            DimensionalSignature.from_compact("not-a-dimension")
+        with pytest.raises(ValueError):
+            DimensionalSignature.from_compact("L1/2unknown")
 
     def test_unknown_compact_roundtrip(self):
         assert UNKNOWN_DIMENSION.to_compact() == "?"

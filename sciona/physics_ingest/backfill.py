@@ -27,6 +27,8 @@ def build_physics_ingest_backfill_report(
     pdg_publication_rows: Any | None = None,
     review_publication_rows: Any | None = None,
     review_status_rows: Any | None = None,
+    source_retrieval_run_plan: Any | None = None,
+    retrieval_run_plan: Any | None = None,
     review_diagnostics: Iterable[Mapping[str, Any]] = (),
     normalization_diagnostics: Iterable[Mapping[str, Any]] = (),
     artifact_bindings: Mapping[str, Mapping[str, Any] | ArtifactBinding] | None = None,
@@ -43,9 +45,19 @@ def build_physics_ingest_backfill_report(
     the report mirrors the eventual writer batches without touching a client.
     """
 
+    if source_retrieval_run_plan is not None and retrieval_run_plan is not None:
+        raise ValueError(
+            "pass only one of source_retrieval_run_plan or retrieval_run_plan"
+        )
+
     source_bundle_list = tuple(source_bundles)
     publication_manifest_list = tuple(publication_manifests)
     normalized_draft_list = tuple(normalized_drafts)
+    retrieval_report = _source_retrieval_report_section(
+        source_retrieval_run_plan
+        if source_retrieval_run_plan is not None
+        else retrieval_run_plan
+    )
     normalized_rows, normalized_publication_diagnostics = (
         _publication_rows_from_normalized_drafts(normalized_draft_list)
     )
@@ -74,12 +86,16 @@ def build_physics_ingest_backfill_report(
         review_row_diagnostics,
         default_stage="review_publication",
     )
+    retrieval_diagnostic_rows = _normalize_source_retrieval_diagnostics(
+        retrieval_report["diagnostics"]
+    )
     external_diagnostics = (
         *review_diagnostic_rows,
         *normalization_diagnostic_rows,
         *normalized_publication_diagnostic_rows,
         *review_publication_diagnostic_rows,
         *pdg_diagnostic_rows,
+        *retrieval_diagnostic_rows,
     )
     additional_insert_rows = merge_publication_insert_rows(
         normalized_rows,
@@ -126,6 +142,8 @@ def build_physics_ingest_backfill_report(
             ),
             "review_diagnostic_count": len(review_diagnostic_rows),
             "normalization_diagnostic_count": len(normalization_diagnostic_rows),
+            "source_retrieval_step_count": retrieval_report["step_count"],
+            "source_retrieval_diagnostic_count": len(retrieval_diagnostic_rows),
         },
         "source_family_counts": _source_family_counts(
             source_bundle_list,
@@ -149,7 +167,9 @@ def build_physics_ingest_backfill_report(
                 dict(row) for row in review_publication_diagnostic_rows
             ],
             "pdg_cdg_publication": [dict(row) for row in pdg_diagnostic_rows],
+            "source_retrieval": [dict(row) for row in retrieval_diagnostic_rows],
         },
+        "source_retrieval_run_plan": retrieval_report["report"],
         "diagnostic_summary": _diagnostic_summary(diagnostics),
     }
     if include_rows:
@@ -264,6 +284,151 @@ def _diagnostic_row(diagnostic: Mapping[str, Any] | Any) -> Mapping[str, Any]:
         "atom_name": getattr(diagnostic, "atom_name", ""),
         "detail": getattr(diagnostic, "detail", ""),
     }
+
+
+def _source_retrieval_report_section(value: Any | None) -> dict[str, Any]:
+    if value is None:
+        return {
+            "step_count": 0,
+            "diagnostics": (),
+            "report": {
+                "manifest_version": "",
+                "snapshot_key_prefix": "",
+                "dry_run": True,
+                "filters": {},
+                "step_count": 0,
+                "diagnostic_count": 0,
+                "steps": [],
+                "replay_keys": [],
+            },
+        }
+
+    plan = _source_retrieval_plan_mapping(value)
+    steps = tuple(_source_retrieval_step_mapping(step) for step in plan.get("steps", ()))
+    diagnostics = tuple(
+        _source_retrieval_diagnostic_mapping(diagnostic)
+        for diagnostic in plan.get("diagnostics", ())
+    )
+    replay_keys = [
+        str(step.get("replay_key") or "")
+        for step in steps
+        if step.get("replay_key")
+    ]
+
+    return {
+        "step_count": len(steps),
+        "diagnostics": diagnostics,
+        "report": {
+            "manifest_version": str(plan.get("manifest_version") or ""),
+            "snapshot_key_prefix": str(plan.get("snapshot_key_prefix") or ""),
+            "dry_run": bool(plan.get("dry_run", True)),
+            "filters": _json_safe_mapping(plan.get("filters") or {}),
+            "step_count": len(steps),
+            "diagnostic_count": len(diagnostics),
+            "steps": [_source_retrieval_step_summary(step) for step in steps],
+            "replay_keys": replay_keys,
+        },
+    }
+
+
+def _source_retrieval_plan_mapping(value: Any) -> Mapping[str, Any]:
+    if isinstance(value, Mapping):
+        return value
+    if hasattr(value, "to_dict"):
+        row = value.to_dict()
+        if isinstance(row, Mapping):
+            return row
+    return {
+        "manifest_version": getattr(value, "manifest_version", ""),
+        "snapshot_key_prefix": getattr(value, "snapshot_key_prefix", ""),
+        "dry_run": getattr(value, "dry_run", True),
+        "filters": getattr(value, "filters", {}),
+        "steps": getattr(value, "steps", ()),
+        "diagnostics": getattr(value, "diagnostics", ()),
+    }
+
+
+def _source_retrieval_step_mapping(value: Mapping[str, Any] | Any) -> Mapping[str, Any]:
+    if isinstance(value, Mapping):
+        return value
+    if hasattr(value, "to_dict"):
+        row = value.to_dict()
+        if isinstance(row, Mapping):
+            return row
+    return {
+        key: getattr(value, key, "")
+        for key in (
+            "step_index",
+            "job_id",
+            "endpoint_id",
+            "source_system",
+            "source_family",
+            "snapshot_key",
+            "method",
+            "url",
+            "endpoint_kind",
+            "dry_run",
+            "replay_key",
+            "warnings",
+        )
+    }
+
+
+def _source_retrieval_diagnostic_mapping(
+    value: Mapping[str, Any] | Any,
+) -> Mapping[str, Any]:
+    if isinstance(value, Mapping):
+        return value
+    if hasattr(value, "to_dict"):
+        row = value.to_dict()
+        if isinstance(row, Mapping):
+            return row
+    return {
+        "severity": getattr(value, "severity", "info"),
+        "job_id": getattr(value, "job_id", ""),
+        "endpoint_id": getattr(value, "endpoint_id", ""),
+        "message": getattr(value, "message", ""),
+    }
+
+
+def _source_retrieval_step_summary(step: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "step_index": int(step.get("step_index") or 0),
+        "job_id": str(step.get("job_id") or ""),
+        "endpoint_id": str(step.get("endpoint_id") or ""),
+        "source_system": str(step.get("source_system") or ""),
+        "source_family": str(step.get("source_family") or ""),
+        "snapshot_key": str(step.get("snapshot_key") or ""),
+        "method": str(step.get("method") or ""),
+        "url": str(step.get("url") or ""),
+        "endpoint_kind": str(step.get("endpoint_kind") or ""),
+        "dry_run": bool(step.get("dry_run", True)),
+        "replay_key": str(step.get("replay_key") or ""),
+        "warnings": [str(warning) for warning in step.get("warnings", ())],
+    }
+
+
+def _normalize_source_retrieval_diagnostics(
+    diagnostics: Iterable[Mapping[str, Any]],
+) -> tuple[dict[str, Any], ...]:
+    return tuple(
+        {
+            "stage": str(row.get("stage") or "source_retrieval"),
+            "table": str(row.get("table") or ""),
+            "reason": str(row.get("reason") or "retrieval_run_plan_diagnostic"),
+            "severity": str(row.get("severity") or "info"),
+            "artifact_key": str(row.get("artifact_key") or ""),
+            "atom_name": str(row.get("atom_name") or ""),
+            "detail": str(row.get("detail") or row.get("message") or ""),
+            "job_id": str(row.get("job_id") or ""),
+            "endpoint_id": str(row.get("endpoint_id") or ""),
+        }
+        for row in diagnostics
+    )
+
+
+def _json_safe_mapping(value: Mapping[str, Any]) -> dict[str, Any]:
+    return json.loads(json.dumps(value, sort_keys=True, ensure_ascii=True))
 
 
 def _source_family_counts(

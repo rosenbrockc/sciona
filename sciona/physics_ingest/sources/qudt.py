@@ -210,31 +210,54 @@ def build_qudt_symbolic_variable_dimension_updates(
     updates: list[dict[str, Any]] = []
     for variable in variables:
         record = _match_qudt_record(variable, resolved_records)
-        if record is None or record.dimension is None:
+        metadata = qudt_record_to_publication_variable_dimension_metadata(record)
+        if metadata is None:
             continue
         update = dict(variable)
         evidence = dict(_mapping_or_empty(update.get("evidence_json")))
-        evidence["qudt_dimension_resolution"] = {
-            "source_entity_uri": record.source_entity_uri,
-            "source_label": record.source_label,
-            "resource_kind": record.resource_kind,
-            **record.dimension.as_payload(),
-        }
-        update["dim_signature"] = record.dimension.compact
-        update["dimension_source"] = "qudt"
+        evidence.update(metadata["evidence_json"])
+        update["dim_signature"] = metadata["dim_signature"]
+        update["dimension_source"] = metadata["dimension_source"]
         update["evidence_json"] = evidence
-        if record.resource_kind == "quantity_kind":
+        if record is not None and record.resource_kind == "quantity_kind":
             if not update.get("quantity_kind_uri"):
                 update["quantity_kind_uri"] = record.source_entity_uri
             if not update.get("quantity_kind_label"):
                 update["quantity_kind_label"] = record.source_label
-        if record.resource_kind == "unit":
+        if record is not None and record.resource_kind == "unit":
             if not update.get("unit_uri"):
                 update["unit_uri"] = record.source_entity_uri
             if not update.get("unit_label"):
                 update["unit_label"] = record.source_label
         updates.append(update)
     return updates
+
+
+def qudt_record_to_publication_variable_dimension_metadata(
+    record: QudtResourceRecord | Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Return side-effect-free publication variable dimension metadata.
+
+    Unresolved QUDT records are left out of variable metadata so they remain
+    reviewable as raw candidate rows instead of being treated as dimensionless.
+    """
+    if record is None:
+        return None
+    resolved = _coerce_record(record)
+    if resolved.dimension is None:
+        return None
+    return {
+        "dim_signature": resolved.dimension.compact,
+        "dimension_source": "qudt",
+        "evidence_json": {
+            "qudt_dimension_resolution": {
+                "source_entity_uri": resolved.source_entity_uri,
+                "source_label": resolved.source_label,
+                "resource_kind": resolved.resource_kind,
+                **resolved.dimension.as_payload(),
+            }
+        },
+    }
 
 
 def extract_qudt_resource_record(raw: dict[str, Any]) -> QudtResourceRecord:

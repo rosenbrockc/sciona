@@ -12,6 +12,10 @@ from sciona.physics_ingest.review import (
     assess_publishability,
     build_review_publication_status_rows,
 )
+from sciona.physics_ingest.sources import (
+    build_physics_source_retrieval_run_plan,
+    build_physics_source_retrieval_run_plan_dict,
+)
 
 
 ARTIFACT_ID = "20000000-0000-0000-0000-000000000001"
@@ -63,6 +67,8 @@ def test_backfill_report_composes_pipeline_with_pdg_rows_and_replay_keys() -> No
         "review_publication_row_count": 0,
         "review_diagnostic_count": 0,
         "normalization_diagnostic_count": 0,
+        "source_retrieval_step_count": 0,
+        "source_retrieval_diagnostic_count": 0,
     }
     assert report["source_family_counts"] == {
         "source_bundles": {"manual": 1},
@@ -305,6 +311,74 @@ def test_backfill_report_groups_adapter_diagnostics() -> None:
         (row["stage"], row["reason"])
         for row in report["skip_diagnostics"]
     } == {("review_publication", "missing_expression_id")}
+
+
+def test_backfill_report_includes_retrieval_run_plan_without_insert_rows() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan(max_jobs=2, limit=5)
+
+    report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=retrieval_plan,
+        include_rows=True,
+    )
+
+    assert report["ok"] is True
+    assert report["input_summary"]["source_retrieval_step_count"] == 2
+    assert report["input_summary"]["source_retrieval_diagnostic_count"] == 0
+    assert report["table_row_counts"] == {}
+    assert report["insert_rows_by_table"] == {}
+    assert report["external_diagnostics"]["source_retrieval"] == []
+
+    retrieval_report = report["source_retrieval_run_plan"]
+    assert retrieval_report["manifest_version"] == retrieval_plan.manifest_version
+    assert retrieval_report["dry_run"] is True
+    assert retrieval_report["step_count"] == 2
+    assert retrieval_report["diagnostic_count"] == 0
+    assert retrieval_report["filters"]["limit"] == 5
+    assert retrieval_report["replay_keys"] == [
+        step.replay_key for step in retrieval_plan.steps
+    ]
+    assert [
+        (step["step_index"], step["job_id"], step["replay_key"])
+        for step in retrieval_report["steps"]
+    ] == [
+        (step.step_index, step.job_id, step.replay_key)
+        for step in retrieval_plan.steps
+    ]
+    assert json.loads(json.dumps(report, sort_keys=True)) == report
+
+
+def test_backfill_report_accepts_retrieval_run_plan_dict_and_diagnostics() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+    retrieval_plan["diagnostics"] = [
+        {
+            "severity": "warning",
+            "job_id": retrieval_plan["steps"][0]["job_id"],
+            "endpoint_id": retrieval_plan["steps"][0]["endpoint_id"],
+            "message": "fixture retrieval metadata warning",
+        }
+    ]
+
+    report = build_physics_ingest_backfill_report(
+        retrieval_run_plan=retrieval_plan,
+    )
+
+    assert report["input_summary"]["source_retrieval_step_count"] == 1
+    assert report["input_summary"]["source_retrieval_diagnostic_count"] == 1
+    assert report["source_retrieval_run_plan"]["diagnostic_count"] == 1
+    assert report["external_diagnostics"]["source_retrieval"] == [
+        {
+            "stage": "source_retrieval",
+            "table": "",
+            "reason": "retrieval_run_plan_diagnostic",
+            "severity": "warning",
+            "artifact_key": "",
+            "atom_name": "",
+            "detail": "fixture retrieval metadata warning",
+            "job_id": retrieval_plan["steps"][0]["job_id"],
+            "endpoint_id": retrieval_plan["steps"][0]["endpoint_id"],
+        }
+    ]
+    assert report["diagnostic_summary"]["by_severity"]["warning"] == 1
 
 
 def _source_bundle() -> dict[str, Any]:

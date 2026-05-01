@@ -66,7 +66,7 @@ class DimensionalSignature(BaseModel, frozen=True):
     M: DimensionExponent = Field(default=Fraction(0), description="Mass (kg)")
     L: DimensionExponent = Field(default=Fraction(0), description="Length (m)")
     T: DimensionExponent = Field(default=Fraction(0), description="Time (s)")
-    I: DimensionExponent = Field(default=Fraction(0), description="Electric current (A)")
+    I: DimensionExponent = Field(default=Fraction(0), description="Electric current (A)")  # noqa: E741
     Theta: DimensionExponent = Field(default=Fraction(0), description="Temperature (K)")
     N: DimensionExponent = Field(default=Fraction(0), description="Amount of substance (mol)")
     J: DimensionExponent = Field(default=Fraction(0), description="Luminous intensity (cd)")
@@ -178,7 +178,11 @@ class DimensionalSignature(BaseModel, frozen=True):
         pattern = re.compile(r"(Th|[MLTNIJ])(-?\d+(?:/\d+)?)")
         kwargs: dict[str, Fraction] = {}
         label_map = {"M": "M", "L": "L", "T": "T", "I": "I", "Th": "Theta", "N": "N", "J": "J"}
-        for match in pattern.finditer(s):
+        matches = list(pattern.finditer(s))
+        consumed = "".join(match.group(0) for match in matches)
+        if consumed != s:
+            raise ValueError(f"unsupported compact dimensional signature: {s!r}")
+        for match in matches:
             label, exp = match.group(1), _coerce_exponent(match.group(2))
             field = label_map[label]
             kwargs[field] = exp
