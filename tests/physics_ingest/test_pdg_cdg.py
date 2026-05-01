@@ -19,6 +19,9 @@ EXPR_FORCE = "10000000-0000-0000-0000-000000000003"
 EXPR_DIMENSIONAL = "10000000-0000-0000-0000-000000000004"
 EXPR_NONDIMENSIONAL = "10000000-0000-0000-0000-000000000005"
 EXPR_LIMIT = "10000000-0000-0000-0000-000000000006"
+EXPR_POSITION = "10000000-0000-0000-0000-000000000007"
+EXPR_VELOCITY = "10000000-0000-0000-0000-000000000008"
+EXPR_POSITION_FROM_VELOCITY = "10000000-0000-0000-0000-000000000009"
 ARTIFACT_BASE = "20000000-0000-0000-0000-000000000001"
 VERSION_BASE = "30000000-0000-0000-0000-000000000001"
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "pdg_payloads"
@@ -251,7 +254,7 @@ def test_pdg_phase4_publication_rows_merge_relationships_and_cdg_tables() -> Non
 
 def test_pdg_phase4_extracts_limit_and_nondimensionalization_derivations() -> None:
     result = build_pdg_relationship_ingest(
-        _fixture_bundle("limit_nondimensionalization_chain.json"),
+        _fixture_bundle("limit_nondimensionalization_chain.pdg.json"),
         expression_bindings_by_pdg_node_id={
             "eq:damped_oscillator_dimensional": {
                 "expression_id": EXPR_DIMENSIONAL,
@@ -308,6 +311,71 @@ def test_pdg_phase4_extracts_limit_and_nondimensionalization_derivations() -> No
     assert manifest["metadata"]["relationship_edge_ids"] == [
         "edge:nondimensionalize_oscillator",
         "edge:zero_damping_limit",
+    ]
+
+    publication_rows = build_pdg_publication_write_rows(result)
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
+def test_pdg_phase4_extracts_differentiate_and_integrate_derivations() -> None:
+    result = build_pdg_relationship_ingest(
+        _fixture_bundle("differentiate_integrate_chain.pdg.json"),
+        expression_bindings_by_pdg_node_id={
+            "eq:position": {
+                "expression_id": EXPR_POSITION,
+                "label": "position",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.kinematics.position",
+                    "bound_version_content_hash": "hash-position",
+                },
+            },
+            "eq:velocity": {
+                "expression_id": EXPR_VELOCITY,
+                "label": "velocity",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.kinematics.velocity",
+                    "bound_version_content_hash": "hash-velocity",
+                },
+            },
+            "eq:position_from_velocity": {
+                "expression_id": EXPR_POSITION_FROM_VELOCITY,
+                "label": "position from velocity",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.kinematics.position_from_velocity",
+                    "bound_version_content_hash": "hash-position-from-velocity",
+                },
+            },
+        },
+    )
+
+    rows = result.relationship_insert_rows()
+    manifest = result.cdg_candidate_manifests[0]
+
+    assert result.skipped_edges == ()
+    assert [row["relationship_kind"] for row in rows] == [
+        "derives_from",
+        "derives_from",
+    ]
+    assert [node["operation_kind"] for node in manifest["nodes"]] == [
+        "differentiate",
+        "integrate",
+    ]
+    assert [node["relationship_kind"] for node in manifest["nodes"]] == [
+        "derives_from",
+        "derives_from",
+    ]
+    assert manifest["edges"] == [
+        {
+            "source_id": "pdg_step_1",
+            "target_id": "pdg_step_2",
+            "edge_kind": "symbolic_equation_flow",
+            "pdg_node_id": "eq:velocity",
+            "expression_id": EXPR_VELOCITY,
+        }
+    ]
+    assert manifest["metadata"]["relationship_edge_ids"] == [
+        "edge:differentiate_position",
+        "edge:integrate_velocity",
     ]
 
     publication_rows = build_pdg_publication_write_rows(result)

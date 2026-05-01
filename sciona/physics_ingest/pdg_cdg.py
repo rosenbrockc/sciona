@@ -41,6 +41,8 @@ _CHAIN_OPERATIONS = frozenset(
         "take_limit",
         "derive",
         "simplify",
+        "differentiate",
+        "integrate",
     }
 )
 

@@ -11,6 +11,7 @@ from sciona.physics_ingest.validation import (
     discover_pdg_payload_fixture_paths,
     validate_pdg_payload,
     validate_pdg_payload_file,
+    validate_source_adapter_coverage,
     validate_source_execution_readiness,
     validate_symbolic_publication_fixture,
 )
@@ -72,7 +73,11 @@ def test_pdg_payload_validator_accepts_graph_ready_derivation_fixture() -> None:
 def test_discovers_default_pdg_payload_fixtures() -> None:
     paths = discover_pdg_payload_fixture_paths(REPO_ROOT)
 
-    assert paths == (PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",)
+    assert paths == (
+        PDG_FIXTURE_DIR / "differentiate_integrate_chain.pdg.json",
+        PDG_FIXTURE_DIR / "limit_nondimensionalization_chain.pdg.json",
+        PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",
+    )
 
 
 def test_pdg_payload_file_uses_stable_fixture_subject() -> None:
@@ -108,7 +113,7 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
     assert report["report_kind"] == VALIDATION_REPORT_KIND
     assert report["ok"] is False
     assert report["summary"] == {
-        "check_count": 3,
+        "check_count": 4,
         "failed_check_count": 1,
         "error_count": 1,
     }
@@ -123,12 +128,13 @@ def test_validation_report_includes_explicit_pdg_fixture_path() -> None:
 
     assert report["ok"] is True
     checks = report["checks"]
-    assert len(checks) == 2
+    assert len(checks) == 3
     assert checks[0]["subject"] == "pdg_fixture:solve_substitute_chain"
     assert checks[0]["metadata"]["fixture_path"].endswith(
         "solve_substitute_chain.pdg.json"
     )
     assert checks[1]["check_id"] == "source_execution_readiness"
+    assert checks[2]["check_id"] == "source_adapter_coverage"
 
 
 def test_validation_report_includes_source_execution_by_default() -> None:
@@ -139,7 +145,10 @@ def test_validation_report_includes_source_execution_by_default() -> None:
 
     assert report["ok"] is True
     checks = report["checks"]
-    assert [check["check_id"] for check in checks] == ["source_execution_readiness"]
+    assert [check["check_id"] for check in checks] == [
+        "source_execution_readiness",
+        "source_adapter_coverage",
+    ]
     source_check = checks[0]
     assert source_check["metadata"]["total_steps"] == 1
     assert source_check["metadata"]["diagnostic_count"] == 0
@@ -151,6 +160,7 @@ def test_validation_report_can_skip_source_execution() -> None:
     report = build_physics_ingestion_validation_report(
         include_default_pdg=False,
         include_source_execution=False,
+        include_source_adapter_coverage=False,
     )
 
     assert report["ok"] is True
@@ -159,6 +169,33 @@ def test_validation_report_can_skip_source_execution() -> None:
         "failed_check_count": 0,
         "error_count": 0,
     }
+    assert report["checks"] == []
+
+
+def test_validation_report_includes_source_adapter_coverage_by_default() -> None:
+    report = build_physics_ingestion_validation_report(
+        include_default_pdg=False,
+        include_source_execution=False,
+    )
+
+    assert report["ok"] is True
+    checks = report["checks"]
+    assert [check["check_id"] for check in checks] == ["source_adapter_coverage"]
+    coverage_check = checks[0]
+    assert coverage_check["metadata"]["total_jobs"] == 11
+    assert coverage_check["metadata"]["diagnostic_count"] == 0
+    assert coverage_check["metadata"]["report"]["summary"]["total_jobs"] == 11
+    json.dumps(report, sort_keys=True)
+
+
+def test_validation_report_can_skip_source_adapter_coverage() -> None:
+    report = build_physics_ingestion_validation_report(
+        include_default_pdg=False,
+        include_source_execution=False,
+        include_source_adapter_coverage=False,
+    )
+
+    assert report["ok"] is True
     assert report["checks"] == []
 
 
@@ -180,6 +217,35 @@ def test_source_execution_diagnostics_convert_to_validation_issues() -> None:
     assert check.metadata["diagnostic_count"] == 3
 
 
+def test_source_adapter_coverage_diagnostics_convert_to_validation_issues() -> None:
+    manifest = {
+        "manifest_version": "test",
+        "snapshot_key_prefix": "test",
+        "jobs": [
+            {
+                "job_id": "synthetic_missing_module.backfill",
+                "adapter_name": "sciona.physics_ingest.sources.does_not_exist",
+                "adapter_version": "0.0.1",
+                "target_adapter_input": "raw_records",
+            }
+        ],
+    }
+
+    check = validate_source_adapter_coverage(manifest)
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "source_adapter_coverage_missing_adapter_module",
+        "source_adapter_coverage_missing_builder_readiness_contract",
+    ]
+    assert all(issue.table == "source_adapter_coverage" for issue in check.issues)
+    assert [issue.subject for issue in check.issues] == [
+        "source_adapter_coverage:synthetic_missing_module.backfill",
+        "source_adapter_coverage:synthetic_missing_module.backfill",
+    ]
+    assert check.metadata["diagnostic_count"] == 2
+
+
 def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None:
     result = subprocess.run(
         [
@@ -198,6 +264,7 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
 
     report = json.loads(result.stdout)
     subjects = [check["subject"] for check in report["checks"]]
+    assert "pdg_fixture:limit_nondimensionalization_chain" in subjects
     assert "pdg_fixture:solve_substitute_chain" in subjects
     assert "default_pdg_validation_fixture" in subjects
     source_checks = [
@@ -207,9 +274,16 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
     ]
     assert len(source_checks) == 1
     assert source_checks[0]["metadata"]["report"]["summary"]["total_steps"] == 1
+    coverage_checks = [
+        check
+        for check in report["checks"]
+        if check["check_id"] == "source_adapter_coverage"
+    ]
+    assert len(coverage_checks) == 1
+    assert coverage_checks[0]["metadata"]["report"]["summary"]["total_jobs"] == 11
 
 
-def test_validation_script_can_skip_source_execution_in_json_mode() -> None:
+def test_validation_script_can_skip_source_checks_in_json_mode() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -217,6 +291,7 @@ def test_validation_script_can_skip_source_execution_in_json_mode() -> None:
             "--skip-atoms",
             "--skip-pdg",
             "--skip-source-execution",
+            "--skip-source-adapter-coverage",
             "--json",
         ],
         cwd=REPO_ROOT,

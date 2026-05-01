@@ -1,0 +1,46 @@
+{
+  "fixture_id": "pdg_differentiate_integrate_chain",
+  "validation_subject": "pdg_fixture:differentiate_integrate_chain",
+  "description": "Offline PDG payload fixture covering differentiate and integrate derivation operations.",
+  "equations": [
+    {
+      "id": "eq:position",
+      "label": "Position as a function of time",
+      "latex": "x(t)"
+    },
+    {
+      "id": "eq:velocity",
+      "label": "Velocity from position",
+      "latex": "v(t) = \\frac{dx}{dt}"
+    },
+    {
+      "id": "eq:position_from_velocity",
+      "label": "Position recovered from velocity",
+      "latex": "x(t) = x(t_0) + \\int_{t_0}^{t} v(s)\\,ds"
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:differentiate_position",
+      "source": "eq:position",
+      "target": "eq:velocity",
+      "rule": "differentiate position with respect to time",
+      "confidence": 0.91,
+      "bindings": {
+        "differentiate_with_respect_to": "t"
+      }
+    },
+    {
+      "id": "edge:integrate_velocity",
+      "source": "eq:velocity",
+      "target": "eq:position_from_velocity",
+      "rule": "integrate velocity over time",
+      "confidence": 0.88,
+      "assumptions": ["initial position x(t_0) is known"],
+      "bindings": {
+        "integration_variable": "t",
+        "lower_bound": "t_0"
+      }
+    }
+  ]
+}

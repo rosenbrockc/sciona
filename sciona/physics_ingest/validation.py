@@ -18,6 +18,7 @@ from sciona.physics_ingest.pdg_cdg import (
 from sciona.physics_ingest.publication import load_symbolic_publication_manifest
 from sciona.physics_ingest.sources import (
     build_physics_source_retrieval_run_plan,
+    build_source_adapter_coverage_report,
     build_source_execution_readiness_report,
 )
 from sciona.physics_ingest.sources.pdg import parse_pdg_document
@@ -87,7 +88,9 @@ def build_physics_ingestion_validation_report(
     pdg_payload_paths: Iterable[Path | str] = (),
     include_default_pdg: bool = True,
     include_source_execution: bool = True,
+    include_source_adapter_coverage: bool = True,
     source_retrieval_run_plan: Any | None = None,
+    source_retrieval_manifest: Any | None = None,
     source_max_jobs: int | None = None,
     source_job_id: str | Iterable[str] | None = None,
     strict: bool = False,
@@ -146,6 +149,9 @@ def build_physics_ingestion_validation_report(
             )
         )
 
+    if include_source_adapter_coverage:
+        checks.append(validate_source_adapter_coverage(source_retrieval_manifest))
+
     report = {
         "report_kind": VALIDATION_REPORT_KIND,
         "ok": all(check.ok for check in checks),
@@ -163,6 +169,49 @@ def build_physics_ingestion_validation_report(
     }
     _assert_json_serializable(report)
     return report
+
+
+def validate_source_adapter_coverage(
+    source_retrieval_manifest: Any | None = None,
+) -> ValidationCheck:
+    """Validate that retrieval jobs have covered offline source adapters."""
+
+    subject = "source_adapter_coverage"
+    try:
+        coverage_report = build_source_adapter_coverage_report(
+            source_retrieval_manifest
+        ).to_dict()
+    except Exception as exc:
+        return ValidationCheck(
+            check_id="source_adapter_coverage",
+            subject=subject,
+            issues=(
+                ValidationIssue(
+                    reason="source_adapter_coverage_report_build_error",
+                    detail=str(exc),
+                    subject=subject,
+                ),
+            ),
+        )
+
+    issues = tuple(
+        _source_adapter_coverage_diagnostic_issue(diagnostic)
+        for diagnostic in coverage_report.get("diagnostics", ())
+        if isinstance(diagnostic, Mapping)
+    )
+    summary = coverage_report["summary"]
+    return ValidationCheck(
+        check_id="source_adapter_coverage",
+        subject=subject,
+        issues=issues,
+        metadata={
+            "report": coverage_report,
+            "total_jobs": summary["total_jobs"],
+            "covered": summary["covered"],
+            "blocked": summary["blocked"],
+            "diagnostic_count": summary["diagnostic_count"],
+        },
+    )
 
 
 def validate_source_execution_readiness(
@@ -665,6 +714,23 @@ def _source_execution_diagnostic_issue(
     )
 
 
+def _source_adapter_coverage_diagnostic_issue(
+    diagnostic: Mapping[str, Any],
+) -> ValidationIssue:
+    code = _reason_token(str(diagnostic.get("code") or "diagnostic"))
+    subject_parts = [
+        "source_adapter_coverage",
+        str(diagnostic.get("job_id") or ""),
+    ]
+    return ValidationIssue(
+        reason=f"source_adapter_coverage_{code}",
+        severity=str(diagnostic.get("severity") or "error"),
+        detail=str(diagnostic.get("message") or ""),
+        table="source_adapter_coverage",
+        subject=":".join(part for part in subject_parts if part),
+    )
+
+
 def _artifact_bindings_for_manifest(
     expressions: Sequence[Mapping[str, Any]],
 ) -> dict[str, dict[str, str]]:
@@ -841,6 +907,7 @@ __all__ = [
     "discover_symbolic_fixture_paths",
     "validate_pdg_payload",
     "validate_pdg_payload_file",
+    "validate_source_adapter_coverage",
     "validate_source_execution_readiness",
     "validate_symbolic_publication_fixture",
 ]
