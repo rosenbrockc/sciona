@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+
 from sciona.physics_ingest.pdg_cdg import (
     PDGCDGArtifactEnvelope,
     build_pdg_publication_write_rows,
     build_pdg_relationship_ingest,
+    validate_pdg_cdg_publication_graph,
 )
 from sciona.physics_ingest.sources.pdg import parse_pdg_document
 from sciona.physics_ingest.write_plan import build_publication_write_plan
@@ -234,6 +237,88 @@ def test_pdg_phase4_publication_rows_merge_relationships_and_cdg_tables() -> Non
     assert {
         diagnostic["reason"] for diagnostic in publication_rows.diagnostics
     } == {"missing_cdg_binding_artifact_metadata"}
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
+def test_pdg_phase4_cdg_graph_validator_accepts_valid_insert_rows() -> None:
+    result = build_pdg_relationship_ingest(
+        _bundle(),
+        expression_bindings_by_pdg_node_id={
+            "eq:base": EXPR_BASE,
+            "eq:solved": EXPR_SOLVED,
+            "eq:force": EXPR_FORCE,
+        },
+    )
+    publication_rows = build_pdg_publication_write_rows(result)
+
+    diagnostics = validate_pdg_cdg_publication_graph(publication_rows.to_insert_rows())
+
+    assert diagnostics == ()
+
+
+def test_pdg_phase4_cdg_graph_validator_reports_deterministic_graph_errors() -> None:
+    rows = {
+        "artifact_versions": [{"version_id": "ver-a"}],
+        "artifact_cdg_nodes": [
+            {"version_id": "ver-a", "node_id": "step-1"},
+            {"version_id": "ver-a", "node_id": "step-1"},
+            {"version_id": "", "node_id": "step-missing-version"},
+            {"version_id": "ver-orphan", "node_id": "step-orphan"},
+        ],
+        "artifact_cdg_edges": [
+            {
+                "version_id": "ver-a",
+                "source_id": "step-1",
+                "target_id": "step-missing",
+                "output_name": "out",
+                "input_name": "in",
+            },
+            {
+                "version_id": "ver-a",
+                "source_id": "step-1",
+                "target_id": "step-missing",
+                "output_name": "out",
+                "input_name": "in",
+            },
+            {"version_id": "ver-a", "source_id": "", "target_id": "step-1"},
+        ],
+        "artifact_cdg_bindings": [
+            {
+                "version_id": "ver-a",
+                "node_id": "step-missing",
+                "bound_artifact_fqdn": "physics.missing",
+            },
+            {"version_id": "", "node_id": "step-1"},
+            "not-a-row",
+        ],
+    }
+
+    diagnostics = validate_pdg_cdg_publication_graph(rows)
+
+    assert [diagnostic["reason"] for diagnostic in diagnostics] == [
+        "malformed_row",
+        "duplicate_node_key",
+        "missing_cdg_row_identity",
+        "edge_endpoint_node_missing",
+        "duplicate_edge_key",
+        "edge_endpoint_node_missing",
+        "missing_cdg_row_identity",
+        "binding_node_missing",
+        "missing_cdg_row_identity",
+        "orphan_cdg_version",
+    ]
+    assert all(diagnostic["stage"] == "pdg_cdg_publication" for diagnostic in diagnostics)
+    assert all(diagnostic["severity"] == "error" for diagnostic in diagnostics)
+    json.dumps(diagnostics, sort_keys=True)
+
+    duplicate_node_detail = json.loads(diagnostics[1]["detail"])
+    assert duplicate_node_detail == {
+        "first_row_index": 0,
+        "key": ["ver-a", "step-1"],
+        "row_index": 1,
+    }
+    missing_edge_endpoint_detail = json.loads(diagnostics[3]["detail"])
+    assert missing_edge_endpoint_detail["missing_node_ids"] == ["step-missing"]
 
 
 def test_pdg_phase4_publication_rows_are_deterministic() -> None:
@@ -296,6 +381,7 @@ def test_pdg_phase4_publication_can_emit_cdg_artifact_envelope_rows() -> None:
     version = insert_rows["artifact_versions"][0]
     cdg_node = insert_rows["artifact_cdg_nodes"][0]
 
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
     assert artifact["artifact_kind"] == "cdg"
     assert artifact["fqdn"].startswith("physics.pdg.cdg.pdg_cdg_candidate_")
     assert artifact["source_repo_id"] == "40000000-0000-0000-0000-000000000001"

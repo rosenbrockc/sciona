@@ -10,7 +10,9 @@ from sciona.physics_ingest.bindings import (
     resolve_publication_artifact_bindings,
 )
 from sciona.physics_ingest.cli import (
+    COMPOSED_REPORT_KIND,
     REPORT_KIND,
+    build_publication_backfill_dry_run_report_from_payload,
     build_publication_dry_run_report,
     build_publication_dry_run_report_from_payload,
     main,
@@ -42,6 +44,7 @@ from sciona.physics_ingest.pdg_cdg import (
     PDGRelationshipIngestResult,
     build_pdg_publication_write_rows,
     build_pdg_relationship_ingest,
+    validate_pdg_cdg_publication_graph,
 )
 from sciona.physics_ingest.pipeline import (
     PublicationPipelineResult,
@@ -133,6 +136,7 @@ __all__ = [
     "BACKFILL_REPORT_KIND",
     "BindingDiagnostic",
     "BindingResolutionResult",
+    "COMPOSED_REPORT_KIND",
     "DeterministicIdError",
     "NormalizationDiagnostic",
     "NormalizedExpressionDraft",
@@ -183,6 +187,7 @@ __all__ = [
     "attach_deterministic_candidate_ids",
     "attach_snapshot_id",
     "assess_publishability",
+    "build_publication_backfill_dry_run_report_from_payload",
     "build_publication_dry_run_report",
     "build_publication_dry_run_report_from_payload",
     "build_publication_load_result_from_normalized_drafts",
@@ -219,6 +224,7 @@ __all__ = [
     "validate_artifact_relationship_rows",
     "validate_candidate_row",
     "validate_candidate_rows",
+    "validate_pdg_cdg_publication_graph",
     "validate_snapshot_row",
     "validate_symbolic_expression_row",
     "write_publication_rows",

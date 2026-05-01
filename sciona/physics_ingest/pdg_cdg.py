@@ -152,6 +152,161 @@ class PDGPublicationWriteRows:
         }
 
 
+def validate_pdg_cdg_publication_graph(
+    rows: PDGPublicationWriteRows | Mapping[str, Iterable[Mapping[str, Any]]],
+) -> tuple[JSONDict, ...]:
+    """Validate publication CDG graph rows without mutating or writing them.
+
+    The validator accepts either ``PDGPublicationWriteRows`` or a table-to-rows
+    mapping shaped like ``to_insert_rows()``. It returns deterministic,
+    JSON-serializable diagnostics and treats ordinary malformed row mappings as
+    diagnostics instead of exceptions.
+    """
+
+    rows_by_table = (
+        rows.to_insert_rows() if isinstance(rows, PDGPublicationWriteRows) else rows
+    )
+    diagnostics: list[JSONDict] = []
+    nodes = _cdg_table_rows(rows_by_table, "artifact_cdg_nodes", diagnostics)
+    edges = _cdg_table_rows(rows_by_table, "artifact_cdg_edges", diagnostics)
+    bindings = _cdg_table_rows(rows_by_table, "artifact_cdg_bindings", diagnostics)
+    artifact_versions = _cdg_table_rows(rows_by_table, "artifact_versions", diagnostics)
+
+    node_keys: set[tuple[str, str]] = set()
+    seen_node_keys: dict[tuple[str, str], int] = {}
+    for row_index, row in nodes:
+        version_id = _row_text(row, "version_id")
+        node_id = _row_text(row, "node_id")
+        _require_cdg_fields(
+            row,
+            row_index=row_index,
+            table="artifact_cdg_nodes",
+            fields=("version_id", "node_id"),
+            diagnostics=diagnostics,
+        )
+        if not version_id or not node_id:
+            continue
+        key = (version_id, node_id)
+        _record_duplicate_key(
+            key,
+            seen=seen_node_keys,
+            row_index=row_index,
+            table="artifact_cdg_nodes",
+            reason="duplicate_node_key",
+            diagnostics=diagnostics,
+        )
+        node_keys.add(key)
+
+    seen_edge_keys: dict[tuple[str, str, str, str, str], int] = {}
+    for row_index, row in edges:
+        _require_cdg_fields(
+            row,
+            row_index=row_index,
+            table="artifact_cdg_edges",
+            fields=("version_id", "source_id", "target_id"),
+            diagnostics=diagnostics,
+        )
+        version_id = _row_text(row, "version_id")
+        source_id = _row_text(row, "source_id")
+        target_id = _row_text(row, "target_id")
+        if version_id and source_id and target_id:
+            key = (
+                version_id,
+                source_id,
+                target_id,
+                _row_text(row, "output_name"),
+                _row_text(row, "input_name"),
+            )
+            _record_duplicate_key(
+                key,
+                seen=seen_edge_keys,
+                row_index=row_index,
+                table="artifact_cdg_edges",
+                reason="duplicate_edge_key",
+                diagnostics=diagnostics,
+            )
+            missing = [
+                endpoint
+                for endpoint in (source_id, target_id)
+                if (version_id, endpoint) not in node_keys
+            ]
+            if missing:
+                diagnostics.append(
+                    _cdg_validation_diagnostic(
+                        table="artifact_cdg_edges",
+                        reason="edge_endpoint_node_missing",
+                        detail={
+                            "row_index": row_index,
+                            "version_id": version_id,
+                            "source_id": source_id,
+                            "target_id": target_id,
+                            "missing_node_ids": missing,
+                        },
+                    )
+                )
+
+    seen_binding_keys: dict[tuple[str, str, str], int] = {}
+    for row_index, row in bindings:
+        _require_cdg_fields(
+            row,
+            row_index=row_index,
+            table="artifact_cdg_bindings",
+            fields=("version_id", "node_id"),
+            diagnostics=diagnostics,
+        )
+        version_id = _row_text(row, "version_id")
+        node_id = _row_text(row, "node_id")
+        if version_id and node_id:
+            key = (version_id, node_id, _row_text(row, "bound_artifact_fqdn"))
+            _record_duplicate_key(
+                key,
+                seen=seen_binding_keys,
+                row_index=row_index,
+                table="artifact_cdg_bindings",
+                reason="duplicate_binding_key",
+                diagnostics=diagnostics,
+            )
+            if (version_id, node_id) not in node_keys:
+                diagnostics.append(
+                    _cdg_validation_diagnostic(
+                        table="artifact_cdg_bindings",
+                        reason="binding_node_missing",
+                        detail={
+                            "row_index": row_index,
+                            "version_id": version_id,
+                            "node_id": node_id,
+                        },
+                    )
+                )
+
+    known_version_ids = {
+        _row_text(row, "version_id")
+        for _, row in artifact_versions
+        if _row_text(row, "version_id")
+    }
+    if known_version_ids:
+        for table, table_rows in (
+            ("artifact_cdg_nodes", nodes),
+            ("artifact_cdg_edges", edges),
+            ("artifact_cdg_bindings", bindings),
+        ):
+            for row_index, row in table_rows:
+                version_id = _row_text(row, "version_id")
+                if version_id and version_id not in known_version_ids:
+                    diagnostics.append(
+                        _cdg_validation_diagnostic(
+                            table=table,
+                            reason="orphan_cdg_version",
+                            detail={
+                                "row_index": row_index,
+                                "version_id": version_id,
+                            },
+                        )
+                    )
+
+    return tuple(diagnostics)
+
+
 @dataclass(frozen=True)
 class PDGCDGArtifactEnvelope:
     """Opt-in artifact registry metadata for CDG candidate publication."""
@@ -696,6 +851,107 @@ def _ref_number(ref: Mapping[str, Any], key: str, default: float) -> float:
     return float(value)
 
 
+def _cdg_table_rows(
+    rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
+    table: str,
+    diagnostics: list[JSONDict],
+) -> tuple[tuple[int, Mapping[str, Any]], ...]:
+    raw_rows = rows_by_table.get(table, ())
+    if raw_rows is None:
+        return ()
+    normalized: list[tuple[int, Mapping[str, Any]]] = []
+    try:
+        iterator = enumerate(raw_rows)
+    except TypeError:
+        diagnostics.append(
+            _cdg_validation_diagnostic(
+                table=table,
+                reason="malformed_table_rows",
+                detail={"table": table, "row_type": type(raw_rows).__name__},
+            )
+        )
+        return ()
+    for row_index, row in iterator:
+        if not isinstance(row, Mapping):
+            diagnostics.append(
+                _cdg_validation_diagnostic(
+                    table=table,
+                    reason="malformed_row",
+                    detail={"row_index": row_index, "row_type": type(row).__name__},
+                )
+            )
+            continue
+        normalized.append((row_index, row))
+    return tuple(normalized)
+
+
+def _row_text(row: Mapping[str, Any], key: str) -> str:
+    value = row.get(key)
+    return "" if value is None else str(value)
+
+
+def _require_cdg_fields(
+    row: Mapping[str, Any],
+    *,
+    row_index: int,
+    table: str,
+    fields: Iterable[str],
+    diagnostics: list[JSONDict],
+) -> None:
+    missing = [field for field in fields if not _row_text(row, field)]
+    if not missing:
+        return
+    diagnostics.append(
+        _cdg_validation_diagnostic(
+            table=table,
+            reason="missing_cdg_row_identity",
+            detail={"row_index": row_index, "missing_fields": missing},
+        )
+    )
+
+
+def _record_duplicate_key(
+    key: tuple[str, ...],
+    *,
+    seen: dict[tuple[str, ...], int],
+    row_index: int,
+    table: str,
+    reason: str,
+    diagnostics: list[JSONDict],
+) -> None:
+    first_index = seen.get(key)
+    if first_index is None:
+        seen[key] = row_index
+        return
+    diagnostics.append(
+        _cdg_validation_diagnostic(
+            table=table,
+            reason=reason,
+            detail={
+                "row_index": row_index,
+                "first_row_index": first_index,
+                "key": list(key),
+            },
+        )
+    )
+
+
+def _cdg_validation_diagnostic(
+    *,
+    table: str,
+    reason: str,
+    detail: Mapping[str, Any],
+    severity: str = "error",
+) -> JSONDict:
+    return _cdg_diagnostic(
+        table=table,
+        reason=reason,
+        manifest_id="",
+        severity=severity,
+        detail=_canonical_json(detail),
+    )
+
+
 def _cdg_diagnostic(
     *,
     table: str,
@@ -723,4 +979,5 @@ __all__ = [
     "PHASE4_SCAFFOLD_VERSION",
     "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
+    "validate_pdg_cdg_publication_graph",
 ]

@@ -7,11 +7,14 @@ import sys
 import pytest
 
 from sciona.physics_ingest.cli import (
+    COMPOSED_REPORT_KIND,
     REPORT_KIND,
+    build_publication_backfill_dry_run_report_from_payload,
     build_publication_dry_run_report,
     build_publication_dry_run_report_from_payload,
     main,
 )
+from sciona.physics_ingest.sources import build_physics_source_retrieval_run_plan_dict
 
 
 ARTIFACT_ID = "20000000-0000-0000-0000-000000000001"
@@ -106,6 +109,96 @@ def test_publication_dry_run_payload_rejects_non_sequence_inputs() -> None:
         )
 
 
+def test_publication_backfill_payload_composes_source_retrieval_plan() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan_dict(max_jobs=2, limit=5)
+    payload = {
+        "source_bundles": [_source_bundle()],
+        "publication_manifests": [_publication_manifest()],
+        "artifact_bindings": {
+            "local:fixture.force": {
+                "artifact_id": ARTIFACT_ID,
+                "version_id": VERSION_ID,
+            }
+        },
+        "source_retrieval_run_plan": retrieval_plan,
+    }
+
+    report = build_publication_backfill_dry_run_report_from_payload(payload)
+
+    assert report["report_kind"] == COMPOSED_REPORT_KIND
+    assert report["dry_run"] is True
+    assert report["ok"] is True
+    assert report["publication_dry_run_report"]["report_kind"] == REPORT_KIND
+    assert report["publication_dry_run_report"]["source_bundle_count"] == 1
+    assert report["backfill_report"]["input_summary"][
+        "source_retrieval_step_count"
+    ] == 2
+    assert report["source_retrieval_run_plan"]["filters"]["limit"] == 5
+    assert report["source_retrieval_run_plan"]["replay_keys"] == [
+        step["replay_key"] for step in retrieval_plan["steps"]
+    ]
+
+
+def test_publication_backfill_payload_accepts_retrieval_plan_alias() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+
+    report = build_publication_backfill_dry_run_report_from_payload(
+        {
+            "source_bundles": [_source_bundle()],
+            "publication_manifests": [_publication_manifest()],
+            "artifact_bindings": {
+                "local:fixture.force": {
+                    "artifact_id": ARTIFACT_ID,
+                    "version_id": VERSION_ID,
+                }
+            },
+            "retrieval_run_plan": retrieval_plan,
+        }
+    )
+
+    assert report["source_retrieval_run_plan"]["step_count"] == 1
+    assert report["backfill_report"]["source_retrieval_run_plan"] == (
+        report["source_retrieval_run_plan"]
+    )
+
+
+def test_publication_backfill_payload_rejects_retrieval_plan_conflict() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+
+    with pytest.raises(
+        ValueError,
+        match="pass only one of source_retrieval_run_plan or retrieval_run_plan",
+    ):
+        build_publication_backfill_dry_run_report_from_payload(
+            {
+                "source_retrieval_run_plan": retrieval_plan,
+                "retrieval_run_plan": retrieval_plan,
+            }
+        )
+
+
+def test_publication_backfill_payload_report_is_json_serializable() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+    report = build_publication_backfill_dry_run_report_from_payload(
+        {
+            "source_bundles": [_source_bundle()],
+            "publication_manifests": [_publication_manifest()],
+            "artifact_bindings": {
+                "local:fixture.force": {
+                    "artifact_id": ARTIFACT_ID,
+                    "version_id": VERSION_ID,
+                }
+            },
+            "source_retrieval_run_plan": retrieval_plan,
+        },
+        include_rows=True,
+    )
+
+    assert json.loads(json.dumps(report, sort_keys=True)) == report
+    assert report["publication_dry_run_report"]["insert_rows_by_table"]
+    assert report["backfill_report"]["insert_rows_by_table"]
+
+
 def test_publication_dry_run_main_prints_report_from_json_payload(
     tmp_path,
     monkeypatch,
@@ -137,6 +230,41 @@ def test_publication_dry_run_main_prints_report_from_json_payload(
     assert report["dry_run"] is True
     assert report["ok"] is True
     assert "insert_rows_by_table" not in report
+
+
+def test_publication_dry_run_main_auto_dispatches_backfill_payload(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps(
+            {
+                "source_bundles": [_source_bundle()],
+                "publication_manifests": [_publication_manifest()],
+                "artifact_bindings": {
+                    "local:fixture.force": {
+                        "artifact_id": ARTIFACT_ID,
+                        "version_id": VERSION_ID,
+                    }
+                },
+                "source_retrieval_run_plan": (
+                    build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+    stdout = StringIO()
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = main([str(payload_path)])
+
+    assert exit_code == 0
+    report = json.loads(stdout.getvalue())
+    assert report["report_kind"] == COMPOSED_REPORT_KIND
+    assert report["publication_dry_run_report"]["report_kind"] == REPORT_KIND
+    assert report["source_retrieval_run_plan"]["step_count"] == 1
 
 
 def test_publication_dry_run_main_can_include_rows(tmp_path, monkeypatch) -> None:

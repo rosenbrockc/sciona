@@ -14,6 +14,7 @@ from pathlib import Path
 import sys
 from typing import Any
 
+from sciona.physics_ingest.backfill import build_physics_ingest_backfill_report
 from sciona.physics_ingest.ids import DeterministicIdError, plan_source_bundle_ids
 from sciona.physics_ingest.orchestration import orchestrate_physics_publication
 from sciona.physics_ingest.publication import ArtifactBinding, PublicationDiagnostic
@@ -21,6 +22,7 @@ from sciona.physics_ingest.write_plan import WriteMode, build_publication_write_
 
 
 REPORT_KIND = "physics_ingest_publication_dry_run"
+COMPOSED_REPORT_KIND = "physics_ingest_publication_backfill_dry_run"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -44,10 +46,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     with args.payload_file.open(encoding="utf-8") as file:
         payload = json.load(file)
 
-    report = build_publication_dry_run_report_from_payload(
-        payload,
-        include_rows=args.include_rows,
-    )
+    if isinstance(payload, Mapping) and _has_retrieval_run_plan_payload(payload):
+        report = build_publication_backfill_dry_run_report_from_payload(
+            payload,
+            include_rows=args.include_rows,
+        )
+    else:
+        report = build_publication_dry_run_report_from_payload(
+            payload,
+            include_rows=args.include_rows,
+        )
     print(json.dumps(report, sort_keys=True), file=sys.stdout)
     return 0
 
@@ -82,6 +90,54 @@ def build_publication_dry_run_report_from_payload(
         plan_ids=bool(payload.get("plan_ids", True)),
         include_rows=include_rows,
     )
+
+
+def build_publication_backfill_dry_run_report_from_payload(
+    payload: Mapping[str, Any],
+    *,
+    include_rows: bool = False,
+) -> dict[str, Any]:
+    """Build a composed publication/backfill dry-run report from a JSON payload.
+
+    This additive payload mode accepts the publication dry-run inputs plus one
+    source retrieval run plan under either ``source_retrieval_run_plan`` or the
+    shorter ``retrieval_run_plan`` alias. It preserves the established
+    publication report shape by embedding it unchanged under
+    ``publication_dry_run_report``.
+    """
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("payload must be a mapping")
+
+    retrieval_plan = _retrieval_run_plan_payload(payload)
+    publication_report = build_publication_dry_run_report_from_payload(
+        payload,
+        include_rows=include_rows,
+    )
+    backfill_report = build_physics_ingest_backfill_report(
+        source_bundles=_sequence(payload.get("source_bundles", ()), "source_bundles"),
+        publication_manifests=_sequence(
+            payload.get("publication_manifests", ()),
+            "publication_manifests",
+        ),
+        artifact_bindings=_mapping(
+            payload.get("artifact_bindings", {}),
+            "artifact_bindings",
+        ),
+        table_modes=_table_modes(payload.get("table_modes", {})),
+        source_retrieval_run_plan=retrieval_plan,
+        include_rows=include_rows,
+    )
+    report: dict[str, Any] = {
+        "report_kind": COMPOSED_REPORT_KIND,
+        "dry_run": True,
+        "ok": bool(publication_report["ok"] and backfill_report["ok"]),
+        "publication_dry_run_report": publication_report,
+        "backfill_report": backfill_report,
+        "source_retrieval_run_plan": backfill_report["source_retrieval_run_plan"],
+    }
+    _assert_json_serializable(report)
+    return report
 
 
 def build_publication_dry_run_report(
@@ -194,6 +250,29 @@ def _assert_json_serializable(report: Mapping[str, Any]) -> None:
         json.dumps(report, sort_keys=True, ensure_ascii=True)
     except (TypeError, ValueError) as exc:  # pragma: no cover - defensive guard
         raise ValueError("dry-run report must be JSON serializable") from exc
+
+
+def _has_retrieval_run_plan_payload(payload: Mapping[str, Any]) -> bool:
+    return (
+        payload.get("source_retrieval_run_plan") not in (None, "")
+        or payload.get("retrieval_run_plan") not in (None, "")
+    )
+
+
+def _retrieval_run_plan_payload(payload: Mapping[str, Any]) -> Any:
+    source_plan = payload.get("source_retrieval_run_plan")
+    alias_plan = payload.get("retrieval_run_plan")
+    has_source_plan = source_plan not in (None, "")
+    has_alias_plan = alias_plan not in (None, "")
+    if has_source_plan and has_alias_plan:
+        raise ValueError(
+            "pass only one of source_retrieval_run_plan or retrieval_run_plan"
+        )
+    if has_source_plan:
+        return source_plan
+    if has_alias_plan:
+        return alias_plan
+    raise ValueError("source_retrieval_run_plan or retrieval_run_plan is required")
 
 
 def _sequence(value: Any, field_name: str) -> Sequence[Any]:
