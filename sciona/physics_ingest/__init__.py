@@ -1,5 +1,15 @@
 """Physics knowledge ingestion helpers."""
 
+from sciona.physics_ingest.bindings import (
+    BindingDiagnostic,
+    BindingResolutionResult,
+    resolve_publication_artifact_bindings,
+)
+from sciona.physics_ingest.orchestration import (
+    PublicationAuditSummary,
+    PublicationOrchestrationResult,
+    orchestrate_physics_publication,
+)
 from sciona.physics_ingest.pdg_cdg import (
     PDGExpressionBinding,
     PDGRelationshipIngestResult,
@@ -50,12 +60,16 @@ from sciona.physics_ingest.staging import (
 __all__ = [
     "ArtifactRelationshipRow",
     "ArtifactBinding",
+    "BindingDiagnostic",
+    "BindingResolutionResult",
     "PDGExpressionBinding",
     "PDGRelationshipIngestResult",
     "PhysicsEquationCandidateRow",
     "PhysicsIngestSnapshotRow",
+    "PublicationAuditSummary",
     "PublicationDiagnostic",
     "PublicationLoadResult",
+    "PublicationOrchestrationResult",
     "ReviewAssessment",
     "ReviewGateResult",
     "RawTrustPolicy",
@@ -74,8 +88,10 @@ __all__ = [
     "build_pdg_relationship_ingest",
     "candidates_from_rows",
     "load_symbolic_publication_manifest",
+    "orchestrate_physics_publication",
     "rank_symbolic_candidates",
     "require_publishable",
+    "resolve_publication_artifact_bindings",
     "score_symbolic_candidate",
     "stage_source_rows",
     "validate_artifact_relationship_row",
