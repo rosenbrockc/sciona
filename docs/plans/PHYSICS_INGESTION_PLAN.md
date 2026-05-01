@@ -362,3 +362,51 @@ The work is complete when:
   when selecting physics knowledge,
 - audit documents can explain exactly which equations, constants, data sources,
   and derivations grounded a generated algorithm.
+
+## Current Landed Publication Pipeline
+
+The first publication slice is now implemented as a side-effect-free pipeline
+with a caller-owned storage boundary. The concise maintainer reference is
+`docs/physics_ingest_publication_pipeline.md`.
+
+Current modules:
+
+- `sciona.physics_ingest.ids`: deterministic UUIDv5 snapshot and candidate ID
+  planning.
+- `sciona.physics_ingest.staging`: Wave 0 row validation for source snapshots,
+  equation candidates, symbolic expressions, and relationship-adjacent rows.
+- `sciona.physics_ingest.publication`: publication manifest loading for
+  symbolic expressions, variables, and validity bounds.
+- `sciona.physics_ingest.orchestration`: combines source bundles and symbolic
+  manifests into validated insert rows and diagnostics.
+- `sciona.physics_ingest.write_plan`: builds dependency-ordered inert write
+  plans with per-table insert/upsert modes.
+- `sciona.physics_ingest.writer`: applies plans through an injected
+  `PublicationTableClient` and supports dry runs.
+- `sciona.physics_ingest.pipeline`: composes ID planning, orchestration, write
+  planning, and optional execution.
+- `sciona.physics_ingest.cli`: builds JSON-serializable dry-run reports from
+  decoded payloads.
+
+Dry-run usage:
+
+```python
+from sciona.physics_ingest.cli import build_publication_dry_run_report_from_payload
+
+report = build_publication_dry_run_report_from_payload(
+    {
+        "source_bundles": [source_bundle],
+        "publication_manifests": [publication_manifest],
+        "artifact_bindings": artifact_bindings,
+        "table_modes": {"artifact_symbolic_expressions": "upsert"},
+        "plan_ids": True,
+    },
+    include_rows=True,
+)
+```
+
+The write-plan/writer contract is deliberately small: callers pass a mapping of
+table names to row mappings, the planner orders known publication tables, and
+the writer calls `client.insert(table, rows)` or `client.upsert(table, rows)`.
+The writer never creates a Supabase client; production storage is an adapter at
+the application boundary.

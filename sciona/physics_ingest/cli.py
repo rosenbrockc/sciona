@@ -7,8 +7,11 @@ structures in, and serialize the returned report directly.
 
 from __future__ import annotations
 
+import argparse
 from collections.abc import Iterable, Mapping, Sequence
 import json
+from pathlib import Path
+import sys
 from typing import Any
 
 from sciona.physics_ingest.ids import DeterministicIdError, plan_source_bundle_ids
@@ -18,6 +21,35 @@ from sciona.physics_ingest.write_plan import WriteMode, build_publication_write_
 
 
 REPORT_KIND = "physics_ingest_publication_dry_run"
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Read a publication payload JSON file and print a dry-run report."""
+
+    parser = argparse.ArgumentParser(
+        description="Build a physics ingestion publication dry-run report.",
+    )
+    parser.add_argument(
+        "payload_file",
+        type=Path,
+        help="Path to a JSON payload for the dry-run report.",
+    )
+    parser.add_argument(
+        "--include-rows",
+        action="store_true",
+        help="Include planned insert rows in the printed report.",
+    )
+    args = parser.parse_args(argv)
+
+    with args.payload_file.open(encoding="utf-8") as file:
+        payload = json.load(file)
+
+    report = build_publication_dry_run_report_from_payload(
+        payload,
+        include_rows=args.include_rows,
+    )
+    print(json.dumps(report, sort_keys=True), file=sys.stdout)
+    return 0
 
 
 def build_publication_dry_run_report_from_payload(
@@ -195,3 +227,7 @@ def _table_modes(value: Any) -> Mapping[str, WriteMode]:
             raise ValueError(f"unsupported write mode for {table}: {mode}")
         modes[str(table)] = mode
     return modes
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

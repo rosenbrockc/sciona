@@ -9,6 +9,7 @@ from sciona.physics_ingest.cli import (
     REPORT_KIND,
     build_publication_dry_run_report,
     build_publication_dry_run_report_from_payload,
+    main,
 )
 from sciona.physics_ingest.ids import (
     DeterministicIdError,
@@ -75,6 +76,10 @@ from sciona.physics_ingest.staging import (
     validate_snapshot_row,
     validate_symbolic_expression_row,
 )
+from sciona.physics_ingest.supabase_adapter import (
+    PostgrestPublicationTableClient,
+    adapt_publication_supabase_client,
+)
 from sciona.physics_ingest.write_plan import (
     PublicationWriteBatch,
     PublicationWritePlan,
@@ -106,6 +111,7 @@ __all__ = [
     "PublicationOrchestrationResult",
     "PublicationPipelineResult",
     "PublicationPipelineSummary",
+    "PostgrestPublicationTableClient",
     "PublicationTableClient",
     "PublicationTableWriteResult",
     "PublicationWriteBatch",
@@ -128,6 +134,7 @@ __all__ = [
     "ValidityBoundRow",
     "WORKFLOW_STATUSES",
     "Wave0ContractError",
+    "adapt_publication_supabase_client",
     "attach_deterministic_candidate_ids",
     "attach_snapshot_id",
     "assess_publishability",
@@ -138,6 +145,7 @@ __all__ = [
     "build_snapshot_id_bindings",
     "candidates_from_rows",
     "load_symbolic_publication_manifest",
+    "main",
     "orchestrate_physics_publication",
     "plan_source_bundle_ids",
     "rank_symbolic_candidates",

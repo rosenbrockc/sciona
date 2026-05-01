@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from io import StringIO
 import json
+import sys
 
 import pytest
 
@@ -8,6 +10,7 @@ from sciona.physics_ingest.cli import (
     REPORT_KIND,
     build_publication_dry_run_report,
     build_publication_dry_run_report_from_payload,
+    main,
 )
 
 
@@ -101,6 +104,66 @@ def test_publication_dry_run_payload_rejects_non_sequence_inputs() -> None:
         build_publication_dry_run_report_from_payload(
             {"source_bundles": {"bundle_key": "not-a-list"}},
         )
+
+
+def test_publication_dry_run_main_prints_report_from_json_payload(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps(
+            {
+                "source_bundles": [_source_bundle()],
+                "publication_manifests": [_publication_manifest()],
+                "artifact_bindings": {
+                    "local:fixture.force": {
+                        "artifact_id": ARTIFACT_ID,
+                        "version_id": VERSION_ID,
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    stdout = StringIO()
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = main([str(payload_path)])
+
+    assert exit_code == 0
+    report = json.loads(stdout.getvalue())
+    assert report["report_kind"] == REPORT_KIND
+    assert report["dry_run"] is True
+    assert report["ok"] is True
+    assert "insert_rows_by_table" not in report
+
+
+def test_publication_dry_run_main_can_include_rows(tmp_path, monkeypatch) -> None:
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps(
+            {
+                "source_bundles": [_source_bundle()],
+                "publication_manifests": [_publication_manifest()],
+                "artifact_bindings": {
+                    "local:fixture.force": {
+                        "artifact_id": ARTIFACT_ID,
+                        "version_id": VERSION_ID,
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    stdout = StringIO()
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = main(["--include-rows", str(payload_path)])
+
+    assert exit_code == 0
+    report = json.loads(stdout.getvalue())
+    assert report["insert_rows_by_table"]["physics_ingest_snapshots"]
 
 
 def _source_bundle() -> dict[str, object]:
