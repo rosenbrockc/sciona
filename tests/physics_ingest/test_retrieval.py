@@ -3,6 +3,7 @@ from __future__ import annotations
 from sciona.physics_ingest.retrieval import (
     SymbolicRetrievalQuery,
     build_symbolic_retrieval_report,
+    build_symbolic_synthesis_retrieval_report,
     candidates_from_rows,
     rank_symbolic_candidates,
     suggest_raw_candidate_external_knowledge,
@@ -309,3 +310,115 @@ def test_symbolic_retrieval_report_includes_trust_and_raw_suggestions() -> None:
     assert report["result_count"] == 1
     assert report["results"][0]["trust_status"] == "needs_human"
     assert report["raw_candidate_external_knowledge_suggestions"][0]["candidate_key"] == "raw"
+
+
+def test_symbolic_synthesis_report_separates_executable_and_external_knowledge() -> None:
+    report = build_symbolic_synthesis_retrieval_report(
+        {
+            "topology_hash": "topo-wave",
+            "dimensional_hash": "dim-wave",
+            "dim_signatures": ["L1", "T-1"],
+            "mechanism_tags": ["dispersion"],
+            "relationship_kinds": ["derives_from"],
+            "source_system": "theoria",
+            "source_kind": "curated_publication",
+            "require_reviewed_bounds": True,
+        },
+        [
+            {
+                "artifact_id": "reviewed-wave",
+                "expression_id": "expr-reviewed-wave",
+                "fqdn": "physics.wave.reviewed",
+                "raw_formula": "v = f lambda",
+                "topology_hash": "topo-wave",
+                "dimensional_hash": "dim-wave",
+                "dim_signatures": ["L1", "T-1"],
+                "mechanism_tags": ["dispersion"],
+                "source_system": "theoria",
+                "source_kind": "curated_publication",
+                "review_status": "human_reviewed",
+                "validation_status": "passed",
+                "publish_status": "published",
+                "relationships": [
+                    {
+                        "relationship_kind": "derives_from",
+                        "relationship_label": "wave identity",
+                        "confidence": 0.9,
+                        "verified": True,
+                        "source_kind": "publication_edge",
+                    }
+                ],
+                "validity_bounds": [
+                    {
+                        "variable_name": "f",
+                        "lower_value": 0,
+                        "review_status": "human_reviewed",
+                    }
+                ],
+            },
+            {
+                "artifact_id": "raw-wave",
+                "fqdn": "physics.wave.raw",
+                "raw_formula": "v = f lambda",
+                "topology_hash": "topo-wave",
+                "dimensional_hash": "dim-wave",
+                "dim_signatures": ["L1", "T-1"],
+                "mechanism_tags": ["dispersion"],
+                "source_system": "web_seed",
+                "source_kind": "raw_adapter",
+                "review_status": "unreviewed",
+                "candidate_status": "raw_imported",
+            },
+        ],
+    )
+
+    assert report["report_kind"] == "symbolic_synthesis_retrieval"
+    assert report["executable_candidate_count"] == 1
+    assert report["external_knowledge_suggestion_count"] == 1
+
+    executable = report["executable_candidates"][0]
+    assert executable["candidate_key"] == "expr-reviewed-wave"
+    assert executable["score_components"]["source_system"] == 0.5
+    assert executable["score_components"]["source_kind"] == 0.3
+    assert executable["score_components"]["provenance_present"] == 0.2
+    assert executable["compiler_contract"]["can_compile"] is True
+    assert executable["compiler_contract"]["blockers"] == []
+    assert "verify_candidate_dimensional_hash" in executable["compiler_contract"][
+        "required_dimensional_checks"
+    ]
+    assert executable["relationship_edges"] == [
+        {
+            "relationship_kind": "derives_from",
+            "relationship_label": "wave identity",
+            "confidence": 0.9,
+            "verified": True,
+            "source_kind": "publication_edge",
+        }
+    ]
+
+    suggestion = report["external_knowledge_suggestions"][0]
+    assert suggestion["candidate_key"] == "raw-wave"
+    assert suggestion["suggestion"]["reason"] == "raw_candidate_needs_external_knowledge"
+    assert suggestion["compiler_contract"]["can_compile"] is False
+    assert "not_published_or_reviewed" in suggestion["compiler_contract"]["blockers"]
+    assert suggestion["dimensions"]["dimensionally_usable"] is True
+
+
+def test_symbolic_synthesis_report_blocks_reviewed_candidate_without_dimensions() -> None:
+    report = build_symbolic_synthesis_retrieval_report(
+        {"topology_hash": "topo"},
+        [
+            {
+                "artifact_id": "reviewed-no-dimensions",
+                "topology_hash": "topo",
+                "review_status": "human_reviewed",
+                "validation_status": "passed",
+            }
+        ],
+    )
+
+    assert report["executable_candidates"] == []
+    blocked = report["blocked_candidates"][0]
+    assert blocked["candidate_key"] == "reviewed-no-dimensions"
+    assert blocked["compiler_contract"]["can_compile"] is False
+    assert blocked["compiler_contract"]["blockers"] == ["missing_dimensional_metadata"]

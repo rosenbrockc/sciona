@@ -335,6 +335,8 @@ class SymbolicRetrievalQuery:
     mechanism_tags: tuple[str, ...] = ()
     behavioral_archetypes: tuple[str, ...] = ()
     relationship_kinds: tuple[str, ...] = ()
+    source_systems: tuple[str, ...] = ()
+    source_kinds: tuple[str, ...] = ()
     require_validity_bounds: bool = False
     require_reviewed_bounds: bool = False
     raw_trust_policy: RawTrustPolicy = "prefer_reviewed"
@@ -352,6 +354,8 @@ class SymbolicRetrievalQuery:
             mechanism_tags=_strings(row.get("mechanism_tags")),
             behavioral_archetypes=_strings(row.get("behavioral_archetypes")),
             relationship_kinds=_strings(row.get("relationship_kinds")),
+            source_systems=_strings(row.get("source_systems") or row.get("source_system")),
+            source_kinds=_strings(row.get("source_kinds") or row.get("source_kind")),
             require_validity_bounds=_bool(row.get("require_validity_bounds")),
             require_reviewed_bounds=_bool(row.get("require_reviewed_bounds")),
             raw_trust_policy=_raw_trust_policy(
@@ -491,6 +495,10 @@ def score_symbolic_candidate(
         components["verified_relationships"] = 0.4
         reasons.append("requested_relationships_verified")
 
+    provenance_component, provenance_reasons = _provenance_score(query, candidate)
+    components.update(provenance_component)
+    reasons.extend(provenance_reasons)
+
     validity_component, validity_reasons, validity_eligible = _validity_score(
         query,
         candidate,
@@ -602,6 +610,71 @@ def build_symbolic_retrieval_report(
     }
 
 
+def build_symbolic_synthesis_retrieval_report(
+    query: SymbolicRetrievalQuery | Mapping[str, Any],
+    candidates: Iterable[SymbolicArtifactCandidate | Mapping[str, Any]],
+    *,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """Build a JSON-safe synthesis report from already-fetched candidate rows.
+
+    The report is intentionally side-effect-free: it accepts catalog/document
+    rows and performs no DB, file, or network IO. Executable candidates are
+    published/reviewed, eligible, and have dimensional metadata that a compiler
+    can check. Raw or needs-human rows are kept as external-knowledge
+    suggestions with their scoring context.
+    """
+
+    request = (
+        query
+        if isinstance(query, SymbolicRetrievalQuery)
+        else SymbolicRetrievalQuery.from_mapping(query)
+    )
+    candidate_tuple = tuple(_candidate(candidate) for candidate in candidates)
+    results = rank_symbolic_candidates(request, candidate_tuple, limit=limit)
+
+    executable: list[dict[str, Any]] = []
+    external_suggestions: list[dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
+    for result in results:
+        contract = _compiler_contract_guidance(request, result)
+        payload = _synthesis_candidate_payload(result, contract)
+        if _is_executable_candidate(result, contract):
+            executable.append(payload)
+        elif result.candidate.raw_like or result.candidate.needs_human:
+            external_suggestions.append(
+                {
+                    **payload,
+                    "suggestion": _external_knowledge_suggestion_payload(
+                        result.candidate
+                    ),
+                }
+            )
+        else:
+            blocked.append(payload)
+
+    return {
+        "report_kind": "symbolic_synthesis_retrieval",
+        "result_count": len(results),
+        "executable_candidate_count": len(executable),
+        "external_knowledge_suggestion_count": len(external_suggestions),
+        "executable_candidates": executable,
+        "external_knowledge_suggestions": external_suggestions,
+        "blocked_candidates": blocked,
+        "compiler_contract": {
+            "required_dimensional_checks": _query_dimensional_checks(request),
+            "blocker_kinds": [
+                "blocked_status",
+                "not_published_or_reviewed",
+                "missing_dimensional_metadata",
+                "missing_required_validity_bounds",
+                "missing_reviewed_validity_bounds",
+                "raw_excluded_by_policy",
+            ],
+        },
+    }
+
+
 def _validity_score(
     query: SymbolicRetrievalQuery,
     candidate: SymbolicArtifactCandidate,
@@ -654,6 +727,175 @@ def _trust_score(
         components["raw_penalty"] = -1.5
         reasons.append("raw_penalty")
     return components, reasons
+
+
+def _provenance_score(
+    query: SymbolicRetrievalQuery,
+    candidate: SymbolicArtifactCandidate,
+) -> tuple[dict[str, float], list[str]]:
+    components: dict[str, float] = {}
+    reasons: list[str] = []
+    if candidate.source_system and candidate.source_system in query.source_systems:
+        components["source_system"] = 0.5
+        reasons.append("source_system_match")
+    if candidate.source_kind and candidate.source_kind in query.source_kinds:
+        components["source_kind"] = 0.3
+        reasons.append("source_kind_match")
+    if candidate.source_system and candidate.source_kind:
+        components["provenance_present"] = 0.2
+        reasons.append("provenance_present")
+    return components, reasons
+
+
+def _is_executable_candidate(
+    result: SymbolicRankingResult,
+    contract: Mapping[str, Any],
+) -> bool:
+    candidate = result.candidate
+    return bool(
+        result.eligible
+        and (candidate.published or candidate.reviewed)
+        and _dimensionally_usable(candidate)
+        and not contract["blockers"]
+    )
+
+
+def _dimensionally_usable(candidate: SymbolicArtifactCandidate) -> bool:
+    return bool(candidate.dimensional_hash or candidate.dim_signatures)
+
+
+def _synthesis_candidate_payload(
+    result: SymbolicRankingResult,
+    contract: Mapping[str, Any],
+) -> dict[str, Any]:
+    candidate = result.candidate
+    return {
+        "candidate_key": _candidate_key(candidate),
+        "artifact_id": candidate.artifact_id,
+        "version_id": candidate.version_id,
+        "expression_id": candidate.expression_id,
+        "fqdn": candidate.fqdn,
+        "raw_formula": candidate.raw_formula,
+        "score": result.score,
+        "eligible": result.eligible,
+        "trust_status": candidate.trust_status,
+        "score_components": dict(result.components),
+        "score_reasons": list(result.reasons),
+        "topology": {
+            "topology_hash": candidate.topology_hash,
+            "behavioral_archetypes": list(candidate.behavioral_archetypes),
+        },
+        "mechanism": {"mechanism_tags": list(candidate.mechanism_tags)},
+        "dimensions": {
+            "dimensional_hash": candidate.dimensional_hash,
+            "dim_signatures": list(candidate.dim_signatures),
+            "dimensionally_usable": _dimensionally_usable(candidate),
+        },
+        "validity_bounds": [
+            {
+                "variable_name": bound.variable_name,
+                "regime_label": bound.regime_label,
+                "validity_statement": bound.validity_statement,
+                "lower_value": bound.lower_value,
+                "upper_value": bound.upper_value,
+                "review_status": bound.review_status,
+            }
+            for bound in candidate.validity_bounds
+        ],
+        "provenance": {
+            "source_system": candidate.source_system,
+            "source_kind": candidate.source_kind,
+            "review_status": candidate.review_status,
+            "validation_status": candidate.validation_status,
+            "publish_status": candidate.publish_status,
+        },
+        "relationship_edges": [
+            {
+                "relationship_kind": relationship.relationship_kind,
+                "relationship_label": relationship.relationship_label,
+                "confidence": relationship.confidence,
+                "verified": relationship.verified,
+                "source_kind": relationship.source_kind,
+            }
+            for relationship in candidate.relationships
+        ],
+        "compiler_contract": dict(contract),
+    }
+
+
+def _external_knowledge_suggestion_payload(
+    candidate: SymbolicArtifactCandidate,
+) -> dict[str, Any]:
+    suggestions = suggest_raw_candidate_external_knowledge((candidate,))
+    if suggestions:
+        return suggestions[0].to_dict()
+    return {
+        "candidate_key": _candidate_key(candidate),
+        "trust_status": candidate.trust_status,
+        "reason": "candidate_needs_human_external_knowledge",
+        "raw_formula": candidate.raw_formula,
+        "suggested_relationship_kinds": [],
+        "suggested_reference_queries": list(_reference_queries(candidate)),
+    }
+
+
+def _compiler_contract_guidance(
+    query: SymbolicRetrievalQuery,
+    result: SymbolicRankingResult,
+) -> dict[str, Any]:
+    candidate = result.candidate
+    blockers = list(_compiler_blockers(query, result))
+    return {
+        "required_dimensional_checks": _candidate_dimensional_checks(query, candidate),
+        "blockers": blockers,
+        "can_compile": not blockers,
+        "requires_human_review": candidate.needs_human or candidate.raw_like,
+    }
+
+
+def _compiler_blockers(
+    query: SymbolicRetrievalQuery,
+    result: SymbolicRankingResult,
+) -> tuple[str, ...]:
+    candidate = result.candidate
+    blockers = []
+    if candidate.blocked:
+        blockers.append("blocked_status")
+    if not (candidate.published or candidate.reviewed):
+        blockers.append("not_published_or_reviewed")
+    if not _dimensionally_usable(candidate):
+        blockers.append("missing_dimensional_metadata")
+    for reason in result.reasons:
+        if reason in {
+            "missing_required_validity_bounds",
+            "missing_reviewed_validity_bounds",
+            "raw_excluded_by_policy",
+        }:
+            blockers.append(reason)
+    if query.raw_trust_policy == "reviewed_only" and candidate.raw_like:
+        blockers.append("raw_excluded_by_policy")
+    return _unique(blockers)
+
+
+def _query_dimensional_checks(query: SymbolicRetrievalQuery) -> list[str]:
+    checks = ["verify_candidate_formula_dimensions_against_problem"]
+    if query.dimensional_hashes:
+        checks.append("match_requested_dimensional_hash")
+    if query.dim_signatures:
+        checks.append("match_requested_input_output_dim_signatures")
+    return checks
+
+
+def _candidate_dimensional_checks(
+    query: SymbolicRetrievalQuery,
+    candidate: SymbolicArtifactCandidate,
+) -> list[str]:
+    checks = _query_dimensional_checks(query)
+    if candidate.dimensional_hash:
+        checks.append("verify_candidate_dimensional_hash")
+    if candidate.dim_signatures:
+        checks.append("verify_candidate_symbol_dim_signatures")
+    return checks
 
 
 def _candidate(

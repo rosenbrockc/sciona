@@ -47,10 +47,14 @@ def build_physics_ingest_backfill_report(
         normalization_diagnostics,
         default_stage="normalization",
     )
+    pdg_diagnostic_rows = _normalize_diagnostics(
+        pdg_diagnostics,
+        default_stage="pdg_cdg_publication",
+    )
     external_diagnostics = (
         *review_diagnostic_rows,
         *normalization_diagnostic_rows,
-        *_normalize_diagnostics(pdg_diagnostics, default_stage="pdg_cdg_publication"),
+        *pdg_diagnostic_rows,
     )
 
     pipeline_result = run_physics_publication_pipeline(
@@ -90,6 +94,11 @@ def build_physics_ingest_backfill_report(
         "replay_keys": _replay_keys(pipeline_result.write_plan.to_dict()["batches"]),
         "retry_diagnostics": retry_diagnostics,
         "skip_diagnostics": skip_diagnostics,
+        "external_diagnostics": {
+            "review": [dict(row) for row in review_diagnostic_rows],
+            "normalization": [dict(row) for row in normalization_diagnostic_rows],
+            "pdg_cdg_publication": [dict(row) for row in pdg_diagnostic_rows],
+        },
         "diagnostic_summary": _diagnostic_summary(diagnostics),
     }
     if include_rows:
