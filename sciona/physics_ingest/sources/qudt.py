@@ -8,8 +8,10 @@ snapshot/candidate-compatible records for the Wave 0 ingestion schema.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from fractions import Fraction
 from hashlib import sha256
 import json
 import re
@@ -19,9 +21,10 @@ from sciona.ghost.dimensions import DimensionalSignature
 
 
 ADAPTER_NAME = "sciona.physics_ingest.sources.qudt"
-ADAPTER_VERSION = "wave1-qudt-scaffold-v1"
+ADAPTER_VERSION = "wave1-qudt-dim-resolution-v2"
 
-_VECTOR_RE = re.compile(r"([AELIMHTD])(-?\d+)")
+_EXPONENT_TOKEN_RE = r"-?(?:\d+/\d+|\d+(?:\.\d+)?|\.\d+)"
+_VECTOR_RE = re.compile(rf"([AELIMHTD])({_EXPONENT_TOKEN_RE})")
 _DIMENSION_VECTOR_URI_MARKER = "/dimensionvector/"
 
 # QUDT dimension-vector axes:
@@ -48,8 +51,9 @@ class QudtDimensionMapping:
     """Parsed QUDT dimension vector and its Sciona representation."""
 
     qudt_vector: str
-    qudt_exponents: dict[str, int]
+    qudt_exponents: dict[str, Fraction]
     sciona_signature: DimensionalSignature
+    qudt_exponent_payloads: dict[str, str] = field(default_factory=dict)
 
     @property
     def compact(self) -> str:
@@ -58,7 +62,11 @@ class QudtDimensionMapping:
     def as_payload(self) -> dict[str, Any]:
         return {
             "qudt_dimension_vector": self.qudt_vector,
-            "qudt_exponents": dict(self.qudt_exponents),
+            "qudt_exponents": {
+                axis: _format_exponent(exponent)
+                for axis, exponent in self.qudt_exponents.items()
+            },
+            "qudt_exponent_payloads": dict(self.qudt_exponent_payloads),
             "dim_signature": self.compact,
         }
 
@@ -72,6 +80,7 @@ class QudtResourceRecord:
     resource_kind: str
     dimension: QudtDimensionMapping | None
     source_payload: dict[str, Any]
+    dimension_error: dict[str, Any] | None = None
     source_description: str = ""
     symbol: str = ""
     quantity_kind_uris: tuple[str, ...] = ()
@@ -106,6 +115,9 @@ class QudtResourceRecord:
         }
         if self.dimension is not None:
             payload.update(self.dimension.as_payload())
+        if self.dimension_error is not None:
+            payload["dimension_error"] = dict(self.dimension_error)
+            payload["dimension_status"] = "unresolved"
         return {
             "source_candidate_id": self.source_candidate_id,
             "source_entity_uri": self.source_entity_uri,
@@ -121,7 +133,11 @@ class QudtResourceRecord:
             "mechanism_tags": [],
             "behavioral_archetypes": [],
             "source_payload": payload,
-            "notes": "QUDT dimensional metadata record; not a standalone equation.",
+            "notes": (
+                "QUDT dimensional metadata record; unresolved dimension reported."
+                if self.dimension_error is not None
+                else "QUDT dimensional metadata record; not a standalone equation."
+            ),
         }
 
 
@@ -153,11 +169,15 @@ def parse_qudt_dimension_vector(value: Any) -> QudtDimensionMapping:
     if consumed != vector:
         raise QudtDimensionError(f"unsupported QUDT dimension vector syntax: {vector!r}")
 
-    qudt_exponents = {axis: 0 for axis in "AELIMHTD"}
+    qudt_exponents = {axis: Fraction(0) for axis in "AELIMHTD"}
+    qudt_exponent_payloads = {axis: "0" for axis in "AELIMHTD"}
     for match in matches:
-        qudt_exponents[match.group(1)] = int(match.group(2))
+        axis = match.group(1)
+        token = match.group(2)
+        qudt_exponents[axis] = Fraction(token)
+        qudt_exponent_payloads[axis] = token
 
-    if qudt_exponents.get("D", 0) not in (0, 1):
+    if qudt_exponents.get("D", Fraction(0)) not in (0, 1):
         raise QudtDimensionError(
             f"unsupported dimensionless axis exponent in QUDT vector: {vector!r}"
         )
@@ -172,7 +192,49 @@ def parse_qudt_dimension_vector(value: Any) -> QudtDimensionMapping:
         qudt_vector=vector,
         qudt_exponents=qudt_exponents,
         sciona_signature=DimensionalSignature(**kwargs),
+        qudt_exponent_payloads=qudt_exponent_payloads,
     )
+
+
+def build_qudt_symbolic_variable_dimension_updates(
+    records: Iterable[QudtResourceRecord | Mapping[str, Any]],
+    variables: Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return variable-row updates resolved from QUDT records without side effects.
+
+    Variables are matched by explicit unit/quantity-kind URI first, then by
+    source symbol or display label.  Returned rows are shallow copies of input
+    variables with QUDT dimension fields and evidence merged in.
+    """
+    resolved_records = tuple(_coerce_record(record) for record in records)
+    updates: list[dict[str, Any]] = []
+    for variable in variables:
+        record = _match_qudt_record(variable, resolved_records)
+        if record is None or record.dimension is None:
+            continue
+        update = dict(variable)
+        evidence = dict(_mapping_or_empty(update.get("evidence_json")))
+        evidence["qudt_dimension_resolution"] = {
+            "source_entity_uri": record.source_entity_uri,
+            "source_label": record.source_label,
+            "resource_kind": record.resource_kind,
+            **record.dimension.as_payload(),
+        }
+        update["dim_signature"] = record.dimension.compact
+        update["dimension_source"] = "qudt"
+        update["evidence_json"] = evidence
+        if record.resource_kind == "quantity_kind":
+            if not update.get("quantity_kind_uri"):
+                update["quantity_kind_uri"] = record.source_entity_uri
+            if not update.get("quantity_kind_label"):
+                update["quantity_kind_label"] = record.source_label
+        if record.resource_kind == "unit":
+            if not update.get("unit_uri"):
+                update["unit_uri"] = record.source_entity_uri
+            if not update.get("unit_label"):
+                update["unit_label"] = record.source_label
+        updates.append(update)
+    return updates
 
 
 def extract_qudt_resource_record(raw: dict[str, Any]) -> QudtResourceRecord:
@@ -203,8 +265,15 @@ def extract_qudt_resource_record(raw: dict[str, Any]) -> QudtResourceRecord:
         "http://qudt.org/schema/qudt/hasDimensionVector",
     )
     dimension: QudtDimensionMapping | None = None
+    dimension_error: dict[str, Any] | None = None
     if dim_raw not in (None, "", []):
-        dimension = parse_qudt_dimension_vector(dim_raw)
+        try:
+            dimension = parse_qudt_dimension_vector(dim_raw)
+        except QudtDimensionError as exc:
+            dimension_error = {
+                "raw_dimension_vector": dim_raw,
+                "message": str(exc),
+            }
 
     return QudtResourceRecord(
         source_entity_uri=uri,
@@ -217,6 +286,7 @@ def extract_qudt_resource_record(raw: dict[str, Any]) -> QudtResourceRecord:
         ),
         unit_uris=tuple(_all_ids(raw, "qudt:applicableUnit", "applicableUnit")),
         dimension=dimension,
+        dimension_error=dimension_error,
         source_payload=raw,
     )
 
@@ -235,6 +305,7 @@ def build_qudt_snapshot_manifest(
     payload = {
         "record_count": len(raw_records),
         "dimension_record_count": sum(1 for record in records if record.dimension),
+        "dimension_error_count": sum(1 for record in records if record.dimension_error),
         "resource_kinds": sorted({record.resource_kind for record in records}),
         "raw_records": raw_records,
     }
@@ -276,7 +347,7 @@ def _coerce_dimension_vector(value: Any) -> str:
         text = text.rsplit(_DIMENSION_VECTOR_URI_MARKER, 1)[1]
     if "#" in text:
         text = text.rsplit("#", 1)[1]
-    if "/" in text:
+    if "://" in text and "/" in text:
         text = text.rsplit("/", 1)[1]
     return text
 
@@ -336,6 +407,63 @@ def _stringify(value: Any) -> str:
                 return _stringify(value[key])
         return ""
     return str(value).strip()
+
+
+def _format_exponent(exp: Fraction) -> str:
+    if exp.denominator == 1:
+        return str(exp.numerator)
+    return f"{exp.numerator}/{exp.denominator}"
+
+
+def _coerce_record(record: QudtResourceRecord | Mapping[str, Any]) -> QudtResourceRecord:
+    if isinstance(record, QudtResourceRecord):
+        return record
+    return extract_qudt_resource_record(dict(record))
+
+
+def _match_qudt_record(
+    variable: Mapping[str, Any],
+    records: tuple[QudtResourceRecord, ...],
+) -> QudtResourceRecord | None:
+    unit_uri = _casefolded(variable.get("unit_uri"))
+    quantity_kind_uri = _casefolded(variable.get("quantity_kind_uri"))
+    symbol_candidates = {
+        _casefolded(variable.get(key))
+        for key in ("source_symbol", "symbol_name", "unit_label", "quantity_kind_label")
+    }
+    symbol_candidates.discard("")
+
+    for record in records:
+        if record.dimension is None:
+            continue
+        record_uri = _casefolded(record.source_entity_uri)
+        if unit_uri and unit_uri == record_uri:
+            return record
+        if quantity_kind_uri and quantity_kind_uri == record_uri:
+            return record
+
+    for record in records:
+        if record.dimension is None:
+            continue
+        labels = {
+            _casefolded(record.symbol),
+            _casefolded(record.source_label),
+            _casefolded(record.source_entity_uri.rsplit("/", 1)[-1]),
+        }
+        labels.discard("")
+        if symbol_candidates & labels:
+            return record
+    return None
+
+
+def _mapping_or_empty(value: Any) -> Mapping[str, Any]:
+    if isinstance(value, Mapping):
+        return value
+    return {}
+
+
+def _casefolded(value: Any) -> str:
+    return str(value or "").strip().casefold()
 
 
 def _stable_sha256(value: Any) -> str:

@@ -1,5 +1,9 @@
 """Physics knowledge ingestion helpers."""
 
+from sciona.physics_ingest.backfill import (
+    BACKFILL_REPORT_KIND,
+    build_physics_ingest_backfill_report,
+)
 from sciona.physics_ingest.bindings import (
     BindingDiagnostic,
     BindingResolutionResult,
@@ -19,6 +23,12 @@ from sciona.physics_ingest.ids import (
     source_candidate_id,
     source_snapshot_id,
     stable_payload_sha256,
+)
+from sciona.physics_ingest.normalization import (
+    NormalizationDiagnostic,
+    NormalizedExpressionDraft,
+    normalize_candidate_expression_draft,
+    normalize_candidate_expression_drafts,
 )
 from sciona.physics_ingest.orchestration import (
     PublicationAuditSummary,
@@ -107,9 +117,12 @@ from sciona.physics_ingest.writer import (
 __all__ = [
     "ArtifactRelationshipRow",
     "ArtifactBinding",
+    "BACKFILL_REPORT_KIND",
     "BindingDiagnostic",
     "BindingResolutionResult",
     "DeterministicIdError",
+    "NormalizationDiagnostic",
+    "NormalizedExpressionDraft",
     "PDGExpressionBinding",
     "PDGPublicationWriteRows",
     "PDGRelationshipIngestResult",
@@ -156,6 +169,7 @@ __all__ = [
     "build_publication_write_plan",
     "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
+    "build_physics_ingest_backfill_report",
     "build_review_trust_report",
     "build_symbolic_retrieval_report",
     "build_snapshot_id_bindings",
@@ -163,6 +177,8 @@ __all__ = [
     "load_symbolic_publication_manifest",
     "main",
     "merge_publication_insert_rows",
+    "normalize_candidate_expression_draft",
+    "normalize_candidate_expression_drafts",
     "orchestrate_physics_publication",
     "plan_source_bundle_ids",
     "rank_symbolic_candidates",
