@@ -320,6 +320,48 @@ Acceptance:
 - Coverage dashboards show discovered, parsed, dimensioned, reviewed, and
   published counts by source and physics family.
 
+## Phase 8: Offline Validation And CI Gate
+
+Owner: validation/tooling worker.
+
+Add a deterministic validation script, analogous to the existing atom and CDG
+validators, so symbolic atoms, publication fixtures, PDG relationship
+extraction, and derived CDG rows can be checked before any database writes.
+
+Validator scope:
+
+- load every checked-in physics publication fixture,
+- optionally compare each fixture to a live
+  `build_symbolic_publication_manifest(...)` render from `sciona-atoms-physics`,
+- run matcher publication loading for symbolic expressions, variables, and
+  validity bounds,
+- enforce symbolic metadata standards: mechanism tags, behavioral archetypes,
+  bibliography, dimensions, review status, validation status, and JSON-safe row
+  payloads,
+- parse PDG payload fixtures,
+- build relationship rows and PDG CDG publication rows,
+- run CDG graph validation on nodes, edges, bindings, and artifact-version
+  envelopes,
+- emit a machine-readable report for CI and dashboards.
+
+Script modes:
+
+- default: fast, offline, deterministic validation over local fixtures,
+- `--strict`: fail when expected fixture families are absent,
+- `--json`: emit the validation report as JSON,
+- future `--changed-only`: restrict checks to touched fixtures and payloads for
+  fast developer loops.
+
+Acceptance:
+
+- The validator exits nonzero on missing symbolic metadata, fixture drift,
+  publication loader errors, malformed PDG edges, CDG graph errors, or
+  nondeterministic publication rows.
+- The report identifies each failing fixture or PDG payload with stable reason
+  codes.
+- CI can run the validator without Supabase, network access, or mutable local
+  state.
+
 ## Parallelization Analysis
 
 Safe parallel work after Phase 0 lands:
@@ -330,6 +372,7 @@ Safe parallel work after Phase 0 lands:
 - Worker D: CODATA/DLMF constants and data artifact publishing.
 - Worker E: existing `sciona-atoms-physics` migration.
 - Worker F: review workflow and audit evidence.
+- Worker G: offline validation script, fixture inventory, and CI report wiring.
 
 Work that should stay single-owner:
 
@@ -345,7 +388,7 @@ Recommended dependency waves:
 2. Wave 1: source adapters in parallel. Workers A-D.
 3. Wave 2: symbolic normalization plus physics atom migration.
 4. Wave 3: PDG CDG extraction and audit workflow in parallel.
-5. Wave 4: retrieval/runtime integration after reviewed artifacts exist.
+5. Wave 4: validation gate plus retrieval/runtime integration.
 6. Wave 5: bulk backfill and dashboards.
 
 ## Exit Criteria
@@ -387,6 +430,8 @@ Current modules:
   planning, and optional execution.
 - `sciona.physics_ingest.cli`: builds JSON-serializable dry-run reports from
   decoded payloads.
+- `sciona.physics_ingest.validation`: offline validation for symbolic
+  publication fixtures and PDG-derived CDG publication rows.
 
 Dry-run usage:
 
