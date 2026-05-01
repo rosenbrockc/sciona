@@ -263,6 +263,7 @@ class AlgorithmicPrimitive(BaseModel):
     uncertainty_mode: str = ""
     tunable_params: list[PrimitiveParamSpec] = Field(default_factory=list)
     param_status: ParamStatus = ParamStatus.FIXED
+    aliases: list[str] = Field(default_factory=list)
 
 
 class BaselineComponentShape(str, Enum):

@@ -183,6 +183,9 @@ class PrimitiveCatalog:
             self._normalize_key(primitive.name),
             primitive.name,
         )
+        # Register aliases declared on the primitive itself
+        for alias in primitive.aliases:
+            self._aliases.setdefault(self._normalize_key(alias), primitive.name)
         # Invalidate TF-IDF caches
         self._idf = None
         self._prim_token_cache.pop(primitive.name, None)
@@ -1694,85 +1697,16 @@ def seed_builtin_primitives(catalog: PrimitiveCatalog) -> None:
                 catalog.add_alias(alias, prim.name)
 
 
-_SOLUTION_RETRIEVAL_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
-    (
-        "temporal_difference",
-        (
-            "difference_features",
-            "time_series_difference_features",
-            "temporal_difference_features",
-        ),
-    ),
-    (
-        "create_lag_features",
-        (
-            "lag_difference_features",
-            "lagged_features",
-        ),
-    ),
-    (
-        "standard_scaler_fit",
-        (
-            "target_scaling_fit",
-            "fit_target_scaler",
-        ),
-    ),
-    (
-        "standard_scaler_transform",
-        (
-            "target_scaling",
-            "target_scaling_transform",
-            "standardize_target",
-        ),
-    ),
-    (
-        "forward_fill",
-        (
-            "streaming_imputation",
-            "forward_fill_imputation",
-        ),
-    ),
-    (
-        "label_smoothing_ce",
-        (
-            "label_smoothing",
-            "label_smoothing_loss",
-        ),
-    ),
-    (
-        "dicom_window",
-        (
-            "dicom_windowing",
-            "hounsfield_window",
-        ),
-    ),
-    (
-        "rolling_window_features",
-        (
-            "feature_aggregation",
-            "rolling_feature_aggregation",
-        ),
-    ),
-    (
-        "temporal_unroll",
-        (
-            "temporal_unrolling",
-            "repeat_aggregated_predictions",
-        ),
-    ),
-    (
-        "resample_volume",
-        (
-            "multi_resolution_upsampling",
-            "spatial_resampling",
-        ),
-    ),
-)
+_SOLUTION_RETRIEVAL_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 def seed_solution_retrieval_aliases(catalog: PrimitiveCatalog) -> None:
-    """Add CDG-stage vocabulary aliases for provider atoms already loaded."""
+    """Register any remaining CDG-stage vocabulary aliases.
 
+    All retrieval aliases are now declared in the atom's own cdg.json
+    "aliases" field and loaded automatically by PrimitiveCatalog.add().
+    This function is kept as a stable call-site for callers that import it.
+    """
     for primitive_name, aliases in _SOLUTION_RETRIEVAL_ALIASES:
         if catalog.get(primitive_name) is None:
             continue

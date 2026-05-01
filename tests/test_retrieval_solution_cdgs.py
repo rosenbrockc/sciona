@@ -116,6 +116,7 @@ def _load_all_atom_primitives() -> list[AlgorithmicPrimitive]:
                             IOSpec(**out) for out in node.get("outputs", [])
                         ],
                         type_signature=node.get("type_signature", ""),
+                        aliases=node.get("aliases", []),
                     )
                 )
     return primitives
