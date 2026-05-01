@@ -70,6 +70,13 @@ from sciona.physics_ingest.review import (
     build_review_trust_report,
     require_publishable,
 )
+from sciona.physics_ingest.sources import (
+    RetrievalRunDiagnostic,
+    RetrievalRunPlan,
+    RetrievalRunStep,
+    build_physics_source_retrieval_run_plan,
+    build_physics_source_retrieval_run_plan_dict,
+)
 from sciona.physics_ingest.retrieval import (
     RawTrustPolicy,
     RawCandidateExternalKnowledgeSuggestion,
@@ -157,6 +164,9 @@ __all__ = [
     "ReviewPublicationDiagnostic",
     "ReviewPublicationRows",
     "ReviewTrustReport",
+    "RetrievalRunDiagnostic",
+    "RetrievalRunPlan",
+    "RetrievalRunStep",
     "RawTrustPolicy",
     "REPORT_KIND",
     "SymbolicArtifactCandidate",
@@ -180,6 +190,8 @@ __all__ = [
     "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
     "build_physics_ingest_backfill_report",
+    "build_physics_source_retrieval_run_plan",
+    "build_physics_source_retrieval_run_plan_dict",
     "build_review_publication_status_rows",
     "build_review_trust_report",
     "build_symbolic_retrieval_report",

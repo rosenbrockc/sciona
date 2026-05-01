@@ -7,6 +7,11 @@ from sciona.physics_ingest.backfill import (
     BACKFILL_REPORT_KIND,
     build_physics_ingest_backfill_report,
 )
+from sciona.physics_ingest.normalization import normalize_candidate_expression_draft
+from sciona.physics_ingest.review import (
+    assess_publishability,
+    build_review_publication_status_rows,
+)
 
 
 ARTIFACT_ID = "20000000-0000-0000-0000-000000000001"
@@ -49,15 +54,22 @@ def test_backfill_report_composes_pipeline_with_pdg_rows_and_replay_keys() -> No
     assert report["input_summary"] == {
         "source_bundle_count": 1,
         "publication_manifest_count": 1,
+        "normalized_draft_count": 0,
+        "normalized_draft_table_count": 0,
+        "normalized_draft_row_count": 0,
         "pdg_table_count": 2,
         "pdg_row_count": 2,
+        "review_publication_table_count": 0,
+        "review_publication_row_count": 0,
         "review_diagnostic_count": 0,
         "normalization_diagnostic_count": 0,
     }
     assert report["source_family_counts"] == {
         "source_bundles": {"manual": 1},
         "publication_manifests": {"fixture": 1},
+        "normalized_drafts": {},
         "pdg_publication_rows": {"physics_derivation_graph": 2},
+        "review_publication_rows": {},
         "combined": {
             "fixture": 1,
             "manual": 1,
@@ -152,6 +164,149 @@ def test_backfill_report_groups_review_normalization_and_pdg_skip_diagnostics() 
     assert report["diagnostic_summary"]["by_reason"]["dry_run"] == 3
 
 
+def test_backfill_report_accepts_normalized_drafts_and_review_publication_rows() -> None:
+    draft = normalize_candidate_expression_draft(
+        {
+            "source_candidate_id": "fixture:eq:normalized",
+            "raw_formula": "F = m a",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "F": {"role": "output", "dim_signature": "M1L1T-2"},
+                "m": {"role": "input", "dim_signature": "M1"},
+                "a": {"role": "input", "dim_signature": "L1T-2"},
+            },
+        },
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+    )
+    review_rows = build_review_publication_status_rows(
+        assess_publishability(
+            candidate={
+                "raw_formula": "F = m a",
+                "candidate_status": "source_verified",
+                "parse_confidence": 0.95,
+            },
+            expression={
+                "raw_formula": "F = m a",
+                "sympy_srepr": "Equality(Symbol('F'), Mul(Symbol('m'), Symbol('a')))",
+                "parse_status": "normalized",
+                "parse_confidence": 0.95,
+                "canonical_expr_hash": "a" * 64,
+                "topology_hash": "b" * 64,
+                "dimensional_hash": "c" * 64,
+                "review_status": "automated_pass",
+                "validation_status": "passed",
+                "evidence_json": {
+                    "parse_roundtrip": {"status": "passed"},
+                    "dimensional_analysis": {"status": "passed"},
+                    "numpy_runtime": {
+                        "no_sympy_runtime": True,
+                        "runtime_imports": ["numpy"],
+                        "tests_passed": True,
+                        "source": "import numpy as np\n",
+                    },
+                },
+            },
+            variables=[
+                {"symbol_name": "F", "dim_signature": "M1L1T-2"},
+                {"symbol_name": "m", "dim_signature": "M1"},
+                {"symbol_name": "a", "dim_signature": "L1T-2"},
+            ],
+            validity_bounds=[],
+        ),
+        candidate={"candidate_id": "candidate-review-1"},
+        expression={"expression_id": "expression-review-1"},
+    )
+
+    report = build_physics_ingest_backfill_report(
+        normalized_drafts=[draft],
+        review_publication_rows=review_rows,
+        include_rows=True,
+    )
+
+    assert report["ok"] is True
+    assert report["input_summary"]["normalized_draft_count"] == 1
+    assert report["input_summary"]["review_publication_row_count"] == 2
+    assert report["table_row_counts"] == {
+        "physics_equation_candidates": 1,
+        "artifact_symbolic_expressions": 2,
+        "artifact_symbolic_variables": 3,
+    }
+    assert report["external_diagnostics"]["normalized_draft_publication"] == []
+    assert report["external_diagnostics"]["review_publication"] == []
+    assert [
+        (batch["table"], batch["mode"], batch["row_count"])
+        for batch in report["dry_run_write_plan"]["batches"]
+    ] == [
+        ("physics_equation_candidates", "upsert", 1),
+        ("artifact_symbolic_expressions", "upsert", 2),
+        ("artifact_symbolic_variables", "insert", 3),
+    ]
+    expression_rows = report["insert_rows_by_table"]["artifact_symbolic_expressions"]
+    assert expression_rows[0]["source_expression_id"] == "fixture:eq:normalized"
+    assert expression_rows[1] == {
+        "expression_id": "expression-review-1",
+        "review_status": "needs_human",
+    }
+    assert report["replay_keys"]["physics_equation_candidates"] == [
+        "physics_equation_candidates|candidate_id=candidate-review-1"
+    ]
+
+
+def test_backfill_report_accepts_review_status_row_alias_and_mapping_rows() -> None:
+    report = build_physics_ingest_backfill_report(
+        review_status_rows={
+            "artifact_symbolic_expressions": [
+                {
+                    "expression_id": "expression-review-2",
+                    "review_status": "human_reviewed",
+                }
+            ]
+        },
+        include_rows=True,
+    )
+
+    assert report["input_summary"]["review_publication_row_count"] == 1
+    assert report["dry_run_write_plan"]["batches"][0]["mode"] == "upsert"
+    assert report["insert_rows_by_table"]["artifact_symbolic_expressions"] == [
+        {
+            "expression_id": "expression-review-2",
+            "review_status": "human_reviewed",
+        }
+    ]
+
+
+def test_backfill_report_groups_adapter_diagnostics() -> None:
+    report = build_physics_ingest_backfill_report(
+        normalized_drafts=[{"raw_formula": "x = y"}],
+        review_publication_rows=FakeReviewRows(),
+    )
+
+    assert report["ok"] is False
+    assert report["external_diagnostics"]["normalized_draft_publication"][0][
+        "stage"
+    ] == "normalized_draft_publication"
+    assert report["external_diagnostics"]["review_publication"] == [
+        {
+            "stage": "review_publication",
+            "table": "artifact_symbolic_expressions",
+            "reason": "missing_expression_id",
+            "severity": "skipped",
+            "artifact_key": "",
+            "atom_name": "",
+            "detail": "review_status patch requires expression_id",
+        }
+    ]
+    assert {
+        (row["stage"], row["reason"])
+        for row in report["retry_diagnostics"]
+    } == {("normalized_draft_publication", "validation_error")}
+    assert {
+        (row["stage"], row["reason"])
+        for row in report["skip_diagnostics"]
+    } == {("review_publication", "missing_expression_id")}
+
+
 def _source_bundle() -> dict[str, Any]:
     return {
         "bundle_key": "fixture-bundle",
@@ -212,3 +367,17 @@ class FakePDGRows:
 
     def to_insert_rows(self) -> dict[str, list[dict[str, str]]]:
         return {"artifact_relationships": [{"relationship_id": "rel-1"}]}
+
+
+class FakeReviewRows:
+    diagnostics = (
+        {
+            "table": "artifact_symbolic_expressions",
+            "reason": "missing_expression_id",
+            "severity": "skipped",
+            "detail": "review_status patch requires expression_id",
+        },
+    )
+
+    def to_upsert_rows(self) -> dict[str, list[dict[str, str]]]:
+        return {}

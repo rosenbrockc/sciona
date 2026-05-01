@@ -9,8 +9,11 @@ import json
 from typing import Any
 
 from sciona.physics_ingest.pipeline import run_physics_publication_pipeline
-from sciona.physics_ingest.publication import ArtifactBinding
-from sciona.physics_ingest.write_plan import WriteMode
+from sciona.physics_ingest.publication import (
+    ArtifactBinding,
+    build_publication_load_result_from_normalized_drafts,
+)
+from sciona.physics_ingest.write_plan import WriteMode, merge_publication_insert_rows
 
 
 BACKFILL_REPORT_KIND = "physics_ingest_bulk_backfill_plan"
@@ -20,7 +23,10 @@ def build_physics_ingest_backfill_report(
     *,
     source_bundles: Iterable[Any] = (),
     publication_manifests: Iterable[Mapping[str, Any]] = (),
+    normalized_drafts: Iterable[Any] = (),
     pdg_publication_rows: Any | None = None,
+    review_publication_rows: Any | None = None,
+    review_status_rows: Any | None = None,
     review_diagnostics: Iterable[Mapping[str, Any]] = (),
     normalization_diagnostics: Iterable[Mapping[str, Any]] = (),
     artifact_bindings: Mapping[str, Mapping[str, Any] | ArtifactBinding] | None = None,
@@ -30,15 +36,24 @@ def build_physics_ingest_backfill_report(
     """Build a deterministic dry-run report for a bulk physics backfill.
 
     The helper performs no database or network IO. It accepts ordinary source
-    bundles, symbolic publication manifests, optional PDG publication rows, and
-    caller-supplied review or normalization diagnostics. All rows are routed
-    through the existing publication pipeline and write-plan ordering so the
-    report mirrors the eventual writer batches without touching a client.
+    bundles, symbolic publication manifests, optional normalized expression
+    drafts, optional PDG publication rows, optional review publication status
+    rows, and caller-supplied review or normalization diagnostics. All rows are
+    routed through the existing publication pipeline and write-plan ordering so
+    the report mirrors the eventual writer batches without touching a client.
     """
 
     source_bundle_list = tuple(source_bundles)
     publication_manifest_list = tuple(publication_manifests)
+    normalized_draft_list = tuple(normalized_drafts)
+    normalized_rows, normalized_publication_diagnostics = (
+        _publication_rows_from_normalized_drafts(normalized_draft_list)
+    )
     pdg_rows, pdg_diagnostics = _normalize_pdg_publication_rows(pdg_publication_rows)
+    review_rows, review_row_diagnostics = _normalize_review_publication_rows(
+        review_publication_rows,
+        review_status_rows=review_status_rows,
+    )
     review_diagnostic_rows = _normalize_diagnostics(
         review_diagnostics,
         default_stage="review",
@@ -51,19 +66,38 @@ def build_physics_ingest_backfill_report(
         pdg_diagnostics,
         default_stage="pdg_cdg_publication",
     )
+    normalized_publication_diagnostic_rows = _normalize_diagnostics(
+        normalized_publication_diagnostics,
+        default_stage="normalized_draft_publication",
+    )
+    review_publication_diagnostic_rows = _normalize_diagnostics(
+        review_row_diagnostics,
+        default_stage="review_publication",
+    )
     external_diagnostics = (
         *review_diagnostic_rows,
         *normalization_diagnostic_rows,
+        *normalized_publication_diagnostic_rows,
+        *review_publication_diagnostic_rows,
         *pdg_diagnostic_rows,
+    )
+    additional_insert_rows = merge_publication_insert_rows(
+        normalized_rows,
+        pdg_rows,
+        review_rows,
+    )
+    effective_table_modes = _table_modes_with_review_upserts(
+        table_modes,
+        review_rows,
     )
 
     pipeline_result = run_physics_publication_pipeline(
         source_bundles=source_bundle_list,
         publication_manifests=publication_manifest_list,
-        additional_insert_rows=pdg_rows,
+        additional_insert_rows=additional_insert_rows,
         additional_diagnostics=external_diagnostics,
         artifact_bindings=artifact_bindings,
-        table_modes=table_modes,
+        table_modes=effective_table_modes,
         dry_run=True,
     )
     insert_rows = pipeline_result.write_plan.to_insert_rows()
@@ -79,8 +113,17 @@ def build_physics_ingest_backfill_report(
         "input_summary": {
             "source_bundle_count": len(source_bundle_list),
             "publication_manifest_count": len(publication_manifest_list),
+            "normalized_draft_count": len(normalized_draft_list),
+            "normalized_draft_table_count": len(normalized_rows),
+            "normalized_draft_row_count": sum(
+                len(rows) for rows in normalized_rows.values()
+            ),
             "pdg_table_count": len(pdg_rows),
             "pdg_row_count": sum(len(rows) for rows in pdg_rows.values()),
+            "review_publication_table_count": len(review_rows),
+            "review_publication_row_count": sum(
+                len(rows) for rows in review_rows.values()
+            ),
             "review_diagnostic_count": len(review_diagnostic_rows),
             "normalization_diagnostic_count": len(normalization_diagnostic_rows),
         },
@@ -88,6 +131,8 @@ def build_physics_ingest_backfill_report(
             source_bundle_list,
             publication_manifest_list,
             pdg_rows,
+            normalized_rows=normalized_rows,
+            review_rows=review_rows,
         ),
         "table_row_counts": dict(pipeline_result.write_plan.audit_summary.planned_row_counts),
         "dry_run_write_plan": _write_plan_summary(pipeline_result),
@@ -97,6 +142,12 @@ def build_physics_ingest_backfill_report(
         "external_diagnostics": {
             "review": [dict(row) for row in review_diagnostic_rows],
             "normalization": [dict(row) for row in normalization_diagnostic_rows],
+            "normalized_draft_publication": [
+                dict(row) for row in normalized_publication_diagnostic_rows
+            ],
+            "review_publication": [
+                dict(row) for row in review_publication_diagnostic_rows
+            ],
             "pdg_cdg_publication": [dict(row) for row in pdg_diagnostic_rows],
         },
         "diagnostic_summary": _diagnostic_summary(diagnostics),
@@ -106,6 +157,15 @@ def build_physics_ingest_backfill_report(
 
     _assert_json_serializable(report)
     return report
+
+
+def _publication_rows_from_normalized_drafts(
+    drafts: tuple[Any, ...],
+) -> tuple[dict[str, list[dict[str, Any]]], tuple[Any, ...]]:
+    if not drafts:
+        return {}, ()
+    result = build_publication_load_result_from_normalized_drafts(drafts)
+    return _copy_rows_by_table(result.to_insert_rows()), tuple(result.diagnostics)
 
 
 def _normalize_pdg_publication_rows(
@@ -122,6 +182,44 @@ def _normalize_pdg_publication_rows(
     raise ValueError("pdg_publication_rows must be a mapping or expose to_insert_rows()")
 
 
+def _normalize_review_publication_rows(
+    value: Any | None,
+    *,
+    review_status_rows: Any | None = None,
+) -> tuple[dict[str, list[dict[str, Any]]], tuple[Any, ...]]:
+    rows_values = tuple(
+        row_value for row_value in (value, review_status_rows) if row_value is not None
+    )
+    if not rows_values:
+        return {}, ()
+
+    rows_by_table: list[dict[str, list[dict[str, Any]]]] = []
+    diagnostics: list[Any] = []
+    for row_value in rows_values:
+        if hasattr(row_value, "to_upsert_rows"):
+            rows = row_value.to_upsert_rows()
+            diagnostics.extend(tuple(getattr(row_value, "diagnostics", ()) or ()))
+        elif isinstance(row_value, Mapping):
+            rows = row_value
+        else:
+            raise ValueError(
+                "review publication rows must be a mapping or expose to_upsert_rows()"
+            )
+        rows_by_table.append(_copy_rows_by_table(rows))
+    return merge_publication_insert_rows(*rows_by_table), tuple(diagnostics)
+
+
+def _table_modes_with_review_upserts(
+    table_modes: Mapping[str, WriteMode] | None,
+    review_rows: Mapping[str, list[dict[str, Any]]],
+) -> dict[str, WriteMode]:
+    effective: dict[str, WriteMode] = {
+        table: "upsert" for table, rows in review_rows.items() if rows
+    }
+    effective.update(dict(table_modes or {}))
+    return effective
+
+
 def _copy_rows_by_table(
     rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
 ) -> dict[str, list[dict[str, Any]]]:
@@ -132,7 +230,7 @@ def _copy_rows_by_table(
 
 
 def _normalize_diagnostics(
-    diagnostics: Iterable[Mapping[str, Any]],
+    diagnostics: Iterable[Mapping[str, Any] | Any],
     *,
     default_stage: str,
 ) -> tuple[dict[str, Any], ...]:
@@ -146,14 +244,35 @@ def _normalize_diagnostics(
             "atom_name": str(row.get("atom_name") or ""),
             "detail": str(row.get("detail") or ""),
         }
-        for row in diagnostics
+        for row in (_diagnostic_row(diagnostic) for diagnostic in diagnostics)
     )
+
+
+def _diagnostic_row(diagnostic: Mapping[str, Any] | Any) -> Mapping[str, Any]:
+    if isinstance(diagnostic, Mapping):
+        return diagnostic
+    if hasattr(diagnostic, "to_dict"):
+        row = diagnostic.to_dict()
+        if isinstance(row, Mapping):
+            return row
+    return {
+        "stage": getattr(diagnostic, "stage", ""),
+        "table": getattr(diagnostic, "table", ""),
+        "reason": getattr(diagnostic, "reason", ""),
+        "severity": getattr(diagnostic, "severity", "info"),
+        "artifact_key": getattr(diagnostic, "artifact_key", ""),
+        "atom_name": getattr(diagnostic, "atom_name", ""),
+        "detail": getattr(diagnostic, "detail", ""),
+    }
 
 
 def _source_family_counts(
     source_bundles: tuple[Any, ...],
     publication_manifests: tuple[Mapping[str, Any], ...],
     pdg_rows: Mapping[str, Iterable[Mapping[str, Any]]],
+    *,
+    normalized_rows: Mapping[str, Iterable[Mapping[str, Any]]] | None = None,
+    review_rows: Mapping[str, Iterable[Mapping[str, Any]]] | None = None,
 ) -> dict[str, dict[str, int]]:
     bundle_counts = Counter(
         _family_from_mapping(_snapshot_row(bundle), fallback="unknown_source_bundle")
@@ -167,13 +286,41 @@ def _source_family_counts(
     for rows in pdg_rows.values():
         for row in rows:
             pdg_counts[_family_from_mapping(row, fallback="physics_derivation_graph")] += 1
-    combined = bundle_counts + manifest_counts + pdg_counts
+    normalized_counts = _row_family_counts(
+        normalized_rows or {},
+        fallback="normalized_draft",
+    )
+    review_publication_counts = _row_family_counts(
+        review_rows or {},
+        fallback="review_publication",
+    )
+    combined = (
+        bundle_counts
+        + manifest_counts
+        + pdg_counts
+        + normalized_counts
+        + review_publication_counts
+    )
     return {
         "source_bundles": dict(sorted(bundle_counts.items())),
         "publication_manifests": dict(sorted(manifest_counts.items())),
+        "normalized_drafts": dict(sorted(normalized_counts.items())),
         "pdg_publication_rows": dict(sorted(pdg_counts.items())),
+        "review_publication_rows": dict(sorted(review_publication_counts.items())),
         "combined": dict(sorted(combined.items())),
     }
+
+
+def _row_family_counts(
+    rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
+    *,
+    fallback: str,
+) -> Counter[str]:
+    counts = Counter[str]()
+    for rows in rows_by_table.values():
+        for row in rows:
+            counts[_family_from_mapping(row, fallback=fallback)] += 1
+    return counts
 
 
 def _snapshot_row(bundle: Any) -> Mapping[str, Any]:

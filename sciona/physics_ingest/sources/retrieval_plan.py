@@ -9,9 +9,9 @@ write retrieval reports, or feed the existing offline adapters.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
-from sciona.physics_ingest.sources._manifest import jsonable
+from sciona.physics_ingest.sources._manifest import jsonable, stable_payload_sha256
 
 
 JSONDict = dict[str, Any]
@@ -140,6 +140,77 @@ class SourceRetrievalManifest:
         return {job.job_id: job for job in self.jobs}
 
 
+@dataclass(frozen=True)
+class RetrievalRunDiagnostic:
+    """Warning emitted while building a side-effect-free retrieval run plan."""
+
+    severity: str
+    job_id: str
+    endpoint_id: str
+    message: str
+
+    def to_dict(self) -> JSONDict:
+        return jsonable(self)
+
+
+@dataclass(frozen=True)
+class RetrievalRunStep:
+    """Deterministic executor-facing retrieval step with no IO behavior."""
+
+    step_index: int
+    job_id: str
+    endpoint_id: str
+    source_system: str
+    source_family: str
+    snapshot_key: str
+    method: str
+    url: str
+    endpoint_kind: str
+    params: Mapping[str, Any]
+    body_template: Mapping[str, Any]
+    paging: Mapping[str, Any]
+    headers: Mapping[str, str]
+    content_type: str
+    requires_auth: bool
+    auth_hint: str
+    rate_limit: Mapping[str, Any]
+    retry_policy: Mapping[str, Any]
+    provenance: Mapping[str, Any]
+    adapter_module: str
+    adapter_version: str
+    target_adapter_input: str
+    dry_run: bool
+    replay_key: str
+    warnings: tuple[str, ...] = ()
+
+    def to_dict(self) -> JSONDict:
+        return jsonable(self)
+
+
+@dataclass(frozen=True)
+class RetrievalRunPlan:
+    """Side-effect-free execution plan derived from a retrieval manifest."""
+
+    manifest_version: str
+    snapshot_key_prefix: str
+    dry_run: bool
+    filters: Mapping[str, Any]
+    steps: tuple[RetrievalRunStep, ...]
+    diagnostics: tuple[RetrievalRunDiagnostic, ...] = ()
+
+    def to_dict(self) -> JSONDict:
+        return {
+            "manifest_version": self.manifest_version,
+            "snapshot_key_prefix": self.snapshot_key_prefix,
+            "dry_run": self.dry_run,
+            "filters": jsonable(self.filters),
+            "steps": [step.to_dict() for step in self.steps],
+            "diagnostics": [
+                diagnostic.to_dict() for diagnostic in self.diagnostics
+            ],
+        }
+
+
 def build_physics_source_retrieval_manifest(
     *,
     snapshot_key_prefix: str = "physics-ingest",
@@ -169,6 +240,89 @@ def build_physics_source_retrieval_manifest_dict(
         snapshot_key_prefix=snapshot_key_prefix,
         manifest_version=manifest_version,
     ).to_dict()
+
+
+def build_physics_source_retrieval_run_plan(
+    *,
+    snapshot_key_prefix: str = "physics-ingest",
+    manifest_version: str = "physics-source-retrieval-plan.v1",
+    manifest: SourceRetrievalManifest | None = None,
+    source_system: str | Iterable[str] | None = None,
+    source_family: str | Iterable[str] | None = None,
+    job_id: str | Iterable[str] | None = None,
+    max_jobs: int | None = None,
+    limit: int | None = None,
+    dry_run: bool = True,
+) -> RetrievalRunPlan:
+    """Build deterministic retrieval execution steps without doing IO.
+
+    ``limit`` overrides each selected job's per-request page size in the run
+    plan only; the manifest and its jobs remain unchanged.
+    """
+
+    if max_jobs is not None and max_jobs < 0:
+        raise ValueError("max_jobs must be non-negative")
+    if limit is not None and limit < 0:
+        raise ValueError("limit must be non-negative")
+
+    source_systems = _normalize_filter(source_system)
+    source_families = _normalize_filter(source_family)
+    job_ids = _normalize_filter(job_id)
+    base_manifest = manifest or build_physics_source_retrieval_manifest(
+        snapshot_key_prefix=snapshot_key_prefix,
+        manifest_version=manifest_version,
+    )
+    endpoints = base_manifest.endpoint_by_id()
+    selected_jobs = [
+        job
+        for job in sorted(base_manifest.jobs, key=lambda item: (item.priority, item.job_id))
+        if _matches_filter(job.source_system, source_systems)
+        and _matches_filter(job.source_family, source_families)
+        and _matches_filter(job.job_id, job_ids)
+    ]
+    if max_jobs is not None:
+        selected_jobs = selected_jobs[:max_jobs]
+
+    diagnostics: list[RetrievalRunDiagnostic] = []
+    steps: list[RetrievalRunStep] = []
+    for step_index, job in enumerate(selected_jobs, start=1):
+        endpoint = endpoints[job.endpoint_id]
+        step, step_diagnostics = _run_step_for_job(
+            step_index=step_index,
+            job=job,
+            endpoint=endpoint,
+            limit=limit,
+            dry_run=dry_run,
+        )
+        steps.append(step)
+        diagnostics.extend(step_diagnostics)
+
+    return RetrievalRunPlan(
+        manifest_version=base_manifest.manifest_version,
+        snapshot_key_prefix=base_manifest.snapshot_key_prefix,
+        dry_run=dry_run,
+        filters={
+            "source_system": sorted(source_systems)
+            if source_systems is not None
+            else None,
+            "source_family": sorted(source_families)
+            if source_families is not None
+            else None,
+            "job_id": sorted(job_ids) if job_ids is not None else None,
+            "max_jobs": max_jobs,
+            "limit": limit,
+        },
+        steps=tuple(steps),
+        diagnostics=tuple(diagnostics),
+    )
+
+
+def build_physics_source_retrieval_run_plan_dict(
+    **kwargs: Any,
+) -> JSONDict:
+    """Return ``build_physics_source_retrieval_run_plan(...).to_dict()``."""
+
+    return build_physics_source_retrieval_run_plan(**kwargs).to_dict()
 
 
 def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, ...]:
@@ -544,6 +698,133 @@ def _source_priority(source_system: str) -> int:
         "phy_srbench": 110,
     }
     return priority[source_system]
+
+
+def _run_step_for_job(
+    *,
+    step_index: int,
+    job: RetrievalJob,
+    endpoint: RetrievalEndpoint,
+    limit: int | None,
+    dry_run: bool,
+) -> tuple[RetrievalRunStep, tuple[RetrievalRunDiagnostic, ...]]:
+    effective_limit = limit if limit is not None else job.limit
+    params = _request_params(job=job, endpoint=endpoint, limit=effective_limit)
+    paging = {
+        **endpoint.pagination.to_dict(),
+        "cursor": job.cursor,
+        "limit": effective_limit,
+    }
+    warnings = _run_step_warnings(job=job, endpoint=endpoint)
+    replay_payload = {
+        "job_id": job.job_id,
+        "endpoint_id": endpoint.endpoint_id,
+        "snapshot_key": job.snapshot_key,
+        "method": endpoint.method,
+        "url": endpoint.url,
+        "params": params,
+        "body_template": endpoint.body_template,
+        "paging": paging,
+        "adapter_module": endpoint.adapter_name,
+        "adapter_version": endpoint.adapter_version,
+        "target_adapter_input": job.target_adapter_input,
+        "dry_run": dry_run,
+    }
+    step = RetrievalRunStep(
+        step_index=step_index,
+        job_id=job.job_id,
+        endpoint_id=endpoint.endpoint_id,
+        source_system=job.source_system,
+        source_family=job.source_family,
+        snapshot_key=job.snapshot_key,
+        method=endpoint.method,
+        url=endpoint.url,
+        endpoint_kind=endpoint.endpoint_kind,
+        params=params,
+        body_template=dict(endpoint.body_template),
+        paging=paging,
+        headers=dict(endpoint.headers),
+        content_type=endpoint.content_type,
+        requires_auth=endpoint.requires_auth,
+        auth_hint=endpoint.auth_hint,
+        rate_limit=endpoint.rate_limit.to_dict(),
+        retry_policy=endpoint.retry_policy.to_dict(),
+        provenance={
+            "license_expression": endpoint.license_expression,
+            "provenance_summary": endpoint.provenance_summary,
+        },
+        adapter_module=endpoint.adapter_name,
+        adapter_version=endpoint.adapter_version,
+        target_adapter_input=job.target_adapter_input,
+        dry_run=dry_run,
+        replay_key=f"physics-source-retrieval:{stable_payload_sha256(replay_payload)}",
+        warnings=warnings,
+    )
+    diagnostics = tuple(
+        RetrievalRunDiagnostic(
+            severity="warning",
+            job_id=job.job_id,
+            endpoint_id=endpoint.endpoint_id,
+            message=warning,
+        )
+        for warning in warnings
+    )
+    return step, diagnostics
+
+
+def _request_params(
+    *,
+    job: RetrievalJob,
+    endpoint: RetrievalEndpoint,
+    limit: int | None,
+) -> dict[str, Any]:
+    params = dict(endpoint.query_params)
+    pagination = endpoint.pagination
+    if pagination.cursor_parameter and job.cursor is not None:
+        params[pagination.cursor_parameter] = job.cursor
+    if pagination.limit_parameter and limit is not None:
+        params[pagination.limit_parameter] = limit
+    overrides = dict(job.request_overrides)
+    override_params = overrides.pop("params", {})
+    if isinstance(override_params, Mapping):
+        params.update(override_params)
+    params.update(overrides)
+    return params
+
+
+def _run_step_warnings(
+    *,
+    job: RetrievalJob,
+    endpoint: RetrievalEndpoint,
+) -> tuple[str, ...]:
+    warnings: list[str] = []
+    if not endpoint.url:
+        warnings.append("endpoint url is missing")
+    if not endpoint.method:
+        warnings.append("endpoint method is missing")
+    if not endpoint.endpoint_kind:
+        warnings.append("endpoint kind is missing")
+    if not endpoint.license_expression:
+        warnings.append("license expression is missing")
+    if not endpoint.provenance_summary:
+        warnings.append("provenance summary is missing")
+    if not job.adapter_name or not endpoint.adapter_name:
+        warnings.append("adapter module is missing")
+    if not job.adapter_version or not endpoint.adapter_version:
+        warnings.append("adapter version is missing")
+    return tuple(warnings)
+
+
+def _normalize_filter(value: str | Iterable[str] | None) -> set[str] | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return {value}
+    return {item for item in value}
+
+
+def _matches_filter(value: str, allowed: set[str] | None) -> bool:
+    return allowed is None or value in allowed
 
 
 def _validate_manifest(
