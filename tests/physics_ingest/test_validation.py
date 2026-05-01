@@ -1,13 +1,22 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 from sciona.physics_ingest.validation import (
     VALIDATION_REPORT_KIND,
     build_physics_ingestion_validation_report,
+    discover_pdg_payload_fixture_paths,
     validate_pdg_payload,
+    validate_pdg_payload_file,
     validate_symbolic_publication_fixture,
 )
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PDG_FIXTURE_DIR = REPO_ROOT / "tests" / "physics_ingest" / "fixtures" / "pdg_payloads"
 
 
 def test_symbolic_publication_fixture_validator_accepts_complete_fixture(tmp_path) -> None:
@@ -56,6 +65,33 @@ def test_pdg_payload_validator_accepts_graph_ready_derivation_fixture() -> None:
     }
 
 
+def test_discovers_default_pdg_payload_fixtures() -> None:
+    paths = discover_pdg_payload_fixture_paths(REPO_ROOT)
+
+    assert paths == (PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",)
+
+
+def test_pdg_payload_file_uses_stable_fixture_subject() -> None:
+    check = validate_pdg_payload_file(PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json")
+
+    assert check.ok is True
+    assert check.subject == "pdg_fixture:solve_substitute_chain"
+    assert check.metadata["fixture_path"].endswith("solve_substitute_chain.pdg.json")
+
+
+def test_pdg_payload_file_reports_deterministic_skipped_edge_reason() -> None:
+    check = validate_pdg_payload_file(PDG_FIXTURE_DIR / "skipped_missing_endpoint.json")
+
+    assert check.ok is False
+    assert check.subject == "pdg_fixture:skipped_missing_endpoint"
+    assert [issue.reason for issue in check.issues] == [
+        "pdg_relationship_edge_skipped_missing_expression_binding"
+    ]
+    assert [issue.subject for issue in check.issues] == [
+        "pdg_fixture:skipped_missing_endpoint:edge:missing_limit_case"
+    ]
+
+
 def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> None:
     report = build_physics_ingestion_validation_report(
         fixture_paths=(),
@@ -71,6 +107,41 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
         "error_count": 1,
     }
     json.dumps(report, sort_keys=True)
+
+
+def test_validation_report_includes_explicit_pdg_fixture_path() -> None:
+    report = build_physics_ingestion_validation_report(
+        pdg_payload_paths=(PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",),
+        include_default_pdg=False,
+    )
+
+    assert report["ok"] is True
+    checks = report["checks"]
+    assert len(checks) == 1
+    assert checks[0]["subject"] == "pdg_fixture:solve_substitute_chain"
+    assert checks[0]["metadata"]["fixture_path"].endswith(
+        "solve_substitute_chain.pdg.json"
+    )
+
+
+def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--skip-atoms",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    subjects = [check["subject"] for check in report["checks"]]
+    assert "pdg_fixture:solve_substitute_chain" in subjects
+    assert "default_pdg_validation_fixture" in subjects
 
 
 def _symbolic_manifest() -> dict[str, object]:

@@ -20,6 +20,11 @@ from sciona.physics_ingest.sources.pdg import parse_pdg_document
 
 
 VALIDATION_REPORT_KIND = "physics_ingestion_validation"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DEFAULT_PDG_FIXTURE_GLOBS = (
+    Path("tests") / "physics_ingest" / "fixtures" / "pdg_payloads" / "*.pdg.json",
+    Path("docs") / "physics_ingest" / "fixtures" / "pdg_payloads" / "*.pdg.json",
+)
 _ARTIFACT_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.validation.artifact")
 _VERSION_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.validation.version")
 _EXPRESSION_NAMESPACE = uuid5(
@@ -282,6 +287,7 @@ def validate_pdg_payload_file(path: Path | str) -> ValidationCheck:
     """Load and validate one PDG JSON payload file."""
 
     payload_path = Path(path)
+    subject = str(payload_path)
     try:
         payload = json.loads(payload_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -296,7 +302,26 @@ def validate_pdg_payload_file(path: Path | str) -> ValidationCheck:
                 ),
             ),
         )
-    return validate_pdg_payload(payload, subject=str(payload_path))
+    if not isinstance(payload, Mapping):
+        return ValidationCheck(
+            check_id="pdg_publication_graph",
+            subject=subject,
+            issues=(
+                ValidationIssue(
+                    reason="pdg_payload_not_mapping",
+                    detail=f"payload root is {type(payload).__name__}",
+                    subject=subject,
+                ),
+            ),
+        )
+    subject = _pdg_payload_subject(payload, fallback=subject)
+    check = validate_pdg_payload(payload, subject=subject)
+    return ValidationCheck(
+        check_id=check.check_id,
+        subject=check.subject,
+        issues=check.issues,
+        metadata={**dict(check.metadata), "fixture_path": str(payload_path)},
+    )
 
 
 def validate_pdg_payload(
@@ -337,11 +362,13 @@ def validate_pdg_payload(
     )
     if ingest_result.skipped_edges:
         for skipped in ingest_result.skipped_edges:
+            skipped_reason = _reason_token(str(skipped.get("reason") or "unknown"))
+            edge_id = str(skipped.get("pdg_edge_id") or "edge")
             issues.append(
                 ValidationIssue(
-                    reason="pdg_relationship_edge_skipped",
+                    reason=f"pdg_relationship_edge_skipped_{skipped_reason}",
                     detail=_canonical_json(skipped),
-                    subject=subject,
+                    subject=f"{subject}:{edge_id}",
                 )
             )
 
@@ -403,6 +430,16 @@ def discover_symbolic_fixture_paths(atoms_repo: Path | str) -> tuple[Path, ...]:
     root = Path(atoms_repo)
     fixture_dir = root / "data" / "publication_fixtures"
     return tuple(sorted(fixture_dir.glob("*.publication_manifest.json")))
+
+
+def discover_pdg_payload_fixture_paths(root: Path | str | None = None) -> tuple[Path, ...]:
+    """Return checked-in local PDG payload fixtures for offline validation."""
+
+    repo_root = Path(root) if root is not None else _REPO_ROOT
+    paths: list[Path] = []
+    for pattern in _DEFAULT_PDG_FIXTURE_GLOBS:
+        paths.extend(repo_root.glob(str(pattern)))
+    return tuple(sorted(path for path in paths if path.is_file()))
 
 
 def _symbolic_expression_standard_issues(
@@ -571,6 +608,38 @@ def _pdg_expression_binding(subject: str, node_id: str) -> dict[str, Any]:
     }
 
 
+def _pdg_payload_subject(payload: Mapping[str, Any], *, fallback: str) -> str:
+    for container in (
+        payload,
+        _mapping_value(payload.get("metadata")),
+        _mapping_value(payload.get("fixture")),
+    ):
+        subject = _first_string(
+            container,
+            "validation_subject",
+            "fixture_subject",
+            "subject",
+        )
+        if subject:
+            return subject
+        fixture_id = _first_string(container, "fixture_id", "id", "name")
+        if fixture_id:
+            return f"pdg_fixture:{_reason_token(fixture_id)}"
+    return fallback
+
+
+def _mapping_value(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _first_string(row: Mapping[str, Any], *keys: str) -> str:
+    for key in keys:
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
 def _load_live_manifest_builder(atoms_repo: Path | str | None) -> Any | None:
     if atoms_repo is None:
         return None
@@ -622,6 +691,13 @@ def _fqdn_token(value: str) -> str:
     return "_".join(part for part in token.split("_") if part) or "pdg"
 
 
+def _reason_token(value: str) -> str:
+    token = "".join(
+        character if character.isalnum() else "_" for character in value.lower()
+    )
+    return "_".join(part for part in token.split("_") if part) or "unknown"
+
+
 def _default_pdg_payload() -> dict[str, Any]:
     return {
         "equations": [
@@ -667,6 +743,7 @@ __all__ = [
     "ValidationCheck",
     "ValidationIssue",
     "build_physics_ingestion_validation_report",
+    "discover_pdg_payload_fixture_paths",
     "discover_symbolic_fixture_paths",
     "validate_pdg_payload",
     "validate_pdg_payload_file",

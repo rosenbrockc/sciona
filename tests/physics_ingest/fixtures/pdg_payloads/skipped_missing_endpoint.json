@@ -1,0 +1,33 @@
+{
+  "fixture_id": "pdg_skipped_missing_endpoint",
+  "validation_subject": "pdg_fixture:skipped_missing_endpoint",
+  "description": "Offline PDG payload fixture covering deterministic skipped-edge diagnostics.",
+  "equations": [
+    {
+      "id": "eq:ohms_law",
+      "label": "Ohm's law",
+      "latex": "V = I R"
+    },
+    {
+      "id": "eq:current_solved",
+      "label": "Current from voltage and resistance",
+      "latex": "I = V / R"
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:solve_current",
+      "source": "eq:ohms_law",
+      "target": "eq:current_solved",
+      "rule": "solve for current",
+      "confidence": 0.91
+    },
+    {
+      "id": "edge:missing_limit_case",
+      "source": "eq:current_solved",
+      "target": "eq:superconductor_limit",
+      "rule": "limit as resistance approaches zero",
+      "confidence": 0.7
+    }
+  ]
+}

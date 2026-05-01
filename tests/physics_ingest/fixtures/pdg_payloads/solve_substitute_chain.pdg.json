@@ -1,0 +1,43 @@
+{
+  "fixture_id": "pdg_solve_substitute_chain",
+  "validation_subject": "pdg_fixture:solve_substitute_chain",
+  "description": "Offline PDG payload fixture covering a solve and substitute chain.",
+  "equations": [
+    {
+      "id": "eq:newton_second_law",
+      "label": "Newton's second law",
+      "latex": "F = m a",
+      "mechanism_tags": ["dynamics", "force_balance"]
+    },
+    {
+      "id": "eq:acceleration_solved",
+      "label": "Acceleration from force",
+      "latex": "a = F / m"
+    },
+    {
+      "id": "eq:constant_mass_force",
+      "label": "Force for constant mass",
+      "latex": "F(t) = m \\frac{d^2 x}{dt^2}"
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:solve_for_a",
+      "source": "eq:newton_second_law",
+      "target": "eq:acceleration_solved",
+      "rule": "solve for acceleration",
+      "confidence": 0.93,
+      "bindings": {
+        "solve_for": "a"
+      }
+    },
+    {
+      "id": "edge:substitute_acceleration",
+      "source": "eq:acceleration_solved",
+      "target": "eq:constant_mass_force",
+      "rule": "substitution",
+      "assumptions": ["mass is constant"],
+      "confidence": 0.81
+    }
+  ]
+}

@@ -15,6 +15,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from sciona.physics_ingest.validation import (  # noqa: E402
     build_physics_ingestion_validation_report,
+    discover_pdg_payload_fixture_paths,
     discover_symbolic_fixture_paths,
 )
 
@@ -66,14 +67,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     fixture_paths = tuple(args.fixture)
+    pdg_payload_paths = tuple(args.pdg_json)
     atoms_repo = None if args.skip_atoms else args.atoms_repo
     if not args.skip_atoms and not fixture_paths and args.atoms_repo.exists():
         fixture_paths = discover_symbolic_fixture_paths(args.atoms_repo)
+    if not args.skip_pdg and not pdg_payload_paths:
+        pdg_payload_paths = discover_pdg_payload_fixture_paths(REPO_ROOT)
 
     report = build_physics_ingestion_validation_report(
         fixture_paths=fixture_paths,
         atoms_repo=atoms_repo,
-        pdg_payload_paths=() if args.skip_pdg else tuple(args.pdg_json),
+        pdg_payload_paths=() if args.skip_pdg else pdg_payload_paths,
         include_default_pdg=not args.skip_pdg,
         strict=args.strict,
     )

@@ -1,5 +1,12 @@
 """Source adapters for physics knowledge ingestion."""
 
+from sciona.physics_ingest.sources.execution_plan import (
+    SourceExecutionDiagnostic,
+    SourceExecutionReadinessReport,
+    SourceExecutionReadinessStep,
+    build_source_execution_readiness_report,
+    build_source_execution_readiness_report_dict,
+)
 from sciona.physics_ingest.sources.retrieval_plan import (
     PaginationSpec,
     RateLimitHint,
@@ -25,9 +32,14 @@ __all__ = [
     "RetrievalRunPlan",
     "RetrievalRunStep",
     "RetryPolicy",
+    "SourceExecutionDiagnostic",
+    "SourceExecutionReadinessReport",
+    "SourceExecutionReadinessStep",
     "SourceRetrievalManifest",
     "build_physics_source_retrieval_manifest",
     "build_physics_source_retrieval_manifest_dict",
     "build_physics_source_retrieval_run_plan",
     "build_physics_source_retrieval_run_plan_dict",
+    "build_source_execution_readiness_report",
+    "build_source_execution_readiness_report_dict",
 ]
