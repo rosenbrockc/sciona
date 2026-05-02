@@ -1,0 +1,51 @@
+{
+  "fixture_id": "pdg_scaling_symmetry_chain",
+  "validation_subject": "pdg_fixture:scaling_symmetry_chain",
+  "description": "Offline PDG payload fixture covering a diffusion scaling-symmetry derivation chain.",
+  "equations": [
+    {
+      "id": "eq:diffusion_equation_scaling",
+      "label": "One-dimensional diffusion equation",
+      "latex": "\\frac{\\partial u}{\\partial t} = D\\frac{\\partial^2 u}{\\partial x^2}",
+      "mechanism_tags": ["diffusion", "pde"]
+    },
+    {
+      "id": "eq:diffusion_scaling_symmetry",
+      "label": "Diffusion scaling symmetry",
+      "latex": "x \\mapsto \\lambda x,\\quad t \\mapsto \\lambda^2 t",
+      "mechanism_tags": ["scale_invariance", "similarity_solution"]
+    },
+    {
+      "id": "eq:diffusion_length_scaling",
+      "label": "Diffusive length-time scaling law",
+      "latex": "L(t) \\sim \\sqrt{Dt}",
+      "mechanism_tags": ["scaling_law", "diffusion"]
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:derive_diffusion_scaling_symmetry",
+      "source": "eq:diffusion_equation_scaling",
+      "target": "eq:diffusion_scaling_symmetry",
+      "rule": "derive scaling symmetry from invariance of the diffusion equation",
+      "confidence": 0.9,
+      "assumptions": ["D is constant", "lambda is positive"],
+      "bindings": {
+        "space_scale": "\\lambda",
+        "time_scale": "\\lambda^2"
+      }
+    },
+    {
+      "id": "edge:derive_diffusive_length_scaling",
+      "source": "eq:diffusion_scaling_symmetry",
+      "target": "eq:diffusion_length_scaling",
+      "rule": "derive scaling law from similarity transformation",
+      "confidence": 0.88,
+      "assumptions": ["the characteristic length is set by the invariant similarity variable"],
+      "bindings": {
+        "similarity_variable": "\\eta = x / \\sqrt{Dt}",
+        "characteristic_length": "L"
+      }
+    }
+  ]
+}

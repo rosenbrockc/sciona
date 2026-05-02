@@ -93,6 +93,7 @@ def build_physics_ingestion_validation_report(
     include_default_pdg: bool = True,
     include_source_execution: bool = True,
     include_source_adapter_coverage: bool = True,
+    include_source_adapter_data_artifact_seeds: bool = True,
     source_retrieval_run_plan: Any | None = None,
     source_retrieval_manifest: Any | None = None,
     source_max_jobs: int | None = None,
@@ -156,6 +157,9 @@ def build_physics_ingestion_validation_report(
     if include_source_adapter_coverage:
         checks.append(validate_source_adapter_coverage(source_retrieval_manifest))
 
+    if include_source_adapter_data_artifact_seeds:
+        checks.append(validate_source_adapter_data_artifact_seed_quality())
+
     report = {
         "report_kind": VALIDATION_REPORT_KIND,
         "ok": all(check.ok for check in checks),
@@ -214,6 +218,82 @@ def validate_source_adapter_coverage(
             "covered": summary["covered"],
             "blocked": summary["blocked"],
             "diagnostic_count": summary["diagnostic_count"],
+        },
+    )
+
+
+def validate_source_adapter_data_artifact_seed_quality(
+    adapter_bundles: Mapping[str, Any] | Iterable[tuple[str, Any]] | None = None,
+) -> ValidationCheck:
+    """Validate offline source adapter future data-artifact seed dictionaries."""
+
+    subject = "source_adapter_data_artifact_seeds"
+    issues: list[ValidationIssue] = []
+    bundle_summaries: list[dict[str, Any]] = []
+    seed_count = 0
+
+    if adapter_bundles is None:
+        bundle_items = _build_default_data_artifact_seed_validation_bundles(issues)
+    elif isinstance(adapter_bundles, Mapping):
+        bundle_items = tuple(
+            (str(bundle_id), bundle) for bundle_id, bundle in adapter_bundles.items()
+        )
+    else:
+        bundle_items = tuple(
+            (str(bundle_id), bundle) for bundle_id, bundle in adapter_bundles
+        )
+
+    for bundle_id, bundle in bundle_items:
+        seeds = _bundle_data_artifact_seeds(bundle)
+        bundle_summaries.append(
+            {
+                "bundle_id": bundle_id,
+                "seed_count": len(seeds),
+            }
+        )
+        if not seeds:
+            issues.append(
+                ValidationIssue(
+                    reason="source_adapter_data_artifact_seed_missing_inventory",
+                    detail="adapter bundle emitted no data_artifact_seeds",
+                    table=subject,
+                    subject=f"{subject}:{bundle_id}",
+                )
+            )
+            continue
+        for index, seed in enumerate(seeds):
+            seed_count += 1
+            if not isinstance(seed, Mapping):
+                issues.append(
+                    ValidationIssue(
+                        reason="source_adapter_data_artifact_seed_not_mapping",
+                        detail=f"seed root is {type(seed).__name__}",
+                        table=subject,
+                        subject=f"{subject}:{bundle_id}:{index}",
+                    )
+                )
+                continue
+            issues.extend(
+                _data_artifact_seed_issues(seed, bundle_id=bundle_id, index=index)
+            )
+
+    report = {
+        "summary": {
+            "bundle_count": len(bundle_items),
+            "seed_count": seed_count,
+            "diagnostic_count": len(issues),
+        },
+        "bundles": bundle_summaries,
+    }
+    return ValidationCheck(
+        check_id="source_adapter_data_artifact_seeds",
+        subject=subject,
+        issues=tuple(issues),
+        metadata={
+            "report": report,
+            "bundle_count": report["summary"]["bundle_count"],
+            "seed_count": report["summary"]["seed_count"],
+            "diagnostic_count": report["summary"]["diagnostic_count"],
         },
     )
 
@@ -832,6 +912,210 @@ def _source_adapter_coverage_diagnostic_issue(
     )
 
 
+def _data_artifact_seed_issues(
+    seed: Mapping[str, Any],
+    *,
+    bundle_id: str,
+    index: int,
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    row_subject = _data_artifact_seed_subject(seed, bundle_id=bundle_id, index=index)
+    for field_name in ("artifact_kind", "fqdn", "source_system", "source_id"):
+        value = seed.get(field_name)
+        if not isinstance(value, str) or not value.strip():
+            issues.append(
+                ValidationIssue(
+                    reason=f"source_adapter_data_artifact_seed_missing_{field_name}",
+                    table="source_adapter_data_artifact_seeds",
+                    subject=row_subject,
+                )
+            )
+
+    try:
+        json.dumps(seed, sort_keys=True, ensure_ascii=True, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        issues.append(
+            ValidationIssue(
+                reason="source_adapter_data_artifact_seed_json_unsafe",
+                detail=str(exc),
+                table="source_adapter_data_artifact_seeds",
+                subject=row_subject,
+            )
+        )
+    return tuple(issues)
+
+
+def _data_artifact_seed_subject(
+    seed: Mapping[str, Any],
+    *,
+    bundle_id: str,
+    index: int,
+) -> str:
+    identity = str(seed.get("fqdn") or seed.get("source_id") or index)
+    return f"source_adapter_data_artifact_seeds:{bundle_id}:{identity}"
+
+
+def _bundle_data_artifact_seeds(bundle: Any) -> tuple[Any, ...]:
+    if isinstance(bundle, Mapping):
+        seeds = bundle.get("data_artifact_seeds") or ()
+    else:
+        seeds = getattr(bundle, "data_artifact_seeds", ()) or ()
+    if isinstance(seeds, Sequence) and not isinstance(seeds, (str, bytes, bytearray)):
+        return tuple(seeds)
+    return (seeds,)
+
+
+def _build_default_data_artifact_seed_validation_bundles(
+    issues: list[ValidationIssue],
+) -> tuple[tuple[str, Any], ...]:
+    bundles: list[tuple[str, Any]] = []
+    for bundle_id, builder in _default_data_artifact_seed_validation_builders():
+        try:
+            bundles.append((bundle_id, builder()))
+        except Exception as exc:  # pragma: no cover - defensive import boundary
+            issues.append(
+                ValidationIssue(
+                    reason="source_adapter_data_artifact_seed_bundle_build_error",
+                    detail=f"{type(exc).__name__}: {exc}",
+                    table="source_adapter_data_artifact_seeds",
+                    subject=f"source_adapter_data_artifact_seeds:{bundle_id}",
+                )
+            )
+    return tuple(bundles)
+
+
+def _default_data_artifact_seed_validation_builders(
+) -> tuple[tuple[str, Any], ...]:
+    return (
+        ("hitran_lines.backfill", _build_hitran_validation_bundle),
+        (
+            "materials_project_documents.backfill",
+            _build_materials_project_validation_bundle,
+        ),
+        ("nist_codata_constants.backfill", _build_nist_codata_validation_bundle),
+        ("opb_problem_payloads.backfill", _build_opb_validation_bundle),
+        ("phy_srbench_payloads.backfill", _build_phy_srbench_validation_bundle),
+        ("theoria_payloads.backfill", _build_theoria_validation_bundle),
+    )
+
+
+def _build_hitran_validation_bundle() -> Any:
+    from sciona.physics_ingest.sources.hitran import build_hitran_wave0_bundle
+
+    return build_hitran_wave0_bundle(
+        (
+            {
+                "id": "HITRAN:H2O:validation",
+                "molecule": "H2O",
+                "isotopologue": "1H2-16O",
+                "transition": "000-000 P(3)",
+                "nu": "1234.56789",
+            },
+        ),
+        source_version="offline validation fixture",
+        source_uri="https://example.invalid/hitran-validation",
+        retrieved_at="2026-04-30T00:00:00Z",
+    )
+
+
+def _build_materials_project_validation_bundle() -> Any:
+    from sciona.physics_ingest.sources.materials_project import (
+        build_materials_project_wave0_bundle,
+    )
+
+    return build_materials_project_wave0_bundle(
+        (
+            {
+                "material_id": "mp-validation",
+                "formula_pretty": "Si",
+                "band_gap": 1.17,
+            },
+        ),
+        source_version="offline validation fixture",
+        source_uri="https://example.invalid/materials-project-validation",
+        retrieved_at="2026-04-30T00:00:00Z",
+    )
+
+
+def _build_nist_codata_validation_bundle() -> Any:
+    from sciona.physics_ingest.sources.nist import (
+        build_codata_wave0_bundle,
+        parse_codata_ascii,
+    )
+
+    constants = parse_codata_ascii(
+        "speed of light in vacuum | 299 792 458 | (exact) | m s^-1 | symbol=c",
+        source_version="offline validation fixture",
+        reference_ids=("NIST-CODATA-validation",),
+    )
+    return build_codata_wave0_bundle(
+        constants,
+        source_version="offline validation fixture",
+        source_uri="https://example.invalid/nist-codata-validation",
+        retrieved_at="2026-04-30T00:00:00Z",
+    )
+
+
+def _build_opb_validation_bundle() -> Any:
+    from sciona.physics_ingest.sources.opb import build_opb_wave0_bundle
+
+    return build_opb_wave0_bundle(
+        (
+            {
+                "problem_id": "opb:validation:newton-2",
+                "title": "Newton second law",
+                "latex": "F = m a",
+                "data": {"fixture_rows": [{"m": 2, "a": 3, "F": 6}]},
+            },
+        ),
+        source_version="offline validation fixture",
+        source_uri="https://example.invalid/opb-validation",
+        retrieved_at="2026-04-30T00:00:00Z",
+    )
+
+
+def _build_phy_srbench_validation_bundle() -> Any:
+    from sciona.physics_ingest.sources.phy_srbench import (
+        build_phy_srbench_wave0_bundle,
+    )
+
+    return build_phy_srbench_wave0_bundle(
+        (
+            {
+                "task_id": "phy-srbench:validation:kepler",
+                "name": "Kepler third law synthetic task",
+                "sympy": "Eq(T**2, 4*pi**2*a**3/(G*M))",
+                "dataset": {"train_rows": [{"a": 1.0, "T": 1.0}]},
+                "evaluation_spec": {"metric": "r2", "threshold": 0.99},
+            },
+        ),
+        source_version="offline validation fixture",
+        source_uri="https://example.invalid/phy-srbench-validation",
+        retrieved_at="2026-04-30T00:00:00Z",
+        license_expression="offline validation fixture",
+    )
+
+
+def _build_theoria_validation_bundle() -> Any:
+    from sciona.physics_ingest.sources.theoria import build_theoria_wave0_bundle
+
+    return build_theoria_wave0_bundle(
+        (
+            {
+                "problem_id": "theoria:validation:oscillator",
+                "title": "Harmonic oscillator Euler-Lagrange equation",
+                "latex": "F = -k x",
+                "theory": "classical mechanics",
+                "evaluation": {"metric": "symbolic_equivalence", "tolerance": 0},
+            },
+        ),
+        source_version="offline validation fixture",
+        source_uri="https://example.invalid/theoria-validation",
+        retrieved_at="2026-04-30T00:00:00Z",
+        license_expression="offline validation fixture",
+    )
+
+
 def _artifact_bindings_for_manifest(
     expressions: Sequence[Mapping[str, Any]],
 ) -> dict[str, dict[str, str]]:
@@ -1012,6 +1296,7 @@ __all__ = [
     "validate_pdg_payload",
     "validate_pdg_payload_file",
     "validate_source_adapter_coverage",
+    "validate_source_adapter_data_artifact_seed_quality",
     "validate_source_execution_readiness",
     "validate_symbolic_publication_fixture",
 ]

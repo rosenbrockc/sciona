@@ -3,6 +3,7 @@ from __future__ import annotations
 from sciona.physics_ingest.retrieval import (
     SymbolicArtifactCandidate,
     SymbolicRetrievalQuery,
+    SymbolicValidityBound,
     build_symbolic_retrieval_report,
     build_symbolic_synthesis_retrieval_report,
     candidates_from_rows,
@@ -89,6 +90,107 @@ def test_symbolic_ranker_prefers_reviewed_topology_dimension_and_mechanism_match
     assert raw.score == 0.0
     assert "missing_required_validity_bounds" in raw.reasons
     assert "raw_penalty" in raw.reasons
+
+
+def test_symbolic_ranker_scores_requested_validity_regime_and_bounds() -> None:
+    results = rank_symbolic_candidates(
+        SymbolicRetrievalQuery(
+            topology_hashes=("topo-drag",),
+            validity_regimes=("low_reynolds",),
+            validity_variables=("Re",),
+            validity_bounds=(
+                SymbolicValidityBound(
+                    variable_name="Re",
+                    lower_value=0,
+                    upper_value=0.5,
+                ),
+            ),
+            require_validity_matches=True,
+        ),
+        [
+            {
+                "artifact_id": "high-re",
+                "fqdn": "physics.drag.turbulent",
+                "topology_hash": "topo-drag",
+                "review_status": "human_reviewed",
+                "validity_bounds": [
+                    {
+                        "variable_name": "Re",
+                        "regime_label": "high_reynolds",
+                        "lower_value": 1000,
+                        "review_status": "human_reviewed",
+                    }
+                ],
+            },
+            {
+                "artifact_id": "low-re",
+                "fqdn": "physics.drag.stokes",
+                "topology_hash": "topo-drag",
+                "review_status": "human_reviewed",
+                "validity_bounds": [
+                    {
+                        "variable_name": "Re",
+                        "regime_label": "low_reynolds",
+                        "lower_value": 0,
+                        "upper_value": 1,
+                        "review_status": "human_reviewed",
+                    }
+                ],
+            },
+        ],
+    )
+
+    winner = results[0]
+    assert winner.candidate.fqdn == "physics.drag.stokes"
+    assert winner.eligible is True
+    assert winner.components["validity_regimes"] == 0.5
+    assert winner.components["validity_variables"] == 0.4
+    assert winner.components["validity_bound_ranges"] == 0.8
+    assert "requested_validity_bounds_match" in winner.reasons
+
+    miss = results[1]
+    assert miss.candidate.fqdn == "physics.drag.turbulent"
+    assert miss.eligible is False
+    assert "requested_validity_regime_missing" in miss.reasons
+    assert "requested_validity_bounds_missing" in miss.reasons
+    assert "missing_required_validity_match" in miss.reasons
+
+
+def test_symbolic_validity_queries_accept_mapping_aliases() -> None:
+    results = rank_symbolic_candidates(
+        {
+            "topology_hash": "topo-pendulum",
+            "regime_label": "small_angle",
+            "validity_bounds": [
+                {
+                    "variable_name": "theta",
+                    "upper_bound": 0.05,
+                }
+            ],
+        },
+        [
+            {
+                "artifact_id": "pendulum-small-angle",
+                "fqdn": "physics.pendulum.small_angle",
+                "topology_hash": "topo-pendulum",
+                "review_status": "human_reviewed",
+                "validity_bounds": [
+                    {
+                        "variable": "theta",
+                        "regime": "small-angle",
+                        "min_value": 0,
+                        "max_value": 0.1,
+                        "review_status": "human_reviewed",
+                    }
+                ],
+            }
+        ],
+    )
+
+    assert results[0].eligible is True
+    assert results[0].components["validity_regimes"] == 0.5
+    assert results[0].components["validity_bound_ranges"] == 0.8
+    assert results[0].candidate.validity_bounds[0].lower_value == 0.0
 
 
 def test_reviewed_only_trust_policy_excludes_raw_candidates() -> None:

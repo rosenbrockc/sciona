@@ -77,6 +77,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Skip source adapter coverage validation.",
     )
     parser.add_argument(
+        "--skip-source-adapter-data-artifact-seeds",
+        action="store_true",
+        help="Skip source adapter data-artifact seed quality validation.",
+    )
+    parser.add_argument(
         "--source-max-jobs",
         type=int,
         default=None,
@@ -125,7 +130,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             pdg_payload_paths = discover_pdg_payload_fixture_paths(REPO_ROOT)
 
     # Changed-only narrows fixture and payload discovery only. Source execution
-    # readiness and adapter coverage are fast global contracts, so they stay on
+    # readiness plus adapter contracts are fast global checks, so they stay on
     # unless the caller uses the existing skip flags.
 
     report = build_physics_ingestion_validation_report(
@@ -135,6 +140,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         include_default_pdg=not args.skip_pdg,
         include_source_execution=not args.skip_source_execution,
         include_source_adapter_coverage=not args.skip_source_adapter_coverage,
+        include_source_adapter_data_artifact_seeds=(
+            not args.skip_source_adapter_data_artifact_seeds
+        ),
         source_max_jobs=args.source_max_jobs,
         source_job_id=tuple(args.source_job_id) or None,
         strict=args.strict,

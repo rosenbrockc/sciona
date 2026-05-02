@@ -14,6 +14,7 @@ from sciona.physics_ingest.validation import (
     validate_pdg_payload,
     validate_pdg_payload_file,
     validate_source_adapter_coverage,
+    validate_source_adapter_data_artifact_seed_quality,
     validate_source_execution_readiness,
     validate_symbolic_publication_fixture,
 )
@@ -80,6 +81,7 @@ def test_discovers_default_pdg_payload_fixtures() -> None:
         PDG_FIXTURE_DIR / "differentiate_integrate_chain.pdg.json",
         PDG_FIXTURE_DIR / "limit_nondimensionalization_chain.pdg.json",
         PDG_FIXTURE_DIR / "nondimensionalize_approximate_chain.pdg.json",
+        PDG_FIXTURE_DIR / "scaling_symmetry_chain.pdg.json",
         PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",
         PDG_FIXTURE_DIR / "variational_principle_chain.pdg.json",
     )
@@ -166,7 +168,7 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
     assert report["report_kind"] == VALIDATION_REPORT_KIND
     assert report["ok"] is False
     assert report["summary"] == {
-        "check_count": 4,
+        "check_count": 5,
         "failed_check_count": 1,
         "error_count": 1,
     }
@@ -181,13 +183,14 @@ def test_validation_report_includes_explicit_pdg_fixture_path() -> None:
 
     assert report["ok"] is True
     checks = report["checks"]
-    assert len(checks) == 3
+    assert len(checks) == 4
     assert checks[0]["subject"] == "pdg_fixture:solve_substitute_chain"
     assert checks[0]["metadata"]["fixture_path"].endswith(
         "solve_substitute_chain.pdg.json"
     )
     assert checks[1]["check_id"] == "source_execution_readiness"
     assert checks[2]["check_id"] == "source_adapter_coverage"
+    assert checks[3]["check_id"] == "source_adapter_data_artifact_seeds"
 
 
 def test_validation_report_includes_source_execution_by_default() -> None:
@@ -201,11 +204,15 @@ def test_validation_report_includes_source_execution_by_default() -> None:
     assert [check["check_id"] for check in checks] == [
         "source_execution_readiness",
         "source_adapter_coverage",
+        "source_adapter_data_artifact_seeds",
     ]
     source_check = checks[0]
     assert source_check["metadata"]["total_steps"] == 1
     assert source_check["metadata"]["diagnostic_count"] == 0
     assert source_check["metadata"]["report"]["summary"]["total_steps"] == 1
+    seed_check = checks[2]
+    assert seed_check["metadata"]["seed_count"] == 6
+    assert seed_check["metadata"]["diagnostic_count"] == 0
     json.dumps(report, sort_keys=True)
 
 
@@ -214,6 +221,7 @@ def test_validation_report_can_skip_source_execution() -> None:
         include_default_pdg=False,
         include_source_execution=False,
         include_source_adapter_coverage=False,
+        include_source_adapter_data_artifact_seeds=False,
     )
 
     assert report["ok"] is True
@@ -233,11 +241,17 @@ def test_validation_report_includes_source_adapter_coverage_by_default() -> None
 
     assert report["ok"] is True
     checks = report["checks"]
-    assert [check["check_id"] for check in checks] == ["source_adapter_coverage"]
+    assert [check["check_id"] for check in checks] == [
+        "source_adapter_coverage",
+        "source_adapter_data_artifact_seeds",
+    ]
     coverage_check = checks[0]
     assert coverage_check["metadata"]["total_jobs"] == 11
     assert coverage_check["metadata"]["diagnostic_count"] == 0
     assert coverage_check["metadata"]["report"]["summary"]["total_jobs"] == 11
+    seed_check = checks[1]
+    assert seed_check["metadata"]["bundle_count"] == 6
+    assert seed_check["metadata"]["seed_count"] == 6
     json.dumps(report, sort_keys=True)
 
 
@@ -249,7 +263,61 @@ def test_validation_report_can_skip_source_adapter_coverage() -> None:
     )
 
     assert report["ok"] is True
-    assert report["checks"] == []
+    assert [check["check_id"] for check in report["checks"]] == [
+        "source_adapter_data_artifact_seeds"
+    ]
+
+
+def test_validation_report_can_skip_source_adapter_seed_quality() -> None:
+    report = build_physics_ingestion_validation_report(
+        include_default_pdg=False,
+        include_source_execution=False,
+        include_source_adapter_data_artifact_seeds=False,
+    )
+
+    assert report["ok"] is True
+    assert [check["check_id"] for check in report["checks"]] == [
+        "source_adapter_coverage"
+    ]
+
+
+def test_source_adapter_data_artifact_seed_quality_accepts_default_bundles() -> None:
+    check = validate_source_adapter_data_artifact_seed_quality()
+
+    assert check.ok is True
+    assert check.issues == ()
+    assert check.metadata["bundle_count"] == 6
+    assert check.metadata["seed_count"] == 6
+    assert check.metadata["diagnostic_count"] == 0
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
+def test_source_adapter_data_artifact_seed_quality_reports_stable_issues() -> None:
+    check = validate_source_adapter_data_artifact_seed_quality(
+        {
+            "synthetic.bad": {
+                "data_artifact_seeds": [
+                    {
+                        "artifact_kind": "",
+                        "fqdn": "fixture.bad",
+                        "source_system": "fixture",
+                        "payload": object(),
+                    }
+                ]
+            }
+        }
+    )
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "source_adapter_data_artifact_seed_missing_artifact_kind",
+        "source_adapter_data_artifact_seed_missing_source_id",
+        "source_adapter_data_artifact_seed_json_unsafe",
+    ]
+    assert all(
+        issue.table == "source_adapter_data_artifact_seeds"
+        for issue in check.issues
+    )
 
 
 def test_source_execution_diagnostics_convert_to_validation_issues() -> None:
@@ -334,6 +402,13 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
     ]
     assert len(coverage_checks) == 1
     assert coverage_checks[0]["metadata"]["report"]["summary"]["total_jobs"] == 11
+    seed_checks = [
+        check
+        for check in report["checks"]
+        if check["check_id"] == "source_adapter_data_artifact_seeds"
+    ]
+    assert len(seed_checks) == 1
+    assert seed_checks[0]["metadata"]["seed_count"] == 6
 
 
 def test_validation_script_changed_only_keeps_source_checks_in_json_mode() -> None:
@@ -359,6 +434,7 @@ def test_validation_script_changed_only_keeps_source_checks_in_json_mode() -> No
     assert [check["check_id"] for check in report["checks"]] == [
         "source_execution_readiness",
         "source_adapter_coverage",
+        "source_adapter_data_artifact_seeds",
     ]
     assert report["checks"][0]["metadata"]["report"]["summary"]["total_steps"] == 1
 
@@ -397,6 +473,7 @@ def test_validation_script_can_skip_source_checks_in_json_mode() -> None:
             "--skip-pdg",
             "--skip-source-execution",
             "--skip-source-adapter-coverage",
+            "--skip-source-adapter-data-artifact-seeds",
             "--json",
         ],
         cwd=REPO_ROOT,

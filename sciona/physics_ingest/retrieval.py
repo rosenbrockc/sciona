@@ -58,11 +58,39 @@ class SymbolicValidityBound:
     @classmethod
     def from_mapping(cls, row: Mapping[str, Any]) -> "SymbolicValidityBound":
         return cls(
-            variable_name=_text(row, "variable_name", "symbol_name", "name"),
-            regime_label=_text(row, "regime_label", "label"),
+            variable_name=_text(
+                row,
+                "variable_name",
+                "symbol_name",
+                "variable",
+                "name",
+            ),
+            regime_label=_text(
+                row,
+                "regime_label",
+                "validity_regime",
+                "regime",
+                "label",
+            ),
             validity_statement=_text(row, "validity_statement", "statement"),
-            lower_value=_optional_float(row.get("lower_value")),
-            upper_value=_optional_float(row.get("upper_value")),
+            lower_value=_optional_float(
+                _first_present(
+                    row,
+                    "lower_value",
+                    "lower_bound",
+                    "min_value",
+                    "minimum_value",
+                )
+            ),
+            upper_value=_optional_float(
+                _first_present(
+                    row,
+                    "upper_value",
+                    "upper_bound",
+                    "max_value",
+                    "maximum_value",
+                )
+            ),
             review_status=_text(row, "review_status", "status"),
         )
 
@@ -361,6 +389,9 @@ class SymbolicRetrievalQuery:
     mechanism_tags: tuple[str, ...] = ()
     behavioral_archetypes: tuple[str, ...] = ()
     relationship_kinds: tuple[str, ...] = ()
+    validity_regimes: tuple[str, ...] = ()
+    validity_variables: tuple[str, ...] = ()
+    validity_bounds: tuple[SymbolicValidityBound, ...] = ()
     source_systems: tuple[str, ...] = ()
     source_kinds: tuple[str, ...] = ()
     source_domains: tuple[str, ...] = ()
@@ -368,6 +399,7 @@ class SymbolicRetrievalQuery:
     data_artifact_dependencies: tuple[str, ...] = ()
     require_validity_bounds: bool = False
     require_reviewed_bounds: bool = False
+    require_validity_matches: bool = False
     require_data_artifact_dependencies: bool = False
     raw_trust_policy: RawTrustPolicy = "prefer_reviewed"
 
@@ -384,6 +416,27 @@ class SymbolicRetrievalQuery:
             mechanism_tags=_strings(row.get("mechanism_tags")),
             behavioral_archetypes=_strings(row.get("behavioral_archetypes")),
             relationship_kinds=_strings(row.get("relationship_kinds")),
+            validity_regimes=_strings(
+                row.get("validity_regimes")
+                or row.get("validity_regime_labels")
+                or row.get("regime_labels")
+                or row.get("regime_label")
+            ),
+            validity_variables=_strings(
+                row.get("validity_variables")
+                or row.get("validity_variable_names")
+                or row.get("validity_variable")
+                or row.get("variable_names")
+                or row.get("variable_name")
+            ),
+            validity_bounds=tuple(
+                SymbolicValidityBound.from_mapping(bound)
+                for bound in _sequence_of_mappings(
+                    row.get("requested_validity_bounds")
+                    or row.get("validity_bound_requests")
+                    or row.get("validity_bounds")
+                )
+            ),
             source_systems=_strings(row.get("source_systems") or row.get("source_system")),
             source_kinds=_strings(row.get("source_kinds") or row.get("source_kind")),
             source_domains=_strings(row.get("source_domains") or row.get("source_domain")),
@@ -398,6 +451,10 @@ class SymbolicRetrievalQuery:
             ),
             require_validity_bounds=_bool(row.get("require_validity_bounds")),
             require_reviewed_bounds=_bool(row.get("require_reviewed_bounds")),
+            require_validity_matches=_bool(
+                row.get("require_validity_matches")
+                or row.get("require_requested_validity_bounds")
+            ),
             require_data_artifact_dependencies=_bool(
                 row.get("require_data_artifact_dependencies")
             ),
@@ -736,6 +793,7 @@ def build_symbolic_synthesis_retrieval_report(
                 "missing_dimensional_metadata",
                 "missing_required_validity_bounds",
                 "missing_reviewed_validity_bounds",
+                "missing_required_validity_match",
                 "missing_required_data_artifact_dependencies",
                 "raw_excluded_by_policy",
             ],
@@ -750,6 +808,9 @@ def _validity_score(
     components: dict[str, float] = {}
     reasons: list[str] = []
     bounds = [bound for bound in candidate.validity_bounds if bound.constrained]
+    requested_bounds = tuple(
+        bound for bound in query.validity_bounds if _validity_request_present(bound)
+    )
     eligible = True
     if bounds:
         components["validity_bounds"] = 0.6
@@ -763,7 +824,117 @@ def _validity_score(
     elif query.require_reviewed_bounds:
         eligible = False
         reasons.append("missing_reviewed_validity_bounds")
+
+    regime_score = _overlap_score(
+        query.validity_regimes,
+        tuple(bound.regime_label for bound in bounds),
+        weight=0.5,
+        normalize=True,
+    )
+    if regime_score:
+        components["validity_regimes"] = regime_score
+        reasons.append("validity_regime_match")
+    elif query.validity_regimes:
+        reasons.append("requested_validity_regime_missing")
+
+    variable_score = _overlap_score(
+        query.validity_variables,
+        tuple(bound.variable_name for bound in bounds),
+        weight=0.4,
+        normalize=True,
+    )
+    if variable_score:
+        components["validity_variables"] = variable_score
+        reasons.append("validity_variable_match")
+    elif query.validity_variables:
+        reasons.append("requested_validity_variable_missing")
+
+    if requested_bounds:
+        matched_bounds = tuple(
+            requested
+            for requested in requested_bounds
+            if any(
+                _validity_bound_matches(requested, available)
+                for available in bounds
+            )
+        )
+        if matched_bounds:
+            components["validity_bound_ranges"] = 0.8 * (
+                len(matched_bounds) / len(requested_bounds)
+            )
+            if len(matched_bounds) == len(requested_bounds):
+                reasons.append("requested_validity_bounds_match")
+            else:
+                reasons.append("requested_validity_bounds_partial")
+                reasons.append("requested_validity_bounds_missing")
+        else:
+            reasons.append("requested_validity_bounds_missing")
+
+    requested_match_count = sum(
+        (
+            1 if not query.validity_regimes or regime_score else 0,
+            1 if not query.validity_variables or variable_score else 0,
+            (
+                1
+                if not requested_bounds
+                or components.get("validity_bound_ranges") == 0.8
+                else 0
+            ),
+        )
+    )
+    has_requested_validity = bool(
+        query.validity_regimes or query.validity_variables or requested_bounds
+    )
+    if (
+        query.require_validity_matches
+        and has_requested_validity
+        and requested_match_count < 3
+    ):
+        eligible = False
+        reasons.append("missing_required_validity_match")
     return components, reasons, eligible
+
+
+def _validity_request_present(bound: SymbolicValidityBound) -> bool:
+    return bool(
+        bound.variable_name
+        or bound.regime_label
+        or bound.validity_statement
+        or bound.lower_value is not None
+        or bound.upper_value is not None
+    )
+
+
+def _validity_bound_matches(
+    requested: SymbolicValidityBound,
+    available: SymbolicValidityBound,
+) -> bool:
+    if requested.variable_name and not _same_text(
+        requested.variable_name,
+        available.variable_name,
+    ):
+        return False
+    if requested.regime_label and not _same_text(
+        requested.regime_label,
+        available.regime_label,
+    ):
+        return False
+    if requested.validity_statement:
+        statement = _norm(available.validity_statement)
+        regime = _norm(available.regime_label)
+        if _norm(requested.validity_statement) not in {statement, regime}:
+            return False
+    if requested.lower_value is not None:
+        if available.lower_value is None:
+            return False
+        if available.lower_value > requested.lower_value + 1e-12:
+            return False
+    if requested.upper_value is not None:
+        if available.upper_value is None:
+            return False
+        if available.upper_value < requested.upper_value - 1e-12:
+            return False
+    return True
 
 
 def _trust_score(
@@ -948,6 +1119,7 @@ def _compiler_blockers(
         if reason in {
             "missing_required_validity_bounds",
             "missing_reviewed_validity_bounds",
+            "missing_required_validity_match",
             "missing_required_data_artifact_dependencies",
             "raw_excluded_by_policy",
         }:
@@ -1019,9 +1191,14 @@ def _overlap_score(
     available: Sequence[str],
     *,
     weight: float,
+    normalize: bool = False,
 ) -> float:
-    requested_set = {item for item in requested if item}
-    available_set = {item for item in available if item}
+    if normalize:
+        requested_set = {_norm(item) for item in requested if _norm(item)}
+        available_set = {_norm(item) for item in available if _norm(item)}
+    else:
+        requested_set = {item for item in requested if item}
+        available_set = {item for item in available if item}
     if not requested_set or not available_set:
         return 0.0
     overlap = requested_set & available_set
@@ -1204,6 +1381,24 @@ def _text(row: Mapping[str, Any], *keys: str) -> str:
         if value is not None and not isinstance(value, (Mapping, Sequence)):
             return str(value).strip()
     return ""
+
+
+def _first_present(row: Mapping[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = row.get(key)
+        if value is not None and value != "":
+            return value
+    return None
+
+
+def _norm(value: str) -> str:
+    return " ".join(
+        value.strip().casefold().replace("_", " ").replace("-", " ").split()
+    )
+
+
+def _same_text(left: str, right: str) -> bool:
+    return bool(_norm(left) and _norm(left) == _norm(right))
 
 
 def _bool(value: Any) -> bool:

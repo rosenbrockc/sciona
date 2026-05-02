@@ -31,6 +31,9 @@ EXPR_DIFFUSION = "10000000-0000-0000-0000-000000000015"
 EXPR_STATIONARY_ACTION = "10000000-0000-0000-0000-000000000016"
 EXPR_EULER_LAGRANGE = "10000000-0000-0000-0000-000000000017"
 EXPR_KLEIN_GORDON = "10000000-0000-0000-0000-000000000018"
+EXPR_DIFFUSION_SCALING_EQUATION = "10000000-0000-0000-0000-000000000019"
+EXPR_DIFFUSION_SCALING_SYMMETRY = "10000000-0000-0000-0000-000000000020"
+EXPR_DIFFUSION_LENGTH_SCALING = "10000000-0000-0000-0000-000000000021"
 ARTIFACT_BASE = "20000000-0000-0000-0000-000000000001"
 VERSION_BASE = "30000000-0000-0000-0000-000000000001"
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "pdg_payloads"
@@ -603,6 +606,81 @@ def test_pdg_phase4_extracts_variational_principle_derivation_chain() -> None:
     assert manifest["metadata"]["relationship_edge_ids"] == [
         "edge:derive_euler_lagrange_from_stationary_action",
         "edge:substitute_scalar_lagrangian",
+    ]
+
+    publication_rows = build_pdg_publication_write_rows(result)
+    assert publication_rows.diagnostics == ()
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
+def test_pdg_phase4_extracts_scaling_symmetry_derivation_chain() -> None:
+    bundle = _fixture_bundle("scaling_symmetry_chain.pdg.json")
+    result = build_pdg_relationship_ingest(
+        bundle,
+        expression_bindings_by_pdg_node_id={
+            "eq:diffusion_equation_scaling": {
+                "expression_id": EXPR_DIFFUSION_SCALING_EQUATION,
+                "label": "diffusion equation",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.scaling.diffusion_equation",
+                    "bound_version_content_hash": "hash-diffusion-scaling-equation",
+                },
+            },
+            "eq:diffusion_scaling_symmetry": {
+                "expression_id": EXPR_DIFFUSION_SCALING_SYMMETRY,
+                "label": "diffusion scaling symmetry",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.scaling.diffusion_symmetry",
+                    "bound_version_content_hash": "hash-diffusion-scaling-symmetry",
+                },
+            },
+            "eq:diffusion_length_scaling": {
+                "expression_id": EXPR_DIFFUSION_LENGTH_SCALING,
+                "label": "diffusive length scaling",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.scaling.diffusion_length",
+                    "bound_version_content_hash": "hash-diffusion-length-scaling",
+                },
+            },
+        },
+    )
+
+    rows = result.relationship_insert_rows()
+    manifest = result.cdg_candidate_manifests[0]
+
+    assert [edge.operation_kind for edge in bundle.inference_edges] == [
+        "derive",
+        "derive",
+    ]
+    assert result.skipped_edges == ()
+    assert [row["relationship_kind"] for row in rows] == [
+        "derives_from",
+        "derives_from",
+    ]
+    assert [row["evidence_json"]["operation_kind"] for row in rows] == [
+        "derive",
+        "derive",
+    ]
+    assert [node["operation_kind"] for node in manifest["nodes"]] == [
+        "derive",
+        "derive",
+    ]
+    assert [node["relationship_kind"] for node in manifest["nodes"]] == [
+        "derives_from",
+        "derives_from",
+    ]
+    assert manifest["edges"] == [
+        {
+            "source_id": "pdg_step_1",
+            "target_id": "pdg_step_2",
+            "edge_kind": "symbolic_equation_flow",
+            "pdg_node_id": "eq:diffusion_scaling_symmetry",
+            "expression_id": EXPR_DIFFUSION_SCALING_SYMMETRY,
+        }
+    ]
+    assert manifest["metadata"]["relationship_edge_ids"] == [
+        "edge:derive_diffusion_scaling_symmetry",
+        "edge:derive_diffusive_length_scaling",
     ]
 
     publication_rows = build_pdg_publication_write_rows(result)
