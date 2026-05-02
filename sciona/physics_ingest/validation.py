@@ -473,6 +473,7 @@ def validate_symbolic_publication_fixture(
 
     issues.extend(_symbolic_expression_standard_issues(expressions, subject=subject))
     issues.extend(_symbolic_variable_standard_issues(variables, subject=subject))
+    issues.extend(_symbolic_variable_duplicate_issues(variables, subject=subject))
     issues.extend(
         _validity_bound_standard_issues(
             bounds,
@@ -999,6 +1000,96 @@ def _symbolic_variable_standard_issues(
                 )
             )
     return tuple(issues)
+
+
+def _symbolic_variable_duplicate_issues(
+    variables: Sequence[Mapping[str, Any]],
+    *,
+    subject: str,
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    seen_references: dict[tuple[str, str, str], int] = {}
+    seen_source_ids: dict[tuple[str, str, str], int] = {}
+    for index, row in enumerate(variables):
+        group_key = _symbolic_variable_group_key(row, fallback=subject)
+        row_subject = _row_subject(row, subject=subject, index=index)
+
+        variable_reference = _text_value(
+            row,
+            "symbol_name",
+            "symbol",
+            "source_symbol",
+            "variable_name",
+        )
+        if variable_reference:
+            issue = _duplicate_symbolic_variable_issue(
+                seen_references,
+                key=(*group_key, variable_reference),
+                value_field="variable_reference",
+                value=variable_reference,
+                reason="duplicate_symbolic_variable_reference",
+                row_index=index,
+                row_subject=row_subject,
+            )
+            if issue is not None:
+                issues.append(issue)
+
+        source_variable_id = _text_value(row, "source_variable_id")
+        if source_variable_id:
+            issue = _duplicate_symbolic_variable_issue(
+                seen_source_ids,
+                key=(*group_key, source_variable_id),
+                value_field="source_variable_id",
+                value=source_variable_id,
+                reason="duplicate_source_variable_id",
+                row_index=index,
+                row_subject=row_subject,
+            )
+            if issue is not None:
+                issues.append(issue)
+    return tuple(issues)
+
+
+def _symbolic_variable_group_key(
+    row: Mapping[str, Any],
+    *,
+    fallback: str,
+) -> tuple[str, str]:
+    return (
+        _text_value(row, "expression_id") or fallback,
+        _text_value(row, "local_artifact_key", "artifact_key", "atom_name") or fallback,
+    )
+
+
+def _duplicate_symbolic_variable_issue(
+    seen: dict[tuple[str, str, str], int],
+    *,
+    key: tuple[str, str, str],
+    value_field: str,
+    value: str,
+    reason: str,
+    row_index: int,
+    row_subject: str,
+) -> ValidationIssue | None:
+    first_index = seen.get(key)
+    if first_index is None:
+        seen[key] = row_index
+        return None
+    expression_id, artifact_key, _ = key
+    return ValidationIssue(
+        reason=reason,
+        detail=_canonical_json(
+            {
+                "artifact_key": artifact_key,
+                "expression_id": expression_id,
+                "first_row_index": first_index,
+                "row_index": row_index,
+                value_field: value,
+            }
+        ),
+        table="artifact_symbolic_variables",
+        subject=row_subject,
+    )
 
 
 def _validity_bound_standard_issues(

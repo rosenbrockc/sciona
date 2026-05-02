@@ -60,6 +60,64 @@ def test_symbolic_publication_fixture_validator_reports_metadata_gaps(tmp_path) 
     ]
 
 
+def test_symbolic_fixture_validator_reports_duplicate_variable_reference(
+    tmp_path,
+) -> None:
+    manifest = _symbolic_manifest()
+    duplicate = dict(manifest["artifact_symbolic_variables"][1])
+    duplicate["source_variable_id"] = "fixture:m:duplicate"
+    duplicate["ordinal"] = 3
+    manifest["artifact_symbolic_variables"].append(duplicate)
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues[:1]] == [
+        "duplicate_symbolic_variable_reference"
+    ]
+    assert [issue.table for issue in check.issues[:1]] == [
+        "artifact_symbolic_variables"
+    ]
+    assert json.loads(check.issues[0].detail) == {
+        "artifact_key": "local:fixture.force",
+        "expression_id": "10000000-0000-0000-0000-000000000001",
+        "first_row_index": 1,
+        "row_index": 3,
+        "variable_reference": "m",
+    }
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
+def test_symbolic_fixture_validator_reports_duplicate_source_variable_id(
+    tmp_path,
+) -> None:
+    manifest = _symbolic_manifest()
+    manifest["artifact_symbolic_variables"][2]["source_variable_id"] = "fixture:m"
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    assert check.ok is False
+    duplicate_source_issues = [
+        issue
+        for issue in check.issues
+        if issue.reason == "duplicate_source_variable_id"
+    ]
+    assert len(duplicate_source_issues) == 1
+    assert duplicate_source_issues[0].table == "artifact_symbolic_variables"
+    assert json.loads(duplicate_source_issues[0].detail) == {
+        "artifact_key": "local:fixture.force",
+        "expression_id": "10000000-0000-0000-0000-000000000001",
+        "first_row_index": 1,
+        "row_index": 2,
+        "source_variable_id": "fixture:m",
+    }
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
 def test_symbolic_fixture_validator_reports_disconnected_validity_bounds(
     tmp_path,
 ) -> None:

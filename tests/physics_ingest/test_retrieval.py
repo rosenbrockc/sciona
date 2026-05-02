@@ -736,6 +736,46 @@ def test_phase6_reference_ranking_normalizes_analogue_and_data_artifact_aliases(
     assert "missing_required_data_artifact_dependencies" in results[1].reasons
 
 
+def test_phase6_relationship_matching_accepts_aliases_labels_and_unverified_edges() -> None:
+    results = rank_symbolic_candidates(
+        {
+            "topology_hash": "topo-relationship",
+            "relationship_kind": "derived from",
+            "relationship_label": "wave identity",
+        },
+        [
+            {
+                "artifact_id": "missing-relationship",
+                "topology_hash": "topo-relationship",
+                "review_status": "human_reviewed",
+            },
+            {
+                "artifact_id": "unverified-relationship",
+                "topology_hash": "topo-relationship",
+                "relationships": [
+                    {
+                        "relationship_kind": "derives-from",
+                        "relationship_label": "Wave Identity",
+                        "verified": False,
+                    }
+                ],
+                "review_status": "human_reviewed",
+            },
+        ],
+    )
+
+    winner = results[0]
+    assert winner.candidate.artifact_id == "unverified-relationship"
+    assert winner.candidate.relationships[0].relationship_kind == "derives_from"
+    assert winner.components["relationship_kinds"] == 0.8
+    assert winner.components["unverified_requested_relationships"] == 0.2
+    assert "relationship_kind_overlap" in winner.reasons
+    assert "requested_relationships_unverified" in winner.reasons
+
+    miss = results[1]
+    assert "requested_relationships_missing" in miss.reasons
+
+
 def test_symbolic_synthesis_report_can_require_data_artifact_dependencies() -> None:
     report = build_symbolic_synthesis_retrieval_report(
         {

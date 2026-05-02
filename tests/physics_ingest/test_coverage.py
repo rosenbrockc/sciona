@@ -205,6 +205,23 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
         "blocked"
     ] == 1
 
+    ring_review_status_counts = {
+        (
+            bucket["key"]["phase7_ring"],
+            bucket["key"]["review_status"],
+        ): bucket["counts"]
+        for bucket in report["by_phase7_ring_and_review_status"]
+    }
+    assert ring_review_status_counts[
+        ("ring_1_foundational_physics", "human_reviewed")
+    ]["published"] == 1
+    assert ring_review_status_counts[
+        ("ring_4_pdg_derivations", "blocked")
+    ]["blocked"] == 1
+    assert ring_review_status_counts[
+        ("ring_5_reference_datasets", "unknown")
+    ]["dimensioned"] == 1
+
 
 def test_phase7_coverage_summary_accepts_row_like_objects_and_nested_evidence() -> None:
     @dataclass(frozen=True)
@@ -406,6 +423,54 @@ def test_phase7_coverage_summary_drills_down_ring_by_physics_family() -> None:
     assert buckets[3]["counts"]["blocked"] == 1
 
 
+def test_phase7_coverage_summary_drills_down_ring_by_review_status() -> None:
+    report = build_phase7_coverage_summary_dict(
+        [
+            {
+                "candidate_status": "published",
+                "source_payload": {"phase7_ring": "Ring 1"},
+                "review_status": "Human_Reviewed",
+            },
+            {
+                "parse_status": "parsed",
+                "source_system": "wikidata",
+                "review_status": " automated_pass ",
+            },
+            {
+                "parse_status": "parse_failed",
+                "review_status": "blocked",
+                "source_payload": {"source": "pdg"},
+            },
+            {
+                "candidate_status": "dimension_resolved",
+                "source_family": "reference_data",
+                "review_status": "",
+            },
+        ]
+    )
+
+    buckets = report["by_phase7_ring_and_review_status"]
+
+    assert [
+        (bucket["key"]["phase7_ring"], bucket["key"]["review_status"])
+        for bucket in buckets
+    ] == [
+        ("ring_1_foundational_physics", "human_reviewed"),
+        ("ring_3_wikidata_equations", "automated_pass"),
+        ("ring_4_pdg_derivations", "blocked"),
+        ("ring_5_reference_datasets", "unknown"),
+    ]
+    assert buckets[0]["key"]["phase7_ring_label"] == (
+        "Foundational mechanics, thermodynamics, electromagnetism, waves, and transport"
+    )
+    assert buckets[0]["counts"]["published"] == 1
+    assert buckets[0]["metrics"]["published_rate"] == 1.0
+    assert buckets[1]["counts"]["reviewed"] == 1
+    assert buckets[2]["counts"]["blocked"] == 1
+    assert buckets[3]["counts"]["dimensioned"] == 1
+    assert buckets[3]["metrics"]["reviewed_rate"] == 0.0
+
+
 def test_phase7_coverage_summary_zero_rows_has_stable_metrics() -> None:
     report = build_phase7_coverage_summary_dict([])
 
@@ -434,4 +499,5 @@ def test_phase7_coverage_summary_zero_rows_has_stable_metrics() -> None:
     assert report["by_physics_family"] == []
     assert report["by_review_status"] == []
     assert report["by_source_and_physics_family"] == []
+    assert report["by_phase7_ring_and_review_status"] == []
     assert report["by_phase7_ring_and_physics_family"] == []

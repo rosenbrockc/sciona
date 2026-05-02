@@ -165,6 +165,7 @@ class Phase7CoverageSummary:
     by_physics_family: tuple[Phase7CoverageBucket, ...]
     by_review_status: tuple[Phase7CoverageBucket, ...]
     by_source_and_physics_family: tuple[Phase7CoverageBucket, ...]
+    by_phase7_ring_and_review_status: tuple[Phase7CoverageBucket, ...]
     by_phase7_ring_and_physics_family: tuple[Phase7CoverageBucket, ...]
 
     def to_dict(self) -> JSONDict:
@@ -188,6 +189,7 @@ def build_phase7_coverage_summary(
     family_counts: dict[str, dict[str, int]] = {}
     review_status_counts: dict[str, dict[str, int]] = {}
     source_family_counts: dict[tuple[str, str, str], dict[str, int]] = {}
+    ring_review_status_counts: dict[tuple[str, str], dict[str, int]] = {}
     ring_family_counts: dict[tuple[str, str], dict[str, int]] = {}
     total_rows = 0
 
@@ -211,6 +213,13 @@ def build_phase7_coverage_summary(
         )
         _add_counts(
             review_status_counts.setdefault(review_status, _empty_counts()),
+            counts,
+        )
+        _add_counts(
+            ring_review_status_counts.setdefault(
+                (phase7_ring, review_status),
+                _empty_counts(),
+            ),
             counts,
         )
         for physics_family in physics_families:
@@ -289,6 +298,23 @@ def build_phase7_coverage_summary(
                 source_family,
                 physics_family,
             ), counts in sorted(source_family_counts.items())
+        ),
+        by_phase7_ring_and_review_status=tuple(
+            Phase7CoverageBucket(
+                key={
+                    "phase7_ring": phase7_ring,
+                    "phase7_ring_label": PHASE7_RING_LABELS.get(
+                        phase7_ring,
+                        PHASE7_RING_LABELS["unknown"],
+                    ),
+                    "review_status": review_status,
+                },
+                counts=dict(counts),
+                metrics=_coverage_metrics(counts),
+            )
+            for (phase7_ring, review_status), counts in sorted(
+                ring_review_status_counts.items()
+            )
         ),
         by_phase7_ring_and_physics_family=tuple(
             Phase7CoverageBucket(

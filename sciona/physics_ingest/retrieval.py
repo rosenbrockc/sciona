@@ -31,6 +31,20 @@ _VERIFIED_RELATIONSHIP_KINDS = {
     "mechanism_analogue_of",
     "algebraic_rearrangement_of",
 }
+_RELATIONSHIP_KIND_ALIASES = {
+    "algebraic rearrangement": "algebraic_rearrangement_of",
+    "analogue": "mechanism_analogue_of",
+    "analog": "mechanism_analogue_of",
+    "approximation": "approximation_of",
+    "constant": "uses_constant",
+    "data artifact": "uses_data_artifact",
+    "derivation": "derives_from",
+    "derived from": "derives_from",
+    "grounding": "physical_grounding_of",
+    "limit case": "limit_case_of",
+    "same topology": "same_math_topology_as",
+    "uses data": "uses_data_artifact",
+}
 _DATA_ARTIFACT_REFERENCE_KEYS = (
     "data_artifact_dependencies",
     "data_artifacts",
@@ -131,7 +145,9 @@ class SymbolicRelationship:
     @classmethod
     def from_mapping(cls, row: Mapping[str, Any]) -> "SymbolicRelationship":
         return cls(
-            relationship_kind=_text(row, "relationship_kind", "kind"),
+            relationship_kind=_relationship_kind(
+                _text(row, "relationship_kind", "kind")
+            ),
             relationship_label=_text(row, "relationship_label", "label"),
             confidence=_bounded_float(row.get("confidence"), default=0.0),
             verified=_bool(row.get("verified")),
@@ -424,7 +440,7 @@ class SymbolicRetrievalQuery:
             dim_signatures=_strings(row.get("dim_signatures") or row.get("dim_signature")),
             mechanism_tags=_strings(row.get("mechanism_tags")),
             behavioral_archetypes=_strings(row.get("behavioral_archetypes")),
-            relationship_kinds=_strings(row.get("relationship_kinds")),
+            relationship_kinds=_relationship_requests(row),
             validity_regimes=_strings(
                 row.get("validity_regimes")
                 or row.get("validity_regime_labels")
@@ -583,25 +599,35 @@ def score_symbolic_candidate(
         components["behavioral_archetypes"] = archetype_score
         reasons.append("behavioral_archetype_overlap")
 
-    relationship_kinds = tuple(
-        relationship.relationship_kind for relationship in candidate.relationships
+    relationship_requests = _relationship_request_set(query.relationship_kinds)
+    relationship_matches = _requested_relationship_matches(
+        relationship_requests,
+        candidate.relationships,
     )
-    relationship_score = _overlap_score(
-        query.relationship_kinds,
-        relationship_kinds,
-        weight=0.8,
-    )
-    verified_requested = {
-        relationship.relationship_kind
-        for relationship in candidate.relationships
-        if relationship.verified
-    }
-    if relationship_score:
-        components["relationship_kinds"] = relationship_score
+    if relationship_matches:
+        components["relationship_kinds"] = 0.8 * (
+            len(relationship_matches) / len(relationship_requests)
+        )
         reasons.append("relationship_kind_overlap")
-    if query.relationship_kinds and set(query.relationship_kinds) <= verified_requested:
-        components["verified_relationships"] = 0.4
-        reasons.append("requested_relationships_verified")
+    if relationship_requests and len(relationship_matches) == len(
+        relationship_requests
+    ):
+        verified_matches = tuple(
+            requested
+            for requested, relationship in relationship_matches.items()
+            if relationship.verified
+        )
+        if len(verified_matches) == len(relationship_requests):
+            components["verified_relationships"] = 0.4
+            reasons.append("requested_relationships_verified")
+        else:
+            components["unverified_requested_relationships"] = 0.2 * (
+                (len(relationship_requests) - len(verified_matches))
+                / len(relationship_requests)
+            )
+            reasons.append("requested_relationships_unverified")
+    elif relationship_requests:
+        reasons.append("requested_relationships_missing")
 
     analogue_score = _overlap_score(
         query.known_analogues,
@@ -1327,6 +1353,77 @@ def _reference_queries(candidate: SymbolicArtifactCandidate) -> tuple[str, ...]:
         if text:
             queries.append(text)
     return _unique(queries)
+
+
+def _relationship_requests(row: Mapping[str, Any]) -> tuple[str, ...]:
+    values: list[str] = []
+    for key in (
+        "relationship_kinds",
+        "relationship_kind",
+        "relationship_labels",
+        "relationship_label",
+    ):
+        values.extend(_strings(row.get(key)))
+    return _unique(
+        request for value in values if (request := _relationship_request(value))
+    )
+
+
+def _requested_relationship_matches(
+    requested: Sequence[str],
+    relationships: Sequence[SymbolicRelationship],
+) -> dict[str, SymbolicRelationship]:
+    matches: dict[str, SymbolicRelationship] = {}
+    for request in _relationship_request_set(requested):
+        if not request:
+            continue
+        for relationship in relationships:
+            if request in _relationship_match_keys(relationship):
+                matches[request] = relationship
+                break
+    return matches
+
+
+def _relationship_request_set(requested: Sequence[str]) -> tuple[str, ...]:
+    return _unique(
+        request for value in requested if (request := _relationship_request(value))
+    )
+
+
+def _relationship_match_keys(
+    relationship: SymbolicRelationship,
+) -> tuple[str, ...]:
+    return _unique(
+        value
+        for value in (
+            _relationship_kind(relationship.relationship_kind),
+            _norm(relationship.relationship_label),
+        )
+        if value
+    )
+
+
+def _relationship_request(value: str) -> str:
+    normalized = _norm(value)
+    if not normalized:
+        return ""
+    kind = _relationship_kind(value)
+    if kind in _VERIFIED_RELATIONSHIP_KINDS:
+        return kind
+    return normalized
+
+
+def _relationship_kind(value: str) -> str:
+    normalized = _norm(value)
+    if not normalized:
+        return ""
+    alias = _RELATIONSHIP_KIND_ALIASES.get(normalized)
+    if alias:
+        return alias
+    canonical = normalized.replace(" ", "_")
+    if canonical in _VERIFIED_RELATIONSHIP_KINDS:
+        return canonical
+    return canonical
 
 
 def _overlap_score(
