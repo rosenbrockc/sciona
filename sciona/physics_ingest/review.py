@@ -526,6 +526,7 @@ def _symbolically_validated_gate(
 ) -> ReviewGateResult:
     blockers = []
     evidence = _evidence(expression)
+    mechanism_evidence = _mechanism_classification_evidence(expression, evidence)
     numpy_evidence = _mapping(
         evidence.get("numpy_runtime")
         or evidence.get("generated_numpy")
@@ -569,7 +570,10 @@ def _symbolically_validated_gate(
     return _gate(
         "symbolically_validated",
         blockers,
-        {"numpy_runtime_checked": bool(numpy_evidence)},
+        {
+            "numpy_runtime_checked": bool(numpy_evidence),
+            **mechanism_evidence,
+        },
     )
 
 
@@ -580,9 +584,12 @@ def _source_verified_gate(
 ) -> ReviewGateResult:
     blockers = []
     evidence = _evidence(expression)
+    mechanism_evidence = _mechanism_classification_evidence(expression, evidence)
     verified_refs = [ref for ref in references if _reference_verified(ref)]
     if not verified_refs:
         blockers.append("at least one verified reference is required")
+    if not mechanism_evidence["has_mechanism_classification"]:
+        blockers.append("mechanism classification evidence is required")
 
     dependencies = _declared_dependencies(evidence)
     dependency_relationships = [
@@ -609,6 +616,7 @@ def _source_verified_gate(
         {
             "verified_reference_count": len(verified_refs),
             "dependency_relationship_count": len(dependency_relationships),
+            **mechanism_evidence,
         },
     )
 
@@ -793,3 +801,111 @@ def _declared_dependencies(evidence: Mapping[str, Any]) -> tuple[Any, ...]:
     if not isinstance(data, Sequence):
         data = ()
     return (*constants, *data)
+
+
+def _mechanism_classification_evidence(
+    expression: Mapping[str, Any],
+    evidence: Mapping[str, Any],
+) -> dict[str, Any]:
+    tags: list[str] = []
+    archetypes: list[str] = []
+    details: list[str] = []
+    sources: list[str] = []
+
+    def add_strings(target: list[str], values: Any, source: str) -> None:
+        items = _string_sequence(values)
+        if not items:
+            return
+        target.extend(item for item in items if item not in target)
+        if source not in sources:
+            sources.append(source)
+
+    def add_detail(value: Any, source: str) -> None:
+        items = _string_sequence(value)
+        if not items:
+            return
+        details.extend(item for item in items if item not in details)
+        if source not in sources:
+            sources.append(source)
+
+    add_strings(tags, expression.get("mechanism_tags"), "expression.mechanism_tags")
+    add_strings(
+        archetypes,
+        expression.get("behavioral_archetypes"),
+        "expression.behavioral_archetypes",
+    )
+    for key in (
+        "mechanism_classification",
+        "mechanism_label",
+        "classification_label",
+    ):
+        add_detail(expression.get(key), f"expression.{key}")
+
+    add_strings(tags, evidence.get("mechanism_tags"), "evidence_json.mechanism_tags")
+    add_strings(
+        archetypes,
+        evidence.get("behavioral_archetypes"),
+        "evidence_json.behavioral_archetypes",
+    )
+    for key in (
+        "mechanism_classification",
+        "mechanism_label",
+        "classification_label",
+    ):
+        add_detail(evidence.get(key), f"evidence_json.{key}")
+
+    for container_key in ("mechanism", "classification", "mechanism_classification"):
+        value = evidence.get(container_key)
+        if isinstance(value, Mapping):
+            source = f"evidence_json.{container_key}"
+            add_strings(
+                tags,
+                value.get("mechanism_tags")
+                or value.get("mechanisms")
+                or value.get("physics_mechanisms"),
+                source,
+            )
+            add_strings(
+                archetypes,
+                value.get("behavioral_archetypes") or value.get("archetypes"),
+                source,
+            )
+            for detail_key in (
+                "mechanism",
+                "mechanism_label",
+                "mechanism_class",
+                "classification",
+                "classification_label",
+                "class",
+                "category",
+                "rationale",
+                "basis",
+                "justification",
+                "notes",
+            ):
+                add_detail(value.get(detail_key), source)
+        else:
+            add_detail(value, f"evidence_json.{container_key}")
+
+    return {
+        "has_mechanism_classification": bool(tags or archetypes or details),
+        "mechanism_tag_count": len(tags),
+        "behavioral_archetype_count": len(archetypes),
+        "classification_detail_count": len(details),
+        "mechanism_evidence_sources": list(sources),
+    }
+
+
+def _string_sequence(value: Any) -> tuple[str, ...]:
+    if isinstance(value, str):
+        stripped = value.strip()
+        return (stripped,) if stripped else ()
+    if isinstance(value, Mapping) or not isinstance(value, Iterable):
+        return ()
+    strings = []
+    for item in value:
+        if isinstance(item, str):
+            stripped = item.strip()
+            if stripped:
+                strings.append(stripped)
+    return tuple(strings)

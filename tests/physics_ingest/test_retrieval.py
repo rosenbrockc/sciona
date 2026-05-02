@@ -398,6 +398,93 @@ def test_raw_candidate_external_knowledge_suggestions_are_side_effect_free() -> 
     )
 
 
+def test_raw_candidate_external_knowledge_suggests_data_validity_and_reference_work() -> None:
+    candidates = candidates_from_rows(
+        [
+            {
+                "artifact_id": "raw-force-data",
+                "fqdn": "physics.raw.force.data",
+                "raw_formula": "F = m a",
+                "review_status": "unreviewed",
+                "candidate_status": "raw_imported",
+                "source_payload": {
+                    "future_data_artifact": {"artifact_id": "opb.record.opb.newton-2"}
+                },
+            }
+        ]
+    )
+    query = SymbolicRetrievalQuery.from_mapping(
+        {
+            "data_artifact_dependencies": ["opb.record.opb.newton-2"],
+            "require_data_artifact_dependencies": True,
+            "require_validity_bounds": True,
+            "validity_variables": ["t"],
+        }
+    )
+
+    suggestions = suggest_raw_candidate_external_knowledge(candidates, query)
+
+    assert len(suggestions) == 1
+    suggestion = suggestions[0]
+    assert suggestion.suggested_relationship_kinds == (
+        "physical_grounding_of",
+        "derives_from",
+        "uses_constant",
+        "uses_data_artifact",
+    )
+    assert suggestion.suggested_reference_queries == (
+        "F = m a",
+        "physics raw force data",
+        "opb.record.opb.newton-2",
+    )
+    assert suggestion.suggested_source_systems == (
+        "manual",
+        "physics_derivation_graph",
+        "theoria",
+        "nist_dlmf",
+        "opb",
+        "materials_project",
+        "hitran",
+        "phy_srbench",
+    )
+    assert suggestion.suggested_review_tasks == (
+        "locate_primary_source_reference",
+        "record_source_provenance",
+        "define_validity_regime_and_bounds",
+        "check_requested_validity_bounds_or_regime",
+        "verify_data_artifact_dependency_provenance",
+        "add_uses_data_artifact_relationship",
+        "classify_mechanism_metadata",
+    )
+    assert suggestion.to_dict()["suggested_review_tasks"] == list(
+        suggestion.suggested_review_tasks
+    )
+
+
+def test_raw_candidate_external_knowledge_distinguishes_provenance_from_reference() -> None:
+    candidates = candidates_from_rows(
+        [
+            {
+                "artifact_id": "raw-adapter-force",
+                "fqdn": "physics.raw.adapter.force",
+                "raw_formula": "F = m a",
+                "review_status": "unreviewed",
+                "candidate_status": "raw_imported",
+                "source_system": "web_seed",
+                "source_kind": "raw_adapter",
+            }
+        ]
+    )
+
+    suggestions = suggest_raw_candidate_external_knowledge(candidates)
+
+    assert suggestions[0].suggested_review_tasks == (
+        "locate_primary_source_reference",
+        "define_validity_regime_and_bounds",
+        "classify_mechanism_metadata",
+    )
+
+
 def test_symbolic_retrieval_report_includes_trust_and_raw_suggestions() -> None:
     report = build_symbolic_retrieval_report(
         {"topology_hash": "topo"},

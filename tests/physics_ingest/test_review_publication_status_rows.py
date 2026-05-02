@@ -150,6 +150,8 @@ def _review_bundle(
             "dimensional_hash": "c" * 64,
             "validation_status": "passed",
             "review_status": review_status,
+            "mechanism_tags": ["force_balance", "classical_mechanics"],
+            "behavioral_archetypes": ["linear_proportionality"],
             "evidence_json": evidence_json,
         },
         "variables": [

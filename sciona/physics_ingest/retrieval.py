@@ -139,6 +139,8 @@ class RawCandidateExternalKnowledgeSuggestion:
     raw_formula: str = ""
     suggested_relationship_kinds: tuple[str, ...] = ()
     suggested_reference_queries: tuple[str, ...] = ()
+    suggested_source_systems: tuple[str, ...] = ()
+    suggested_review_tasks: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -148,6 +150,8 @@ class RawCandidateExternalKnowledgeSuggestion:
             "raw_formula": self.raw_formula,
             "suggested_relationship_kinds": list(self.suggested_relationship_kinds),
             "suggested_reference_queries": list(self.suggested_reference_queries),
+            "suggested_source_systems": list(self.suggested_source_systems),
+            "suggested_review_tasks": list(self.suggested_review_tasks),
         }
 
 
@@ -671,6 +675,7 @@ def candidates_from_rows(
 
 def suggest_raw_candidate_external_knowledge(
     candidates: Iterable[SymbolicArtifactCandidate | Mapping[str, Any]],
+    query: SymbolicRetrievalQuery | Mapping[str, Any] | None = None,
 ) -> tuple[RawCandidateExternalKnowledgeSuggestion, ...]:
     """Suggest external-knowledge checks for raw or needs-human candidates.
 
@@ -678,6 +683,12 @@ def suggest_raw_candidate_external_knowledge(
     suggestions in CLI reports or decide which source adapters to run.
     """
 
+    if query is None:
+        request = None
+    elif isinstance(query, SymbolicRetrievalQuery):
+        request = query
+    else:
+        request = SymbolicRetrievalQuery.from_mapping(query)
     suggestions: list[RawCandidateExternalKnowledgeSuggestion] = []
     for value in candidates:
         candidate = _candidate(value)
@@ -693,7 +704,7 @@ def suggest_raw_candidate_external_knowledge(
         }
         missing_kinds = tuple(
             kind
-            for kind in ("physical_grounding_of", "derives_from", "uses_constant")
+            for kind in _suggested_relationship_kind_order(candidate, request)
             if kind not in verified_kinds
         )
         reason = (
@@ -709,6 +720,8 @@ def suggest_raw_candidate_external_knowledge(
                 raw_formula=candidate.raw_formula,
                 suggested_relationship_kinds=missing_kinds,
                 suggested_reference_queries=_reference_queries(candidate),
+                suggested_source_systems=_suggested_source_systems(candidate, request),
+                suggested_review_tasks=_suggested_review_tasks(candidate, request),
             )
         )
     return tuple(suggestions)
@@ -722,9 +735,14 @@ def build_symbolic_retrieval_report(
 ) -> dict[str, Any]:
     """Return ranking and raw-candidate review suggestions without IO."""
 
+    request = (
+        query
+        if isinstance(query, SymbolicRetrievalQuery)
+        else SymbolicRetrievalQuery.from_mapping(query)
+    )
     candidate_tuple = tuple(_candidate(candidate) for candidate in candidates)
-    results = rank_symbolic_candidates(query, candidate_tuple, limit=limit)
-    suggestions = suggest_raw_candidate_external_knowledge(candidate_tuple)
+    results = rank_symbolic_candidates(request, candidate_tuple, limit=limit)
+    suggestions = suggest_raw_candidate_external_knowledge(candidate_tuple, request)
     return {
         "result_count": len(results),
         "results": [result.to_dict() for result in results],
@@ -770,7 +788,8 @@ def build_symbolic_synthesis_retrieval_report(
                 {
                     **payload,
                     "suggestion": _external_knowledge_suggestion_payload(
-                        result.candidate
+                        result.candidate,
+                        request,
                     ),
                 }
             )
@@ -1075,8 +1094,9 @@ def _synthesis_candidate_payload(
 
 def _external_knowledge_suggestion_payload(
     candidate: SymbolicArtifactCandidate,
+    query: SymbolicRetrievalQuery | None = None,
 ) -> dict[str, Any]:
-    suggestions = suggest_raw_candidate_external_knowledge((candidate,))
+    suggestions = suggest_raw_candidate_external_knowledge((candidate,), query)
     if suggestions:
         return suggestions[0].to_dict()
     return {
@@ -1086,6 +1106,8 @@ def _external_knowledge_suggestion_payload(
         "raw_formula": candidate.raw_formula,
         "suggested_relationship_kinds": [],
         "suggested_reference_queries": list(_reference_queries(candidate)),
+        "suggested_source_systems": list(_suggested_source_systems(candidate, query)),
+        "suggested_review_tasks": list(_suggested_review_tasks(candidate, query)),
     }
 
 
@@ -1166,6 +1188,120 @@ def _candidate_key(candidate: SymbolicArtifactCandidate) -> str:
         or candidate.fqdn
         or "<candidate>"
     )
+
+
+def _suggested_relationship_kind_order(
+    candidate: SymbolicArtifactCandidate,
+    query: SymbolicRetrievalQuery | None = None,
+) -> tuple[str, ...]:
+    kinds = ["physical_grounding_of", "derives_from", "uses_constant"]
+    if candidate.data_artifact_dependencies or _query_requires_data_artifact(query):
+        kinds.append("uses_data_artifact")
+    return tuple(kinds)
+
+
+def _suggested_source_systems(
+    candidate: SymbolicArtifactCandidate,
+    query: SymbolicRetrievalQuery | None = None,
+) -> tuple[str, ...]:
+    systems: list[str] = []
+    if not _has_source_reference(candidate) or not (
+        candidate.source_system and candidate.source_kind
+    ):
+        systems.extend(("manual", "physics_derivation_graph", "theoria"))
+    if not candidate.validity_bounds or _query_requests_validity(query):
+        systems.extend(("theoria", "nist_dlmf", "manual"))
+    if candidate.data_artifact_dependencies or _query_requires_data_artifact(query):
+        systems.extend(("opb", "materials_project", "hitran", "phy_srbench"))
+    if not (
+        candidate.mechanism_tags
+        or candidate.behavioral_archetypes
+        or candidate.known_analogues
+    ):
+        systems.extend(("physics_derivation_graph", "opb"))
+    return _unique(systems)
+
+
+def _suggested_review_tasks(
+    candidate: SymbolicArtifactCandidate,
+    query: SymbolicRetrievalQuery | None = None,
+) -> tuple[str, ...]:
+    tasks: list[str] = []
+    verified_kinds = {
+        relationship.relationship_kind
+        for relationship in candidate.relationships
+        if relationship.verified
+    }
+    if not _has_source_reference(candidate):
+        tasks.append("locate_primary_source_reference")
+    if not (candidate.source_system and candidate.source_kind):
+        tasks.append("record_source_provenance")
+    if not candidate.validity_bounds:
+        tasks.append("define_validity_regime_and_bounds")
+    elif not all(bound.reviewed for bound in candidate.validity_bounds):
+        tasks.append("human_review_validity_bounds")
+    if _query_requests_validity(query):
+        tasks.append("check_requested_validity_bounds_or_regime")
+    if candidate.data_artifact_dependencies:
+        tasks.append("verify_data_artifact_dependency_provenance")
+        if "uses_data_artifact" not in verified_kinds:
+            tasks.append("add_uses_data_artifact_relationship")
+    elif _query_requires_data_artifact(query):
+        tasks.append("resolve_required_data_artifact_dependencies")
+    if not (
+        candidate.mechanism_tags
+        or candidate.behavioral_archetypes
+        or candidate.known_analogues
+    ):
+        tasks.append("classify_mechanism_metadata")
+    return _unique(tasks)
+
+
+def _query_requires_data_artifact(query: SymbolicRetrievalQuery | None) -> bool:
+    return bool(
+        query
+        and (query.require_data_artifact_dependencies or query.data_artifact_dependencies)
+    )
+
+
+def _query_requests_validity(query: SymbolicRetrievalQuery | None) -> bool:
+    return bool(
+        query
+        and (
+            query.require_validity_bounds
+            or query.require_reviewed_bounds
+            or query.require_validity_matches
+            or query.validity_regimes
+            or query.validity_variables
+            or any(_validity_request_present(bound) for bound in query.validity_bounds)
+        )
+    )
+
+
+def _has_source_reference(candidate: SymbolicArtifactCandidate) -> bool:
+    row = _mapping(candidate.extra.get("row"))
+    document = _mapping(candidate.extra.get("document"))
+    return _row_has_source_reference(row) or _row_has_source_reference(document)
+
+
+def _row_has_source_reference(row: Mapping[str, Any]) -> bool:
+    if not row:
+        return False
+    for key in (
+        "source_id",
+        "source_uri",
+        "source_entity_uri",
+        "references",
+        "reference_ids",
+        "doi",
+        "url",
+        "citation",
+    ):
+        value = row.get(key)
+        if value:
+            return True
+    payload = row.get("source_payload")
+    return isinstance(payload, Mapping) and _row_has_source_reference(payload)
 
 
 def _reference_queries(candidate: SymbolicArtifactCandidate) -> tuple[str, ...]:

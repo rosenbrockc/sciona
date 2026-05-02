@@ -7,6 +7,7 @@ from pathlib import Path
 
 from sciona.physics_ingest.validation import (
     VALIDATION_REPORT_KIND,
+    VALIDATION_REPORT_VERSION,
     build_physics_ingestion_validation_report,
     discover_changed_pdg_payload_fixture_paths,
     discover_changed_symbolic_fixture_paths,
@@ -166,11 +167,23 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
     )
 
     assert report["report_kind"] == VALIDATION_REPORT_KIND
+    assert report["report_version"] == VALIDATION_REPORT_VERSION
     assert report["ok"] is False
     assert report["summary"] == {
         "check_count": 5,
         "failed_check_count": 1,
         "error_count": 1,
+        "check_ids": [
+            "symbolic_fixture_inventory",
+            "pdg_publication_graph",
+            "source_execution_readiness",
+            "source_adapter_coverage",
+            "source_adapter_data_artifact_seeds",
+        ],
+        "failed_check_ids": ["symbolic_fixture_inventory"],
+        "error_count_by_reason": {"missing_symbolic_fixture_inventory": 1},
+        "failed_count_by_check_id": {"symbolic_fixture_inventory": 1},
+        "issue_count_by_table": {"unscoped": 1},
     }
     json.dumps(report, sort_keys=True)
 
@@ -229,6 +242,11 @@ def test_validation_report_can_skip_source_execution() -> None:
         "check_count": 0,
         "failed_check_count": 0,
         "error_count": 0,
+        "check_ids": [],
+        "failed_check_ids": [],
+        "error_count_by_reason": {},
+        "failed_count_by_check_id": {},
+        "issue_count_by_table": {},
     }
     assert report["checks"] == []
 
@@ -279,6 +297,42 @@ def test_validation_report_can_skip_source_adapter_seed_quality() -> None:
     assert [check["check_id"] for check in report["checks"]] == [
         "source_adapter_coverage"
     ]
+
+
+def test_validation_report_summary_includes_dashboard_rollups() -> None:
+    report = build_physics_ingestion_validation_report(
+        include_default_pdg=False,
+        include_source_execution=False,
+        include_source_adapter_data_artifact_seeds=False,
+        source_retrieval_manifest={
+            "manifest_version": "test",
+            "snapshot_key_prefix": "test",
+            "jobs": [
+                {
+                    "job_id": "synthetic_missing_module.backfill",
+                    "adapter_name": "sciona.physics_ingest.sources.does_not_exist",
+                    "adapter_version": "0.0.1",
+                    "target_adapter_input": "raw_records",
+                }
+            ],
+        },
+    )
+
+    assert report["report_version"] == VALIDATION_REPORT_VERSION
+    assert report["summary"] == {
+        "check_count": 1,
+        "failed_check_count": 1,
+        "error_count": 2,
+        "check_ids": ["source_adapter_coverage"],
+        "failed_check_ids": ["source_adapter_coverage"],
+        "error_count_by_reason": {
+            "source_adapter_coverage_missing_adapter_module": 1,
+            "source_adapter_coverage_missing_builder_readiness_contract": 1,
+        },
+        "failed_count_by_check_id": {"source_adapter_coverage": 1},
+        "issue_count_by_table": {"source_adapter_coverage": 2},
+    }
+    json.dumps(report, sort_keys=True)
 
 
 def test_source_adapter_data_artifact_seed_quality_accepts_default_bundles() -> None:
@@ -384,6 +438,7 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
     )
 
     report = json.loads(result.stdout)
+    assert report["report_version"] == VALIDATION_REPORT_VERSION
     subjects = [check["subject"] for check in report["checks"]]
     assert "pdg_fixture:limit_nondimensionalization_chain" in subjects
     assert "pdg_fixture:solve_substitute_chain" in subjects

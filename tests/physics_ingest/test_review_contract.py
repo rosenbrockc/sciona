@@ -39,7 +39,15 @@ def test_phase5_review_marks_fully_evidenced_bundle_publishable() -> None:
     assert assessment.needs_human is False
     assert assessment.blocked is False
     assert assessment.gate("symbolically_validated").evidence == {
-        "numpy_runtime_checked": True
+        "numpy_runtime_checked": True,
+        "has_mechanism_classification": True,
+        "mechanism_tag_count": 2,
+        "behavioral_archetype_count": 1,
+        "classification_detail_count": 0,
+        "mechanism_evidence_sources": [
+            "expression.mechanism_tags",
+            "expression.behavioral_archetypes",
+        ],
     }
 
 
@@ -129,6 +137,55 @@ def test_phase5_review_blocks_unverified_sources_and_dependencies() -> None:
     assert assessment.achieved_status == "symbolically_validated"
     assert "at least one verified reference is required" in assessment.blockers
     assert "speed of light relationship must be verified" in assessment.blockers
+
+
+def test_phase5_review_requires_mechanism_classification_for_source_verification() -> None:
+    bundle = _publishable_bundle()
+    bundle["expression"] = {
+        key: value
+        for key, value in bundle["expression"].items()
+        if key not in {"mechanism_tags", "behavioral_archetypes"}
+    }
+
+    assessment = assess_publishability(**bundle)
+
+    assert assessment.publishable is False
+    assert assessment.achieved_status == "symbolically_validated"
+    assert assessment.gate("symbolically_validated").passed is True
+    assert assessment.gate("symbolically_validated").evidence[
+        "has_mechanism_classification"
+    ] is False
+    assert assessment.gate("source_verified").passed is False
+    assert "mechanism classification evidence is required" in assessment.blockers
+
+
+def test_phase5_review_accepts_nested_mechanism_classification_evidence() -> None:
+    bundle = _publishable_bundle()
+    expression = {
+        key: value
+        for key, value in bundle["expression"].items()
+        if key not in {"mechanism_tags", "behavioral_archetypes"}
+    }
+    bundle["expression"] = {
+        **expression,
+        "evidence_json": {
+            **expression["evidence_json"],
+            "classification": {
+                "mechanism_class": "force_balance",
+                "basis": "source annotation classifies the relation as inertial force balance",
+            },
+        },
+    }
+
+    assessment = assess_publishability(**bundle)
+
+    assert assessment.publishable is True
+    assert assessment.gate("source_verified").evidence[
+        "classification_detail_count"
+    ] == 2
+    assert assessment.gate("source_verified").evidence[
+        "mechanism_evidence_sources"
+    ] == ["evidence_json.classification"]
 
 
 def test_phase5_review_checks_numpy_evidence_only_when_present() -> None:
@@ -223,6 +280,8 @@ def _publishable_bundle() -> dict[str, object]:
         "dimensional_hash": "c" * 64,
         "validation_status": "passed",
         "review_status": "human_reviewed",
+        "mechanism_tags": ["force_balance", "classical_mechanics"],
+        "behavioral_archetypes": ["linear_proportionality"],
         "evidence_json": {
             "parse_roundtrip": {"status": "passed"},
             "dimensional_analysis": {"status": "passed"},

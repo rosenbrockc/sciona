@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 import fnmatch
@@ -27,6 +28,7 @@ from sciona.physics_ingest.sources.pdg import parse_pdg_document
 
 
 VALIDATION_REPORT_KIND = "physics_ingestion_validation"
+VALIDATION_REPORT_VERSION = "physics-ingestion-validation.v1"
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_PDG_FIXTURE_GLOBS = (
     Path("tests") / "physics_ingest" / "fixtures" / "pdg_payloads" / "*.pdg.json",
@@ -162,21 +164,46 @@ def build_physics_ingestion_validation_report(
 
     report = {
         "report_kind": VALIDATION_REPORT_KIND,
+        "report_version": VALIDATION_REPORT_VERSION,
         "ok": all(check.ok for check in checks),
-        "summary": {
-            "check_count": len(checks),
-            "failed_check_count": sum(1 for check in checks if not check.ok),
-            "error_count": sum(
-                1
-                for check in checks
-                for issue in check.issues
-                if issue.severity == "error"
-            ),
-        },
+        "summary": _validation_report_summary(checks),
         "checks": [check.to_dict() for check in checks],
     }
     _assert_json_serializable(report)
     return report
+
+
+def _validation_report_summary(checks: Sequence[ValidationCheck]) -> dict[str, Any]:
+    """Build stable aggregate fields for CI and dashboard consumers."""
+
+    failed_checks = tuple(check for check in checks if not check.ok)
+    errors = tuple(
+        issue
+        for check in checks
+        for issue in check.issues
+        if issue.severity == "error"
+    )
+    issues = tuple(issue for check in checks for issue in check.issues)
+
+    return {
+        "check_count": len(checks),
+        "failed_check_count": len(failed_checks),
+        "error_count": len(errors),
+        "check_ids": [check.check_id for check in checks],
+        "failed_check_ids": [check.check_id for check in failed_checks],
+        "error_count_by_reason": _sorted_count_dict(issue.reason for issue in errors),
+        "failed_count_by_check_id": _sorted_count_dict(
+            check.check_id for check in failed_checks
+        ),
+        "issue_count_by_table": _sorted_count_dict(
+            issue.table or "unscoped" for issue in issues
+        ),
+    }
+
+
+def _sorted_count_dict(values: Iterable[str]) -> dict[str, int]:
+    counts = Counter(values)
+    return {key: counts[key] for key in sorted(counts)}
 
 
 def validate_source_adapter_coverage(
