@@ -41,6 +41,16 @@ _DATA_ARTIFACT_REFERENCE_KEYS = (
     "data_artifact_seed",
     "data_artifact_seeds",
 )
+_KNOWN_ANALOGUE_REFERENCE_KEYS = (
+    "known_analogues",
+    "known_analogue",
+    "known_analogue_ids",
+    "known_analogue_labels",
+    "analogue_artifact_fqdns",
+    "analogue_artifact_ids",
+    "analogue_artifact_labels",
+    "analogues",
+)
 _NESTED_REFERENCE_PAYLOAD_KEYS = ("source_payload",)
 
 
@@ -439,10 +449,9 @@ class SymbolicRetrievalQuery:
             source_systems=_strings(row.get("source_systems") or row.get("source_system")),
             source_kinds=_strings(row.get("source_kinds") or row.get("source_kind")),
             source_domains=_strings(row.get("source_domains") or row.get("source_domain")),
-            known_analogues=_strings(
-                row.get("known_analogues")
-                or row.get("known_analogue")
-                or row.get("analogue_artifact_fqdns")
+            known_analogues=_row_references(
+                row,
+                keys=_KNOWN_ANALOGUE_REFERENCE_KEYS,
             ),
             data_artifact_dependencies=_row_references(
                 row,
@@ -598,6 +607,7 @@ def score_symbolic_candidate(
         query.known_analogues,
         candidate.known_analogues,
         weight=0.7,
+        normalize=True,
     )
     if analogue_score:
         components["known_analogues"] = analogue_score
@@ -607,6 +617,7 @@ def score_symbolic_candidate(
         query.data_artifact_dependencies,
         candidate.data_artifact_dependencies,
         weight=0.7,
+        normalize=True,
     )
     if artifact_score:
         components["data_artifact_dependencies"] = artifact_score
@@ -1386,12 +1397,7 @@ def _known_analogues(
         _row_references(
             row,
             document,
-            keys=(
-                "known_analogues",
-                "known_analogue",
-                "analogue_artifact_fqdns",
-                "analogues",
-            ),
+            keys=_KNOWN_ANALOGUE_REFERENCE_KEYS,
         )
     )
     for relationship in relationships:
@@ -1404,6 +1410,9 @@ def _known_analogues(
                     "target_artifact_fqdn",
                     "target_fqdn",
                     "target_artifact_id",
+                    "target_artifact_key",
+                    "target_artifact_label",
+                    "target_label",
                     "relationship_label",
                     "label",
                 ),
@@ -1458,19 +1467,28 @@ def _row_reference_values(
 
 def _reference_values(value: Any) -> tuple[str, ...]:
     if isinstance(value, Mapping):
-        text = _text(
-            value,
-            "artifact_id",
-            "artifact_key",
-            "artifact_fqdn",
-            "fqdn",
-            "source_candidate_id",
-            "reference_id",
-            "id",
-            "key",
-            "name",
-        )
-        return (text,) if text else ()
+        values = [
+            text
+            for key in (
+                "artifact_id",
+                "artifact_key",
+                "artifact_fqdn",
+                "artifact_label",
+                "fqdn",
+                "target_artifact_id",
+                "target_artifact_key",
+                "target_artifact_fqdn",
+                "target_artifact_label",
+                "target_fqdn",
+                "target_label",
+                "source_candidate_id",
+                "reference_id",
+                "id",
+                "key",
+            )
+            if (text := _text(value, key))
+        ]
+        return _unique(values)
     if isinstance(value, str):
         return _strings(value)
     if isinstance(value, Iterable):
@@ -1541,7 +1559,12 @@ def _first_present(row: Mapping[str, Any], *keys: str) -> Any:
 
 def _norm(value: str) -> str:
     return " ".join(
-        value.strip().casefold().replace("_", " ").replace("-", " ").split()
+        value.strip()
+        .casefold()
+        .replace("_", " ")
+        .replace("-", " ")
+        .replace(".", " ")
+        .split()
     )
 
 

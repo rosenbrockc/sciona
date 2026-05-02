@@ -163,6 +163,7 @@ class Phase7CoverageSummary:
     by_source: tuple[Phase7CoverageBucket, ...]
     by_phase7_ring: tuple[Phase7CoverageBucket, ...]
     by_physics_family: tuple[Phase7CoverageBucket, ...]
+    by_review_status: tuple[Phase7CoverageBucket, ...]
     by_source_and_physics_family: tuple[Phase7CoverageBucket, ...]
     by_phase7_ring_and_physics_family: tuple[Phase7CoverageBucket, ...]
 
@@ -185,6 +186,7 @@ def build_phase7_coverage_summary(
     source_counts: dict[tuple[str, str], dict[str, int]] = {}
     ring_counts: dict[str, dict[str, int]] = {}
     family_counts: dict[str, dict[str, int]] = {}
+    review_status_counts: dict[str, dict[str, int]] = {}
     source_family_counts: dict[tuple[str, str, str], dict[str, int]] = {}
     ring_family_counts: dict[tuple[str, str], dict[str, int]] = {}
     total_rows = 0
@@ -194,6 +196,7 @@ def build_phase7_coverage_summary(
         counts = _coverage_counts(row)
         source_system, source_family = _source_key(row)
         physics_families = _physics_families(row)
+        review_status = _review_status_key(row)
         phase7_ring = _phase7_ring(row, source_system, source_family, physics_families)
 
         total_rows += 1
@@ -204,6 +207,10 @@ def build_phase7_coverage_summary(
         )
         _add_counts(
             ring_counts.setdefault(phase7_ring, _empty_counts()),
+            counts,
+        )
+        _add_counts(
+            review_status_counts.setdefault(review_status, _empty_counts()),
             counts,
         )
         for physics_family in physics_families:
@@ -258,6 +265,14 @@ def build_phase7_coverage_summary(
                 metrics=_coverage_metrics(counts),
             )
             for physics_family, counts in sorted(family_counts.items())
+        ),
+        by_review_status=tuple(
+            Phase7CoverageBucket(
+                key={"review_status": review_status},
+                counts=dict(counts),
+                metrics=_coverage_metrics(counts),
+            )
+            for review_status, counts in sorted(review_status_counts.items())
         ),
         by_source_and_physics_family=tuple(
             Phase7CoverageBucket(
@@ -384,6 +399,11 @@ def _source_key(row: Mapping[str, Any]) -> tuple[str, str]:
         "unknown",
     )
     return source_system, source_family
+
+
+def _review_status_key(row: Mapping[str, Any]) -> str:
+    review_status = _text(row, "review_status")
+    return review_status or "unknown"
 
 
 def _physics_families(row: Mapping[str, Any]) -> tuple[str, ...]:

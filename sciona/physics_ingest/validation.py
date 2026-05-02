@@ -1051,6 +1051,16 @@ def _validity_bound_standard_issues(
                 )
             )
 
+        if row.get("review_status") not in {"automated_pass", "human_reviewed"}:
+            issues.append(
+                ValidationIssue(
+                    reason="validity_bound_review_status_not_publishable",
+                    detail=str(row.get("review_status") or ""),
+                    table="artifact_validity_bounds",
+                    subject=row_subject,
+                )
+            )
+
         lower = row.get("lower_value", row.get("min_value"))
         upper = row.get("upper_value", row.get("max_value"))
         if _real_number(lower) and _real_number(upper) and lower > upper:

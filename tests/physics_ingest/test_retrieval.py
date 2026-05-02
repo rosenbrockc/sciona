@@ -685,6 +685,57 @@ def test_source_domain_ranking_normalizes_label_variants_and_nested_payloads() -
     assert "source_domains" not in results[1].components
 
 
+def test_phase6_reference_ranking_normalizes_analogue_and_data_artifact_aliases() -> None:
+    results = rank_symbolic_candidates(
+        {
+            "topology_hash": "topo-reference",
+            "known_analogues": [{"artifact_id": "navier_stokes"}],
+            "data_artifact_dependencies": [
+                {"artifact_id": "opb.record.wave-benchmark"}
+            ],
+            "require_data_artifact_dependencies": True,
+        },
+        [
+            {
+                "artifact_id": "no-reference-aliases",
+                "topology_hash": "topo-reference",
+                "review_status": "human_reviewed",
+            },
+            {
+                "artifact_id": "reference-aliases",
+                "topology_hash": "topo-reference",
+                "relationships": [
+                    {
+                        "relationship_kind": "mechanism_analogue_of",
+                        "target_artifact_label": "Navier-Stokes",
+                        "verified": True,
+                    }
+                ],
+                "source_payload": {
+                    "future_data_artifact": {
+                        "artifact_label": "OPB Record Wave Benchmark"
+                    }
+                },
+                "review_status": "human_reviewed",
+            },
+        ],
+    )
+
+    assert results[0].candidate.artifact_id == "reference-aliases"
+    assert results[0].candidate.known_analogues == ("Navier-Stokes",)
+    assert results[0].candidate.data_artifact_dependencies == (
+        "OPB Record Wave Benchmark",
+    )
+    assert results[0].components["known_analogues"] == 0.7
+    assert results[0].components["data_artifact_dependencies"] == 0.7
+    assert "known_analogue_overlap" in results[0].reasons
+    assert "data_artifact_dependency_overlap" in results[0].reasons
+
+    assert results[1].candidate.artifact_id == "no-reference-aliases"
+    assert results[1].eligible is False
+    assert "missing_required_data_artifact_dependencies" in results[1].reasons
+
+
 def test_symbolic_synthesis_report_can_require_data_artifact_dependencies() -> None:
     report = build_symbolic_synthesis_retrieval_report(
         {

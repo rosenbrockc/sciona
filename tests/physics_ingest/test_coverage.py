@@ -171,6 +171,14 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
     assert family_counts["dynamics"]["blocked"] == 1
     assert family_counts["force_balance"]["blocked"] == 1
 
+    review_status_counts = {
+        bucket["key"]["review_status"]: bucket["counts"]
+        for bucket in report["by_review_status"]
+    }
+    assert review_status_counts["blocked"]["blocked"] == 1
+    assert review_status_counts["human_reviewed"]["published"] == 1
+    assert review_status_counts["unknown"]["dimensioned"] == 1
+
     ring_counts = {
         bucket["key"]["phase7_ring"]: bucket["counts"]
         for bucket in report["by_phase7_ring"]
@@ -268,6 +276,43 @@ def test_phase7_coverage_summary_dict_is_json_serializable() -> None:
     assert decoded["report_version"] == "physics-phase7-coverage-summary.v1"
     assert decoded["summary"]["published"] == 1
     assert decoded["summary"]["metrics"]["published_rate"] == 1.0
+
+
+def test_phase7_coverage_summary_groups_by_review_status_deterministically() -> None:
+    report = build_phase7_coverage_summary_dict(
+        [
+            {
+                "candidate_status": "published",
+                "review_status": "Human_Reviewed",
+            },
+            {
+                "parse_status": "normalized",
+                "review_status": " automated_pass ",
+            },
+            {
+                "parse_status": "parse_failed",
+                "review_status": "blocked",
+            },
+            {
+                "candidate_status": "dimension_resolved",
+                "review_status": "",
+            },
+        ]
+    )
+
+    buckets = report["by_review_status"]
+
+    assert [bucket["key"]["review_status"] for bucket in buckets] == [
+        "automated_pass",
+        "blocked",
+        "human_reviewed",
+        "unknown",
+    ]
+    assert buckets[0]["counts"]["reviewed"] == 1
+    assert buckets[1]["counts"]["blocked"] == 1
+    assert buckets[2]["counts"]["published"] == 1
+    assert buckets[3]["counts"]["dimensioned"] == 1
+    assert buckets[3]["metrics"]["reviewed_rate"] == 0.0
 
 
 def test_phase7_coverage_summary_groups_explicit_and_inferred_backfill_rings() -> None:
@@ -387,5 +432,6 @@ def test_phase7_coverage_summary_zero_rows_has_stable_metrics() -> None:
     assert report["by_source"] == []
     assert report["by_phase7_ring"] == []
     assert report["by_physics_family"] == []
+    assert report["by_review_status"] == []
     assert report["by_source_and_physics_family"] == []
     assert report["by_phase7_ring_and_physics_family"] == []

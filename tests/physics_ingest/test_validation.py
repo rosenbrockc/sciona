@@ -111,6 +111,27 @@ def test_symbolic_fixture_validator_reports_malformed_validity_bound_variable(
     json.dumps(check.to_dict(), sort_keys=True)
 
 
+def test_symbolic_fixture_validator_reports_unpublishable_validity_bound_status(
+    tmp_path,
+) -> None:
+    manifest = _symbolic_manifest()
+    manifest["artifact_validity_bounds"][0]["review_status"] = "needs_review"
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues[:1]] == [
+        "validity_bound_review_status_not_publishable"
+    ]
+    assert [issue.table for issue in check.issues[:1]] == [
+        "artifact_validity_bounds"
+    ]
+    assert [issue.detail for issue in check.issues[:1]] == ["needs_review"]
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
 def test_pdg_payload_validator_accepts_graph_ready_derivation_fixture() -> None:
     check = validate_pdg_payload(_pdg_payload(), subject="fixture-pdg")
 
