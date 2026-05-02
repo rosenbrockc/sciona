@@ -94,6 +94,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Restrict source execution readiness to a retrieval job id. May be repeated.",
     )
     parser.add_argument(
+        "--source-phase7-ring",
+        action="append",
+        default=[],
+        help=(
+            "Restrict source execution readiness to a Phase 7 ring. "
+            "May be repeated."
+        ),
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="Fail when expected local fixture inventories are absent.",
@@ -145,6 +154,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ),
         source_max_jobs=args.source_max_jobs,
         source_job_id=tuple(args.source_job_id) or None,
+        source_phase7_ring=tuple(args.source_phase7_ring) or None,
         strict=args.strict,
     )
 

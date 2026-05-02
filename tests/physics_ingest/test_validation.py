@@ -5,6 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import sciona.physics_ingest.validation as validation_module
 from sciona.physics_ingest.validation import (
     VALIDATION_REPORT_KIND,
     VALIDATION_REPORT_VERSION,
@@ -67,11 +68,68 @@ def test_pdg_payload_validator_accepts_graph_ready_derivation_fixture() -> None:
     assert check.metadata == {
         "equation_count": 3,
         "inference_edge_count": 2,
+        "cdg_candidate_manifest_count": 1,
+        "artifact_row_count": 1,
+        "artifact_version_row_count": 1,
         "relationship_row_count": 2,
         "cdg_node_count": 2,
         "cdg_edge_count": 1,
         "cdg_binding_count": 4,
     }
+
+
+def test_pdg_payload_validator_reports_missing_cdg_artifact_envelope_rows() -> None:
+    check = validate_pdg_payload(
+        _pdg_payload(),
+        subject="fixture-pdg",
+        cdg_artifact_envelope=None,
+    )
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "pdg_cdg_artifact_envelope_artifacts_missing",
+        "pdg_cdg_artifact_envelope_artifact_versions_missing",
+    ]
+    assert check.metadata["cdg_candidate_manifest_count"] == 1
+    assert check.metadata["artifact_row_count"] == 0
+    assert check.metadata["artifact_version_row_count"] == 0
+
+
+def test_pdg_payload_validator_reports_nondeterministic_cdg_artifact_envelope_rows(
+    monkeypatch,
+) -> None:
+    original = validation_module.build_pdg_publication_write_rows
+    call_count = 0
+
+    def nondeterministic_publication_rows(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        rows = original(*args, **kwargs)
+        if call_count != 2:
+            return rows
+        insert_rows = rows.to_insert_rows()
+        insert_rows["artifacts"][0]["fqdn"] += ".changed"
+        return type(rows)(
+            insert_rows_by_table={
+                table: tuple(table_rows)
+                for table, table_rows in insert_rows.items()
+            },
+            diagnostics=rows.diagnostics,
+        )
+
+    monkeypatch.setattr(
+        validation_module,
+        "build_pdg_publication_write_rows",
+        nondeterministic_publication_rows,
+    )
+
+    check = validate_pdg_payload(_pdg_payload(), subject="fixture-pdg")
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "pdg_publication_rows_nondeterministic",
+        "pdg_cdg_artifact_envelope_rows_nondeterministic",
+    ]
 
 
 def test_discovers_default_pdg_payload_fixtures() -> None:
@@ -226,6 +284,28 @@ def test_validation_report_includes_source_execution_by_default() -> None:
     seed_check = checks[2]
     assert seed_check["metadata"]["seed_count"] == 6
     assert seed_check["metadata"]["diagnostic_count"] == 0
+    json.dumps(report, sort_keys=True)
+
+
+def test_validation_report_filters_source_execution_by_phase7_ring() -> None:
+    report = build_physics_ingestion_validation_report(
+        include_default_pdg=False,
+        source_phase7_ring="ring_5_reference_datasets",
+    )
+
+    assert report["ok"] is True
+    source_check = report["checks"][0]
+    source_report = source_check["metadata"]["report"]
+    assert source_check["check_id"] == "source_execution_readiness"
+    assert source_check["metadata"]["total_steps"] == 4
+    assert all(
+        "ring_5_reference_datasets" in step["phase7_rings"]
+        for step in source_report["steps"]
+    )
+    assert {step["phase7_ring"] for step in source_report["steps"]} == {
+        "ring_1_foundational",
+        "ring_2_existing_sciona_domains",
+    }
     json.dumps(report, sort_keys=True)
 
 
@@ -492,6 +572,36 @@ def test_validation_script_changed_only_keeps_source_checks_in_json_mode() -> No
         "source_adapter_data_artifact_seeds",
     ]
     assert report["checks"][0]["metadata"]["report"]["summary"]["total_steps"] == 1
+
+
+def test_validation_script_json_filters_source_execution_by_phase7_ring() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--changed-only",
+            "--skip-atoms",
+            "--skip-pdg",
+            "--source-phase7-ring",
+            "ring_5_reference_datasets",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    source_check = report["checks"][0]
+    source_report = source_check["metadata"]["report"]
+    assert report["ok"] is True
+    assert source_check["check_id"] == "source_execution_readiness"
+    assert source_report["summary"]["total_steps"] == 4
+    assert all(
+        "ring_5_reference_datasets" in step["phase7_rings"]
+        for step in source_report["steps"]
+    )
 
 
 def test_validation_script_changed_only_json_accepts_explicit_pdg_fixture() -> None:

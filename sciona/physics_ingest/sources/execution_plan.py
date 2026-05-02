@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 from sciona.physics_ingest.sources._manifest import jsonable
 from sciona.physics_ingest.sources.retrieval_plan import (
@@ -39,6 +39,9 @@ class SourceExecutionReadinessStep:
     status_reason: str
     source_system: str
     source_family: str
+    phase7_ring: str
+    phase7_ring_order: int
+    phase7_rings: tuple[str, ...]
     snapshot_key: str
     required_adapter: Mapping[str, str]
     endpoint: Mapping[str, Any]
@@ -168,6 +171,9 @@ def _readiness_step(
         status_reason=status_reason,
         source_system=str(step.get("source_system", "")),
         source_family=str(step.get("source_family", "")),
+        phase7_ring=str(step.get("phase7_ring", "")),
+        phase7_ring_order=_int_value(step.get("phase7_ring_order"), 0),
+        phase7_rings=_string_tuple(step.get("phase7_rings", ())),
         snapshot_key=str(step.get("snapshot_key", "")),
         required_adapter={
             "name": adapter_name,
@@ -300,3 +306,11 @@ def _int_value(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _string_tuple(value: Any) -> tuple[str, ...]:
+    if isinstance(value, str):
+        return (value,)
+    if isinstance(value, Iterable):
+        return tuple(str(item) for item in value)
+    return ()

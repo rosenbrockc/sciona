@@ -87,6 +87,103 @@ def test_sympy_expression_candidate_normalizes_without_text_preparse() -> None:
     assert {diagnostic.code for diagnostic in draft.diagnostics} == {
         "missing_dimension"
     }
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+    assert dimensions["unknown_dimensions"] == {
+        "symbols": ["t", "v", "x"],
+        "count": 3,
+        "review_task_codes": [
+            "missing_dimension",
+            "missing_dimension",
+            "missing_dimension",
+        ],
+        "review_task_code_counts": {"missing_dimension": 3},
+    }
+    assert draft.row.evidence_json["normalization"]["review_task_codes"] == [
+        "missing_dimension",
+        "missing_dimension",
+        "missing_dimension",
+    ]
+
+
+def test_fractional_dimension_signatures_are_reflected_in_evidence() -> None:
+    draft = normalize_candidate_expression_draft(
+        {
+            "source_candidate_id": "fixture-rational-dimensions",
+            "raw_formula": "v = x",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "v": {"role": "output", "dim_signature": "M1L1/2T-1"},
+                "x": {"role": "input", "dim_signature": "L1/2"},
+            },
+        },
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert dimensions["unknown_dimensions"]["count"] == 0
+    assert dimensions["provided_dimensions"]["signatures"] == [
+        {
+            "symbol": "v",
+            "dim_signature": "M1L1/2T-1",
+            "is_unknown": False,
+            "is_rational": True,
+        },
+        {
+            "symbol": "x",
+            "dim_signature": "L1/2",
+            "is_unknown": False,
+            "is_rational": True,
+        },
+    ]
+    assert dimensions["rational_dimensions"] == {
+        "symbols": ["v", "x"],
+        "count": 2,
+        "signatures": dimensions["provided_dimensions"]["signatures"],
+    }
+
+
+def test_explicit_unknown_dimension_signature_is_reflected_in_evidence() -> None:
+    draft = normalize_candidate_expression_draft(
+        {
+            "source_candidate_id": "fixture-explicit-unknown-dimension",
+            "raw_formula": "u = v",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "u": {"role": "output", "dim_signature": "?"},
+                "v": {"role": "input", "dim_signature": "1"},
+            },
+        },
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert dimensions["unknown_dimensions"] == {
+        "symbols": ["u"],
+        "count": 1,
+        "review_task_codes": [],
+        "review_task_code_counts": {},
+    }
+    assert dimensions["provided_dimensions"]["signatures"] == [
+        {
+            "symbol": "u",
+            "dim_signature": "?",
+            "is_unknown": True,
+            "is_rational": False,
+        },
+        {
+            "symbol": "v",
+            "dim_signature": "1",
+            "is_unknown": False,
+            "is_rational": False,
+        },
+    ]
 
 
 def test_parse_failure_returns_needs_human_row_without_hashes() -> None:
@@ -113,6 +210,15 @@ def test_parse_failure_returns_needs_human_row_without_hashes() -> None:
     assert row.topology_hash == ""
     assert row.evidence_json["parse_roundtrip"]["status"] == "failed"
     assert "parse_failed" in {diagnostic.code for diagnostic in draft.diagnostics}
+    assert row.evidence_json["normalization"]["review_task_code_counts"] == {
+        "parse_failed": 1
+    }
+    assert row.evidence_json["normalization"]["dimensions"]["unknown_dimensions"] == {
+        "symbols": [],
+        "count": 0,
+        "review_task_codes": [],
+        "review_task_code_counts": {},
+    }
 
 
 def test_batch_normalization_keeps_failed_candidates() -> None:

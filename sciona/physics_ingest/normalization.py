@@ -23,6 +23,10 @@ _SUPPORTED_SOURCE_FORMATS = {
     "sympy",
     "plain_text",
 }
+_DIMENSION_REVIEW_TASK_CODES = {
+    "missing_dimension",
+    "missing_required_dimension",
+}
 
 
 class NormalizationDiagnostic(BaseModel):
@@ -340,6 +344,10 @@ def _evidence_json(
     roundtrip: Mapping[str, Any],
     source_format: str,
 ) -> dict[str, Any]:
+    review_task_codes = sorted(task.code for task in normalized.review_tasks)
+    review_task_code_counts = {
+        code: review_task_codes.count(code) for code in sorted(set(review_task_codes))
+    }
     return {
         "normalization": {
             "source_format": source_format,
@@ -349,12 +357,80 @@ def _evidence_json(
             "review_tasks": [
                 task.model_dump(mode="json") for task in normalized.review_tasks
             ],
+            "review_task_codes": review_task_codes,
+            "review_task_code_counts": review_task_code_counts,
+            "dimensions": _dimension_evidence(normalized),
         },
         "parse_roundtrip": dict(roundtrip),
         "diagnostics": [
             diagnostic.model_dump(mode="json") for diagnostic in diagnostics
         ],
     }
+
+
+def _dimension_evidence(normalized: NormalizedSymbolicCandidate) -> dict[str, Any]:
+    provided_signatures = []
+    rational_signatures = []
+    unknown_symbols = {
+        task.symbol
+        for task in normalized.review_tasks
+        if task.code in _DIMENSION_REVIEW_TASK_CODES and task.symbol
+    }
+    unknown_review_task_codes = sorted(
+        task.code
+        for task in normalized.review_tasks
+        if task.code in _DIMENSION_REVIEW_TASK_CODES
+    )
+    for symbol, variable in sorted(normalized.variables.items()):
+        dim_signature = variable.dim_signature
+        if dim_signature is None:
+            unknown_symbols.add(symbol)
+            continue
+        compact = dim_signature.to_compact()
+        if dim_signature.is_unknown:
+            unknown_symbols.add(symbol)
+        entry = {
+            "symbol": symbol,
+            "dim_signature": compact,
+            "is_unknown": dim_signature.is_unknown,
+            "is_rational": _has_rational_exponent(dim_signature),
+        }
+        provided_signatures.append(entry)
+        if entry["is_rational"]:
+            rational_signatures.append(entry)
+
+    unknown_symbols_list = sorted(unknown_symbols)
+    unknown_review_task_code_counts = {
+        code: unknown_review_task_codes.count(code)
+        for code in sorted(set(unknown_review_task_codes))
+    }
+    return {
+        "unknown_dimensions": {
+            "symbols": unknown_symbols_list,
+            "count": len(unknown_symbols_list),
+            "review_task_codes": unknown_review_task_codes,
+            "review_task_code_counts": unknown_review_task_code_counts,
+        },
+        "provided_dimensions": {
+            "symbols": [entry["symbol"] for entry in provided_signatures],
+            "count": len(provided_signatures),
+            "signatures": provided_signatures,
+        },
+        "rational_dimensions": {
+            "symbols": [entry["symbol"] for entry in rational_signatures],
+            "count": len(rational_signatures),
+            "signatures": rational_signatures,
+        },
+    }
+
+
+def _has_rational_exponent(dim_signature: Any) -> bool:
+    for field in ("M", "L", "T", "I", "Theta", "N", "J"):
+        exponent = getattr(dim_signature, field, 0)
+        denominator = getattr(exponent, "denominator", 1)
+        if denominator != 1:
+            return True
+    return False
 
 
 def _review_task_diagnostics(

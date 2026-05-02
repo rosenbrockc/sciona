@@ -14,6 +14,7 @@ from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
 from sciona.physics_ingest.pdg_cdg import (
+    PDGCDGArtifactEnvelope,
     build_pdg_publication_write_rows,
     build_pdg_relationship_ingest,
     validate_pdg_cdg_publication_graph,
@@ -41,6 +42,18 @@ _VERSION_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.validation.vers
 _EXPRESSION_NAMESPACE = uuid5(
     NAMESPACE_URL,
     "sciona.physics_ingest.validation.expression",
+)
+_DEFAULT_PDG_CDG_ARTIFACT_ENVELOPE = PDGCDGArtifactEnvelope(
+    fqdn_prefix="physics.validation.pdg.cdg",
+    semver="0.1.0",
+    namespace_root="physics",
+    namespace_path="validation/pdg/cdg",
+    source_package="pdg",
+    source_module_path="pdg.validation",
+    source_symbol_prefix="pdg_cdg_validation_candidate",
+    status="draft",
+    visibility_tier="internal",
+    description="Offline validation PDG-derived CDG manifest",
 )
 
 
@@ -100,6 +113,7 @@ def build_physics_ingestion_validation_report(
     source_retrieval_manifest: Any | None = None,
     source_max_jobs: int | None = None,
     source_job_id: str | Iterable[str] | None = None,
+    source_phase7_ring: str | Iterable[str] | None = None,
     strict: bool = False,
 ) -> dict[str, Any]:
     """Build a JSON-safe offline validation report.
@@ -153,6 +167,7 @@ def build_physics_ingestion_validation_report(
                 source_retrieval_run_plan,
                 source_max_jobs=source_max_jobs,
                 source_job_id=source_job_id,
+                source_phase7_ring=source_phase7_ring,
             )
         )
 
@@ -330,6 +345,7 @@ def validate_source_execution_readiness(
     *,
     source_max_jobs: int | None = None,
     source_job_id: str | Iterable[str] | None = None,
+    source_phase7_ring: str | Iterable[str] | None = None,
 ) -> ValidationCheck:
     """Validate that source retrieval steps are executor-ready offline."""
 
@@ -340,6 +356,7 @@ def validate_source_execution_readiness(
             plan = build_physics_source_retrieval_run_plan(
                 max_jobs=source_max_jobs,
                 job_id=source_job_id,
+                phase7_ring=source_phase7_ring,
             )
         readiness_report = build_source_execution_readiness_report(plan).to_dict()
     except Exception as exc:
@@ -556,6 +573,9 @@ def validate_pdg_payload(
     payload: Mapping[str, Any],
     *,
     subject: str = "pdg_payload",
+    cdg_artifact_envelope: PDGCDGArtifactEnvelope | Mapping[str, Any] | None = (
+        _DEFAULT_PDG_CDG_ARTIFACT_ENVELOPE
+    ),
 ) -> ValidationCheck:
     """Validate PDG relationship extraction and derived CDG publication rows."""
 
@@ -602,7 +622,20 @@ def validate_pdg_payload(
                 )
             )
 
-    publication_rows = build_pdg_publication_write_rows(ingest_result)
+    try:
+        publication_rows = build_pdg_publication_write_rows(
+            ingest_result,
+            cdg_artifact_envelope=cdg_artifact_envelope,
+        )
+    except Exception as exc:
+        issues.append(
+            ValidationIssue(
+                reason="pdg_cdg_artifact_envelope_error",
+                detail=str(exc),
+                subject=subject,
+            )
+        )
+        publication_rows = build_pdg_publication_write_rows(ingest_result)
     for diagnostic in publication_rows.diagnostics:
         issues.append(
             ValidationIssue(
@@ -624,21 +657,83 @@ def validate_pdg_payload(
             )
         )
 
-    second_rows = build_pdg_publication_write_rows(
-        build_pdg_relationship_ingest(
-            bundle,
-            expression_bindings_by_pdg_node_id=bindings,
+    insert_rows = publication_rows.to_insert_rows()
+    cdg_candidate_manifest_count = len(ingest_result.cdg_candidate_manifests)
+    artifact_row_count = len(insert_rows.get("artifacts", ()))
+    artifact_version_row_count = len(insert_rows.get("artifact_versions", ()))
+    if cdg_candidate_manifest_count:
+        if artifact_row_count != cdg_candidate_manifest_count:
+            issues.append(
+                ValidationIssue(
+                    reason="pdg_cdg_artifact_envelope_artifacts_missing",
+                    detail=_canonical_json(
+                        {
+                            "cdg_candidate_manifest_count": cdg_candidate_manifest_count,
+                            "artifact_row_count": artifact_row_count,
+                        }
+                    ),
+                    table="artifacts",
+                    subject=subject,
+                )
+            )
+        if artifact_version_row_count != cdg_candidate_manifest_count:
+            issues.append(
+                ValidationIssue(
+                    reason="pdg_cdg_artifact_envelope_artifact_versions_missing",
+                    detail=_canonical_json(
+                        {
+                            "cdg_candidate_manifest_count": cdg_candidate_manifest_count,
+                            "artifact_version_row_count": artifact_version_row_count,
+                        }
+                    ),
+                    table="artifact_versions",
+                    subject=subject,
+                )
+            )
+
+    try:
+        second_rows = build_pdg_publication_write_rows(
+            build_pdg_relationship_ingest(
+                bundle,
+                expression_bindings_by_pdg_node_id=bindings,
+            ),
+            cdg_artifact_envelope=cdg_artifact_envelope,
         )
-    )
-    if publication_rows.to_insert_rows() != second_rows.to_insert_rows():
+    except Exception as exc:
+        issues.append(
+            ValidationIssue(
+                reason="pdg_cdg_artifact_envelope_error",
+                detail=str(exc),
+                subject=subject,
+            )
+        )
+        second_rows = build_pdg_publication_write_rows(
+            build_pdg_relationship_ingest(
+                bundle,
+                expression_bindings_by_pdg_node_id=bindings,
+            )
+        )
+    second_insert_rows = second_rows.to_insert_rows()
+    if publication_rows.to_insert_rows() != second_insert_rows:
         issues.append(
             ValidationIssue(
                 reason="pdg_publication_rows_nondeterministic",
                 subject=subject,
             )
         )
+    if cdg_candidate_manifest_count and (
+        insert_rows.get("artifacts", ()) != second_insert_rows.get("artifacts", ())
+        or insert_rows.get("artifact_versions", ())
+        != second_insert_rows.get("artifact_versions", ())
+    ):
+        issues.append(
+            ValidationIssue(
+                reason="pdg_cdg_artifact_envelope_rows_nondeterministic",
+                table="artifacts",
+                subject=subject,
+            )
+        )
 
-    insert_rows = publication_rows.to_insert_rows()
     return ValidationCheck(
         check_id="pdg_publication_graph",
         subject=subject,
@@ -646,6 +741,9 @@ def validate_pdg_payload(
         metadata={
             "equation_count": len(bundle.equations),
             "inference_edge_count": len(bundle.inference_edges),
+            "cdg_candidate_manifest_count": cdg_candidate_manifest_count,
+            "artifact_row_count": artifact_row_count,
+            "artifact_version_row_count": artifact_version_row_count,
             "relationship_row_count": len(
                 insert_rows.get("artifact_relationships", ())
             ),

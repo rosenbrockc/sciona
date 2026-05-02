@@ -128,3 +128,24 @@ def test_source_execution_readiness_report_dict_is_json_serializable() -> None:
     assert decoded == report_dict
     assert decoded["summary"]["total_steps"] == 2
     assert decoded["steps"][0]["storage_expectation"]["write_required"] is False
+
+
+def test_source_execution_readiness_report_dict_includes_phase7_metadata() -> None:
+    plan = build_physics_source_retrieval_run_plan(
+        phase7_ring="ring_5_reference_datasets",
+    )
+
+    report_dict = build_source_execution_readiness_report_dict(plan)
+    encoded = json.dumps(report_dict, sort_keys=True)
+    decoded = json.loads(encoded)
+
+    assert decoded == report_dict
+    assert decoded["summary"]["total_steps"] == 4
+    assert all(
+        "ring_5_reference_datasets" in step["phase7_rings"]
+        for step in decoded["steps"]
+    )
+    assert decoded["steps"][0]["phase7_ring"] == "ring_1_foundational"
+    assert decoded["steps"][0]["phase7_ring_order"] == 1
+    assert decoded["steps"][2]["phase7_ring"] == "ring_2_existing_sciona_domains"
+    assert decoded["steps"][2]["phase7_ring_order"] == 2
