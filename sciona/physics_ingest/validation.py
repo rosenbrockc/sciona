@@ -285,6 +285,8 @@ def validate_source_adapter_data_artifact_seed_quality(
     subject = "source_adapter_data_artifact_seeds"
     issues: list[ValidationIssue] = []
     bundle_summaries: list[dict[str, Any]] = []
+    seen_fqdns: dict[str, str] = {}
+    seen_source_identities: dict[tuple[str, str], str] = {}
     seed_count = 0
 
     if adapter_bundles is None:
@@ -330,6 +332,15 @@ def validate_source_adapter_data_artifact_seed_quality(
                 continue
             issues.extend(
                 _data_artifact_seed_issues(seed, bundle_id=bundle_id, index=index)
+            )
+            issues.extend(
+                _duplicate_data_artifact_seed_issues(
+                    seed,
+                    bundle_id=bundle_id,
+                    index=index,
+                    seen_fqdns=seen_fqdns,
+                    seen_source_identities=seen_source_identities,
+                )
             )
 
     report = {
@@ -1091,6 +1102,54 @@ def _data_artifact_seed_subject(
 ) -> str:
     identity = str(seed.get("fqdn") or seed.get("source_id") or index)
     return f"source_adapter_data_artifact_seeds:{bundle_id}:{identity}"
+
+
+def _duplicate_data_artifact_seed_issues(
+    seed: Mapping[str, Any],
+    *,
+    bundle_id: str,
+    index: int,
+    seen_fqdns: dict[str, str],
+    seen_source_identities: dict[tuple[str, str], str],
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    row_subject = _data_artifact_seed_subject(seed, bundle_id=bundle_id, index=index)
+
+    fqdn = seed.get("fqdn")
+    if isinstance(fqdn, str) and fqdn.strip():
+        fqdn_key = fqdn.strip()
+        first_subject = seen_fqdns.setdefault(fqdn_key, row_subject)
+        if first_subject != row_subject:
+            issues.append(
+                ValidationIssue(
+                    reason="source_adapter_data_artifact_seed_duplicate_fqdn",
+                    detail=f"duplicates {first_subject}",
+                    table="source_adapter_data_artifact_seeds",
+                    subject=row_subject,
+                )
+            )
+
+    source_system = seed.get("source_system")
+    source_id = seed.get("source_id")
+    if (
+        isinstance(source_system, str)
+        and source_system.strip()
+        and isinstance(source_id, str)
+        and source_id.strip()
+    ):
+        identity_key = (source_system.strip(), source_id.strip())
+        first_subject = seen_source_identities.setdefault(identity_key, row_subject)
+        if first_subject != row_subject:
+            issues.append(
+                ValidationIssue(
+                    reason="source_adapter_data_artifact_seed_duplicate_source_identity",
+                    detail=f"duplicates {first_subject}",
+                    table="source_adapter_data_artifact_seeds",
+                    subject=row_subject,
+                )
+            )
+
+    return tuple(issues)
 
 
 def _bundle_data_artifact_seeds(bundle: Any) -> tuple[Any, ...]:

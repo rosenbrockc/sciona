@@ -180,6 +180,23 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
     assert ring_counts["ring_4_pdg_derivations"]["blocked"] == 1
     assert ring_counts["ring_5_reference_datasets"]["dimensioned"] == 1
 
+    ring_family_counts = {
+        (
+            bucket["key"]["phase7_ring"],
+            bucket["key"]["physics_family"],
+        ): bucket["counts"]
+        for bucket in report["by_phase7_ring_and_physics_family"]
+    }
+    assert ring_family_counts[
+        ("ring_1_foundational_physics", "thermodynamics")
+    ]["published"] == 1
+    assert ring_family_counts[
+        ("ring_3_wikidata_equations", "classical_mechanics")
+    ]["discovered"] == 1
+    assert ring_family_counts[("ring_4_pdg_derivations", "force_balance")][
+        "blocked"
+    ] == 1
+
 
 def test_phase7_coverage_summary_accepts_row_like_objects_and_nested_evidence() -> None:
     @dataclass(frozen=True)
@@ -302,6 +319,48 @@ def test_phase7_coverage_summary_groups_explicit_and_inferred_backfill_rings() -
     assert buckets["unknown"]["key"]["phase7_ring_label"] == "Unknown or unassigned"
 
 
+def test_phase7_coverage_summary_drills_down_ring_by_physics_family() -> None:
+    report = build_phase7_coverage_summary_dict(
+        [
+            {
+                "candidate_status": "published",
+                "source_payload": {"phase7_ring": "Ring 1"},
+                "mechanism_tags": ["thermodynamics", "transport"],
+            },
+            {
+                "parse_status": "parsed",
+                "source_system": "wikidata",
+                "physics_family": "electromagnetism",
+            },
+            {
+                "parse_status": "parse_failed",
+                "review_status": "blocked",
+                "source_payload": {"source": "pdg"},
+                "physics_family": "mechanics",
+            },
+        ]
+    )
+
+    buckets = report["by_phase7_ring_and_physics_family"]
+
+    assert [
+        (bucket["key"]["phase7_ring"], bucket["key"]["physics_family"])
+        for bucket in buckets
+    ] == [
+        ("ring_1_foundational_physics", "thermodynamics"),
+        ("ring_1_foundational_physics", "transport"),
+        ("ring_3_wikidata_equations", "electromagnetism"),
+        ("ring_4_pdg_derivations", "mechanics"),
+    ]
+    assert buckets[0]["key"]["phase7_ring_label"] == (
+        "Foundational mechanics, thermodynamics, electromagnetism, waves, and transport"
+    )
+    assert buckets[0]["counts"]["published"] == 1
+    assert buckets[1]["counts"]["published"] == 1
+    assert buckets[2]["counts"]["parsed"] == 1
+    assert buckets[3]["counts"]["blocked"] == 1
+
+
 def test_phase7_coverage_summary_zero_rows_has_stable_metrics() -> None:
     report = build_phase7_coverage_summary_dict([])
 
@@ -329,3 +388,4 @@ def test_phase7_coverage_summary_zero_rows_has_stable_metrics() -> None:
     assert report["by_phase7_ring"] == []
     assert report["by_physics_family"] == []
     assert report["by_source_and_physics_family"] == []
+    assert report["by_phase7_ring_and_physics_family"] == []

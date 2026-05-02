@@ -164,6 +164,7 @@ class Phase7CoverageSummary:
     by_phase7_ring: tuple[Phase7CoverageBucket, ...]
     by_physics_family: tuple[Phase7CoverageBucket, ...]
     by_source_and_physics_family: tuple[Phase7CoverageBucket, ...]
+    by_phase7_ring_and_physics_family: tuple[Phase7CoverageBucket, ...]
 
     def to_dict(self) -> JSONDict:
         return jsonable(self)
@@ -185,6 +186,7 @@ def build_phase7_coverage_summary(
     ring_counts: dict[str, dict[str, int]] = {}
     family_counts: dict[str, dict[str, int]] = {}
     source_family_counts: dict[tuple[str, str, str], dict[str, int]] = {}
+    ring_family_counts: dict[tuple[str, str], dict[str, int]] = {}
     total_rows = 0
 
     for raw_row in rows:
@@ -212,6 +214,13 @@ def build_phase7_coverage_summary(
             _add_counts(
                 source_family_counts.setdefault(
                     (source_system, source_family, physics_family),
+                    _empty_counts(),
+                ),
+                counts,
+            )
+            _add_counts(
+                ring_family_counts.setdefault(
+                    (phase7_ring, physics_family),
                     _empty_counts(),
                 ),
                 counts,
@@ -265,6 +274,23 @@ def build_phase7_coverage_summary(
                 source_family,
                 physics_family,
             ), counts in sorted(source_family_counts.items())
+        ),
+        by_phase7_ring_and_physics_family=tuple(
+            Phase7CoverageBucket(
+                key={
+                    "phase7_ring": phase7_ring,
+                    "phase7_ring_label": PHASE7_RING_LABELS.get(
+                        phase7_ring,
+                        PHASE7_RING_LABELS["unknown"],
+                    ),
+                    "physics_family": physics_family,
+                },
+                counts=dict(counts),
+                metrics=_coverage_metrics(counts),
+            )
+            for (phase7_ring, physics_family), counts in sorted(
+                ring_family_counts.items()
+            )
         ),
     )
 

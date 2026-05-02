@@ -656,6 +656,35 @@ def test_symbolic_ranker_scores_source_domain_analogues_and_data_artifacts() -> 
     assert "data_artifact_dependency_overlap" in results[0].reasons
 
 
+def test_source_domain_ranking_normalizes_label_variants_and_nested_payloads() -> None:
+    results = rank_symbolic_candidates(
+        {
+            "topology_hash": "topo-domain",
+            "source_domain": "fluid dynamics",
+        },
+        [
+            {
+                "artifact_id": "materials-candidate",
+                "topology_hash": "topo-domain",
+                "source_payload": {"physics_domain": "materials_science"},
+                "review_status": "human_reviewed",
+            },
+            {
+                "artifact_id": "fluid-candidate",
+                "topology_hash": "topo-domain",
+                "source_payload": {"physics_domain": "Fluid-Dynamics"},
+                "review_status": "human_reviewed",
+            },
+        ],
+    )
+
+    assert results[0].candidate.artifact_id == "fluid-candidate"
+    assert results[0].candidate.source_domains == ("Fluid-Dynamics",)
+    assert results[0].components["source_domains"] == 0.4
+    assert "source_domain_overlap" in results[0].reasons
+    assert "source_domains" not in results[1].components
+
+
 def test_symbolic_synthesis_report_can_require_data_artifact_dependencies() -> None:
     report = build_symbolic_synthesis_retrieval_report(
         {

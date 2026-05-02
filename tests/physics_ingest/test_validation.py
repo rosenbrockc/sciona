@@ -464,6 +464,89 @@ def test_source_adapter_data_artifact_seed_quality_reports_stable_issues() -> No
     )
 
 
+def test_source_adapter_data_artifact_seed_quality_reports_duplicate_fqdns() -> None:
+    check = validate_source_adapter_data_artifact_seed_quality(
+        (
+            (
+                "synthetic.first",
+                {
+                    "data_artifact_seeds": [
+                        {
+                            "artifact_kind": "data_artifact",
+                            "fqdn": "fixture.duplicate",
+                            "source_system": "fixture_a",
+                            "source_id": "a-1",
+                        }
+                    ]
+                },
+            ),
+            (
+                "synthetic.second",
+                {
+                    "data_artifact_seeds": [
+                        {
+                            "artifact_kind": "data_artifact",
+                            "fqdn": "fixture.duplicate",
+                            "source_system": "fixture_b",
+                            "source_id": "b-1",
+                        }
+                    ]
+                },
+            ),
+        )
+    )
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "source_adapter_data_artifact_seed_duplicate_fqdn"
+    ]
+    assert [issue.subject for issue in check.issues] == [
+        "source_adapter_data_artifact_seeds:synthetic.second:fixture.duplicate"
+    ]
+    assert check.issues[0].detail == (
+        "duplicates source_adapter_data_artifact_seeds:"
+        "synthetic.first:fixture.duplicate"
+    )
+    assert check.metadata["seed_count"] == 2
+    assert check.metadata["diagnostic_count"] == 1
+
+
+def test_seed_quality_reports_duplicate_source_identity() -> None:
+    check = validate_source_adapter_data_artifact_seed_quality(
+        {
+            "synthetic.duplicates": {
+                "data_artifact_seeds": [
+                    {
+                        "artifact_kind": "data_artifact",
+                        "fqdn": "fixture.first",
+                        "source_system": "fixture",
+                        "source_id": "same-source-row",
+                    },
+                    {
+                        "artifact_kind": "data_artifact",
+                        "fqdn": "fixture.second",
+                        "source_system": "fixture",
+                        "source_id": "same-source-row",
+                    },
+                ]
+            }
+        }
+    )
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "source_adapter_data_artifact_seed_duplicate_source_identity"
+    ]
+    assert [issue.subject for issue in check.issues] == [
+        "source_adapter_data_artifact_seeds:synthetic.duplicates:fixture.second"
+    ]
+    assert check.issues[0].detail == (
+        "duplicates source_adapter_data_artifact_seeds:"
+        "synthetic.duplicates:fixture.first"
+    )
+    assert check.metadata["diagnostic_count"] == 1
+
+
 def test_source_execution_diagnostics_convert_to_validation_issues() -> None:
     plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
     plan["dry_run"] = False

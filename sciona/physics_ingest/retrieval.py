@@ -298,12 +298,7 @@ class SymbolicArtifactCandidate:
             ),
             source_system=_text(merged, "source_system"),
             source_kind=_text(merged, "source_kind"),
-            source_domains=_strings(
-                merged.get("source_domains")
-                or merged.get("source_domain")
-                or (document or {}).get("source_domains")
-                or (document or {}).get("source_domain")
-            ),
+            source_domains=_source_domains(merged, document),
             known_analogues=_known_analogues(merged, scoped_relationships, document),
             data_artifact_dependencies=_row_references(
                 merged,
@@ -1003,6 +998,7 @@ def _provenance_score(
         query.source_domains,
         candidate.source_domains,
         weight=0.4,
+        normalize=True,
     )
     if source_domain_score:
         components["source_domains"] = source_domain_score
@@ -1414,6 +1410,22 @@ def _known_analogues(
             )
         )
     return _unique(values)
+
+
+def _source_domains(
+    row: Mapping[str, Any],
+    document: Mapping[str, Any] | None = None,
+) -> tuple[str, ...]:
+    return _row_references(
+        row,
+        document,
+        keys=(
+            "source_domains",
+            "source_domain",
+            "physics_domains",
+            "physics_domain",
+        ),
+    )
 
 
 def _row_references(
