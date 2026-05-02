@@ -1,0 +1,50 @@
+{
+  "fixture_id": "pdg_conservation_pde_chain",
+  "validation_subject": "pdg_fixture:conservation_pde_chain",
+  "description": "Offline PDG payload fixture covering a conservation balance to PDE derivation chain.",
+  "equations": [
+    {
+      "id": "eq:integral_conservation_balance",
+      "label": "Integral conservation balance",
+      "latex": "\\frac{d}{dt}\\int_{\\Omega} u\\,dV = -\\int_{\\partial\\Omega} j \\cdot n\\,dS",
+      "mechanism_tags": ["conservation_law", "transport"]
+    },
+    {
+      "id": "eq:continuity_equation",
+      "label": "Local continuity equation",
+      "latex": "\\frac{\\partial u}{\\partial t} + \\nabla \\cdot j = 0",
+      "mechanism_tags": ["conservation_law", "pde"]
+    },
+    {
+      "id": "eq:diffusion_equation",
+      "label": "Diffusion equation",
+      "latex": "\\frac{\\partial u}{\\partial t} = D\\nabla^2 u",
+      "mechanism_tags": ["diffusion", "pde"]
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:derive_continuity_from_balance",
+      "source": "eq:integral_conservation_balance",
+      "target": "eq:continuity_equation",
+      "rule": "derive local PDE from conservation balance using divergence theorem",
+      "confidence": 0.9,
+      "assumptions": ["control volume is arbitrary", "fields are smooth"],
+      "bindings": {
+        "balance_law": "integral conservation",
+        "differential_operator": "divergence"
+      }
+    },
+    {
+      "id": "edge:substitute_fick_law",
+      "source": "eq:continuity_equation",
+      "target": "eq:diffusion_equation",
+      "rule": "substitute Fick constitutive law j = -D grad u",
+      "confidence": 0.86,
+      "assumptions": ["D is constant"],
+      "bindings": {
+        "constitutive_law": "j = -D grad u"
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sciona.physics_ingest.retrieval import (
+    SymbolicArtifactCandidate,
     SymbolicRetrievalQuery,
     build_symbolic_retrieval_report,
     build_symbolic_synthesis_retrieval_report,
@@ -8,6 +9,7 @@ from sciona.physics_ingest.retrieval import (
     rank_symbolic_candidates,
     suggest_raw_candidate_external_knowledge,
 )
+from sciona.physics_ingest.sources.opb import build_opb_wave0_bundle
 
 
 def test_symbolic_ranker_prefers_reviewed_topology_dimension_and_mechanism_match() -> None:
@@ -507,5 +509,48 @@ def test_symbolic_synthesis_report_can_require_data_artifact_dependencies() -> N
     blocked = report["blocked_candidates"][0]
     assert blocked["candidate_key"] == "reviewed-without-data"
     assert "missing_required_data_artifact_dependencies" in blocked[
+        "compiler_contract"
+    ]["blockers"]
+
+
+def test_adapter_source_payload_future_data_artifact_satisfies_dependency_requirement() -> None:
+    bundle = build_opb_wave0_bundle(
+        [
+            {
+                "problem_id": "opb:newton-2",
+                "title": "Newton second law",
+                "latex": "F = m a",
+                "data": {"fixture_rows": [{"m": 2, "a": 3, "F": 6}]},
+            }
+        ],
+        source_version="OPB fixture",
+        snapshot_id="00000000-0000-0000-0000-000000000030",
+    )
+    adapter_row = {
+        **bundle.candidate_rows[0],
+        "artifact_id": "opb-newton-2",
+        "dimensional_hash": "dim-force",
+        "review_status": "human_reviewed",
+    }
+
+    candidate = SymbolicArtifactCandidate.from_catalog_row(adapter_row)
+
+    assert candidate.data_artifact_dependencies == ("opb.record.opb.newton-2",)
+
+    report = build_symbolic_synthesis_retrieval_report(
+        {
+            "data_artifact_dependencies": ["opb.record.opb.newton-2"],
+            "require_data_artifact_dependencies": True,
+        },
+        [adapter_row],
+    )
+
+    assert report["executable_candidate_count"] == 1
+    executable = report["executable_candidates"][0]
+    assert executable["candidate_key"] == "opb-newton-2"
+    assert executable["data_artifact_dependencies"] == [
+        "opb.record.opb.newton-2"
+    ]
+    assert "missing_required_data_artifact_dependencies" not in executable[
         "compiler_contract"
     ]["blockers"]

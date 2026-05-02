@@ -31,6 +31,17 @@ _VERIFIED_RELATIONSHIP_KINDS = {
     "mechanism_analogue_of",
     "algebraic_rearrangement_of",
 }
+_DATA_ARTIFACT_REFERENCE_KEYS = (
+    "data_artifact_dependencies",
+    "data_artifacts",
+    "data_artifact_ids",
+    "artifact_dependencies",
+    "future_data_artifact",
+    "future_data_artifacts",
+    "data_artifact_seed",
+    "data_artifact_seeds",
+)
+_NESTED_REFERENCE_PAYLOAD_KEYS = ("source_payload",)
 
 
 @dataclass(frozen=True)
@@ -265,13 +276,7 @@ class SymbolicArtifactCandidate:
             data_artifact_dependencies=_row_references(
                 merged,
                 document,
-                keys=(
-                    "data_artifact_dependencies",
-                    "data_artifacts",
-                    "data_artifact_ids",
-                    "artifact_dependencies",
-                    "future_data_artifact",
-                ),
+                keys=_DATA_ARTIFACT_REFERENCE_KEYS,
             ),
             review_status=_text(merged, "review_status"),
             validation_status=_text(merged, "validation_status"),
@@ -389,13 +394,7 @@ class SymbolicRetrievalQuery:
             ),
             data_artifact_dependencies=_row_references(
                 row,
-                keys=(
-                    "data_artifact_dependencies",
-                    "data_artifacts",
-                    "data_artifact_ids",
-                    "artifact_dependencies",
-                    "future_data_artifact",
-                ),
+                keys=_DATA_ARTIFACT_REFERENCE_KEYS,
             ),
             require_validity_bounds=_bool(row.get("require_validity_bounds")),
             require_reviewed_bounds=_bool(row.get("require_reviewed_bounds")),
@@ -1124,6 +1123,11 @@ def _row_reference_values(
     values: list[str] = []
     for key in keys:
         values.extend(_reference_values(row.get(key)))
+    for payload_key in _NESTED_REFERENCE_PAYLOAD_KEYS:
+        payload = row.get(payload_key)
+        if isinstance(payload, Mapping):
+            for key in keys:
+                values.extend(_reference_values(payload.get(key)))
     return _unique(values)
 
 

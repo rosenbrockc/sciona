@@ -17,6 +17,12 @@ from sciona.physics_ingest.cli import (
     build_publication_dry_run_report_from_payload,
     main,
 )
+from sciona.physics_ingest.coverage import (
+    Phase7CoverageBucket,
+    Phase7CoverageSummary,
+    build_phase7_coverage_summary,
+    build_phase7_coverage_summary_dict,
+)
 from sciona.physics_ingest.ids import (
     DeterministicIdError,
     attach_deterministic_candidate_ids,
@@ -166,6 +172,8 @@ __all__ = [
     "PDGExpressionBinding",
     "PDGPublicationWriteRows",
     "PDGRelationshipIngestResult",
+    "Phase7CoverageBucket",
+    "Phase7CoverageSummary",
     "PhysicsEquationCandidateRow",
     "PhysicsIngestSnapshotRow",
     "PublicationAuditSummary",
@@ -229,6 +237,8 @@ __all__ = [
     "build_physics_ingestion_validation_report",
     "build_physics_source_retrieval_run_plan",
     "build_physics_source_retrieval_run_plan_dict",
+    "build_phase7_coverage_summary",
+    "build_phase7_coverage_summary_dict",
     "build_source_adapter_coverage_report",
     "build_source_adapter_coverage_report_dict",
     "build_source_execution_readiness_report",

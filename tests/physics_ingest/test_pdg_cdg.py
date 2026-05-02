@@ -25,6 +25,9 @@ EXPR_POSITION_FROM_VELOCITY = "10000000-0000-0000-0000-000000000009"
 EXPR_DIMENSIONAL_DECAY = "10000000-0000-0000-0000-000000000010"
 EXPR_NONDIMENSIONAL_DECAY = "10000000-0000-0000-0000-000000000011"
 EXPR_FIRST_ORDER_DECAY = "10000000-0000-0000-0000-000000000012"
+EXPR_INTEGRAL_CONSERVATION = "10000000-0000-0000-0000-000000000013"
+EXPR_CONTINUITY = "10000000-0000-0000-0000-000000000014"
+EXPR_DIFFUSION = "10000000-0000-0000-0000-000000000015"
 ARTIFACT_BASE = "20000000-0000-0000-0000-000000000001"
 VERSION_BASE = "30000000-0000-0000-0000-000000000001"
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "pdg_payloads"
@@ -453,6 +456,76 @@ def test_pdg_phase4_extracts_nondimensionalize_and_approximate_derivations() -> 
     assert manifest["metadata"]["relationship_edge_ids"] == [
         "edge:nondimensionalize_decay",
         "edge:first_order_approximation_decay",
+    ]
+
+    publication_rows = build_pdg_publication_write_rows(result)
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
+def test_pdg_phase4_extracts_conservation_law_to_pde_derivation_chain() -> None:
+    bundle = _fixture_bundle("conservation_pde_chain.pdg.json")
+    result = build_pdg_relationship_ingest(
+        bundle,
+        expression_bindings_by_pdg_node_id={
+            "eq:integral_conservation_balance": {
+                "expression_id": EXPR_INTEGRAL_CONSERVATION,
+                "label": "integral conservation balance",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.transport.integral_conservation",
+                    "bound_version_content_hash": "hash-integral-conservation",
+                },
+            },
+            "eq:continuity_equation": {
+                "expression_id": EXPR_CONTINUITY,
+                "label": "continuity equation",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.transport.continuity",
+                    "bound_version_content_hash": "hash-continuity",
+                },
+            },
+            "eq:diffusion_equation": {
+                "expression_id": EXPR_DIFFUSION,
+                "label": "diffusion equation",
+                "metadata": {
+                    "bound_artifact_fqdn": "physics.transport.diffusion",
+                    "bound_version_content_hash": "hash-diffusion",
+                },
+            },
+        },
+    )
+
+    rows = result.relationship_insert_rows()
+    manifest = result.cdg_candidate_manifests[0]
+
+    assert [edge.operation_kind for edge in bundle.inference_edges] == [
+        "derive",
+        "substitute",
+    ]
+    assert result.skipped_edges == ()
+    assert [row["relationship_kind"] for row in rows] == [
+        "derives_from",
+        "derives_from",
+    ]
+    assert [node["operation_kind"] for node in manifest["nodes"]] == [
+        "derive",
+        "substitute",
+    ]
+    assert [node["relationship_kind"] for node in manifest["nodes"]] == [
+        "derives_from",
+        "derives_from",
+    ]
+    assert manifest["edges"] == [
+        {
+            "source_id": "pdg_step_1",
+            "target_id": "pdg_step_2",
+            "edge_kind": "symbolic_equation_flow",
+            "pdg_node_id": "eq:continuity_equation",
+            "expression_id": EXPR_CONTINUITY,
+        }
+    ]
+    assert manifest["metadata"]["relationship_edge_ids"] == [
+        "edge:derive_continuity_from_balance",
+        "edge:substitute_fick_law",
     ]
 
     publication_rows = build_pdg_publication_write_rows(result)

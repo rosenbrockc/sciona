@@ -76,6 +76,7 @@ def test_discovers_default_pdg_payload_fixtures() -> None:
     paths = discover_pdg_payload_fixture_paths(REPO_ROOT)
 
     assert paths == (
+        PDG_FIXTURE_DIR / "conservation_pde_chain.pdg.json",
         PDG_FIXTURE_DIR / "differentiate_integrate_chain.pdg.json",
         PDG_FIXTURE_DIR / "limit_nondimensionalization_chain.pdg.json",
         PDG_FIXTURE_DIR / "nondimensionalize_approximate_chain.pdg.json",
