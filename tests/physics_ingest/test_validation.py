@@ -60,6 +60,57 @@ def test_symbolic_publication_fixture_validator_reports_metadata_gaps(tmp_path) 
     ]
 
 
+def test_symbolic_fixture_validator_reports_disconnected_validity_bounds(
+    tmp_path,
+) -> None:
+    manifest = _symbolic_manifest()
+    bound = manifest["artifact_validity_bounds"][0]
+    bound["artifact_key"] = "local:fixture.missing"
+    bound["local_artifact_key"] = "local:fixture.missing"
+    bound["atom_name"] = "missing_atom"
+    bound["registry_name"] = "missing_atom"
+    bound["expression_id"] = "20000000-0000-0000-0000-000000000002"
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues[:2]] == [
+        "validity_bound_expression_id_unknown",
+        "validity_bound_missing_expression_reference",
+    ]
+    assert [issue.table for issue in check.issues[:2]] == [
+        "artifact_validity_bounds",
+        "artifact_validity_bounds",
+    ]
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
+def test_symbolic_fixture_validator_reports_malformed_validity_bound_variable(
+    tmp_path,
+) -> None:
+    manifest = _symbolic_manifest()
+    bound = manifest["artifact_validity_bounds"][0]
+    bound["symbol"] = "velocity"
+    bound["variable_name"] = "velocity"
+    bound["source_symbol"] = "velocity"
+    bound["lower_value"] = 10.0
+    bound["upper_value"] = 1.0
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues[:2]] == [
+        "validity_bound_range_inverted",
+        "validity_bound_variable_not_found",
+    ]
+    assert all(issue.table == "artifact_validity_bounds" for issue in check.issues[:2])
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
 def test_pdg_payload_validator_accepts_graph_ready_derivation_fixture() -> None:
     check = validate_pdg_payload(_pdg_payload(), subject="fixture-pdg")
 

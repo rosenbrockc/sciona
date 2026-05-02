@@ -474,6 +474,14 @@ def validate_symbolic_publication_fixture(
     issues.extend(_symbolic_expression_standard_issues(expressions, subject=subject))
     issues.extend(_symbolic_variable_standard_issues(variables, subject=subject))
     issues.extend(
+        _validity_bound_standard_issues(
+            bounds,
+            expressions=expressions,
+            variables=variables,
+            subject=subject,
+        )
+    )
+    issues.extend(
         _duplicate_value_issues(expressions, "expression_id", subject=subject)
     )
     issues.extend(_duplicate_value_issues(expressions, "artifact_key", subject=subject))
@@ -993,6 +1001,103 @@ def _symbolic_variable_standard_issues(
     return tuple(issues)
 
 
+def _validity_bound_standard_issues(
+    bounds: Sequence[Mapping[str, Any]],
+    *,
+    expressions: Sequence[Mapping[str, Any]],
+    variables: Sequence[Mapping[str, Any]],
+    subject: str,
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    expression_ids = {
+        _text_value(row, "expression_id")
+        for row in expressions
+        if row.get("expression_id")
+    }
+    expression_keys = {
+        key for row in expressions for key in _publication_candidate_keys(row)
+    }
+    variable_keys = {
+        (expression_key, symbol)
+        for row in variables
+        for expression_key in _publication_candidate_keys(row)
+        for symbol in _symbol_reference_values(row)
+    }
+
+    for index, row in enumerate(bounds):
+        row_subject = _row_subject(row, subject=subject, index=index)
+        bound_expression_id = _text_value(row, "expression_id")
+        bound_expression_keys = tuple(
+            key for key in _publication_candidate_keys(row) if key in expression_keys
+        )
+        if bound_expression_id and bound_expression_id not in expression_ids:
+            issues.append(
+                ValidationIssue(
+                    reason="validity_bound_expression_id_unknown",
+                    detail=_canonical_json({"expression_id": bound_expression_id}),
+                    table="artifact_validity_bounds",
+                    subject=row_subject,
+                )
+            )
+        if not bound_expression_keys:
+            issues.append(
+                ValidationIssue(
+                    reason="validity_bound_missing_expression_reference",
+                    detail=_canonical_json(
+                        {"candidate_keys": _publication_candidate_keys(row)}
+                    ),
+                    table="artifact_validity_bounds",
+                    subject=row_subject,
+                )
+            )
+
+        lower = row.get("lower_value", row.get("min_value"))
+        upper = row.get("upper_value", row.get("max_value"))
+        if _real_number(lower) and _real_number(upper) and lower > upper:
+            issues.append(
+                ValidationIssue(
+                    reason="validity_bound_range_inverted",
+                    detail=_canonical_json(
+                        {"lower_value": lower, "upper_value": upper}
+                    ),
+                    table="artifact_validity_bounds",
+                    subject=row_subject,
+                )
+            )
+
+        scope = _text_value(row, "scope") or "expression"
+        symbol_values = _symbol_reference_values(row)
+        if scope == "variable" and not symbol_values:
+            issues.append(
+                ValidationIssue(
+                    reason="validity_bound_missing_variable_reference",
+                    table="artifact_validity_bounds",
+                    subject=row_subject,
+                )
+            )
+            continue
+        if symbol_values and bound_expression_keys:
+            if not any(
+                (expression_key, symbol) in variable_keys
+                for expression_key in bound_expression_keys
+                for symbol in symbol_values
+            ):
+                issues.append(
+                    ValidationIssue(
+                        reason="validity_bound_variable_not_found",
+                        detail=_canonical_json(
+                            {
+                                "candidate_expression_keys": bound_expression_keys,
+                                "candidate_symbols": symbol_values,
+                            }
+                        ),
+                        table="artifact_validity_bounds",
+                        subject=row_subject,
+                    )
+                )
+    return tuple(issues)
+
+
 def _duplicate_value_issues(
     rows: Sequence[Mapping[str, Any]],
     field_name: str,
@@ -1409,6 +1514,45 @@ def _string_sequence(value: Any) -> tuple[str, ...]:
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
         return ()
     return tuple(str(item) for item in value if str(item))
+
+
+def _text_value(row: Mapping[str, Any], *keys: str) -> str:
+    for key in keys:
+        value = row.get(key)
+        if value is not None:
+            text = str(value)
+            if text:
+                return text
+    return ""
+
+
+def _publication_candidate_keys(row: Mapping[str, Any]) -> tuple[str, ...]:
+    keys: list[str] = []
+    for key_name in ("local_artifact_key", "artifact_key", "atom_name", "registry_name"):
+        value = _text_value(row, key_name)
+        if value and value not in keys:
+            keys.append(value)
+    return tuple(keys)
+
+
+def _symbol_reference_values(row: Mapping[str, Any]) -> tuple[str, ...]:
+    symbols: list[str] = []
+    for key_name in (
+        "variable_name",
+        "symbol_name",
+        "symbol",
+        "source_symbol",
+        "variable_id",
+        "source_variable_id",
+    ):
+        value = _text_value(row, key_name)
+        if value and value not in symbols:
+            symbols.append(value)
+    return tuple(symbols)
+
+
+def _real_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
 def _row_subject(row: Mapping[str, Any], *, subject: str, index: int) -> str:
