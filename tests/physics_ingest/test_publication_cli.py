@@ -212,6 +212,17 @@ def test_publication_backfill_payload_report_is_json_serializable() -> None:
         "reviewed": 1,
         "published": 0,
         "blocked": 0,
+        "metrics": {
+            "parsed_rate": 0.5,
+            "dimensioned_rate": 0.0,
+            "reviewed_rate": 0.5,
+            "published_rate": 0.0,
+            "blocked_rate": 0.0,
+            "discovered_to_parsed_loss": 1,
+            "parsed_to_dimensioned_loss": 1,
+            "dimensioned_to_reviewed_loss": 0,
+            "reviewed_to_published_loss": 1,
+        },
     }
 
 

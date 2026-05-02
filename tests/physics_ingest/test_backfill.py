@@ -112,6 +112,25 @@ def test_backfill_report_composes_pipeline_with_pdg_rows_and_replay_keys() -> No
     assert report["replay_keys"]["artifact_cdg_nodes"] == [
         f"artifact_cdg_nodes|version_id={VERSION_ID}|node_id=pdg_step_1"
     ]
+    audit_replay = report["audit_replay"]
+    assert audit_replay["schema_version"] == (
+        "physics-ingest-backfill-audit-replay.v1"
+    )
+    assert len(audit_replay["input_fingerprint_sha256"]) == 64
+    assert "insert_rows_by_table" not in audit_replay["input_fingerprint_source"]
+    cdg_node_digest = audit_replay["table_batch_digests"]["artifact_cdg_nodes"]
+    assert cdg_node_digest["mode"] == "insert"
+    assert cdg_node_digest["row_count"] == 1
+    assert cdg_node_digest["conflict_keys"] == ["version_id", "node_id"]
+    assert len(cdg_node_digest["row_hash_digest"]) == 64
+    assert len(cdg_node_digest["conflict_identity_digest"]) == 64
+    assert len(cdg_node_digest["batch_digest"]) == 64
+    assert cdg_node_digest["missing_conflict_key_row_count"] == 0
+    assert cdg_node_digest["duplicate_conflict_identity_count"] == 0
+    assert audit_replay["replay_key_rollup"]["artifact_cdg_nodes"]["count"] == 1
+    assert audit_replay["diagnostic_digest"]["summary"] == report[
+        "diagnostic_summary"
+    ]
     assert report["retry_diagnostics"] == []
     assert report["skip_diagnostics"] == []
     assert report["diagnostic_summary"]["by_severity"] == {"info": 6}
@@ -401,6 +420,12 @@ def test_backfill_report_includes_retrieval_run_plan_without_insert_rows() -> No
     assert retrieval_report["replay_keys"] == [
         step.replay_key for step in retrieval_plan.steps
     ]
+    assert report["audit_replay"]["source_retrieval_replay"][
+        "replay_key_count"
+    ] == 2
+    assert len(
+        report["audit_replay"]["source_retrieval_replay"]["replay_key_digest"]
+    ) == 64
     assert [
         (step["step_index"], step["job_id"], step["replay_key"])
         for step in retrieval_report["steps"]

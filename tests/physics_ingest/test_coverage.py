@@ -58,6 +58,17 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
         "reviewed": 1,
         "published": 1,
         "blocked": 1,
+        "metrics": {
+            "parsed_rate": 0.5,
+            "dimensioned_rate": 0.5,
+            "reviewed_rate": 0.25,
+            "published_rate": 0.25,
+            "blocked_rate": 0.25,
+            "discovered_to_parsed_loss": 2,
+            "parsed_to_dimensioned_loss": 0,
+            "dimensioned_to_reviewed_loss": 1,
+            "reviewed_to_published_loss": 0,
+        },
     }
     assert report["by_source"] == [
         {
@@ -70,6 +81,17 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
                 "published": 1,
                 "blocked": 0,
             },
+            "metrics": {
+                "parsed_rate": 1.0,
+                "dimensioned_rate": 1.0,
+                "reviewed_rate": 1.0,
+                "published_rate": 1.0,
+                "blocked_rate": 0.0,
+                "discovered_to_parsed_loss": 0,
+                "parsed_to_dimensioned_loss": 0,
+                "dimensioned_to_reviewed_loss": 0,
+                "reviewed_to_published_loss": 0,
+            },
         },
         {
             "key": {"source_system": "nist_codata", "source_family": "reference_data"},
@@ -80,6 +102,17 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
                 "reviewed": 0,
                 "published": 0,
                 "blocked": 0,
+            },
+            "metrics": {
+                "parsed_rate": 1.0,
+                "dimensioned_rate": 1.0,
+                "reviewed_rate": 0.0,
+                "published_rate": 0.0,
+                "blocked_rate": 0.0,
+                "discovered_to_parsed_loss": 0,
+                "parsed_to_dimensioned_loss": 0,
+                "dimensioned_to_reviewed_loss": 1,
+                "reviewed_to_published_loss": 0,
             },
         },
         {
@@ -92,6 +125,17 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
                 "published": 0,
                 "blocked": 1,
             },
+            "metrics": {
+                "parsed_rate": 0.0,
+                "dimensioned_rate": 0.0,
+                "reviewed_rate": 0.0,
+                "published_rate": 0.0,
+                "blocked_rate": 1.0,
+                "discovered_to_parsed_loss": 1,
+                "parsed_to_dimensioned_loss": 0,
+                "dimensioned_to_reviewed_loss": 0,
+                "reviewed_to_published_loss": 0,
+            },
         },
         {
             "key": {"source_system": "wikidata", "source_family": "knowledge_graph"},
@@ -102,6 +146,17 @@ def test_phase7_coverage_summary_groups_source_and_physics_family() -> None:
                 "reviewed": 0,
                 "published": 0,
                 "blocked": 0,
+            },
+            "metrics": {
+                "parsed_rate": 0.0,
+                "dimensioned_rate": 0.0,
+                "reviewed_rate": 0.0,
+                "published_rate": 0.0,
+                "blocked_rate": 0.0,
+                "discovered_to_parsed_loss": 1,
+                "parsed_to_dimensioned_loss": 0,
+                "dimensioned_to_reviewed_loss": 0,
+                "reviewed_to_published_loss": 0,
             },
         },
     ]
@@ -151,6 +206,17 @@ def test_phase7_coverage_summary_accepts_row_like_objects_and_nested_evidence() 
         "reviewed": 1,
         "published": 0,
         "blocked": 0,
+        "metrics": {
+            "parsed_rate": 1.0,
+            "dimensioned_rate": 1.0,
+            "reviewed_rate": 1.0,
+            "published_rate": 0.0,
+            "blocked_rate": 0.0,
+            "discovered_to_parsed_loss": 0,
+            "parsed_to_dimensioned_loss": 0,
+            "dimensioned_to_reviewed_loss": 0,
+            "reviewed_to_published_loss": 1,
+        },
     }
     assert report.by_source[0].key == {
         "source_system": "foundational_manual_seed",
@@ -175,3 +241,32 @@ def test_phase7_coverage_summary_dict_is_json_serializable() -> None:
     assert decoded == report_dict
     assert decoded["report_version"] == "physics-phase7-coverage-summary.v1"
     assert decoded["summary"]["published"] == 1
+    assert decoded["summary"]["metrics"]["published_rate"] == 1.0
+
+
+def test_phase7_coverage_summary_zero_rows_has_stable_metrics() -> None:
+    report = build_phase7_coverage_summary_dict([])
+
+    assert report["summary"] == {
+        "total_rows": 0,
+        "discovered": 0,
+        "parsed": 0,
+        "dimensioned": 0,
+        "reviewed": 0,
+        "published": 0,
+        "blocked": 0,
+        "metrics": {
+            "parsed_rate": 0.0,
+            "dimensioned_rate": 0.0,
+            "reviewed_rate": 0.0,
+            "published_rate": 0.0,
+            "blocked_rate": 0.0,
+            "discovered_to_parsed_loss": 0,
+            "parsed_to_dimensioned_loss": 0,
+            "dimensioned_to_reviewed_loss": 0,
+            "reviewed_to_published_loss": 0,
+        },
+    }
+    assert report["by_source"] == []
+    assert report["by_physics_family"] == []
+    assert report["by_source_and_physics_family"] == []

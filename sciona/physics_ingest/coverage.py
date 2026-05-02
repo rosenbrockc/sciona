@@ -55,6 +55,7 @@ class Phase7CoverageBucket:
 
     key: Mapping[str, str]
     counts: Mapping[str, int]
+    metrics: Mapping[str, int | float]
 
     def to_dict(self) -> JSONDict:
         return jsonable(self)
@@ -65,7 +66,7 @@ class Phase7CoverageSummary:
     """JSON-safe, side-effect-free Phase 7 coverage report."""
 
     report_version: str
-    summary: Mapping[str, int]
+    summary: Mapping[str, Any]
     by_source: tuple[Phase7CoverageBucket, ...]
     by_physics_family: tuple[Phase7CoverageBucket, ...]
     by_source_and_physics_family: tuple[Phase7CoverageBucket, ...]
@@ -118,11 +119,12 @@ def build_phase7_coverage_summary(
 
     return Phase7CoverageSummary(
         report_version=REPORT_VERSION,
-        summary={"total_rows": total_rows, **total_counts},
+        summary=_summary_counts_and_metrics(total_rows, total_counts),
         by_source=tuple(
             Phase7CoverageBucket(
                 key={"source_system": source_system, "source_family": source_family},
                 counts=dict(counts),
+                metrics=_coverage_metrics(counts),
             )
             for (source_system, source_family), counts in sorted(source_counts.items())
         ),
@@ -130,6 +132,7 @@ def build_phase7_coverage_summary(
             Phase7CoverageBucket(
                 key={"physics_family": physics_family},
                 counts=dict(counts),
+                metrics=_coverage_metrics(counts),
             )
             for physics_family, counts in sorted(family_counts.items())
         ),
@@ -141,6 +144,7 @@ def build_phase7_coverage_summary(
                     "physics_family": physics_family,
                 },
                 counts=dict(counts),
+                metrics=_coverage_metrics(counts),
             )
             for (
                 source_system,
@@ -289,6 +293,48 @@ def _empty_counts() -> dict[str, int]:
 def _add_counts(target: dict[str, int], source: Mapping[str, int]) -> None:
     for key in COVERAGE_COUNT_KEYS:
         target[key] += int(source.get(key, 0))
+
+
+def _summary_counts_and_metrics(
+    total_rows: int,
+    counts: Mapping[str, int],
+) -> JSONDict:
+    return {
+        "total_rows": total_rows,
+        **dict(counts),
+        "metrics": _coverage_metrics(counts),
+    }
+
+
+def _coverage_metrics(counts: Mapping[str, int]) -> JSONDict:
+    discovered = int(counts.get("discovered", 0))
+    parsed = int(counts.get("parsed", 0))
+    dimensioned = int(counts.get("dimensioned", 0))
+    reviewed = int(counts.get("reviewed", 0))
+    published = int(counts.get("published", 0))
+    blocked = int(counts.get("blocked", 0))
+
+    return {
+        "parsed_rate": _rate(parsed, discovered),
+        "dimensioned_rate": _rate(dimensioned, discovered),
+        "reviewed_rate": _rate(reviewed, discovered),
+        "published_rate": _rate(published, discovered),
+        "blocked_rate": _rate(blocked, discovered),
+        "discovered_to_parsed_loss": _loss(discovered, parsed),
+        "parsed_to_dimensioned_loss": _loss(parsed, dimensioned),
+        "dimensioned_to_reviewed_loss": _loss(dimensioned, reviewed),
+        "reviewed_to_published_loss": _loss(reviewed, published),
+    }
+
+
+def _rate(numerator: int, denominator: int) -> float:
+    if denominator <= 0:
+        return 0.0
+    return round(numerator / denominator, 6)
+
+
+def _loss(previous_stage_count: int, next_stage_count: int) -> int:
+    return max(previous_stage_count - next_stage_count, 0)
 
 
 def _text(row: Mapping[str, Any], *keys: str) -> str:

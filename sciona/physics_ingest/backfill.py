@@ -128,6 +128,7 @@ def build_physics_ingest_backfill_report(
     retry_diagnostics = _diagnostics_by_severity(diagnostics, severity="error")
     skip_diagnostics = _diagnostics_by_severity(diagnostics, severity="skipped")
     has_errors = bool(retry_diagnostics)
+    replay_keys = _replay_keys(pipeline_result.write_plan.to_dict()["batches"])
 
     report: dict[str, Any] = {
         "report_kind": BACKFILL_REPORT_KIND,
@@ -164,7 +165,30 @@ def build_physics_ingest_backfill_report(
         "data_artifact_seeds": data_artifact_seed_summaries,
         "table_row_counts": dict(pipeline_result.write_plan.audit_summary.planned_row_counts),
         "dry_run_write_plan": _write_plan_summary(pipeline_result),
-        "replay_keys": _replay_keys(pipeline_result.write_plan.to_dict()["batches"]),
+        "replay_keys": replay_keys,
+        "audit_replay": _audit_replay_section(
+            pipeline_result=pipeline_result,
+            input_summary={
+                "source_bundle_count": len(source_bundle_list),
+                "publication_manifest_count": len(publication_manifest_list),
+                "data_artifact_seed_count": len(data_artifact_seed_summaries),
+                "normalized_draft_count": len(normalized_draft_list),
+                "pdg_table_count": len(pdg_rows),
+                "pdg_row_count": sum(len(rows) for rows in pdg_rows.values()),
+                "review_publication_table_count": len(review_rows),
+                "review_publication_row_count": sum(
+                    len(rows) for rows in review_rows.values()
+                ),
+                "source_retrieval_step_count": retrieval_report["step_count"],
+                "source_retrieval_diagnostic_count": len(retrieval_diagnostic_rows),
+            },
+            data_artifact_seed_summaries=data_artifact_seed_summaries,
+            replay_keys=replay_keys,
+            diagnostics=diagnostics,
+            retry_diagnostics=retry_diagnostics,
+            skip_diagnostics=skip_diagnostics,
+            source_retrieval_report=retrieval_report["report"],
+        ),
         "retry_diagnostics": retry_diagnostics,
         "skip_diagnostics": skip_diagnostics,
         "external_diagnostics": {
@@ -632,9 +656,185 @@ def _replay_keys(batches: Iterable[Mapping[str, Any]]) -> dict[str, list[str]]:
     return replay_keys
 
 
+def _audit_replay_section(
+    *,
+    pipeline_result: Any,
+    input_summary: Mapping[str, Any],
+    data_artifact_seed_summaries: list[dict[str, Any]],
+    replay_keys: Mapping[str, list[str]],
+    diagnostics: Iterable[Mapping[str, Any]],
+    retry_diagnostics: Iterable[Mapping[str, Any]],
+    skip_diagnostics: Iterable[Mapping[str, Any]],
+    source_retrieval_report: Mapping[str, Any],
+) -> dict[str, Any]:
+    write_plan = pipeline_result.write_plan
+    batch_digests = _batch_digest_rollups(write_plan)
+    diagnostic_rollup = _diagnostic_digest_rollup(diagnostics)
+    retry_rollup = _diagnostic_digest_rollup(retry_diagnostics)
+    skip_rollup = _diagnostic_digest_rollup(skip_diagnostics)
+    source_retrieval_rollup = _source_retrieval_replay_rollup(
+        source_retrieval_report
+    )
+    input_fingerprint_source = {
+        "report_kind": BACKFILL_REPORT_KIND,
+        "dry_run": True,
+        "input_summary": _json_safe_mapping(input_summary),
+        "data_artifact_seed_digest": _stable_sequence_digest(
+            data_artifact_seed_summaries
+        ),
+        "table_row_counts": dict(write_plan.audit_summary.planned_row_counts),
+        "table_modes": dict(sorted(write_plan.table_modes.items())),
+        "table_batch_digests": batch_digests,
+        "diagnostic_digest": diagnostic_rollup["digest"],
+        "source_retrieval_replay_key_digest": source_retrieval_rollup[
+            "replay_key_digest"
+        ],
+    }
+    return {
+        "schema_version": "physics-ingest-backfill-audit-replay.v1",
+        "input_fingerprint_sha256": _stable_row_hash(input_fingerprint_source),
+        "input_fingerprint_source": input_fingerprint_source,
+        "table_batch_digests": batch_digests,
+        "replay_key_rollup": _replay_key_rollup(replay_keys),
+        "diagnostic_digest": diagnostic_rollup,
+        "retry_digest": retry_rollup,
+        "skip_digest": skip_rollup,
+        "source_retrieval_replay": source_retrieval_rollup,
+    }
+
+
+def _batch_digest_rollups(write_plan: Any) -> dict[str, dict[str, Any]]:
+    rollups: dict[str, dict[str, Any]] = {}
+    for batch in write_plan.batches:
+        row_hashes = [_stable_row_hash(row) for row in batch.rows]
+        conflict_keys = tuple(batch.conflict_keys)
+        conflict_identities = [
+            _row_conflict_identity(row, conflict_keys, index)
+            for index, row in enumerate(batch.rows)
+        ]
+        conflict_identity_hashes = [
+            _stable_row_hash(identity) for identity in conflict_identities
+        ]
+        duplicate_conflict_identity_count = len(conflict_identity_hashes) - len(
+            set(conflict_identity_hashes)
+        )
+        rollups[batch.table] = {
+            "mode": write_plan.mode_for(batch.table),
+            "row_count": batch.row_count,
+            "conflict_keys": list(conflict_keys),
+            "row_hash_digest": _stable_sequence_digest(row_hashes),
+            "conflict_identity_digest": _stable_sequence_digest(
+                conflict_identities
+            ),
+            "batch_digest": _stable_row_hash(
+                {
+                    "table": batch.table,
+                    "mode": write_plan.mode_for(batch.table),
+                    "row_count": batch.row_count,
+                    "conflict_keys": list(conflict_keys),
+                    "row_hash_digest": _stable_sequence_digest(row_hashes),
+                    "conflict_identity_digest": _stable_sequence_digest(
+                        conflict_identities
+                    ),
+                }
+            ),
+            "missing_conflict_key_row_count": sum(
+                1
+                for row in batch.rows
+                if conflict_keys
+                and any(row.get(key) in (None, "") for key in conflict_keys)
+            ),
+            "duplicate_conflict_identity_count": duplicate_conflict_identity_count,
+        }
+    return rollups
+
+
+def _row_conflict_identity(
+    row: Mapping[str, Any],
+    conflict_keys: tuple[str, ...],
+    index: int,
+) -> dict[str, Any]:
+    if conflict_keys and all(row.get(key) not in (None, "") for key in conflict_keys):
+        return {
+            "kind": "conflict_keys",
+            "keys": {key: _json_safe_value(row.get(key)) for key in conflict_keys},
+        }
+    return {
+        "kind": "row_hash",
+        "row_index": index,
+        "sha256": _stable_row_hash(row),
+    }
+
+
+def _replay_key_rollup(
+    replay_keys: Mapping[str, list[str]],
+) -> dict[str, dict[str, Any]]:
+    return {
+        table: {
+            "count": len(keys),
+            "digest": _stable_sequence_digest(keys),
+        }
+        for table, keys in sorted(replay_keys.items())
+    }
+
+
+def _diagnostic_digest_rollup(
+    diagnostics: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    rows = [dict(row) for row in diagnostics]
+    return {
+        "count": len(rows),
+        "digest": _stable_sequence_digest(rows),
+        "summary": _diagnostic_summary(rows),
+    }
+
+
+def _source_retrieval_replay_rollup(
+    report: Mapping[str, Any],
+) -> dict[str, Any]:
+    replay_keys = [str(key) for key in report.get("replay_keys", ())]
+    steps = [
+        {
+            "step_index": step.get("step_index", 0),
+            "job_id": step.get("job_id", ""),
+            "endpoint_id": step.get("endpoint_id", ""),
+            "snapshot_key": step.get("snapshot_key", ""),
+            "replay_key": step.get("replay_key", ""),
+        }
+        for step in report.get("steps", ())
+        if isinstance(step, Mapping)
+    ]
+    return {
+        "manifest_version": str(report.get("manifest_version") or ""),
+        "snapshot_key_prefix": str(report.get("snapshot_key_prefix") or ""),
+        "step_count": int(report.get("step_count") or 0),
+        "diagnostic_count": int(report.get("diagnostic_count") or 0),
+        "replay_key_count": len(replay_keys),
+        "replay_key_digest": _stable_sequence_digest(replay_keys),
+        "step_replay_digest": _stable_sequence_digest(steps),
+    }
+
+
+def _stable_sequence_digest(values: Iterable[Any]) -> str:
+    return _stable_row_hash({"items": list(values)})
+
+
+def _json_safe_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {
+            str(key): _json_safe_value(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_value(item) for item in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
 def _stable_row_hash(row: Mapping[str, Any]) -> str:
     encoded = json.dumps(
-        row,
+        _json_safe_value(row),
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=True,

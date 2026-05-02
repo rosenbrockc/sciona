@@ -17,6 +17,37 @@ from sciona.physics_ingest.sources._manifest import jsonable, stable_payload_sha
 JSONDict = dict[str, Any]
 
 
+PHASE7_RING_ORDER: Mapping[str, int] = {
+    "ring_1_foundational": 1,
+    "ring_2_existing_sciona_domains": 2,
+    "ring_3_wikidata_physical_equations": 3,
+    "ring_4_pdg_derivations": 4,
+    "ring_5_reference_datasets": 5,
+    "ring_6_long_tail": 6,
+}
+
+_PHASE7_PRIMARY_RING_BY_SOURCE_SYSTEM: Mapping[str, str] = {
+    "manual": "ring_1_foundational",
+    "nist_codata": "ring_1_foundational",
+    "qudt": "ring_1_foundational",
+    "nist_dlmf": "ring_1_foundational",
+    "hitran": "ring_2_existing_sciona_domains",
+    "materials_project": "ring_2_existing_sciona_domains",
+    "opb": "ring_2_existing_sciona_domains",
+    "wikidata": "ring_3_wikidata_physical_equations",
+    "physics_derivation_graph": "ring_4_pdg_derivations",
+    "theoria": "ring_6_long_tail",
+    "phy_srbench": "ring_6_long_tail",
+}
+
+_PHASE7_ADDITIONAL_RINGS_BY_SOURCE_SYSTEM: Mapping[str, tuple[str, ...]] = {
+    "nist_codata": ("ring_5_reference_datasets",),
+    "qudt": ("ring_5_reference_datasets",),
+    "hitran": ("ring_5_reference_datasets",),
+    "materials_project": ("ring_5_reference_datasets",),
+}
+
+
 @dataclass(frozen=True)
 class RetryPolicy:
     """Retry/backoff settings for a retrieval job."""
@@ -70,6 +101,9 @@ class RetrievalEndpoint:
     endpoint_id: str
     source_system: str
     source_family: str
+    phase7_ring: str
+    phase7_ring_order: int
+    phase7_rings: tuple[str, ...]
     snapshot_key: str
     adapter_name: str
     adapter_version: str
@@ -101,6 +135,9 @@ class RetrievalJob:
     endpoint_id: str
     source_system: str
     source_family: str
+    phase7_ring: str
+    phase7_ring_order: int
+    phase7_rings: tuple[str, ...]
     snapshot_key: str
     adapter_name: str
     adapter_version: str
@@ -162,6 +199,9 @@ class RetrievalRunStep:
     endpoint_id: str
     source_system: str
     source_family: str
+    phase7_ring: str
+    phase7_ring_order: int
+    phase7_rings: tuple[str, ...]
     snapshot_key: str
     method: str
     url: str
@@ -249,6 +289,7 @@ def build_physics_source_retrieval_run_plan(
     manifest: SourceRetrievalManifest | None = None,
     source_system: str | Iterable[str] | None = None,
     source_family: str | Iterable[str] | None = None,
+    phase7_ring: str | Iterable[str] | None = None,
     job_id: str | Iterable[str] | None = None,
     max_jobs: int | None = None,
     limit: int | None = None,
@@ -267,6 +308,7 @@ def build_physics_source_retrieval_run_plan(
 
     source_systems = _normalize_filter(source_system)
     source_families = _normalize_filter(source_family)
+    phase7_rings = _normalize_filter(phase7_ring)
     job_ids = _normalize_filter(job_id)
     base_manifest = manifest or build_physics_source_retrieval_manifest(
         snapshot_key_prefix=snapshot_key_prefix,
@@ -278,6 +320,7 @@ def build_physics_source_retrieval_run_plan(
         for job in sorted(base_manifest.jobs, key=lambda item: (item.priority, item.job_id))
         if _matches_filter(job.source_system, source_systems)
         and _matches_filter(job.source_family, source_families)
+        and _matches_any_filter(job.phase7_rings, phase7_rings)
         and _matches_filter(job.job_id, job_ids)
     ]
     if max_jobs is not None:
@@ -307,6 +350,9 @@ def build_physics_source_retrieval_run_plan(
             else None,
             "source_family": sorted(source_families)
             if source_families is not None
+            else None,
+            "phase7_ring": sorted(phase7_rings)
+            if phase7_rings is not None
             else None,
             "job_id": sorted(job_ids) if job_ids is not None else None,
             "max_jobs": max_jobs,
@@ -338,6 +384,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="wikidata_equation_candidates",
             source_system="wikidata",
             source_family="knowledge_graph",
+            **_phase7_kwargs("wikidata"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "wikidata"),
             adapter_name="sciona.physics_ingest.sources.wikidata",
             adapter_version="0.1.0",
@@ -374,6 +421,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="qudt_units_quantity_kinds",
             source_system="qudt",
             source_family="ontology",
+            **_phase7_kwargs("qudt"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "qudt"),
             adapter_name="sciona.physics_ingest.sources.qudt",
             adapter_version="wave1-qudt-dim-resolution-v2",
@@ -398,6 +446,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="pdg_derivation_graph",
             source_system="physics_derivation_graph",
             source_family="derivation_graph",
+            **_phase7_kwargs("physics_derivation_graph"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "pdg"),
             adapter_name="sciona.physics_ingest.sources.pdg",
             adapter_version="wave1.pdg_scaffold.v1",
@@ -424,6 +473,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="nist_codata_constants",
             source_system="nist_codata",
             source_family="standards_reference",
+            **_phase7_kwargs("nist_codata"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "nist-codata"),
             adapter_name="sciona.physics_ingest.sources.nist",
             adapter_version="0.1.0",
@@ -448,6 +498,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="nist_dlmf_equations",
             source_system="nist_dlmf",
             source_family="standards_reference",
+            **_phase7_kwargs("nist_dlmf"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "nist-dlmf"),
             adapter_name="sciona.physics_ingest.sources.nist",
             adapter_version="0.1.0",
@@ -477,6 +528,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="hitran_lines",
             source_system="hitran",
             source_family="spectroscopy",
+            **_phase7_kwargs("hitran"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "hitran"),
             adapter_name="sciona.physics_ingest.sources.hitran",
             adapter_version="wave1.hitran_scaffold.v1",
@@ -508,6 +560,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="materials_project_documents",
             source_system="materials_project",
             source_family="materials",
+            **_phase7_kwargs("materials_project"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "materials-project"),
             adapter_name="sciona.physics_ingest.sources.materials_project",
             adapter_version="wave1.materials_project_scaffold.v1",
@@ -539,6 +592,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="opb_problem_payloads",
             source_system="opb",
             source_family="benchmark",
+            **_phase7_kwargs("opb"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "opb"),
             adapter_name="sciona.physics_ingest.sources.opb",
             adapter_version="wave1.opb_scaffold.v1",
@@ -567,6 +621,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="theoria_payloads",
             source_system="theoria",
             source_family="benchmark",
+            **_phase7_kwargs("theoria"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "theoria"),
             adapter_name="sciona.physics_ingest.sources.theoria",
             adapter_version="wave1.theoria_scaffold.v1",
@@ -595,6 +650,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="phy_srbench_payloads",
             source_system="phy_srbench",
             source_family="benchmark",
+            **_phase7_kwargs("phy_srbench"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "phy-srbench"),
             adapter_name="sciona.physics_ingest.sources.phy_srbench",
             adapter_version="wave1.phy_srbench_scaffold.v1",
@@ -622,6 +678,7 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             endpoint_id="foundational_manual_seed",
             source_system="manual",
             source_family="curated_foundational",
+            **_phase7_kwargs("manual"),
             snapshot_key=_snapshot_key(snapshot_key_prefix, "foundational-manual"),
             adapter_name="sciona.physics_ingest.sources.foundational_physics",
             adapter_version="wave1.foundational_physics_backfill.v1",
@@ -656,6 +713,9 @@ def _job_for_endpoint(endpoint: RetrievalEndpoint) -> RetrievalJob:
         endpoint_id=endpoint.endpoint_id,
         source_system=endpoint.source_system,
         source_family=endpoint.source_family,
+        phase7_ring=endpoint.phase7_ring,
+        phase7_ring_order=endpoint.phase7_ring_order,
+        phase7_rings=endpoint.phase7_rings,
         snapshot_key=endpoint.snapshot_key,
         adapter_name=endpoint.adapter_name,
         adapter_version=endpoint.adapter_version,
@@ -684,20 +744,46 @@ def _target_adapter_input(endpoint: RetrievalEndpoint) -> str:
 
 
 def _source_priority(source_system: str) -> int:
-    priority = {
-        "manual": 10,
-        "nist_codata": 20,
-        "qudt": 30,
-        "wikidata": 40,
-        "nist_dlmf": 50,
-        "physics_derivation_graph": 60,
-        "hitran": 70,
-        "materials_project": 80,
-        "opb": 90,
-        "theoria": 100,
-        "phy_srbench": 110,
+    phase7_order = _phase7_ring_order(_phase7_primary_ring(source_system))
+    source_order = {
+        "manual": 0,
+        "nist_codata": 1,
+        "qudt": 2,
+        "nist_dlmf": 3,
+        "hitran": 0,
+        "materials_project": 1,
+        "opb": 2,
+        "wikidata": 0,
+        "physics_derivation_graph": 0,
+        "theoria": 0,
+        "phy_srbench": 1,
     }
-    return priority[source_system]
+    return phase7_order * 100 + source_order[source_system]
+
+
+def _phase7_primary_ring(source_system: str) -> str:
+    return _PHASE7_PRIMARY_RING_BY_SOURCE_SYSTEM[source_system]
+
+
+def _phase7_rings(source_system: str) -> tuple[str, ...]:
+    rings = {
+        _phase7_primary_ring(source_system),
+        *_PHASE7_ADDITIONAL_RINGS_BY_SOURCE_SYSTEM.get(source_system, ()),
+    }
+    return tuple(sorted(rings, key=_phase7_ring_order))
+
+
+def _phase7_ring_order(phase7_ring: str) -> int:
+    return PHASE7_RING_ORDER[phase7_ring]
+
+
+def _phase7_kwargs(source_system: str) -> dict[str, Any]:
+    primary_ring = _phase7_primary_ring(source_system)
+    return {
+        "phase7_ring": primary_ring,
+        "phase7_ring_order": _phase7_ring_order(primary_ring),
+        "phase7_rings": _phase7_rings(source_system),
+    }
 
 
 def _run_step_for_job(
@@ -720,6 +806,9 @@ def _run_step_for_job(
         "job_id": job.job_id,
         "endpoint_id": endpoint.endpoint_id,
         "snapshot_key": job.snapshot_key,
+        "phase7_ring": job.phase7_ring,
+        "phase7_ring_order": job.phase7_ring_order,
+        "phase7_rings": job.phase7_rings,
         "method": endpoint.method,
         "url": endpoint.url,
         "params": params,
@@ -736,6 +825,9 @@ def _run_step_for_job(
         endpoint_id=endpoint.endpoint_id,
         source_system=job.source_system,
         source_family=job.source_family,
+        phase7_ring=job.phase7_ring,
+        phase7_ring_order=job.phase7_ring_order,
+        phase7_rings=job.phase7_rings,
         snapshot_key=job.snapshot_key,
         method=endpoint.method,
         url=endpoint.url,
@@ -827,6 +919,10 @@ def _matches_filter(value: str, allowed: set[str] | None) -> bool:
     return allowed is None or value in allowed
 
 
+def _matches_any_filter(values: Iterable[str], allowed: set[str] | None) -> bool:
+    return allowed is None or bool(set(values) & allowed)
+
+
 def _validate_manifest(
     *,
     endpoints: tuple[RetrievalEndpoint, ...],
@@ -842,3 +938,39 @@ def _validate_manifest(
     missing = sorted({job.endpoint_id for job in jobs} - endpoint_id_set)
     if missing:
         raise ValueError(f"retrieval jobs reference unknown endpoints: {missing}")
+    endpoints_by_id = {endpoint.endpoint_id: endpoint for endpoint in endpoints}
+    for endpoint in endpoints:
+        _validate_phase7_metadata(
+            phase7_ring=endpoint.phase7_ring,
+            phase7_ring_order=endpoint.phase7_ring_order,
+            phase7_rings=endpoint.phase7_rings,
+            owner_id=endpoint.endpoint_id,
+        )
+    for job in jobs:
+        endpoint = endpoints_by_id[job.endpoint_id]
+        if job.phase7_ring != endpoint.phase7_ring:
+            raise ValueError(f"retrieval job phase7 ring mismatch: {job.job_id}")
+        if job.phase7_ring_order != endpoint.phase7_ring_order:
+            raise ValueError(f"retrieval job phase7 ring order mismatch: {job.job_id}")
+        if job.phase7_rings != endpoint.phase7_rings:
+            raise ValueError(f"retrieval job phase7 rings mismatch: {job.job_id}")
+
+
+def _validate_phase7_metadata(
+    *,
+    phase7_ring: str,
+    phase7_ring_order: int,
+    phase7_rings: tuple[str, ...],
+    owner_id: str,
+) -> None:
+    if phase7_ring not in PHASE7_RING_ORDER:
+        raise ValueError(f"unknown phase7 ring for {owner_id}: {phase7_ring}")
+    if phase7_ring_order != PHASE7_RING_ORDER[phase7_ring]:
+        raise ValueError(f"phase7 ring order mismatch for {owner_id}")
+    unknown_rings = sorted(set(phase7_rings) - set(PHASE7_RING_ORDER))
+    if unknown_rings:
+        raise ValueError(f"unknown phase7 rings for {owner_id}: {unknown_rings}")
+    if phase7_ring not in phase7_rings:
+        raise ValueError(f"primary phase7 ring missing from phase7 rings: {owner_id}")
+    if phase7_rings != tuple(sorted(phase7_rings, key=_phase7_ring_order)):
+        raise ValueError(f"phase7 rings must be sorted by ring order: {owner_id}")

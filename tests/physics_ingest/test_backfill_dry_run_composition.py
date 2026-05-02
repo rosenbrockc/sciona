@@ -154,6 +154,17 @@ def test_dry_run_backfill_composes_retrieval_normalization_qudt_and_pdg() -> Non
         "reviewed": 0,
         "published": 0,
         "blocked": 1,
+        "metrics": {
+            "parsed_rate": 0.285714,
+            "dimensioned_rate": 0.285714,
+            "reviewed_rate": 0.0,
+            "published_rate": 0.0,
+            "blocked_rate": 0.142857,
+            "discovered_to_parsed_loss": 5,
+            "parsed_to_dimensioned_loss": 0,
+            "dimensioned_to_reviewed_loss": 2,
+            "reviewed_to_published_loss": 0,
+        },
     }
     encoded_coverage_summary = json.dumps(
         report["phase7_coverage_summary"],

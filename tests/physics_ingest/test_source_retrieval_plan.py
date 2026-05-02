@@ -4,6 +4,7 @@ import json
 
 from sciona.physics_ingest.sources import build_physics_source_retrieval_manifest
 from sciona.physics_ingest.sources.retrieval_plan import (
+    PHASE7_RING_ORDER,
     build_physics_source_retrieval_manifest_dict,
 )
 
@@ -74,6 +75,41 @@ def test_retrieval_manifest_jobs_link_to_endpoints_and_adapter_inputs() -> None:
     assert jobs["wikidata_equation_candidates.backfill"].snapshot_key == "wave-a/wikidata"
 
 
+def test_retrieval_manifest_exposes_phase7_ring_metadata() -> None:
+    manifest = build_physics_source_retrieval_manifest()
+    endpoints = manifest.endpoint_by_id()
+    jobs = manifest.job_by_id()
+
+    assert endpoints["foundational_manual_seed"].phase7_ring == "ring_1_foundational"
+    assert endpoints["nist_codata_constants"].phase7_ring == "ring_1_foundational"
+    assert endpoints["qudt_units_quantity_kinds"].phase7_ring == "ring_1_foundational"
+    assert endpoints["nist_dlmf_equations"].phase7_ring == "ring_1_foundational"
+    assert endpoints["hitran_lines"].phase7_ring == "ring_2_existing_sciona_domains"
+    assert endpoints["materials_project_documents"].phase7_ring == "ring_2_existing_sciona_domains"
+    assert endpoints["opb_problem_payloads"].phase7_ring == "ring_2_existing_sciona_domains"
+    assert endpoints["wikidata_equation_candidates"].phase7_ring == "ring_3_wikidata_physical_equations"
+    assert endpoints["pdg_derivation_graph"].phase7_ring == "ring_4_pdg_derivations"
+    assert endpoints["theoria_payloads"].phase7_ring == "ring_6_long_tail"
+    assert endpoints["phy_srbench_payloads"].phase7_ring == "ring_6_long_tail"
+
+    reference_ring = "ring_5_reference_datasets"
+    assert reference_ring in endpoints["nist_codata_constants"].phase7_rings
+    assert reference_ring in endpoints["qudt_units_quantity_kinds"].phase7_rings
+    assert reference_ring in endpoints["hitran_lines"].phase7_rings
+    assert reference_ring in endpoints["materials_project_documents"].phase7_rings
+    assert reference_ring not in endpoints["nist_dlmf_equations"].phase7_rings
+
+    for endpoint in manifest.endpoints:
+        assert endpoint.phase7_ring_order == PHASE7_RING_ORDER[endpoint.phase7_ring]
+        assert endpoint.phase7_rings == tuple(
+            sorted(endpoint.phase7_rings, key=PHASE7_RING_ORDER.__getitem__)
+        )
+        job = jobs[f"{endpoint.endpoint_id}.backfill"]
+        assert job.phase7_ring == endpoint.phase7_ring
+        assert job.phase7_ring_order == endpoint.phase7_ring_order
+        assert job.phase7_rings == endpoint.phase7_rings
+
+
 def test_retrieval_manifest_dict_is_json_safe_and_side_effect_free() -> None:
     manifest_dict = build_physics_source_retrieval_manifest_dict()
 
@@ -86,3 +122,5 @@ def test_retrieval_manifest_dict_is_json_safe_and_side_effect_free() -> None:
     assert "jobs" in decoded
     assert all("url" in endpoint for endpoint in decoded["endpoints"])
     assert all("retry_policy" in endpoint for endpoint in decoded["endpoints"])
+    assert all("phase7_ring" in endpoint for endpoint in decoded["endpoints"])
+    assert all("phase7_ring_order" in job for job in decoded["jobs"])

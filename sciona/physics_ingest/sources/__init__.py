@@ -15,6 +15,7 @@ from sciona.physics_ingest.sources.execution_plan import (
     build_source_execution_readiness_report_dict,
 )
 from sciona.physics_ingest.sources.retrieval_plan import (
+    PHASE7_RING_ORDER,
     PaginationSpec,
     RateLimitHint,
     RetrievalEndpoint,
@@ -31,6 +32,7 @@ from sciona.physics_ingest.sources.retrieval_plan import (
 )
 
 __all__ = [
+    "PHASE7_RING_ORDER",
     "PaginationSpec",
     "RateLimitHint",
     "RetrievalEndpoint",
