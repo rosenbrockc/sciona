@@ -482,6 +482,7 @@ def validate_symbolic_publication_fixture(
             subject=subject,
         )
     )
+    issues.extend(_validity_bound_duplicate_issues(bounds, subject=subject))
     issues.extend(
         _duplicate_value_issues(expressions, "expression_id", subject=subject)
     )
@@ -1196,6 +1197,50 @@ def _validity_bound_standard_issues(
                         subject=row_subject,
                     )
                 )
+    return tuple(issues)
+
+
+def _validity_bound_duplicate_issues(
+    bounds: Sequence[Mapping[str, Any]],
+    *,
+    subject: str,
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    seen_source_bound_ids: dict[str, int] = {}
+    for index, row in enumerate(bounds):
+        source_bound_id = _text_value(row, "source_bound_id")
+        if not source_bound_id:
+            continue
+        first_index = seen_source_bound_ids.get(source_bound_id)
+        if first_index is None:
+            seen_source_bound_ids[source_bound_id] = index
+            continue
+        issues.append(
+            ValidationIssue(
+                reason="duplicate_source_bound_id",
+                detail=_canonical_json(
+                    {
+                        "artifact_key": (
+                            _text_value(
+                                row,
+                                "local_artifact_key",
+                                "artifact_key",
+                                "atom_name",
+                            )
+                            or subject
+                        ),
+                        "expression_id": (
+                            _text_value(row, "expression_id") or subject
+                        ),
+                        "first_row_index": first_index,
+                        "row_index": index,
+                        "source_bound_id": source_bound_id,
+                    }
+                ),
+                table="artifact_validity_bounds",
+                subject=_row_subject(row, subject=subject, index=index),
+            )
+        )
     return tuple(issues)
 
 

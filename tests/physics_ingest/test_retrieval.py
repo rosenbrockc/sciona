@@ -615,6 +615,60 @@ def test_symbolic_synthesis_report_blocks_reviewed_candidate_without_dimensions(
     assert blocked["compiler_contract"]["blockers"] == ["missing_dimensional_metadata"]
 
 
+def test_symbolic_synthesis_report_exposes_unverified_relationship_diagnostics() -> None:
+    report = build_symbolic_synthesis_retrieval_report(
+        {
+            "topology_hash": "topo-wave",
+            "relationship_kind": "derived from",
+            "relationship_label": "wave identity",
+        },
+        [
+            {
+                "artifact_id": "reviewed-wave-missing-dimensions",
+                "topology_hash": "topo-wave",
+                "review_status": "human_reviewed",
+                "relationships": [
+                    {
+                        "relationship_kind": "derives-from",
+                        "relationship_label": "Wave Identity",
+                        "confidence": 0.75,
+                        "verified": False,
+                        "source_kind": "adapter_edge",
+                    }
+                ],
+            }
+        ],
+    )
+
+    assert report["executable_candidates"] == []
+    blocked = report["blocked_candidates"][0]
+    assert blocked["candidate_key"] == "reviewed-wave-missing-dimensions"
+    assert blocked["compiler_contract"]["blockers"] == ["missing_dimensional_metadata"]
+    diagnostics = blocked["compiler_contract"]["relationship_request_diagnostics"]
+    assert diagnostics["requested"] == ["derives_from", "wave identity"]
+    assert diagnostics["verified"] == []
+    assert diagnostics["unverified"] == ["derives_from", "wave identity"]
+    assert diagnostics["missing"] == []
+    assert diagnostics["matched_edges"] == [
+        {
+            "requested_relationship": "derives_from",
+            "relationship_kind": "derives_from",
+            "relationship_label": "Wave Identity",
+            "confidence": 0.75,
+            "verified": False,
+            "source_kind": "adapter_edge",
+        },
+        {
+            "requested_relationship": "wave identity",
+            "relationship_kind": "derives_from",
+            "relationship_label": "Wave Identity",
+            "confidence": 0.75,
+            "verified": False,
+            "source_kind": "adapter_edge",
+        },
+    ]
+
+
 def test_symbolic_ranker_scores_source_domain_analogues_and_data_artifacts() -> None:
     results = rank_symbolic_candidates(
         {

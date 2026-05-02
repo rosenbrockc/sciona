@@ -1152,6 +1152,10 @@ def _compiler_contract_guidance(
     blockers = list(_compiler_blockers(query, result))
     return {
         "required_dimensional_checks": _candidate_dimensional_checks(query, candidate),
+        "relationship_request_diagnostics": _relationship_request_diagnostics(
+            query,
+            candidate,
+        ),
         "blockers": blockers,
         "can_compile": not blockers,
         "requires_human_review": candidate.needs_human or candidate.raw_like,
@@ -1182,6 +1186,43 @@ def _compiler_blockers(
     if query.raw_trust_policy == "reviewed_only" and candidate.raw_like:
         blockers.append("raw_excluded_by_policy")
     return _unique(blockers)
+
+
+def _relationship_request_diagnostics(
+    query: SymbolicRetrievalQuery,
+    candidate: SymbolicArtifactCandidate,
+) -> dict[str, Any]:
+    requested = _relationship_request_set(query.relationship_kinds)
+    matches = _requested_relationship_matches(requested, candidate.relationships)
+    verified = tuple(
+        request
+        for request in requested
+        if request in matches and matches[request].verified
+    )
+    unverified = tuple(
+        request
+        for request in requested
+        if request in matches and not matches[request].verified
+    )
+    missing = tuple(request for request in requested if request not in matches)
+    return {
+        "requested": list(requested),
+        "verified": list(verified),
+        "unverified": list(unverified),
+        "missing": list(missing),
+        "matched_edges": [
+            {
+                "requested_relationship": request,
+                "relationship_kind": relationship.relationship_kind,
+                "relationship_label": relationship.relationship_label,
+                "confidence": relationship.confidence,
+                "verified": relationship.verified,
+                "source_kind": relationship.source_kind,
+            }
+            for request in requested
+            if (relationship := matches.get(request)) is not None
+        ],
+    }
 
 
 def _query_dimensional_checks(query: SymbolicRetrievalQuery) -> list[str]:

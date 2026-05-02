@@ -190,6 +190,39 @@ def test_symbolic_fixture_validator_reports_unpublishable_validity_bound_status(
     json.dumps(check.to_dict(), sort_keys=True)
 
 
+def test_symbolic_fixture_validator_reports_duplicate_source_bound_id(
+    tmp_path,
+) -> None:
+    manifest = _symbolic_manifest()
+    duplicate = dict(manifest["artifact_validity_bounds"][0])
+    duplicate["source_symbol"] = "a"
+    duplicate["symbol"] = "a"
+    duplicate["variable_name"] = "a"
+    duplicate["validity_statement"] = "a >= 0.0"
+    duplicate["evidence_ref_key"] = "fixture:a:bound"
+    duplicate["ordinal"] = 1
+    manifest["artifact_validity_bounds"].append(duplicate)
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    assert check.ok is False
+    duplicate_bound_issues = [
+        issue for issue in check.issues if issue.reason == "duplicate_source_bound_id"
+    ]
+    assert len(duplicate_bound_issues) == 1
+    assert duplicate_bound_issues[0].table == "artifact_validity_bounds"
+    assert json.loads(duplicate_bound_issues[0].detail) == {
+        "artifact_key": "local:fixture.force",
+        "expression_id": "10000000-0000-0000-0000-000000000001",
+        "first_row_index": 0,
+        "row_index": 1,
+        "source_bound_id": "fixture:m:bound",
+    }
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
 def test_pdg_payload_validator_accepts_graph_ready_derivation_fixture() -> None:
     check = validate_pdg_payload(_pdg_payload(), subject="fixture-pdg")
 
