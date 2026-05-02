@@ -141,6 +141,19 @@ def build_physics_ingestion_validation_report(
                 ),
             )
         )
+    if strict and include_default_pdg and not pdg_path_list:
+        checks.append(
+            ValidationCheck(
+                check_id="pdg_payload_fixture_inventory",
+                subject="pdg_payload_fixtures",
+                issues=(
+                    ValidationIssue(
+                        reason="missing_pdg_payload_fixture_inventory",
+                        detail="no local PDG payload fixture paths were provided",
+                    ),
+                ),
+            )
+        )
 
     for path in fixture_path_list:
         checks.append(

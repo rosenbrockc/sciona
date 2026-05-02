@@ -74,6 +74,10 @@ def _bundle():
                     "target": "eq:force",
                     "rule": "substitution",
                     "assumptions": ["mass is constant"],
+                    "bindings": {
+                        "variables": {"a": "d2x_dt2"},
+                        "dimensions": {"a": "L T^-2"},
+                    },
                     "confidence": 0.81,
                 },
             ],
@@ -686,6 +690,42 @@ def test_pdg_phase4_extracts_scaling_symmetry_derivation_chain() -> None:
     publication_rows = build_pdg_publication_write_rows(result)
     assert publication_rows.diagnostics == ()
     assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
+def test_pdg_phase4_cdg_manifest_carries_source_inference_binding_coverage() -> None:
+    result = build_pdg_relationship_ingest(
+        _bundle(),
+        expression_bindings_by_pdg_node_id={
+            "eq:base": EXPR_BASE,
+            "eq:solved": EXPR_SOLVED,
+            "eq:force": EXPR_FORCE,
+        },
+    )
+
+    manifest = result.cdg_candidate_manifests[0]
+    substitute_node = manifest["nodes"][1]
+    source_coverage = manifest["metadata"]["source_pdg_inference_coverage"][1]
+
+    assert substitute_node["source_pdg_inference_id"] == "edge:substitute"
+    assert substitute_node["variable_bindings"] == {"a": "d2x_dt2"}
+    assert substitute_node["dimensions"] == {"a": "L T^-2"}
+    assert source_coverage == {
+        "pdg_edge_id": "edge:substitute",
+        "source_node_id": "eq:solved",
+        "target_node_id": "eq:force",
+        "variable_bindings": {"a": "d2x_dt2"},
+        "dimensions": {"a": "L T^-2"},
+        "assumptions": ["mass is constant"],
+    }
+
+    publication_rows = build_pdg_publication_write_rows(result)
+    node_signature = json.loads(
+        publication_rows.to_insert_rows()["artifact_cdg_nodes"][1]["type_signature"]
+    )
+
+    assert node_signature["source_pdg_inference_id"] == "edge:substitute"
+    assert node_signature["variable_bindings"] == {"a": "d2x_dt2"}
+    assert node_signature["dimensions"] == {"a": "L T^-2"}
 
 
 def test_pdg_phase4_cdg_graph_validator_accepts_valid_insert_rows() -> None:

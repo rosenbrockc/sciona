@@ -621,10 +621,13 @@ def _build_cdg_candidate_manifests(
             "input_expressions": [input_binding.to_manifest_ref()],
             "output_expression": output_binding.to_manifest_ref(),
             "pdg_edge_id": edge.edge_id,
+            "source_pdg_inference_id": edge.edge_id,
             "relationship_kind": edge.relationship_kind,
             "inference_rule_id": edge.inference_rule_id,
             "assumptions": list(edge.assumptions),
             "binding_metadata": dict(edge.binding_metadata),
+            "variable_bindings": _edge_variable_bindings(edge),
+            "dimensions": _edge_dimensions(edge),
         }
         if labels.get(edge.source_node_id) or labels.get(edge.target_node_id):
             node["equation_labels"] = {
@@ -665,6 +668,17 @@ def _build_cdg_candidate_manifests(
             ],
             "metadata": {
                 "relationship_edge_ids": [edge.edge_id for edge in selected_edges],
+                "source_pdg_inference_coverage": [
+                    {
+                        "pdg_edge_id": edge.edge_id,
+                        "source_node_id": edge.source_node_id,
+                        "target_node_id": edge.target_node_id,
+                        "variable_bindings": _edge_variable_bindings(edge),
+                        "dimensions": _edge_dimensions(edge),
+                        "assumptions": list(edge.assumptions),
+                    }
+                    for edge in selected_edges
+                ],
                 "candidate_scope": "algebraic_rearrangement_derivation_chain",
             },
         }
@@ -774,8 +788,51 @@ def _node_type_signature(node: Mapping[str, Any]) -> str:
             "inputs": [value for value in inputs if value],
             "output": "" if output is None else str(output.get("expression_id") or ""),
             "operation_kind": str(node.get("operation_kind") or ""),
+            "source_pdg_inference_id": str(
+                node.get("source_pdg_inference_id") or node.get("pdg_edge_id") or ""
+            ),
+            "inference_rule_id": str(node.get("inference_rule_id") or ""),
+            "relationship_kind": str(node.get("relationship_kind") or ""),
+            "assumptions": _text_list(node.get("assumptions")),
+            "variable_bindings": _json_mapping(node.get("variable_bindings")),
+            "dimensions": _json_mapping(node.get("dimensions")),
         }
     )
+
+
+def _edge_variable_bindings(edge: PDGInferenceEdge) -> JSONDict:
+    bindings = dict(edge.binding_metadata)
+    explicit = bindings.get("variable_bindings")
+    if isinstance(explicit, Mapping):
+        return dict(explicit)
+    variables = bindings.get("variables")
+    if isinstance(variables, Mapping):
+        return dict(variables)
+    dimensions = bindings.get("dimensions")
+    return {
+        key: value
+        for key, value in bindings.items()
+        if key not in {"dimensions", "dimension_bindings"} and value is not dimensions
+    }
+
+
+def _edge_dimensions(edge: PDGInferenceEdge) -> JSONDict:
+    for key in ("dimensions", "dimension_bindings"):
+        value = edge.binding_metadata.get(key)
+        if isinstance(value, Mapping):
+            return dict(value)
+    value = edge.raw_payload.get("dimensions")
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _json_mapping(value: Any) -> JSONDict:
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _text_list(value: Any) -> list[str]:
+    if not isinstance(value, (list, tuple)):
+        return []
+    return [str(item) for item in value if str(item)]
 
 
 def _node_binding_rows(

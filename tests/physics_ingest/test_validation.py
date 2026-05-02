@@ -228,20 +228,30 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
     assert report["report_version"] == VALIDATION_REPORT_VERSION
     assert report["ok"] is False
     assert report["summary"] == {
-        "check_count": 5,
-        "failed_check_count": 1,
-        "error_count": 1,
+        "check_count": 6,
+        "failed_check_count": 2,
+        "error_count": 2,
         "check_ids": [
             "symbolic_fixture_inventory",
+            "pdg_payload_fixture_inventory",
             "pdg_publication_graph",
             "source_execution_readiness",
             "source_adapter_coverage",
             "source_adapter_data_artifact_seeds",
         ],
-        "failed_check_ids": ["symbolic_fixture_inventory"],
-        "error_count_by_reason": {"missing_symbolic_fixture_inventory": 1},
-        "failed_count_by_check_id": {"symbolic_fixture_inventory": 1},
-        "issue_count_by_table": {"unscoped": 1},
+        "failed_check_ids": [
+            "symbolic_fixture_inventory",
+            "pdg_payload_fixture_inventory",
+        ],
+        "error_count_by_reason": {
+            "missing_pdg_payload_fixture_inventory": 1,
+            "missing_symbolic_fixture_inventory": 1,
+        },
+        "failed_count_by_check_id": {
+            "pdg_payload_fixture_inventory": 1,
+            "symbolic_fixture_inventory": 1,
+        },
+        "issue_count_by_table": {"unscoped": 2},
     }
     json.dumps(report, sort_keys=True)
 
@@ -544,6 +554,39 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
     ]
     assert len(seed_checks) == 1
     assert seed_checks[0]["metadata"]["seed_count"] == 6
+
+
+def test_validation_script_strict_accepts_discovered_pdg_fixtures(tmp_path) -> None:
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(_symbolic_manifest()), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--atoms-repo",
+            str(tmp_path / "missing-atoms-repo"),
+            "--fixture",
+            str(fixture_path),
+            "--strict",
+            "--skip-source-execution",
+            "--skip-source-adapter-coverage",
+            "--skip-source-adapter-data-artifact-seeds",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    assert report["ok"] is True
+    assert "pdg_payload_fixture_inventory" not in report["summary"]["check_ids"]
+    assert (
+        "missing_pdg_payload_fixture_inventory"
+        not in report["summary"]["error_count_by_reason"]
+    )
 
 
 def test_validation_script_changed_only_keeps_source_checks_in_json_mode() -> None:

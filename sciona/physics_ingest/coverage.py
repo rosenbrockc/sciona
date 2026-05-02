@@ -48,6 +48,99 @@ _BLOCKED_REVIEW_STATUSES = {"blocked"}
 _PASSED_VALUES = {"pass", "passed", "ok", "success", "succeeded", "true"}
 _FAILED_VALUES = {"fail", "failed", "error", "blocked", "false"}
 
+PHASE7_RING_LABELS: dict[str, str] = {
+    "ring_1_foundational_physics": (
+        "Foundational mechanics, thermodynamics, electromagnetism, waves, and transport"
+    ),
+    "ring_2_existing_sciona_domains": (
+        "Existing Sciona domains: biosignals, imaging, particle tracking, "
+        "astrophysics, and materials"
+    ),
+    "ring_3_wikidata_equations": "Full Wikidata physical equation corpus",
+    "ring_4_pdg_derivations": (
+        "Full Physics Derivation Graph equation and derivation corpus"
+    ),
+    "ring_5_reference_datasets": (
+        "Constants, spectra, materials, and property datasets"
+    ),
+    "ring_6_long_tail": "Long-tail equations with lower metadata quality",
+    "unknown": "Unknown or unassigned",
+}
+
+_PHASE7_RING_ALIASES: dict[str, str] = {
+    "1": "ring_1_foundational_physics",
+    "ring 1": "ring_1_foundational_physics",
+    "ring 1 foundational physics": "ring_1_foundational_physics",
+    "foundational": "ring_1_foundational_physics",
+    "foundational physics": "ring_1_foundational_physics",
+    "2": "ring_2_existing_sciona_domains",
+    "ring 2": "ring_2_existing_sciona_domains",
+    "ring 2 existing sciona domains": "ring_2_existing_sciona_domains",
+    "existing sciona domains": "ring_2_existing_sciona_domains",
+    "sciona domains": "ring_2_existing_sciona_domains",
+    "3": "ring_3_wikidata_equations",
+    "ring 3": "ring_3_wikidata_equations",
+    "ring 3 wikidata equations": "ring_3_wikidata_equations",
+    "wikidata": "ring_3_wikidata_equations",
+    "wikidata equations": "ring_3_wikidata_equations",
+    "4": "ring_4_pdg_derivations",
+    "ring 4": "ring_4_pdg_derivations",
+    "ring 4 pdg derivations": "ring_4_pdg_derivations",
+    "pdg": "ring_4_pdg_derivations",
+    "physics derivation graph": "ring_4_pdg_derivations",
+    "5": "ring_5_reference_datasets",
+    "ring 5": "ring_5_reference_datasets",
+    "ring 5 reference datasets": "ring_5_reference_datasets",
+    "reference datasets": "ring_5_reference_datasets",
+    "property datasets": "ring_5_reference_datasets",
+    "6": "ring_6_long_tail",
+    "ring 6": "ring_6_long_tail",
+    "ring 6 long tail": "ring_6_long_tail",
+    "long tail": "ring_6_long_tail",
+}
+
+_FOUNDATIONAL_PHYSICS_FAMILIES = {
+    "mechanics",
+    "classical mechanics",
+    "classical_mechanics",
+    "thermodynamics",
+    "electromagnetism",
+    "waves",
+    "wave propagation",
+    "wave_propagation",
+    "transport",
+    "transport phenomena",
+}
+_EXISTING_SCIONA_PHYSICS_FAMILIES = {
+    "biosignals",
+    "bio signals",
+    "imaging",
+    "particle tracking",
+    "particle_tracking",
+    "astrophysics",
+    "materials",
+    "materials science",
+}
+_REFERENCE_DATA_SOURCE_SYSTEMS = {
+    "nist codata",
+    "nist_codata",
+    "codata",
+    "nist dlmf",
+    "nist_dlmf",
+    "dlmf",
+    "hitran",
+    "materials project",
+    "materials_project",
+}
+_REFERENCE_DATA_SOURCE_FAMILIES = {
+    "reference data",
+    "reference_data",
+    "constants",
+    "spectra",
+    "property data",
+    "property_data",
+}
+
 
 @dataclass(frozen=True)
 class Phase7CoverageBucket:
@@ -68,6 +161,7 @@ class Phase7CoverageSummary:
     report_version: str
     summary: Mapping[str, Any]
     by_source: tuple[Phase7CoverageBucket, ...]
+    by_phase7_ring: tuple[Phase7CoverageBucket, ...]
     by_physics_family: tuple[Phase7CoverageBucket, ...]
     by_source_and_physics_family: tuple[Phase7CoverageBucket, ...]
 
@@ -88,6 +182,7 @@ def build_phase7_coverage_summary(
 
     total_counts = _empty_counts()
     source_counts: dict[tuple[str, str], dict[str, int]] = {}
+    ring_counts: dict[str, dict[str, int]] = {}
     family_counts: dict[str, dict[str, int]] = {}
     source_family_counts: dict[tuple[str, str, str], dict[str, int]] = {}
     total_rows = 0
@@ -97,11 +192,16 @@ def build_phase7_coverage_summary(
         counts = _coverage_counts(row)
         source_system, source_family = _source_key(row)
         physics_families = _physics_families(row)
+        phase7_ring = _phase7_ring(row, source_system, source_family, physics_families)
 
         total_rows += 1
         _add_counts(total_counts, counts)
         _add_counts(
             source_counts.setdefault((source_system, source_family), _empty_counts()),
+            counts,
+        )
+        _add_counts(
+            ring_counts.setdefault(phase7_ring, _empty_counts()),
             counts,
         )
         for physics_family in physics_families:
@@ -127,6 +227,20 @@ def build_phase7_coverage_summary(
                 metrics=_coverage_metrics(counts),
             )
             for (source_system, source_family), counts in sorted(source_counts.items())
+        ),
+        by_phase7_ring=tuple(
+            Phase7CoverageBucket(
+                key={
+                    "phase7_ring": phase7_ring,
+                    "phase7_ring_label": PHASE7_RING_LABELS.get(
+                        phase7_ring,
+                        PHASE7_RING_LABELS["unknown"],
+                    ),
+                },
+                counts=dict(counts),
+                metrics=_coverage_metrics(counts),
+            )
+            for phase7_ring, counts in sorted(ring_counts.items())
         ),
         by_physics_family=tuple(
             Phase7CoverageBucket(
@@ -268,6 +382,61 @@ def _physics_families(row: Mapping[str, Any]) -> tuple[str, ...]:
     return ("unknown",)
 
 
+def _phase7_ring(
+    row: Mapping[str, Any],
+    source_system: str,
+    source_family: str,
+    physics_families: tuple[str, ...],
+) -> str:
+    payload = _mapping(row.get("source_payload"))
+    explicit = _first_text(
+        row.get("phase7_ring"),
+        row.get("phase_7_ring"),
+        row.get("backfill_ring"),
+        row.get("ingestion_ring"),
+        row.get("ring"),
+        payload.get("phase7_ring"),
+        payload.get("phase_7_ring"),
+        payload.get("backfill_ring"),
+        payload.get("ingestion_ring"),
+        payload.get("ring"),
+    )
+    ring = _phase7_ring_alias(explicit)
+    if ring:
+        return ring
+
+    source_system_norm = _norm(source_system)
+    source_family_norm = _norm(source_family)
+    family_norms = {_norm(family) for family in physics_families}
+    if source_system_norm == "wikidata":
+        return "ring_3_wikidata_equations"
+    if source_system_norm in {"pdg", "physics derivation graph"}:
+        return "ring_4_pdg_derivations"
+    if source_family_norm == "derivation graph":
+        return "ring_4_pdg_derivations"
+    if (
+        source_system_norm in {_norm(value) for value in _REFERENCE_DATA_SOURCE_SYSTEMS}
+        or source_family_norm in {_norm(value) for value in _REFERENCE_DATA_SOURCE_FAMILIES}
+    ):
+        return "ring_5_reference_datasets"
+    if family_norms & {_norm(value) for value in _FOUNDATIONAL_PHYSICS_FAMILIES}:
+        return "ring_1_foundational_physics"
+    if family_norms & {_norm(value) for value in _EXISTING_SCIONA_PHYSICS_FAMILIES}:
+        return "ring_2_existing_sciona_domains"
+    if source_family_norm in {"long tail", "lower metadata quality"}:
+        return "ring_6_long_tail"
+    return "unknown"
+
+
+def _phase7_ring_alias(value: str) -> str:
+    if not value:
+        return ""
+    normalized = _norm(value)
+    if normalized in _PHASE7_RING_ALIASES:
+        return _PHASE7_RING_ALIASES[normalized]
+    return value if value in PHASE7_RING_LABELS else ""
+
+
 def _row_dict(value: Mapping[str, Any] | Any) -> JSONDict:
     if isinstance(value, Mapping):
         return dict(value)
@@ -343,6 +512,12 @@ def _text(row: Mapping[str, Any], *keys: str) -> str:
         if value is not None and value != "":
             return str(value).strip().lower()
     return ""
+
+
+def _norm(value: str) -> str:
+    return " ".join(
+        str(value).strip().casefold().replace("_", " ").replace("-", " ").split()
+    )
 
 
 def _first_text(*values: Any) -> str:
