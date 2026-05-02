@@ -39,6 +39,7 @@ def test_orchestrator_groups_validated_source_and_publication_insert_rows() -> N
     assert result.audit_summary.to_dict() == {
         "source_bundle_count": 1,
         "publication_manifest_count": 1,
+        "data_artifact_seed_count": 0,
         "input_row_counts": {
             "artifact_symbolic_expressions": 1,
             "artifact_symbolic_variables": 1,

@@ -135,6 +135,8 @@ def build_publication_backfill_dry_run_report_from_payload(
         "publication_dry_run_report": publication_report,
         "backfill_report": backfill_report,
         "source_retrieval_run_plan": backfill_report["source_retrieval_run_plan"],
+        "phase7_coverage_row_counts": backfill_report["phase7_coverage_row_counts"],
+        "phase7_coverage_summary": backfill_report["phase7_coverage_summary"],
     }
     _assert_json_serializable(report)
     return report

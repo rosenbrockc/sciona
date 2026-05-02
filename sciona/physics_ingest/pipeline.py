@@ -37,6 +37,7 @@ class PublicationPipelineSummary:
     dry_run: bool
     source_bundle_count: int
     publication_manifest_count: int
+    data_artifact_seed_count: int
     snapshot_binding_count: int
     planned_batch_count: int
     planned_row_count: int
@@ -54,6 +55,7 @@ class PublicationPipelineSummary:
             "dry_run": self.dry_run,
             "source_bundle_count": self.source_bundle_count,
             "publication_manifest_count": self.publication_manifest_count,
+            "data_artifact_seed_count": self.data_artifact_seed_count,
             "snapshot_binding_count": self.snapshot_binding_count,
             "planned_batch_count": self.planned_batch_count,
             "planned_row_count": self.planned_row_count,
@@ -151,6 +153,9 @@ def run_physics_publication_pipeline(
         dry_run=dry_run,
         source_bundle_count=len(planned_bundles),
         publication_manifest_count=len(publication_manifest_list),
+        data_artifact_seed_count=(
+            orchestration_result.audit_summary.data_artifact_seed_count
+        ),
         snapshot_binding_count=len(deterministic_bindings),
         planned_batch_count=write_plan.audit_summary.batch_count,
         planned_row_count=write_plan.audit_summary.total_row_count,

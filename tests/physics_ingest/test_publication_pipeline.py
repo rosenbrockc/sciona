@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from sciona.physics_ingest.pipeline import run_physics_publication_pipeline
+from sciona.physics_ingest.sources.opb import build_opb_wave0_bundle
 
 
 ARTIFACT_ID = "20000000-0000-0000-0000-000000000001"
@@ -51,6 +52,7 @@ def test_pipeline_plans_deterministic_source_ids_and_dry_run_write_plan() -> Non
         "dry_run": True,
         "source_bundle_count": 1,
         "publication_manifest_count": 1,
+        "data_artifact_seed_count": 0,
         "snapshot_binding_count": 3,
         "planned_batch_count": 4,
         "planned_row_count": 4,
@@ -113,6 +115,30 @@ def test_pipeline_can_stop_at_side_effect_free_plan_without_client() -> None:
     assert result.summary.wrote is False
     assert result.summary.planned_row_count == 2
     assert result.diagnostics == ()
+
+
+def test_pipeline_preserves_source_bundle_data_artifact_seeds_in_plan() -> None:
+    bundle = build_opb_wave0_bundle(
+        [
+            {
+                "source_id": "problem-1",
+                "label": "Pendulum fixture",
+                "formula": "T = 2*pi*sqrt(L/g)",
+                "data": {"split": "fixture"},
+            }
+        ],
+        source_version="fixture-opb",
+        source_uri="https://example.test/opb",
+    )
+
+    result = run_physics_publication_pipeline(source_bundles=[bundle], dry_run=True)
+
+    assert result.summary.data_artifact_seed_count == 1
+    assert result.summary.to_dict()["data_artifact_seed_count"] == 1
+    assert result.orchestration_result.audit_summary.data_artifact_seed_count == 1
+    assert result.planned_source_bundles[0]["data_artifact_seeds"] == [
+        dict(bundle.data_artifact_seeds[0])
+    ]
 
 
 def test_pipeline_merges_additional_publication_rows_into_write_plan() -> None:

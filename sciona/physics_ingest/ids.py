@@ -147,6 +147,7 @@ def plan_source_bundle_ids(
             bindings[key] = snapshot_id
 
         candidate_rows = tuple(_bundle_value(bundle, "candidate_rows") or ())
+        data_artifact_seeds = tuple(_bundle_value(bundle, "data_artifact_seeds") or ())
         planned_bundle = _copy_bundle_as_mapping(bundle)
         planned_snapshot = dict(snapshot_row)
         planned_snapshot["snapshot_id"] = snapshot_id
@@ -155,6 +156,10 @@ def plan_source_bundle_ids(
             candidate_rows,
             snapshot_id,
         )
+        planned_bundle["data_artifact_seeds"] = [
+            dict(seed) if isinstance(seed, Mapping) else seed
+            for seed in data_artifact_seeds
+        ]
         planned_bundles.append(planned_bundle)
     return bindings, planned_bundles
 
@@ -183,7 +188,14 @@ def _copy_bundle_as_mapping(bundle: Any) -> dict[str, Any]:
     if isinstance(bundle, Mapping):
         return dict(bundle)
     copied: dict[str, Any] = {}
-    for key in ("bundle_key", "key", "name", "snapshot_row", "candidate_rows"):
+    for key in (
+        "bundle_key",
+        "key",
+        "name",
+        "snapshot_row",
+        "candidate_rows",
+        "data_artifact_seeds",
+    ):
         if hasattr(bundle, key):
             copied[key] = _bundle_value(bundle, key)
     return copied

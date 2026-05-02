@@ -8,6 +8,7 @@ import hashlib
 import json
 from typing import Any
 
+from sciona.physics_ingest.coverage import build_phase7_coverage_summary_dict
 from sciona.physics_ingest.pipeline import run_physics_publication_pipeline
 from sciona.physics_ingest.publication import (
     ArtifactBinding,
@@ -33,6 +34,7 @@ def build_physics_ingest_backfill_report(
     normalization_diagnostics: Iterable[Mapping[str, Any]] = (),
     artifact_bindings: Mapping[str, Mapping[str, Any] | ArtifactBinding] | None = None,
     table_modes: Mapping[str, WriteMode] | None = None,
+    include_phase7_coverage_summary: bool = True,
     include_rows: bool = False,
 ) -> dict[str, Any]:
     """Build a deterministic dry-run report for a bulk physics backfill.
@@ -53,6 +55,7 @@ def build_physics_ingest_backfill_report(
     source_bundle_list = tuple(source_bundles)
     publication_manifest_list = tuple(publication_manifests)
     normalized_draft_list = tuple(normalized_drafts)
+    data_artifact_seed_summaries = _data_artifact_seed_summaries(source_bundle_list)
     retrieval_report = _source_retrieval_report_section(
         source_retrieval_run_plan
         if source_retrieval_run_plan is not None
@@ -117,6 +120,10 @@ def build_physics_ingest_backfill_report(
         dry_run=True,
     )
     insert_rows = pipeline_result.write_plan.to_insert_rows()
+    coverage_rows_by_table = _phase7_coverage_rows_by_table(insert_rows)
+    phase7_coverage_row_counts = {
+        table: len(rows) for table, rows in coverage_rows_by_table.items()
+    }
     diagnostics = tuple(pipeline_result.diagnostics)
     retry_diagnostics = _diagnostics_by_severity(diagnostics, severity="error")
     skip_diagnostics = _diagnostics_by_severity(diagnostics, severity="skipped")
@@ -129,6 +136,7 @@ def build_physics_ingest_backfill_report(
         "input_summary": {
             "source_bundle_count": len(source_bundle_list),
             "publication_manifest_count": len(publication_manifest_list),
+            "data_artifact_seed_count": len(data_artifact_seed_summaries),
             "normalized_draft_count": len(normalized_draft_list),
             "normalized_draft_table_count": len(normalized_rows),
             "normalized_draft_row_count": sum(
@@ -140,6 +148,7 @@ def build_physics_ingest_backfill_report(
             "review_publication_row_count": sum(
                 len(rows) for rows in review_rows.values()
             ),
+            "phase7_coverage_row_count": sum(phase7_coverage_row_counts.values()),
             "review_diagnostic_count": len(review_diagnostic_rows),
             "normalization_diagnostic_count": len(normalization_diagnostic_rows),
             "source_retrieval_step_count": retrieval_report["step_count"],
@@ -152,6 +161,7 @@ def build_physics_ingest_backfill_report(
             normalized_rows=normalized_rows,
             review_rows=review_rows,
         ),
+        "data_artifact_seeds": data_artifact_seed_summaries,
         "table_row_counts": dict(pipeline_result.write_plan.audit_summary.planned_row_counts),
         "dry_run_write_plan": _write_plan_summary(pipeline_result),
         "replay_keys": _replay_keys(pipeline_result.write_plan.to_dict()["batches"]),
@@ -172,6 +182,13 @@ def build_physics_ingest_backfill_report(
         "source_retrieval_run_plan": retrieval_report["report"],
         "diagnostic_summary": _diagnostic_summary(diagnostics),
     }
+    if include_phase7_coverage_summary:
+        report["phase7_coverage_row_counts"] = phase7_coverage_row_counts
+        report["phase7_coverage_summary"] = build_phase7_coverage_summary_dict(
+            row
+            for rows in coverage_rows_by_table.values()
+            for row in rows
+        )
     if include_rows:
         report["insert_rows_by_table"] = insert_rows
 
@@ -247,6 +264,75 @@ def _copy_rows_by_table(
     for table, rows in rows_by_table.items():
         copied[str(table)] = [dict(row) for row in rows]
     return copied
+
+
+def _phase7_coverage_rows_by_table(
+    rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
+) -> dict[str, list[dict[str, Any]]]:
+    return {
+        table: [dict(row) for row in rows_by_table.get(table, ())]
+        for table in (
+            "physics_equation_candidates",
+            "artifact_symbolic_expressions",
+        )
+    }
+
+
+def _data_artifact_seed_summaries(
+    source_bundles: tuple[Any, ...],
+) -> list[dict[str, Any]]:
+    summaries: list[dict[str, Any]] = []
+    for bundle_index, bundle in enumerate(source_bundles):
+        snapshot_row = _snapshot_row(bundle)
+        bundle_key = _bundle_key(bundle, snapshot_row, bundle_index)
+        for seed_index, seed in enumerate(_bundle_data_artifact_seeds(bundle)):
+            summaries.append(
+                {
+                    "bundle_index": bundle_index,
+                    "bundle_key": bundle_key,
+                    "seed_index": seed_index,
+                    "source_system": str(
+                        seed.get("source_system")
+                        or snapshot_row.get("source_system")
+                        or ""
+                    ),
+                    "source_id": str(seed.get("source_id") or ""),
+                    "source_uri": str(
+                        seed.get("source_uri")
+                        or snapshot_row.get("source_uri")
+                        or ""
+                    ),
+                    "artifact_kind": str(seed.get("artifact_kind") or ""),
+                    "artifact_role": str(seed.get("artifact_role") or ""),
+                    "fqdn": str(seed.get("fqdn") or ""),
+                    "label": str(seed.get("label") or ""),
+                }
+            )
+    return summaries
+
+
+def _bundle_data_artifact_seeds(bundle: Any) -> tuple[Mapping[str, Any], ...]:
+    if isinstance(bundle, Mapping):
+        seeds = bundle.get("data_artifact_seeds") or ()
+    else:
+        seeds = getattr(bundle, "data_artifact_seeds", ()) or ()
+    return tuple(seed for seed in seeds if isinstance(seed, Mapping))
+
+
+def _bundle_key(bundle: Any, snapshot_row: Mapping[str, Any], index: int) -> str:
+    if isinstance(bundle, Mapping):
+        for key_name in ("bundle_key", "key", "name"):
+            if bundle.get(key_name):
+                return str(bundle[key_name])
+    else:
+        for key_name in ("bundle_key", "key", "name"):
+            value = getattr(bundle, key_name, None)
+            if value:
+                return str(value)
+    for key_name in ("source_system", "adapter_name", "source_uri"):
+        if snapshot_row.get(key_name):
+            return str(snapshot_row[key_name])
+    return f"source_bundle:{index}"
 
 
 def _normalize_diagnostics(
@@ -514,6 +600,9 @@ def _write_plan_summary(pipeline_result: Any) -> dict[str, Any]:
     write_plan = pipeline_result.write_plan
     return {
         "audit_summary": write_plan.audit_summary.to_dict(),
+        "data_artifact_seed_count": int(
+            getattr(pipeline_result.summary, "data_artifact_seed_count", 0)
+        ),
         "batches": [
             {
                 "table": batch.table,

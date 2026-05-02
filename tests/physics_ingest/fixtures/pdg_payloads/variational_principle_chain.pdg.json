@@ -1,0 +1,50 @@
+{
+  "fixture_id": "pdg_variational_principle_chain",
+  "validation_subject": "pdg_fixture:variational_principle_chain",
+  "description": "Offline PDG payload fixture covering a variational principle to field equation derivation chain.",
+  "equations": [
+    {
+      "id": "eq:stationary_action_principle",
+      "label": "Stationary action principle",
+      "latex": "\\delta S[\\phi] = \\delta \\int \\mathcal{L}(\\phi, \\partial_\\mu \\phi)\\,d^4x = 0",
+      "mechanism_tags": ["variational_principle", "field_theory"]
+    },
+    {
+      "id": "eq:euler_lagrange_field_equation",
+      "label": "Euler-Lagrange field equation",
+      "latex": "\\frac{\\partial \\mathcal{L}}{\\partial \\phi} - \\partial_\\mu\\left(\\frac{\\partial \\mathcal{L}}{\\partial(\\partial_\\mu \\phi)}\\right) = 0",
+      "mechanism_tags": ["variational_principle", "field_equation"]
+    },
+    {
+      "id": "eq:klein_gordon_equation",
+      "label": "Klein-Gordon equation",
+      "latex": "\\Box \\phi + m^2 \\phi = 0",
+      "mechanism_tags": ["wave_equation", "field_theory"]
+    }
+  ],
+  "inference_edges": [
+    {
+      "id": "edge:derive_euler_lagrange_from_stationary_action",
+      "source": "eq:stationary_action_principle",
+      "target": "eq:euler_lagrange_field_equation",
+      "rule": "derive Euler-Lagrange field equation from stationary action principle",
+      "confidence": 0.9,
+      "assumptions": ["field variations vanish on the boundary"],
+      "bindings": {
+        "functional": "S[\\phi]",
+        "variation": "\\delta \\phi"
+      }
+    },
+    {
+      "id": "edge:substitute_scalar_lagrangian",
+      "source": "eq:euler_lagrange_field_equation",
+      "target": "eq:klein_gordon_equation",
+      "rule": "substitute scalar field Lagrangian density into Euler-Lagrange equation",
+      "confidence": 0.87,
+      "assumptions": ["flat spacetime", "mass parameter is constant"],
+      "bindings": {
+        "lagrangian_density": "\\mathcal{L}=\\frac{1}{2}\\partial_\\mu\\phi\\partial^\\mu\\phi-\\frac{1}{2}m^2\\phi^2"
+      }
+    }
+  ]
+}

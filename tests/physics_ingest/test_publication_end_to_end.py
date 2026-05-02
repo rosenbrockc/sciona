@@ -52,6 +52,7 @@ def test_foundational_physics_publication_pipeline_is_offline_end_to_end() -> No
     assert orchestrated.audit_summary.to_dict() == {
         "source_bundle_count": 1,
         "publication_manifest_count": 1,
+        "data_artifact_seed_count": 0,
         "input_row_counts": {
             "artifact_symbolic_expressions": 1,
             "artifact_symbolic_variables": 3,

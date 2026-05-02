@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 from typing import Any
 
 from sciona.physics_ingest.backfill import build_physics_ingest_backfill_report
@@ -137,6 +138,28 @@ def test_dry_run_backfill_composes_retrieval_normalization_qudt_and_pdg() -> Non
     )
 
     assert report["input_summary"]["source_bundle_count"] == 3
+    assert report["input_summary"]["phase7_coverage_row_count"] == 7
+    assert report["phase7_coverage_row_counts"] == {
+        "artifact_symbolic_expressions": 2,
+        "physics_equation_candidates": 5,
+    }
+    assert report["phase7_coverage_summary"]["report_version"] == (
+        "physics-phase7-coverage-summary.v1"
+    )
+    assert report["phase7_coverage_summary"]["summary"] == {
+        "total_rows": 7,
+        "discovered": 7,
+        "parsed": 2,
+        "dimensioned": 2,
+        "reviewed": 0,
+        "published": 0,
+        "blocked": 1,
+    }
+    encoded_coverage_summary = json.dumps(
+        report["phase7_coverage_summary"],
+        sort_keys=True,
+    )
+    assert json.loads(encoded_coverage_summary) == report["phase7_coverage_summary"]
     assert report["table_row_counts"]["physics_equation_candidates"] == 5
     assert report["table_row_counts"]["artifact_symbolic_expressions"] == 2
     assert report["insert_rows_by_table"]["artifact_symbolic_expressions"][1][

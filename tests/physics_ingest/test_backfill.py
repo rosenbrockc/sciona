@@ -16,6 +16,9 @@ from sciona.physics_ingest.sources import (
     build_physics_source_retrieval_run_plan,
     build_physics_source_retrieval_run_plan_dict,
 )
+from sciona.physics_ingest.sources.hitran import build_hitran_wave0_bundle
+from sciona.physics_ingest.sources.opb import build_opb_wave0_bundle
+from sciona.physics_ingest.sources.theoria import build_theoria_wave0_bundle
 
 
 ARTIFACT_ID = "20000000-0000-0000-0000-000000000001"
@@ -58,6 +61,7 @@ def test_backfill_report_composes_pipeline_with_pdg_rows_and_replay_keys() -> No
     assert report["input_summary"] == {
         "source_bundle_count": 1,
         "publication_manifest_count": 1,
+        "data_artifact_seed_count": 0,
         "normalized_draft_count": 0,
         "normalized_draft_table_count": 0,
         "normalized_draft_row_count": 0,
@@ -65,6 +69,7 @@ def test_backfill_report_composes_pipeline_with_pdg_rows_and_replay_keys() -> No
         "pdg_row_count": 2,
         "review_publication_table_count": 0,
         "review_publication_row_count": 0,
+        "phase7_coverage_row_count": 2,
         "review_diagnostic_count": 0,
         "normalization_diagnostic_count": 0,
         "source_retrieval_step_count": 0,
@@ -311,6 +316,65 @@ def test_backfill_report_groups_adapter_diagnostics() -> None:
         (row["stage"], row["reason"])
         for row in report["skip_diagnostics"]
     } == {("review_publication", "missing_expression_id")}
+
+
+def test_backfill_report_retains_source_data_artifact_seed_summaries() -> None:
+    hitran_bundle = build_hitran_wave0_bundle(
+        [
+            {
+                "source_id": "HITRAN:H2O:0001",
+                "molecule": "H2O",
+                "transition": "1-2",
+                "nu": "1594.7",
+            }
+        ],
+        source_version="fixture-hitran",
+    )
+    opb_bundle = build_opb_wave0_bundle(
+        [
+            {
+                "source_id": "problem-1",
+                "label": "Pendulum fixture",
+                "formula": "T = 2*pi*sqrt(L/g)",
+                "data": {"split": "fixture"},
+            }
+        ],
+        source_version="fixture-opb",
+        source_uri="https://example.test/opb",
+    )
+    theoria_bundle = build_theoria_wave0_bundle(
+        [
+            {
+                "source_id": "theory-1",
+                "label": "TheorIA fixture",
+                "formula": "E = m*c**2",
+                "evaluation": {"metric": "symbolic"},
+            }
+        ],
+        source_version="fixture-theoria",
+        source_uri="https://example.test/theoria",
+    )
+
+    report = build_physics_ingest_backfill_report(
+        source_bundles=[hitran_bundle, opb_bundle, theoria_bundle],
+    )
+
+    assert report["ok"] is True
+    assert report["input_summary"]["source_bundle_count"] == 3
+    assert report["input_summary"]["data_artifact_seed_count"] == 3
+    assert report["dry_run_write_plan"]["data_artifact_seed_count"] == 3
+    assert report["table_row_counts"] == {
+        "physics_ingest_snapshots": 3,
+        "physics_equation_candidates": 3,
+    }
+    assert [
+        (seed["source_system"], seed["fqdn"], seed["artifact_kind"])
+        for seed in report["data_artifact_seeds"]
+    ] == [
+        ("hitran", "hitran.line.HITRAN.H2O.0001", "data_artifact"),
+        ("opb", "opb.record.problem-1", "data_artifact"),
+        ("theoria", "theoria.record.theory-1", "data_artifact"),
+    ]
 
 
 def test_backfill_report_includes_retrieval_run_plan_without_insert_rows() -> None:

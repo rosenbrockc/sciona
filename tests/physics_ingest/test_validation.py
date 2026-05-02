@@ -81,6 +81,7 @@ def test_discovers_default_pdg_payload_fixtures() -> None:
         PDG_FIXTURE_DIR / "limit_nondimensionalization_chain.pdg.json",
         PDG_FIXTURE_DIR / "nondimensionalize_approximate_chain.pdg.json",
         PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",
+        PDG_FIXTURE_DIR / "variational_principle_chain.pdg.json",
     )
 
 

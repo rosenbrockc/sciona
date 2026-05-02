@@ -197,6 +197,22 @@ def test_publication_backfill_payload_report_is_json_serializable() -> None:
     assert json.loads(json.dumps(report, sort_keys=True)) == report
     assert report["publication_dry_run_report"]["insert_rows_by_table"]
     assert report["backfill_report"]["insert_rows_by_table"]
+    assert report["phase7_coverage_row_counts"] == {
+        "artifact_symbolic_expressions": 1,
+        "physics_equation_candidates": 1,
+    }
+    assert report["phase7_coverage_summary"] == (
+        report["backfill_report"]["phase7_coverage_summary"]
+    )
+    assert report["phase7_coverage_summary"]["summary"] == {
+        "total_rows": 2,
+        "discovered": 2,
+        "parsed": 1,
+        "dimensioned": 0,
+        "reviewed": 1,
+        "published": 0,
+        "blocked": 0,
+    }
 
 
 def test_publication_dry_run_main_prints_report_from_json_payload(

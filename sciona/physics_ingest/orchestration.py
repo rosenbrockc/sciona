@@ -27,6 +27,7 @@ class PublicationAuditSummary:
 
     source_bundle_count: int = 0
     publication_manifest_count: int = 0
+    data_artifact_seed_count: int = 0
     input_row_counts: Mapping[str, int] = field(default_factory=dict)
     insert_row_counts: Mapping[str, int] = field(default_factory=dict)
     skipped_row_count: int = 0
@@ -40,6 +41,7 @@ class PublicationAuditSummary:
         return {
             "source_bundle_count": self.source_bundle_count,
             "publication_manifest_count": self.publication_manifest_count,
+            "data_artifact_seed_count": self.data_artifact_seed_count,
             "input_row_counts": dict(self.input_row_counts),
             "insert_row_counts": dict(self.insert_row_counts),
             "skipped_row_count": self.skipped_row_count,
@@ -97,9 +99,13 @@ def orchestrate_physics_publication(
     input_counts: dict[str, int] = defaultdict(int)
     source_count = 0
     manifest_count = 0
+    data_artifact_seed_count = 0
 
     for index, bundle in enumerate(source_bundles):
         source_count += 1
+        data_artifact_seed_count += len(
+            tuple(_bundle_value(bundle, "data_artifact_seeds") or ())
+        )
         _load_source_bundle(
             bundle,
             index=index,
@@ -125,6 +131,7 @@ def orchestrate_physics_publication(
     summary = PublicationAuditSummary(
         source_bundle_count=source_count,
         publication_manifest_count=manifest_count,
+        data_artifact_seed_count=data_artifact_seed_count,
         input_row_counts=dict(sorted(input_counts.items())),
         insert_row_counts={
             table: len(rows)
