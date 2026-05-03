@@ -25,6 +25,7 @@ from sciona.architect.stage_resolution import NON_ATOM_ACTION_CLASSES
 from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
+    CommonPattern,
     ConceptType,
     IOSpec,
 )
@@ -117,6 +118,10 @@ def _load_all_atom_primitives() -> list[AlgorithmicPrimitive]:
                         ],
                         type_signature=node.get("type_signature", ""),
                         aliases=node.get("aliases", []),
+                        common_patterns=[
+                            CommonPattern(**p)
+                            for p in node.get("common_patterns", [])
+                        ],
                     )
                 )
     return primitives

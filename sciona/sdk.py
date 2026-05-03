@@ -44,6 +44,7 @@ from sciona.architect.catalog import (
 from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
+    CommonPattern,
     ConceptType,
     IOSpec,
 )
@@ -115,6 +116,10 @@ def load_catalog_from_repos(
                             ],
                             type_signature=node.get("type_signature", ""),
                             aliases=node.get("aliases", []),
+                            common_patterns=[
+                                CommonPattern(**p)
+                                for p in node.get("common_patterns", [])
+                            ],
                         )
                     )
                 except Exception:  # noqa: BLE001

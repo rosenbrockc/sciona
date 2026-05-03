@@ -247,6 +247,16 @@ class PrimitiveParamSpec(BaseModel):
         return self
 
 
+class CommonPattern(BaseModel):
+    """A composition pattern declaring companion atoms for multi-step stages."""
+
+    pattern_id: str
+    description: str = ""
+    atoms: list[str]
+    ordering: str = "sequential"  # sequential, parallel, alternatives
+    when: str = ""
+
+
 class AlgorithmicPrimitive(BaseModel):
     """A known atomic operation from CLRS or a library."""
 
@@ -264,6 +274,7 @@ class AlgorithmicPrimitive(BaseModel):
     tunable_params: list[PrimitiveParamSpec] = Field(default_factory=list)
     param_status: ParamStatus = ParamStatus.FIXED
     aliases: list[str] = Field(default_factory=list)
+    common_patterns: list[CommonPattern] = Field(default_factory=list)
 
 
 class BaselineComponentShape(str, Enum):

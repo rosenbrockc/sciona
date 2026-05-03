@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from sciona.architect.models import (
     AlgorithmicNode,
     AlgorithmicPrimitive,
+    CommonPattern,
     ConceptType,
     IOSpec,
     ParamStatus,
@@ -158,6 +159,8 @@ class PrimitiveCatalog:
         # TF-IDF scoring caches (lazily built, invalidated on add)
         self._idf: dict[str, float] | None = None
         self._prim_token_cache: dict[str, frozenset[str]] = {}
+        # Pattern index: pattern_id -> set of declaring atom names
+        self._pattern_index: dict[str, set[str]] = {}
 
     @staticmethod
     def _normalize_key(name: str) -> str:
@@ -186,6 +189,10 @@ class PrimitiveCatalog:
         # Register aliases declared on the primitive itself
         for alias in primitive.aliases:
             self._aliases.setdefault(self._normalize_key(alias), primitive.name)
+        # Register common patterns
+        for pattern in primitive.common_patterns:
+            bucket = self._pattern_index.setdefault(pattern.pattern_id, set())
+            bucket.add(primitive.name)
         # Invalidate TF-IDF caches
         self._idf = None
         self._prim_token_cache.pop(primitive.name, None)
@@ -651,6 +658,35 @@ class PrimitiveCatalog:
         elif prim_out:
             score -= abs(node_out - prim_out) * 0.1
         return score
+
+    def get_pattern_companions(
+        self, atom_name: str
+    ) -> list["CommonPattern"]:
+        """Return all composition patterns this atom participates in."""
+        from sciona.architect.models import CommonPattern  # noqa: F811
+
+        prim = self.get(atom_name)
+        if prim is None:
+            return []
+        return list(prim.common_patterns)
+
+    def find_matching_primitives_with_patterns(
+        self, node: AlgorithmicNode, k: int = 5
+    ) -> tuple[list[AlgorithmicPrimitive], list["CommonPattern"]]:
+        """Find primitives and suggest composition patterns.
+
+        Returns the top-k primitives plus any composition patterns
+        declared by atoms in the result set.
+        """
+        prims = self.find_matching_primitives(node, k=k)
+        seen: set[str] = set()
+        suggested: list["CommonPattern"] = []
+        for prim in prims:
+            for pattern in prim.common_patterns:
+                if pattern.pattern_id not in seen:
+                    seen.add(pattern.pattern_id)
+                    suggested.append(pattern)
+        return prims, suggested
 
     def attach_tunables(
         self, tunables_map: dict[str, list["PrimitiveParamSpec"]]
