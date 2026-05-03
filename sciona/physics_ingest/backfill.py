@@ -124,6 +124,7 @@ def build_physics_ingest_backfill_report(
     phase7_coverage_row_counts = {
         table: len(rows) for table, rows in coverage_rows_by_table.items()
     }
+    publication_readiness_summary = _publication_readiness_summary(insert_rows)
     diagnostics = tuple(pipeline_result.diagnostics)
     retry_diagnostics = _diagnostics_by_severity(diagnostics, severity="error")
     skip_diagnostics = _diagnostics_by_severity(diagnostics, severity="skipped")
@@ -164,6 +165,7 @@ def build_physics_ingest_backfill_report(
         ),
         "data_artifact_seeds": data_artifact_seed_summaries,
         "table_row_counts": dict(pipeline_result.write_plan.audit_summary.planned_row_counts),
+        "publication_readiness_summary": publication_readiness_summary,
         "dry_run_write_plan": _write_plan_summary(pipeline_result),
         "replay_keys": replay_keys,
         "audit_replay": _audit_replay_section(
@@ -300,6 +302,118 @@ def _phase7_coverage_rows_by_table(
             "artifact_symbolic_expressions",
         )
     }
+
+
+def _publication_readiness_summary(
+    rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
+) -> dict[str, Any]:
+    table_rows = _phase7_coverage_rows_by_table(rows_by_table)
+    combined_rows = [
+        row
+        for table in ("physics_equation_candidates", "artifact_symbolic_expressions")
+        for row in table_rows[table]
+    ]
+
+    return {
+        "report_version": "physics-ingest-publication-readiness-summary.v1",
+        "row_count": len(combined_rows),
+        "table_row_counts": {
+            table: len(rows) for table, rows in sorted(table_rows.items())
+        },
+        "by_candidate_status": _status_counts(combined_rows, "candidate_status"),
+        "by_parse_status": _status_counts(combined_rows, "parse_status"),
+        "by_review_status": _status_counts(combined_rows, "review_status"),
+        "by_validation_status": _status_counts(combined_rows, "validation_status"),
+        "readiness_stage_counts": _readiness_stage_counts(combined_rows),
+        "by_table": {
+            table: {
+                "row_count": len(rows),
+                "by_candidate_status": _status_counts(rows, "candidate_status"),
+                "by_parse_status": _status_counts(rows, "parse_status"),
+                "by_review_status": _status_counts(rows, "review_status"),
+                "by_validation_status": _status_counts(rows, "validation_status"),
+                "readiness_stage_counts": _readiness_stage_counts(rows),
+            }
+            for table, rows in sorted(table_rows.items())
+        },
+    }
+
+
+def _status_counts(
+    rows: Iterable[Mapping[str, Any]],
+    status_key: str,
+) -> dict[str, int]:
+    counts = Counter(
+        str(row.get(status_key) or "unknown")
+        for row in rows
+        if status_key in row
+    )
+    return dict(sorted(counts.items()))
+
+
+def _readiness_stage_counts(rows: Iterable[Mapping[str, Any]]) -> dict[str, int]:
+    counts = Counter(_readiness_stage(row) for row in rows)
+    return dict(sorted(counts.items()))
+
+
+def _readiness_stage(row: Mapping[str, Any]) -> str:
+    candidate_status = str(row.get("candidate_status") or "")
+    parse_status = str(row.get("parse_status") or "")
+    review_status = str(row.get("review_status") or "")
+    validation_status = str(row.get("validation_status") or "")
+    publication_status = str(
+        row.get("publication_status") or row.get("published_status") or ""
+    )
+
+    if (
+        candidate_status in {"blocked", "parse_failed"}
+        or parse_status in {"blocked", "parse_failed"}
+        or review_status == "blocked"
+        or validation_status in {"blocked", "error", "fail", "failed"}
+        or bool(row.get("blockers"))
+    ):
+        return "blocked"
+    if (
+        candidate_status == "published"
+        or publication_status == "published"
+        or bool(row.get("published"))
+        or bool(row.get("published_at"))
+    ):
+        return "published"
+    if (
+        candidate_status == "human_reviewed"
+        or (
+            review_status == "human_reviewed"
+            and validation_status == "passed"
+            and parse_status in {"parsed", "normalized"}
+        )
+    ):
+        return "publishable_candidate"
+    if review_status == "human_reviewed":
+        return "human_reviewed"
+    if review_status == "needs_human":
+        return "needs_human_review"
+    if review_status == "automated_pass":
+        return "automated_pass"
+    if validation_status == "passed":
+        return "validated"
+    if (
+        candidate_status
+        in {
+            "parsed",
+            "dimension_resolved",
+            "symbolically_validated",
+            "source_verified",
+        }
+        or parse_status in {"parsed", "normalized"}
+        or bool(row.get("sympy_srepr"))
+        or bool(row.get("canonical_expr_hash"))
+        or bool(row.get("topology_hash"))
+    ):
+        return "parsed"
+    if candidate_status or parse_status:
+        return "raw_or_pending"
+    return "unknown"
 
 
 def _data_artifact_seed_summaries(

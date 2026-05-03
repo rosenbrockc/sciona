@@ -60,6 +60,75 @@ def test_symbolic_publication_fixture_validator_reports_metadata_gaps(tmp_path) 
     ]
 
 
+def test_symbolic_fixture_validator_reports_malformed_bibliography_entries(
+    tmp_path,
+) -> None:
+    manifest = _symbolic_manifest()
+    manifest["artifact_symbolic_expressions"][0]["bibliography"] = [
+        "fixture",
+        "",
+        {"title": "not a stable citation key"},
+    ]
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    bibliography_issues = [
+        issue
+        for issue in check.issues
+        if issue.reason
+        in {"bibliography_entry_blank", "bibliography_entry_not_string"}
+    ]
+    assert [(issue.reason, issue.table) for issue in bibliography_issues] == [
+        ("bibliography_entry_blank", "artifact_symbolic_expressions"),
+        ("bibliography_entry_not_string", "artifact_symbolic_expressions"),
+    ]
+    assert [json.loads(issue.detail) for issue in bibliography_issues] == [
+        {"entry_index": 1},
+        {"entry_index": 2},
+    ]
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
+def test_symbolic_fixture_validator_reports_json_unsafe_metadata(tmp_path) -> None:
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_text = json.dumps(_symbolic_manifest())
+    fixture_text = fixture_text.replace(
+        '"artifact_uuid": null',
+        '"artifact_uuid": null, "evidence_json": {"confidence": NaN}',
+        1,
+    )
+    fixture_text = fixture_text.replace(
+        '"evidence_json": {"source_symbol": "F"}',
+        '"evidence_json": {"source_symbol": "F", "payload": Infinity}',
+        1,
+    )
+    fixture_text = fixture_text.replace(
+        '"metadata": {"provider": "fixture"}',
+        '"metadata": {"provider": "fixture", "score": NaN}',
+        1,
+    )
+    fixture_path.write_text(fixture_text, encoding="utf-8")
+
+    check = validate_symbolic_publication_fixture(fixture_path)
+
+    json_unsafe_issues = [
+        issue for issue in check.issues if issue.reason.endswith("_json_unsafe")
+    ]
+    assert [(issue.reason, issue.table) for issue in json_unsafe_issues] == [
+        ("symbolic_expression_json_unsafe", "artifact_symbolic_expressions"),
+        ("symbolic_variable_json_unsafe", "artifact_symbolic_variables"),
+        ("validity_bound_json_unsafe", "artifact_validity_bounds"),
+    ]
+    assert [json.loads(issue.detail)["field_name"] for issue in json_unsafe_issues] == [
+        "evidence_json",
+        "evidence_json",
+        "metadata",
+    ]
+    json.dumps(check.to_dict(), sort_keys=True)
+
+
 def test_symbolic_fixture_validator_reports_duplicate_variable_reference(
     tmp_path,
 ) -> None:

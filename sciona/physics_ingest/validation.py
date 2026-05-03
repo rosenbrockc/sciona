@@ -947,7 +947,8 @@ def _symbolic_expression_standard_issues(
                     subject=row_subject,
                 )
             )
-        if not _string_sequence(row.get("bibliography")):
+        bibliography = row.get("bibliography")
+        if not _string_sequence(bibliography):
             issues.append(
                 ValidationIssue(
                     reason="missing_bibliography",
@@ -955,6 +956,21 @@ def _symbolic_expression_standard_issues(
                     subject=row_subject,
                 )
             )
+        issues.extend(
+            _bibliography_entry_issues(
+                bibliography,
+                table="artifact_symbolic_expressions",
+                subject=row_subject,
+            )
+        )
+        issues.extend(
+            _json_metadata_issues(
+                row,
+                table="artifact_symbolic_expressions",
+                reason="symbolic_expression_json_unsafe",
+                subject=row_subject,
+            )
+        )
         if row.get("review_status") not in {"automated_pass", "human_reviewed"}:
             issues.append(
                 ValidationIssue(
@@ -1000,6 +1016,14 @@ def _symbolic_variable_standard_issues(
                     subject=row_subject,
                 )
             )
+        issues.extend(
+            _json_metadata_issues(
+                row,
+                table="artifact_symbolic_variables",
+                reason="symbolic_variable_json_unsafe",
+                subject=row_subject,
+            )
+        )
     return tuple(issues)
 
 
@@ -1118,6 +1142,14 @@ def _validity_bound_standard_issues(
 
     for index, row in enumerate(bounds):
         row_subject = _row_subject(row, subject=subject, index=index)
+        issues.extend(
+            _json_metadata_issues(
+                row,
+                table="artifact_validity_bounds",
+                reason="validity_bound_json_unsafe",
+                subject=row_subject,
+            )
+        )
         bound_expression_id = _text_value(row, "expression_id")
         bound_expression_keys = tuple(
             key for key in _publication_candidate_keys(row) if key in expression_keys
@@ -1242,6 +1274,109 @@ def _validity_bound_duplicate_issues(
             )
         )
     return tuple(issues)
+
+
+def _bibliography_entry_issues(
+    bibliography: Any,
+    *,
+    table: str,
+    subject: str,
+) -> tuple[ValidationIssue, ...]:
+    if not isinstance(bibliography, Sequence) or isinstance(bibliography, (str, bytes)):
+        return ()
+
+    issues: list[ValidationIssue] = []
+    for index, entry in enumerate(bibliography):
+        if not isinstance(entry, str):
+            issues.append(
+                ValidationIssue(
+                    reason="bibliography_entry_not_string",
+                    detail=_canonical_json({"entry_index": index}),
+                    table=table,
+                    subject=subject,
+                )
+            )
+            continue
+        if not entry.strip():
+            issues.append(
+                ValidationIssue(
+                    reason="bibliography_entry_blank",
+                    detail=_canonical_json({"entry_index": index}),
+                    table=table,
+                    subject=subject,
+                )
+            )
+    return tuple(issues)
+
+
+def _json_metadata_issues(
+    row: Mapping[str, Any],
+    *,
+    table: str,
+    reason: str,
+    subject: str,
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    for field_name, value in row.items():
+        if not _json_metadata_field_name(str(field_name)):
+            continue
+        json_error = _json_safety_error(value)
+        if json_error is None:
+            continue
+        issues.append(
+            ValidationIssue(
+                reason=reason,
+                detail=_canonical_json(
+                    {
+                        "field_name": str(field_name),
+                        "error": json_error,
+                    }
+                ),
+                table=table,
+                subject=subject,
+            )
+        )
+    return tuple(issues)
+
+
+def _json_metadata_field_name(field_name: str) -> bool:
+    return (
+        field_name == "metadata"
+        or field_name == "payload"
+        or field_name == "evidence"
+        or field_name == "variables"
+        or field_name == "constants"
+        or field_name == "dim_signature"
+        or field_name == "symbolic_dim_signature"
+        or field_name.endswith("_json")
+        or field_name.endswith("_payload")
+    )
+
+
+def _json_safety_error(value: Any) -> str | None:
+    if value is None or isinstance(value, (bool, str, int)):
+        return None
+    if isinstance(value, float):
+        try:
+            json.dumps(value, allow_nan=False)
+        except ValueError as exc:
+            return str(exc)
+        return None
+    if isinstance(value, Mapping):
+        for key, nested_value in value.items():
+            if not isinstance(key, str):
+                return "mapping keys must be strings"
+            nested_error = _json_safety_error(nested_value)
+            if nested_error is not None:
+                return nested_error
+        return None
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for nested_value in value:
+            nested_error = _json_safety_error(nested_value)
+            if nested_error is not None:
+                return nested_error
+        return None
+    return f"value of type {type(value).__name__} is not JSON serializable"
 
 
 def _duplicate_value_issues(

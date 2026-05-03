@@ -746,7 +746,7 @@ def test_pdg_phase4_cdg_graph_validator_accepts_valid_insert_rows() -> None:
 
 def test_pdg_phase4_cdg_graph_validator_reports_deterministic_graph_errors() -> None:
     rows = {
-        "artifact_versions": [{"version_id": "ver-a"}],
+        "artifact_versions": [{"version_id": "ver-a", "artifact_id": "artifact-a"}],
         "artifact_cdg_nodes": [
             {"version_id": "ver-a", "node_id": "step-1"},
             {"version_id": "ver-a", "node_id": "step-1"},
@@ -807,6 +807,66 @@ def test_pdg_phase4_cdg_graph_validator_reports_deterministic_graph_errors() -> 
     }
     missing_edge_endpoint_detail = json.loads(diagnostics[3]["detail"])
     assert missing_edge_endpoint_detail["missing_node_ids"] == ["step-missing"]
+
+
+def test_pdg_phase8_cdg_graph_validator_reports_artifact_envelope_errors() -> None:
+    rows = {
+        "artifacts": [
+            {
+                "artifact_id": "artifact-a",
+                "artifact_kind": "cdg",
+                "fqdn": "physics.pdg.cdg.a",
+            },
+            {
+                "artifact_id": "artifact-a",
+                "artifact_kind": "dataset",
+                "fqdn": "physics.pdg.cdg.duplicate",
+            },
+            {"artifact_id": "artifact-without-version", "artifact_kind": "cdg"},
+            {
+                "artifact_id": "artifact-no-version",
+                "artifact_kind": "cdg",
+                "fqdn": "physics.pdg.cdg.no_version",
+            },
+        ],
+        "artifact_versions": [
+            {"version_id": "version-a", "artifact_id": "artifact-a"},
+            {"version_id": "version-a", "artifact_id": "artifact-a"},
+            {"version_id": "version-missing-artifact", "artifact_id": "artifact-z"},
+            {"version_id": "version-without-artifact"},
+            {"artifact_id": "artifact-a"},
+        ],
+    }
+
+    diagnostics = validate_pdg_cdg_publication_graph(rows)
+
+    assert [diagnostic["reason"] for diagnostic in diagnostics] == [
+        "duplicate_artifact_id",
+        "invalid_artifact_kind",
+        "missing_cdg_row_identity",
+        "duplicate_version_id",
+        "artifact_version_artifact_missing",
+        "missing_cdg_row_identity",
+        "missing_cdg_row_identity",
+        "artifact_version_missing",
+        "artifact_version_missing",
+    ]
+    assert all(diagnostic["stage"] == "pdg_cdg_publication" for diagnostic in diagnostics)
+    assert all(diagnostic["severity"] == "error" for diagnostic in diagnostics)
+    json.dumps(diagnostics, sort_keys=True)
+
+    duplicate_artifact_detail = json.loads(diagnostics[0]["detail"])
+    assert duplicate_artifact_detail == {
+        "first_row_index": 0,
+        "key": ["artifact-a"],
+        "row_index": 1,
+    }
+    missing_artifact_detail = json.loads(diagnostics[4]["detail"])
+    assert missing_artifact_detail == {
+        "artifact_id": "artifact-z",
+        "row_index": 2,
+        "version_id": "version-missing-artifact",
+    }
 
 
 def test_pdg_phase4_publication_rows_are_deterministic() -> None:

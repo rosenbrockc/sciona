@@ -306,6 +306,83 @@ def test_backfill_report_accepts_review_status_row_alias_and_mapping_rows() -> N
     ]
 
 
+def test_backfill_report_includes_publication_readiness_rollups() -> None:
+    report = build_physics_ingest_backfill_report(
+        review_publication_rows={
+            "physics_equation_candidates": [
+                {
+                    "candidate_id": "candidate-ready-1",
+                    "candidate_status": "source_verified",
+                },
+                {
+                    "candidate_id": "candidate-blocked-1",
+                    "candidate_status": "blocked",
+                },
+            ],
+            "artifact_symbolic_expressions": [
+                {
+                    "expression_id": "expression-ready-1",
+                    "parse_status": "normalized",
+                    "review_status": "human_reviewed",
+                    "validation_status": "passed",
+                },
+                {
+                    "expression_id": "expression-blocked-1",
+                    "parse_status": "parse_failed",
+                    "review_status": "blocked",
+                    "validation_status": "failed",
+                },
+                {
+                    "expression_id": "expression-needs-human-1",
+                    "review_status": "needs_human",
+                },
+            ],
+        },
+    )
+
+    readiness = report["publication_readiness_summary"]
+
+    assert json.loads(json.dumps(readiness, sort_keys=True)) == readiness
+    assert readiness["report_version"] == (
+        "physics-ingest-publication-readiness-summary.v1"
+    )
+    assert readiness["row_count"] == 5
+    assert readiness["table_row_counts"] == {
+        "artifact_symbolic_expressions": 3,
+        "physics_equation_candidates": 2,
+    }
+    assert readiness["by_candidate_status"] == {
+        "blocked": 1,
+        "source_verified": 1,
+    }
+    assert readiness["by_parse_status"] == {
+        "normalized": 1,
+        "parse_failed": 1,
+    }
+    assert readiness["by_review_status"] == {
+        "blocked": 1,
+        "human_reviewed": 1,
+        "needs_human": 1,
+    }
+    assert readiness["by_validation_status"] == {
+        "failed": 1,
+        "passed": 1,
+    }
+    assert readiness["readiness_stage_counts"] == {
+        "blocked": 2,
+        "needs_human_review": 1,
+        "parsed": 1,
+        "publishable_candidate": 1,
+    }
+    assert readiness["by_table"]["artifact_symbolic_expressions"][
+        "readiness_stage_counts"
+    ] == {
+        "blocked": 1,
+        "needs_human_review": 1,
+        "publishable_candidate": 1,
+    }
+
+
 def test_backfill_report_groups_adapter_diagnostics() -> None:
     report = build_physics_ingest_backfill_report(
         normalized_drafts=[{"raw_formula": "x = y"}],

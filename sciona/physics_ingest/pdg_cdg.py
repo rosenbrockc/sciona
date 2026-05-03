@@ -182,6 +182,7 @@ def validate_pdg_cdg_publication_graph(
     nodes = _cdg_table_rows(rows_by_table, "artifact_cdg_nodes", diagnostics)
     edges = _cdg_table_rows(rows_by_table, "artifact_cdg_edges", diagnostics)
     bindings = _cdg_table_rows(rows_by_table, "artifact_cdg_bindings", diagnostics)
+    artifacts = _cdg_table_rows(rows_by_table, "artifacts", diagnostics)
     artifact_versions = _cdg_table_rows(rows_by_table, "artifact_versions", diagnostics)
 
     node_keys: set[tuple[str, str]] = set()
@@ -289,7 +290,13 @@ def validate_pdg_cdg_publication_graph(
                             "node_id": node_id,
                         },
                     )
-                )
+            )
+
+    _validate_cdg_artifact_envelope_rows(
+        artifacts=artifacts,
+        artifact_versions=artifact_versions,
+        diagnostics=diagnostics,
+    )
 
     known_version_ids = {
         _row_text(row, "version_id")
@@ -957,6 +964,101 @@ def _cdg_table_rows(
 def _row_text(row: Mapping[str, Any], key: str) -> str:
     value = row.get(key)
     return "" if value is None else str(value)
+
+
+def _validate_cdg_artifact_envelope_rows(
+    *,
+    artifacts: tuple[tuple[int, Mapping[str, Any]], ...],
+    artifact_versions: tuple[tuple[int, Mapping[str, Any]], ...],
+    diagnostics: list[JSONDict],
+) -> None:
+    seen_artifact_ids: dict[tuple[str, ...], int] = {}
+    artifact_ids: set[str] = set()
+    for row_index, row in artifacts:
+        _require_cdg_fields(
+            row,
+            row_index=row_index,
+            table="artifacts",
+            fields=("artifact_id", "artifact_kind", "fqdn"),
+            diagnostics=diagnostics,
+        )
+        artifact_id = _row_text(row, "artifact_id")
+        if artifact_id:
+            _record_duplicate_key(
+                (artifact_id,),
+                seen=seen_artifact_ids,
+                row_index=row_index,
+                table="artifacts",
+                reason="duplicate_artifact_id",
+                diagnostics=diagnostics,
+            )
+            artifact_ids.add(artifact_id)
+        artifact_kind = _row_text(row, "artifact_kind")
+        if artifact_kind and artifact_kind != "cdg":
+            diagnostics.append(
+                _cdg_validation_diagnostic(
+                    table="artifacts",
+                    reason="invalid_artifact_kind",
+                    detail={
+                        "row_index": row_index,
+                        "artifact_id": artifact_id,
+                        "artifact_kind": artifact_kind,
+                        "expected_artifact_kind": "cdg",
+                    },
+                )
+            )
+
+    seen_version_ids: dict[tuple[str, ...], int] = {}
+    version_artifact_ids: set[str] = set()
+    for row_index, row in artifact_versions:
+        _require_cdg_fields(
+            row,
+            row_index=row_index,
+            table="artifact_versions",
+            fields=("version_id", "artifact_id"),
+            diagnostics=diagnostics,
+        )
+        version_id = _row_text(row, "version_id")
+        artifact_id = _row_text(row, "artifact_id")
+        if version_id:
+            _record_duplicate_key(
+                (version_id,),
+                seen=seen_version_ids,
+                row_index=row_index,
+                table="artifact_versions",
+                reason="duplicate_version_id",
+                diagnostics=diagnostics,
+            )
+        if not artifact_id:
+            continue
+        version_artifact_ids.add(artifact_id)
+        if artifacts and artifact_id not in artifact_ids:
+            diagnostics.append(
+                _cdg_validation_diagnostic(
+                    table="artifact_versions",
+                    reason="artifact_version_artifact_missing",
+                    detail={
+                        "row_index": row_index,
+                        "version_id": version_id,
+                        "artifact_id": artifact_id,
+                    },
+                )
+            )
+
+    if artifact_versions:
+        for row_index, row in artifacts:
+            artifact_id = _row_text(row, "artifact_id")
+            if artifact_id and artifact_id not in version_artifact_ids:
+                diagnostics.append(
+                    _cdg_validation_diagnostic(
+                        table="artifacts",
+                        reason="artifact_version_missing",
+                        detail={
+                            "row_index": row_index,
+                            "artifact_id": artifact_id,
+                        },
+                    )
+                )
 
 
 def _require_cdg_fields(
