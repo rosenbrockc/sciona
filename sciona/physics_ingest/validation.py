@@ -105,6 +105,7 @@ def build_physics_ingestion_validation_report(
     fixture_paths: Iterable[Path | str] = (),
     atoms_repo: Path | str | None = None,
     pdg_payload_paths: Iterable[Path | str] = (),
+    validation_mode: str = "full",
     include_default_pdg: bool = True,
     include_source_execution: bool = True,
     include_source_adapter_coverage: bool = True,
@@ -127,6 +128,20 @@ def build_physics_ingestion_validation_report(
     fixture_path_list = tuple(Path(path) for path in fixture_paths)
     pdg_path_list = tuple(Path(path) for path in pdg_payload_paths)
     live_manifest_builder = _load_live_manifest_builder(atoms_repo)
+    inventory = _validation_report_inventory(
+        fixture_path_list=fixture_path_list,
+        pdg_path_list=pdg_path_list,
+        validation_mode=validation_mode,
+        include_default_pdg=include_default_pdg,
+        include_source_execution=include_source_execution,
+        include_source_adapter_coverage=include_source_adapter_coverage,
+        include_source_adapter_data_artifact_seeds=(
+            include_source_adapter_data_artifact_seeds
+        ),
+        source_max_jobs=source_max_jobs,
+        source_job_id=source_job_id,
+        source_phase7_ring=source_phase7_ring,
+    )
 
     if strict and not fixture_path_list:
         checks.append(
@@ -194,11 +209,63 @@ def build_physics_ingestion_validation_report(
         "report_kind": VALIDATION_REPORT_KIND,
         "report_version": VALIDATION_REPORT_VERSION,
         "ok": all(check.ok for check in checks),
+        "inventory": inventory,
         "summary": _validation_report_summary(checks),
         "checks": [check.to_dict() for check in checks],
     }
     _assert_json_serializable(report)
     return report
+
+
+def _validation_report_inventory(
+    *,
+    fixture_path_list: Sequence[Path],
+    pdg_path_list: Sequence[Path],
+    validation_mode: str,
+    include_default_pdg: bool,
+    include_source_execution: bool,
+    include_source_adapter_coverage: bool,
+    include_source_adapter_data_artifact_seeds: bool,
+    source_max_jobs: int | None,
+    source_job_id: str | Iterable[str] | None,
+    source_phase7_ring: str | Iterable[str] | None,
+) -> dict[str, Any]:
+    """Build fixture-family inventory metadata for CI and dashboards."""
+
+    source_job_ids = _string_filter_values(source_job_id)
+    source_phase7_rings = _string_filter_values(source_phase7_ring)
+    return {
+        "validation_mode": str(validation_mode),
+        "symbolic_fixtures": {
+            "count": len(fixture_path_list),
+            "paths": [str(path) for path in fixture_path_list],
+        },
+        "pdg_payloads": {
+            "count": len(pdg_path_list),
+            "paths": [str(path) for path in pdg_path_list],
+            "include_default_pdg": include_default_pdg,
+        },
+        "source_checks": {
+            "include_source_execution": include_source_execution,
+            "include_source_adapter_coverage": include_source_adapter_coverage,
+            "include_source_adapter_data_artifact_seeds": (
+                include_source_adapter_data_artifact_seeds
+            ),
+            "filters": {
+                "source_max_jobs": source_max_jobs,
+                "source_job_id": source_job_ids,
+                "source_phase7_ring": source_phase7_rings,
+            },
+        },
+    }
+
+
+def _string_filter_values(value: str | Iterable[str] | None) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [str(item) for item in value]
 
 
 def _validation_report_summary(checks: Sequence[ValidationCheck]) -> dict[str, Any]:

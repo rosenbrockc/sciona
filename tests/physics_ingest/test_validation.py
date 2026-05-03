@@ -459,6 +459,28 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
     assert report["report_kind"] == VALIDATION_REPORT_KIND
     assert report["report_version"] == VALIDATION_REPORT_VERSION
     assert report["ok"] is False
+    assert report["inventory"] == {
+        "validation_mode": "full",
+        "symbolic_fixtures": {
+            "count": 0,
+            "paths": [],
+        },
+        "pdg_payloads": {
+            "count": 0,
+            "paths": [],
+            "include_default_pdg": True,
+        },
+        "source_checks": {
+            "include_source_execution": True,
+            "include_source_adapter_coverage": True,
+            "include_source_adapter_data_artifact_seeds": True,
+            "filters": {
+                "source_max_jobs": None,
+                "source_job_id": [],
+                "source_phase7_ring": [],
+            },
+        },
+    }
     assert report["summary"] == {
         "check_count": 6,
         "failed_check_count": 2,
@@ -489,12 +511,18 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
 
 
 def test_validation_report_includes_explicit_pdg_fixture_path() -> None:
+    pdg_path = PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json"
     report = build_physics_ingestion_validation_report(
-        pdg_payload_paths=(PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json",),
+        pdg_payload_paths=(pdg_path,),
         include_default_pdg=False,
     )
 
     assert report["ok"] is True
+    assert report["inventory"]["pdg_payloads"] == {
+        "count": 1,
+        "paths": [str(pdg_path)],
+        "include_default_pdg": False,
+    }
     checks = report["checks"]
     assert len(checks) == 4
     assert checks[0]["subject"] == "pdg_fixture:solve_substitute_chain"
@@ -536,6 +564,11 @@ def test_validation_report_filters_source_execution_by_phase7_ring() -> None:
     )
 
     assert report["ok"] is True
+    assert report["inventory"]["source_checks"]["filters"] == {
+        "source_max_jobs": None,
+        "source_job_id": [],
+        "source_phase7_ring": ["ring_5_reference_datasets"],
+    }
     source_check = report["checks"][0]
     source_report = source_check["metadata"]["report"]
     assert source_check["check_id"] == "source_execution_readiness"
@@ -560,6 +593,16 @@ def test_validation_report_can_skip_source_execution() -> None:
     )
 
     assert report["ok"] is True
+    assert report["inventory"]["source_checks"] == {
+        "include_source_execution": False,
+        "include_source_adapter_coverage": False,
+        "include_source_adapter_data_artifact_seeds": False,
+        "filters": {
+            "source_max_jobs": None,
+            "source_job_id": [],
+            "source_phase7_ring": [],
+        },
+    }
     assert report["summary"] == {
         "check_count": 0,
         "failed_check_count": 0,
@@ -844,6 +887,11 @@ def test_validation_script_discovers_default_pdg_fixtures_in_json_mode() -> None
 
     report = json.loads(result.stdout)
     assert report["report_version"] == VALIDATION_REPORT_VERSION
+    assert report["inventory"]["validation_mode"] == "full"
+    assert report["inventory"]["symbolic_fixtures"] == {"count": 0, "paths": []}
+    assert report["inventory"]["pdg_payloads"]["count"] == 7
+    assert report["inventory"]["pdg_payloads"]["include_default_pdg"] is True
+    assert report["inventory"]["source_checks"]["filters"]["source_max_jobs"] == 1
     subjects = [check["subject"] for check in report["checks"]]
     assert "pdg_fixture:limit_nondimensionalization_chain" in subjects
     assert "pdg_fixture:solve_substitute_chain" in subjects
@@ -924,6 +972,17 @@ def test_validation_script_changed_only_keeps_source_checks_in_json_mode() -> No
 
     report = json.loads(result.stdout)
     assert report["ok"] is True
+    assert report["inventory"]["validation_mode"] == "changed_only"
+    assert report["inventory"]["pdg_payloads"] == {
+        "count": 0,
+        "paths": [],
+        "include_default_pdg": False,
+    }
+    assert report["inventory"]["source_checks"]["filters"] == {
+        "source_max_jobs": 1,
+        "source_job_id": [],
+        "source_phase7_ring": [],
+    }
     assert [check["check_id"] for check in report["checks"]] == [
         "source_execution_readiness",
         "source_adapter_coverage",
@@ -982,9 +1041,103 @@ def test_validation_script_changed_only_json_accepts_explicit_pdg_fixture() -> N
     )
 
     report = json.loads(result.stdout)
+    assert report["inventory"]["validation_mode"] == "changed_only"
+    assert report["inventory"]["pdg_payloads"] == {
+        "count": 1,
+        "paths": [str(PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json")],
+        "include_default_pdg": True,
+    }
     subjects = [check["subject"] for check in report["checks"]]
     assert "pdg_fixture:solve_substitute_chain" in subjects
     assert "default_pdg_validation_fixture" in subjects
+
+
+def test_validation_script_changed_only_json_accepts_explicit_fixture_families(
+    tmp_path,
+) -> None:
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    pdg_path = PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json"
+    fixture_path.write_text(json.dumps(_symbolic_manifest()), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--changed-only",
+            "--atoms-repo",
+            str(tmp_path / "missing-atoms-repo"),
+            "--fixture",
+            str(fixture_path),
+            "--pdg-json",
+            str(pdg_path),
+            "--skip-source-execution",
+            "--skip-source-adapter-coverage",
+            "--skip-source-adapter-data-artifact-seeds",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(result.stdout)
+    assert report["ok"] is True
+    assert report["inventory"] == {
+        "validation_mode": "changed_only",
+        "symbolic_fixtures": {
+            "count": 1,
+            "paths": [str(fixture_path)],
+        },
+        "pdg_payloads": {
+            "count": 1,
+            "paths": [str(pdg_path)],
+            "include_default_pdg": True,
+        },
+        "source_checks": {
+            "include_source_execution": False,
+            "include_source_adapter_coverage": False,
+            "include_source_adapter_data_artifact_seeds": False,
+            "filters": {
+                "source_max_jobs": None,
+                "source_job_id": [],
+                "source_phase7_ring": [],
+            },
+        },
+    }
+    assert [check["check_id"] for check in report["checks"]] == [
+        "symbolic_publication_fixture",
+        "pdg_publication_graph",
+        "pdg_publication_graph",
+    ]
+
+
+def test_validation_script_text_output_includes_inventory() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--changed-only",
+            "--skip-atoms",
+            "--skip-pdg",
+            "--skip-source-execution",
+            "--skip-source-adapter-coverage",
+            "--skip-source-adapter-data-artifact-seeds",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "mode: changed_only" in result.stdout
+    assert "inventory: 0 symbolic fixtures, 0 PDG payloads, default PDG off" in (
+        result.stdout
+    )
+    assert (
+        "source checks: execution off, adapter coverage off, "
+        "data artifact seeds off"
+    ) in result.stdout
 
 
 def test_validation_script_can_skip_source_checks_in_json_mode() -> None:
@@ -1007,6 +1160,16 @@ def test_validation_script_can_skip_source_checks_in_json_mode() -> None:
 
     report = json.loads(result.stdout)
     assert report["ok"] is True
+    assert report["inventory"]["source_checks"] == {
+        "include_source_execution": False,
+        "include_source_adapter_coverage": False,
+        "include_source_adapter_data_artifact_seeds": False,
+        "filters": {
+            "source_max_jobs": None,
+            "source_job_id": [],
+            "source_phase7_ring": [],
+        },
+    }
     assert report["checks"] == []
 
 

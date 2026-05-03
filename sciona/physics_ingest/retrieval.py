@@ -1156,6 +1156,10 @@ def _compiler_contract_guidance(
             query,
             candidate,
         ),
+        "validity_request_diagnostics": _validity_request_diagnostics(
+            query,
+            candidate,
+        ),
         "blockers": blockers,
         "can_compile": not blockers,
         "requires_human_review": candidate.needs_human or candidate.raw_like,
@@ -1222,6 +1226,102 @@ def _relationship_request_diagnostics(
             for request in requested
             if (relationship := matches.get(request)) is not None
         ],
+    }
+
+
+def _validity_request_diagnostics(
+    query: SymbolicRetrievalQuery,
+    candidate: SymbolicArtifactCandidate,
+) -> dict[str, Any]:
+    requested_regimes = _unique(query.validity_regimes)
+    requested_variables = _unique(query.validity_variables)
+    requested_bounds = tuple(
+        bound for bound in query.validity_bounds if _validity_request_present(bound)
+    )
+    available_bounds = tuple(
+        bound for bound in candidate.validity_bounds if bound.constrained
+    )
+    matched_regimes = tuple(
+        regime
+        for regime in requested_regimes
+        if any(_same_text(regime, bound.regime_label) for bound in available_bounds)
+    )
+    matched_variables = tuple(
+        variable
+        for variable in requested_variables
+        if any(_same_text(variable, bound.variable_name) for bound in available_bounds)
+    )
+    bound_matches = _requested_validity_bound_matches(
+        requested_bounds,
+        available_bounds,
+    )
+    return {
+        "requested": {
+            "regimes": list(requested_regimes),
+            "variables": list(requested_variables),
+            "bounds": [_validity_bound_payload(bound) for bound in requested_bounds],
+        },
+        "available_bounds": [
+            _validity_bound_payload(bound) for bound in available_bounds
+        ],
+        "available_bound_count": len(available_bounds),
+        "reviewed_bound_count": sum(1 for bound in available_bounds if bound.reviewed),
+        "unreviewed_bound_count": sum(
+            1 for bound in available_bounds if not bound.reviewed
+        ),
+        "matched": {
+            "regimes": list(matched_regimes),
+            "variables": list(matched_variables),
+            "bounds": [
+                {
+                    "requested_bound": _validity_bound_payload(requested),
+                    "available_bound": _validity_bound_payload(available),
+                }
+                for requested, available in bound_matches
+            ],
+        },
+        "missing": {
+            "regimes": [
+                regime
+                for regime in requested_regimes
+                if regime not in matched_regimes
+            ],
+            "variables": [
+                variable
+                for variable in requested_variables
+                if variable not in matched_variables
+            ],
+            "bounds": [
+                _validity_bound_payload(bound)
+                for bound in requested_bounds
+                if not any(bound is matched[0] for matched in bound_matches)
+            ],
+        },
+    }
+
+
+def _requested_validity_bound_matches(
+    requested_bounds: Sequence[SymbolicValidityBound],
+    available_bounds: Sequence[SymbolicValidityBound],
+) -> tuple[tuple[SymbolicValidityBound, SymbolicValidityBound], ...]:
+    matches: list[tuple[SymbolicValidityBound, SymbolicValidityBound]] = []
+    for requested in requested_bounds:
+        for available in available_bounds:
+            if _validity_bound_matches(requested, available):
+                matches.append((requested, available))
+                break
+    return tuple(matches)
+
+
+def _validity_bound_payload(bound: SymbolicValidityBound) -> dict[str, Any]:
+    return {
+        "variable_name": bound.variable_name,
+        "regime_label": bound.regime_label,
+        "validity_statement": bound.validity_statement,
+        "lower_value": bound.lower_value,
+        "upper_value": bound.upper_value,
+        "review_status": bound.review_status,
+        "reviewed": bound.reviewed,
     }
 
 

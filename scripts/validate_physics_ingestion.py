@@ -146,6 +146,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         fixture_paths=fixture_paths,
         atoms_repo=atoms_repo,
         pdg_payload_paths=() if args.skip_pdg else pdg_payload_paths,
+        validation_mode="changed_only" if args.changed_only else "full",
         include_default_pdg=not args.skip_pdg,
         include_source_execution=not args.skip_source_execution,
         include_source_adapter_coverage=not args.skip_source_adapter_coverage,
@@ -179,8 +180,31 @@ def _unique_paths(paths: Sequence[Path]) -> tuple[Path, ...]:
 def _print_text_report(report: dict[str, object]) -> None:
     summary = report["summary"]
     assert isinstance(summary, dict)
+    inventory = report["inventory"]
+    assert isinstance(inventory, dict)
+    symbolic_inventory = inventory["symbolic_fixtures"]
+    pdg_inventory = inventory["pdg_payloads"]
+    source_inventory = inventory["source_checks"]
+    assert isinstance(symbolic_inventory, dict)
+    assert isinstance(pdg_inventory, dict)
+    assert isinstance(source_inventory, dict)
     print("PHYSICS INGESTION VALIDATION REPORT")
     print(f"ok: {report['ok']}")
+    print(f"mode: {inventory['validation_mode']}")
+    print(
+        "inventory: "
+        f"{symbolic_inventory['count']} symbolic fixtures, "
+        f"{pdg_inventory['count']} PDG payloads, "
+        f"default PDG {'on' if pdg_inventory['include_default_pdg'] else 'off'}"
+    )
+    print(
+        "source checks: "
+        f"execution {'on' if source_inventory['include_source_execution'] else 'off'}, "
+        "adapter coverage "
+        f"{'on' if source_inventory['include_source_adapter_coverage'] else 'off'}, "
+        "data artifact seeds "
+        f"{'on' if source_inventory['include_source_adapter_data_artifact_seeds'] else 'off'}"
+    )
     print(
         "checks: "
         f"{summary['check_count']} total, "

@@ -669,6 +669,153 @@ def test_symbolic_synthesis_report_exposes_unverified_relationship_diagnostics()
     ]
 
 
+def test_symbolic_synthesis_report_exposes_missing_required_validity_diagnostics() -> None:
+    report = build_symbolic_synthesis_retrieval_report(
+        {
+            "topology_hash": "topo-validity",
+            "validity_regimes": ["small_angle"],
+            "validity_variables": ["theta"],
+            "requested_validity_bounds": [
+                {"variable_name": "theta", "lower_value": 0.0, "upper_value": 0.1}
+            ],
+            "require_validity_matches": True,
+        },
+        [
+            {
+                "artifact_id": "reviewed-large-angle",
+                "topology_hash": "topo-validity",
+                "dimensional_hash": "dim-validity",
+                "review_status": "human_reviewed",
+                "validity_bounds": [
+                    {
+                        "variable_name": "theta",
+                        "regime_label": "large_angle",
+                        "lower_value": 0.5,
+                        "upper_value": 1.0,
+                        "review_status": "human_reviewed",
+                    }
+                ],
+            }
+        ],
+    )
+
+    assert report["executable_candidates"] == []
+    blocked = report["blocked_candidates"][0]
+    assert blocked["candidate_key"] == "reviewed-large-angle"
+    assert blocked["compiler_contract"]["blockers"] == [
+        "missing_required_validity_match"
+    ]
+    assert blocked["compiler_contract"]["can_compile"] is False
+
+    diagnostics = blocked["compiler_contract"]["validity_request_diagnostics"]
+    assert diagnostics["requested"]["regimes"] == ["small_angle"]
+    assert diagnostics["requested"]["variables"] == ["theta"]
+    assert diagnostics["requested"]["bounds"] == [
+        {
+            "variable_name": "theta",
+            "regime_label": "",
+            "validity_statement": "",
+            "lower_value": 0.0,
+            "upper_value": 0.1,
+            "review_status": "",
+            "reviewed": False,
+        }
+    ]
+    assert diagnostics["available_bound_count"] == 1
+    assert diagnostics["reviewed_bound_count"] == 1
+    assert diagnostics["unreviewed_bound_count"] == 0
+    assert diagnostics["matched"]["regimes"] == []
+    assert diagnostics["matched"]["variables"] == ["theta"]
+    assert diagnostics["matched"]["bounds"] == []
+    assert diagnostics["missing"]["regimes"] == ["small_angle"]
+    assert diagnostics["missing"]["variables"] == []
+    assert diagnostics["missing"]["bounds"] == diagnostics["requested"]["bounds"]
+
+
+def test_symbolic_synthesis_report_exposes_partial_validity_diagnostics() -> None:
+    report = build_symbolic_synthesis_retrieval_report(
+        {
+            "topology_hash": "topo-validity-partial",
+            "validity_regimes": ["small_angle", "long_wave"],
+            "validity_variables": ["theta", "omega"],
+            "requested_validity_bounds": [
+                {"variable_name": "theta", "upper_value": 0.1},
+                {"variable_name": "omega", "lower_value": 1.0, "upper_value": 2.0},
+            ],
+        },
+        [
+            {
+                "artifact_id": "reviewed-partial-validity",
+                "topology_hash": "topo-validity-partial",
+                "dimensional_hash": "dim-validity",
+                "review_status": "human_reviewed",
+                "validity_bounds": [
+                    {
+                        "variable_name": "theta",
+                        "regime_label": "small_angle",
+                        "lower_value": 0.0,
+                        "upper_value": 0.2,
+                        "review_status": "human_reviewed",
+                    },
+                    {
+                        "variable_name": "k",
+                        "regime_label": "long_wave",
+                        "lower_value": 0.0,
+                        "review_status": "unreviewed",
+                    },
+                ],
+            }
+        ],
+    )
+
+    assert report["executable_candidate_count"] == 1
+    executable = report["executable_candidates"][0]
+    assert executable["compiler_contract"]["can_compile"] is True
+    assert executable["compiler_contract"]["blockers"] == []
+
+    diagnostics = executable["compiler_contract"]["validity_request_diagnostics"]
+    assert diagnostics["available_bound_count"] == 2
+    assert diagnostics["reviewed_bound_count"] == 1
+    assert diagnostics["unreviewed_bound_count"] == 1
+    assert diagnostics["matched"]["regimes"] == ["small_angle", "long_wave"]
+    assert diagnostics["matched"]["variables"] == ["theta"]
+    assert diagnostics["matched"]["bounds"] == [
+        {
+            "requested_bound": {
+                "variable_name": "theta",
+                "regime_label": "",
+                "validity_statement": "",
+                "lower_value": None,
+                "upper_value": 0.1,
+                "review_status": "",
+                "reviewed": False,
+            },
+            "available_bound": {
+                "variable_name": "theta",
+                "regime_label": "small_angle",
+                "validity_statement": "",
+                "lower_value": 0.0,
+                "upper_value": 0.2,
+                "review_status": "human_reviewed",
+                "reviewed": True,
+            },
+        }
+    ]
+    assert diagnostics["missing"]["regimes"] == []
+    assert diagnostics["missing"]["variables"] == ["omega"]
+    assert diagnostics["missing"]["bounds"] == [
+        {
+            "variable_name": "omega",
+            "regime_label": "",
+            "validity_statement": "",
+            "lower_value": 1.0,
+            "upper_value": 2.0,
+            "review_status": "",
+            "reviewed": False,
+        }
+    ]
+
+
 def test_symbolic_ranker_scores_source_domain_analogues_and_data_artifacts() -> None:
     results = rank_symbolic_candidates(
         {

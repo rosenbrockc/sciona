@@ -13,6 +13,8 @@ from sciona.physics_ingest.sources.retrieval_plan import (
 
 
 JSONDict = dict[str, Any]
+SummaryCounts = dict[str, int]
+SourceExecutionSummary = Mapping[str, int | SummaryCounts]
 
 
 @dataclass(frozen=True)
@@ -62,7 +64,7 @@ class SourceExecutionReadinessReport:
     manifest_version: str
     snapshot_key_prefix: str
     dry_run: bool
-    summary: Mapping[str, int]
+    summary: SourceExecutionSummary
     steps: tuple[SourceExecutionReadinessStep, ...]
     diagnostics: tuple[SourceExecutionDiagnostic, ...] = ()
 
@@ -107,13 +109,7 @@ def build_source_execution_readiness_report(
         readiness_steps.append(readiness_step)
         report_diagnostics.extend(readiness_step.diagnostics)
 
-    summary = {
-        "total_steps": len(readiness_steps),
-        "executable": _count_status(readiness_steps, "executable"),
-        "offline_blocked": _count_status(readiness_steps, "offline_blocked"),
-        "manual": _count_status(readiness_steps, "manual"),
-        "diagnostic_count": len(report_diagnostics),
-    }
+    summary = _summary(readiness_steps, report_diagnostics)
     return SourceExecutionReadinessReport(
         report_version="physics-source-execution-readiness.v1",
         manifest_version=str(plan_dict.get("manifest_version", "")),
@@ -297,6 +293,90 @@ def _count_status(
     status: str,
 ) -> int:
     return sum(1 for step in steps if step.status == status)
+
+
+def _summary(
+    steps: list[SourceExecutionReadinessStep],
+    diagnostics: list[SourceExecutionDiagnostic],
+) -> dict[str, int | SummaryCounts]:
+    return {
+        "total_steps": len(steps),
+        "executable": _count_status(steps, "executable"),
+        "offline_blocked": _count_status(steps, "offline_blocked"),
+        "manual": _count_status(steps, "manual"),
+        "diagnostic_count": len(diagnostics),
+        "by_source_family": _count_by_string(
+            step.source_family or "unknown" for step in steps
+        ),
+        "by_source_system": _count_by_string(
+            step.source_system or "unknown" for step in steps
+        ),
+        "by_phase7_ring": _count_by_phase7_ring(steps),
+        "by_status": _count_by_status(steps),
+        "payload_requirements": {
+            "offline_payload_available": sum(
+                1
+                for step in steps
+                if bool(step.payload_expectation.get("offline_payload_available"))
+            ),
+            "payload_required": sum(
+                1
+                for step in steps
+                if bool(step.payload_expectation.get("payload_required"))
+            ),
+        },
+        "storage_requirements": {
+            "side_effect_free": sum(
+                1
+                for step in steps
+                if bool(step.storage_expectation.get("side_effect_free"))
+            ),
+            "storage_required": sum(
+                1
+                for step in steps
+                if bool(step.storage_expectation.get("storage_required"))
+            ),
+            "write_required": sum(
+                1
+                for step in steps
+                if bool(step.storage_expectation.get("write_required"))
+            ),
+        },
+    }
+
+
+def _count_by_string(values: Iterable[str]) -> SummaryCounts:
+    counts: dict[str, int] = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    return {key: counts[key] for key in sorted(counts)}
+
+
+def _count_by_phase7_ring(
+    steps: list[SourceExecutionReadinessStep],
+) -> SummaryCounts:
+    counts: dict[str, int] = {}
+    ring_orders: dict[str, int] = {}
+    for step in steps:
+        ring = step.phase7_ring or "unknown"
+        counts[ring] = counts.get(ring, 0) + 1
+        ring_orders[ring] = step.phase7_ring_order
+    return {
+        ring: counts[ring]
+        for ring in sorted(ring_orders, key=lambda value: (ring_orders[value], value))
+    }
+
+
+def _count_by_status(
+    steps: list[SourceExecutionReadinessStep],
+) -> SummaryCounts:
+    counts = _count_by_string(step.status for step in steps)
+    status_order = ("executable", "offline_blocked", "manual")
+    ordered = {status: counts[status] for status in status_order if status in counts}
+    ordered.update(
+        {status: counts[status] for status in counts if status not in status_order}
+    )
+    return ordered
 
 
 def _int_value(value: Any, default: int) -> int:
