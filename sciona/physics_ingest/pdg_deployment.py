@@ -48,6 +48,7 @@ class PDGDeploymentStoragePlan:
     apply_result: PhysicsIngestDeploymentStorageApplyResult | None = None
     diagnostics: tuple[JSONDict, ...] = ()
     summary: Mapping[str, Any] = field(default_factory=dict)
+    dashboard_summary: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         diagnostics = tuple(_json_safe_value(row) for row in self.diagnostics)
@@ -73,6 +74,18 @@ class PDGDeploymentStoragePlan:
                     ),
                 ),
             )
+        if self.dashboard_summary:
+            object.__setattr__(
+                self,
+                "dashboard_summary",
+                _json_safe_mapping(self.dashboard_summary),
+            )
+        else:
+            object.__setattr__(
+                self,
+                "dashboard_summary",
+                _build_pdg_deployment_dashboard_summary(self.summary),
+            )
 
     def to_insert_rows(self) -> dict[str, list[JSONDict]]:
         """Return JSON-ready rows planned for production deployment storage."""
@@ -89,6 +102,7 @@ class PDGDeploymentStoragePlan:
             else self.apply_result.to_dict(),
             "diagnostics": list(self.diagnostics),
             "summary": dict(self.summary),
+            "dashboard_summary": dict(self.dashboard_summary),
         }
 
 
@@ -245,6 +259,88 @@ def _diagnostics_by_reason(
         reason = str(diagnostic.get("reason") or "unknown")
         counts[reason] = counts.get(reason, 0) + 1
     return dict(sorted(counts.items()))
+
+
+def _build_pdg_deployment_dashboard_summary(summary: Mapping[str, Any]) -> JSONDict:
+    catalog_projection = _mapping(summary.get("catalog_projection_summary"))
+    catalog_write_plan = _mapping(summary.get("catalog_write_plan_summary"))
+    preflight = _mapping(summary.get("preflight"))
+    apply_summary = _mapping(summary.get("apply_summary"))
+    apply_accounting = _mapping(apply_summary.get("accounting"))
+    table_row_counts = _int_mapping(summary.get("table_row_counts"))
+    preflight_missing_conflicts = tuple(
+        str(value)
+        for value in preflight.get("missing_conflict_metadata_for_upserts") or ()
+    )
+    return _json_safe_mapping(
+        {
+            "report_version": "pdg-deployment-storage-dashboard.v1",
+            "input_kind": str(summary.get("input_kind") or ""),
+            "apply_requested": bool(summary.get("apply_requested")),
+            "dry_run": bool(summary.get("dry_run")),
+            "wrote": bool(summary.get("wrote")),
+            "storage": {
+                "table_count": len(table_row_counts),
+                "total_row_count": _int(summary.get("total_row_count")),
+                "table_row_counts": table_row_counts,
+                "preflight_table_count": _int(preflight.get("table_count")),
+                "preflight_total_row_count": _int(preflight.get("total_row_count")),
+                "missing_conflict_metadata_count": len(preflight_missing_conflicts),
+                "missing_conflict_metadata_for_upserts": sorted(
+                    preflight_missing_conflicts
+                ),
+            },
+            "catalog": {
+                "catalogable_cdg_count": _int(
+                    catalog_projection.get("catalogable_cdg_count")
+                ),
+                "projected_row_count": _int(
+                    catalog_projection.get("projected_row_count")
+                ),
+                "catalog_projection_row_count": _int(
+                    catalog_write_plan.get("catalog_projection_row_count")
+                ),
+                "merged_row_count": _int(catalog_write_plan.get("merged_row_count")),
+                "operation_kind_counts": _int_mapping(
+                    catalog_projection.get("operation_kind_counts")
+                ),
+                "relationship_kind_counts": _int_mapping(
+                    catalog_projection.get("relationship_kind_counts")
+                ),
+            },
+            "diagnostics": {
+                "diagnostic_count": _int(summary.get("diagnostic_count")),
+                "by_reason": _int_mapping(summary.get("diagnostics_by_reason")),
+                "by_severity": _int_mapping(
+                    catalog_write_plan.get("diagnostics_by_severity")
+                ),
+                "by_table": _int_mapping(catalog_write_plan.get("diagnostics_by_table")),
+            },
+            "apply": {
+                "requested": bool(summary.get("apply_requested")),
+                "performed": bool(summary.get("wrote")),
+                "dry_run": bool(summary.get("dry_run")),
+                "affected_count": _int(apply_accounting.get("affected_count")),
+            },
+        }
+    )
+
+
+def _mapping(value: Any) -> JSONDict:
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _int_mapping(value: Any) -> dict[str, int]:
+    if not isinstance(value, Mapping):
+        return {}
+    return {
+        str(key): _int(item)
+        for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+    }
+
+
+def _int(value: Any) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def _json_safe_mapping(value: Mapping[str, Any]) -> JSONDict:

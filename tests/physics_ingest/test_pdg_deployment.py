@@ -56,6 +56,32 @@ def test_pdg_deployment_bundle_has_deterministic_write_order_with_catalog_tables
         "catalog_symbolic_artifacts": 1,
     }
     assert plan.summary["total_row_count"] == 19
+    assert plan.dashboard_summary["report_version"] == (
+        "pdg-deployment-storage-dashboard.v1"
+    )
+    assert plan.dashboard_summary["storage"] == {
+        "table_count": len(EXPECTED_TABLE_ORDER),
+        "total_row_count": 19,
+        "table_row_counts": {
+            "artifact_cdg_bindings": 4,
+            "artifact_cdg_edges": 1,
+            "artifact_cdg_nodes": 2,
+            "artifact_relationships": 2,
+            "artifact_versions": 1,
+            "artifacts": 1,
+            "catalog_cdg_artifacts": 1,
+            "catalog_cdg_nodes": 2,
+            "catalog_cdg_relationships": 3,
+            "catalog_cdg_versions": 1,
+            "catalog_symbolic_artifacts": 1,
+        },
+        "preflight_table_count": len(EXPECTED_TABLE_ORDER),
+        "preflight_total_row_count": 19,
+        "missing_conflict_metadata_count": 0,
+        "missing_conflict_metadata_for_upserts": [],
+    }
+    assert plan.dashboard_summary["catalog"]["catalogable_cdg_count"] == 1
+    assert plan.dashboard_summary["catalog"]["projected_row_count"] == 8
 
 
 def test_pdg_deployment_catalog_tables_carry_conflict_metadata() -> None:
@@ -105,6 +131,12 @@ def test_pdg_deployment_dry_run_apply_does_not_call_client() -> None:
     assert plan.apply_result.accounting["affected_count"] == 0
     assert plan.summary["dry_run"] is True
     assert plan.summary["wrote"] is False
+    assert plan.dashboard_summary["apply"] == {
+        "requested": True,
+        "performed": False,
+        "dry_run": True,
+        "affected_count": 0,
+    }
 
 
 def test_pdg_deployment_non_dry_run_applies_through_injected_fake_client() -> None:
@@ -122,6 +154,12 @@ def test_pdg_deployment_non_dry_run_applies_through_injected_fake_client() -> No
     assert plan.apply_result is not None
     assert plan.apply_result.accounting["affected_count"] == 19
     assert plan.summary["wrote"] is True
+    assert plan.dashboard_summary["apply"] == {
+        "requested": True,
+        "performed": True,
+        "dry_run": False,
+        "affected_count": 19,
+    }
     assert [call.table for call in client.calls] == list(EXPECTED_TABLE_ORDER)
     assert [call.mode for call in client.calls[-5:]] == ["upsert"] * 5
     assert client.calls[-1].kwargs == {
@@ -144,6 +182,20 @@ def test_pdg_deployment_preserves_missing_envelope_diagnostics() -> None:
         "no_catalogable_cdgs": 1,
         "orphan_cdg_row": 1,
     }
+    assert plan.dashboard_summary["diagnostics"] == {
+        "diagnostic_count": 3,
+        "by_reason": {
+            "missing_version_envelope": 1,
+            "no_catalogable_cdgs": 1,
+            "orphan_cdg_row": 1,
+        },
+        "by_severity": {"warning": 3},
+        "by_table": {
+            "artifact_cdg_nodes": 1,
+            "artifact_versions": 1,
+            "catalog_symbolic_artifacts": 1,
+        },
+    }
     assert "catalog_symbolic_artifacts" not in plan.to_insert_rows()
     assert plan.summary["write_plan_table_order"] == [
         "artifact_relationships",
@@ -160,6 +212,7 @@ def test_pdg_deployment_result_is_json_serializable() -> None:
     decoded = json.loads(encoded)
 
     assert decoded["summary"]["summary_kind"] == "pdg_deployment_storage_plan.v1"
+    assert decoded["dashboard_summary"]["storage"]["total_row_count"] == 19
     assert decoded["preflight"]["total_row_count"] == 19
     assert decoded["deployment_bundle"]["write_plan"]["audit_summary"][
         "total_row_count"
