@@ -52,6 +52,105 @@ jobs:
             tests/test_ingest_monitor.py \
             tests/test_ingester_graph_cache_integration.py
 
+  physics-ingestion-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install physics ingestion validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Run offline physics ingestion validation
+        run: |
+          mkdir -p build/physics_ingestion_validation
+          set +e
+          python scripts/validate_physics_ingestion.py \
+            --skip-atoms \
+            --json \
+            > build/physics_ingestion_validation/report.json
+          validation_status=$?
+          set -e
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report_path = Path("build/physics_ingestion_validation/report.json")
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          summary = report["summary"]
+          inventory = report["inventory"]
+          pdg = inventory["pdg_payloads"]
+          source = inventory["source_checks"]
+
+          lines = [
+              "PHYSICS INGESTION VALIDATION",
+              f"ok: {report['ok']}",
+              (
+                  "inventory: "
+                  f"{pdg['count']} checked-in PDG payloads, "
+                  f"default PDG {'on' if pdg['include_default_pdg'] else 'off'}, "
+                  f"{inventory['symbolic_fixtures']['count']} symbolic fixtures"
+              ),
+              (
+                  "source checks: "
+                  f"execution {'on' if source['include_source_execution'] else 'off'}, "
+                  "adapter coverage "
+                  f"{'on' if source['include_source_adapter_coverage'] else 'off'}, "
+                  "data artifact seeds "
+                  f"{'on' if source['include_source_adapter_data_artifact_seeds'] else 'off'}"
+              ),
+              (
+                  "checks: "
+                  f"{summary['check_count']} total, "
+                  f"{summary['failed_check_count']} failed, "
+                  f"{summary['error_count']} errors"
+              ),
+          ]
+          failed = [check for check in report["checks"] if not check["ok"]]
+          for check in failed[:10]:
+              lines.append(f"- {check['check_id']} failed: {check['subject']}")
+              for issue in check["issues"][:5]:
+                  lines.append(
+                      "  "
+                      f"{issue['severity']} "
+                      f"{issue['reason']} "
+                      f"{issue['table']} "
+                      f"{issue['subject']} "
+                      f"{issue['detail']}".rstrip()
+                  )
+          if len(failed) > 10:
+              lines.append(f"... {len(failed) - 10} additional failed checks omitted")
+
+          summary_text = "\n".join(lines)
+          print(summary_text)
+          Path("build/physics_ingestion_validation/summary.txt").write_text(
+              summary_text + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          exit "$validation_status"
+
+      - name: Upload physics ingestion validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physics-ingestion-validation
+          path: build/physics_ingestion_validation
+          if-no-files-found: error
+
   ingest-regression-broad:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_broad_slice)
     runs-on: ubuntu-latest

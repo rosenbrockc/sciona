@@ -272,21 +272,48 @@ def _validation_report_summary(checks: Sequence[ValidationCheck]) -> dict[str, A
     """Build stable aggregate fields for CI and dashboard consumers."""
 
     failed_checks = tuple(check for check in checks if not check.ok)
+    check_statuses = tuple(_validation_check_status(check) for check in checks)
+    issue_pairs = tuple(
+        (check, issue) for check in checks for issue in check.issues
+    )
     errors = tuple(
         issue
-        for check in checks
-        for issue in check.issues
+        for _, issue in issue_pairs
         if issue.severity == "error"
     )
-    issues = tuple(issue for check in checks for issue in check.issues)
+    warnings = tuple(
+        issue
+        for _, issue in issue_pairs
+        if issue.severity == "warning"
+    )
+    issues = tuple(issue for _, issue in issue_pairs)
 
     return {
         "check_count": len(checks),
         "failed_check_count": len(failed_checks),
+        "issue_count": len(issues),
         "error_count": len(errors),
+        "warning_count": len(warnings),
         "check_ids": [check.check_id for check in checks],
         "failed_check_ids": [check.check_id for check in failed_checks],
+        "checks_by_status": _sorted_grouped_values(
+            zip(check_statuses, (check.check_id for check in checks), strict=True)
+        ),
+        "check_count_by_status": _sorted_count_dict(check_statuses),
+        "check_count_by_check_id": _sorted_count_dict(
+            check.check_id for check in checks
+        ),
+        "issue_count_by_severity": _sorted_count_dict(
+            issue.severity or "unspecified" for issue in issues
+        ),
+        "issue_count_by_reason": _sorted_count_dict(issue.reason for issue in issues),
         "error_count_by_reason": _sorted_count_dict(issue.reason for issue in errors),
+        "issue_count_by_check_id": _sorted_count_dict(
+            check.check_id for check, _ in issue_pairs
+        ),
+        "issue_count_by_subject": _sorted_count_dict(
+            _validation_issue_subject(check, issue) for check, issue in issue_pairs
+        ),
         "failed_count_by_check_id": _sorted_count_dict(
             check.check_id for check in failed_checks
         ),
@@ -296,9 +323,31 @@ def _validation_report_summary(checks: Sequence[ValidationCheck]) -> dict[str, A
     }
 
 
+def _validation_check_status(check: ValidationCheck) -> str:
+    if any(issue.severity == "error" for issue in check.issues):
+        return "failed"
+    if any(issue.severity == "warning" for issue in check.issues):
+        return "warning"
+    return "passed"
+
+
+def _validation_issue_subject(
+    check: ValidationCheck,
+    issue: ValidationIssue,
+) -> str:
+    return issue.subject or check.subject or "unscoped"
+
+
 def _sorted_count_dict(values: Iterable[str]) -> dict[str, int]:
     counts = Counter(values)
     return {key: counts[key] for key in sorted(counts)}
+
+
+def _sorted_grouped_values(values: Iterable[tuple[str, str]]) -> dict[str, list[str]]:
+    groups: dict[str, list[str]] = {}
+    for key, value in values:
+        groups.setdefault(key, []).append(value)
+    return {key: sorted(groups[key]) for key in sorted(groups)}
 
 
 def validate_source_adapter_coverage(

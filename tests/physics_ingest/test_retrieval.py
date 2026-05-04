@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from sciona.physics_ingest.retrieval import (
     SymbolicArtifactCandidate,
     SymbolicRetrievalQuery,
@@ -503,6 +505,81 @@ def test_symbolic_retrieval_report_includes_trust_and_raw_suggestions() -> None:
     assert report["raw_candidate_external_knowledge_suggestions"][0]["candidate_key"] == "raw"
 
 
+def test_symbolic_retrieval_report_includes_json_safe_dashboard_summary() -> None:
+    report = build_symbolic_retrieval_report(
+        {
+            "topology_hash": "topo-dashboard",
+            "data_artifact_dependencies": ["data-1"],
+            "require_data_artifact_dependencies": True,
+        },
+        [
+            {
+                "artifact_id": "reviewed-data",
+                "topology_hash": "topo-dashboard",
+                "dimensional_hash": "dim-dashboard",
+                "mechanism_tags": ["dispersion"],
+                "source_system": "theoria",
+                "source_kind": "curated_publication",
+                "source_domains": ["fluid_dynamics"],
+                "data_artifact_dependencies": ["data-1"],
+                "relationships": [
+                    {
+                        "relationship_kind": "uses_data_artifact",
+                        "verified": True,
+                    }
+                ],
+                "review_status": "human_reviewed",
+            },
+            {
+                "artifact_id": "raw-no-data",
+                "topology_hash": "topo-dashboard",
+                "source_system": "web_seed",
+                "source_kind": "raw_adapter",
+                "review_status": "unreviewed",
+                "candidate_status": "raw_imported",
+            },
+            {
+                "artifact_id": "blocked-no-data",
+                "topology_hash": "topo-dashboard",
+                "relationships": [{"relationship_kind": "derives_from"}],
+                "review_status": "blocked",
+            },
+        ],
+    )
+
+    summary = report["dashboard_summary"]
+    assert json.loads(json.dumps(summary)) == summary
+    assert summary == {
+        "result_count": 3,
+        "eligibility_counts": {"eligible": 1, "ineligible": 2},
+        "trust_status_counts": {
+            "blocked": 1,
+            "human_reviewed": 1,
+            "needs_human": 1,
+        },
+        "source_system_counts": {
+            "<missing>": 1,
+            "theoria": 1,
+            "web_seed": 1,
+        },
+        "source_kind_counts": {
+            "<missing>": 1,
+            "curated_publication": 1,
+            "raw_adapter": 1,
+        },
+        "presence_counts": {
+            "mechanism": {"present": 1, "missing": 2},
+            "source_domain": {"present": 1, "missing": 2},
+            "data_artifact": {"present": 1, "missing": 2},
+            "relationship": {"present": 2, "missing": 1},
+        },
+        "blocker_counts": {
+            "blocked_status": 1,
+            "missing_required_data_artifact_dependencies": 2,
+        },
+    }
+
+
 def test_symbolic_synthesis_report_separates_executable_and_external_knowledge() -> None:
     report = build_symbolic_synthesis_retrieval_report(
         {
@@ -566,6 +643,18 @@ def test_symbolic_synthesis_report_separates_executable_and_external_knowledge()
     assert report["report_kind"] == "symbolic_synthesis_retrieval"
     assert report["executable_candidate_count"] == 1
     assert report["external_knowledge_suggestion_count"] == 1
+    assert json.loads(json.dumps(report["dashboard_summary"])) == report[
+        "dashboard_summary"
+    ]
+    assert report["dashboard_summary"]["synthesis_candidate_counts"] == {
+        "executable": 1,
+        "external": 1,
+        "blocked": 0,
+    }
+    assert report["dashboard_summary"]["blocker_counts"] == {
+        "missing_reviewed_validity_bounds": 1,
+        "not_published_or_reviewed": 1,
+    }
 
     executable = report["executable_candidates"][0]
     assert executable["candidate_key"] == "expr-reviewed-wave"

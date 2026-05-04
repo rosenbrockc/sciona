@@ -484,7 +484,9 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
     assert report["summary"] == {
         "check_count": 6,
         "failed_check_count": 2,
+        "issue_count": 2,
         "error_count": 2,
+        "warning_count": 0,
         "check_ids": [
             "symbolic_fixture_inventory",
             "pdg_payload_fixture_inventory",
@@ -497,9 +499,46 @@ def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> N
             "symbolic_fixture_inventory",
             "pdg_payload_fixture_inventory",
         ],
+        "checks_by_status": {
+            "failed": [
+                "pdg_payload_fixture_inventory",
+                "symbolic_fixture_inventory",
+            ],
+            "passed": [
+                "pdg_publication_graph",
+                "source_adapter_coverage",
+                "source_adapter_data_artifact_seeds",
+                "source_execution_readiness",
+            ],
+        },
+        "check_count_by_status": {
+            "failed": 2,
+            "passed": 4,
+        },
+        "check_count_by_check_id": {
+            "pdg_payload_fixture_inventory": 1,
+            "pdg_publication_graph": 1,
+            "source_adapter_coverage": 1,
+            "source_adapter_data_artifact_seeds": 1,
+            "source_execution_readiness": 1,
+            "symbolic_fixture_inventory": 1,
+        },
+        "issue_count_by_severity": {"error": 2},
+        "issue_count_by_reason": {
+            "missing_pdg_payload_fixture_inventory": 1,
+            "missing_symbolic_fixture_inventory": 1,
+        },
         "error_count_by_reason": {
             "missing_pdg_payload_fixture_inventory": 1,
             "missing_symbolic_fixture_inventory": 1,
+        },
+        "issue_count_by_check_id": {
+            "pdg_payload_fixture_inventory": 1,
+            "symbolic_fixture_inventory": 1,
+        },
+        "issue_count_by_subject": {
+            "pdg_payload_fixtures": 1,
+            "symbolic_publication_fixtures": 1,
         },
         "failed_count_by_check_id": {
             "pdg_payload_fixture_inventory": 1,
@@ -606,10 +645,19 @@ def test_validation_report_can_skip_source_execution() -> None:
     assert report["summary"] == {
         "check_count": 0,
         "failed_check_count": 0,
+        "issue_count": 0,
         "error_count": 0,
+        "warning_count": 0,
         "check_ids": [],
         "failed_check_ids": [],
+        "checks_by_status": {},
+        "check_count_by_status": {},
+        "check_count_by_check_id": {},
+        "issue_count_by_severity": {},
+        "issue_count_by_reason": {},
         "error_count_by_reason": {},
+        "issue_count_by_check_id": {},
+        "issue_count_by_subject": {},
         "failed_count_by_check_id": {},
         "issue_count_by_table": {},
     }
@@ -687,17 +735,90 @@ def test_validation_report_summary_includes_dashboard_rollups() -> None:
     assert report["summary"] == {
         "check_count": 1,
         "failed_check_count": 1,
+        "issue_count": 2,
         "error_count": 2,
+        "warning_count": 0,
         "check_ids": ["source_adapter_coverage"],
         "failed_check_ids": ["source_adapter_coverage"],
+        "checks_by_status": {"failed": ["source_adapter_coverage"]},
+        "check_count_by_status": {"failed": 1},
+        "check_count_by_check_id": {"source_adapter_coverage": 1},
+        "issue_count_by_severity": {"error": 2},
+        "issue_count_by_reason": {
+            "source_adapter_coverage_missing_adapter_module": 1,
+            "source_adapter_coverage_missing_builder_readiness_contract": 1,
+        },
         "error_count_by_reason": {
             "source_adapter_coverage_missing_adapter_module": 1,
             "source_adapter_coverage_missing_builder_readiness_contract": 1,
+        },
+        "issue_count_by_check_id": {"source_adapter_coverage": 2},
+        "issue_count_by_subject": {
+            "source_adapter_coverage:synthetic_missing_module.backfill": 2
         },
         "failed_count_by_check_id": {"source_adapter_coverage": 1},
         "issue_count_by_table": {"source_adapter_coverage": 2},
     }
     json.dumps(report, sort_keys=True)
+
+
+def test_validation_report_summary_counts_warning_issues() -> None:
+    checks = (
+        validation_module.ValidationCheck(
+            check_id="synthetic_warning_check",
+            subject="synthetic:warning",
+            issues=(
+                validation_module.ValidationIssue(
+                    reason="synthetic_warning",
+                    severity="warning",
+                    table="synthetic_table",
+                    subject="synthetic:warning:row",
+                ),
+            ),
+        ),
+        validation_module.ValidationCheck(
+            check_id="synthetic_error_check",
+            subject="synthetic:error",
+            issues=(
+                validation_module.ValidationIssue(
+                    reason="synthetic_error",
+                    severity="error",
+                    table="synthetic_table",
+                ),
+            ),
+        ),
+    )
+
+    summary = validation_module._validation_report_summary(checks)
+
+    assert summary["failed_check_count"] == 1
+    assert summary["issue_count"] == 2
+    assert summary["error_count"] == 1
+    assert summary["warning_count"] == 1
+    assert summary["checks_by_status"] == {
+        "failed": ["synthetic_error_check"],
+        "warning": ["synthetic_warning_check"],
+    }
+    assert summary["check_count_by_status"] == {"failed": 1, "warning": 1}
+    assert summary["check_count_by_check_id"] == {
+        "synthetic_error_check": 1,
+        "synthetic_warning_check": 1,
+    }
+    assert summary["issue_count_by_severity"] == {"error": 1, "warning": 1}
+    assert summary["issue_count_by_reason"] == {
+        "synthetic_error": 1,
+        "synthetic_warning": 1,
+    }
+    assert summary["error_count_by_reason"] == {"synthetic_error": 1}
+    assert summary["issue_count_by_check_id"] == {
+        "synthetic_error_check": 1,
+        "synthetic_warning_check": 1,
+    }
+    assert summary["issue_count_by_subject"] == {
+        "synthetic:error": 1,
+        "synthetic:warning:row": 1,
+    }
+    assert summary["issue_count_by_table"] == {"synthetic_table": 2}
 
 
 def test_source_adapter_data_artifact_seed_quality_accepts_default_bundles() -> None:

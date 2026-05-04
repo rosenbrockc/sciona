@@ -25,6 +25,11 @@ The current pipeline is split at the storage boundary:
   stop at a side-effect-free plan, or execute through an injected client.
 - `sciona.physics_ingest.cli` provides JSON-serializable dry-run report helpers
   for decoded payloads.
+- `sciona.physics_ingest.validation` provides the offline validation report used
+  to check symbolic fixtures, PDG-derived CDG rows, source execution readiness,
+  adapter coverage, and data-artifact seed shape without Supabase.
+- `sciona.physics_ingest.retrieval` provides side-effect-free symbolic
+  retrieval and synthesis ranking over already-fetched catalog/document rows.
 
 Publication table order is:
 
@@ -282,6 +287,5 @@ ingestion roadmap. Remaining work includes:
   `blocked`, and publication trust gates;
 - add bulk backfill orchestration, coverage dashboards, and replay/audit
   artifacts for large ingestion waves;
-- extend retrieval and synthesis ranking to use topology, mechanism,
-  dimensions, validity, provenance, and relationship edges.
-
+- connect the side-effect-free retrieval and synthesis ranking surface to
+  production catalog/RPC fetches and runtime planner calls.

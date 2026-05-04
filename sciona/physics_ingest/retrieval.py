@@ -7,6 +7,7 @@ pass ordinary dictionaries into this module.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -20,6 +21,17 @@ _HUMAN_REVIEWED_STATUSES = {"human_reviewed", "published", "approved"}
 _NEEDS_HUMAN_STATUSES = {"needs_human"}
 _PUBLISHED_STATUSES = {"published", "approved"}
 _RAW_STATUSES = {"", "raw_imported", "unreviewed", "parsed"}
+_SUMMARY_MISSING_KEY = "<missing>"
+_COMPILER_BLOCKER_KINDS = (
+    "blocked_status",
+    "not_published_or_reviewed",
+    "missing_dimensional_metadata",
+    "missing_required_validity_bounds",
+    "missing_reviewed_validity_bounds",
+    "missing_required_validity_match",
+    "missing_required_data_artifact_dependencies",
+    "raw_excluded_by_policy",
+)
 _VERIFIED_RELATIONSHIP_KINDS = {
     "same_math_topology_as",
     "physical_grounding_of",
@@ -777,6 +789,7 @@ def build_symbolic_retrieval_report(
     suggestions = suggest_raw_candidate_external_knowledge(candidate_tuple, request)
     return {
         "result_count": len(results),
+        "dashboard_summary": _ranked_dashboard_summary(results),
         "results": [result.to_dict() for result in results],
         "raw_candidate_external_knowledge_suggestions": [
             suggestion.to_dict() for suggestion in suggestions
@@ -833,23 +846,114 @@ def build_symbolic_synthesis_retrieval_report(
         "result_count": len(results),
         "executable_candidate_count": len(executable),
         "external_knowledge_suggestion_count": len(external_suggestions),
+        "dashboard_summary": _ranked_dashboard_summary(
+            results,
+            synthesis_categories={
+                "executable": executable,
+                "external": external_suggestions,
+                "blocked": blocked,
+            },
+        ),
         "executable_candidates": executable,
         "external_knowledge_suggestions": external_suggestions,
         "blocked_candidates": blocked,
         "compiler_contract": {
             "required_dimensional_checks": _query_dimensional_checks(request),
-            "blocker_kinds": [
-                "blocked_status",
-                "not_published_or_reviewed",
-                "missing_dimensional_metadata",
-                "missing_required_validity_bounds",
-                "missing_reviewed_validity_bounds",
-                "missing_required_validity_match",
-                "missing_required_data_artifact_dependencies",
-                "raw_excluded_by_policy",
-            ],
+            "blocker_kinds": list(_COMPILER_BLOCKER_KINDS),
         },
     }
+
+
+def _ranked_dashboard_summary(
+    results: Sequence[SymbolicRankingResult],
+    *,
+    synthesis_categories: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Build compact, deterministic, JSON-safe rollups for dashboard cards."""
+
+    candidate_count = len(results)
+    summary: dict[str, Any] = {
+        "result_count": candidate_count,
+        "eligibility_counts": {
+            "eligible": sum(1 for result in results if result.eligible),
+            "ineligible": sum(1 for result in results if not result.eligible),
+        },
+        "trust_status_counts": _sorted_counts(
+            result.candidate.trust_status for result in results
+        ),
+        "source_system_counts": _sorted_counts(
+            _summary_value(result.candidate.source_system) for result in results
+        ),
+        "source_kind_counts": _sorted_counts(
+            _summary_value(result.candidate.source_kind) for result in results
+        ),
+        "presence_counts": {
+            "mechanism": _presence_count(
+                result.candidate.mechanism_tags for result in results
+            ),
+            "source_domain": _presence_count(
+                result.candidate.source_domains for result in results
+            ),
+            "data_artifact": _presence_count(
+                result.candidate.data_artifact_dependencies for result in results
+            ),
+            "relationship": _presence_count(
+                result.candidate.relationships for result in results
+            ),
+        },
+        "blocker_counts": _ranked_blocker_counts(results),
+    }
+    if synthesis_categories is not None:
+        summary["synthesis_candidate_counts"] = {
+            "executable": len(synthesis_categories.get("executable", ())),
+            "external": len(synthesis_categories.get("external", ())),
+            "blocked": len(synthesis_categories.get("blocked", ())),
+        }
+        summary["blocker_counts"] = _synthesis_blocker_counts(
+            synthesis_categories.values()
+        )
+    return summary
+
+
+def _ranked_blocker_counts(
+    results: Sequence[SymbolicRankingResult],
+) -> dict[str, int]:
+    counts: Counter[str] = Counter()
+    for result in results:
+        counts.update(
+            reason for reason in result.reasons if reason in _COMPILER_BLOCKER_KINDS
+        )
+    return _sorted_counts(counts.elements())
+
+
+def _presence_count(values: Iterable[Sequence[Any]]) -> dict[str, int]:
+    total = 0
+    present = 0
+    for value in values:
+        total += 1
+        if value:
+            present += 1
+    return {"present": present, "missing": total - present}
+
+
+def _synthesis_blocker_counts(
+    category_payloads: Iterable[Sequence[Mapping[str, Any]]],
+) -> dict[str, int]:
+    counts: Counter[str] = Counter()
+    for payloads in category_payloads:
+        for payload in payloads:
+            contract = _mapping(payload.get("compiler_contract"))
+            counts.update(_strings(contract.get("blockers")))
+    return _sorted_counts(counts.elements())
+
+
+def _summary_value(value: str) -> str:
+    return value if value else _SUMMARY_MISSING_KEY
+
+
+def _sorted_counts(values: Iterable[str]) -> dict[str, int]:
+    counts = Counter(value for value in values if value)
+    return {key: counts[key] for key in sorted(counts)}
 
 
 def _validity_score(
