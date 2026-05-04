@@ -158,6 +158,92 @@ def test_retrieval_run_plan_replay_keys_are_deterministic() -> None:
     ]
 
 
+def test_retrieval_run_step_request_envelope_is_json_safe_and_deterministic() -> None:
+    first = build_physics_source_retrieval_run_plan(
+        job_id="wikidata_equation_candidates.backfill",
+        limit=25,
+    )
+    second = build_physics_source_retrieval_run_plan(
+        job_id="wikidata_equation_candidates.backfill",
+        limit=25,
+    )
+
+    step = first.steps[0]
+    envelope = step.request_envelope
+    encoded = json.dumps(envelope, sort_keys=True)
+    decoded = json.loads(encoded)
+
+    assert decoded == envelope
+    assert envelope == second.steps[0].request_envelope
+    assert envelope["envelope_version"] == "physics-source-request-envelope.v1"
+    assert envelope["method"] == step.method == "POST"
+    assert envelope["url"] == step.url == "https://query.wikidata.org/sparql"
+    assert envelope["headers"] == step.headers
+    assert envelope["params"] == step.params == {"LIMIT": 25}
+    assert envelope["body_template"] == step.body_template
+    assert envelope["paging"] == step.paging
+    assert envelope["auth"] == {
+        "requires_auth": False,
+        "auth_hint": "",
+    }
+    assert envelope["storage"] == {
+        "snapshot_key": step.snapshot_key,
+        "target_adapter_input": "json_records",
+        "storage_required": True,
+        "write_required": False,
+        "side_effect_free": True,
+    }
+    assert envelope["provenance"] == step.provenance
+    assert envelope["retry_policy"] == step.retry_policy
+    assert envelope["rate_limit"] == step.rate_limit
+    assert envelope["replay_key"] == step.replay_key
+    assert envelope["snapshot_key"] == step.snapshot_key
+    assert envelope["adapter_target"] == {
+        "module": "sciona.physics_ingest.sources.wikidata",
+        "version": "0.1.0",
+        "target_input": "json_records",
+    }
+    assert envelope["execution"] == {
+        "mode": "network",
+        "dry_run": True,
+        "io_performed": False,
+        "network_required": True,
+        "network_io_allowed": False,
+        "manual_source": False,
+    }
+
+
+def test_manual_retrieval_request_envelope_remains_non_network_manual() -> None:
+    plan = build_physics_source_retrieval_run_plan(
+        job_id="foundational_manual_seed.backfill",
+    )
+
+    step = plan.steps[0]
+    envelope = step.request_envelope
+
+    assert step.method == "MANUAL"
+    assert step.url == "manual://sciona.physics_ingest/foundational_physics/v1"
+    assert envelope["method"] == "MANUAL"
+    assert envelope["url"].startswith("manual://")
+    assert envelope["execution"] == {
+        "mode": "manual",
+        "dry_run": True,
+        "io_performed": False,
+        "network_required": False,
+        "network_io_allowed": False,
+        "manual_source": True,
+    }
+    assert envelope["storage"]["storage_required"] is False
+    assert envelope["storage"]["write_required"] is False
+    assert envelope["retry_policy"]["max_attempts"] == 1
+    assert envelope["rate_limit"]["requests_per_second"] == 0.0
+    assert envelope["adapter_target"] == {
+        "module": "sciona.physics_ingest.sources.foundational_physics",
+        "version": "wave1.foundational_physics_backfill.v1",
+        "target_input": "curated_seed_records",
+    }
+
+
 def test_retrieval_run_plan_warns_on_incomplete_endpoint_or_adapter_metadata() -> None:
     manifest = build_physics_source_retrieval_manifest()
     endpoint = manifest.endpoints[0]

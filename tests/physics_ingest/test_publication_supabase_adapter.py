@@ -7,6 +7,7 @@ from typing import Any
 from sciona.physics_ingest.supabase_adapter import (
     PostgrestPublicationTableClient,
     adapt_publication_supabase_client,
+    preflight_publication_supabase_write,
 )
 from sciona.physics_ingest.write_plan import PublicationWritePlan
 from sciona.physics_ingest.writer import PublicationWriter
@@ -77,6 +78,85 @@ def test_adapter_allows_explicit_conflict_metadata_for_unknown_tables() -> None:
             rows=({"source_id": "src", "version": 1},),
             kwargs={"on_conflict": "source_id,version"},
         )
+    ]
+
+
+def test_preflight_reports_plan_modes_conflicts_and_missing_upsert_metadata() -> None:
+    plan = PublicationWritePlan.from_rows(
+        {
+            "artifact_symbolic_expressions": [
+                {"expression_id": "expr-1"},
+                {"expression_id": "expr-2"},
+            ],
+            "custom_publications": [{"source_id": "src"}],
+        },
+        table_modes={
+            "artifact_symbolic_expressions": "upsert",
+            "custom_publications": "upsert",
+        },
+    )
+
+    report = preflight_publication_supabase_write(plan)
+
+    assert report.missing_conflict_metadata_for_upserts == ("custom_publications",)
+    assert report.to_dict() == {
+        "table_count": 2,
+        "total_row_count": 3,
+        "tables": [
+            {
+                "table": "artifact_symbolic_expressions",
+                "mode": "upsert",
+                "row_count": 2,
+                "conflict_keys": ["expression_id"],
+                "missing_conflict_metadata": False,
+            },
+            {
+                "table": "custom_publications",
+                "mode": "upsert",
+                "row_count": 1,
+                "conflict_keys": [],
+                "missing_conflict_metadata": True,
+            },
+        ],
+        "missing_conflict_metadata_for_upserts": ["custom_publications"],
+        "adapter_capabilities": {
+            "imports_supabase": False,
+            "requires_injected_client": True,
+            "writes_during_preflight": False,
+            "supports_insert": True,
+            "supports_upsert": True,
+            "supports_upsert_on_conflict": True,
+        },
+    }
+
+
+def test_preflight_accepts_rows_modes_and_explicit_conflict_metadata() -> None:
+    rows = {
+        "custom_publications": [{"source_id": "src", "version": 1}],
+        "physics_ingest_snapshots": [{"snapshot_id": "snap-1"}],
+    }
+
+    report = preflight_publication_supabase_write(
+        rows,
+        table_modes={"custom_publications": "upsert"},
+        conflict_keys_by_table={"custom_publications": ("source_id", "version")},
+    )
+
+    assert [table.to_dict() for table in report.tables] == [
+        {
+            "table": "physics_ingest_snapshots",
+            "mode": "insert",
+            "row_count": 1,
+            "conflict_keys": ["snapshot_id"],
+            "missing_conflict_metadata": False,
+        },
+        {
+            "table": "custom_publications",
+            "mode": "upsert",
+            "row_count": 1,
+            "conflict_keys": ["source_id", "version"],
+            "missing_conflict_metadata": False,
+        },
     ]
 
 

@@ -221,6 +221,7 @@ class RetrievalRunStep:
     target_adapter_input: str
     dry_run: bool
     replay_key: str
+    request_envelope: Mapping[str, Any]
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> JSONDict:
@@ -806,6 +807,28 @@ def _run_step_for_job(
         "cursor": job.cursor,
         "limit": effective_limit,
     }
+    body_template = dict(endpoint.body_template)
+    headers = dict(endpoint.headers)
+    rate_limit = endpoint.rate_limit.to_dict()
+    retry_policy = endpoint.retry_policy.to_dict()
+    provenance = {
+        "license_expression": endpoint.license_expression,
+        "provenance_summary": endpoint.provenance_summary,
+    }
+    auth = {
+        "requires_auth": endpoint.requires_auth,
+        "auth_hint": endpoint.auth_hint,
+    }
+    storage = _storage_hint(
+        snapshot_key=job.snapshot_key,
+        target_adapter_input=job.target_adapter_input,
+        manual_source=_is_manual_endpoint(method=endpoint.method, url=endpoint.url),
+    )
+    adapter_target = {
+        "module": endpoint.adapter_name,
+        "version": endpoint.adapter_version,
+        "target_input": job.target_adapter_input,
+    }
     warnings = _run_step_warnings(job=job, endpoint=endpoint)
     replay_payload = {
         "job_id": job.job_id,
@@ -816,14 +839,36 @@ def _run_step_for_job(
         "phase7_rings": job.phase7_rings,
         "method": endpoint.method,
         "url": endpoint.url,
+        "headers": headers,
         "params": params,
-        "body_template": endpoint.body_template,
+        "body_template": body_template,
         "paging": paging,
-        "adapter_module": endpoint.adapter_name,
-        "adapter_version": endpoint.adapter_version,
-        "target_adapter_input": job.target_adapter_input,
+        "auth": auth,
+        "storage": storage,
+        "provenance": provenance,
+        "retry_policy": retry_policy,
+        "rate_limit": rate_limit,
+        "adapter_target": adapter_target,
         "dry_run": dry_run,
     }
+    replay_key = f"physics-source-retrieval:{stable_payload_sha256(replay_payload)}"
+    request_envelope = _request_envelope(
+        method=endpoint.method,
+        url=endpoint.url,
+        headers=headers,
+        params=params,
+        body_template=body_template,
+        paging=paging,
+        auth=auth,
+        storage=storage,
+        provenance=provenance,
+        retry_policy=retry_policy,
+        rate_limit=rate_limit,
+        replay_key=replay_key,
+        snapshot_key=job.snapshot_key,
+        adapter_target=adapter_target,
+        dry_run=dry_run,
+    )
     step = RetrievalRunStep(
         step_index=step_index,
         job_id=job.job_id,
@@ -838,23 +883,21 @@ def _run_step_for_job(
         url=endpoint.url,
         endpoint_kind=endpoint.endpoint_kind,
         params=params,
-        body_template=dict(endpoint.body_template),
+        body_template=body_template,
         paging=paging,
-        headers=dict(endpoint.headers),
+        headers=headers,
         content_type=endpoint.content_type,
         requires_auth=endpoint.requires_auth,
         auth_hint=endpoint.auth_hint,
-        rate_limit=endpoint.rate_limit.to_dict(),
-        retry_policy=endpoint.retry_policy.to_dict(),
-        provenance={
-            "license_expression": endpoint.license_expression,
-            "provenance_summary": endpoint.provenance_summary,
-        },
+        rate_limit=rate_limit,
+        retry_policy=retry_policy,
+        provenance=provenance,
         adapter_module=endpoint.adapter_name,
         adapter_version=endpoint.adapter_version,
         target_adapter_input=job.target_adapter_input,
         dry_run=dry_run,
-        replay_key=f"physics-source-retrieval:{stable_payload_sha256(replay_payload)}",
+        replay_key=replay_key,
+        request_envelope=request_envelope,
         warnings=warnings,
     )
     diagnostics = tuple(
@@ -867,6 +910,73 @@ def _run_step_for_job(
         for warning in warnings
     )
     return step, diagnostics
+
+
+def _request_envelope(
+    *,
+    method: str,
+    url: str,
+    headers: Mapping[str, Any],
+    params: Mapping[str, Any],
+    body_template: Mapping[str, Any],
+    paging: Mapping[str, Any],
+    auth: Mapping[str, Any],
+    storage: Mapping[str, Any],
+    provenance: Mapping[str, Any],
+    retry_policy: Mapping[str, Any],
+    rate_limit: Mapping[str, Any],
+    replay_key: str,
+    snapshot_key: str,
+    adapter_target: Mapping[str, Any],
+    dry_run: bool,
+) -> JSONDict:
+    manual_source = _is_manual_endpoint(method=method, url=url)
+    return jsonable(
+        {
+            "envelope_version": "physics-source-request-envelope.v1",
+            "method": method,
+            "url": url,
+            "headers": headers,
+            "params": params,
+            "body_template": body_template,
+            "paging": paging,
+            "auth": auth,
+            "storage": storage,
+            "provenance": provenance,
+            "retry_policy": retry_policy,
+            "rate_limit": rate_limit,
+            "replay_key": replay_key,
+            "snapshot_key": snapshot_key,
+            "adapter_target": adapter_target,
+            "execution": {
+                "mode": "manual" if manual_source else "network",
+                "dry_run": dry_run,
+                "io_performed": False,
+                "network_required": not manual_source,
+                "network_io_allowed": False if manual_source else not dry_run,
+                "manual_source": manual_source,
+            },
+        }
+    )
+
+
+def _storage_hint(
+    *,
+    snapshot_key: str,
+    target_adapter_input: str,
+    manual_source: bool,
+) -> JSONDict:
+    return {
+        "snapshot_key": snapshot_key,
+        "target_adapter_input": target_adapter_input,
+        "storage_required": not manual_source,
+        "write_required": False,
+        "side_effect_free": True,
+    }
+
+
+def _is_manual_endpoint(*, method: str, url: str) -> bool:
+    return method == "MANUAL" or url.startswith("manual://")
 
 
 def _request_params(

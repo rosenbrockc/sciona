@@ -54,6 +54,14 @@ class NormalizedExpressionDraft:
         return self.row.to_insert_dict()
 
 
+@dataclass(frozen=True)
+class QudtAssistedCandidate:
+    """Candidate copy enriched with reviewable QUDT dimension diagnostics."""
+
+    candidate: dict[str, Any]
+    diagnostics: tuple[NormalizationDiagnostic, ...] = ()
+
+
 def normalize_candidate_expression_draft(
     candidate: Any,
     *,
@@ -71,6 +79,149 @@ def normalize_candidate_expression_draft(
     diagnostics in ``evidence_json``.
     """
 
+    return _normalize_candidate_expression_draft(
+        candidate,
+        artifact_id=artifact_id,
+        version_id=version_id,
+        expression_kind=expression_kind,
+        expression_role=expression_role,
+        require_dimensions=require_dimensions,
+        initial_diagnostics=(),
+    )
+
+
+def normalize_candidate_expression_draft_with_qudt_dimensions(
+    candidate: Any,
+    *,
+    qudt_records: Iterable[Any],
+    artifact_id: str,
+    version_id: str,
+    expression_kind: str = "equation",
+    expression_role: str = "primary",
+    require_dimensions: bool = False,
+) -> NormalizedExpressionDraft:
+    """Normalize one candidate after side-effect-free QUDT dimension resolution.
+
+    Only uniquely resolved QUDT records fill missing variable dimensions.  Empty
+    or unknown placeholders that QUDT cannot resolve are omitted from the copied
+    candidate before normalization so they remain reviewable as missing
+    dimensions instead of being interpreted as dimensionless.
+    """
+
+    assisted = resolve_candidate_variable_dimensions_from_qudt(
+        candidate,
+        qudt_records=qudt_records,
+    )
+    return _normalize_candidate_expression_draft(
+        assisted.candidate,
+        artifact_id=artifact_id,
+        version_id=version_id,
+        expression_kind=expression_kind,
+        expression_role=expression_role,
+        require_dimensions=require_dimensions,
+        initial_diagnostics=assisted.diagnostics,
+    )
+
+
+def normalize_candidate_expression_drafts_with_qudt_dimensions(
+    candidates: Iterable[Any],
+    *,
+    qudt_records: Iterable[Any],
+    artifact_id: str,
+    version_id: str,
+    expression_kind: str = "equation",
+    expression_role: str = "primary",
+    require_dimensions: bool = False,
+) -> tuple[NormalizedExpressionDraft, ...]:
+    """Normalize candidate rows after QUDT-assisted dimension resolution."""
+
+    records = tuple(qudt_records)
+    return tuple(
+        normalize_candidate_expression_draft_with_qudt_dimensions(
+            candidate,
+            qudt_records=records,
+            artifact_id=artifact_id,
+            version_id=version_id,
+            expression_kind=expression_kind,
+            expression_role=expression_role,
+            require_dimensions=require_dimensions,
+        )
+        for candidate in candidates
+    )
+
+
+def resolve_candidate_variable_dimensions_from_qudt(
+    candidate: Any,
+    *,
+    qudt_records: Iterable[Any],
+) -> QudtAssistedCandidate:
+    """Return a candidate copy with uniquely resolved QUDT dimensions applied."""
+
+    source = _as_mapping(candidate)
+    data = dict(source)
+    variable_key = _first_present_key(data, "variable_hints", "variables", "symbols")
+    if variable_key is None:
+        return QudtAssistedCandidate(candidate=data)
+
+    records = _coerce_qudt_records(qudt_records)
+    variables, restore = _copy_variable_hints(data[variable_key])
+    diagnostics: list[NormalizationDiagnostic] = []
+    for variable in variables:
+        symbol = _text(_first_present(variable, "symbol", "name", "id"))
+        if not symbol:
+            continue
+        if not _is_missing_dimension_hint(
+            _first_present(variable, "dim_signature", "dimension", "dimensions")
+        ):
+            continue
+
+        resolution = _resolve_qudt_record_for_variable(variable, records)
+        if resolution["status"] == "resolved":
+            record = resolution["record"]
+            dimension = record.dimension
+            variable["dim_signature"] = dimension.compact
+            if record.resource_kind == "unit":
+                variable.setdefault("unit_uri", record.source_entity_uri)
+                variable.setdefault("unit_label", record.source_label)
+            if record.resource_kind == "quantity_kind":
+                variable.setdefault("qudt_uri", record.source_entity_uri)
+                variable.setdefault("quantity_kind", record.source_label)
+            diagnostics.append(
+                NormalizationDiagnostic(
+                    code="qudt_dimension_resolved",
+                    message=(
+                        f"Resolved QUDT dimension for symbol {symbol!r}: "
+                        f"{dimension.compact}"
+                    ),
+                    symbol=symbol,
+                )
+            )
+            continue
+
+        _drop_dimension_hint(variable)
+        diagnostics.append(
+            NormalizationDiagnostic(
+                code=f"qudt_dimension_{resolution['status']}",
+                message=str(resolution["message"]),
+                severity="warning",
+                symbol=symbol,
+            )
+        )
+
+    data[variable_key] = restore(variables)
+    return QudtAssistedCandidate(candidate=data, diagnostics=tuple(diagnostics))
+
+
+def _normalize_candidate_expression_draft(
+    candidate: Any,
+    *,
+    artifact_id: str,
+    version_id: str,
+    expression_kind: str,
+    expression_role: str,
+    require_dimensions: bool,
+    initial_diagnostics: Iterable[NormalizationDiagnostic],
+) -> NormalizedExpressionDraft:
     source = _as_mapping(candidate)
     raw_formula = _text(_first_present(source, "raw_formula", "formula", "expression"))
     raw_format = _normalize_formula_format(
@@ -83,7 +234,7 @@ def normalize_candidate_expression_draft(
             )
         )
     )
-    diagnostics: list[NormalizationDiagnostic] = []
+    diagnostics: list[NormalizationDiagnostic] = list(initial_diagnostics)
     normalized_input = _candidate_for_symbolic_normalizer(
         source,
         raw_formula=raw_formula,
@@ -173,6 +324,155 @@ def normalize_candidate_expression_drafts(
         )
         for candidate in candidates
     )
+
+
+def _coerce_qudt_records(records: Iterable[Any]) -> tuple[Any, ...]:
+    from sciona.physics_ingest.sources.qudt import (
+        QudtResourceRecord,
+        extract_qudt_resource_record,
+    )
+
+    coerced = []
+    for record in records:
+        if isinstance(record, QudtResourceRecord):
+            coerced.append(record)
+        elif isinstance(record, Mapping):
+            coerced.append(extract_qudt_resource_record(dict(record)))
+    return tuple(coerced)
+
+
+def _copy_variable_hints(value: Any) -> tuple[list[dict[str, Any]], Any]:
+    if isinstance(value, Mapping):
+        original_keys: list[str] = []
+        variables: list[dict[str, Any]] = []
+        for symbol, raw_variable in value.items():
+            original_keys.append(str(symbol))
+            if isinstance(raw_variable, Mapping):
+                variable = dict(raw_variable)
+            elif isinstance(raw_variable, str):
+                variable = {"dim_signature": raw_variable}
+            else:
+                variable = {}
+            variable.setdefault("symbol", str(symbol))
+            variables.append(variable)
+
+        def restore_mapping(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+            return {
+                symbol: dict(item)
+                for symbol, item in zip(original_keys, items, strict=True)
+            }
+
+        return variables, restore_mapping
+
+    if isinstance(value, list | tuple):
+        variables = []
+        for raw_variable in value:
+            if isinstance(raw_variable, Mapping):
+                variables.append(dict(raw_variable))
+            else:
+                variables.append({"symbol": str(raw_variable)})
+
+        def restore_list(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+            return [dict(item) for item in items]
+
+        return variables, restore_list
+
+    return [], lambda items: list(items)
+
+
+def _is_missing_dimension_hint(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip().casefold() in {"", "?", "unknown", "unresolved"}
+    is_unknown = getattr(value, "is_unknown", False)
+    return bool(is_unknown)
+
+
+def _drop_dimension_hint(variable: dict[str, Any]) -> None:
+    for key in ("dim_signature", "dimension", "dimensions"):
+        variable.pop(key, None)
+
+
+def _resolve_qudt_record_for_variable(
+    variable: Mapping[str, Any],
+    records: tuple[Any, ...],
+) -> dict[str, Any]:
+    for matches in _qudt_match_tiers(variable, records):
+        if not matches:
+            continue
+        resolved = [record for record in matches if record.dimension is not None]
+        compact_dimensions = sorted({record.dimension.compact for record in resolved})
+        symbol = _text(_first_present(variable, "symbol", "name", "id"))
+        if len(compact_dimensions) == 1:
+            return {"status": "resolved", "record": resolved[0]}
+        if len(compact_dimensions) > 1:
+            return {
+                "status": "ambiguous",
+                "message": (
+                    f"QUDT matches for symbol {symbol!r} have conflicting "
+                    f"dimensions: {', '.join(compact_dimensions)}"
+                ),
+            }
+        return {
+            "status": "unresolved",
+            "message": f"QUDT matches for symbol {symbol!r} have no resolved dimension",
+        }
+    symbol = _text(_first_present(variable, "symbol", "name", "id"))
+    return {
+        "status": "unresolved",
+        "message": f"No QUDT dimension match for symbol {symbol!r}",
+    }
+
+
+def _qudt_match_tiers(
+    variable: Mapping[str, Any],
+    records: tuple[Any, ...],
+) -> tuple[list[Any], list[Any]]:
+    unit_uri = _casefolded(_first_present(variable, "unit_uri", "unit_qudt_uri"))
+    quantity_kind_uri = _casefolded(
+        _first_present(variable, "quantity_kind_uri", "qudt_uri")
+    )
+    uri_matches = []
+    for record in records:
+        record_uri = _casefolded(record.source_entity_uri)
+        record_unit_uris = {_casefolded(uri) for uri in record.unit_uris}
+        record_quantity_kind_uris = {
+            _casefolded(uri) for uri in record.quantity_kind_uris
+        }
+        if unit_uri and (unit_uri == record_uri or unit_uri in record_unit_uris):
+            uri_matches.append(record)
+        elif quantity_kind_uri and (
+            quantity_kind_uri == record_uri
+            or quantity_kind_uri in record_quantity_kind_uris
+        ):
+            uri_matches.append(record)
+
+    symbol_candidates = {
+        _casefolded(_first_present(variable, key))
+        for key in (
+            "source_symbol",
+            "symbol",
+            "symbol_name",
+            "name",
+            "unit",
+            "unit_label",
+            "quantity_kind",
+            "quantity_kind_label",
+        )
+    }
+    symbol_candidates.discard("")
+    label_matches = []
+    for record in records:
+        labels = {
+            _casefolded(record.symbol),
+            _casefolded(record.source_label),
+            _casefolded(record.source_entity_uri.rsplit("/", 1)[-1]),
+        }
+        labels.discard("")
+        if symbol_candidates & labels:
+            label_matches.append(record)
+    return uri_matches, label_matches
 
 
 def _candidate_for_symbolic_normalizer(
@@ -287,9 +587,7 @@ def _replace_first_frac(text: str) -> str:
         return text
     denominator, denominator_end = _balanced_group(text, denominator_start)
     return (
-        text[:start]
-        + f"(({numerator})/({denominator}))"
-        + text[denominator_end + 1 :]
+        text[:start] + f"(({numerator})/({denominator}))" + text[denominator_end + 1 :]
     )
 
 
@@ -468,7 +766,9 @@ def _parse_confidence(
 def _has_reviewable_diagnostics(
     diagnostics: Iterable[NormalizationDiagnostic],
 ) -> bool:
-    return any(diagnostic.severity in {"warning", "error"} for diagnostic in diagnostics)
+    return any(
+        diagnostic.severity in {"warning", "error"} for diagnostic in diagnostics
+    )
 
 
 def _normalize_formula_format(value: str) -> str:
@@ -529,8 +829,19 @@ def _first_present(data: Mapping[str, Any], *keys: str) -> Any:
     return None
 
 
+def _first_present_key(data: Mapping[str, Any], *keys: str) -> str | None:
+    for key in keys:
+        if key in data and data[key] is not None:
+            return key
+    return None
+
+
 def _text(value: Any) -> str:
     return "" if value is None else str(value)
+
+
+def _casefolded(value: Any) -> str:
+    return str(value or "").strip().casefold()
 
 
 def _ensure_sympy() -> Any:

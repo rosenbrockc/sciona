@@ -8,13 +8,80 @@ already-created client with ``.table(name).insert(...).execute()`` and
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
 from typing import Any
 
 from sciona.physics_ingest.write_plan import (
     CONFLICT_KEYS_BY_TABLE,
     PublicationWritePlan,
+    WriteMode,
 )
+
+
+POSTGREST_PUBLICATION_ADAPTER_CAPABILITIES: Mapping[str, bool] = {
+    "imports_supabase": False,
+    "requires_injected_client": True,
+    "writes_during_preflight": False,
+    "supports_insert": True,
+    "supports_upsert": True,
+    "supports_upsert_on_conflict": True,
+}
+
+
+@dataclass(frozen=True)
+class PostgrestPublicationWritePreflightTable:
+    """Side-effect-free write metadata for one planned PostgREST table call."""
+
+    table: str
+    mode: WriteMode
+    row_count: int
+    conflict_keys: tuple[str, ...] = ()
+    missing_conflict_metadata: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "table": self.table,
+            "mode": self.mode,
+            "row_count": self.row_count,
+            "conflict_keys": list(self.conflict_keys),
+            "missing_conflict_metadata": self.missing_conflict_metadata,
+        }
+
+
+@dataclass(frozen=True)
+class PostgrestPublicationWritePreflight:
+    """Side-effect-free report for the publication PostgREST adapter boundary."""
+
+    tables: tuple[PostgrestPublicationWritePreflightTable, ...]
+    adapter_capabilities: Mapping[str, bool] = field(
+        default_factory=lambda: dict(POSTGREST_PUBLICATION_ADAPTER_CAPABILITIES)
+    )
+
+    @property
+    def table_count(self) -> int:
+        return len(self.tables)
+
+    @property
+    def total_row_count(self) -> int:
+        return sum(table.row_count for table in self.tables)
+
+    @property
+    def missing_conflict_metadata_for_upserts(self) -> tuple[str, ...]:
+        return tuple(
+            table.table for table in self.tables if table.missing_conflict_metadata
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "table_count": self.table_count,
+            "total_row_count": self.total_row_count,
+            "tables": [table.to_dict() for table in self.tables],
+            "missing_conflict_metadata_for_upserts": list(
+                self.missing_conflict_metadata_for_upserts
+            ),
+            "adapter_capabilities": dict(self.adapter_capabilities),
+        }
 
 
 class PostgrestPublicationTableClient:
@@ -89,6 +156,50 @@ def adapt_publication_supabase_client(
     )
 
 
+def preflight_publication_postgrest_write(
+    plan_or_rows: PublicationWritePlan | Mapping[str, Iterable[Mapping[str, Any]]],
+    *,
+    table_modes: Mapping[str, WriteMode] | None = None,
+    conflict_keys_by_table: Mapping[str, Sequence[str]] | None = None,
+) -> PostgrestPublicationWritePreflight:
+    """Report planned adapter calls without importing Supabase or writing rows."""
+
+    write_plan = _write_plan_for_preflight(plan_or_rows, table_modes=table_modes)
+    conflict_keys = _conflict_keys_by_table(
+        write_plan=write_plan,
+        conflict_keys_by_table=conflict_keys_by_table,
+    )
+    tables = tuple(
+        PostgrestPublicationWritePreflightTable(
+            table=batch.table,
+            mode=write_plan.mode_for(batch.table),
+            row_count=batch.row_count,
+            conflict_keys=conflict_keys.get(batch.table, ()),
+            missing_conflict_metadata=(
+                write_plan.mode_for(batch.table) == "upsert"
+                and not conflict_keys.get(batch.table)
+            ),
+        )
+        for batch in write_plan.batches
+    )
+    return PostgrestPublicationWritePreflight(tables=tables)
+
+
+def preflight_publication_supabase_write(
+    plan_or_rows: PublicationWritePlan | Mapping[str, Iterable[Mapping[str, Any]]],
+    *,
+    table_modes: Mapping[str, WriteMode] | None = None,
+    conflict_keys_by_table: Mapping[str, Sequence[str]] | None = None,
+) -> PostgrestPublicationWritePreflight:
+    """Alias for the PostgREST preflight helper at the Supabase adapter boundary."""
+
+    return preflight_publication_postgrest_write(
+        plan_or_rows,
+        table_modes=table_modes,
+        conflict_keys_by_table=conflict_keys_by_table,
+    )
+
+
 def _conflict_keys_by_table(
     *,
     write_plan: PublicationWritePlan | None,
@@ -116,6 +227,22 @@ def _conflict_keys_by_table(
             }
         )
     return conflicts
+
+
+def _write_plan_for_preflight(
+    plan_or_rows: PublicationWritePlan | Mapping[str, Iterable[Mapping[str, Any]]],
+    *,
+    table_modes: Mapping[str, WriteMode] | None,
+) -> PublicationWritePlan:
+    if isinstance(plan_or_rows, PublicationWritePlan):
+        if table_modes is None:
+            return plan_or_rows
+        return PublicationWritePlan(
+            batches=plan_or_rows.batches,
+            audit_summary=plan_or_rows.audit_summary,
+            table_modes={**plan_or_rows.table_modes, **table_modes},
+        )
+    return PublicationWritePlan.from_rows(plan_or_rows, table_modes=table_modes)
 
 
 def _copy_rows(rows: Sequence[Mapping[str, Any]]) -> tuple[dict[str, Any], ...]:

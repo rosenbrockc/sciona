@@ -21,8 +21,17 @@ The current pipeline is split at the storage boundary:
   table insert/upsert modes.
 - `sciona.physics_ingest.writer` applies a write plan through an injected
   `PublicationTableClient`; it does not import Supabase.
+- `sciona.physics_ingest.supabase_adapter` wraps injected PostgREST-style
+  clients and can preflight planned writes without importing Supabase or writing
+  rows.
 - `sciona.physics_ingest.pipeline` composes all steps and can either dry-run,
   stop at a side-effect-free plan, or execute through an injected client.
+- `sciona.physics_ingest.sources.retrieval_plan` emits deterministic
+  executor-facing request envelopes for retrieval jobs without performing
+  network IO.
+- `sciona.physics_ingest.normalization` includes opt-in QUDT-assisted dimension
+  resolution before symbolic normalization; unresolved or ambiguous dimensions
+  stay reviewable.
 - `sciona.physics_ingest.cli` provides JSON-serializable dry-run report helpers
   for decoded payloads.
 - `sciona.physics_ingest.validation` provides the offline validation report used
@@ -279,13 +288,13 @@ that should inspect rows without requiring credentials.
 The current publication pipeline does not yet complete the full physics
 ingestion roadmap. Remaining work includes:
 
-- implement real source retrieval adapters for the full external source set,
-  including production pagination, rate limits, and license/provenance capture;
-- connect a production storage adapter at the application boundary;
+- implement real source retrieval executors for the full external source set
+  using the existing request envelopes;
+- wire injected production PostgREST/Supabase clients through deployment code;
 - connect PDG-derived CDG publication rows to production storage and catalog
   views;
-- complete symbolic normalization, QUDT dimension-vector ingestion, rational
-  dimensional exponents, and unknown-dimension review behavior;
+- broaden symbolic normalization coverage across the long-tail equation corpus
+  and keep expanding QUDT/unit alias coverage;
 - connect review workflow decisions for `needs_human`, `human_reviewed`, and
   `blocked` to production queues and reviewer UX;
 - add production bulk backfill orchestration, persisted coverage dashboards, and

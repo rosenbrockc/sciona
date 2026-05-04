@@ -35,8 +35,12 @@ from sciona.physics_ingest.ids import (
 from sciona.physics_ingest.normalization import (
     NormalizationDiagnostic,
     NormalizedExpressionDraft,
+    QudtAssistedCandidate,
     normalize_candidate_expression_draft,
+    normalize_candidate_expression_draft_with_qudt_dimensions,
     normalize_candidate_expression_drafts,
+    normalize_candidate_expression_drafts_with_qudt_dimensions,
+    resolve_candidate_variable_dimensions_from_qudt,
 )
 from sciona.physics_ingest.orchestration import (
     PublicationAuditSummary,
@@ -128,8 +132,12 @@ from sciona.physics_ingest.staging import (
     validate_symbolic_expression_row,
 )
 from sciona.physics_ingest.supabase_adapter import (
+    PostgrestPublicationWritePreflight,
+    PostgrestPublicationWritePreflightTable,
     PostgrestPublicationTableClient,
     adapt_publication_supabase_client,
+    preflight_publication_postgrest_write,
+    preflight_publication_supabase_write,
 )
 from sciona.physics_ingest.validation import (
     VALIDATION_REPORT_KIND,
@@ -192,6 +200,9 @@ __all__ = [
     "PublicationWritePlanAuditSummary",
     "PublicationWriteResult",
     "PublicationWriter",
+    "PostgrestPublicationWritePreflight",
+    "PostgrestPublicationWritePreflightTable",
+    "QudtAssistedCandidate",
     "REVIEW_STATUSES",
     "RawCandidateExternalKnowledgeSuggestion",
     "ReviewAssessment",
@@ -256,12 +267,17 @@ __all__ = [
     "main",
     "merge_publication_insert_rows",
     "normalize_candidate_expression_draft",
+    "normalize_candidate_expression_draft_with_qudt_dimensions",
     "normalize_candidate_expression_drafts",
+    "normalize_candidate_expression_drafts_with_qudt_dimensions",
     "orchestrate_physics_publication",
     "plan_source_bundle_ids",
+    "preflight_publication_postgrest_write",
+    "preflight_publication_supabase_write",
     "rank_symbolic_candidates",
     "require_publishable",
     "resolve_publication_artifact_bindings",
+    "resolve_candidate_variable_dimensions_from_qudt",
     "run_physics_publication_pipeline",
     "score_symbolic_candidate",
     "suggest_raw_candidate_external_knowledge",

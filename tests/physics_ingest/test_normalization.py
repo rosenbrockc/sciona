@@ -7,6 +7,8 @@ import sympy as sp
 from sciona.physics_ingest.normalization import (
     normalize_candidate_expression_draft,
     normalize_candidate_expression_drafts,
+    normalize_candidate_expression_draft_with_qudt_dimensions,
+    resolve_candidate_variable_dimensions_from_qudt,
 )
 
 
@@ -65,7 +67,9 @@ def test_latex_candidate_uses_local_parser_and_preserves_raw_formula() -> None:
     assert draft.row.raw_formula == r"E = m c^2"
     assert draft.row.raw_formula_format == "latex"
     assert draft.row.evidence_json["parse_roundtrip"]["status"] == "passed"
-    assert "latex_parsed_locally" in {diagnostic.code for diagnostic in draft.diagnostics}
+    assert "latex_parsed_locally" in {
+        diagnostic.code for diagnostic in draft.diagnostics
+    }
 
 
 def test_sympy_expression_candidate_normalizes_without_text_preparse() -> None:
@@ -186,6 +190,175 @@ def test_explicit_unknown_dimension_signature_is_reflected_in_evidence() -> None
     ]
 
 
+def test_qudt_assisted_normalization_resolves_candidate_dimensions() -> None:
+    candidate = {
+        "source_candidate_id": "fixture-qudt-force",
+        "raw_formula": "F = m * a",
+        "raw_formula_format": "plain_text",
+        "variables": {
+            "F": {
+                "role": "output",
+                "quantity_kind_uri": "http://qudt.org/vocab/quantitykind/Force",
+                "dim_signature": "",
+            },
+            "m": {"role": "input", "dim_signature": "M1"},
+            "a": {"role": "input", "dim_signature": "L1T-2"},
+        },
+    }
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        candidate,
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/quantitykind/Force",
+                "@type": ["qudt:QuantityKind"],
+                "rdfs:label": "Force",
+                "qudt:hasDimensionVector": "A0E0L1I0M1H0T-2D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert candidate["variables"]["F"]["dim_signature"] == ""
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert "qudt_dimension_resolved" in {
+        diagnostic.code for diagnostic in draft.diagnostics
+    }
+    assert dimensions["unknown_dimensions"]["count"] == 0
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"F": "M1L1T-2", "a": "L1T-2", "m": "M1"}
+
+
+def test_unresolved_qudt_dimensions_remain_reviewable_not_dimensionless() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-unresolved-qudt",
+            "raw_formula": "F = m * a",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "F": {
+                    "role": "output",
+                    "quantity_kind_uri": "http://qudt.org/vocab/quantitykind/Force",
+                    "dim_signature": "",
+                },
+                "m": {"role": "input", "dim_signature": "M1"},
+                "a": {"role": "input", "dim_signature": "L1T-2"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/quantitykind/Force",
+                "@type": ["qudt:QuantityKind"],
+                "rdfs:label": "Force",
+                "qudt:hasDimensionVector": "A0E0LbadI0M0H0T0D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "needs_human"
+    assert "qudt_dimension_unresolved" in {
+        diagnostic.code for diagnostic in draft.diagnostics
+    }
+    assert "missing_required_dimension" in {
+        diagnostic.code for diagnostic in draft.diagnostics
+    }
+    assert dimensions["unknown_dimensions"]["symbols"] == ["F"]
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"a": "L1T-2", "m": "M1"}
+
+
+def test_qudt_assisted_normalization_preserves_rational_exponents() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-rational",
+            "raw_formula": "y = x",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "y": {"role": "output", "dim_signature": "L1/2"},
+                "x": {
+                    "role": "input",
+                    "unit_uri": "http://qudt.org/vocab/unit/SQRT-M",
+                    "dim_signature": "",
+                },
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/SQRT-M",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "square root metre",
+                "qudt:symbol": "sqrt_m",
+                "qudt:hasDimensionVector": "A0E0L1/2I0M0H0T0D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert dimensions["rational_dimensions"] == {
+        "symbols": ["x", "y"],
+        "count": 2,
+        "signatures": dimensions["provided_dimensions"]["signatures"],
+    }
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"x": "L1/2", "y": "L1/2"}
+
+
+def test_ambiguous_qudt_dimensions_are_not_applied_to_candidate_copy() -> None:
+    assisted = resolve_candidate_variable_dimensions_from_qudt(
+        {
+            "source_candidate_id": "fixture-ambiguous-qudt",
+            "raw_formula": "F = m * a",
+            "variables": {
+                "F": {"role": "output", "source_symbol": "Force", "dim_signature": ""}
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/quantitykind/Force",
+                "@type": ["qudt:QuantityKind"],
+                "rdfs:label": "Force",
+                "qudt:hasDimensionVector": "A0E0L1I0M1H0T-2D0",
+            },
+            {
+                "@id": "http://qudt.org/vocab/unit/Force",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Force",
+                "qudt:hasDimensionVector": "A0E0L2I0M1H0T-2D0",
+            },
+        ],
+    )
+
+    assert assisted.candidate["variables"]["F"] == {
+        "role": "output",
+        "source_symbol": "Force",
+        "symbol": "F",
+    }
+    assert [diagnostic.code for diagnostic in assisted.diagnostics] == [
+        "qudt_dimension_ambiguous"
+    ]
+
+
 def test_parse_failure_returns_needs_human_row_without_hashes() -> None:
     draft = normalize_candidate_expression_draft(
         {
@@ -224,8 +397,16 @@ def test_parse_failure_returns_needs_human_row_without_hashes() -> None:
 def test_batch_normalization_keeps_failed_candidates() -> None:
     drafts = normalize_candidate_expression_drafts(
         [
-            {"source_candidate_id": "ok", "raw_formula": "x = y", "raw_formula_format": "plain_text"},
-            {"source_candidate_id": "bad", "raw_formula": "x =", "raw_formula_format": "plain_text"},
+            {
+                "source_candidate_id": "ok",
+                "raw_formula": "x = y",
+                "raw_formula_format": "plain_text",
+            },
+            {
+                "source_candidate_id": "bad",
+                "raw_formula": "x =",
+                "raw_formula_format": "plain_text",
+            },
         ],
         artifact_id=ARTIFACT_ID,
         version_id=VERSION_ID,
