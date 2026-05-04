@@ -209,12 +209,18 @@ def build_physics_ingestion_validation_report(
     if include_source_adapter_data_artifact_seeds:
         checks.append(validate_source_adapter_data_artifact_seed_quality())
 
+    summary = _validation_report_summary(checks)
     report = {
         "report_kind": VALIDATION_REPORT_KIND,
         "report_version": VALIDATION_REPORT_VERSION,
         "ok": all(check.ok for check in checks),
         "inventory": inventory,
-        "summary": _validation_report_summary(checks),
+        "summary": summary,
+        "dashboard_summary": _validation_dashboard_summary(
+            checks=checks,
+            inventory=inventory,
+            summary=summary,
+        ),
         "checks": [check.to_dict() for check in checks],
     }
     _assert_json_serializable(report)
@@ -325,6 +331,121 @@ def _validation_report_summary(checks: Sequence[ValidationCheck]) -> dict[str, A
             issue.table or "unscoped" for issue in issues
         ),
     }
+
+
+def _validation_dashboard_summary(
+    *,
+    checks: Sequence[ValidationCheck],
+    inventory: Mapping[str, Any],
+    summary: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Build compact validation rollups for CI and coverage dashboards."""
+
+    symbolic_checks = [
+        check for check in checks if check.check_id == "symbolic_publication_fixture"
+    ]
+    pdg_checks = [check for check in checks if check.check_id == "pdg_publication_graph"]
+    source_checks = [
+        check
+        for check in checks
+        if check.check_id
+        in {
+            "source_execution_readiness",
+            "source_adapter_coverage",
+            "source_adapter_data_artifact_seeds",
+        }
+    ]
+    atom_review_checks = [
+        check for check in checks if check.check_id == "physics_atom_symbolic_review"
+    ]
+    symbolic_expression_count = sum(
+        _int_metadata(check, "expression_count") for check in symbolic_checks
+    )
+    symbolic_variable_count = sum(
+        _int_metadata(check, "variable_count") for check in symbolic_checks
+    )
+    symbolic_bound_count = sum(
+        _int_metadata(check, "validity_bound_count") for check in symbolic_checks
+    )
+    pdg_equation_count = sum(
+        _int_metadata(check, "equation_count") for check in pdg_checks
+    )
+    pdg_relationship_count = sum(
+        _int_metadata(check, "relationship_row_count") for check in pdg_checks
+    )
+    pdg_cdg_node_count = sum(
+        _int_metadata(check, "cdg_node_count") for check in pdg_checks
+    )
+    pdg_cdg_edge_count = sum(
+        _int_metadata(check, "cdg_edge_count") for check in pdg_checks
+    )
+    regular_atom_count = sum(
+        _int_metadata(check, "regular_atom_count") for check in atom_review_checks
+    )
+    reviewed_regular_atom_count = sum(
+        _int_metadata(check, "reviewed_regular_atom_count")
+        for check in atom_review_checks
+    )
+
+    return {
+        "report_version": "physics-ingestion-validation-dashboard.v1",
+        "ok": all(check.ok for check in checks),
+        "validation_mode": str(inventory.get("validation_mode", "")),
+        "check_health": {
+            "check_count": int(summary.get("check_count", 0) or 0),
+            "failed_check_count": int(summary.get("failed_check_count", 0) or 0),
+            "error_count": int(summary.get("error_count", 0) or 0),
+            "warning_count": int(summary.get("warning_count", 0) or 0),
+            "check_count_by_status": dict(
+                summary.get("check_count_by_status", {}) or {}
+            ),
+        },
+        "symbolic_fixture_coverage": {
+            "fixture_count": len(symbolic_checks),
+            "expression_count": symbolic_expression_count,
+            "variable_count": symbolic_variable_count,
+            "validity_bound_count": symbolic_bound_count,
+            "failed_fixture_count": sum(1 for check in symbolic_checks if not check.ok),
+        },
+        "physics_atom_symbolic_review": {
+            "check_count": len(atom_review_checks),
+            "regular_atom_count": regular_atom_count,
+            "reviewed_regular_atom_count": reviewed_regular_atom_count,
+            "unreviewed_regular_atom_count": max(
+                regular_atom_count - reviewed_regular_atom_count,
+                0,
+            ),
+            "failed_check_count": sum(
+                1 for check in atom_review_checks if not check.ok
+            ),
+        },
+        "pdg_derivation_coverage": {
+            "payload_check_count": len(pdg_checks),
+            "equation_count": pdg_equation_count,
+            "relationship_row_count": pdg_relationship_count,
+            "cdg_node_count": pdg_cdg_node_count,
+            "cdg_edge_count": pdg_cdg_edge_count,
+            "failed_payload_count": sum(1 for check in pdg_checks if not check.ok),
+        },
+        "source_check_health": {
+            "check_count": len(source_checks),
+            "failed_check_count": sum(1 for check in source_checks if not check.ok),
+            "diagnostic_count": sum(
+                _int_metadata(check, "diagnostic_count") for check in source_checks
+            ),
+        },
+    }
+
+
+def _int_metadata(check: ValidationCheck, key: str) -> int:
+    value = check.metadata.get(key, 0)
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return 0
 
 
 def _validation_check_status(check: ValidationCheck) -> str:

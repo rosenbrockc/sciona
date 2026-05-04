@@ -652,6 +652,63 @@ def test_validation_report_includes_explicit_pdg_fixture_path() -> None:
     assert checks[3]["check_id"] == "source_adapter_data_artifact_seeds"
 
 
+def test_validation_report_includes_compact_dashboard_summary(tmp_path) -> None:
+    fixture_path = tmp_path / "fixture.publication_manifest.json"
+    fixture_path.write_text(json.dumps(_symbolic_manifest()), encoding="utf-8")
+    pdg_path = PDG_FIXTURE_DIR / "solve_substitute_chain.pdg.json"
+
+    report = build_physics_ingestion_validation_report(
+        fixture_paths=(fixture_path,),
+        pdg_payload_paths=(pdg_path,),
+        include_default_pdg=False,
+        include_source_execution=False,
+        include_source_adapter_coverage=False,
+        include_source_adapter_data_artifact_seeds=False,
+    )
+
+    dashboard = report["dashboard_summary"]
+    assert dashboard == {
+        "report_version": "physics-ingestion-validation-dashboard.v1",
+        "ok": True,
+        "validation_mode": "full",
+        "check_health": {
+            "check_count": 2,
+            "failed_check_count": 0,
+            "error_count": 0,
+            "warning_count": 0,
+            "check_count_by_status": {"passed": 2},
+        },
+        "symbolic_fixture_coverage": {
+            "fixture_count": 1,
+            "expression_count": 1,
+            "variable_count": 3,
+            "validity_bound_count": 1,
+            "failed_fixture_count": 0,
+        },
+        "physics_atom_symbolic_review": {
+            "check_count": 0,
+            "regular_atom_count": 0,
+            "reviewed_regular_atom_count": 0,
+            "unreviewed_regular_atom_count": 0,
+            "failed_check_count": 0,
+        },
+        "pdg_derivation_coverage": {
+            "payload_check_count": 1,
+            "equation_count": 3,
+            "relationship_row_count": 2,
+            "cdg_node_count": 2,
+            "cdg_edge_count": 1,
+            "failed_payload_count": 0,
+        },
+        "source_check_health": {
+            "check_count": 0,
+            "failed_check_count": 0,
+            "diagnostic_count": 0,
+        },
+    }
+    json.dumps(dashboard, sort_keys=True)
+
+
 def test_validation_report_includes_source_execution_by_default() -> None:
     report = build_physics_ingestion_validation_report(
         include_default_pdg=False,
