@@ -28,6 +28,9 @@ The current pipeline is split at the storage boundary:
 - `sciona.physics_ingest.validation` provides the offline validation report used
   to check symbolic fixtures, PDG-derived CDG rows, source execution readiness,
   adapter coverage, and data-artifact seed shape without Supabase.
+- `sciona.physics_ingest.backfill`, `sciona.physics_ingest.pdg_cdg`, and
+  `sciona.physics_ingest.review` expose JSON-safe rollups for bulk dashboards,
+  PDG/CDG publication audit, and Phase 5 trust review triage.
 - `sciona.physics_ingest.retrieval` provides side-effect-free symbolic
   retrieval and synthesis ranking over already-fetched catalog/document rows.
 
@@ -279,13 +282,13 @@ ingestion roadmap. Remaining work includes:
 - implement real source retrieval adapters for the full external source set,
   including production pagination, rate limits, and license/provenance capture;
 - connect a production storage adapter at the application boundary;
-- publish relationship rows and PDG-derived CDG rows through the same write-plan
-  path;
+- connect PDG-derived CDG publication rows to production storage and catalog
+  views;
 - complete symbolic normalization, QUDT dimension-vector ingestion, rational
   dimensional exponents, and unknown-dimension review behavior;
-- add review workflow integration for `needs_human`, `human_reviewed`,
-  `blocked`, and publication trust gates;
-- add bulk backfill orchestration, coverage dashboards, and replay/audit
-  artifacts for large ingestion waves;
+- connect review workflow decisions for `needs_human`, `human_reviewed`, and
+  `blocked` to production queues and reviewer UX;
+- add production bulk backfill orchestration, persisted coverage dashboards, and
+  replay/audit artifact storage for large ingestion waves;
 - connect the side-effect-free retrieval and synthesis ranking surface to
   production catalog/RPC fetches and runtime planner calls.

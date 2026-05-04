@@ -253,6 +253,52 @@ def build_review_trust_report(**kwargs: Any) -> dict[str, Any]:
     return assess_publishability(**kwargs).to_report().to_dict()
 
 
+def summarize_review_assessments(
+    reviews: Iterable[ReviewAssessment | ReviewTrustReport | Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Build deterministic JSON-safe rollups for Phase 5 review dashboards."""
+
+    rows = [_review_row(review) for review in reviews]
+    gate_counts: dict[str, dict[str, int]] = {}
+    for row in rows:
+        for gate in _review_gates(row):
+            status = _text(gate, "status")
+            if not status:
+                continue
+            counts = gate_counts.setdefault(status, {"passed": 0, "failed": 0})
+            if _bool(gate.get("passed")):
+                counts["passed"] += 1
+            else:
+                counts["failed"] += 1
+
+    return {
+        "assessment_count": len(rows),
+        "achieved_status_counts": _ordered_counts(
+            (_summary_text(row, "achieved_status") for row in rows),
+            WORKFLOW_STATUSES,
+        ),
+        "trust_status_counts": _ordered_counts(
+            (_summary_text(row, "trust_status") for row in rows),
+            REVIEW_STATUSES,
+        ),
+        "publishable_counts": {
+            "publishable": sum(1 for row in rows if _bool(row.get("publishable"))),
+            "not_publishable": sum(
+                1
+                for row in rows
+                if "publishable" in row and not _bool(row.get("publishable"))
+            ),
+            "unknown": sum(1 for row in rows if "publishable" not in row),
+        },
+        "blocker_counts": _ordered_counts(
+            blocker
+            for row in rows
+            for blocker in _review_blockers(row)
+        ),
+        "gate_counts": _ordered_gate_counts(gate_counts),
+    }
+
+
 def build_review_publication_status_rows(
     review: ReviewAssessment | ReviewTrustReport | Mapping[str, Any],
     *,
@@ -412,6 +458,88 @@ def _candidate_status_for_review(
     if review_status == "automated_pass":
         return "source_verified"
     return "raw_imported"
+
+
+def _review_gates(review_row: Mapping[str, Any]) -> tuple[Mapping[str, Any], ...]:
+    gates = review_row.get("gates")
+    if not isinstance(gates, Sequence) or isinstance(gates, (str, bytes)):
+        return ()
+    return tuple(_gate_row(gate) for gate in gates)
+
+
+def _gate_row(gate: Any) -> Mapping[str, Any]:
+    if isinstance(gate, ReviewGateResult):
+        return {
+            "status": gate.status,
+            "passed": gate.passed,
+            "blockers": list(gate.blockers),
+            "evidence": dict(gate.evidence or {}),
+        }
+    return gate if isinstance(gate, Mapping) else {}
+
+
+def _review_blockers(review_row: Mapping[str, Any]) -> tuple[str, ...]:
+    blockers = review_row.get("blockers")
+    if isinstance(blockers, str):
+        return (blockers,) if blockers else ()
+    if isinstance(blockers, Iterable) and not isinstance(blockers, Mapping):
+        blocker_texts: list[str] = []
+        for blocker in blockers:
+            if blocker is None:
+                continue
+            text = str(blocker).strip()
+            if text:
+                blocker_texts.append(text)
+        return tuple(blocker_texts)
+    return tuple(
+        blocker
+        for gate in _review_gates(review_row)
+        for blocker in _review_blockers(gate)
+    )
+
+
+def _summary_text(row: Mapping[str, Any], key: str) -> str:
+    return _text(row, key) or "<missing>"
+
+
+def _ordered_counts(
+    values: Iterable[str],
+    preferred_order: Sequence[str] = (),
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    ordered = {
+        value: counts[value]
+        for value in preferred_order
+        if value in counts
+    }
+    for value in sorted(counts):
+        if value not in ordered:
+            ordered[value] = counts[value]
+    return ordered
+
+
+def _ordered_gate_counts(
+    gate_counts: Mapping[str, Mapping[str, int]],
+) -> dict[str, dict[str, int]]:
+    ordered: dict[str, dict[str, int]] = {}
+    for status in WORKFLOW_STATUSES:
+        if status in gate_counts:
+            counts = gate_counts[status]
+            ordered[status] = {
+                "passed": int(counts.get("passed", 0)),
+                "failed": int(counts.get("failed", 0)),
+            }
+    for status in sorted(gate_counts):
+        if status in ordered:
+            continue
+        counts = gate_counts[status]
+        ordered[status] = {
+            "passed": int(counts.get("passed", 0)),
+            "failed": int(counts.get("failed", 0)),
+        }
+    return ordered
 
 
 def _raw_imported_gate(

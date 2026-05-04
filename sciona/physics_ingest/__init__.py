@@ -78,6 +78,7 @@ from sciona.physics_ingest.review import (
     build_review_publication_status_rows,
     build_review_trust_report,
     require_publishable,
+    summarize_review_assessments,
 )
 from sciona.physics_ingest.sources import (
     RetrievalRunDiagnostic,
@@ -264,6 +265,7 @@ __all__ = [
     "run_physics_publication_pipeline",
     "score_symbolic_candidate",
     "suggest_raw_candidate_external_knowledge",
+    "summarize_review_assessments",
     "source_candidate_id",
     "source_snapshot_id",
     "stage_source_rows",

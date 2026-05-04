@@ -215,6 +215,7 @@ def build_physics_ingest_backfill_report(
             for rows in coverage_rows_by_table.values()
             for row in rows
         )
+    report["dashboard_summary"] = _dashboard_summary(report)
     if include_rows:
         report["insert_rows_by_table"] = insert_rows
 
@@ -752,6 +753,128 @@ def _write_plan_summary(pipeline_result: Any) -> dict[str, Any]:
             for batch in write_plan.batches
         ],
     }
+
+
+def _dashboard_summary(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Build compact, deterministic, JSON-safe rollups for dashboard cards."""
+
+    input_summary = _json_safe_mapping(report.get("input_summary") or {})
+    table_row_counts = _sorted_int_mapping(report.get("table_row_counts") or {})
+    write_plan = report.get("dry_run_write_plan") or {}
+    batches = tuple(
+        batch for batch in write_plan.get("batches", ()) if isinstance(batch, Mapping)
+    )
+    diagnostic_summary = _json_safe_mapping(report.get("diagnostic_summary") or {})
+    source_retrieval_report = report.get("source_retrieval_run_plan") or {}
+    source_family_counts = report.get("source_family_counts") or {}
+    publication_readiness = report.get("publication_readiness_summary") or {}
+
+    summary: dict[str, Any] = {
+        "ok": bool(report.get("ok")),
+        "dry_run": bool(report.get("dry_run")),
+        "input_counts": input_summary,
+        "write_plan": {
+            "batch_count": len(batches),
+            "table_count": len(table_row_counts),
+            "row_count": sum(table_row_counts.values()),
+            "dry_run_batch_count": sum(
+                1 for batch in batches if bool(batch.get("dry_run"))
+            ),
+            "mode_counts": _sorted_counts(
+                str(batch.get("mode") or "unknown") for batch in batches
+            ),
+            "table_row_counts": table_row_counts,
+        },
+        "publication_readiness": _publication_readiness_dashboard_rollup(
+            publication_readiness
+        ),
+        "source_retrieval": {
+            "step_count": int(
+                input_summary.get("source_retrieval_step_count")
+                or source_retrieval_report.get("step_count")
+                or 0
+            ),
+            "diagnostic_count": int(
+                input_summary.get("source_retrieval_diagnostic_count")
+                or source_retrieval_report.get("diagnostic_count")
+                or 0
+            ),
+        },
+        "diagnostics": {
+            "by_severity": _sorted_int_mapping(
+                diagnostic_summary.get("by_severity") or {}
+            ),
+            "by_reason": _sorted_int_mapping(diagnostic_summary.get("by_reason") or {}),
+            "retry_count": len(report.get("retry_diagnostics") or ()),
+            "skip_count": len(report.get("skip_diagnostics") or ()),
+        },
+        "source_family_counts": {
+            "combined": _sorted_int_mapping(
+                source_family_counts.get("combined") or {}
+            ),
+        },
+        "data_artifacts": {
+            "seed_count": int(input_summary.get("data_artifact_seed_count") or 0),
+        },
+    }
+    phase7_rollup = _phase7_dashboard_rollup(report)
+    if phase7_rollup is not None:
+        summary["phase7_coverage"] = phase7_rollup
+    return _json_safe_mapping(summary)
+
+
+def _publication_readiness_dashboard_rollup(
+    summary: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "row_count": int(summary.get("row_count") or 0),
+        "table_row_counts": _sorted_int_mapping(
+            summary.get("table_row_counts") or {}
+        ),
+        "readiness_stage_counts": _sorted_int_mapping(
+            summary.get("readiness_stage_counts") or {}
+        ),
+        "by_candidate_status": _sorted_int_mapping(
+            summary.get("by_candidate_status") or {}
+        ),
+        "by_parse_status": _sorted_int_mapping(summary.get("by_parse_status") or {}),
+        "by_review_status": _sorted_int_mapping(summary.get("by_review_status") or {}),
+        "by_validation_status": _sorted_int_mapping(
+            summary.get("by_validation_status") or {}
+        ),
+    }
+
+
+def _phase7_dashboard_rollup(report: Mapping[str, Any]) -> dict[str, Any] | None:
+    row_counts = report.get("phase7_coverage_row_counts")
+    coverage_summary = report.get("phase7_coverage_summary")
+    if not isinstance(row_counts, Mapping) and not isinstance(
+        coverage_summary, Mapping
+    ):
+        return None
+
+    summary: dict[str, Any] = {
+        "row_count": int(
+            report.get("input_summary", {}).get("phase7_coverage_row_count") or 0
+        )
+        if isinstance(report.get("input_summary"), Mapping)
+        else 0,
+        "table_row_counts": _sorted_int_mapping(row_counts or {}),
+    }
+    if isinstance(coverage_summary, Mapping):
+        summary["summary"] = _json_safe_mapping(coverage_summary.get("summary") or {})
+    return summary
+
+
+def _sorted_int_mapping(value: Mapping[str, Any]) -> dict[str, int]:
+    return {
+        str(key): int(count or 0)
+        for key, count in sorted(value.items(), key=lambda pair: str(pair[0]))
+    }
+
+
+def _sorted_counts(values: Iterable[str]) -> dict[str, int]:
+    return dict(sorted(Counter(values).items()))
 
 
 def _replay_keys(batches: Iterable[Mapping[str, Any]]) -> dict[str, list[str]]:

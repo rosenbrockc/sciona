@@ -136,6 +136,124 @@ def test_backfill_report_composes_pipeline_with_pdg_rows_and_replay_keys() -> No
     assert report["diagnostic_summary"]["by_severity"] == {"info": 6}
 
 
+def test_backfill_report_includes_json_safe_dashboard_summary() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+    retrieval_plan["diagnostics"] = [
+        {
+            "severity": "warning",
+            "job_id": retrieval_plan["steps"][0]["job_id"],
+            "endpoint_id": retrieval_plan["steps"][0]["endpoint_id"],
+            "message": "fixture retrieval metadata warning",
+        }
+    ]
+    hitran_bundle = build_hitran_wave0_bundle(
+        [
+            {
+                "source_id": "HITRAN:H2O:0001",
+                "molecule": "H2O",
+                "transition": "1-2",
+                "nu": "1594.7",
+            }
+        ],
+        source_version="fixture-hitran",
+    )
+
+    report = build_physics_ingest_backfill_report(
+        source_bundles=[hitran_bundle],
+        publication_manifests=[_publication_manifest()],
+        pdg_publication_rows=FakePDGRows(),
+        retrieval_run_plan=retrieval_plan,
+        normalization_diagnostics=[
+            {
+                "table": "artifact_symbolic_variables",
+                "reason": "unit_alias_unresolved",
+                "severity": "error",
+                "detail": "kg*m/s^2",
+            }
+        ],
+        artifact_bindings={
+            "local:fixture.force": {
+                "artifact_id": ARTIFACT_ID,
+                "version_id": VERSION_ID,
+            }
+        },
+    )
+
+    summary = report["dashboard_summary"]
+
+    assert json.loads(json.dumps(summary, sort_keys=True)) == summary
+    assert "input_summary" in report
+    assert "dry_run_write_plan" in report
+    assert "publication_readiness_summary" in report
+    assert "phase7_coverage_summary" in report
+    assert summary["ok"] is False
+    assert summary["dry_run"] is True
+    assert summary["input_counts"] == report["input_summary"]
+    assert summary["write_plan"] == {
+        "batch_count": 5,
+        "table_count": 5,
+        "row_count": 5,
+        "dry_run_batch_count": 5,
+        "mode_counts": {"insert": 5},
+        "table_row_counts": report["table_row_counts"],
+    }
+    assert summary["publication_readiness"] == {
+        "row_count": 2,
+        "table_row_counts": {
+            "artifact_symbolic_expressions": 1,
+            "physics_equation_candidates": 1,
+        },
+        "readiness_stage_counts": {
+            "automated_pass": 1,
+            "raw_or_pending": 1,
+        },
+        "by_candidate_status": {"raw_imported": 1},
+        "by_parse_status": {"normalized": 1},
+        "by_review_status": {"automated_pass": 1},
+        "by_validation_status": {"passed": 1},
+    }
+    assert summary["phase7_coverage"] == {
+        "row_count": 2,
+        "table_row_counts": {
+            "artifact_symbolic_expressions": 1,
+            "physics_equation_candidates": 1,
+        },
+        "summary": report["phase7_coverage_summary"]["summary"],
+    }
+    assert summary["source_retrieval"] == {
+        "step_count": 1,
+        "diagnostic_count": 1,
+    }
+    assert summary["diagnostics"] == {
+        "by_severity": report["diagnostic_summary"]["by_severity"],
+        "by_reason": report["diagnostic_summary"]["by_reason"],
+        "retry_count": 1,
+        "skip_count": 1,
+    }
+    assert summary["source_family_counts"] == {
+        "combined": {
+            "fixture": 1,
+            "hitran": 1,
+            "physics_derivation_graph": 1,
+        }
+    }
+    assert summary["data_artifacts"] == {"seed_count": 1}
+
+
+def test_backfill_dashboard_summary_omits_phase7_when_not_requested() -> None:
+    report = build_physics_ingest_backfill_report(
+        source_bundles=[_source_bundle()],
+        include_phase7_coverage_summary=False,
+    )
+
+    assert "phase7_coverage_row_counts" not in report
+    assert "phase7_coverage_summary" not in report
+    assert "phase7_coverage" not in report["dashboard_summary"]
+    assert report["dashboard_summary"]["input_counts"][
+        "phase7_coverage_row_count"
+    ] == 1
+
+
 def test_backfill_report_groups_review_normalization_and_pdg_skip_diagnostics() -> None:
     report = build_physics_ingest_backfill_report(
         publication_manifests=[_publication_manifest()],

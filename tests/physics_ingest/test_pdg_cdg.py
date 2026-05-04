@@ -186,6 +186,32 @@ def test_pdg_phase4_skips_edges_missing_expression_bindings() -> None:
     )
 
 
+def test_pdg_phase4_relationship_ingest_summary_is_json_safe() -> None:
+    result = build_pdg_relationship_ingest(
+        _bundle(),
+        expression_bindings_by_pdg_node_id={
+            "eq:base": EXPR_BASE,
+            "eq:solved": EXPR_SOLVED,
+        },
+    )
+
+    summary = result.summary
+
+    assert json.loads(json.dumps(summary, sort_keys=True)) == summary
+    assert summary == {
+        "summary_kind": "pdg_relationship_ingest_summary.v1",
+        "source_system": "physics_derivation_graph",
+        "scaffold_version": "phase4.pdg_cdg_scaffold.v1",
+        "relationship_row_count": 1,
+        "skipped_edge_count": 1,
+        "skipped_edge_reasons": {"missing_expression_binding": 1},
+        "cdg_candidate_manifest_count": 1,
+        "operation_kind_counts": {"solve_for": 1},
+        "relationship_kind_counts": {"algebraic_rearrangement_of": 1},
+    }
+    assert result.to_dict()["summary"] == summary
+
+
 def test_pdg_phase4_can_scope_to_named_chain_edges() -> None:
     result = build_pdg_relationship_ingest(
         _bundle(),
@@ -266,6 +292,26 @@ def test_pdg_phase4_publication_rows_merge_relationships_and_cdg_tables() -> Non
         diagnostic["reason"] for diagnostic in publication_rows.diagnostics
     } == {"missing_cdg_binding_artifact_metadata"}
     assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+    summary = publication_rows.summary
+    assert json.loads(json.dumps(summary, sort_keys=True)) == summary
+    assert summary["table_row_counts"] == {
+        "artifact_cdg_bindings": 3,
+        "artifact_cdg_edges": 1,
+        "artifact_cdg_nodes": 2,
+        "artifact_relationships": 2,
+    }
+    assert summary["operation_kind_counts"] == {"solve": 1, "substitute": 1}
+    assert summary["relationship_kind_counts"] == {
+        "algebraic_rearrangement_of": 1,
+        "derives_from": 1,
+    }
+    assert summary["diagnostic_count"] == 1
+    assert summary["diagnostics_by_severity"] == {"skipped": 1}
+    assert summary["diagnostics_by_reason"] == {
+        "missing_cdg_binding_artifact_metadata": 1
+    }
+    assert summary["diagnostics_by_table"] == {"artifact_cdg_bindings": 1}
 
 
 def test_pdg_phase4_extracts_limit_and_nondimensionalization_derivations() -> None:
@@ -946,6 +992,16 @@ def test_pdg_phase4_publication_can_emit_cdg_artifact_envelope_rows() -> None:
     assert version["fingerprint"] == version["content_hash"]
     assert plan.batches_by_table()["artifacts"].conflict_keys == ("artifact_id",)
     assert plan.batches_by_table()["artifact_versions"].conflict_keys == ("version_id",)
+
+    summary = publication_rows.summary
+    assert summary["artifact_envelope_row_counts"] == {
+        "artifacts": 1,
+        "artifact_versions": 1,
+    }
+    assert summary["artifact_envelope_total_row_count"] == 2
+    assert summary["table_row_counts"]["artifacts"] == 1
+    assert summary["table_row_counts"]["artifact_versions"] == 1
+    assert publication_rows.to_dict()["summary"] == summary
 
 
 def test_pdg_phase4_artifact_envelope_requires_fqdn_identity() -> None:

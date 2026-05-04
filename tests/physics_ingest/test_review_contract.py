@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from sciona.physics_ingest.review import (
@@ -8,6 +10,7 @@ from sciona.physics_ingest.review import (
     assess_publishability,
     build_review_trust_report,
     require_publishable,
+    summarize_review_assessments,
 )
 
 
@@ -267,6 +270,66 @@ def test_phase5_review_reports_needs_human_and_blocked_trust_states() -> None:
     assert blocked.blocked is True
     assert "candidate_status is blocked" in blocked.blockers
     assert "expression review_status is blocked" in blocked.blockers
+
+
+def test_phase5_review_summarizes_dashboard_rollups_json_safe() -> None:
+    publishable = assess_publishability(**_publishable_bundle())
+
+    needs_human_bundle = _publishable_bundle()
+    needs_human_bundle["expression"] = {
+        **needs_human_bundle["expression"],
+        "review_status": "automated_pass",
+        "evidence_json": {
+            key: value
+            for key, value in needs_human_bundle["expression"]["evidence_json"].items()
+            if key != "human_review"
+        },
+    }
+    needs_human = assess_publishability(**needs_human_bundle).to_report()
+
+    blocked_bundle = _publishable_bundle()
+    blocked_bundle["candidate"] = {
+        **blocked_bundle["candidate"],
+        "candidate_status": "blocked",
+    }
+    blocked = assess_publishability(**blocked_bundle).to_report().to_dict()
+
+    summary = summarize_review_assessments([publishable, needs_human, blocked])
+
+    assert json.loads(json.dumps(summary)) == summary
+    assert summary == {
+        "assessment_count": 3,
+        "achieved_status_counts": {
+            "raw_imported": 1,
+            "source_verified": 1,
+            "published": 1,
+        },
+        "trust_status_counts": {
+            "needs_human": 1,
+            "human_reviewed": 1,
+            "blocked": 1,
+        },
+        "publishable_counts": {
+            "publishable": 1,
+            "not_publishable": 2,
+            "unknown": 0,
+        },
+        "blocker_counts": {
+            "candidate_status is blocked": 1,
+            "expression review_status must be human_reviewed": 1,
+            "human review evidence must identify a reviewer": 1,
+            "human review evidence must include a review timestamp": 1,
+        },
+        "gate_counts": {
+            "raw_imported": {"passed": 2, "failed": 1},
+            "parsed": {"passed": 3, "failed": 0},
+            "dimension_resolved": {"passed": 3, "failed": 0},
+            "symbolically_validated": {"passed": 3, "failed": 0},
+            "source_verified": {"passed": 3, "failed": 0},
+            "human_reviewed": {"passed": 2, "failed": 1},
+            "published": {"passed": 1, "failed": 2},
+        },
+    }
 
 
 def _publishable_bundle() -> dict[str, object]:

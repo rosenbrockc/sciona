@@ -132,6 +132,17 @@ class PDGRelationshipIngestResult:
     artifact_relationship_rows: tuple[ArtifactRelationshipRow, ...]
     cdg_candidate_manifests: tuple[JSONDict, ...]
     skipped_edges: tuple[JSONDict, ...] = ()
+    summary: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.summary:
+            object.__setattr__(self, "summary", _json_safe_mapping(self.summary))
+        else:
+            object.__setattr__(
+                self,
+                "summary",
+                _build_relationship_ingest_summary(self),
+            )
 
     def relationship_insert_rows(self) -> list[JSONDict]:
         """Return JSON-ready rows for ``artifact_relationships`` insertion."""
@@ -147,6 +158,7 @@ class PDGRelationshipIngestResult:
                 "source_system": PDG_SOURCE_SYSTEM,
                 "scaffold_version": PHASE4_SCAFFOLD_VERSION,
             },
+            "summary": dict(self.summary),
         }
 
 
@@ -156,11 +168,29 @@ class PDGPublicationWriteRows:
 
     insert_rows_by_table: Mapping[str, tuple[JSONDict, ...]]
     diagnostics: tuple[JSONDict, ...] = ()
+    summary: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.summary:
+            object.__setattr__(self, "summary", _json_safe_mapping(self.summary))
+        else:
+            object.__setattr__(
+                self,
+                "summary",
+                _build_publication_write_rows_summary(self),
+            )
 
     def to_insert_rows(self) -> dict[str, list[JSONDict]]:
         return {
             table: [dict(row) for row in rows]
             for table, rows in self.insert_rows_by_table.items()
+        }
+
+    def to_dict(self) -> JSONDict:
+        return {
+            "insert_rows": self.to_insert_rows(),
+            "diagnostics": list(self.diagnostics),
+            "summary": dict(self.summary),
         }
 
 
@@ -840,6 +870,120 @@ def _text_list(value: Any) -> list[str]:
     if not isinstance(value, (list, tuple)):
         return []
     return [str(item) for item in value if str(item)]
+
+
+def _build_relationship_ingest_summary(
+    result: PDGRelationshipIngestResult,
+) -> JSONDict:
+    relationship_rows = result.relationship_insert_rows()
+    skipped_edges = list(result.skipped_edges)
+    return _json_safe_mapping(
+        {
+            "summary_kind": "pdg_relationship_ingest_summary.v1",
+            "source_system": PDG_SOURCE_SYSTEM,
+            "scaffold_version": PHASE4_SCAFFOLD_VERSION,
+            "relationship_row_count": len(relationship_rows),
+            "skipped_edge_count": len(skipped_edges),
+            "skipped_edge_reasons": _count_mapping_values(skipped_edges, "reason"),
+            "cdg_candidate_manifest_count": len(result.cdg_candidate_manifests),
+            "operation_kind_counts": _count_values(
+                _relationship_row_operation_kind(row) for row in relationship_rows
+            ),
+            "relationship_kind_counts": _count_mapping_values(
+                relationship_rows, "relationship_kind"
+            ),
+        }
+    )
+
+
+def _build_publication_write_rows_summary(
+    publication_rows: PDGPublicationWriteRows,
+) -> JSONDict:
+    insert_rows = publication_rows.to_insert_rows()
+    table_row_counts = {
+        table: len(rows) for table, rows in sorted(insert_rows.items())
+    }
+    artifact_envelope_row_counts = {
+        "artifacts": table_row_counts.get("artifacts", 0),
+        "artifact_versions": table_row_counts.get("artifact_versions", 0),
+    }
+    diagnostics = list(publication_rows.diagnostics)
+    return _json_safe_mapping(
+        {
+            "summary_kind": "pdg_cdg_publication_rows_summary.v1",
+            "source_system": PDG_SOURCE_SYSTEM,
+            "scaffold_version": PHASE4_SCAFFOLD_VERSION,
+            "table_row_counts": table_row_counts,
+            "artifact_relationship_row_count": table_row_counts.get(
+                "artifact_relationships", 0
+            ),
+            "cdg_candidate_manifest_count": _count_distinct_cdg_versions(insert_rows),
+            "operation_kind_counts": _count_mapping_values(
+                insert_rows.get("artifact_cdg_nodes", ()), "matched_primitive"
+            ),
+            "relationship_kind_counts": _count_mapping_values(
+                insert_rows.get("artifact_relationships", ()), "relationship_kind"
+            ),
+            "diagnostic_count": len(diagnostics),
+            "diagnostics_by_severity": _count_mapping_values(
+                diagnostics, "severity"
+            ),
+            "diagnostics_by_reason": _count_mapping_values(diagnostics, "reason"),
+            "diagnostics_by_table": _count_mapping_values(diagnostics, "table"),
+            "artifact_envelope_row_counts": artifact_envelope_row_counts,
+            "artifact_envelope_total_row_count": sum(
+                artifact_envelope_row_counts.values()
+            ),
+        }
+    )
+
+
+def _relationship_row_operation_kind(row: Mapping[str, Any]) -> str:
+    evidence = row.get("evidence_json")
+    if isinstance(evidence, Mapping):
+        return "" if evidence.get("operation_kind") is None else str(
+            evidence.get("operation_kind")
+        )
+    return ""
+
+
+def _count_mapping_values(
+    rows: Iterable[Mapping[str, Any]],
+    key: str,
+) -> dict[str, int]:
+    return _count_values(_mapping_text(row, key) for row in rows)
+
+
+def _count_values(values: Iterable[Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for raw_value in values:
+        value = "" if raw_value is None else str(raw_value)
+        if not value:
+            continue
+        counts[value] = counts.get(value, 0) + 1
+    return {key: counts[key] for key in sorted(counts)}
+
+
+def _mapping_text(row: Mapping[str, Any], key: str) -> str:
+    value = row.get(key)
+    return "" if value is None else str(value)
+
+
+def _count_distinct_cdg_versions(
+    insert_rows: Mapping[str, Iterable[Mapping[str, Any]]],
+) -> int:
+    version_ids = {
+        _mapping_text(row, "version_id")
+        for row in insert_rows.get("artifact_cdg_nodes", ())
+        if _mapping_text(row, "version_id")
+    }
+    if version_ids:
+        return len(version_ids)
+    return len(insert_rows.get("artifact_versions", ()))
+
+
+def _json_safe_mapping(value: Mapping[str, Any]) -> JSONDict:
+    return json.loads(_canonical_json(value))
 
 
 def _node_binding_rows(
