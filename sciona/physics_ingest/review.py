@@ -7,6 +7,9 @@ side-effect free so loaders, CLIs, and CI checks can share the same contract.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import math
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -38,6 +41,18 @@ _DEPENDENCY_KINDS = {"uses_constant", "uses_data_artifact"}
 _BLOCKED_STATUSES = {"blocked", "failed", "parse_failed"}
 _UNKNOWN_DIM_SIGNATURES = {"", "?", "unknown", "unresolved", "tbd"}
 _UNKNOWN_DIMENSION_SOURCES = {"", "unknown", "unresolved", "tbd"}
+REVIEW_QUEUE_TASK_KINDS: tuple[str, ...] = (
+    "human_review_required",
+    "blocked_resolution",
+    "audit_complete",
+)
+REVIEW_QUEUE_TASK_STATUSES: tuple[str, ...] = (
+    "open",
+    "blocked",
+    "complete",
+)
+REVIEW_QUEUE_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low")
+REVIEW_QUEUE_PRIORITIES: tuple[str, ...] = ("p0", "p1", "p2", "p3")
 
 
 @dataclass(frozen=True)
@@ -193,6 +208,59 @@ class ReviewPublicationRows:
             ],
             "diagnostics": [diagnostic.to_dict() for diagnostic in self.diagnostics],
         }
+
+
+@dataclass(frozen=True)
+class ReviewQueueTask:
+    """JSON-safe task row for review queues and audit dashboards."""
+
+    task_id: str
+    replay_key: str
+    task_kind: str
+    task_status: str
+    priority: str
+    severity: str
+    target_ids: Mapping[str, str]
+    trust_status: str
+    achieved_status: str
+    publishable: bool
+    blocker_summaries: tuple[Mapping[str, str], ...] = ()
+    suggested_reviewer_focus: tuple[str, ...] = ()
+    source_family: str = ""
+    source_system: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "task_id": self.task_id,
+            "replay_key": self.replay_key,
+            "task_kind": self.task_kind,
+            "task_status": self.task_status,
+            "priority": self.priority,
+            "severity": self.severity,
+            "target_ids": dict(self.target_ids),
+            "trust_status": self.trust_status,
+            "achieved_status": self.achieved_status,
+            "publishable": self.publishable,
+            "blocker_summaries": [
+                dict(summary) for summary in self.blocker_summaries
+            ],
+            "suggested_reviewer_focus": list(self.suggested_reviewer_focus),
+            "source_family": self.source_family,
+            "source_system": self.source_system,
+        }
+
+
+@dataclass(frozen=True)
+class ReviewQueueRows:
+    """Side-effect-free review queue materialization."""
+
+    tasks: tuple[ReviewQueueTask, ...] = ()
+
+    def to_rows(self) -> list[dict[str, Any]]:
+        return [task.to_dict() for task in self.tasks]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"tasks": self.to_rows()}
 
 
 def assess_publishability(
@@ -387,6 +455,148 @@ def build_review_publication_status_rows(
     )
 
 
+def build_review_queue_task_rows(
+    review: ReviewAssessment | ReviewTrustReport | Mapping[str, Any],
+    *,
+    candidate: Mapping[str, Any] | Any | None = None,
+    expression: Mapping[str, Any] | Any | None = None,
+    include_audit_complete: bool = True,
+) -> ReviewQueueRows:
+    """Build deterministic queue/audit rows from a review decision.
+
+    The function is intentionally inert: it does not read or write any external
+    system, and task IDs are stable hashes of target IDs, statuses, and blockers.
+    Human-reviewed decisions produce completion metadata instead of an open human
+    work task; callers that only want active work can disable that row with
+    ``include_audit_complete=False``.
+    """
+
+    review_row = _review_row(review)
+    candidate_row = _row(candidate)
+    expression_row = _row(expression)
+    trust_status = _queue_trust_status(review_row)
+    achieved_status = _summary_text(review_row, "achieved_status")
+    publishable = _bool(review_row.get("publishable"))
+    blockers = _review_blockers(review_row)
+
+    if trust_status == "blocked" or _bool(review_row.get("blocked")):
+        task_kind = "blocked_resolution"
+        task_status = "blocked"
+    elif trust_status == "human_reviewed" or _bool(review_row.get("human_reviewed")):
+        if not include_audit_complete:
+            return ReviewQueueRows()
+        task_kind = "audit_complete"
+        task_status = "complete"
+    elif trust_status in {"needs_human", "automated_pass"} or _bool(
+        review_row.get("needs_human")
+    ):
+        task_kind = "human_review_required"
+        task_status = "open"
+    else:
+        return ReviewQueueRows()
+
+    blocker_summaries = tuple(_blocker_summary(blocker) for blocker in blockers)
+    severity, priority = _queue_severity_priority(
+        task_kind,
+        achieved_status,
+        blocker_summaries,
+    )
+    target_ids = _queue_target_ids(candidate_row, expression_row)
+    source_family = _source_context_text(candidate_row, expression_row, "family")
+    source_system = _source_context_text(candidate_row, expression_row, "system")
+    stable_identity = {
+        "task_kind": task_kind,
+        "task_status": task_status,
+        "target_ids": target_ids,
+        "trust_status": trust_status,
+        "achieved_status": achieved_status,
+        "blockers": list(blockers),
+    }
+    digest = _stable_digest(stable_identity)
+    task = ReviewQueueTask(
+        task_id=f"physics-review-task:{digest[:24]}",
+        replay_key=f"physics-review:{digest}",
+        task_kind=task_kind,
+        task_status=task_status,
+        priority=priority,
+        severity=severity,
+        target_ids=target_ids,
+        trust_status=trust_status,
+        achieved_status=achieved_status,
+        publishable=publishable,
+        blocker_summaries=blocker_summaries,
+        suggested_reviewer_focus=_suggested_reviewer_focus(
+            task_kind,
+            blocker_summaries,
+        ),
+        source_family=source_family,
+        source_system=source_system,
+    )
+    return ReviewQueueRows(tasks=(task,))
+
+
+def materialize_review_queue_task_rows(
+    reviews: Iterable[ReviewAssessment | ReviewTrustReport | Mapping[str, Any]],
+    *,
+    candidates: Iterable[Mapping[str, Any] | Any | None] = (),
+    expressions: Iterable[Mapping[str, Any] | Any | None] = (),
+    include_audit_complete: bool = True,
+) -> ReviewQueueRows:
+    """Build queue rows for many review decisions, aligning context by position."""
+
+    candidate_rows = tuple(candidates)
+    expression_rows = tuple(expressions)
+    tasks: list[ReviewQueueTask] = []
+    for index, review in enumerate(reviews):
+        rows = build_review_queue_task_rows(
+            review,
+            candidate=candidate_rows[index] if index < len(candidate_rows) else None,
+            expression=expression_rows[index] if index < len(expression_rows) else None,
+            include_audit_complete=include_audit_complete,
+        )
+        tasks.extend(rows.tasks)
+    return ReviewQueueRows(tasks=tuple(tasks))
+
+
+def summarize_review_queue_tasks(
+    tasks: Iterable[ReviewQueueTask | Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Build deterministic JSON-safe rollups for review queue dashboards."""
+
+    rows = [_queue_task_row(task) for task in tasks]
+    return {
+        "task_count": len(rows),
+        "task_kind_counts": _ordered_counts(
+            (_summary_text(row, "task_kind") for row in rows),
+            REVIEW_QUEUE_TASK_KINDS,
+        ),
+        "task_status_counts": _ordered_counts(
+            (_summary_text(row, "task_status") for row in rows),
+            REVIEW_QUEUE_TASK_STATUSES,
+        ),
+        "trust_status_counts": _ordered_counts(
+            (_summary_text(row, "trust_status") for row in rows),
+            REVIEW_STATUSES,
+        ),
+        "severity_counts": _ordered_counts(
+            (_summary_text(row, "severity") for row in rows),
+            REVIEW_QUEUE_SEVERITIES,
+        ),
+        "priority_counts": _ordered_counts(
+            (_summary_text(row, "priority") for row in rows),
+            REVIEW_QUEUE_PRIORITIES,
+        ),
+        "source_family_counts": _ordered_counts(
+            (_summary_text(row, "source_family") for row in rows)
+        ),
+        "blocker_reason_counts": _ordered_counts(
+            _summary_text(summary, "reason")
+            for row in rows
+            for summary in _queue_blocker_summaries(row)
+        ),
+    }
+
+
 def require_publishable(**kwargs: Any) -> ReviewAssessment:
     """Return an assessment or raise ``ValueError`` with gate blockers."""
 
@@ -458,6 +668,210 @@ def _candidate_status_for_review(
     if review_status == "automated_pass":
         return "source_verified"
     return "raw_imported"
+
+
+def _queue_trust_status(review_row: Mapping[str, Any]) -> str:
+    trust_status = _text(review_row, "trust_status")
+    if trust_status:
+        return trust_status
+    if _bool(review_row.get("blocked")):
+        return "blocked"
+    if _bool(review_row.get("human_reviewed")) or _bool(review_row.get("publishable")):
+        return "human_reviewed"
+    if _bool(review_row.get("needs_human")):
+        return "needs_human"
+    return "unreviewed"
+
+
+def _queue_task_row(task: ReviewQueueTask | Mapping[str, Any]) -> Mapping[str, Any]:
+    if isinstance(task, ReviewQueueTask):
+        return task.to_dict()
+    return task if isinstance(task, Mapping) else {}
+
+
+def _queue_blocker_summaries(row: Mapping[str, Any]) -> tuple[Mapping[str, Any], ...]:
+    summaries = row.get("blocker_summaries")
+    if not isinstance(summaries, Sequence) or isinstance(summaries, (str, bytes)):
+        return ()
+    return tuple(summary for summary in summaries if isinstance(summary, Mapping))
+
+
+def _queue_target_ids(
+    candidate: Mapping[str, Any],
+    expression: Mapping[str, Any],
+) -> dict[str, str]:
+    values = {
+        "candidate_id": _first_context_text(
+            (candidate, "candidate_id"),
+            (expression, "candidate_id"),
+        ),
+        "source_candidate_id": _first_context_text(
+            (candidate, "source_candidate_id"),
+            (expression, "source_candidate_id"),
+        ),
+        "expression_id": _first_context_text((expression, "expression_id")),
+        "source_expression_id": _first_context_text(
+            (expression, "source_expression_id"),
+            (candidate, "source_expression_id"),
+        ),
+        "artifact_id": _first_context_text(
+            (expression, "artifact_id"),
+            (candidate, "artifact_id"),
+        ),
+        "version_id": _first_context_text((expression, "version_id")),
+        "snapshot_id": _first_context_text(
+            (candidate, "snapshot_id"),
+            (expression, "snapshot_id"),
+        ),
+    }
+    return {key: value for key, value in values.items() if value}
+
+
+def _source_context_text(
+    candidate: Mapping[str, Any],
+    expression: Mapping[str, Any],
+    kind: str,
+) -> str:
+    keys = (
+        ("source_family", "fixture_family", "family")
+        if kind == "family"
+        else ("source_system", "system")
+    )
+    for row in (expression, candidate):
+        for key in keys:
+            value = _text(row, key)
+            if value:
+                return value
+        payload = _mapping(row.get("source_payload"))
+        for key in keys:
+            value = _text(payload, key)
+            if value:
+                return value
+    return ""
+
+
+def _first_context_text(*pairs: tuple[Mapping[str, Any], str]) -> str:
+    for row, key in pairs:
+        value = row.get(key)
+        if value is None:
+            continue
+        text = value if isinstance(value, str) else str(value)
+        text = text.strip()
+        if text:
+            return text
+    return ""
+
+
+def _blocker_summary(blocker: str) -> dict[str, str]:
+    return {
+        "reason": _blocker_reason(blocker),
+        "detail": blocker,
+    }
+
+
+def _blocker_reason(blocker: str) -> str:
+    text = blocker.lower()
+    if "candidate_status" in text or "review_status is blocked" in text:
+        return "blocked_status"
+    if "parse" in text or "roundtrip" in text or "canonical symbolic" in text:
+        return "parse"
+    if "dimension" in text or "dimensional" in text or "dim_signature" in text:
+        return "dimension"
+    if (
+        "validation" in text
+        or "validity bound" in text
+        or "numpy" in text
+        or "sympy" in text
+        or "canonical_expr_hash" in text
+        or "topology_hash" in text
+    ):
+        return "symbolic_validation"
+    if (
+        "reference" in text
+        or "source" in text
+        or "relationship" in text
+        or "mechanism classification" in text
+    ):
+        return "source_verification"
+    if "review" in text or "reviewer" in text or "reviewed" in text:
+        return "human_review"
+    if "missing" in text or "required" in text:
+        return "missing_payload"
+    return "other"
+
+
+def _queue_severity_priority(
+    task_kind: str,
+    achieved_status: str,
+    blocker_summaries: Sequence[Mapping[str, str]],
+) -> tuple[str, str]:
+    reasons = {_text(summary, "reason") for summary in blocker_summaries}
+    if task_kind == "blocked_resolution":
+        if {"blocked_status", "parse"} & reasons:
+            return "critical", "p0"
+        return "high", "p1"
+    if task_kind == "human_review_required":
+        if achieved_status in {"raw_imported", "parsed"}:
+            return "high", "p1"
+        return "medium", "p2"
+    return "low", "p3"
+
+
+def _suggested_reviewer_focus(
+    task_kind: str,
+    blocker_summaries: Sequence[Mapping[str, str]],
+) -> tuple[str, ...]:
+    if task_kind == "audit_complete":
+        return ("audit/completion metadata only; no human work required",)
+    reason_focus = {
+        "blocked_status": "resolve blocked status or upstream failure",
+        "parse": "inspect parse confidence, roundtrip, and canonical symbolic payload",
+        "dimension": "verify dimensions and dimensional consistency evidence",
+        "symbolic_validation": "review symbolic validation, validity bounds, and NumPy evidence",
+        "source_verification": "verify references, mechanism classification, and dependency relationships",
+        "human_review": "complete human review evidence and validity-bound signoff",
+        "missing_payload": "locate missing ingestion payload or target identifiers",
+        "other": "inspect unresolved review blockers",
+    }
+    focus: list[str] = []
+    for summary in blocker_summaries:
+        reason = _text(summary, "reason") or "other"
+        item = reason_focus.get(reason, reason_focus["other"])
+        if item not in focus:
+            focus.append(item)
+    if not focus:
+        focus.append("complete human review signoff")
+    return tuple(focus)
+
+
+def _stable_digest(value: Mapping[str, Any]) -> str:
+    return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _canonical_json(value: Any) -> str:
+    return json.dumps(
+        _json_safe(value),
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {
+            str(key): _json_safe(item)
+            for key, item in sorted(value.items(), key=lambda item: str(item[0]))
+        }
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, set):
+        return sorted(_json_safe(item) for item in value)
+    if isinstance(value, float):
+        return value if math.isfinite(value) else str(value)
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    return str(value)
 
 
 def _review_gates(review_row: Mapping[str, Any]) -> tuple[Mapping[str, Any], ...]:

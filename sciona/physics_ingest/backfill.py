@@ -44,6 +44,7 @@ def build_physics_ingest_backfill_report(
     include_source_request_envelopes: bool = False,
     include_publication_write_preflight: bool = False,
     include_execution_boundary_preflight: bool = False,
+    include_audit_artifact_manifests: bool = False,
     include_rows: bool = False,
 ) -> dict[str, Any]:
     """Build a deterministic dry-run report for a bulk physics backfill.
@@ -235,6 +236,15 @@ def build_physics_ingest_backfill_report(
     report["dashboard_summary"] = _dashboard_summary(report)
     if include_rows:
         report["insert_rows_by_table"] = insert_rows
+    if include_audit_artifact_manifests:
+        artifact_manifests = _audit_artifact_manifests(
+            report,
+            include_payload=include_rows,
+        )
+        report["audit_artifact_manifests"] = artifact_manifests
+        report["audit_artifact_manifest_summary"] = (
+            _audit_artifact_manifest_summary(artifact_manifests)
+        )
 
     _assert_json_serializable(report)
     return report
@@ -1020,6 +1030,170 @@ def _phase7_dashboard_rollup(report: Mapping[str, Any]) -> dict[str, Any] | None
     if isinstance(coverage_summary, Mapping):
         summary["summary"] = _json_safe_mapping(coverage_summary.get("summary") or {})
     return summary
+
+
+def _audit_artifact_manifests(
+    report: Mapping[str, Any],
+    *,
+    include_payload: bool,
+) -> list[dict[str, Any]]:
+    sections = (
+        "dashboard_summary",
+        "audit_replay",
+        "phase7_coverage_summary",
+        "source_request_envelope_preflight",
+        "publication_storage_write_preflight",
+    )
+    manifests = []
+    for section_name in sections:
+        payload = report.get(section_name)
+        if not isinstance(payload, Mapping):
+            continue
+        manifests.append(
+            _audit_artifact_manifest_row(
+                section_name=section_name,
+                payload=payload,
+                report=report,
+                include_payload=include_payload,
+            )
+        )
+    return manifests
+
+
+def _audit_artifact_manifest_row(
+    *,
+    section_name: str,
+    payload: Mapping[str, Any],
+    report: Mapping[str, Any],
+    include_payload: bool,
+) -> dict[str, Any]:
+    json_payload = _json_safe_mapping(payload)
+    payload_sha256 = _stable_row_hash(json_payload)
+    row = {
+        "manifest_version": "physics-ingest-backfill-artifact-manifest-row.v1",
+        "artifact_key": (
+            f"{BACKFILL_REPORT_KIND}/{section_name}/{payload_sha256}"
+        ),
+        "artifact_name": section_name,
+        "name": section_name,
+        "source_section": section_name,
+        "source_report_kind": str(report.get("report_kind") or ""),
+        "source_replay_key": (
+            f"{str(report.get('report_kind') or '')}|{section_name}|"
+            f"payload_sha256={payload_sha256}"
+        ),
+        "source_report_fingerprint_sha256": str(
+            (report.get("audit_replay") or {}).get("input_fingerprint_sha256")
+            if isinstance(report.get("audit_replay"), Mapping)
+            else ""
+        ),
+        "content_type": "application/json",
+        "payload_sha256": payload_sha256,
+        **_audit_artifact_payload_counts(section_name, json_payload),
+    }
+    if include_payload:
+        row["payload"] = json_payload
+    return _json_safe_mapping(row)
+
+
+def _audit_artifact_payload_counts(
+    section_name: str,
+    payload: Mapping[str, Any],
+) -> dict[str, int]:
+    counts: dict[str, int] = {"section_count": len(payload)}
+    if section_name == "dashboard_summary":
+        write_plan = payload.get("write_plan") or {}
+        if isinstance(write_plan, Mapping):
+            counts["row_count"] = int(write_plan.get("row_count") or 0)
+        counts["payload_count"] = counts["section_count"]
+    elif section_name == "audit_replay":
+        batch_digests = payload.get("table_batch_digests") or {}
+        replay_rollup = payload.get("replay_key_rollup") or {}
+        source_replay = payload.get("source_retrieval_replay") or {}
+        diagnostic_digest = payload.get("diagnostic_digest") or {}
+        row_count = 0
+        replay_key_count = 0
+        diagnostic_count = 0
+        if isinstance(batch_digests, Mapping):
+            row_count = sum(
+                int(digest.get("row_count") or 0)
+                for digest in batch_digests.values()
+                if isinstance(digest, Mapping)
+            )
+            counts["table_count"] = len(batch_digests)
+        if isinstance(replay_rollup, Mapping):
+            replay_key_count = sum(
+                int(rollup.get("count") or 0)
+                for rollup in replay_rollup.values()
+                if isinstance(rollup, Mapping)
+            )
+        if isinstance(source_replay, Mapping):
+            replay_key_count += int(source_replay.get("replay_key_count") or 0)
+        if isinstance(diagnostic_digest, Mapping):
+            diagnostic_count = int(diagnostic_digest.get("count") or 0)
+        counts["row_count"] = row_count
+        counts["replay_key_count"] = replay_key_count
+        counts["diagnostic_count"] = diagnostic_count
+        counts["payload_count"] = (
+            counts["section_count"] + row_count + replay_key_count + diagnostic_count
+        )
+    elif section_name == "phase7_coverage_summary":
+        row_count = _phase7_summary_row_count(payload)
+        counts["row_count"] = row_count
+        counts["payload_count"] = row_count
+    elif section_name == "source_request_envelope_preflight":
+        request_envelopes = payload.get("request_envelopes") or ()
+        row_count = (
+            len(request_envelopes) if isinstance(request_envelopes, list) else 0
+        )
+        counts["row_count"] = row_count
+        counts["payload_count"] = row_count
+    elif section_name == "publication_storage_write_preflight":
+        counts["table_count"] = int(payload.get("table_count") or 0)
+        counts["row_count"] = int(payload.get("total_row_count") or 0)
+        counts["payload_count"] = counts["row_count"]
+    else:
+        counts["payload_count"] = counts["section_count"]
+    return counts
+
+
+def _phase7_summary_row_count(summary: Mapping[str, Any]) -> int:
+    nested_summary = summary.get("summary") or {}
+    if isinstance(nested_summary, Mapping):
+        for key in ("row_count", "total_row_count", "total_rows"):
+            if key in nested_summary:
+                return int(nested_summary.get(key) or 0)
+    table_counts = summary.get("table_row_counts") or {}
+    if isinstance(table_counts, Mapping):
+        return sum(int(count or 0) for count in table_counts.values())
+    return 0
+
+
+def _audit_artifact_manifest_summary(
+    manifests: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    manifest_rows = [_json_safe_mapping(row) for row in manifests]
+    digest_source = [
+        {
+            "artifact_key": row["artifact_key"],
+            "content_type": row["content_type"],
+            "payload_count": row["payload_count"],
+            "payload_sha256": row["payload_sha256"],
+        }
+        for row in manifest_rows
+    ]
+    return {
+        "manifest_version": "physics-ingest-backfill-artifact-manifest-summary.v1",
+        "artifact_count": len(manifest_rows),
+        "total_payload_count": sum(
+            int(row.get("payload_count") or 0) for row in manifest_rows
+        ),
+        "content_type_counts": _sorted_counts(
+            str(row.get("content_type") or "unknown") for row in manifest_rows
+        ),
+        "payload_sha256_digest": _stable_sequence_digest(digest_source),
+        "artifact_keys": [str(row["artifact_key"]) for row in manifest_rows],
+    }
 
 
 def _sorted_int_mapping(value: Mapping[str, Any]) -> dict[str, int]:

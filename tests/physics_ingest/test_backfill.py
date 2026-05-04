@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
@@ -240,6 +241,200 @@ def test_backfill_report_includes_json_safe_dashboard_summary() -> None:
     assert summary["data_artifacts"] == {"seed_count": 1}
 
 
+def test_backfill_report_omits_audit_artifact_manifests_by_default() -> None:
+    report = build_physics_ingest_backfill_report(
+        source_bundles=[_source_bundle()],
+        publication_manifests=[_publication_manifest()],
+        artifact_bindings={
+            "local:fixture.force": {
+                "artifact_id": ARTIFACT_ID,
+                "version_id": VERSION_ID,
+            }
+        },
+    )
+
+    assert "audit_artifact_manifests" not in report
+    assert "audit_artifact_manifest_summary" not in report
+
+
+def test_backfill_report_includes_opt_in_audit_artifact_manifests() -> None:
+    report = build_physics_ingest_backfill_report(
+        source_bundles=[_source_bundle()],
+        publication_manifests=[_publication_manifest()],
+        artifact_bindings={
+            "local:fixture.force": {
+                "artifact_id": ARTIFACT_ID,
+                "version_id": VERSION_ID,
+            }
+        },
+        include_audit_artifact_manifests=True,
+    )
+
+    manifests = report["audit_artifact_manifests"]
+    summary = report["audit_artifact_manifest_summary"]
+
+    assert json.loads(json.dumps(manifests, sort_keys=True)) == manifests
+    assert [row["artifact_name"] for row in manifests] == [
+        "dashboard_summary",
+        "audit_replay",
+        "phase7_coverage_summary",
+    ]
+    assert all(row["content_type"] == "application/json" for row in manifests)
+    assert all(
+        row["source_report_kind"] == BACKFILL_REPORT_KIND
+        for row in manifests
+    )
+    assert all(row["name"] == row["artifact_name"] for row in manifests)
+    assert all("payload" not in row for row in manifests)
+    assert all("payload_ref" not in row for row in manifests)
+    assert all(len(row["payload_sha256"]) == 64 for row in manifests)
+
+    dashboard_manifest = manifests[0]
+    expected_dashboard_sha = _stable_json_sha256(report["dashboard_summary"])
+    assert dashboard_manifest["payload_sha256"] == expected_dashboard_sha
+    assert dashboard_manifest["artifact_key"] == (
+        f"{BACKFILL_REPORT_KIND}/dashboard_summary/{expected_dashboard_sha}"
+    )
+    assert dashboard_manifest["source_replay_key"] == (
+        f"{BACKFILL_REPORT_KIND}|dashboard_summary|"
+        f"payload_sha256={expected_dashboard_sha}"
+    )
+    assert dashboard_manifest["row_count"] == report["dashboard_summary"][
+        "write_plan"
+    ]["row_count"]
+    phase7_manifest = manifests[2]
+    assert phase7_manifest["row_count"] == report["phase7_coverage_summary"][
+        "summary"
+    ]["total_rows"]
+
+    assert summary["artifact_count"] == 3
+    assert summary["total_payload_count"] == sum(
+        row["payload_count"] for row in manifests
+    )
+    assert summary["content_type_counts"] == {"application/json": 3}
+    assert len(summary["payload_sha256_digest"]) == 64
+    assert summary["artifact_keys"] == [row["artifact_key"] for row in manifests]
+
+
+def test_backfill_audit_artifact_manifest_hashes_are_deterministic() -> None:
+    kwargs = {
+        "source_bundles": [_source_bundle()],
+        "publication_manifests": [_publication_manifest()],
+        "artifact_bindings": {
+            "local:fixture.force": {
+                "artifact_id": ARTIFACT_ID,
+                "version_id": VERSION_ID,
+            }
+        },
+        "include_audit_artifact_manifests": True,
+    }
+
+    report = build_physics_ingest_backfill_report(**kwargs)
+    repeated_report = build_physics_ingest_backfill_report(**kwargs)
+    changed_report = build_physics_ingest_backfill_report(
+        **{
+            **kwargs,
+            "review_diagnostics": [
+                {
+                    "reason": "fixture_warning",
+                    "severity": "warning",
+                }
+            ],
+        }
+    )
+
+    assert report["audit_artifact_manifests"] == repeated_report[
+        "audit_artifact_manifests"
+    ]
+    assert report["audit_artifact_manifest_summary"] == repeated_report[
+        "audit_artifact_manifest_summary"
+    ]
+    assert report["audit_artifact_manifest_summary"][
+        "payload_sha256_digest"
+    ] != changed_report["audit_artifact_manifest_summary"]["payload_sha256_digest"]
+
+
+def test_backfill_audit_artifact_manifests_can_embed_payload_with_rows() -> None:
+    report = build_physics_ingest_backfill_report(
+        source_bundles=[_source_bundle()],
+        include_rows=True,
+        include_audit_artifact_manifests=True,
+    )
+
+    manifests = report["audit_artifact_manifests"]
+
+    assert "insert_rows_by_table" in report
+    assert all("payload" in row for row in manifests)
+    assert manifests[0]["payload"] == report["dashboard_summary"]
+    assert json.loads(json.dumps(report, sort_keys=True)) == report
+
+
+def test_backfill_audit_artifact_manifests_follow_preflight_flags() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan(max_jobs=2, limit=5)
+    review_rows = {
+        "artifact_symbolic_expressions": [
+            {
+                "expression_id": "expression-review-2",
+                "review_status": "human_reviewed",
+            }
+        ]
+    }
+
+    source_report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=retrieval_plan,
+        review_status_rows=review_rows,
+        include_source_request_envelopes=True,
+        include_audit_artifact_manifests=True,
+    )
+    write_report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=retrieval_plan,
+        review_status_rows=review_rows,
+        include_publication_write_preflight=True,
+        include_audit_artifact_manifests=True,
+    )
+    boundary_report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=retrieval_plan,
+        review_status_rows=review_rows,
+        include_execution_boundary_preflight=True,
+        include_audit_artifact_manifests=True,
+    )
+
+    assert _manifest_names(source_report) == [
+        "dashboard_summary",
+        "audit_replay",
+        "phase7_coverage_summary",
+        "source_request_envelope_preflight",
+    ]
+    assert _manifest_names(write_report) == [
+        "dashboard_summary",
+        "audit_replay",
+        "phase7_coverage_summary",
+        "publication_storage_write_preflight",
+    ]
+    assert _manifest_names(boundary_report) == [
+        "dashboard_summary",
+        "audit_replay",
+        "phase7_coverage_summary",
+        "source_request_envelope_preflight",
+        "publication_storage_write_preflight",
+    ]
+
+    source_manifest = _manifest_by_name(
+        boundary_report,
+        "source_request_envelope_preflight",
+    )
+    write_manifest = _manifest_by_name(
+        boundary_report,
+        "publication_storage_write_preflight",
+    )
+    assert source_manifest["row_count"] == boundary_report[
+        "source_request_envelope_preflight"
+    ]["step_count"]
+    assert write_manifest["row_count"] == boundary_report[
+        "publication_storage_write_preflight"
+    ]["total_row_count"]
+
+
 def test_backfill_dashboard_summary_omits_phase7_when_not_requested() -> None:
     report = build_physics_ingest_backfill_report(
         source_bundles=[_source_bundle()],
@@ -252,6 +447,16 @@ def test_backfill_dashboard_summary_omits_phase7_when_not_requested() -> None:
     assert report["dashboard_summary"]["input_counts"][
         "phase7_coverage_row_count"
     ] == 1
+
+    manifest_report = build_physics_ingest_backfill_report(
+        source_bundles=[_source_bundle()],
+        include_phase7_coverage_summary=False,
+        include_audit_artifact_manifests=True,
+    )
+    assert _manifest_names(manifest_report) == [
+        "dashboard_summary",
+        "audit_replay",
+    ]
 
 
 def test_backfill_report_groups_review_normalization_and_pdg_skip_diagnostics() -> None:
@@ -759,6 +964,30 @@ def test_backfill_report_can_include_execution_boundary_preflight_sections() -> 
         },
     }
     assert json.loads(json.dumps(report, sort_keys=True)) == report
+
+
+def _manifest_names(report: dict[str, Any]) -> list[str]:
+    return [
+        str(row["artifact_name"])
+        for row in report.get("audit_artifact_manifests", ())
+    ]
+
+
+def _manifest_by_name(report: dict[str, Any], name: str) -> dict[str, Any]:
+    for row in report["audit_artifact_manifests"]:
+        if row["artifact_name"] == name:
+            return row
+    raise AssertionError(f"missing artifact manifest {name}")
+
+
+def _stable_json_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _source_bundle() -> dict[str, Any]:

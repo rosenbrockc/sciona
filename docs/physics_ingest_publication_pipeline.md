@@ -44,9 +44,12 @@ The current pipeline is split at the storage boundary:
 - `sciona.physics_ingest.backfill`, `sciona.physics_ingest.pdg_cdg`, and
   `sciona.physics_ingest.review` expose JSON-safe rollups for bulk dashboards,
   PDG/CDG publication audit, and Phase 5 trust review triage. Backfill reports
-  can opt into source request-envelope and publication write preflight sections.
+  can opt into source request-envelope, publication write preflight, and
+  persistable audit/dashboard artifact manifest sections.
 - `sciona.physics_ingest.retrieval` provides side-effect-free symbolic
   retrieval and synthesis ranking over already-fetched catalog/document rows.
+- `sciona.physics_ingest.retrieval_io` plans and executes catalog/RPC fetches
+  through injected clients before handing rows to the side-effect-free rankers.
 
 Publication table order is:
 
@@ -301,9 +304,8 @@ ingestion roadmap. Remaining work includes:
   views;
 - broaden symbolic normalization coverage across the long-tail equation corpus
   and keep expanding QUDT/unit alias coverage;
-- connect review workflow decisions for `needs_human`, `human_reviewed`, and
-  `blocked` to production queues and reviewer UX;
-- add production bulk backfill orchestration, persisted coverage dashboards, and
-  replay/audit artifact storage for large ingestion waves;
-- connect the side-effect-free retrieval and synthesis ranking surface to
-  production catalog/RPC fetches and runtime planner calls.
+- wire review queue task rows for `needs_human`, `human_reviewed`, and
+  `blocked` into production queues and reviewer UX;
+- add production bulk backfill orchestration and storage adapters for persisted
+  coverage dashboard and replay/audit artifact manifests;
+- connect the injected-client retrieval fetch boundary to runtime planner calls.

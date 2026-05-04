@@ -442,7 +442,12 @@ Current modules:
   publication fixtures and PDG-derived CDG publication rows.
 - `sciona.physics_ingest.backfill`: builds deterministic bulk backfill reports,
   including opt-in source request-envelope and publication write preflight
-  sections for production execution review.
+  sections for production execution review, plus opt-in persistable
+  audit/dashboard artifact manifests.
+- `sciona.physics_ingest.review`: materializes deterministic review queue task
+  rows for `needs_human`, `blocked`, and human-reviewed audit completion states.
+- `sciona.physics_ingest.retrieval_io`: plans and executes catalog/RPC fetches
+  through injected clients for runtime retrieval and synthesis ranking.
 
 Dry-run usage:
 
