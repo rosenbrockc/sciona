@@ -333,6 +333,12 @@ def _deployment_report_dict(
         "runtime_preflight_summary": _json_safe(
             runtime_preflight_report.get("summary") or {}
         ),
+        "backfill_dashboard_summary": _json_safe(
+            backfill_report.get("dashboard_summary") or {}
+        ),
+        "audit_artifact_manifest_summary": _json_safe(
+            backfill_report.get("audit_artifact_manifest_summary") or {}
+        ),
         "audit_artifact_storage": audit_artifact_rows.to_dict(),
         "storage_bundle": storage_bundle.to_dict(),
         "storage_preflight": storage_preflight,

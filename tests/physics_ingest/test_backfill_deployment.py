@@ -109,6 +109,26 @@ def test_backfill_deployment_includes_runtime_preflight_summary() -> None:
     assert report["summary"]["runtime_blocked"] is False
 
 
+def test_backfill_deployment_surfaces_compact_summaries_without_full_report() -> None:
+    report = build_physics_ingest_backfill_deployment_report(
+        include_backfill_report=False,
+    ).to_dict()
+
+    assert "backfill_report" not in report
+    assert report["backfill_dashboard_summary"]["ok"] is True
+    assert "publication_readiness" in report["backfill_dashboard_summary"]
+    assert "phase7_coverage" in report["backfill_dashboard_summary"]
+    assert {
+        "by_review_status",
+        "by_validation_status",
+    } <= set(report["backfill_dashboard_summary"]["phase7_coverage"])
+    assert report["audit_artifact_manifest_summary"]["artifact_count"] == report[
+        "summary"
+    ]["audit_artifact_manifest_count"]
+    assert report["audit_artifact_manifest_summary"]["artifact_keys"]
+    assert json.loads(json.dumps(report, sort_keys=True)) == report
+
+
 def test_backfill_deployment_report_is_json_serializable() -> None:
     report = build_physics_ingest_backfill_deployment_report(
         review_diagnostics=[
