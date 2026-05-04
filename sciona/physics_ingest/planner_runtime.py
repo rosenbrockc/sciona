@@ -242,6 +242,17 @@ def _batch_summary(summaries: Sequence[Mapping[str, Any]]) -> JSONDict:
         "compiler_blocker_count": sum(
             int(summary["compiler_blocker_count"]) for summary in summaries
         ),
+        "query_requested_feature_count": sum(
+            int(summary["query_requested_feature_count"]) for summary in summaries
+        ),
+        "query_matched_requested_feature_count": sum(
+            int(summary["query_matched_requested_feature_count"])
+            for summary in summaries
+        ),
+        "query_unmatched_requested_feature_count": sum(
+            int(summary["query_unmatched_requested_feature_count"])
+            for summary in summaries
+        ),
         "diagnostic_count": sum(
             int(summary["diagnostic_count"]) for summary in summaries
         ),
@@ -256,6 +267,7 @@ def _response_summary(response: Mapping[str, Any]) -> JSONDict:
     external = _mapping_list(response.get("external_knowledge_suggestions"))
     blocked = _mapping_list(response.get("blocked_candidates"))
     diagnostics = _mapping_list(response.get("diagnostics"))
+    query_coverage = _mapping(response.get("query_coverage_summary"))
     compiler_blockers = [
         blocker
         for candidate in blocked
@@ -269,6 +281,15 @@ def _response_summary(response: Mapping[str, Any]) -> JSONDict:
         "external_knowledge_candidate_count": len(external),
         "blocked_candidate_count": len(blocked),
         "compiler_blocker_count": len(compiler_blockers),
+        "query_requested_feature_count": _int_value(
+            query_coverage.get("requested_feature_count")
+        ),
+        "query_matched_requested_feature_count": _int_value(
+            query_coverage.get("matched_requested_feature_count")
+        ),
+        "query_unmatched_requested_feature_count": len(
+            _strings(query_coverage.get("unmatched_requested_features"))
+        ),
         "diagnostic_count": len(diagnostics),
         "blocking_diagnostic_count": sum(
             1
@@ -427,6 +448,25 @@ def _compiler_blockers(candidate: Mapping[str, Any]) -> list[str]:
         for blocker in _sequence(contract.get("blockers"))
         if str(blocker)
     ]
+
+
+def _int_value(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
+def _strings(value: Any) -> list[str]:
+    return [str(item) for item in _sequence(value) if str(item)]
 
 
 def _mapping(value: Any) -> JSONDict:

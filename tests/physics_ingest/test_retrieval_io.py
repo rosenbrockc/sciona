@@ -466,6 +466,40 @@ async def test_symbolic_retrieval_planner_executes_fake_client_synthesis_section
     assert response["request_replay_metadata"]["executed_fetch_plan_hash"] == request[
         "fetch_plan"
     ]["plan_hash"]
+    assert response["dashboard_summary"]["synthesis_candidate_counts"] == {
+        "executable": 1,
+        "external": 1,
+        "blocked": 1,
+    }
+    assert response["query_coverage_summary"] == {
+        "requested": {
+            "topology_hash": True,
+            "dimensional_hash": True,
+            "dim_signature": False,
+            "mechanism": True,
+            "behavioral_archetype": False,
+            "relationship": False,
+            "validity": False,
+            "source": False,
+            "known_analogue": False,
+            "data_artifact": False,
+        },
+        "candidate_match_counts": {
+            "topology_hash": 3,
+            "dimensional_hash": 3,
+            "dim_signature": 0,
+            "mechanism": 2,
+            "behavioral_archetype": 0,
+            "relationship": 0,
+            "validity": 0,
+            "source": 0,
+            "known_analogue": 0,
+            "data_artifact": 0,
+        },
+        "requested_feature_count": 3,
+        "matched_requested_feature_count": 3,
+        "unmatched_requested_features": [],
+    }
 
 
 async def test_symbolic_retrieval_planner_response_is_json_safe() -> None:

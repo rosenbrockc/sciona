@@ -499,6 +499,7 @@ async def execute_symbolic_retrieval_planner_request(
     candidate_sections = _planner_candidate_sections(fetch_result)
     diagnostics = list(fetch_result.get("diagnostics", ()))
     request_replay_metadata = _planner_replay_metadata(request, fetch_result)
+    report_summaries = _planner_report_summaries(fetch_result)
     return _json_safe(
         {
             "report_kind": SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND,
@@ -514,6 +515,8 @@ async def execute_symbolic_retrieval_planner_request(
             "diagnostics": diagnostics,
             "fetch_summary": dict(fetch_result.get("summary", {})),
             "fetch_plan": dict(fetch_result.get("fetch_plan", {})),
+            "dashboard_summary": report_summaries["dashboard_summary"],
+            "query_coverage_summary": report_summaries["query_coverage_summary"],
         }
     )
 
@@ -639,6 +642,16 @@ def _planner_candidate_sections(fetch_result: Mapping[str, Any]) -> dict[str, li
         "executable_candidates": executable,
         "external_knowledge_suggestions": external,
         "blocked_candidates": blocked,
+    }
+
+
+def _planner_report_summaries(fetch_result: Mapping[str, Any]) -> dict[str, Any]:
+    synthesis_report = _mapping(fetch_result.get("synthesis_report"))
+    retrieval_report = _mapping(fetch_result.get("retrieval_report"))
+    report = synthesis_report or retrieval_report
+    return {
+        "dashboard_summary": _mapping(report.get("dashboard_summary")),
+        "query_coverage_summary": _mapping(report.get("query_coverage_summary")),
     }
 
 
@@ -806,6 +819,8 @@ def _normalize_planner_response_payload(
         ),
         "blocked_candidates": _mapping_list(response.get("blocked_candidates")),
         "diagnostics": _mapping_list(response.get("diagnostics")),
+        "dashboard_summary": _mapping(response.get("dashboard_summary")),
+        "query_coverage_summary": _mapping(response.get("query_coverage_summary")),
     }
     return _json_safe(normalized)
 
@@ -841,6 +856,10 @@ def _planner_service_response(
             "blocked_candidates": blocked_candidates,
             "diagnostics": diagnostics_list,
             "planner_response": dict(planner_response),
+            "dashboard_summary": _mapping(planner_response.get("dashboard_summary")),
+            "query_coverage_summary": _mapping(
+                planner_response.get("query_coverage_summary")
+            ),
         }
     )
 

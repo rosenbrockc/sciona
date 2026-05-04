@@ -114,6 +114,11 @@ async def test_planner_runtime_fake_async_client_non_dry_run() -> None:
             }
         ],
         "diagnostics": [{"severity": "info", "code": "ok", "message": "ok"}],
+        "query_coverage_summary": {
+            "requested_feature_count": 2,
+            "matched_requested_feature_count": 1,
+            "unmatched_requested_features": ["mechanism"],
+        },
     }
     client = _FakeAsyncPlannerClient(planner_response)
 
@@ -131,7 +136,14 @@ async def test_planner_runtime_fake_async_client_non_dry_run() -> None:
     assert report["summary"]["external_knowledge_candidate_count"] == 1
     assert report["summary"]["blocked_candidate_count"] == 1
     assert report["summary"]["compiler_blocker_count"] == 1
+    assert report["summary"]["query_requested_feature_count"] == 2
+    assert report["summary"]["query_matched_requested_feature_count"] == 1
+    assert report["summary"]["query_unmatched_requested_feature_count"] == 1
     assert report["summary"]["diagnostic_count"] == 1
+    assert (
+        report["invocation_responses"][0]["summary"]["query_requested_feature_count"]
+        == 2
+    )
 
 
 async def test_planner_runtime_missing_client_uses_retrieval_io_blocked_response() -> None:
