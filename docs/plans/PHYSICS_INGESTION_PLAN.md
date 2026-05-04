@@ -436,7 +436,10 @@ Current modules:
 - `sciona.physics_ingest.deployment`: composes publication rows, PDG catalog
   projections, review queue rows, and audit artifact rows into one deterministic
   production storage bundle with an inert write plan and injected-client
-  preflight boundary.
+  preflight/apply boundary.
+- `sciona.physics_ingest.deployment_runtime`: composes side-effect-free
+  production deployment preflight reports across full source runtime execution
+  readiness and optional storage bundle preflight summaries.
 - `sciona.physics_ingest.sources.retrieval_plan`: emits deterministic
   executor-facing request envelopes for source jobs.
 - `sciona.physics_ingest.sources.executor`: executes retrieval envelopes only

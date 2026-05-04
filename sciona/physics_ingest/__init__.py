@@ -29,10 +29,18 @@ from sciona.physics_ingest.coverage import (
     build_phase7_coverage_summary_dict,
 )
 from sciona.physics_ingest.deployment import (
+    PhysicsIngestDeploymentStorageApplyResult,
     PhysicsIngestDeploymentStorageBundle,
     PhysicsIngestDeploymentStorageComponent,
+    apply_physics_ingest_deployment_storage_bundle,
     build_physics_ingest_deployment_storage_bundle,
     preflight_physics_ingest_deployment_storage_bundle,
+)
+from sciona.physics_ingest.deployment_runtime import (
+    DEPLOYMENT_RUNTIME_REPORT_VERSION,
+    PhysicsIngestDeploymentRuntimeReport,
+    build_physics_ingest_deployment_runtime_report,
+    build_physics_ingest_deployment_runtime_report_dict,
 )
 from sciona.physics_ingest.ids import (
     DeterministicIdError,
@@ -237,6 +245,7 @@ __all__ = [
     "BindingDiagnostic",
     "BindingResolutionResult",
     "COMPOSED_REPORT_KIND",
+    "DEPLOYMENT_RUNTIME_REPORT_VERSION",
     "DeterministicIdError",
     "NormalizationDiagnostic",
     "NormalizedExpressionDraft",
@@ -249,6 +258,8 @@ __all__ = [
     "Phase7CoverageBucket",
     "Phase7CoverageSummary",
     "PhysicsEquationCandidateRow",
+    "PhysicsIngestDeploymentRuntimeReport",
+    "PhysicsIngestDeploymentStorageApplyResult",
     "PhysicsIngestDeploymentStorageBundle",
     "PhysicsIngestDeploymentStorageComponent",
     "PhysicsIngestSnapshotRow",
@@ -329,6 +340,7 @@ __all__ = [
     "WORKFLOW_STATUSES",
     "Wave0ContractError",
     "adapt_publication_supabase_client",
+    "apply_physics_ingest_deployment_storage_bundle",
     "attach_deterministic_candidate_ids",
     "attach_snapshot_id",
     "assess_publishability",
@@ -343,6 +355,8 @@ __all__ = [
     "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
     "build_physics_ingest_backfill_report",
+    "build_physics_ingest_deployment_runtime_report",
+    "build_physics_ingest_deployment_runtime_report_dict",
     "build_physics_ingest_deployment_storage_bundle",
     "build_physics_ingestion_validation_report",
     "build_physics_source_retrieval_run_plan",

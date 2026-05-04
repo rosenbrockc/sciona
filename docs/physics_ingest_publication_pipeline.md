@@ -25,6 +25,11 @@ The current pipeline is split at the storage boundary:
   clients and can preflight planned writes without importing Supabase or writing
   rows. It also exposes a high-level apply helper for injected clients so
   deployment code can share the same dry-run/write accounting path.
+- `sciona.physics_ingest.deployment` composes production storage bundles and
+  applies them through injected clients using the shared preflight/write helper.
+- `sciona.physics_ingest.deployment_runtime` composes side-effect-free
+  deployment preflight reports across source runtime execution readiness and
+  optional storage preflight summaries.
 - `sciona.physics_ingest.pipeline` composes all steps and can either dry-run,
   stop at a side-effect-free plan, or execute through an injected client.
 - `sciona.physics_ingest.sources.retrieval_plan` emits deterministic
@@ -313,10 +318,6 @@ that should inspect rows without requiring credentials.
 The current publication pipeline does not yet complete the full physics
 ingestion roadmap. Remaining work includes:
 
-- wire source runtime execution reports into deployment code for the full
-  external source set;
-- wire injected production PostgREST/Supabase clients through deployment code
-  using the shared apply/preflight helper;
 - apply PDG-derived CDG publication and catalog projection write plans through
   production storage and catalog views;
 - broaden symbolic normalization coverage across the long-tail equation corpus

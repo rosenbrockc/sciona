@@ -9,6 +9,7 @@ from typing import Any, Protocol
 
 from sciona.physics_ingest.supabase_adapter import (
     PostgrestPublicationWritePreflight,
+    apply_publication_supabase_write,
     preflight_publication_supabase_write,
 )
 from sciona.physics_ingest.write_plan import (
@@ -17,6 +18,7 @@ from sciona.physics_ingest.write_plan import (
     build_publication_write_plan,
     merge_publication_insert_rows,
 )
+from sciona.physics_ingest.writer import PublicationWriteResult
 
 
 JSONDict = dict[str, Any]
@@ -100,6 +102,24 @@ class PhysicsIngestDeploymentStorageBundle:
         )
 
 
+@dataclass(frozen=True)
+class PhysicsIngestDeploymentStorageApplyResult:
+    """Preflight and write accounting for applying a deployment storage bundle."""
+
+    preflight: PostgrestPublicationWritePreflight
+    write_result: PublicationWriteResult
+    accounting: Mapping[str, Any]
+    summary: Mapping[str, Any]
+
+    def to_dict(self) -> JSONDict:
+        return {
+            "preflight": self.preflight.to_dict(),
+            "write_result": self.write_result.to_dict(),
+            "accounting": _json_safe_value(self.accounting),
+            "summary": _json_safe_value(self.summary),
+        }
+
+
 def build_physics_ingest_deployment_storage_bundle(
     publication_rows: RowsByTable | _InsertRowsProvider | PublicationWritePlan,
     *,
@@ -154,6 +174,45 @@ def preflight_physics_ingest_deployment_storage_bundle(
 
     return bundle.preflight_supabase_write(
         conflict_keys_by_table=conflict_keys_by_table,
+    )
+
+
+def apply_physics_ingest_deployment_storage_bundle(
+    bundle: PhysicsIngestDeploymentStorageBundle,
+    client: Any | None = None,
+    *,
+    dry_run: bool = True,
+    conflict_keys_by_table: Mapping[str, Sequence[str]] | None = None,
+) -> PhysicsIngestDeploymentStorageApplyResult:
+    """Apply a deployment bundle through an injected PostgREST/Supabase client."""
+
+    if client is None and not dry_run:
+        raise ValueError("client is required when dry_run is False")
+
+    preflight = preflight_publication_supabase_write(
+        bundle.write_plan,
+        conflict_keys_by_table=conflict_keys_by_table,
+    )
+    write_result = apply_publication_supabase_write(
+        client,
+        bundle.write_plan,
+        conflict_keys_by_table=conflict_keys_by_table,
+        dry_run=dry_run,
+    )
+    accounting = _deployment_apply_accounting(
+        preflight=preflight,
+        write_result=write_result,
+    )
+    return PhysicsIngestDeploymentStorageApplyResult(
+        preflight=preflight,
+        write_result=write_result,
+        accounting=accounting,
+        summary=_deployment_apply_summary(
+            bundle=bundle,
+            dry_run=dry_run,
+            client_supplied=client is not None,
+            accounting=accounting,
+        ),
     )
 
 
@@ -271,6 +330,45 @@ def _deployment_summary(
             if write_plan.mode_for(batch.table) == "upsert" and not batch.conflict_keys
         ],
         "diagnostic_count": sum(len(component.diagnostics) for component in components),
+    }
+
+
+def _deployment_apply_accounting(
+    *,
+    preflight: PostgrestPublicationWritePreflight,
+    write_result: PublicationWriteResult,
+) -> JSONDict:
+    return {
+        "dry_run": write_result.dry_run,
+        "preflight_table_count": preflight.table_count,
+        "preflight_row_count": preflight.total_row_count,
+        "planned_table_count": len(write_result.tables),
+        "planned_row_count": sum(table.planned_count for table in write_result.tables),
+        "inserted_count": write_result.inserted_count,
+        "upserted_count": write_result.upserted_count,
+        "affected_count": write_result.affected_count,
+        "write_diagnostic_count": len(write_result.diagnostics),
+        "write_error_count": sum(
+            1 for row in write_result.diagnostics if row.severity == "error"
+        ),
+        "has_errors": write_result.has_errors,
+    }
+
+
+def _deployment_apply_summary(
+    *,
+    bundle: PhysicsIngestDeploymentStorageBundle,
+    dry_run: bool,
+    client_supplied: bool,
+    accounting: Mapping[str, Any],
+) -> JSONDict:
+    return {
+        "summary_kind": "physics_ingest_deployment_storage_apply.v1",
+        "dry_run": dry_run,
+        "client_supplied": client_supplied,
+        "wrote": not dry_run,
+        "bundle_summary": _json_safe_value(bundle.summary),
+        "accounting": _json_safe_value(accounting),
     }
 
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from sciona.physics_ingest.deployment import (
+    apply_physics_ingest_deployment_storage_bundle,
     build_physics_ingest_deployment_storage_bundle,
     preflight_physics_ingest_deployment_storage_bundle,
 )
@@ -166,6 +167,127 @@ def test_preflight_and_apply_consume_composed_plan_with_injected_client() -> Non
             kwargs={"on_conflict": "task_id"},
         ),
     ]
+
+
+def test_apply_deployment_storage_bundle_dry_run_does_not_call_client() -> None:
+    bundle = build_physics_ingest_deployment_storage_bundle(
+        {
+            "physics_ingest_snapshots": [{"snapshot_id": "snap-1"}],
+            "artifact_symbolic_expressions": [{"expression_id": "expr-1"}],
+        },
+        table_modes={"artifact_symbolic_expressions": "upsert"},
+    )
+    client = FakePostgrestClient()
+
+    result = apply_physics_ingest_deployment_storage_bundle(
+        bundle,
+        client,
+        dry_run=True,
+    )
+
+    assert client.calls == []
+    assert result.preflight.total_row_count == 2
+    assert result.write_result.dry_run is True
+    assert result.write_result.affected_count == 0
+    assert result.accounting["planned_row_count"] == 2
+    assert result.summary["dry_run"] is True
+    assert result.summary["wrote"] is False
+
+
+def test_apply_deployment_storage_bundle_applies_with_injected_fake_client() -> None:
+    bundle = build_physics_ingest_deployment_storage_bundle(
+        {
+            "physics_ingest_snapshots": [{"snapshot_id": "snap-1"}],
+            "artifact_symbolic_expressions": [{"expression_id": "expr-1"}],
+        },
+        review_queue_rows={
+            "physics_review_queue_tasks": [{"task_id": "task-1"}],
+        },
+        table_modes={
+            "artifact_symbolic_expressions": "upsert",
+            "physics_review_queue_tasks": "upsert",
+        },
+    )
+    client = FakePostgrestClient(
+        responses={
+            "physics_ingest_snapshots": {"count": 1},
+            "artifact_symbolic_expressions": {"count": 1},
+            "physics_review_queue_tasks": {"count": 1},
+        }
+    )
+
+    result = apply_physics_ingest_deployment_storage_bundle(
+        bundle,
+        client,
+        dry_run=False,
+    )
+
+    assert result.write_result.inserted_count == 1
+    assert result.write_result.upserted_count == 2
+    assert result.accounting["affected_count"] == 3
+    assert result.summary["wrote"] is True
+    assert client.calls == [
+        QueryCall(
+            table="physics_ingest_snapshots",
+            mode="insert",
+            rows=({"snapshot_id": "snap-1"},),
+            kwargs={},
+        ),
+        QueryCall(
+            table="artifact_symbolic_expressions",
+            mode="upsert",
+            rows=({"expression_id": "expr-1"},),
+            kwargs={"on_conflict": "expression_id"},
+        ),
+        QueryCall(
+            table="physics_review_queue_tasks",
+            mode="upsert",
+            rows=({"task_id": "task-1"},),
+            kwargs={"on_conflict": "task_id"},
+        ),
+    ]
+
+
+def test_apply_deployment_storage_bundle_requires_client_for_non_dry_run() -> None:
+    bundle = build_physics_ingest_deployment_storage_bundle(
+        {"physics_ingest_snapshots": [{"snapshot_id": "snap-1"}]},
+    )
+
+    try:
+        apply_physics_ingest_deployment_storage_bundle(
+            bundle,
+            dry_run=False,
+        )
+    except ValueError as exc:
+        assert str(exc) == "client is required when dry_run is False"
+    else:  # pragma: no cover - assertion branch
+        raise AssertionError("expected missing client to raise")
+
+
+def test_apply_deployment_storage_bundle_result_is_json_serializable() -> None:
+    bundle = build_physics_ingest_deployment_storage_bundle(
+        {
+            "physics_ingest_snapshots": [
+                {
+                    "snapshot_id": "snap-1",
+                    "score": float("inf"),
+                    "tags": {"deployment", "physics"},
+                }
+            ]
+        }
+    )
+
+    result = apply_physics_ingest_deployment_storage_bundle(bundle, dry_run=True)
+    encoded = json.dumps(result.to_dict(), sort_keys=True, allow_nan=False)
+    decoded = json.loads(encoded)
+
+    assert decoded["preflight"]["total_row_count"] == 1
+    assert decoded["write_result"]["dry_run"] is True
+    assert decoded["accounting"]["planned_row_count"] == 1
+    assert (
+        decoded["summary"]["bundle_summary"]["summary_kind"]
+        == "physics_ingest_deployment_storage_bundle.v1"
+    )
 
 
 def test_deployment_storage_module_does_not_import_supabase_package() -> None:
