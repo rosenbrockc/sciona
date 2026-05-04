@@ -1395,6 +1395,49 @@ def test_validation_script_text_output_includes_inventory() -> None:
         "source checks: execution off, adapter coverage off, "
         "data artifact seeds off"
     ) in result.stdout
+    assert "dashboard: 0 symbolic expressions, 0 fixtures, 0 validity bounds" in (
+        result.stdout
+    )
+    assert "atom review: 0/0 regular physics atoms reviewed" in result.stdout
+    assert "pdg coverage: 0 equations, 0 relationships, 0 CDG nodes" in result.stdout
+    assert "source health: 0 checks, 0 diagnostics" in result.stdout
+
+
+def test_validation_script_dashboard_json_mode_emits_compact_summary() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_physics_ingestion.py",
+            "--skip-atoms",
+            "--skip-pdg",
+            "--skip-source-execution",
+            "--skip-source-adapter-coverage",
+            "--skip-source-adapter-data-artifact-seeds",
+            "--dashboard-json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    dashboard = json.loads(result.stdout)
+    assert sorted(dashboard) == [
+        "check_health",
+        "ok",
+        "pdg_derivation_coverage",
+        "physics_atom_symbolic_review",
+        "report_version",
+        "source_check_health",
+        "symbolic_fixture_coverage",
+        "validation_mode",
+    ]
+    assert dashboard["report_version"] == (
+        "physics-ingestion-validation-dashboard.v1"
+    )
+    assert dashboard["ok"] is True
+    assert dashboard["symbolic_fixture_coverage"]["expression_count"] == 0
+    assert dashboard["pdg_derivation_coverage"]["equation_count"] == 0
 
 
 def test_validation_script_can_skip_source_checks_in_json_mode() -> None:

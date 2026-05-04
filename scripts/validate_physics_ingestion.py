@@ -112,6 +112,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="Emit only machine-readable JSON.",
     )
+    parser.add_argument(
+        "--dashboard-json",
+        action="store_true",
+        help="Emit only the compact dashboard summary JSON.",
+    )
     args = parser.parse_args(argv)
 
     fixture_paths = tuple(args.fixture)
@@ -159,7 +164,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         strict=args.strict,
     )
 
-    if args.json:
+    if args.dashboard_json:
+        print(json.dumps(report["dashboard_summary"], sort_keys=True), file=sys.stdout)
+    elif args.json:
         print(json.dumps(report, sort_keys=True), file=sys.stdout)
     else:
         _print_text_report(report)
@@ -210,6 +217,38 @@ def _print_text_report(report: dict[str, object]) -> None:
         f"{summary['check_count']} total, "
         f"{summary['failed_check_count']} failed, "
         f"{summary['error_count']} errors"
+    )
+    dashboard = report["dashboard_summary"]
+    assert isinstance(dashboard, dict)
+    symbolic_coverage = dashboard["symbolic_fixture_coverage"]
+    atom_review = dashboard["physics_atom_symbolic_review"]
+    pdg_coverage = dashboard["pdg_derivation_coverage"]
+    source_health = dashboard["source_check_health"]
+    assert isinstance(symbolic_coverage, dict)
+    assert isinstance(atom_review, dict)
+    assert isinstance(pdg_coverage, dict)
+    assert isinstance(source_health, dict)
+    print(
+        "dashboard: "
+        f"{symbolic_coverage['expression_count']} symbolic expressions, "
+        f"{symbolic_coverage['fixture_count']} fixtures, "
+        f"{symbolic_coverage['validity_bound_count']} validity bounds"
+    )
+    print(
+        "atom review: "
+        f"{atom_review['reviewed_regular_atom_count']}/"
+        f"{atom_review['regular_atom_count']} regular physics atoms reviewed"
+    )
+    print(
+        "pdg coverage: "
+        f"{pdg_coverage['equation_count']} equations, "
+        f"{pdg_coverage['relationship_row_count']} relationships, "
+        f"{pdg_coverage['cdg_node_count']} CDG nodes"
+    )
+    print(
+        "source health: "
+        f"{source_health['check_count']} checks, "
+        f"{source_health['diagnostic_count']} diagnostics"
     )
     for check in report["checks"]:
         assert isinstance(check, dict)
