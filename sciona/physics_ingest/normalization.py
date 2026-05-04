@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+import re
 from typing import Any
 from uuid import UUID
 
@@ -27,6 +28,44 @@ _DIMENSION_REVIEW_TASK_CODES = {
     "missing_dimension",
     "missing_required_dimension",
 }
+_UNIT_ALIAS_KEYS = (
+    "unit",
+    "unit_label",
+    "unit_symbol",
+    "unit_code",
+    "unit_name",
+)
+_QUANTITY_KIND_ALIAS_KEYS = (
+    "quantity_kind",
+    "quantity_kind_label",
+    "quantity_kind_name",
+)
+_GENERIC_QUDT_ALIAS_KEYS = (
+    "source_symbol",
+    "symbol",
+    "symbol_name",
+    "name",
+)
+_QUDT_UNIT_PAYLOAD_ALIAS_KEYS = (
+    "qudt:symbol",
+    "symbol",
+    "http://qudt.org/schema/qudt/symbol",
+    "qudt:ucumCode",
+    "ucumCode",
+    "http://qudt.org/schema/qudt/ucumCode",
+    "qudt:uneceCommonCode",
+    "uneceCommonCode",
+    "http://qudt.org/schema/qudt/uneceCommonCode",
+    "qudt:unitCode",
+    "unitCode",
+    "code",
+)
+_QUDT_QUANTITY_KIND_PAYLOAD_ALIAS_KEYS = (
+    "rdfs:label",
+    "label",
+    "http://www.w3.org/2000/01/rdf-schema#label",
+)
+_LABEL_ALIAS_SEPARATOR_RE = re.compile(r"[\s_-]+")
 
 
 class NormalizationDiagnostic(BaseModel):
@@ -428,7 +467,7 @@ def _resolve_qudt_record_for_variable(
 def _qudt_match_tiers(
     variable: Mapping[str, Any],
     records: tuple[Any, ...],
-) -> tuple[list[Any], list[Any]]:
+) -> tuple[list[Any], list[Any], list[Any]]:
     unit_uri = _casefolded(_first_present(variable, "unit_uri", "unit_qudt_uri"))
     quantity_kind_uri = _casefolded(
         _first_present(variable, "quantity_kind_uri", "qudt_uri")
@@ -448,31 +487,154 @@ def _qudt_match_tiers(
         ):
             uri_matches.append(record)
 
-    symbol_candidates = {
-        _casefolded(_first_present(variable, key))
-        for key in (
-            "source_symbol",
-            "symbol",
-            "symbol_name",
-            "name",
-            "unit",
-            "unit_label",
-            "quantity_kind",
-            "quantity_kind_label",
-        )
-    }
-    symbol_candidates.discard("")
-    label_matches = []
+    exact_aliases = _qudt_variable_aliases(variable, normalized=False)
+    normalized_aliases = _qudt_variable_aliases(variable, normalized=True)
+    exact_label_matches = []
+    normalized_label_matches = []
     for record in records:
-        labels = {
-            _casefolded(record.symbol),
-            _casefolded(record.source_label),
-            _casefolded(record.source_entity_uri.rsplit("/", 1)[-1]),
-        }
-        labels.discard("")
-        if symbol_candidates & labels:
-            label_matches.append(record)
-    return uri_matches, label_matches
+        if _qudt_record_matches_aliases(record, exact_aliases, normalized=False):
+            exact_label_matches.append(record)
+        elif _qudt_record_matches_aliases(
+            record,
+            normalized_aliases,
+            normalized=True,
+        ):
+            normalized_label_matches.append(record)
+    return uri_matches, exact_label_matches, normalized_label_matches
+
+
+def _qudt_variable_aliases(
+    variable: Mapping[str, Any],
+    *,
+    normalized: bool,
+) -> dict[str, set[str]]:
+    transform = _label_alias_key if normalized else _casefolded
+    unit_aliases = _alias_values(variable, _UNIT_ALIAS_KEYS, transform)
+    quantity_kind_aliases = _alias_values(
+        variable,
+        _QUANTITY_KIND_ALIAS_KEYS,
+        transform,
+    )
+    generic_aliases = _alias_values(variable, _GENERIC_QUDT_ALIAS_KEYS, transform)
+    return {
+        "unit": unit_aliases,
+        "quantity_kind": quantity_kind_aliases,
+        "generic": generic_aliases,
+    }
+
+
+def _qudt_record_matches_aliases(
+    record: Any,
+    aliases: Mapping[str, set[str]],
+    *,
+    normalized: bool,
+) -> bool:
+    transform = _label_alias_key if normalized else _casefolded
+    if aliases["unit"] and record.resource_kind == "unit":
+        if aliases["unit"] & _qudt_record_aliases(record, kind="unit", transform=transform):
+            return True
+    if aliases["quantity_kind"] and record.resource_kind == "quantity_kind":
+        if aliases["quantity_kind"] & _qudt_record_aliases(
+            record,
+            kind="quantity_kind",
+            transform=transform,
+        ):
+            return True
+    if aliases["generic"]:
+        return bool(
+            aliases["generic"]
+            & _qudt_record_aliases(record, kind="generic", transform=transform)
+        )
+    return False
+
+
+def _qudt_record_aliases(record: Any, *, kind: str, transform: Any) -> set[str]:
+    aliases = {
+        transform(record.source_label),
+        transform(_uri_tail(record.source_entity_uri)),
+    }
+    payload = record.source_payload if isinstance(record.source_payload, Mapping) else {}
+    if kind in {"unit", "generic"}:
+        aliases.add(transform(record.symbol))
+        aliases.update(
+            _alias_values_from_payload(
+                payload,
+                _QUDT_UNIT_PAYLOAD_ALIAS_KEYS,
+                transform,
+            )
+        )
+    if kind in {"quantity_kind", "generic"}:
+        aliases.update(
+            _alias_values_from_payload(
+                payload,
+                _QUDT_QUANTITY_KIND_PAYLOAD_ALIAS_KEYS,
+                transform,
+            )
+        )
+    aliases.discard("")
+    return aliases
+
+
+def _alias_values(
+    data: Mapping[str, Any],
+    keys: Iterable[str],
+    transform: Any,
+) -> set[str]:
+    aliases: set[str] = set()
+    for key in keys:
+        if key not in data:
+            continue
+        aliases.update(transform(value) for value in _iter_text_aliases(data[key]))
+    aliases.discard("")
+    return aliases
+
+
+def _alias_values_from_payload(
+    data: Mapping[str, Any],
+    keys: Iterable[str],
+    transform: Any,
+) -> set[str]:
+    aliases: set[str] = set()
+    for key in keys:
+        if key not in data:
+            continue
+        aliases.update(transform(value) for value in _iter_text_aliases(data[key]))
+    aliases.discard("")
+    return aliases
+
+
+def _iter_text_aliases(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        text = value.strip()
+        return (text,) if text else ()
+    if isinstance(value, Mapping):
+        aliases = []
+        for key in ("@id", "id", "@value", "value", "uri", "label"):
+            if key in value:
+                aliases.extend(_iter_text_aliases(value[key]))
+        return tuple(aliases)
+    if isinstance(value, list | tuple | set):
+        aliases = []
+        for item in value:
+            aliases.extend(_iter_text_aliases(item))
+        return tuple(aliases)
+    text = str(value).strip()
+    return (text,) if text else ()
+
+
+def _label_alias_key(value: Any) -> str:
+    return _LABEL_ALIAS_SEPARATOR_RE.sub("", _casefolded(value))
+
+
+def _uri_tail(value: Any) -> str:
+    text = _text(value).strip()
+    if "#" in text:
+        text = text.rsplit("#", 1)[-1]
+    if "/" in text:
+        text = text.rsplit("/", 1)[-1]
+    return text
 
 
 def _candidate_for_symbolic_normalizer(

@@ -418,6 +418,10 @@ Current modules:
   planning.
 - `sciona.physics_ingest.staging`: Wave 0 row validation for source snapshots,
   equation candidates, symbolic expressions, and relationship-adjacent rows.
+- `sciona.physics_ingest.normalization`: side-effect-free symbolic expression
+  draft normalization with QUDT-assisted dimension resolution, conservative
+  unit and quantity-kind alias matching, round-trip diagnostics, and
+  reviewable ambiguity handling.
 - `sciona.physics_ingest.publication`: publication manifest loading for
   symbolic expressions, variables, and validity bounds.
 - `sciona.physics_ingest.orchestration`: combines source bundles and symbolic
@@ -429,6 +433,10 @@ Current modules:
 - `sciona.physics_ingest.supabase_adapter`: adapts injected PostgREST/Supabase
   clients, preflights planned writes, and applies writes through the shared
   writer without constructing storage clients.
+- `sciona.physics_ingest.deployment`: composes publication rows, PDG catalog
+  projections, review queue rows, and audit artifact rows into one deterministic
+  production storage bundle with an inert write plan and injected-client
+  preflight boundary.
 - `sciona.physics_ingest.sources.retrieval_plan`: emits deterministic
   executor-facing request envelopes for source jobs.
 - `sciona.physics_ingest.sources.executor`: executes retrieval envelopes only
@@ -443,7 +451,9 @@ Current modules:
 - `sciona.physics_ingest.pipeline`: composes ID planning, orchestration, write
   planning, and optional execution.
 - `sciona.physics_ingest.cli`: builds JSON-serializable dry-run reports from
-  decoded payloads.
+  decoded payloads, including opt-in production-boundary sections for source
+  runtime execution preflight, audit artifact write-plan rows, and review queue
+  write-plan rows.
 - `sciona.physics_ingest.validation`: offline validation for symbolic
   publication fixtures and PDG-derived CDG publication rows.
 - `sciona.physics_ingest.backfill`: builds deterministic bulk backfill reports,

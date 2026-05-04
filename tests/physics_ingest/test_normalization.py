@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import copy
+
 import sympy as sp
 
 from sciona.physics_ingest.normalization import (
@@ -235,6 +237,84 @@ def test_qudt_assisted_normalization_resolves_candidate_dimensions() -> None:
     } == {"F": "M1L1T-2", "a": "L1T-2", "m": "M1"}
 
 
+def test_qudt_assisted_normalization_resolves_unique_unit_code_alias() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-unit-code-alias",
+            "raw_formula": "F = m * a",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "F": {"role": "output", "unit_code": "new", "dim_signature": ""},
+                "m": {"role": "input", "dim_signature": "M1"},
+                "a": {"role": "input", "dim_signature": "L1T-2"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/N",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Newton",
+                "qudt:symbol": "N",
+                "qudt:uneceCommonCode": "NEW",
+                "qudt:hasDimensionVector": "A0E0L1I0M1H0T-2D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert "qudt_dimension_resolved" in {
+        diagnostic.code for diagnostic in draft.diagnostics
+    }
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"F": "M1L1T-2", "a": "L1T-2", "m": "M1"}
+
+
+def test_qudt_assisted_normalization_resolves_quantity_kind_label_alias() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-quantity-kind-label-alias",
+            "raw_formula": "J = x",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "J": {
+                    "role": "output",
+                    "quantity_kind_name": "angular momentum",
+                    "dim_signature": "",
+                },
+                "x": {"role": "input", "dim_signature": "M1L2T-1"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/quantitykind/AngularMomentum",
+                "@type": ["qudt:QuantityKind"],
+                "rdfs:label": "Angular-Momentum",
+                "qudt:hasDimensionVector": "A0E0L2I0M1H0T-1D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"J": "M1L2T-1", "x": "M1L2T-1"}
+
+
 def test_unresolved_qudt_dimensions_remain_reviewable_not_dimensionless() -> None:
     draft = normalize_candidate_expression_draft_with_qudt_dimensions(
         {
@@ -357,6 +437,86 @@ def test_ambiguous_qudt_dimensions_are_not_applied_to_candidate_copy() -> None:
     assert [diagnostic.code for diagnostic in assisted.diagnostics] == [
         "qudt_dimension_ambiguous"
     ]
+
+
+def test_ambiguous_qudt_alias_remains_reviewable_not_dimensionless() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-ambiguous-qudt-alias",
+            "raw_formula": "F = m * a",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "F": {
+                    "role": "output",
+                    "unit_label": "force unit",
+                    "dim_signature": "",
+                },
+                "m": {"role": "input", "dim_signature": "M1"},
+                "a": {"role": "input", "dim_signature": "L1T-2"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/FORCE-A",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Force-Unit",
+                "qudt:hasDimensionVector": "A0E0L1I0M1H0T-2D0",
+            },
+            {
+                "@id": "http://qudt.org/vocab/unit/FORCE-B",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Force_Unit",
+                "qudt:hasDimensionVector": "A0E0L2I0M1H0T-2D0",
+            },
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "needs_human"
+    assert "qudt_dimension_ambiguous" in {
+        diagnostic.code for diagnostic in draft.diagnostics
+    }
+    assert dimensions["unknown_dimensions"]["symbols"] == ["F"]
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"a": "L1T-2", "m": "M1"}
+
+
+def test_qudt_alias_resolution_does_not_mutate_input_candidate() -> None:
+    candidate = {
+        "source_candidate_id": "fixture-qudt-non-mutating-alias",
+        "raw_formula": "x = y",
+        "variables": {
+            "x": {
+                "role": "output",
+                "unit_label": "square-root metre",
+                "dim_signature": "",
+            },
+            "y": {"role": "input", "dim_signature": "L1/2"},
+        },
+    }
+    original = copy.deepcopy(candidate)
+
+    assisted = resolve_candidate_variable_dimensions_from_qudt(
+        candidate,
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/SQRT-M",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Square Root Metre",
+                "qudt:hasDimensionVector": "A0E0L1/2I0M0H0T0D0",
+            }
+        ],
+    )
+
+    assert candidate == original
+    assert assisted.candidate["variables"]["x"]["dim_signature"] == "L1/2"
 
 
 def test_parse_failure_returns_needs_human_row_without_hashes() -> None:

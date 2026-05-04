@@ -28,6 +28,12 @@ from sciona.physics_ingest.coverage import (
     build_phase7_coverage_summary,
     build_phase7_coverage_summary_dict,
 )
+from sciona.physics_ingest.deployment import (
+    PhysicsIngestDeploymentStorageBundle,
+    PhysicsIngestDeploymentStorageComponent,
+    build_physics_ingest_deployment_storage_bundle,
+    preflight_physics_ingest_deployment_storage_bundle,
+)
 from sciona.physics_ingest.ids import (
     DeterministicIdError,
     attach_deterministic_candidate_ids,
@@ -243,6 +249,8 @@ __all__ = [
     "Phase7CoverageBucket",
     "Phase7CoverageSummary",
     "PhysicsEquationCandidateRow",
+    "PhysicsIngestDeploymentStorageBundle",
+    "PhysicsIngestDeploymentStorageComponent",
     "PhysicsIngestSnapshotRow",
     "PublicationAuditSummary",
     "PublicationDiagnostic",
@@ -335,6 +343,7 @@ __all__ = [
     "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
     "build_physics_ingest_backfill_report",
+    "build_physics_ingest_deployment_storage_bundle",
     "build_physics_ingestion_validation_report",
     "build_physics_source_retrieval_run_plan",
     "build_physics_source_retrieval_run_plan_dict",
@@ -379,6 +388,7 @@ __all__ = [
     "apply_publication_supabase_write",
     "preflight_publication_postgrest_write",
     "preflight_publication_supabase_write",
+    "preflight_physics_ingest_deployment_storage_bundle",
     "rank_symbolic_candidates",
     "require_publishable",
     "resolve_publication_artifact_bindings",

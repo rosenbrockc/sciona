@@ -14,6 +14,7 @@ from sciona.physics_ingest.cli import (
     build_publication_dry_run_report_from_payload,
     main,
 )
+from sciona.physics_ingest.review import REVIEW_QUEUE_TASKS_TABLE
 from sciona.physics_ingest.sources import build_physics_source_retrieval_run_plan_dict
 
 
@@ -137,6 +138,174 @@ def test_publication_backfill_payload_composes_source_retrieval_plan() -> None:
     assert report["source_retrieval_run_plan"]["replay_keys"] == [
         step["replay_key"] for step in retrieval_plan["steps"]
     ]
+    assert "audit_artifact_write_plan_rows" not in report
+    assert "review_queue_write_plan_rows" not in report
+    assert "source_runtime_execution_preflight" not in report
+
+
+def test_publication_backfill_payload_can_surface_audit_artifact_write_plan_rows() -> None:
+    report = build_publication_backfill_dry_run_report_from_payload(
+        {
+            "source_bundles": [_source_bundle()],
+            "publication_manifests": [_publication_manifest()],
+            "artifact_bindings": {
+                "local:fixture.force": {
+                    "artifact_id": ARTIFACT_ID,
+                    "version_id": VERSION_ID,
+                }
+            },
+            "source_retrieval_run_plan": (
+                build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+            ),
+            "include_audit_artifact_write_plan_rows": True,
+        }
+    )
+
+    section = report["audit_artifact_write_plan_rows"]
+    assert json.loads(json.dumps(section, sort_keys=True)) == section
+    assert "insert_rows" not in section
+    assert "rows" not in section["write_plan"]["batches"][0]
+    assert section["diagnostics"] == []
+    assert section["summary"]["table"] == "physics_ingest_audit_artifacts"
+    assert section["summary"]["row_count"] == len(
+        report["backfill_report"]["audit_artifact_manifests"]
+    )
+    assert section["write_plan"]["batches"] == [
+        {
+            "table": "physics_ingest_audit_artifacts",
+            "mode": "insert",
+            "row_count": section["summary"]["row_count"],
+            "conflict_keys": ["artifact_key"],
+            "dry_run": True,
+        }
+    ]
+
+
+def test_publication_backfill_payload_can_include_boundary_rows() -> None:
+    task = _review_queue_task()
+    report = build_publication_backfill_dry_run_report_from_payload(
+        {
+            "source_bundles": [_source_bundle()],
+            "publication_manifests": [_publication_manifest()],
+            "artifact_bindings": {
+                "local:fixture.force": {
+                    "artifact_id": ARTIFACT_ID,
+                    "version_id": VERSION_ID,
+                }
+            },
+            "source_retrieval_run_plan": (
+                build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+            ),
+            "include_audit_artifact_write_plan_rows": True,
+            "review_queue_tasks": [task],
+        },
+        include_rows=True,
+    )
+
+    audit_section = report["audit_artifact_write_plan_rows"]
+    review_section = report["review_queue_write_plan_rows"]
+    assert json.loads(json.dumps(report, sort_keys=True)) == report
+
+    audit_table = "physics_ingest_audit_artifacts"
+    assert audit_section["insert_rows"][audit_table]
+    assert audit_section["write_plan"]["batches"][0]["rows"] == (
+        audit_section["insert_rows"][audit_table]
+    )
+
+    assert review_section["summary"]["review_queue_row_count"] == 1
+    assert review_section["summary"]["review_queue_table"] == REVIEW_QUEUE_TASKS_TABLE
+    assert review_section["insert_rows"][REVIEW_QUEUE_TASKS_TABLE] == [task]
+    assert review_section["write_plan"]["batches"] == [
+        {
+            "table": REVIEW_QUEUE_TASKS_TABLE,
+            "mode": "upsert",
+            "row_count": 1,
+            "conflict_keys": ["task_id"],
+            "dry_run": True,
+            "rows": [task],
+        }
+    ]
+
+
+def test_publication_backfill_payload_surfaces_source_runtime_execution_plan() -> None:
+    runtime_plan = build_physics_source_retrieval_run_plan_dict(
+        job_id="wikidata_equation_candidates.backfill",
+        dry_run=False,
+    )
+
+    report = build_publication_backfill_dry_run_report_from_payload(
+        {
+            "source_runtime_execution_plan": runtime_plan,
+        }
+    )
+
+    preflight = report["source_runtime_execution_preflight"]
+    assert json.loads(json.dumps(preflight, sort_keys=True)) == preflight
+    assert report["backfill_report"]["source_runtime_execution_preflight"] == preflight
+    assert preflight["report_version"] == "physics-source-runtime-execution.v1"
+    assert preflight["preflight"] is True
+    assert preflight["execution_requested"] is True
+    assert preflight["execution_performed"] is False
+    assert preflight["side_effect_free"] is True
+    assert preflight["summary"]["requires_http_client_count"] == 1
+    assert preflight["summary"]["blocking_diagnostic_count"] == 2
+
+
+def test_publication_backfill_payload_validates_boundary_payloads() -> None:
+    with pytest.raises(
+        ValueError,
+        match="include_audit_artifact_write_plan_rows must be a boolean",
+    ):
+        build_publication_backfill_dry_run_report_from_payload(
+            {
+                "source_retrieval_run_plan": (
+                    build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+                ),
+                "include_audit_artifact_write_plan_rows": "yes",
+            }
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "review_queue_tasks or review_queue_rows is required when "
+            "include_review_queue_write_plan_rows is true"
+        ),
+    ):
+        build_publication_backfill_dry_run_report_from_payload(
+            {"include_review_queue_write_plan_rows": True}
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="source_runtime_execution_report must not include performed execution",
+    ):
+        build_publication_backfill_dry_run_report_from_payload(
+            {
+                "source_runtime_execution_report": {
+                    "preflight": True,
+                    "execution_performed": True,
+                    "side_effect_free": False,
+                }
+            }
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="pass only one source runtime execution plan, report, or preflight payload",
+    ):
+        build_publication_backfill_dry_run_report_from_payload(
+            {
+                "source_runtime_execution_plan": (
+                    build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+                ),
+                "source_runtime_execution_preflight": {
+                    "preflight": True,
+                    "execution_performed": False,
+                    "side_effect_free": True,
+                },
+            }
+        )
 
 
 def test_publication_backfill_payload_accepts_retrieval_plan_alias() -> None:
@@ -400,4 +569,33 @@ def _publication_manifest() -> dict[str, object]:
             }
         ],
         "artifact_validity_bounds": [],
+    }
+
+
+def _review_queue_task() -> dict[str, object]:
+    return {
+        "task_id": "physics-review-task:fixture",
+        "replay_key": "physics-review:fixture",
+        "task_kind": "human_review_required",
+        "task_status": "open",
+        "priority": "p2",
+        "severity": "medium",
+        "target_ids": {
+            "candidate_id": "fixture-candidate",
+            "expression_id": "fixture-expression",
+        },
+        "trust_status": "needs_human",
+        "achieved_status": "source_verified",
+        "publishable": False,
+        "blocker_summaries": [
+            {
+                "reason": "human_review",
+                "detail": "human review evidence must identify a reviewer",
+            }
+        ],
+        "suggested_reviewer_focus": [
+            "complete human review evidence and validity-bound signoff"
+        ],
+        "source_family": "mechanics",
+        "source_system": "manual",
     }

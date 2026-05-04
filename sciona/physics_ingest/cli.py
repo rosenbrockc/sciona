@@ -14,10 +14,20 @@ from pathlib import Path
 import sys
 from typing import Any
 
+from sciona.physics_ingest.audit_artifacts import (
+    build_backfill_audit_artifact_write_plan_rows,
+)
 from sciona.physics_ingest.backfill import build_physics_ingest_backfill_report
 from sciona.physics_ingest.ids import DeterministicIdError, plan_source_bundle_ids
 from sciona.physics_ingest.orchestration import orchestrate_physics_publication
 from sciona.physics_ingest.publication import ArtifactBinding, PublicationDiagnostic
+from sciona.physics_ingest.review import (
+    REVIEW_QUEUE_TASKS_TABLE,
+    build_review_queue_write_plan_rows,
+)
+from sciona.physics_ingest.sources.runtime_execution import (
+    build_source_retrieval_runtime_execution_report_dict,
+)
 from sciona.physics_ingest.write_plan import WriteMode, build_publication_write_plan
 
 
@@ -46,7 +56,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     with args.payload_file.open(encoding="utf-8") as file:
         payload = json.load(file)
 
-    if isinstance(payload, Mapping) and _has_retrieval_run_plan_payload(payload):
+    if isinstance(payload, Mapping) and _has_backfill_payload(payload):
         report = build_publication_backfill_dry_run_report_from_payload(
             payload,
             include_rows=args.include_rows,
@@ -99,9 +109,9 @@ def build_publication_backfill_dry_run_report_from_payload(
 ) -> dict[str, Any]:
     """Build a composed publication/backfill dry-run report from a JSON payload.
 
-    This additive payload mode accepts the publication dry-run inputs plus one
-    source retrieval run plan under either ``source_retrieval_run_plan`` or the
-    shorter ``retrieval_run_plan`` alias. It preserves the established
+    This additive payload mode accepts the publication dry-run inputs plus an
+    optional source retrieval run plan under either ``source_retrieval_run_plan``
+    or the shorter ``retrieval_run_plan`` alias. It preserves the established
     publication report shape by embedding it unchanged under
     ``publication_dry_run_report``.
     """
@@ -109,7 +119,27 @@ def build_publication_backfill_dry_run_report_from_payload(
     if not isinstance(payload, Mapping):
         raise ValueError("payload must be a mapping")
 
-    retrieval_plan = _retrieval_run_plan_payload(payload)
+    retrieval_plan = _optional_retrieval_run_plan_payload(payload)
+    table_modes = _table_modes(payload.get("table_modes", {}))
+    include_execution_boundary_preflight = _payload_bool(
+        payload,
+        "include_execution_boundary_preflight",
+        default=False,
+    )
+    include_audit_artifact_write_plan_rows = _payload_bool(
+        payload,
+        "include_audit_artifact_write_plan_rows",
+        default=False,
+    )
+    include_review_queue_write_plan_rows = _payload_bool(
+        payload,
+        "include_review_queue_write_plan_rows",
+        default=False,
+    )
+    source_runtime_execution_preflight = _source_runtime_execution_preflight_payload(
+        payload
+    )
+    review_queue_rows = _review_queue_write_plan_rows_payload(payload)
     publication_report = build_publication_dry_run_report_from_payload(
         payload,
         include_rows=include_rows,
@@ -124,10 +154,42 @@ def build_publication_backfill_dry_run_report_from_payload(
             payload.get("artifact_bindings", {}),
             "artifact_bindings",
         ),
-        table_modes=_table_modes(payload.get("table_modes", {})),
+        table_modes=table_modes,
         source_retrieval_run_plan=retrieval_plan,
+        include_source_request_envelopes=_payload_bool(
+            payload,
+            "include_source_request_envelopes",
+            default=False,
+        ),
+        include_source_runtime_execution_preflight=(
+            _payload_bool(
+                payload,
+                "include_source_runtime_execution_preflight",
+                default=False,
+            )
+            and source_runtime_execution_preflight is None
+        ),
+        include_publication_write_preflight=_payload_bool(
+            payload,
+            "include_publication_write_preflight",
+            default=False,
+        ),
+        include_execution_boundary_preflight=include_execution_boundary_preflight,
+        include_audit_artifact_manifests=(
+            _payload_bool(
+                payload,
+                "include_audit_artifact_manifests",
+                default=False,
+            )
+            or include_audit_artifact_write_plan_rows
+        ),
         include_rows=include_rows,
     )
+    if source_runtime_execution_preflight is not None:
+        backfill_report["source_runtime_execution_preflight"] = (
+            source_runtime_execution_preflight
+        )
+
     report: dict[str, Any] = {
         "report_kind": COMPOSED_REPORT_KIND,
         "dry_run": True,
@@ -145,6 +207,40 @@ def build_publication_backfill_dry_run_report_from_payload(
     ):
         if summary_key in backfill_report:
             report[summary_key] = backfill_report[summary_key]
+    for preflight_key in (
+        "source_request_envelope_preflight",
+        "source_runtime_execution_preflight",
+        "publication_storage_write_preflight",
+    ):
+        if preflight_key in backfill_report:
+            report[preflight_key] = backfill_report[preflight_key]
+    if include_audit_artifact_write_plan_rows:
+        audit_artifact_write_plan_rows = (
+            build_backfill_audit_artifact_write_plan_rows(
+                backfill_report,
+                include_write_plan=True,
+                table_modes=table_modes,
+            )
+        )
+        report["audit_artifact_write_plan_rows"] = _write_plan_rows_section(
+            audit_artifact_write_plan_rows,
+            include_rows=include_rows,
+        )
+    if include_review_queue_write_plan_rows or review_queue_rows is not None:
+        if review_queue_rows is None:
+            raise ValueError(
+                "review_queue_tasks or review_queue_rows is required when "
+                "include_review_queue_write_plan_rows is true"
+            )
+        review_queue_write_plan_rows = build_review_queue_write_plan_rows(
+            review_queue_rows,
+            include_write_plan=True,
+            table_modes=table_modes,
+        )
+        report["review_queue_write_plan_rows"] = _write_plan_rows_section(
+            review_queue_write_plan_rows,
+            include_rows=include_rows,
+        )
     _assert_json_serializable(report)
     return report
 
@@ -261,6 +357,26 @@ def _assert_json_serializable(report: Mapping[str, Any]) -> None:
         raise ValueError("dry-run report must be JSON serializable") from exc
 
 
+def _has_backfill_payload(payload: Mapping[str, Any]) -> bool:
+    return _has_retrieval_run_plan_payload(payload) or any(
+        payload.get(key) not in (None, "", False)
+        for key in (
+            "include_source_request_envelopes",
+            "include_source_runtime_execution_preflight",
+            "include_publication_write_preflight",
+            "include_execution_boundary_preflight",
+            "include_audit_artifact_manifests",
+            "include_audit_artifact_write_plan_rows",
+            "include_review_queue_write_plan_rows",
+            "review_queue_tasks",
+            "review_queue_rows",
+            "source_runtime_execution_plan",
+            "source_runtime_execution_report",
+            "source_runtime_execution_preflight",
+        )
+    )
+
+
 def _has_retrieval_run_plan_payload(payload: Mapping[str, Any]) -> bool:
     return (
         payload.get("source_retrieval_run_plan") not in (None, "")
@@ -268,7 +384,7 @@ def _has_retrieval_run_plan_payload(payload: Mapping[str, Any]) -> bool:
     )
 
 
-def _retrieval_run_plan_payload(payload: Mapping[str, Any]) -> Any:
+def _optional_retrieval_run_plan_payload(payload: Mapping[str, Any]) -> Any | None:
     source_plan = payload.get("source_retrieval_run_plan")
     alias_plan = payload.get("retrieval_run_plan")
     has_source_plan = source_plan not in (None, "")
@@ -281,7 +397,100 @@ def _retrieval_run_plan_payload(payload: Mapping[str, Any]) -> Any:
         return source_plan
     if has_alias_plan:
         return alias_plan
-    raise ValueError("source_retrieval_run_plan or retrieval_run_plan is required")
+    return None
+
+
+def _payload_bool(
+    payload: Mapping[str, Any],
+    field_name: str,
+    *,
+    default: bool,
+) -> bool:
+    if field_name not in payload:
+        return default
+    value = payload[field_name]
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _source_runtime_execution_preflight_payload(
+    payload: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    values = {
+        key: payload.get(key)
+        for key in (
+            "source_runtime_execution_plan",
+            "source_runtime_execution_report",
+            "source_runtime_execution_preflight",
+        )
+        if payload.get(key) not in (None, "")
+    }
+    if len(values) > 1:
+        raise ValueError(
+            "pass only one source runtime execution plan, report, or preflight payload"
+        )
+    if not values:
+        return None
+
+    field_name, value = next(iter(values.items()))
+    mapping = _mapping(value, field_name)
+    if field_name == "source_runtime_execution_plan":
+        return _json_safe_mapping(
+            build_source_retrieval_runtime_execution_report_dict(
+                mapping,
+                execute=True,
+                preflight=True,
+            )
+        )
+    return _validate_source_runtime_execution_preflight(mapping, field_name)
+
+
+def _validate_source_runtime_execution_preflight(
+    value: Mapping[str, Any],
+    field_name: str,
+) -> dict[str, Any]:
+    preflight = _json_safe_mapping(value)
+    if preflight.get("preflight") is False:
+        raise ValueError(f"{field_name} must describe a preflight report")
+    if preflight.get("execution_performed") is True:
+        raise ValueError(f"{field_name} must not include performed execution")
+    if preflight.get("side_effect_free") is False:
+        raise ValueError(f"{field_name} must be side-effect-free")
+    return preflight
+
+
+def _review_queue_write_plan_rows_payload(payload: Mapping[str, Any]) -> Any | None:
+    tasks = payload.get("review_queue_tasks")
+    rows = payload.get("review_queue_rows")
+    has_tasks = tasks not in (None, "")
+    has_rows = rows not in (None, "")
+    if has_tasks and has_rows:
+        raise ValueError("pass only one of review_queue_tasks or review_queue_rows")
+    if has_tasks:
+        return tasks
+    if has_rows:
+        return _review_queue_rows_payload(rows)
+    return None
+
+
+def _review_queue_rows_payload(value: Any) -> Any:
+    if not isinstance(value, Mapping):
+        return value
+    if "tasks" in value:
+        return value
+    if "insert_rows" in value:
+        insert_rows = _mapping(value["insert_rows"], "review_queue_rows.insert_rows")
+        return _sequence(
+            insert_rows.get(REVIEW_QUEUE_TASKS_TABLE, ()),
+            f"review_queue_rows.insert_rows.{REVIEW_QUEUE_TASKS_TABLE}",
+        )
+    if REVIEW_QUEUE_TASKS_TABLE in value:
+        return _sequence(
+            value[REVIEW_QUEUE_TASKS_TABLE],
+            f"review_queue_rows.{REVIEW_QUEUE_TASKS_TABLE}",
+        )
+    return value
 
 
 def _sequence(value: Any, field_name: str) -> Sequence[Any]:
@@ -315,6 +524,44 @@ def _table_modes(value: Any) -> Mapping[str, WriteMode]:
             raise ValueError(f"unsupported write mode for {table}: {mode}")
         modes[str(table)] = mode
     return modes
+
+
+def _write_plan_rows_section(value: Any, *, include_rows: bool) -> dict[str, Any]:
+    section: dict[str, Any] = {
+        "summary": _json_safe_mapping(getattr(value, "summary", {}) or {}),
+        "diagnostics": [
+            _json_safe_mapping(row)
+            for row in tuple(getattr(value, "diagnostics", ()) or ())
+            if isinstance(row, Mapping)
+        ],
+    }
+    write_plan = getattr(value, "write_plan", None)
+    if write_plan is not None:
+        section["write_plan"] = {
+            "audit_summary": write_plan.audit_summary.to_dict(),
+            "batches": [
+                {
+                    "table": batch.table,
+                    "mode": write_plan.mode_for(batch.table),
+                    "row_count": batch.row_count,
+                    "conflict_keys": list(batch.conflict_keys),
+                    "dry_run": True,
+                    **(
+                        {"rows": [dict(row) for row in batch.rows]}
+                        if include_rows
+                        else {}
+                    ),
+                }
+                for batch in write_plan.batches
+            ],
+        }
+    if include_rows:
+        section["insert_rows"] = value.to_insert_rows()
+    return _json_safe_mapping(section)
+
+
+def _json_safe_mapping(value: Mapping[str, Any]) -> dict[str, Any]:
+    return json.loads(json.dumps(dict(value), sort_keys=True, ensure_ascii=True))
 
 
 if __name__ == "__main__":  # pragma: no cover
