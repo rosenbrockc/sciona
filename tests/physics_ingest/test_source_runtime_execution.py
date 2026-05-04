@@ -147,7 +147,21 @@ def test_runtime_execution_uses_injected_fake_session_and_sink() -> None:
                     "Accept": "application/sparql-results+json",
                 },
                 "params": {"LIMIT": 5},
-                "json": {"query_builder": "build_physical_equation_candidates_query"},
+                "data": {
+                    "format": "json",
+                    "query": (
+                        "SELECT ?item ?itemLabel ?itemDescription ?formulaProperty "
+                        "?formula ?alias ?use ?useLabel ?useDescription WHERE {\n"
+                        "  VALUES ?formulaProperty { wdt:P2534 }\n"
+                        "  ?item ?formulaProperty ?formula .\n"
+                        '  OPTIONAL { ?item skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }\n'
+                        "  OPTIONAL { ?item wdt:P366 ?use . }\n"
+                        "  SERVICE wikibase:label {\n"
+                        '    bd:serviceParam wikibase:language "en,mul,en".\n'
+                        "  }\n"
+                        "} LIMIT 5"
+                    ),
+                },
             },
         }
     ]

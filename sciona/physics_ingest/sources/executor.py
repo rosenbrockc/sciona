@@ -322,12 +322,63 @@ def _request_kwargs(
     method = str(envelope.get("method") or step.get("method") or "").upper()
     body_template = jsonable(envelope.get("body_template", {}))
     if method in {"POST", "PUT", "PATCH"} and body_template:
+        rendered_body = _render_body_template(
+            body_template=body_template,
+            envelope=envelope,
+            step=step,
+        )
+        if isinstance(rendered_body, Mapping) and str(
+            rendered_body.get("body_kind") or ""
+        ) == "form":
+            kwargs["data"] = rendered_body.get("data", {})
+            return kwargs
         content_type = str(step.get("content_type") or "").lower()
         if content_type and "json" not in content_type:
-            kwargs["data"] = body_template
+            kwargs["data"] = rendered_body
         else:
-            kwargs["json"] = body_template
+            kwargs["json"] = rendered_body
     return kwargs
+
+
+def _render_body_template(
+    *,
+    body_template: Mapping[str, Any],
+    envelope: Mapping[str, Any],
+    step: Mapping[str, Any],
+) -> Any:
+    query_builder = str(body_template.get("query_builder") or "")
+    if query_builder == "build_physical_equation_candidates_query":
+        from sciona.physics_ingest.sources.wikidata import (
+            build_physical_equation_candidates_query,
+        )
+
+        return {
+            "body_kind": "form",
+            "data": {
+                "query": build_physical_equation_candidates_query(
+                    limit=_request_limit(envelope=envelope, step=step)
+                ),
+                "format": "json",
+            },
+        }
+    return body_template
+
+
+def _request_limit(*, envelope: Mapping[str, Any], step: Mapping[str, Any]) -> int:
+    paging = envelope.get("paging")
+    if isinstance(paging, Mapping):
+        value = paging.get("limit")
+        if value is not None:
+            return max(_int_value(value, 500), 1)
+    params = envelope.get("params")
+    if isinstance(params, Mapping):
+        value = params.get("LIMIT") or params.get("limit")
+        if value is not None:
+            return max(_int_value(value, 500), 1)
+    value = step.get("limit")
+    if value is not None:
+        return max(_int_value(value, 500), 1)
+    return 500
 
 
 def _request_summary(
