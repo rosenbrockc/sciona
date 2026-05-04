@@ -145,6 +145,7 @@ from sciona.physics_ingest.reviewer_handoff import (
     build_reviewer_handoff_from_review_queue_rows,
 )
 from sciona.physics_ingest.sources import (
+    LocalFilesystemSnapshotSink,
     RetrievalRunDiagnostic,
     RetrievalRunPlan,
     RetrievalRunStep,
@@ -163,6 +164,8 @@ from sciona.physics_ingest.sources import (
     SourceRetrievalRuntimeExecutionReport,
     SourceRetrievalRuntimeExecutionStep,
     SourceRetrievalSnapshotSinkAdapter,
+    UrllibSourceHTTPClient,
+    UrllibSourceHTTPResponse,
     build_physics_source_retrieval_run_plan,
     build_physics_source_retrieval_run_plan_dict,
     build_source_adapter_coverage_report,
@@ -283,6 +286,7 @@ __all__ = [
     "DEFAULT_PLANNER_SERVICE_NAME",
     "DEPLOYMENT_RUNTIME_REPORT_VERSION",
     "DeterministicIdError",
+    "LocalFilesystemSnapshotSink",
     "NormalizationDiagnostic",
     "NormalizedExpressionDraft",
     "PDGCDGArtifactEnvelope",
@@ -381,6 +385,8 @@ __all__ = [
     "SymbolicRetrievalQuery",
     "SymbolicValidityBound",
     "SymbolicVariableRow",
+    "UrllibSourceHTTPClient",
+    "UrllibSourceHTTPResponse",
     "VALIDATION_REPORT_KIND",
     "ValidationCheck",
     "ValidationIssue",

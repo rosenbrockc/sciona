@@ -20,6 +20,11 @@ from sciona.physics_ingest.sources.executor import (
     execute_source_retrieval_plan,
     execute_source_retrieval_plan_dict,
 )
+from sciona.physics_ingest.sources.local_runtime import (
+    LocalFilesystemSnapshotSink,
+    UrllibSourceHTTPClient,
+    UrllibSourceHTTPResponse,
+)
 from sciona.physics_ingest.sources.retrieval_plan import (
     PHASE7_RING_ORDER,
     PaginationSpec,
@@ -62,6 +67,7 @@ __all__ = [
     "RetrievalRunPlan",
     "RetrievalRunStep",
     "RetryPolicy",
+    "LocalFilesystemSnapshotSink",
     "SourceAdapterCoverageDiagnostic",
     "SourceAdapterCoverageJob",
     "SourceAdapterCoverageReport",
@@ -78,6 +84,8 @@ __all__ = [
     "SourceRetrievalRuntimeExecutionReport",
     "SourceRetrievalRuntimeExecutionStep",
     "SourceRetrievalSnapshotSinkAdapter",
+    "UrllibSourceHTTPClient",
+    "UrllibSourceHTTPResponse",
     "build_physics_source_retrieval_manifest",
     "build_physics_source_retrieval_manifest_dict",
     "build_physics_source_retrieval_run_plan",
