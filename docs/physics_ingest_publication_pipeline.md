@@ -76,6 +76,10 @@ The current pipeline is split at the storage boundary:
   candidate/expression status patches, queue rows, storage preflight, and replay
   digests into a side-effect-free reviewer workflow deployment report for
   caller-owned reviewer UX and persistence.
+- `sciona.physics_ingest.reviewer_handoff` reshapes review queue rows or the
+  workflow deployment report into deterministic JSON-safe reviewer task cards,
+  queue groups, action metadata, and replay digests without constructing app,
+  HTTP, browser, or Supabase clients.
 - `sciona.physics_ingest.audit_artifacts` converts backfill audit/dashboard
   artifact manifests into deterministic rows and optional write plans for
   caller-owned storage.
@@ -335,5 +339,5 @@ ingestion roadmap. Remaining work includes:
 
 - continue expanding symbolic normalization coverage across the long-tail
   equation corpus as new source-specific unit and quantity aliases appear;
-- connect the reviewer workflow deployment report to the production reviewer UX
-  outside this storage-neutral matcher boundary.
+- integrate the storage-neutral reviewer handoff payload with the production
+  reviewer UX and its app-owned persistence/action handlers.

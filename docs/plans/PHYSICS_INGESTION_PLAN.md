@@ -421,7 +421,8 @@ Current modules:
 - `sciona.physics_ingest.normalization`: side-effect-free symbolic expression
   draft normalization with QUDT-assisted dimension resolution, conservative
   unit and quantity-kind alias matching across common QUDT/UCUM/JSON-LD
-  spellings, round-trip diagnostics, and reviewable ambiguity handling.
+  spellings plus source-specific unit text and quantity hints, round-trip
+  diagnostics, and reviewable ambiguity handling.
 - `sciona.physics_ingest.publication`: publication manifest loading for
   symbolic expressions, variables, and validity bounds.
 - `sciona.physics_ingest.orchestration`: combines source bundles and symbolic
@@ -487,6 +488,10 @@ Current modules:
   candidate/expression status patches, review queue rows, storage preflight,
   and deterministic replay digests into a side-effect-free reviewer workflow
   deployment report for caller-owned reviewer UX and persistence.
+- `sciona.physics_ingest.reviewer_handoff`: projects review queue rows or a
+  review deployment report into deterministic reviewer task cards, queue
+  groups, action metadata, replay digests, and stable view IDs for app-owned
+  reviewer UX/action handlers.
 - `sciona.physics_ingest.retrieval_io`: plans and executes catalog/RPC fetches
   through injected clients for runtime retrieval and synthesis ranking, and
   wraps those fetches in planner request/response envelopes with replay hashes,

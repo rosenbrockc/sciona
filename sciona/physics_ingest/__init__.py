@@ -135,6 +135,15 @@ from sciona.physics_ingest.review_deployment import (
     PhysicsIngestReviewDeploymentReport,
     build_physics_ingest_review_deployment_report,
 )
+from sciona.physics_ingest.reviewer_handoff import (
+    REVIEWER_HANDOFF_REPORT_KIND,
+    REVIEWER_HANDOFF_REPORT_VERSION,
+    ReviewerActionMetadata,
+    ReviewerQueueView,
+    ReviewerTaskCard,
+    build_reviewer_handoff_from_review_deployment_report,
+    build_reviewer_handoff_from_review_queue_rows,
+)
 from sciona.physics_ingest.sources import (
     RetrievalRunDiagnostic,
     RetrievalRunPlan,
@@ -317,6 +326,8 @@ __all__ = [
     "REVIEW_QUEUE_TASKS_TABLE",
     "REVIEW_DEPLOYMENT_REPORT_KIND",
     "REVIEW_DEPLOYMENT_REPORT_VERSION",
+    "REVIEWER_HANDOFF_REPORT_KIND",
+    "REVIEWER_HANDOFF_REPORT_VERSION",
     "REVIEW_STATUSES",
     "RawCandidateExternalKnowledgeSuggestion",
     "ReviewAssessment",
@@ -327,6 +338,9 @@ __all__ = [
     "ReviewQueueTask",
     "ReviewQueueWritePlanRows",
     "ReviewTrustReport",
+    "ReviewerActionMetadata",
+    "ReviewerQueueView",
+    "ReviewerTaskCard",
     "RetrievalRunDiagnostic",
     "RetrievalRunPlan",
     "RetrievalRunStep",
@@ -411,6 +425,8 @@ __all__ = [
     "build_review_queue_task_rows",
     "build_review_queue_write_plan_rows",
     "build_review_trust_report",
+    "build_reviewer_handoff_from_review_deployment_report",
+    "build_reviewer_handoff_from_review_queue_rows",
     "build_symbolic_retrieval_fetch_plan",
     "build_symbolic_retrieval_planner_request",
     "build_symbolic_retrieval_planner_service_invocation",

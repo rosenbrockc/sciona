@@ -394,6 +394,83 @@ def test_qudt_assisted_normalization_resolves_long_tail_unit_code_aliases() -> N
     } == {"F": "M1L2T-3", "P": "M1L2T-3"}
 
 
+def test_qudt_assisted_normalization_resolves_source_unit_text_aliases() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-source-unit-text-alias",
+            "raw_formula": "v = x",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "v": {
+                    "role": "output",
+                    "unit_text": "m s^-1",
+                    "dim_signature": "",
+                },
+                "x": {"role": "input", "dim_signature": "L1T-1"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/M-PER-SEC",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Metre per Second",
+                "qudt:symbol": "m/s",
+                "qudt:hasDimensionVector": "A0E0L1I0M0H0T-1D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"v": "L1T-1", "x": "L1T-1"}
+
+
+def test_qudt_assisted_normalization_resolves_source_quantity_hint_alias() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-source-quantity-hint-alias",
+            "raw_formula": "h = x",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "h": {
+                    "role": "output",
+                    "quantity_kind_hint": "Planck constant",
+                    "dim_signature": "",
+                },
+                "x": {"role": "input", "dim_signature": "M1L2T-1"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/quantitykind/PlanckConstant",
+                "@type": ["qudt:QuantityKind"],
+                "rdfs:label": "PlanckConstant",
+                "qudt:hasDimensionVector": "A0E0L2I0M1H0T-1D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"h": "M1L2T-1", "x": "M1L2T-1"}
+
+
 def test_qudt_assisted_normalization_resolves_quantity_kind_alt_label() -> None:
     draft = normalize_candidate_expression_draft_with_qudt_dimensions(
         {
@@ -606,6 +683,56 @@ def test_ambiguous_qudt_alias_remains_reviewable_not_dimensionless() -> None:
         entry["symbol"]: entry["dim_signature"]
         for entry in dimensions["provided_dimensions"]["signatures"]
     } == {"a": "L1T-2", "m": "M1"}
+
+
+def test_ambiguous_normalized_source_unit_alias_remains_reviewable() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-ambiguous-normalized-unit-alias",
+            "raw_formula": "v = x",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "v": {
+                    "role": "output",
+                    "unit_text": "m s^-1",
+                    "dim_signature": "",
+                },
+                "x": {"role": "input", "dim_signature": "L1T-1"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/M-PER-SEC-A",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Metre per Second A",
+                "qudt:symbol": "m/s",
+                "qudt:hasDimensionVector": "A0E0L1I0M0H0T-1D0",
+            },
+            {
+                "@id": "http://qudt.org/vocab/unit/M-PER-SEC-B",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Metre per Second B",
+                "qudt:symbol": "m/s",
+                "qudt:hasDimensionVector": "A0E0L1I0M1H0T-1D0",
+            },
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "needs_human"
+    assert "qudt_dimension_ambiguous" in {
+        diagnostic.code for diagnostic in draft.diagnostics
+    }
+    assert dimensions["unknown_dimensions"]["symbols"] == ["v"]
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"x": "L1T-1"}
 
 
 def test_qudt_alias_resolution_does_not_mutate_input_candidate() -> None:

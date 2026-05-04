@@ -34,10 +34,20 @@ _UNIT_ALIAS_KEYS = (
     "unit_symbol",
     "unit_code",
     "unit_name",
+    "unit_text",
+    "unitText",
+    "unit_string",
+    "unit_expression",
+    "unitExpression",
+    "unit_formula",
     "units",
+    "units_text",
     "uom",
     "unit_of_measure",
     "unit_abbreviation",
+    "source_unit",
+    "source_units",
+    "source_unit_text",
     "ucum_code",
     "ucumCode",
     "unit_ucum_code",
@@ -50,11 +60,16 @@ _QUANTITY_KIND_ALIAS_KEYS = (
     "quantity_kind_name",
     "quantity_kind_symbol",
     "quantity_kind_code",
+    "quantity_kind_hint",
+    "quantity_kind_text",
+    "quantityKind",
+    "kind_of_quantity",
     "quantity",
     "quantity_label",
     "quantity_name",
     "physical_quantity",
     "qudt_quantity_kind",
+    "source_quantity_kind",
 )
 _GENERIC_QUDT_ALIAS_KEYS = (
     "source_symbol",
@@ -80,6 +95,9 @@ _QUDT_UNIT_PAYLOAD_ALIAS_KEYS = (
     "http://qudt.org/schema/qudt/uneceCommonCode",
     "qudt:unitCode",
     "unitCode",
+    "qudt:expression",
+    "expression",
+    "http://qudt.org/schema/qudt/expression",
     "code",
 )
 _QUDT_QUANTITY_KIND_PAYLOAD_ALIAS_KEYS = (
@@ -538,6 +556,8 @@ def _qudt_variable_aliases(
 ) -> dict[str, set[str]]:
     transform = _label_alias_key if normalized else _casefolded
     unit_aliases = _alias_values(variable, _UNIT_ALIAS_KEYS, transform)
+    if normalized:
+        unit_aliases.update(_alias_values(variable, _UNIT_ALIAS_KEYS, _unit_alias_key))
     quantity_kind_aliases = _alias_values(
         variable,
         _QUANTITY_KIND_ALIAS_KEYS,
@@ -592,6 +612,17 @@ def _qudt_record_aliases(record: Any, *, kind: str, transform: Any) -> set[str]:
                 transform,
             )
         )
+        if transform is _label_alias_key:
+            aliases.add(_unit_alias_key(record.symbol))
+            aliases.add(_unit_alias_key(record.source_label))
+            aliases.add(_unit_alias_key(_uri_tail(record.source_entity_uri)))
+            aliases.update(
+                _alias_values_from_payload(
+                    payload,
+                    _QUDT_UNIT_PAYLOAD_ALIAS_KEYS,
+                    _unit_alias_key,
+                )
+            )
     if kind in {"quantity_kind", "generic"}:
         aliases.update(
             _alias_values_from_payload(
@@ -669,6 +700,38 @@ def _iter_text_aliases(value: Any) -> tuple[str, ...]:
 
 def _label_alias_key(value: Any) -> str:
     return _LABEL_ALIAS_SEPARATOR_RE.sub("", _casefolded(value))
+
+
+_UNIT_POWER_TEXT_RE = re.compile(r"\b(square|squared|cubic|cubed)\s+([a-z]+)\b")
+_UNIT_PER_WORD_RE = re.compile(r"\bper\b")
+_UNIT_DIVISION_RE = re.compile(r"/\s*([a-z]+)(?:\^?([+-]?\d+))?")
+_UNIT_EXPONENT_RE = re.compile(r"([a-z]+)(?:\*\*)?([+-]?\d+)")
+
+
+def _unit_alias_key(value: Any) -> str:
+    text = _casefolded(value)
+    if not text:
+        return ""
+    text = text.replace("µ", "u").replace("μ", "u")
+    text = text.replace("·", " ").replace("*", " ")
+    text = text.replace("−", "-").replace("⁻", "-")
+    text = text.replace("²", "2").replace("³", "3")
+    text = _UNIT_POWER_TEXT_RE.sub(_unit_power_replacement, text)
+    text = _UNIT_PER_WORD_RE.sub("/", text)
+    text = _UNIT_DIVISION_RE.sub(_unit_division_replacement, text)
+    text = text.replace("^", "")
+    text = _UNIT_EXPONENT_RE.sub(r"\1^\2", text)
+    return re.sub(r"[^a-z0-9+-]+", "", text)
+
+
+def _unit_power_replacement(match: re.Match[str]) -> str:
+    power = "2" if match.group(1) in {"square", "squared"} else "3"
+    return f"{match.group(2)}{power}"
+
+
+def _unit_division_replacement(match: re.Match[str]) -> str:
+    exponent = int(match.group(2) or "1")
+    return f" {match.group(1)}{-exponent}"
 
 
 def _uri_tail(value: Any) -> str:
