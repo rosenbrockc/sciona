@@ -138,6 +138,13 @@ def build_publication_backfill_dry_run_report_from_payload(
         "phase7_coverage_row_counts": backfill_report["phase7_coverage_row_counts"],
         "phase7_coverage_summary": backfill_report["phase7_coverage_summary"],
     }
+    for summary_key in (
+        "publication_readiness_summary",
+        "source_retrieval_summary",
+        "source_retrieval_readiness_summary",
+    ):
+        if summary_key in backfill_report:
+            report[summary_key] = backfill_report[summary_key]
     _assert_json_serializable(report)
     return report
 

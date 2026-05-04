@@ -226,6 +226,39 @@ def test_publication_backfill_payload_report_is_json_serializable() -> None:
     }
 
 
+def test_publication_backfill_payload_surfaces_dashboard_summaries() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan_dict(max_jobs=1)
+    report = build_publication_backfill_dry_run_report_from_payload(
+        {
+            "source_bundles": [_source_bundle()],
+            "publication_manifests": [_publication_manifest()],
+            "artifact_bindings": {
+                "local:fixture.force": {
+                    "artifact_id": ARTIFACT_ID,
+                    "version_id": VERSION_ID,
+                }
+            },
+            "source_retrieval_run_plan": retrieval_plan,
+        }
+    )
+
+    summary_keys = (
+        "publication_readiness_summary",
+        "source_retrieval_summary",
+        "source_retrieval_readiness_summary",
+    )
+    surfaced_summary_keys = [
+        key for key in summary_keys if key in report["backfill_report"]
+    ]
+
+    assert "publication_readiness_summary" in surfaced_summary_keys
+    for summary_key in surfaced_summary_keys:
+        assert report[summary_key] == report["backfill_report"][summary_key]
+        assert json.loads(json.dumps(report[summary_key], sort_keys=True)) == (
+            report[summary_key]
+        )
+
+
 def test_publication_dry_run_main_prints_report_from_json_payload(
     tmp_path,
     monkeypatch,

@@ -244,6 +244,11 @@ class RetrievalRunPlan:
             "snapshot_key_prefix": self.snapshot_key_prefix,
             "dry_run": self.dry_run,
             "filters": jsonable(self.filters),
+            "summary": _run_plan_summary(
+                steps=self.steps,
+                diagnostics=self.diagnostics,
+                dry_run=self.dry_run,
+            ),
             "steps": [step.to_dict() for step in self.steps],
             "diagnostics": [
                 diagnostic.to_dict() for diagnostic in self.diagnostics
@@ -905,6 +910,43 @@ def _run_step_warnings(
     if not job.adapter_version or not endpoint.adapter_version:
         warnings.append("adapter version is missing")
     return tuple(warnings)
+
+
+def _run_plan_summary(
+    *,
+    steps: tuple[RetrievalRunStep, ...],
+    diagnostics: tuple[RetrievalRunDiagnostic, ...],
+    dry_run: bool,
+) -> JSONDict:
+    dry_run_step_count = sum(1 for step in steps if step.dry_run)
+    return {
+        "step_count": len(steps),
+        "diagnostic_count": len(diagnostics),
+        "dry_run": dry_run,
+        "dry_run_step_count": dry_run_step_count,
+        "non_dry_run_step_count": len(steps) - dry_run_step_count,
+        "by_source_family": _step_count_rollup(
+            step.source_family for step in steps
+        ),
+        "by_source_system": _step_count_rollup(
+            step.source_system for step in steps
+        ),
+        "by_phase7_ring": _step_count_rollup(step.phase7_ring for step in steps),
+        "by_endpoint_kind": _step_count_rollup(
+            step.endpoint_kind for step in steps
+        ),
+        "by_method": _step_count_rollup(step.method for step in steps),
+        "by_target_adapter_input": _step_count_rollup(
+            step.target_adapter_input for step in steps
+        ),
+    }
+
+
+def _step_count_rollup(values: Iterable[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    return {key: counts[key] for key in sorted(counts)}
 
 
 def _normalize_filter(value: str | Iterable[str] | None) -> set[str] | None:

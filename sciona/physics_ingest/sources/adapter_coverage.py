@@ -84,7 +84,7 @@ class SourceAdapterCoverageReport:
     report_version: str
     manifest_version: str
     snapshot_key_prefix: str
-    summary: Mapping[str, int]
+    summary: Mapping[str, Any]
     jobs: tuple[SourceAdapterCoverageJob, ...]
     diagnostics: tuple[SourceAdapterCoverageDiagnostic, ...] = ()
 
@@ -121,6 +121,16 @@ def build_source_adapter_coverage_report(
         "manual": sum(1 for job in jobs if job.manual),
         "offline": sum(1 for job in jobs if job.offline),
         "diagnostic_count": len(diagnostics),
+        "by_source_family": _count_by_field(jobs, "source_family"),
+        "by_target_adapter_input": _count_by_field(jobs, "target_adapter_input"),
+        "by_status": {
+            status: _count_status(jobs, status)
+            for status in ("blocked", "covered", "metadata_only")
+        },
+        "by_supported": _count_by_bool(jobs, "supported"),
+        "by_offline": _count_by_bool(jobs, "offline"),
+        "by_manual": _count_by_bool(jobs, "manual"),
+        "by_adapter_module": _count_by_field(jobs, "adapter_module"),
     }
     return SourceAdapterCoverageReport(
         report_version=REPORT_VERSION,
@@ -312,6 +322,27 @@ def _diagnostic(
 
 def _count_status(jobs: list[SourceAdapterCoverageJob], status: str) -> int:
     return sum(1 for job in jobs if job.status == status)
+
+
+def _count_by_field(
+    jobs: list[SourceAdapterCoverageJob],
+    field_name: str,
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for job in jobs:
+        value = str(getattr(job, field_name))
+        counts[value] = counts.get(value, 0) + 1
+    return {key: counts[key] for key in sorted(counts)}
+
+
+def _count_by_bool(
+    jobs: list[SourceAdapterCoverageJob],
+    field_name: str,
+) -> dict[str, int]:
+    return {
+        "false": sum(1 for job in jobs if not bool(getattr(job, field_name))),
+        "true": sum(1 for job in jobs if bool(getattr(job, field_name))),
+    }
 
 
 def _int_value(value: Any, default: int) -> int:

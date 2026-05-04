@@ -13,6 +13,7 @@ from sciona.physics_ingest.sources import (
 
 def test_retrieval_run_plan_builds_ordered_dry_run_steps() -> None:
     plan = build_physics_source_retrieval_run_plan(max_jobs=3)
+    plan_dict = plan.to_dict()
 
     assert plan.dry_run is True
     assert [step.job_id for step in plan.steps] == [
@@ -34,6 +35,35 @@ def test_retrieval_run_plan_builds_ordered_dry_run_steps() -> None:
     assert manual.phase7_rings == ("ring_1_foundational",)
     assert manual.provenance["license_expression"]
     assert manual.retry_policy["max_attempts"] == 1
+    assert plan_dict["summary"] == {
+        "step_count": 3,
+        "diagnostic_count": 0,
+        "dry_run": True,
+        "dry_run_step_count": 3,
+        "non_dry_run_step_count": 0,
+        "by_source_family": {
+            "curated_foundational": 1,
+            "ontology": 1,
+            "standards_reference": 1,
+        },
+        "by_source_system": {
+            "manual": 1,
+            "nist_codata": 1,
+            "qudt": 1,
+        },
+        "by_phase7_ring": {"ring_1_foundational": 3},
+        "by_endpoint_kind": {
+            "ascii_table": 1,
+            "curated_seed": 1,
+            "rdf_dump": 1,
+        },
+        "by_method": {"GET": 2, "MANUAL": 1},
+        "by_target_adapter_input": {
+            "curated_seed_records": 1,
+            "raw_document": 1,
+            "raw_records": 1,
+        },
+    }
 
 
 def test_retrieval_run_plan_filters_and_limit_do_not_mutate_manifest() -> None:
@@ -59,6 +89,19 @@ def test_retrieval_run_plan_filters_and_limit_do_not_mutate_manifest() -> None:
     assert plan.filters["phase7_ring"] == ["ring_3_wikidata_physical_equations"]
     assert plan.filters["job_id"] == ["wikidata_equation_candidates.backfill"]
     assert manifest.job_by_id()["wikidata_equation_candidates.backfill"].limit == original_limit
+    assert plan.to_dict()["summary"] == {
+        "step_count": 1,
+        "diagnostic_count": 0,
+        "dry_run": True,
+        "dry_run_step_count": 1,
+        "non_dry_run_step_count": 0,
+        "by_source_family": {"knowledge_graph": 1},
+        "by_source_system": {"wikidata": 1},
+        "by_phase7_ring": {"ring_3_wikidata_physical_equations": 1},
+        "by_endpoint_kind": {"sparql": 1},
+        "by_method": {"POST": 1},
+        "by_target_adapter_input": {"json_records": 1},
+    }
 
 
 def test_retrieval_run_plan_filters_by_phase7_ring_without_mutating_manifest() -> None:
@@ -146,6 +189,19 @@ def test_retrieval_run_plan_warns_on_incomplete_endpoint_or_adapter_metadata() -
     assert [diagnostic.message for diagnostic in plan.diagnostics] == list(
         plan.steps[0].warnings
     )
+    assert plan.to_dict()["summary"] == {
+        "step_count": 1,
+        "diagnostic_count": 3,
+        "dry_run": True,
+        "dry_run_step_count": 1,
+        "non_dry_run_step_count": 0,
+        "by_source_family": {"knowledge_graph": 1},
+        "by_source_system": {"wikidata": 1},
+        "by_phase7_ring": {"ring_3_wikidata_physical_equations": 1},
+        "by_endpoint_kind": {"sparql": 1},
+        "by_method": {"POST": 1},
+        "by_target_adapter_input": {"json_records": 1},
+    }
 
 
 def test_retrieval_run_plan_dict_is_json_safe() -> None:
@@ -161,3 +217,6 @@ def test_retrieval_run_plan_dict_is_json_safe() -> None:
     assert decoded["steps"][0]["phase7_ring"] == "ring_1_foundational"
     assert decoded["filters"]["phase7_ring"] is None
     assert "diagnostics" in decoded
+    assert decoded["summary"]["step_count"] == 2
+    assert decoded["summary"]["dry_run_step_count"] == 2
+    assert decoded["summary"]["by_method"] == {"GET": 1, "MANUAL": 1}
