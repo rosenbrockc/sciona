@@ -61,6 +61,59 @@ def test_review_deployment_report_packages_workflow_and_storage_rows() -> None:
     assert rows["summary"]["review_queue_row_count"] == 2
     assert rows["summary"]["candidate_status_patch_count"] == 2
     assert rows["summary"]["expression_status_patch_count"] == 2
+    assert rows["dashboard_summary"]["report_version"] == (
+        "physics-ingest-reviewer-workflow-dashboard.v1"
+    )
+    assert rows["dashboard_summary"]["review"] == {
+        "review_count": 2,
+        "trust_status_counts": {"blocked": 1, "needs_human": 1},
+        "achieved_status_counts": {"raw_imported": 1, "source_verified": 1},
+        "publishable_counts": {
+            "not_publishable": 2,
+            "publishable": 0,
+            "unknown": 0,
+        },
+    }
+    assert rows["dashboard_summary"]["queue"] == {
+        "task_count": 2,
+        "row_count": 2,
+        "task_kind_counts": {
+            "human_review_required": 1,
+            "blocked_resolution": 1,
+        },
+        "task_status_counts": {"blocked": 1, "open": 1},
+        "trust_status_counts": {"blocked": 1, "needs_human": 1},
+        "severity_counts": {"critical": 1, "medium": 1},
+        "priority_counts": {"p0": 1, "p2": 1},
+        "source_family_counts": {"mechanics": 1, "thermo": 1},
+        "blocker_reason_counts": {"blocked_status": 1, "human_review": 1},
+    }
+    assert rows["dashboard_summary"]["publication_status"] == {
+        "candidate_status_patch_count": 2,
+        "expression_status_patch_count": 2,
+        "diagnostic_count": 0,
+    }
+    assert rows["dashboard_summary"]["storage"] == {
+        "table_count": 3,
+        "total_row_count": 6,
+        "bundle_total_row_count": 6,
+        "table_row_counts": {
+            "artifact_symbolic_expressions": 2,
+            "physics_equation_candidates": 2,
+            REVIEW_QUEUE_TASKS_TABLE: 2,
+        },
+        "missing_conflict_metadata_count": 0,
+        "missing_conflict_metadata_for_upserts": [],
+    }
+    assert rows["dashboard_summary"]["diagnostics"] == {
+        "publication_status_diagnostic_count": 0,
+        "review_queue_diagnostic_count": 0,
+        "error_diagnostic_count": 0,
+    }
+    assert rows["dashboard_summary"]["replay"]["review_queue_replay_key_count"] == 2
+    assert rows["dashboard_summary"]["replay"]["replay_keys_digest"] == rows[
+        "workflow"
+    ]["replay_keys_digest"]
     assert rows["storage_preflight"]["missing_conflict_metadata_for_upserts"] == []
     assert rows["storage_preflight"]["table_count"] == 3
     assert rows["storage_bundle"]["summary"]["component_order"] == [
@@ -101,6 +154,10 @@ def test_review_deployment_report_is_deterministic_and_json_safe() -> None:
 
     assert json.loads(json.dumps(first, sort_keys=True, allow_nan=False)) == first
     assert first == second
+    assert first["dashboard_summary"]["ok"] is True
+    assert first["dashboard_summary"]["queue"]["task_kind_counts"] == {
+        "audit_complete": 1
+    }
     assert len(first["workflow"]["replay_keys_digest"]) == 64
     assert len(first["workflow"]["storage_rows_digest"]) == 64
     assert first["review_queue_rows"]["write_plan"]["batches"][0]["table"] == (
@@ -131,6 +188,12 @@ def test_review_deployment_report_can_skip_completed_audit_and_status_patches() 
     assert report["summary"]["review_queue_row_count"] == 0
     assert report["summary"]["candidate_status_patch_count"] == 0
     assert report["summary"]["expression_status_patch_count"] == 0
+    assert report["dashboard_summary"]["queue"]["task_count"] == 0
+    assert report["dashboard_summary"]["publication_status"] == {
+        "candidate_status_patch_count": 0,
+        "expression_status_patch_count": 0,
+        "diagnostic_count": 0,
+    }
     assert report["storage_preflight"]["total_row_count"] == 0
     assert report["storage_bundle"]["insert_rows"] == {}
 

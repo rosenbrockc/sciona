@@ -145,6 +145,7 @@ def build_physics_ingest_review_deployment_report(
         "storage_bundle": storage_bundle.to_dict(),
         "storage_preflight": storage_preflight,
     }
+    report["dashboard_summary"] = _dashboard_summary(report)
     return PhysicsIngestReviewDeploymentReport(
         report=_json_safe(report),
         review_queue_rows=review_queue_rows,
@@ -273,6 +274,108 @@ def _summary(
     }
 
 
+def _dashboard_summary(report: Mapping[str, Any]) -> dict[str, Any]:
+    summary = _mapping(report.get("summary"))
+    workflow = _mapping(report.get("workflow"))
+    review_summary = _mapping(workflow.get("review_summary"))
+    queue_summary = _mapping(workflow.get("review_queue_summary"))
+    publication_summary = _mapping(workflow.get("publication_status_summary"))
+    storage_preflight = _mapping(report.get("storage_preflight"))
+    return _json_safe(
+        {
+            "report_version": "physics-ingest-reviewer-workflow-dashboard.v1",
+            "ok": bool(report.get("ok")),
+            "side_effect_free": bool(report.get("side_effect_free")),
+            "preflight": bool(report.get("preflight")),
+            "review": {
+                "review_count": _int(summary.get("review_count")),
+                "trust_status_counts": _int_mapping(
+                    review_summary.get("trust_status_counts")
+                ),
+                "achieved_status_counts": _int_mapping(
+                    review_summary.get("achieved_status_counts")
+                ),
+                "publishable_counts": _int_mapping(
+                    review_summary.get("publishable_counts")
+                ),
+            },
+            "queue": {
+                "task_count": _int(queue_summary.get("task_count")),
+                "row_count": _int(summary.get("review_queue_row_count")),
+                "task_kind_counts": _int_mapping(queue_summary.get("task_kind_counts")),
+                "task_status_counts": _int_mapping(
+                    queue_summary.get("task_status_counts")
+                ),
+                "trust_status_counts": _int_mapping(
+                    queue_summary.get("trust_status_counts")
+                ),
+                "severity_counts": _int_mapping(queue_summary.get("severity_counts")),
+                "priority_counts": _int_mapping(queue_summary.get("priority_counts")),
+                "source_family_counts": _int_mapping(
+                    queue_summary.get("source_family_counts")
+                ),
+                "blocker_reason_counts": _int_mapping(
+                    queue_summary.get("blocker_reason_counts")
+                ),
+            },
+            "publication_status": {
+                "candidate_status_patch_count": _int(
+                    publication_summary.get("candidate_status_patch_count")
+                ),
+                "expression_status_patch_count": _int(
+                    publication_summary.get("expression_status_patch_count")
+                ),
+                "diagnostic_count": _int(publication_summary.get("diagnostic_count")),
+            },
+            "storage": {
+                "table_count": _int(summary.get("storage_table_count")),
+                "total_row_count": _int(summary.get("storage_total_row_count")),
+                "bundle_total_row_count": _int(
+                    summary.get("storage_bundle_total_row_count")
+                ),
+                "table_row_counts": _storage_table_row_counts(storage_preflight),
+                "missing_conflict_metadata_count": len(
+                    _sequence(
+                        summary.get("missing_conflict_metadata_for_upserts")
+                    )
+                ),
+                "missing_conflict_metadata_for_upserts": sorted(
+                    str(value)
+                    for value in _sequence(
+                        summary.get("missing_conflict_metadata_for_upserts")
+                    )
+                ),
+            },
+            "diagnostics": {
+                "publication_status_diagnostic_count": _int(
+                    summary.get("publication_status_diagnostic_count")
+                ),
+                "review_queue_diagnostic_count": _int(
+                    summary.get("review_queue_diagnostic_count")
+                ),
+                "error_diagnostic_count": _int(summary.get("error_diagnostic_count")),
+            },
+            "replay": {
+                "review_queue_replay_key_count": len(
+                    _sequence(workflow.get("replay_keys"))
+                ),
+                "replay_keys_digest": str(workflow.get("replay_keys_digest") or ""),
+                "storage_rows_digest": str(workflow.get("storage_rows_digest") or ""),
+            },
+        }
+    )
+
+
+def _storage_table_row_counts(storage_preflight: Mapping[str, Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for table in _sequence(storage_preflight.get("tables")):
+        if isinstance(table, Mapping):
+            table_name = str(table.get("table") or "")
+            if table_name:
+                counts[table_name] = _int(table.get("row_count"))
+    return dict(sorted(counts.items()))
+
+
 def _severity_count(rows: Iterable[Any], severity: str) -> int:
     count = 0
     for row in rows:
@@ -280,6 +383,31 @@ def _severity_count(rows: Iterable[Any], severity: str) -> int:
         if isinstance(value, Mapping) and str(value.get("severity") or "") == severity:
             count += 1
     return count
+
+
+def _mapping(value: Any) -> dict[str, Any]:
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _int_mapping(value: Any) -> dict[str, int]:
+    if not isinstance(value, Mapping):
+        return {}
+    return {
+        str(key): _int(item)
+        for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+    }
+
+
+def _int(value: Any) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+
+def _sequence(value: Any) -> tuple[Any, ...]:
+    if value is None or isinstance(value, str | bytes):
+        return ()
+    if isinstance(value, Sequence):
+        return tuple(value)
+    return ()
 
 
 def _stable_json_sha256(value: Any) -> str:
