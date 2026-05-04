@@ -189,6 +189,7 @@ class Sciona:
         _proof_env: Any = None,
         _architect_agent: Any = None,
         _hunter_agent: Any = None,
+        _solution_index: Any = None,
     ) -> None:
         self._catalog = catalog
         self._config = config
@@ -198,6 +199,7 @@ class Sciona:
         self._proof_env = _proof_env
         self._architect_agent = _architect_agent
         self._hunter_agent = _hunter_agent
+        self._solution_index = _solution_index
 
     @classmethod
     async def create(
@@ -327,6 +329,18 @@ class Sciona:
             except Exception:  # noqa: BLE001
                 logger.debug("Hunter agent not available")
 
+        # -- solution template index -----------------------------------
+        solution_index = None
+        try:
+            from sciona.architect.solution_index import SolutionTemplateIndex
+
+            cdg_dir = Path.home() / "personal" / "sciona-atoms" / "data" / "solution_cdgs"
+            if cdg_dir.is_dir():
+                solution_index = SolutionTemplateIndex.from_directory(cdg_dir)
+                logger.info("Solution index: %d templates", solution_index.size)
+        except Exception:  # noqa: BLE001
+            logger.debug("Solution template index not available")
+
         return cls(
             catalog=catalog,
             config=config,
@@ -336,15 +350,33 @@ class Sciona:
             _proof_env=proof_env,
             _architect_agent=architect_agent,
             _hunter_agent=hunter_agent,
+            _solution_index=solution_index,
         )
 
     @classmethod
-    def from_catalog(cls, catalog: PrimitiveCatalog) -> Sciona:
+    def from_catalog(
+        cls,
+        catalog: PrimitiveCatalog,
+        solution_cdg_dir: str | Path | None = None,
+    ) -> Sciona:
         """Create a lightweight instance with only catalog (no LLM/indexes).
 
         Useful for retrieval-only workflows (search, inspect, gaps).
         """
-        return cls(catalog=catalog)
+        solution_index = None
+        if solution_cdg_dir is None:
+            solution_cdg_dir = (
+                Path.home() / "personal" / "sciona-atoms" / "data" / "solution_cdgs"
+            )
+        cdg_dir = Path(solution_cdg_dir)
+        if cdg_dir.is_dir():
+            try:
+                from sciona.architect.solution_index import SolutionTemplateIndex
+
+                solution_index = SolutionTemplateIndex.from_directory(cdg_dir)
+            except Exception:  # noqa: BLE001
+                pass
+        return cls(catalog=catalog, _solution_index=solution_index)
 
     # -- properties ---------------------------------------------------------
 
@@ -448,6 +480,49 @@ class Sciona:
             goal, thread_id=thread_id
         )
 
+    def find_matching_templates(
+        self,
+        prompt: str,
+        k: int = 10,
+        *,
+        dejargonize: bool = True,
+    ) -> list[tuple[Any, float]]:
+        """Find solution CDG templates matching a problem prompt.
+
+        Uses dejargonized keyword search against the solution template index.
+        Returns list of (SolutionTemplate, score) pairs.
+        """
+        if self._solution_index is None:
+            return []
+
+        from sciona.architect.dejargonizer import dejargonize_heuristic
+
+        search_prompt = dejargonize_heuristic(prompt) if dejargonize else prompt
+        return self._solution_index.search_dejargonized(
+            dejargonized_prompt=search_prompt,
+            original_prompt=prompt,
+            k=k,
+        )
+
+    async def rerank_templates(
+        self,
+        prompt: str,
+        candidates: list[Any],
+        max_candidates: int = 5,
+    ) -> Any:
+        """Use LLM to semantically rerank template candidates.
+
+        Requires an LLM client (call Sciona.create() with an LLM provider).
+        """
+        if self._llm is None:
+            raise RuntimeError(
+                "LLM not available for reranking. "
+                "Call Sciona.create() with an LLM provider."
+            )
+        from sciona.architect.template_reranker import rerank_templates
+
+        return await rerank_templates(prompt, candidates, self._llm, max_candidates)
+
     async def propose(
         self,
         problem: str,
@@ -459,6 +534,10 @@ class Sciona:
         """Compose a problem prompt, decompose, match, and ground.
 
         This is the main entry point for the Kaggle validation pipeline.
+        Uses a three-phase approach:
+        1. Dejargonize prompt + keyword match against solution templates
+        2. If strong template match, use it directly
+        3. Otherwise, decompose from scratch via architect
         """
         t0 = time.monotonic()
 
@@ -474,7 +553,17 @@ class Sciona:
             parts.append(f"Domain: {', '.join(domain_hints)}")
         goal = "\n".join(parts)
 
-        # Decompose
+        # Phase 1: Try template matching
+        template_used = None
+        template_score = 0.0
+        template_matches = self.find_matching_templates(goal, k=10)
+
+        if template_matches:
+            top_template, top_score = template_matches[0]
+            template_used = top_template.name
+            template_score = top_score
+
+        # Phase 2: Decompose (from template or from scratch)
         cdg = await self.decompose(goal)
 
         # Match stages
@@ -485,6 +574,8 @@ class Sciona:
 
         return ProposalResult(
             cdg=cdg,
+            template_used=template_used,
+            template_match_score=template_score,
             grounding=grounding,
             matches=matches,
             wall_time_seconds=time.monotonic() - t0,

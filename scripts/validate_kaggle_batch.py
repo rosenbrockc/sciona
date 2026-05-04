@@ -25,62 +25,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sciona.sdk import load_catalog_from_repos, Sciona
 from sciona.architect.models import AlgorithmicNode, ConceptType, IOSpec
-
-
-def load_solution_cdgs(cdg_dir: Path) -> dict[str, dict]:
-    """Load all solution CDG templates."""
-    templates = {}
-    for cdg_path in cdg_dir.glob("*.json"):
-        if "_bindings" in cdg_path.name:
-            continue
-        data = json.loads(cdg_path.read_text())
-        templates[cdg_path.stem] = data
-    return templates
+from sciona.architect.dejargonizer import dejargonize_heuristic
+from sciona.architect.solution_index import SolutionTemplateIndex
 
 
 def match_prompt_to_templates(
     prompt: str,
-    templates: dict[str, dict],
-    catalog,
+    solution_index: SolutionTemplateIndex,
     k: int = 5,
 ) -> list[dict]:
-    """Find CDG templates that match a competition prompt."""
-    # Build a query node from the prompt
-    node = AlgorithmicNode(
-        node_id="query",
-        name=prompt[:60],
-        description=prompt,
-        concept_type=ConceptType.CUSTOM,
+    """Find CDG templates matching a competition prompt via dejargonized search."""
+    dejargonized = dejargonize_heuristic(prompt)
+    matches = solution_index.search_dejargonized(
+        dejargonized_prompt=dejargonized,
+        original_prompt=prompt,
+        k=k,
     )
-
-    # Score each template by keyword overlap with the prompt
-    scored = []
-    for name, cdg in templates.items():
-        # Combine template metadata for matching
-        template_text = " ".join([
-            cdg.get("summary", ""),
-            cdg.get("dejargonized_summary", ""),
-            cdg.get("name", ""),
-            " ".join(cdg.get("applicability", {}).get("use_when", [])),
-            cdg.get("family", ""),
-            cdg.get("paradigm", ""),
-        ])
-
-        template_words = catalog._tokenize(template_text)
-        prompt_words = catalog._tokenize(prompt)
-        overlap = len(template_words & prompt_words)
-
-        if overlap > 0:
-            scored.append({
-                "template": name,
-                "overlap_score": overlap,
-                "family": cdg.get("family", ""),
-                "paradigm": cdg.get("paradigm", ""),
-                "summary": cdg.get("summary", "")[:200],
-            })
-
-    scored.sort(key=lambda x: -x["overlap_score"])
-    return scored[:k]
+    return [
+        {
+            "template": tmpl.name,
+            "overlap_score": score,
+            "family": tmpl.family,
+            "paradigm": tmpl.paradigm,
+            "summary": (tmpl.dejargonized_summary or tmpl.summary)[:200],
+        }
+        for tmpl, score in matches
+    ]
 
 
 def evaluate_template_coverage(
@@ -245,10 +215,10 @@ def main():
     catalog = load_catalog_from_repos(repos)
     print(f"Catalog: {catalog.size} atoms")
 
-    # Load CDG templates and bindings
+    # Load solution template index
     cdg_dir = Path(args.cdg_dir)
-    templates = load_solution_cdgs(cdg_dir)
-    print(f"Templates: {len(templates)}")
+    solution_index = SolutionTemplateIndex.from_directory(cdg_dir)
+    print(f"Templates: {solution_index.size}")
 
     # Process each competition
     results = []
@@ -258,22 +228,21 @@ def main():
         key_techniques = comp.get("key_techniques", [])
         solution_summary = comp.get("solution_summary", "")
 
-        # Match prompt to templates
-        matches = match_prompt_to_templates(prompt, templates, catalog, k=5)
+        # Match prompt to templates (dejargonized)
+        matches = match_prompt_to_templates(prompt, solution_index, k=5)
 
         # Evaluate top match
         evaluation = None
-        top_template = None
         if matches:
             top_name = matches[0]["template"]
-            top_template = templates.get(top_name)
-            bindings_path = cdg_dir / f"{top_name}_bindings.json"
-            bindings = None
-            if bindings_path.exists():
-                bindings = json.loads(bindings_path.read_text())
-            if top_template:
+            tmpl = solution_index.get(top_name)
+            if tmpl:
+                bindings_path = cdg_dir / f"{top_name}_bindings.json"
+                bindings = None
+                if bindings_path.exists():
+                    bindings = json.loads(bindings_path.read_text())
                 evaluation = evaluate_template_coverage(
-                    top_template, bindings, key_techniques, catalog
+                    tmpl.raw_cdg, bindings, key_techniques, catalog
                 )
 
         assessment = assess_result(
