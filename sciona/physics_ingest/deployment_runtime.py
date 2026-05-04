@@ -146,6 +146,7 @@ def build_physics_ingest_deployment_runtime_report(
         "storage_bundle_summary": storage_bundle_summary,
         "storage_preflight": storage_preflight_dict,
     }
+    report["dashboard_summary"] = _dashboard_summary(report)
     return PhysicsIngestDeploymentRuntimeReport(_json_safe(report))
 
 
@@ -223,6 +224,80 @@ def _source_runtime_counts(source_preflight: Mapping[str, Any]) -> dict[str, int
         "blocking_diagnostic_count": _int(summary.get("blocking_diagnostic_count")),
         "execution_result_count": _int(summary.get("execution_result_count")),
     }
+
+
+def _dashboard_summary(report: Mapping[str, Any]) -> JSONDict:
+    summary = _mapping(report.get("summary"))
+    source_counts = _mapping(report.get("source_runtime_counts"))
+    diagnostic_summary = _mapping(report.get("diagnostic_summary"))
+    replay_keys = _mapping(report.get("replay_keys"))
+    return _json_safe(
+        {
+            "report_version": "physics-ingest-deployment-runtime-dashboard.v1",
+            "ok": bool(report.get("ok")),
+            "blocked": bool(report.get("blocked")),
+            "side_effect_free": bool(report.get("side_effect_free")),
+            "preflight": bool(report.get("preflight")),
+            "source_runtime": {
+                "step_count": _int(summary.get("source_runtime_step_count")),
+                "network_step_count": _int(
+                    summary.get("source_runtime_network_step_count")
+                ),
+                "manual_step_count": _int(
+                    summary.get("source_runtime_manual_step_count")
+                ),
+                "dry_run_step_count": _int(
+                    summary.get("source_runtime_dry_run_step_count")
+                ),
+                "requires_http_client_count": _int(
+                    summary.get("source_runtime_requires_http_client_count")
+                ),
+                "requires_snapshot_sink_count": _int(
+                    summary.get("source_runtime_requires_snapshot_sink_count")
+                ),
+                "requires_auth_count": _int(
+                    summary.get("source_runtime_requires_auth_count")
+                ),
+                "execution_result_count": _int(
+                    source_counts.get("execution_result_count")
+                ),
+            },
+            "storage": {
+                "table_count": _int(summary.get("storage_table_count")),
+                "total_row_count": _int(summary.get("storage_total_row_count")),
+                "table_row_counts": dict(
+                    sorted(
+                        (
+                            str(table),
+                            _int(row_count),
+                        )
+                        for table, row_count in _mapping(
+                            report.get("storage_table_counts")
+                        ).items()
+                    )
+                ),
+            },
+            "diagnostics": {
+                "diagnostic_count": _int(summary.get("diagnostic_count")),
+                "blocking_diagnostic_count": _int(
+                    summary.get("blocking_diagnostic_count")
+                ),
+                "by_stage": _mapping(diagnostic_summary.get("by_stage")),
+                "by_severity": _mapping(diagnostic_summary.get("by_severity")),
+                "blocking_by_code": _mapping(
+                    diagnostic_summary.get("blocking_by_code")
+                ),
+            },
+            "replay": {
+                "source_runtime_count": _int(
+                    replay_keys.get("source_runtime_count")
+                ),
+                "source_runtime_digest": str(
+                    replay_keys.get("source_runtime_digest") or ""
+                ),
+            },
+        }
+    )
 
 
 def _source_runtime_replay_keys(

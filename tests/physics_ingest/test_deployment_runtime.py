@@ -40,6 +40,43 @@ def test_deployment_runtime_report_generates_source_runtime_preflight_for_multi_
     assert report["source_runtime_counts"]["total_steps"] == 3
     assert report["source_runtime_counts"]["dry_run_step_count"] == 3
     assert report["summary"]["source_runtime_step_count"] == 3
+    assert report["dashboard_summary"] == {
+        "report_version": "physics-ingest-deployment-runtime-dashboard.v1",
+        "ok": True,
+        "blocked": False,
+        "side_effect_free": True,
+        "preflight": True,
+        "source_runtime": {
+            "step_count": 3,
+            "network_step_count": report["summary"][
+                "source_runtime_network_step_count"
+            ],
+            "manual_step_count": report["summary"]["source_runtime_manual_step_count"],
+            "dry_run_step_count": 3,
+            "requires_http_client_count": 0,
+            "requires_snapshot_sink_count": 0,
+            "requires_auth_count": 0,
+            "execution_result_count": 0,
+        },
+        "storage": {
+            "table_count": 0,
+            "total_row_count": 0,
+            "table_row_counts": {},
+        },
+        "diagnostics": {
+            "diagnostic_count": 0,
+            "blocking_diagnostic_count": 0,
+            "by_stage": {},
+            "by_severity": {},
+            "blocking_by_code": {},
+        },
+        "replay": {
+            "source_runtime_count": 3,
+            "source_runtime_digest": report["replay_keys"][
+                "source_runtime_digest"
+            ],
+        },
+    }
     assert report["source_runtime_execution_preflight"]["execution_requested"] is True
     assert report["source_runtime_execution_preflight"]["execution_performed"] is False
     assert report["source_runtime_execution_preflight"]["execution_skipped_reason"] == (
@@ -102,6 +139,15 @@ def test_deployment_runtime_report_combines_storage_preflight() -> None:
     assert report["summary"]["storage_table_count"] == 3
     assert report["summary"]["storage_total_row_count"] == 3
     assert report["storage_bundle_summary"]["total_row_count"] == 3
+    assert report["dashboard_summary"]["storage"] == {
+        "table_count": 3,
+        "total_row_count": 3,
+        "table_row_counts": {
+            "artifact_symbolic_expressions": 1,
+            "physics_ingest_snapshots": 1,
+            "physics_review_queue_tasks": 1,
+        },
+    }
 
 
 def test_deployment_runtime_report_summarizes_blocked_diagnostics() -> None:
@@ -147,6 +193,14 @@ def test_deployment_runtime_report_summarizes_blocked_diagnostics() -> None:
         "storage_preflight": 1,
     }
     assert report["summary"]["blocking_diagnostic_count"] == 7
+    assert report["dashboard_summary"]["blocked"] is True
+    assert report["dashboard_summary"]["diagnostics"]["blocking_diagnostic_count"] == 7
+    assert report["dashboard_summary"]["diagnostics"]["blocking_by_code"] == {
+        "missing_auth": 2,
+        "missing_http_client": 2,
+        "missing_snapshot_sink": 2,
+        "missing_storage_conflict_metadata": 1,
+    }
     assert [diagnostic["blocking"] for diagnostic in report["diagnostics"]] == [
         True,
         True,
