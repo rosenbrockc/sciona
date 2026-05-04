@@ -250,6 +250,19 @@ def _print_text_report(report: dict[str, object]) -> None:
         f"{source_health['check_count']} checks, "
         f"{source_health['diagnostic_count']} diagnostics"
     )
+    source_execution = source_health.get("source_execution", {})
+    source_adapter_coverage = source_health.get("source_adapter_coverage", {})
+    source_adapter_seeds = source_health.get("source_adapter_data_artifact_seeds", {})
+    assert isinstance(source_execution, dict)
+    assert isinstance(source_adapter_coverage, dict)
+    assert isinstance(source_adapter_seeds, dict)
+    print(
+        "source gates: "
+        f"{source_execution.get('total_steps', 0)} execution steps, "
+        f"{source_adapter_coverage.get('covered', 0)}/"
+        f"{source_adapter_coverage.get('total_jobs', 0)} adapters covered, "
+        f"{source_adapter_seeds.get('seed_count', 0)} data artifact seeds"
+    )
     for check in report["checks"]:
         assert isinstance(check, dict)
         status = "ok" if check["ok"] else "failed"

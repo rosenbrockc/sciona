@@ -1448,6 +1448,10 @@ def test_validation_script_text_output_includes_inventory() -> None:
     assert "atom review: 0/0 regular physics atoms reviewed" in result.stdout
     assert "pdg coverage: 0 equations, 0 relationships, 0 CDG nodes" in result.stdout
     assert "source health: 0 checks, 0 diagnostics" in result.stdout
+    assert (
+        "source gates: 0 execution steps, 0/0 adapters covered, "
+        "0 data artifact seeds"
+    ) in result.stdout
 
 
 def test_validation_script_dashboard_json_mode_emits_compact_summary() -> None:
