@@ -790,6 +790,7 @@ def build_symbolic_retrieval_report(
     return {
         "result_count": len(results),
         "dashboard_summary": _ranked_dashboard_summary(results),
+        "query_coverage_summary": _query_coverage_summary(request, results),
         "results": [result.to_dict() for result in results],
         "raw_candidate_external_knowledge_suggestions": [
             suggestion.to_dict() for suggestion in suggestions
@@ -854,6 +855,7 @@ def build_symbolic_synthesis_retrieval_report(
                 "blocked": blocked,
             },
         ),
+        "query_coverage_summary": _query_coverage_summary(request, results),
         "executable_candidates": executable,
         "external_knowledge_suggestions": external_suggestions,
         "blocked_candidates": blocked,
@@ -913,6 +915,104 @@ def _ranked_dashboard_summary(
             synthesis_categories.values()
         )
     return summary
+
+
+def _query_coverage_summary(
+    query: SymbolicRetrievalQuery,
+    results: Sequence[SymbolicRankingResult],
+) -> dict[str, Any]:
+    """Summarize requested retrieval features and observed match coverage."""
+
+    requested = {
+        "topology_hash": bool(query.topology_hashes),
+        "dimensional_hash": bool(query.dimensional_hashes),
+        "dim_signature": bool(query.dim_signatures),
+        "mechanism": bool(query.mechanism_tags),
+        "behavioral_archetype": bool(query.behavioral_archetypes),
+        "relationship": bool(query.relationship_kinds),
+        "validity": bool(
+            query.validity_regimes
+            or query.validity_variables
+            or any(_validity_request_present(bound) for bound in query.validity_bounds)
+            or query.require_validity_bounds
+            or query.require_reviewed_bounds
+            or query.require_validity_matches
+        ),
+        "source": bool(
+            query.source_systems or query.source_kinds or query.source_domains
+        ),
+        "known_analogue": bool(query.known_analogues),
+        "data_artifact": bool(
+            query.data_artifact_dependencies
+            or query.require_data_artifact_dependencies
+        ),
+    }
+    candidate_matches = {
+        "topology_hash": _component_match_count(results, "topology_hash"),
+        "dimensional_hash": _component_match_count(results, "dimensional_hash"),
+        "dim_signature": _component_match_count(results, "dim_signatures"),
+        "mechanism": _component_match_count(results, "mechanism_tags"),
+        "behavioral_archetype": _component_match_count(
+            results,
+            "behavioral_archetypes",
+        ),
+        "relationship": _component_match_count(results, "relationship_kinds"),
+        "validity": _validity_match_count(results),
+        "source": _source_match_count(results),
+        "known_analogue": _component_match_count(results, "known_analogues"),
+        "data_artifact": _component_match_count(
+            results,
+            "data_artifact_dependencies",
+        ),
+    }
+    requested_feature_count = sum(1 for requested_value in requested.values() if requested_value)
+    matched_requested_feature_count = sum(
+        1
+        for key, requested_value in requested.items()
+        if requested_value and candidate_matches[key] > 0
+    )
+    return {
+        "requested": requested,
+        "candidate_match_counts": candidate_matches,
+        "requested_feature_count": requested_feature_count,
+        "matched_requested_feature_count": matched_requested_feature_count,
+        "unmatched_requested_features": [
+            key
+            for key, requested_value in requested.items()
+            if requested_value and candidate_matches[key] == 0
+        ],
+    }
+
+
+def _component_match_count(
+    results: Sequence[SymbolicRankingResult],
+    component_name: str,
+) -> int:
+    return sum(1 for result in results if component_name in result.components)
+
+
+def _validity_match_count(results: Sequence[SymbolicRankingResult]) -> int:
+    validity_components = {
+        "validity_bounds",
+        "reviewed_validity_bounds",
+        "validity_regimes",
+        "validity_variables",
+        "validity_bound_ranges",
+    }
+    return sum(
+        1
+        for result in results
+        if any(component in result.components for component in validity_components)
+    )
+
+
+def _source_match_count(results: Sequence[SymbolicRankingResult]) -> int:
+    source_components = {"source_system", "source_kind", "source_domains"}
+    return sum(
+        1
+        for result in results
+        if any(component in result.components for component in source_components)
+    )
 
 
 def _ranked_blocker_counts(

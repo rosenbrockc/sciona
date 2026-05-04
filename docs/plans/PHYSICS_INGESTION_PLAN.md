@@ -319,6 +319,11 @@ Acceptance:
 
 - Coverage dashboards show discovered, parsed, dimensioned, reviewed, and
   published counts by source and physics family.
+- Deferred UI/display task: when a real dashboard or reviewer UI consumes
+  symbolic equations, add deterministic TeX/LaTeX render fields derived from
+  the canonical SymPy expression and render them with a math renderer such as
+  KaTeX or MathJax. This should not replace `sympy.srepr` or normalized plain
+  text, which remain the storage and validation contract.
 
 ## Phase 8: Offline Validation And CI Gate
 

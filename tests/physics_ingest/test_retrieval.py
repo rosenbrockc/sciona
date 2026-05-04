@@ -578,6 +578,37 @@ def test_symbolic_retrieval_report_includes_json_safe_dashboard_summary() -> Non
             "missing_required_data_artifact_dependencies": 2,
         },
     }
+    query_coverage = report["query_coverage_summary"]
+    assert json.loads(json.dumps(query_coverage)) == query_coverage
+    assert query_coverage == {
+        "requested": {
+            "topology_hash": True,
+            "dimensional_hash": False,
+            "dim_signature": False,
+            "mechanism": False,
+            "behavioral_archetype": False,
+            "relationship": False,
+            "validity": False,
+            "source": False,
+            "known_analogue": False,
+            "data_artifact": True,
+        },
+        "candidate_match_counts": {
+            "topology_hash": 3,
+            "dimensional_hash": 0,
+            "dim_signature": 0,
+            "mechanism": 0,
+            "behavioral_archetype": 0,
+            "relationship": 0,
+            "validity": 0,
+            "source": 0,
+            "known_analogue": 0,
+            "data_artifact": 1,
+        },
+        "requested_feature_count": 2,
+        "matched_requested_feature_count": 2,
+        "unmatched_requested_features": [],
+    }
 
 
 def test_symbolic_synthesis_report_separates_executable_and_external_knowledge() -> None:
@@ -654,6 +685,35 @@ def test_symbolic_synthesis_report_separates_executable_and_external_knowledge()
     assert report["dashboard_summary"]["blocker_counts"] == {
         "missing_reviewed_validity_bounds": 1,
         "not_published_or_reviewed": 1,
+    }
+    assert report["query_coverage_summary"] == {
+        "requested": {
+            "topology_hash": True,
+            "dimensional_hash": True,
+            "dim_signature": True,
+            "mechanism": True,
+            "behavioral_archetype": False,
+            "relationship": True,
+            "validity": True,
+            "source": True,
+            "known_analogue": False,
+            "data_artifact": False,
+        },
+        "candidate_match_counts": {
+            "topology_hash": 2,
+            "dimensional_hash": 2,
+            "dim_signature": 2,
+            "mechanism": 2,
+            "behavioral_archetype": 0,
+            "relationship": 1,
+            "validity": 1,
+            "source": 1,
+            "known_analogue": 0,
+            "data_artifact": 0,
+        },
+        "requested_feature_count": 7,
+        "matched_requested_feature_count": 7,
+        "unmatched_requested_features": [],
     }
 
     executable = report["executable_candidates"][0]
