@@ -224,5 +224,4 @@ async def dejargonize_llm(prompt: str, llm: object) -> str:
         "plain descriptions. Keep the problem structure, data description, "
         "metric, and constraints intact. Output only the rewritten text."
     )
-    response = await llm.complete(system=system, user=prompt)  # type: ignore[union-attr]
-    return response.text  # type: ignore[union-attr]
+    return await llm.complete(system=system, user=prompt)  # type: ignore[union-attr]

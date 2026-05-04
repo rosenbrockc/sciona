@@ -18,8 +18,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -194,6 +197,10 @@ def main():
     parser.add_argument("--cdg-dir", default=str(
         Path.home() / "personal/sciona-atoms/data/solution_cdgs"
     ))
+    parser.add_argument("--rerank", action="store_true",
+                        help="Use LLM to rerank top-N template candidates")
+    parser.add_argument("--llm-provider", default=None,
+                        help="LLM provider for reranking (e.g., claude_shim, anthropic)")
     args = parser.parse_args()
 
     # Load corpus
@@ -220,16 +227,77 @@ def main():
     solution_index = SolutionTemplateIndex.from_directory(cdg_dir)
     print(f"Templates: {solution_index.size}")
 
+    # Optional: set up LLM reranker
+    llm = None
+    if args.rerank:
+        try:
+            from sciona.config import AgeomConfig
+            from sciona.commands.llm_helpers import _create_llm
+
+            config = AgeomConfig()
+            if args.llm_provider:
+                config.llm_provider = args.llm_provider
+            llm_args = argparse.Namespace(
+                mode=None,
+                llm_provider=config.llm_provider,
+                llm_model=config.llm_model,
+                llm_max_tokens=config.llm_max_tokens,
+            )
+            llm = _create_llm(llm_args, config, "architect")
+            print(f"LLM reranking enabled: {config.llm_provider}/{config.llm_model}")
+        except Exception as e:
+            print(f"WARNING: LLM reranking requested but failed to create client: {e}")
+            print("Falling back to keyword-only matching")
+
     # Process each competition
+    import asyncio
     results = []
-    for comp in competitions:
+
+    async def _process_competition(comp):
         cid = comp["competition_id"]
         prompt = comp["prompt"]
         key_techniques = comp.get("key_techniques", [])
         solution_summary = comp.get("solution_summary", "")
 
-        # Match prompt to templates (dejargonized)
-        matches = match_prompt_to_templates(prompt, solution_index, k=5)
+        # Phase 1: Match prompt to templates (dejargonized keyword search)
+        matches = match_prompt_to_templates(prompt, solution_index, k=10)
+
+        # Phase 2: Optional LLM reranking of top candidates
+        rerank_output = None
+        if llm and matches:
+            try:
+                from sciona.architect.template_reranker import rerank_templates
+                top_candidates = [
+                    solution_index.get(m["template"])
+                    for m in matches[:5]
+                    if solution_index.get(m["template"]) is not None
+                ]
+                if top_candidates:
+                    rerank_output = await rerank_templates(
+                        prompt, top_candidates, llm, max_candidates=5
+                    )
+                    # Reorder matches based on LLM ranking
+                    if rerank_output.best_match and rerank_output.best_match != "none":
+                        # Move best match to front
+                        reranked = []
+                        for r in rerank_output.rankings:
+                            m = next(
+                                (m for m in matches if m["template"] == r.template_name),
+                                None,
+                            )
+                            if m:
+                                m = dict(m)
+                                m["llm_score"] = r.score
+                                m["llm_reasoning"] = r.reasoning
+                                reranked.append(m)
+                        # Keep any that weren't in the reranked set
+                        reranked_names = {m["template"] for m in reranked}
+                        for m in matches:
+                            if m["template"] not in reranked_names:
+                                reranked.append(m)
+                        matches = reranked
+            except Exception as e:
+                logger.debug("Reranking failed for %s: %s", cid, e)
 
         # Evaluate top match
         evaluation = None
@@ -261,6 +329,12 @@ def main():
             "key_techniques_count": len(key_techniques),
             "solution_summary_preview": solution_summary[:200],
         }
+        if rerank_output:
+            result["rerank"] = {
+                "best_match": rerank_output.best_match,
+                "should_compose_novel": rerank_output.should_compose_novel,
+                "novel_reasoning": rerank_output.novel_reasoning,
+            }
         results.append(result)
 
         status = "✓" if assessment == "competitive" else \
@@ -269,6 +343,12 @@ def main():
         print(f"  {status} {cid}: {assessment}"
               f" (tc={evaluation['technique_coverage'] if evaluation else 0:.0%},"
               f" gr={evaluation['grounding_rate'] if evaluation else 0:.0%})")
+
+    async def _run_all():
+        for comp in competitions:
+            await _process_competition(comp)
+
+    asyncio.run(_run_all())
 
     # Write results
     output_path = Path(args.output)

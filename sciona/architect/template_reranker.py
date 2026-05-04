@@ -174,8 +174,8 @@ async def rerank_templates(
         )
 
     user_prompt = _format_rerank_prompt(prompt, candidates)
-    response = await llm.complete(  # type: ignore[union-attr]
+    text = await llm.complete(  # type: ignore[union-attr]
         system=TEMPLATE_RERANK_SYSTEM,
         user=user_prompt,
     )
-    return _parse_rerank_response(response.text)  # type: ignore[union-attr]
+    return _parse_rerank_response(text)
