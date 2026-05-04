@@ -225,6 +225,10 @@ def test_backfill_report_includes_json_safe_dashboard_summary() -> None:
             "by_physics_family"
         ],
         "by_phase7_ring": report["phase7_coverage_summary"]["by_phase7_ring"],
+        "by_review_status": report["phase7_coverage_summary"]["by_review_status"],
+        "by_validation_status": report["phase7_coverage_summary"][
+            "by_validation_status"
+        ],
     }
     assert {
         bucket["key"]["source_system"]
@@ -234,6 +238,14 @@ def test_backfill_report_includes_json_safe_dashboard_summary() -> None:
         bucket["key"]["physics_family"]
         for bucket in summary["phase7_coverage"]["by_physics_family"]
     } == {"reference_data", "spectroscopy", "unknown"}
+    assert {
+        bucket["key"]["review_status"]
+        for bucket in summary["phase7_coverage"]["by_review_status"]
+    } == {"automated_pass", "unknown"}
+    assert {
+        bucket["key"]["validation_status"]
+        for bucket in summary["phase7_coverage"]["by_validation_status"]
+    } == {"passed", "unknown"}
     assert summary["source_retrieval"] == {
         "step_count": 1,
         "diagnostic_count": 1,

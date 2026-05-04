@@ -1130,6 +1130,12 @@ def _phase7_dashboard_rollup(report: Mapping[str, Any]) -> dict[str, Any] | None
         summary["by_phase7_ring"] = _coverage_bucket_dashboard_rollup(
             coverage_summary.get("by_phase7_ring") or ()
         )
+        summary["by_review_status"] = _coverage_bucket_dashboard_rollup(
+            coverage_summary.get("by_review_status") or ()
+        )
+        summary["by_validation_status"] = _coverage_bucket_dashboard_rollup(
+            coverage_summary.get("by_validation_status") or ()
+        )
     return summary
 
 
