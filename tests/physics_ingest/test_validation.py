@@ -704,6 +704,27 @@ def test_validation_report_includes_compact_dashboard_summary(tmp_path) -> None:
             "check_count": 0,
             "failed_check_count": 0,
             "diagnostic_count": 0,
+            "source_execution": {
+                "check_count": 0,
+                "failed_check_count": 0,
+                "total_steps": 0,
+                "diagnostic_count": 0,
+            },
+            "source_adapter_coverage": {
+                "check_count": 0,
+                "failed_check_count": 0,
+                "total_jobs": 0,
+                "covered": 0,
+                "blocked": 0,
+                "diagnostic_count": 0,
+            },
+            "source_adapter_data_artifact_seeds": {
+                "check_count": 0,
+                "failed_check_count": 0,
+                "bundle_count": 0,
+                "seed_count": 0,
+                "diagnostic_count": 0,
+            },
         },
     }
     json.dumps(dashboard, sort_keys=True)
@@ -729,6 +750,32 @@ def test_validation_report_includes_source_execution_by_default() -> None:
     seed_check = checks[2]
     assert seed_check["metadata"]["seed_count"] == 6
     assert seed_check["metadata"]["diagnostic_count"] == 0
+    assert report["dashboard_summary"]["source_check_health"] == {
+        "check_count": 3,
+        "failed_check_count": 0,
+        "diagnostic_count": 0,
+        "source_execution": {
+            "check_count": 1,
+            "failed_check_count": 0,
+            "total_steps": 1,
+            "diagnostic_count": 0,
+        },
+        "source_adapter_coverage": {
+            "check_count": 1,
+            "failed_check_count": 0,
+            "total_jobs": 11,
+            "covered": 11,
+            "blocked": 0,
+            "diagnostic_count": 0,
+        },
+        "source_adapter_data_artifact_seeds": {
+            "check_count": 1,
+            "failed_check_count": 0,
+            "bundle_count": 6,
+            "seed_count": 6,
+            "diagnostic_count": 0,
+        },
+    }
     json.dumps(report, sort_keys=True)
 
 

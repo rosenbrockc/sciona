@@ -355,6 +355,17 @@ def _validation_dashboard_summary(
             "source_adapter_data_artifact_seeds",
         }
     ]
+    source_execution_checks = [
+        check for check in checks if check.check_id == "source_execution_readiness"
+    ]
+    source_adapter_coverage_checks = [
+        check for check in checks if check.check_id == "source_adapter_coverage"
+    ]
+    source_adapter_seed_checks = [
+        check
+        for check in checks
+        if check.check_id == "source_adapter_data_artifact_seeds"
+    ]
     atom_review_checks = [
         check for check in checks if check.check_id == "physics_atom_symbolic_review"
     ]
@@ -433,6 +444,60 @@ def _validation_dashboard_summary(
             "diagnostic_count": sum(
                 _int_metadata(check, "diagnostic_count") for check in source_checks
             ),
+            "source_execution": {
+                "check_count": len(source_execution_checks),
+                "failed_check_count": sum(
+                    1 for check in source_execution_checks if not check.ok
+                ),
+                "total_steps": sum(
+                    _int_metadata(check, "total_steps")
+                    for check in source_execution_checks
+                ),
+                "diagnostic_count": sum(
+                    _int_metadata(check, "diagnostic_count")
+                    for check in source_execution_checks
+                ),
+            },
+            "source_adapter_coverage": {
+                "check_count": len(source_adapter_coverage_checks),
+                "failed_check_count": sum(
+                    1 for check in source_adapter_coverage_checks if not check.ok
+                ),
+                "total_jobs": sum(
+                    _int_metadata(check, "total_jobs")
+                    for check in source_adapter_coverage_checks
+                ),
+                "covered": sum(
+                    _int_metadata(check, "covered")
+                    for check in source_adapter_coverage_checks
+                ),
+                "blocked": sum(
+                    _int_metadata(check, "blocked")
+                    for check in source_adapter_coverage_checks
+                ),
+                "diagnostic_count": sum(
+                    _int_metadata(check, "diagnostic_count")
+                    for check in source_adapter_coverage_checks
+                ),
+            },
+            "source_adapter_data_artifact_seeds": {
+                "check_count": len(source_adapter_seed_checks),
+                "failed_check_count": sum(
+                    1 for check in source_adapter_seed_checks if not check.ok
+                ),
+                "bundle_count": sum(
+                    _int_metadata(check, "bundle_count")
+                    for check in source_adapter_seed_checks
+                ),
+                "seed_count": sum(
+                    _int_metadata(check, "seed_count")
+                    for check in source_adapter_seed_checks
+                ),
+                "diagnostic_count": sum(
+                    _int_metadata(check, "diagnostic_count")
+                    for check in source_adapter_seed_checks
+                ),
+            },
         },
     }
 
