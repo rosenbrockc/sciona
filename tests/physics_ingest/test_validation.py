@@ -15,6 +15,7 @@ from sciona.physics_ingest.validation import (
     discover_pdg_payload_fixture_paths,
     validate_pdg_payload,
     validate_pdg_payload_file,
+    validate_physics_atom_symbolic_review,
     validate_source_adapter_coverage,
     validate_source_adapter_data_artifact_seed_quality,
     validate_source_execution_readiness,
@@ -447,6 +448,84 @@ def test_pdg_payload_file_reports_deterministic_skipped_edge_reason() -> None:
     assert [issue.subject for issue in check.issues] == [
         "pdg_fixture:skipped_missing_endpoint:edge:missing_limit_case"
     ]
+
+
+def test_physics_atom_symbolic_review_requires_blockers_for_regular_atoms(
+    tmp_path,
+) -> None:
+    atom_path = (
+        tmp_path
+        / "src"
+        / "sciona"
+        / "atoms"
+        / "physics"
+        / "demo"
+        / "atoms.py"
+    )
+    atom_path.parent.mkdir(parents=True)
+    atom_path.write_text(
+        "\n".join(
+            [
+                "from sciona.ghost.registry import register_atom",
+                "",
+                "@register_atom(witness_demo, name='demo_atom')",
+                "def demo_atom(x):",
+                "    return x",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    check = validate_physics_atom_symbolic_review(tmp_path)
+
+    assert check.ok is False
+    assert [issue.reason for issue in check.issues] == [
+        "missing_symbolic_review_blocker"
+    ]
+    assert check.issues[0].subject.endswith("atoms.py:demo_atom")
+
+
+def test_physics_atom_symbolic_review_accepts_documented_non_equations(
+    tmp_path,
+) -> None:
+    atom_path = (
+        tmp_path
+        / "src"
+        / "sciona"
+        / "atoms"
+        / "physics"
+        / "demo"
+        / "atoms.py"
+    )
+    atom_path.parent.mkdir(parents=True)
+    atom_path.write_text(
+        "\n".join(
+            [
+                "from sciona.ghost.registry import register_atom",
+                "",
+                "SYMBOLIC_REVIEW_BLOCKERS = {",
+                "    'demo_atom': (",
+                "        'No sound @symbolic_atom expression was added: this atom '",
+                "        'formats a stateful object rather than computing an equation.'",
+                "    ),",
+                "}",
+                "",
+                "@register_atom(witness_demo, name='demo_atom')",
+                "def demo_atom(x):",
+                "    return x",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    check = validate_physics_atom_symbolic_review(tmp_path)
+
+    assert check.ok is True
+    assert check.issues == ()
+    assert check.metadata["regular_atom_count"] == 1
+    assert check.metadata["reviewed_regular_atom_count"] == 1
 
 
 def test_validation_report_is_json_safe_and_fails_strict_without_fixtures() -> None:

@@ -249,6 +249,7 @@ from sciona.physics_ingest.validation import (
     discover_symbolic_fixture_paths,
     validate_pdg_payload,
     validate_pdg_payload_file,
+    validate_physics_atom_symbolic_review,
     validate_source_execution_readiness,
     validate_symbolic_publication_fixture,
 )
@@ -477,6 +478,7 @@ __all__ = [
     "validate_pdg_payload",
     "validate_pdg_payload_file",
     "validate_pdg_cdg_publication_graph",
+    "validate_physics_atom_symbolic_review",
     "validate_source_execution_readiness",
     "validate_snapshot_row",
     "validate_symbolic_publication_fixture",

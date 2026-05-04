@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -177,6 +178,9 @@ def build_physics_ingestion_validation_report(
                 live_manifest_builder=live_manifest_builder,
             )
         )
+
+    if atoms_repo is not None and Path(atoms_repo).exists():
+        checks.append(validate_physics_atom_symbolic_review(atoms_repo))
 
     for path in pdg_path_list:
         checks.append(validate_pdg_payload_file(path))
@@ -676,6 +680,146 @@ def validate_symbolic_publication_fixture(
             "validity_bound_count": len(bounds),
         },
     )
+
+
+def validate_physics_atom_symbolic_review(atoms_repo: Path | str) -> ValidationCheck:
+    """Validate symbolic migration decisions for remaining physics atoms.
+
+    Every physics atom still using ``@register_atom`` must have an explicit
+    module-local ``SYMBOLIC_REVIEW_BLOCKERS`` entry.  This keeps algorithmic,
+    formatting, parsing, or stateful atoms visible without pretending they are
+    symbolic equations.
+    """
+
+    repo_path = Path(atoms_repo)
+    physics_root = repo_path / "src" / "sciona" / "atoms" / "physics"
+    subject = str(repo_path)
+    issues: list[ValidationIssue] = []
+    reviewed_atoms = 0
+    regular_atoms = 0
+    module_count = 0
+
+    if not physics_root.exists():
+        return ValidationCheck(
+            check_id="physics_atom_symbolic_review",
+            subject=subject,
+            issues=(
+                ValidationIssue(
+                    reason="physics_atom_root_missing",
+                    detail=f"missing physics atom root: {physics_root}",
+                    subject=subject,
+                ),
+            ),
+        )
+
+    for path in sorted(physics_root.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        try:
+            source = path.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(path))
+        except (OSError, SyntaxError) as exc:
+            issues.append(
+                ValidationIssue(
+                    reason="physics_atom_source_parse_error",
+                    detail=str(exc),
+                    table="physics_atom_symbolic_review",
+                    subject=str(path),
+                )
+            )
+            continue
+
+        register_atoms = _registered_atom_names(tree)
+        if not register_atoms:
+            continue
+
+        module_count += 1
+        blockers = _symbolic_review_blockers(tree)
+        for atom_name in register_atoms:
+            regular_atoms += 1
+            blocker = blockers.get(atom_name)
+            if isinstance(blocker, str) and len(blocker.strip()) >= 40:
+                reviewed_atoms += 1
+                continue
+            issues.append(
+                ValidationIssue(
+                    reason="missing_symbolic_review_blocker",
+                    detail=(
+                        "remaining @register_atom physics atoms must document "
+                        "why no sound symbolic equation was added"
+                    ),
+                    table="physics_atom_symbolic_review",
+                    subject=f"{path}:{atom_name}",
+                )
+            )
+
+    return ValidationCheck(
+        check_id="physics_atom_symbolic_review",
+        subject=subject,
+        issues=tuple(issues),
+        metadata={
+            "module_count": module_count,
+            "regular_atom_count": regular_atoms,
+            "reviewed_regular_atom_count": reviewed_atoms,
+            "physics_root": str(physics_root),
+        },
+    )
+
+
+def _registered_atom_names(tree: ast.AST) -> list[str]:
+    names: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for decorator in node.decorator_list:
+            if not _is_decorator_call_named(decorator, "register_atom"):
+                continue
+            names.append(_register_atom_decorator_name(decorator, node.name))
+    return names
+
+
+def _register_atom_decorator_name(decorator: ast.AST, fallback: str) -> str:
+    if isinstance(decorator, ast.Call):
+        for keyword in decorator.keywords:
+            if keyword.arg == "name":
+                try:
+                    value = ast.literal_eval(keyword.value)
+                except (ValueError, TypeError, SyntaxError):
+                    value = None
+                if isinstance(value, str) and value:
+                    return value
+    return fallback
+
+
+def _is_decorator_call_named(decorator: ast.AST, name: str) -> bool:
+    target = decorator.func if isinstance(decorator, ast.Call) else decorator
+    if isinstance(target, ast.Name):
+        return target.id == name
+    if isinstance(target, ast.Attribute):
+        return target.attr == name
+    return False
+
+
+def _symbolic_review_blockers(tree: ast.AST) -> dict[str, str]:
+    for node in getattr(tree, "body", ()):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == "SYMBOLIC_REVIEW_BLOCKERS"
+            for target in node.targets
+        ):
+            continue
+        try:
+            value = ast.literal_eval(node.value)
+        except (ValueError, TypeError, SyntaxError):
+            return {}
+        if isinstance(value, Mapping):
+            return {
+                str(key): str(reason)
+                for key, reason in value.items()
+                if isinstance(key, str) and isinstance(reason, str)
+            }
+    return {}
 
 
 def validate_pdg_payload_file(path: Path | str) -> ValidationCheck:
@@ -2033,6 +2177,7 @@ __all__ = [
     "discover_symbolic_fixture_paths",
     "validate_pdg_payload",
     "validate_pdg_payload_file",
+    "validate_physics_atom_symbolic_review",
     "validate_source_adapter_coverage",
     "validate_source_adapter_data_artifact_seed_quality",
     "validate_source_execution_readiness",
