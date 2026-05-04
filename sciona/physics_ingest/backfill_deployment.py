@@ -345,6 +345,7 @@ def _deployment_report_dict(
         "runtime_preflight": runtime_preflight_report,
         "storage_apply_result": apply_result_dict,
     }
+    report["dashboard_summary"] = _dashboard_summary(report)
     if include_backfill_report:
         report["backfill_report"] = backfill_report
     return _json_safe(report)
@@ -429,6 +430,122 @@ def _storage_preflight_summary(storage_preflight: Mapping[str, Any]) -> dict[str
             if row.get("table")
         },
     }
+
+
+def _dashboard_summary(report: Mapping[str, Any]) -> dict[str, Any]:
+    summary = report.get("summary") or {}
+    storage = report.get("storage_preflight_summary") or {}
+    runtime = report.get("runtime_preflight_summary") or {}
+    backfill = report.get("backfill_dashboard_summary") or {}
+    audit_manifest = report.get("audit_artifact_manifest_summary") or {}
+    return _json_safe(
+        {
+            "report_version": "physics-ingest-backfill-deployment-dashboard.v1",
+            "ok": bool(report.get("ok")),
+            "dry_run": bool(report.get("dry_run")),
+            "side_effect_free": bool(report.get("side_effect_free")),
+            "input": _json_safe(report.get("input") or {}),
+            "backfill": {
+                "ok": bool(backfill.get("ok", True))
+                if isinstance(backfill, Mapping)
+                else True,
+                "write_plan_row_count": _nested_int(
+                    backfill,
+                    "write_plan",
+                    "row_count",
+                ),
+                "phase7_row_count": _nested_int(
+                    backfill,
+                    "phase7_coverage",
+                    "row_count",
+                ),
+                "source_retrieval_step_count": _nested_int(
+                    backfill,
+                    "source_retrieval",
+                    "step_count",
+                ),
+            },
+            "audit_artifacts": {
+                "manifest_count": _int(
+                    summary.get("audit_artifact_manifest_count")
+                    if isinstance(summary, Mapping)
+                    else 0
+                ),
+                "manifest_artifact_count": _int(
+                    audit_manifest.get("artifact_count")
+                    if isinstance(audit_manifest, Mapping)
+                    else 0
+                ),
+                "storage_row_count": _int(
+                    summary.get("audit_artifact_storage_row_count")
+                    if isinstance(summary, Mapping)
+                    else 0
+                ),
+                "storage_diagnostic_count": _int(
+                    summary.get("audit_artifact_storage_diagnostic_count")
+                    if isinstance(summary, Mapping)
+                    else 0
+                ),
+            },
+            "storage": {
+                "table_count": _int(
+                    storage.get("table_count") if isinstance(storage, Mapping) else 0
+                ),
+                "total_row_count": _int(
+                    storage.get("total_row_count")
+                    if isinstance(storage, Mapping)
+                    else 0
+                ),
+                "write_performed": bool(
+                    summary.get("storage_write_performed")
+                    if isinstance(summary, Mapping)
+                    else False
+                ),
+            },
+            "runtime": {
+                "ok": bool(summary.get("runtime_ok", True))
+                if isinstance(summary, Mapping)
+                else True,
+                "blocked": bool(summary.get("runtime_blocked", False))
+                if isinstance(summary, Mapping)
+                else False,
+                "blocking_diagnostic_count": _int(
+                    summary.get("runtime_blocking_diagnostic_count")
+                    if isinstance(summary, Mapping)
+                    else 0
+                ),
+                "source_runtime_step_count": _int(
+                    runtime.get("source_runtime_step_count")
+                    if isinstance(runtime, Mapping)
+                    else 0
+                ),
+            },
+        }
+    )
+
+
+def _nested_int(value: Any, section: str, field: str) -> int:
+    if not isinstance(value, Mapping):
+        return 0
+    nested = value.get(section) or {}
+    if not isinstance(nested, Mapping):
+        return 0
+    return _int(nested.get(field))
+
+
+def _int(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
 
 
 def _has_error_diagnostics(diagnostics: Sequence[Mapping[str, Any]]) -> bool:

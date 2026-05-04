@@ -107,6 +107,8 @@ def test_backfill_deployment_includes_runtime_preflight_summary() -> None:
     assert report["runtime_preflight"]["source_runtime_counts"]["total_steps"] == 2
     assert report["runtime_preflight"]["summary"]["storage_table_count"] >= 1
     assert report["summary"]["runtime_blocked"] is False
+    assert report["dashboard_summary"]["runtime"]["source_runtime_step_count"] == 2
+    assert report["dashboard_summary"]["runtime"]["blocked"] is False
 
 
 def test_backfill_deployment_surfaces_compact_summaries_without_full_report() -> None:
@@ -126,6 +128,23 @@ def test_backfill_deployment_surfaces_compact_summaries_without_full_report() ->
         "summary"
     ]["audit_artifact_manifest_count"]
     assert report["audit_artifact_manifest_summary"]["artifact_keys"]
+    dashboard = report["dashboard_summary"]
+    assert dashboard["report_version"] == (
+        "physics-ingest-backfill-deployment-dashboard.v1"
+    )
+    assert dashboard["ok"] is True
+    assert dashboard["backfill"]["phase7_row_count"] == report[
+        "backfill_dashboard_summary"
+    ]["phase7_coverage"]["row_count"]
+    assert dashboard["audit_artifacts"]["manifest_count"] == report["summary"][
+        "audit_artifact_manifest_count"
+    ]
+    assert dashboard["audit_artifacts"]["manifest_artifact_count"] == report[
+        "audit_artifact_manifest_summary"
+    ]["artifact_count"]
+    assert dashboard["storage"]["total_row_count"] == report[
+        "storage_preflight_summary"
+    ]["total_row_count"]
     assert json.loads(json.dumps(report, sort_keys=True)) == report
 
 
