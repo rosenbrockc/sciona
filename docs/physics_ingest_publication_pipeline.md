@@ -33,6 +33,9 @@ The current pipeline is split at the storage boundary:
 - `sciona.physics_ingest.sources.executor` can execute those retrieval envelopes
   through injected HTTP clients and snapshot sinks; dry runs and manual sources
   remain side-effect free.
+- `sciona.physics_ingest.sources.runtime_adapters` wraps injected HTTP/session
+  objects and snapshot sinks into executor-ready adapters with JSON-safe
+  capability reports, preflight metadata, and normalized snapshot receipts.
 - `sciona.physics_ingest.normalization` includes opt-in QUDT-assisted dimension
   resolution before symbolic normalization; unresolved or ambiguous dimensions
   stay reviewable.
@@ -45,11 +48,15 @@ The current pipeline is split at the storage boundary:
   `sciona.physics_ingest.review` expose JSON-safe rollups for bulk dashboards,
   PDG/CDG publication audit, and Phase 5 trust review triage. Backfill reports
   can opt into source request-envelope, publication write preflight, and
-  persistable audit/dashboard artifact manifest sections.
+  persistable audit/dashboard artifact manifest sections. PDG/CDG helpers also
+  project derived CDGs into deterministic catalog/search rows for review before
+  production catalog storage is wired.
 - `sciona.physics_ingest.retrieval` provides side-effect-free symbolic
   retrieval and synthesis ranking over already-fetched catalog/document rows.
 - `sciona.physics_ingest.retrieval_io` plans and executes catalog/RPC fetches
-  through injected clients before handing rows to the side-effect-free rankers.
+  through injected clients before handing rows to the side-effect-free rankers,
+  and can build/execute planner request envelopes that preserve replay hashes,
+  compiler expectations, and trust-policy blockers.
 
 Publication table order is:
 
@@ -296,16 +303,17 @@ that should inspect rows without requiring credentials.
 The current publication pipeline does not yet complete the full physics
 ingestion roadmap. Remaining work includes:
 
-- wire production HTTP clients and snapshot sinks through the source retrieval
-  executor boundary for the full external source set;
+- wire the source runtime adapter bundle into deployment code for the full
+  external source set;
 - wire injected production PostgREST/Supabase clients through deployment code
   using the shared apply/preflight helper;
-- connect PDG-derived CDG publication rows to production storage and catalog
-  views;
+- connect PDG-derived CDG publication and catalog projection rows to production
+  storage and catalog views;
 - broaden symbolic normalization coverage across the long-tail equation corpus
   and keep expanding QUDT/unit alias coverage;
 - wire review queue task rows for `needs_human`, `human_reviewed`, and
   `blocked` into production queues and reviewer UX;
 - add production bulk backfill orchestration and storage adapters for persisted
   coverage dashboard and replay/audit artifact manifests;
-- connect the injected-client retrieval fetch boundary to runtime planner calls.
+- connect the planner request-envelope boundary to the production runtime
+  planner service.

@@ -8,7 +8,7 @@ the fetched rows are handed to the side-effect-free rankers in ``retrieval``.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 import inspect
 import json
 import math
@@ -27,6 +27,8 @@ from sciona.physics_ingest.retrieval import (
 CATALOG_SYMBOLIC_ARTIFACTS_TABLE = "catalog_symbolic_artifacts"
 ARTIFACT_DOCUMENT_RPC = "get_artifact_document"
 SYMBOLIC_RETRIEVAL_FETCH_REPORT_KIND = "symbolic_retrieval_fetch"
+SYMBOLIC_RETRIEVAL_PLANNER_REQUEST_KIND = "symbolic_retrieval_planner_request"
+SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND = "symbolic_retrieval_planner_response"
 
 ReportMode = Literal["none", "retrieval", "synthesis"]
 
@@ -38,6 +40,55 @@ _CATALOG_SELECT = (
     "data_artifact_dependencies, review_status, validation_status, publish_status, "
     "candidate_status, trust_readiness, is_publishable"
 )
+
+_PLANNER_COMPILER_BLOCKER_KINDS = (
+    "blocked_status",
+    "not_published_or_reviewed",
+    "missing_dimensional_metadata",
+    "missing_required_validity_bounds",
+    "missing_reviewed_validity_bounds",
+    "missing_required_validity_match",
+    "missing_required_data_artifact_dependencies",
+    "raw_excluded_by_policy",
+)
+
+
+@dataclass(frozen=True)
+class SymbolicRetrievalPlannerFetchOptions:
+    """Planner-facing fetch controls for symbolic retrieval."""
+
+    limit: int = 50
+    include_artifact_documents: bool = False
+    document_fqdns: tuple[str, ...] = ()
+    report_limit: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_safe(
+            {
+                "limit": max(0, int(self.limit)),
+                "include_artifact_documents": self.include_artifact_documents,
+                "document_fqdns": _unique_sorted(self.document_fqdns),
+                "report_limit": self.report_limit,
+            }
+        )
+
+
+@dataclass(frozen=True)
+class SymbolicRetrievalPlannerExecutionPolicy:
+    """Deterministic execution policy advertised to a runtime planner."""
+
+    dry_run: bool = False
+    client_required: bool = True
+    report_mode: ReportMode = "synthesis"
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_safe(
+            {
+                "dry_run": self.dry_run,
+                "client_required": self.client_required,
+                "report_mode": self.report_mode,
+            }
+        )
 
 _DOCUMENT_FQDN_KEYS = (
     "artifact_fqdns",
@@ -133,6 +184,69 @@ def build_symbolic_retrieval_fetch_plan(
                     row.get("operation") == "rpc_deferred" for row in request_rows
                 ),
             },
+        }
+    )
+
+
+def build_symbolic_retrieval_planner_request(
+    query: SymbolicRetrievalQuery | Mapping[str, Any],
+    *,
+    limit: int = 50,
+    include_artifact_documents: bool = False,
+    document_fqdns: Sequence[str] = (),
+    dry_run: bool = False,
+    client_required: bool | None = None,
+    report_mode: ReportMode = "synthesis",
+    report_limit: int | None = None,
+) -> dict[str, Any]:
+    """Build a deterministic, JSON-safe request envelope for runtime planners."""
+
+    request = _query(query)
+    query_payload = _query_payload(request)
+    fetch_options = SymbolicRetrievalPlannerFetchOptions(
+        limit=limit,
+        include_artifact_documents=include_artifact_documents,
+        document_fqdns=tuple(document_fqdns),
+        report_limit=report_limit,
+    ).to_dict()
+    policy = SymbolicRetrievalPlannerExecutionPolicy(
+        dry_run=dry_run,
+        client_required=(not dry_run if client_required is None else client_required),
+        report_mode=_report_mode(report_mode),
+    ).to_dict()
+    fetch_plan = build_symbolic_retrieval_fetch_plan(
+        request,
+        limit=int(fetch_options["limit"]),
+        include_artifact_documents=include_artifact_documents,
+        document_fqdns=fetch_options["document_fqdns"],
+    )
+    raw_trust_policy = str(query_payload.get("raw_trust_policy") or "prefer_reviewed")
+    stable = _json_safe(
+        {
+            "request_kind": SYMBOLIC_RETRIEVAL_PLANNER_REQUEST_KIND,
+            "request_version": 1,
+            "query": query_payload,
+            "fetch_options": fetch_options,
+            "fetch_plan": fetch_plan,
+            "compiler_contract_expectations": _planner_compiler_contract_expectations(
+                query_payload
+            ),
+            "allowed_candidate_trust_statuses": _planner_allowed_trust_statuses(
+                raw_trust_policy
+            ),
+            "trust_policy": {
+                "raw_trust_policy": raw_trust_policy,
+                "raw_candidate_execution": "external_knowledge_only",
+            },
+            "execution_policy": policy,
+        }
+    )
+    request_hash = stable_payload_sha256(stable)
+    return _json_safe(
+        {
+            **stable,
+            "request_hash": request_hash,
+            "replay_key": f"symbolic-retrieval-planner:{request_hash}",
         }
     )
 
@@ -238,6 +352,212 @@ async def fetch_symbolic_retrieval(
             limit=report_limit,
         )
     return _json_safe(payload)
+
+
+async def execute_symbolic_retrieval_planner_request(
+    planner_request: Mapping[str, Any],
+    *,
+    client: Any | None = None,
+) -> dict[str, Any]:
+    """Execute a planner retrieval envelope through the injected-client fetch boundary."""
+
+    request = _planner_request(planner_request)
+    fetch_options = _planner_fetch_options(request)
+    execution_policy = _planner_execution_policy(request)
+    report_mode = _report_mode(execution_policy.get("report_mode", "synthesis"))
+    fetch_result = await fetch_symbolic_retrieval(
+        request["query"],
+        client=client,
+        dry_run=bool(execution_policy.get("dry_run")),
+        limit=int(fetch_options.get("limit", 50)),
+        include_artifact_documents=bool(
+            fetch_options.get("include_artifact_documents")
+        ),
+        document_fqdns=_strings(fetch_options.get("document_fqdns")),
+        report_mode=report_mode,
+        report_limit=_optional_int(fetch_options.get("report_limit")),
+    )
+    candidate_sections = _planner_candidate_sections(fetch_result)
+    diagnostics = list(fetch_result.get("diagnostics", ()))
+    request_replay_metadata = _planner_replay_metadata(request, fetch_result)
+    return _json_safe(
+        {
+            "report_kind": SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND,
+            "request_replay_metadata": request_replay_metadata,
+            "execution_policy": execution_policy,
+            "blocked": bool(fetch_result.get("blocked")),
+            "dry_run": bool(fetch_result.get("dry_run")),
+            "executable_candidates": candidate_sections["executable_candidates"],
+            "external_knowledge_suggestions": candidate_sections[
+                "external_knowledge_suggestions"
+            ],
+            "blocked_candidates": candidate_sections["blocked_candidates"],
+            "diagnostics": diagnostics,
+            "fetch_summary": dict(fetch_result.get("summary", {})),
+            "fetch_plan": dict(fetch_result.get("fetch_plan", {})),
+        }
+    )
+
+
+def _planner_compiler_contract_expectations(
+    query_payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    return _json_safe(
+        {
+            "required_response_sections": [
+                "executable_candidates",
+                "external_knowledge_suggestions",
+                "blocked_candidates",
+                "diagnostics",
+            ],
+            "executable_candidate_requires": [
+                "eligible",
+                "published_or_reviewed",
+                "dimensional_metadata",
+                "no_compiler_blockers",
+            ],
+            "candidate_contract_fields": [
+                "candidate_key",
+                "raw_formula",
+                "trust_status",
+                "score",
+                "dimensions",
+                "compiler_contract",
+            ],
+            "required_dimensional_checks": _planner_dimensional_checks(query_payload),
+            "blocker_kinds": list(_PLANNER_COMPILER_BLOCKER_KINDS),
+        }
+    )
+
+
+def _planner_dimensional_checks(
+    query_payload: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    checks: list[dict[str, Any]] = []
+    for query_key, check_kind in (
+        ("topology_hashes", "topology_hash_match"),
+        ("dimensional_hashes", "dimensional_hash_match"),
+        ("dim_signatures", "dim_signature_overlap"),
+    ):
+        values = _strings(query_payload.get(query_key))
+        if values:
+            checks.append({"check_kind": check_kind, "values": values})
+    checks.append(
+        {
+            "check_kind": "candidate_dimensional_metadata_present",
+            "required": True,
+        }
+    )
+    return checks
+
+
+def _planner_allowed_trust_statuses(raw_trust_policy: str) -> dict[str, Any]:
+    external_statuses = ["needs_human", "unreviewed"]
+    return {
+        "executable_candidates": ["automated_pass", "human_reviewed"],
+        "external_knowledge_suggestions": external_statuses,
+        "blocked_candidates": ["blocked"],
+        "raw_trust_policy": raw_trust_policy,
+        "raw_candidate_execution_allowed": False,
+    }
+
+
+def _planner_request(planner_request: Mapping[str, Any]) -> dict[str, Any]:
+    request = _json_safe(planner_request)
+    if not isinstance(request, Mapping):
+        raise TypeError("planner_request must be a mapping")
+    if request.get("request_kind") != SYMBOLIC_RETRIEVAL_PLANNER_REQUEST_KIND:
+        raise ValueError("planner_request must be a symbolic retrieval planner request")
+    stable = {
+        key: value
+        for key, value in request.items()
+        if key not in {"request_hash", "replay_key"}
+    }
+    expected_hash = stable_payload_sha256(stable)
+    if not request.get("request_hash"):
+        request = {
+            **dict(request),
+            "request_hash": expected_hash,
+            "replay_key": f"symbolic-retrieval-planner:{expected_hash}",
+        }
+    return dict(request)
+
+
+def _planner_fetch_options(request: Mapping[str, Any]) -> dict[str, Any]:
+    options = _mapping(request.get("fetch_options"))
+    return {
+        "limit": max(0, int(options.get("limit", 50))),
+        "include_artifact_documents": bool(options.get("include_artifact_documents")),
+        "document_fqdns": _strings(options.get("document_fqdns")),
+        "report_limit": _optional_int(options.get("report_limit")),
+    }
+
+
+def _planner_execution_policy(request: Mapping[str, Any]) -> dict[str, Any]:
+    policy = _mapping(request.get("execution_policy"))
+    return _json_safe(
+        {
+            "dry_run": bool(policy.get("dry_run")),
+            "client_required": bool(policy.get("client_required")),
+            "report_mode": _report_mode(policy.get("report_mode", "synthesis")),
+        }
+    )
+
+
+def _planner_candidate_sections(fetch_result: Mapping[str, Any]) -> dict[str, list[Any]]:
+    synthesis_report = _mapping(fetch_result.get("synthesis_report"))
+    executable = _mapping_list(synthesis_report.get("executable_candidates"))
+    external = _mapping_list(synthesis_report.get("external_knowledge_suggestions"))
+    blocked = _mapping_list(synthesis_report.get("blocked_candidates"))
+    if not synthesis_report:
+        retrieval_report = _mapping(fetch_result.get("retrieval_report"))
+        external = _mapping_list(
+            retrieval_report.get("raw_candidate_external_knowledge_suggestions")
+        )
+    if fetch_result.get("blocked") and not blocked:
+        blocked.append(_planner_blocked_fetch_candidate(fetch_result))
+    return {
+        "executable_candidates": executable,
+        "external_knowledge_suggestions": external,
+        "blocked_candidates": blocked,
+    }
+
+
+def _planner_blocked_fetch_candidate(fetch_result: Mapping[str, Any]) -> dict[str, Any]:
+    diagnostics = _mapping_list(fetch_result.get("diagnostics"))
+    codes = [
+        str(diagnostic.get("code"))
+        for diagnostic in diagnostics
+        if diagnostic.get("code")
+    ]
+    return {
+        "candidate_key": "<planner_fetch>",
+        "eligible": False,
+        "trust_status": "blocked",
+        "score": 0.0,
+        "score_reasons": codes or ["planner_fetch_blocked"],
+        "compiler_contract": {
+            "blockers": codes or ["planner_fetch_blocked"],
+            "can_compile": False,
+            "requires_human_review": False,
+        },
+    }
+
+
+def _planner_replay_metadata(
+    request: Mapping[str, Any],
+    fetch_result: Mapping[str, Any],
+) -> dict[str, Any]:
+    requested_plan = _mapping(request.get("fetch_plan"))
+    summary = _mapping(fetch_result.get("summary"))
+    return {
+        "request_hash": str(request.get("request_hash", "") or ""),
+        "request_replay_key": str(request.get("replay_key", "") or ""),
+        "fetch_plan_hash": str(requested_plan.get("plan_hash", "") or ""),
+        "fetch_plan_replay_key": str(requested_plan.get("replay_key", "") or ""),
+        "executed_fetch_plan_hash": str(summary.get("plan_hash", "") or ""),
+        "executed_fetch_plan_replay_key": str(summary.get("replay_key", "") or ""),
+    }
 
 
 def _query(query: SymbolicRetrievalQuery | Mapping[str, Any]) -> SymbolicRetrievalQuery:
@@ -449,6 +769,32 @@ def _params(request_row: Mapping[str, Any]) -> Mapping[str, Any]:
     if isinstance(params, Mapping):
         return params
     return {}
+
+
+def _mapping(value: Any) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+    return {}
+
+
+def _mapping_list(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, Mapping):
+        return [dict(value)]
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return [dict(item) for item in value if isinstance(item, Mapping)]
+    return []
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    return int(value)
+
+
+def _report_mode(value: Any) -> ReportMode:
+    if value in {"none", "retrieval", "synthesis"}:
+        return value
+    raise ValueError("report_mode must be none, retrieval, or synthesis")
 
 
 def _rows(payload: Any) -> list[dict[str, Any]]:

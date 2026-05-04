@@ -10,7 +10,11 @@ from sciona.physics_ingest.retrieval import (
 from sciona.physics_ingest.retrieval_io import (
     ARTIFACT_DOCUMENT_RPC,
     CATALOG_SYMBOLIC_ARTIFACTS_TABLE,
+    SYMBOLIC_RETRIEVAL_PLANNER_REQUEST_KIND,
+    SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND,
+    build_symbolic_retrieval_planner_request,
     build_symbolic_retrieval_fetch_plan,
+    execute_symbolic_retrieval_planner_request,
     fetch_symbolic_retrieval,
 )
 
@@ -273,3 +277,192 @@ async def test_symbolic_retrieval_fetch_builds_synthesis_report_from_rows() -> N
     assert result["synthesis_report"]["executable_candidates"][0][
         "candidate_key"
     ] == "expr-reviewed-wave"
+
+
+def test_symbolic_retrieval_planner_request_envelope_is_deterministic() -> None:
+    query = {
+        "topology_hash": "topo-wave",
+        "dimensional_hash": "dim-wave",
+        "mechanism_tags": ["dispersion"],
+        "raw_trust_policy": "reviewed_only",
+    }
+
+    request = build_symbolic_retrieval_planner_request(
+        query,
+        include_artifact_documents=True,
+        limit=10,
+        dry_run=True,
+        report_mode="synthesis",
+    )
+    request_again = build_symbolic_retrieval_planner_request(
+        query,
+        include_artifact_documents=True,
+        limit=10,
+        dry_run=True,
+        report_mode="synthesis",
+    )
+
+    assert request == request_again
+    assert request["request_kind"] == SYMBOLIC_RETRIEVAL_PLANNER_REQUEST_KIND
+    assert len(request["request_hash"]) == 64
+    assert request["replay_key"] == (
+        f"symbolic-retrieval-planner:{request['request_hash']}"
+    )
+    assert request["fetch_plan"]["plan_kind"] == "symbolic_retrieval_fetch_plan"
+    assert request["execution_policy"] == {
+        "client_required": False,
+        "dry_run": True,
+        "report_mode": "synthesis",
+    }
+    assert request["trust_policy"]["raw_trust_policy"] == "reviewed_only"
+    assert request["allowed_candidate_trust_statuses"]["executable_candidates"] == [
+        "automated_pass",
+        "human_reviewed",
+    ]
+    assert request["compiler_contract_expectations"]["required_response_sections"] == [
+        "executable_candidates",
+        "external_knowledge_suggestions",
+        "blocked_candidates",
+        "diagnostics",
+    ]
+    assert json.loads(json.dumps(request, sort_keys=True)) == request
+
+
+async def test_symbolic_retrieval_planner_dry_run_without_client_is_not_blocked() -> None:
+    client = _FakeClient(catalog_rows=[{"artifact_id": "would-not-fetch"}])
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=True,
+        include_artifact_documents=True,
+    )
+
+    response = await execute_symbolic_retrieval_planner_request(request, client=client)
+
+    assert response["report_kind"] == SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND
+    assert response["dry_run"] is True
+    assert response["blocked"] is False
+    assert response["executable_candidates"] == []
+    assert response["external_knowledge_suggestions"] == []
+    assert response["blocked_candidates"] == []
+    assert client.table_calls == []
+    assert client.rpc_calls == []
+
+
+async def test_symbolic_retrieval_planner_missing_client_blocks_response() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+
+    response = await execute_symbolic_retrieval_planner_request(request)
+
+    assert response["blocked"] is True
+    assert response["diagnostics"][0]["code"] == "missing_client"
+    assert response["blocked_candidates"][0]["candidate_key"] == "<planner_fetch>"
+    assert response["blocked_candidates"][0]["compiler_contract"]["blockers"] == [
+        "missing_client"
+    ]
+    assert (
+        response["request_replay_metadata"]["request_hash"] == request["request_hash"]
+    )
+    assert response["request_replay_metadata"]["fetch_plan_hash"] == (
+        request["fetch_plan"]["plan_hash"]
+    )
+
+
+async def test_symbolic_retrieval_planner_executes_fake_client_synthesis_sections() -> None:
+    client = _FakeClient(
+        catalog_rows=[
+            {
+                "artifact_id": "reviewed-wave",
+                "expression_id": "expr-reviewed-wave",
+                "fqdn": "physics.wave.reviewed",
+                "raw_formula": "v = f lambda",
+                "topology_hash": "topo-wave",
+                "dimensional_hash": "dim-wave",
+                "mechanism_tags": ["dispersion"],
+                "review_status": "human_reviewed",
+                "validation_status": "passed",
+                "publish_status": "published",
+                "is_publishable": True,
+            },
+            {
+                "artifact_id": "raw-wave",
+                "expression_id": "expr-raw-wave",
+                "fqdn": "physics.wave.raw",
+                "raw_formula": "v approx f lambda",
+                "topology_hash": "topo-wave",
+                "dimensional_hash": "dim-wave",
+                "mechanism_tags": ["dispersion"],
+                "review_status": "unreviewed",
+                "candidate_status": "parsed",
+            },
+            {
+                "artifact_id": "blocked-wave",
+                "expression_id": "expr-blocked-wave",
+                "fqdn": "physics.wave.blocked",
+                "raw_formula": "bad wave",
+                "topology_hash": "topo-wave",
+                "dimensional_hash": "dim-wave",
+                "review_status": "human_reviewed",
+                "validation_status": "failed",
+            },
+        ]
+    )
+    request = build_symbolic_retrieval_planner_request(
+        {
+            "topology_hash": "topo-wave",
+            "dimensional_hash": "dim-wave",
+            "mechanism_tags": ["dispersion"],
+            "raw_trust_policy": "prefer_reviewed",
+        },
+        dry_run=False,
+        limit=5,
+    )
+
+    response = await execute_symbolic_retrieval_planner_request(request, client=client)
+
+    assert response["blocked"] is False
+    assert response["fetch_summary"]["candidate_count"] == 3
+    assert [row["candidate_key"] for row in response["executable_candidates"]] == [
+        "expr-reviewed-wave"
+    ]
+    assert [
+        row["candidate_key"] for row in response["external_knowledge_suggestions"]
+    ] == ["expr-raw-wave"]
+    assert response["external_knowledge_suggestions"][0]["suggestion"][
+        "reason"
+    ] == "raw_candidate_needs_external_knowledge"
+    assert response["external_knowledge_suggestions"][0]["suggestion"][
+        "raw_formula"
+    ] == "v approx f lambda"
+    assert [row["candidate_key"] for row in response["blocked_candidates"]] == [
+        "expr-blocked-wave"
+    ]
+    assert response["request_replay_metadata"]["executed_fetch_plan_hash"] == request[
+        "fetch_plan"
+    ]["plan_hash"]
+
+
+async def test_symbolic_retrieval_planner_response_is_json_safe() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        SymbolicRetrievalQuery(
+            topology_hashes=("topo",),
+            validity_bounds=(
+                SymbolicValidityBound(
+                    variable_name="Re",
+                    lower_value=float("nan"),
+                    upper_value=float("inf"),
+                ),
+            ),
+        ),
+        dry_run=True,
+        report_limit=1,
+    )
+
+    response = await execute_symbolic_retrieval_planner_request(request)
+
+    assert request["query"]["validity_bounds"][0]["lower_value"] == "nan"
+    assert request["query"]["validity_bounds"][0]["upper_value"] == "inf"
+    assert json.loads(json.dumps(request, sort_keys=True)) == request
+    assert json.loads(json.dumps(response, sort_keys=True)) == response
