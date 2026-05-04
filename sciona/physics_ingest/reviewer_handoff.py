@@ -141,6 +141,7 @@ class ReviewerQueueView:
     view_id: str
     source: Mapping[str, Any]
     summary: Mapping[str, Any]
+    dashboard_summary: Mapping[str, Any]
     grouped_counts: Mapping[str, Any]
     queue_groups: tuple[Mapping[str, Any], ...]
     task_cards: tuple[ReviewerTaskCard, ...]
@@ -154,6 +155,7 @@ class ReviewerQueueView:
                 "view_id": self.view_id,
                 "source": dict(self.source),
                 "summary": dict(self.summary),
+                "dashboard_summary": dict(self.dashboard_summary),
                 "grouped_counts": dict(self.grouped_counts),
                 "queue_groups": [dict(group) for group in self.queue_groups],
                 "task_cards": [card.to_dict() for card in self.task_cards],
@@ -239,6 +241,12 @@ def _build_view(
         view_id=view_id,
         source=source,
         summary=summary,
+        dashboard_summary=_dashboard_summary(
+            cards=cards,
+            source=source,
+            summary=summary,
+            grouped_counts=grouped_counts,
+        ),
         grouped_counts=grouped_counts,
         queue_groups=queue_groups,
         task_cards=cards,
@@ -486,6 +494,87 @@ def _queue_groups(cards: Sequence[ReviewerTaskCard]) -> tuple[Mapping[str, Any],
     )
 
 
+def _dashboard_summary(
+    *,
+    cards: Sequence[ReviewerTaskCard],
+    source: Mapping[str, Any],
+    summary: Mapping[str, Any],
+    grouped_counts: Mapping[str, Any],
+) -> dict[str, Any]:
+    action_counts = _action_counts(cards)
+    return _json_safe(
+        {
+            "report_version": "physics-ingest-reviewer-handoff-dashboard.v1",
+            "side_effect_free": True,
+            "source": {
+                "source_kind": str(source.get("source_kind") or ""),
+                "task_count": _int(source.get("task_count")),
+                "deployment_report_kind": str(
+                    source.get("deployment_report_kind") or ""
+                ),
+            },
+            "queue": {
+                "card_count": _int(summary.get("card_count")),
+                "active_card_count": _int(summary.get("active_card_count")),
+                "completed_card_count": _int(summary.get("completed_card_count")),
+                "blocked_card_count": _int(
+                    _mapping(grouped_counts.get("queue_group_counts")).get("blocked")
+                ),
+                "open_card_count": _int(
+                    _mapping(grouped_counts.get("queue_group_counts")).get("open")
+                ),
+                "complete_card_count": _int(
+                    _mapping(grouped_counts.get("queue_group_counts")).get("complete")
+                ),
+            },
+            "counts": {
+                "queue_groups": _int_mapping(grouped_counts.get("queue_group_counts")),
+                "task_kinds": _int_mapping(grouped_counts.get("task_kind_counts")),
+                "task_statuses": _int_mapping(grouped_counts.get("task_status_counts")),
+                "trust_statuses": _int_mapping(grouped_counts.get("trust_status_counts")),
+                "severities": _int_mapping(grouped_counts.get("severity_counts")),
+                "priorities": _int_mapping(grouped_counts.get("priority_counts")),
+                "source_families": _int_mapping(
+                    grouped_counts.get("source_family_counts")
+                ),
+                "blocker_reasons": _int_mapping(
+                    grouped_counts.get("blocker_reason_counts")
+                ),
+            },
+            "actions": {
+                "action_count": _int(summary.get("action_count")),
+                "enabled_action_count": action_counts["enabled_action_count"],
+                "terminal_action_count": action_counts["terminal_action_count"],
+                "by_kind": action_counts["by_kind"],
+                "enabled_by_kind": action_counts["enabled_by_kind"],
+            },
+        }
+    )
+
+
+def _action_counts(cards: Sequence[ReviewerTaskCard]) -> dict[str, Any]:
+    by_kind: dict[str, int] = {}
+    enabled_by_kind: dict[str, int] = {}
+    enabled_count = 0
+    terminal_count = 0
+    for card in cards:
+        for action in card.actions:
+            by_kind[action.action_kind] = by_kind.get(action.action_kind, 0) + 1
+            if action.enabled:
+                enabled_count += 1
+                enabled_by_kind[action.action_kind] = (
+                    enabled_by_kind.get(action.action_kind, 0) + 1
+                )
+            if action.terminal:
+                terminal_count += 1
+    return {
+        "enabled_action_count": enabled_count,
+        "terminal_action_count": terminal_count,
+        "by_kind": dict(sorted(by_kind.items())),
+        "enabled_by_kind": dict(sorted(enabled_by_kind.items())),
+    }
+
+
 def _queue_group(task_status: str) -> str:
     if task_status == "blocked":
         return "blocked"
@@ -593,6 +682,23 @@ def _bool(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"1", "true", "yes", "y", "pass", "passed"}
     return bool(value)
+
+
+def _mapping(value: Any) -> dict[str, Any]:
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _int_mapping(value: Any) -> dict[str, int]:
+    if not isinstance(value, Mapping):
+        return {}
+    return {
+        str(key): _int(item)
+        for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+    }
+
+
+def _int(value: Any) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def _string_mapping(value: Any) -> dict[str, str]:

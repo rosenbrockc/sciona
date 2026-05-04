@@ -62,6 +62,63 @@ def test_reviewer_handoff_builds_task_cards_from_queue_rows() -> None:
     assert rows["summary"]["card_count"] == 3
     assert rows["summary"]["active_card_count"] == 2
     assert rows["summary"]["completed_card_count"] == 1
+    assert rows["dashboard_summary"] == {
+        "report_version": "physics-ingest-reviewer-handoff-dashboard.v1",
+        "side_effect_free": True,
+        "source": {
+            "source_kind": "review_queue_rows",
+            "task_count": 3,
+            "deployment_report_kind": "",
+        },
+        "queue": {
+            "card_count": 3,
+            "active_card_count": 2,
+            "completed_card_count": 1,
+            "blocked_card_count": 1,
+            "open_card_count": 1,
+            "complete_card_count": 1,
+        },
+        "counts": {
+            "queue_groups": {"blocked": 1, "open": 1, "complete": 1},
+            "task_kinds": {
+                "human_review_required": 1,
+                "blocked_resolution": 1,
+                "audit_complete": 1,
+            },
+            "task_statuses": {"blocked": 1, "open": 1, "complete": 1},
+            "trust_statuses": {
+                "needs_human": 1,
+                "blocked": 1,
+                "human_reviewed": 1,
+            },
+            "severities": {"critical": 1, "medium": 1, "low": 1},
+            "priorities": {"p0": 1, "p2": 1, "p3": 1},
+            "source_families": {"mechanics": 2, "thermo": 1},
+            "blocker_reasons": {
+                "blocked_status": 1,
+                "human_review": 1,
+            },
+        },
+        "actions": {
+            "action_count": 6,
+            "enabled_action_count": 6,
+            "terminal_action_count": 1,
+            "by_kind": {
+                "approve_review": 1,
+                "block_review": 1,
+                "reopen_review": 2,
+                "resolve_blocker": 1,
+                "start_review": 1,
+            },
+            "enabled_by_kind": {
+                "approve_review": 1,
+                "block_review": 1,
+                "reopen_review": 2,
+                "resolve_blocker": 1,
+                "start_review": 1,
+            },
+        },
+    }
     assert rows["grouped_counts"]["queue_group_counts"] == {
         "blocked": 1,
         "open": 1,
@@ -129,6 +186,13 @@ def test_reviewer_handoff_from_deployment_report_is_deterministic_json_safe() ->
     assert first["source"]["deployment_report_kind"] == (
         "physics_ingest_reviewer_workflow"
     )
+    assert first["dashboard_summary"]["source"] == {
+        "source_kind": "review_deployment_report",
+        "task_count": 2,
+        "deployment_report_kind": "physics_ingest_reviewer_workflow",
+    }
+    assert first["dashboard_summary"]["queue"]["blocked_card_count"] == 1
+    assert first["dashboard_summary"]["queue"]["open_card_count"] == 1
     assert len(first["source"]["source_report_digest"]) == 64
     assert len(first["summary"]["card_digest"]) == 64
     assert first["summary"]["queue_summary"]["task_kind_counts"] == {
