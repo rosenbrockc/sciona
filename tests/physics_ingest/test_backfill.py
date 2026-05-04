@@ -220,7 +220,20 @@ def test_backfill_report_includes_json_safe_dashboard_summary() -> None:
             "physics_equation_candidates": 1,
         },
         "summary": report["phase7_coverage_summary"]["summary"],
+        "by_source": report["phase7_coverage_summary"]["by_source"],
+        "by_physics_family": report["phase7_coverage_summary"][
+            "by_physics_family"
+        ],
+        "by_phase7_ring": report["phase7_coverage_summary"]["by_phase7_ring"],
     }
+    assert {
+        bucket["key"]["source_system"]
+        for bucket in summary["phase7_coverage"]["by_source"]
+    } == {"hitran", "unknown"}
+    assert {
+        bucket["key"]["physics_family"]
+        for bucket in summary["phase7_coverage"]["by_physics_family"]
+    } == {"reference_data", "spectroscopy", "unknown"}
     assert summary["source_retrieval"] == {
         "step_count": 1,
         "diagnostic_count": 1,

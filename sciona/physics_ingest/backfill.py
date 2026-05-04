@@ -1121,7 +1121,28 @@ def _phase7_dashboard_rollup(report: Mapping[str, Any]) -> dict[str, Any] | None
     }
     if isinstance(coverage_summary, Mapping):
         summary["summary"] = _json_safe_mapping(coverage_summary.get("summary") or {})
+        summary["by_source"] = _coverage_bucket_dashboard_rollup(
+            coverage_summary.get("by_source") or ()
+        )
+        summary["by_physics_family"] = _coverage_bucket_dashboard_rollup(
+            coverage_summary.get("by_physics_family") or ()
+        )
+        summary["by_phase7_ring"] = _coverage_bucket_dashboard_rollup(
+            coverage_summary.get("by_phase7_ring") or ()
+        )
     return summary
+
+
+def _coverage_bucket_dashboard_rollup(value: Any) -> list[dict[str, Any]]:
+    return [
+        {
+            "key": _json_safe_mapping(bucket.get("key") or {}),
+            "counts": _sorted_int_mapping(bucket.get("counts") or {}),
+            "metrics": _json_safe_mapping(bucket.get("metrics") or {}),
+        }
+        for bucket in value
+        if isinstance(bucket, Mapping)
+    ]
 
 
 def _audit_artifact_manifests(
