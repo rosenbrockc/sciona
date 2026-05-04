@@ -96,6 +96,8 @@ class CODATAConstant:
             "source_version": self.source_version,
             "source_uri": self.source_uri,
             "source_id": self.source_id,
+            "ingestion_target_kind": "state_artifact",
+            "symbolic_equation_candidate": False,
             "label": self.label,
             "symbol": self.symbol,
             "value_text": self.value_text,
@@ -364,7 +366,8 @@ def build_codata_candidate_row(
         "source_payload": constant.to_source_payload(),
         "notes": (
             "CODATA constants are represented as raw candidates for Wave 0 "
-            "and should publish as state artifacts before executable use."
+            "and should publish as state artifacts, not standalone symbolic "
+            "equations, before executable use."
         ),
     }
     if snapshot_id:

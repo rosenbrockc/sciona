@@ -7,6 +7,7 @@ from sciona.physics_ingest.sources.wikidata import (
     build_snapshot_record,
     build_wave0_candidate_records,
     entity_uri_to_id,
+    extract_plain_formula_text,
     parse_sparql_bindings,
     parse_sparql_response,
     property_uri_to_id,
@@ -106,6 +107,8 @@ def test_candidate_record_is_wave0_compatible() -> None:
     assert record["behavioral_archetypes"] == []
     assert record["source_payload"]["wikidata_entity_id"] == "Q1"
     assert record["source_payload"]["formula_property_id"] == "P2534"
+    assert record["source_payload"]["formula_plain_text"] == "E = m c^2"
+    assert record["source_payload"]["formula_parse_hint"] == "source_plain_text"
     assert len(record["source_payload"]["uses"]) == 2
 
 
@@ -143,3 +146,28 @@ def test_uri_helpers_accept_entity_and_property_uris_or_ids() -> None:
     assert property_uri_to_id("http://www.wikidata.org/entity/P366") == "P366"
     assert property_uri_to_id("wdt:P2534") == "P2534"
     assert property_uri_to_id("P366") == "P366"
+
+
+def test_extract_plain_formula_text_from_wikidata_mathml() -> None:
+    formula = (
+        '<math xmlns="http://www.w3.org/1998/Math/MathML">'
+        "<mrow>"
+        "<mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup>"
+        "</mrow>"
+        "</math>"
+    )
+
+    assert extract_plain_formula_text(formula) == "E = m c^2"
+
+
+def test_extract_plain_formula_text_normalizes_greek_and_subscripts() -> None:
+    formula = (
+        '<math xmlns="http://www.w3.org/1998/Math/MathML">'
+        "<mrow>"
+        "<mi>ψ</mi><mo>(</mo><mi>x</mi><mo>,</mo>"
+        "<msub><mi>t</mi><mn>1</mn></msub><mo>)</mo>"
+        "</mrow>"
+        "</math>"
+    )
+
+    assert extract_plain_formula_text(formula) == "psi(x, t_1)"

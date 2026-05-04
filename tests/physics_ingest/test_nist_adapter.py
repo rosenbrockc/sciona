@@ -95,6 +95,8 @@ def test_build_codata_wave0_bundle_matches_wave0_snapshot_and_candidate_shape() 
     assert candidate["candidate_status"] == "source_verified"
     assert candidate["source_payload"]["normalized_value"] == "1.602176634E-19"
     assert candidate["source_payload"]["is_exact"] is True
+    assert candidate["source_payload"]["ingestion_target_kind"] == "state_artifact"
+    assert candidate["source_payload"]["symbolic_equation_candidate"] is False
     assert candidate["source_payload"]["dim_signature_hint"] == "T1I1"
     assert candidate["source_payload"]["reference_ids"] == ["NIST-CODATA-2022"]
 

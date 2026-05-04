@@ -21,8 +21,16 @@ from sciona.physics_ingest.staging import SymbolicExpressionRow
 _SUPPORTED_SOURCE_FORMATS = {
     "",
     "latex",
+    "mathml",
+    "content_mathml",
+    "wikidata_math",
     "sympy",
     "plain_text",
+}
+_FORMATS_WITH_PLAIN_TEXT_HINTS = {
+    "mathml",
+    "content_mathml",
+    "wikidata_math",
 }
 _DIMENSION_REVIEW_TASK_CODES = {
     "missing_dimension",
@@ -753,9 +761,25 @@ def _candidate_for_symbolic_normalizer(
     data = dict(source)
     data["raw_formula"] = raw_formula
     data["raw_formula_format"] = raw_formula_format
-    if raw_formula_format in {"latex", "plain_text"}:
+    parse_formula = raw_formula
+    parse_format = raw_formula_format
+    if raw_formula_format in _FORMATS_WITH_PLAIN_TEXT_HINTS:
+        plain_text_hint = _formula_plain_text_hint(source)
+        if plain_text_hint:
+            parse_formula = plain_text_hint
+            parse_format = "plain_text"
+            diagnostics.append(
+                NormalizationDiagnostic(
+                    code=f"{raw_formula_format}_plain_text_hint_selected",
+                    message=(
+                        f"Selected plain-text parse hint for {raw_formula_format} "
+                        "while preserving the raw source formula"
+                    ),
+                )
+            )
+    if parse_format in {"latex", "plain_text"}:
         try:
-            parsed = _parse_formula_text(raw_formula, raw_formula_format)
+            parsed = _parse_formula_text(parse_formula, parse_format)
         except Exception as exc:  # noqa: BLE001 - keep failure reviewable below
             parsed = None
             diagnostics.append(
@@ -771,10 +795,36 @@ def _candidate_for_symbolic_normalizer(
             diagnostics.append(
                 NormalizationDiagnostic(
                     code=f"{raw_formula_format}_parsed_locally",
-                    message=f"Parsed {raw_formula_format} formula with local normalizer",
+                    message=(
+                        f"Parsed {raw_formula_format} formula with local normalizer"
+                    ),
                 )
             )
     return data
+
+
+def _formula_plain_text_hint(source: Mapping[str, Any]) -> str:
+    direct = _text(
+        _first_present(
+            source,
+            "formula_plain_text",
+            "plain_formula",
+            "normalized_formula_text",
+        )
+    )
+    if direct:
+        return direct
+    payload = source.get("source_payload")
+    if isinstance(payload, Mapping):
+        return _text(
+            _first_present(
+                payload,
+                "formula_plain_text",
+                "plain_formula",
+                "normalized_formula_text",
+            )
+        )
+    return ""
 
 
 def _parse_formula_text(raw_formula: str, raw_formula_format: str) -> Any | None:

@@ -74,6 +74,39 @@ def test_latex_candidate_uses_local_parser_and_preserves_raw_formula() -> None:
     }
 
 
+def test_wikidata_math_candidate_uses_plain_text_hint_and_preserves_raw_math() -> None:
+    raw_formula = (
+        '<math xmlns="http://www.w3.org/1998/Math/MathML">'
+        "<mrow>"
+        "<mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup>"
+        "</mrow>"
+        "</math>"
+    )
+
+    draft = normalize_candidate_expression_draft(
+        {
+            "source_candidate_id": "wikidata:Q1:P2534",
+            "raw_formula": raw_formula,
+            "raw_formula_format": "wikidata_math",
+            "source_payload": {
+                "formula_plain_text": "E = m c^2",
+                "formula_plain_text_format": "plain_text",
+            },
+        },
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+    )
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.raw_formula == raw_formula
+    assert draft.row.raw_formula_format == "wikidata_math"
+    assert draft.row.evidence_json["parse_roundtrip"]["status"] == "passed"
+    assert {
+        "wikidata_math_plain_text_hint_selected",
+        "wikidata_math_parsed_locally",
+    } <= {diagnostic.code for diagnostic in draft.diagnostics}
+
+
 def test_sympy_expression_candidate_normalizes_without_text_preparse() -> None:
     draft = normalize_candidate_expression_draft(
         {

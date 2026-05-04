@@ -9,9 +9,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from hashlib import sha256
+import html
 import json
+import re
 from typing import Any, Iterable, Mapping, Sequence
 from urllib import parse, request
+from xml.etree import ElementTree
 
 
 WIKIDATA_ENTITY_BASE = "http://www.wikidata.org/entity/"
@@ -22,6 +25,71 @@ DEFINING_FORMULA_PROPERTY_ID = "P2534"
 HAS_USE_PROPERTY_ID = "P366"
 ADAPTER_NAME = "sciona.physics_ingest.sources.wikidata"
 ADAPTER_VERSION = "0.1.0"
+
+_GREEK_SYMBOL_NAMES = {
+    "α": "alpha",
+    "β": "beta",
+    "γ": "gamma",
+    "δ": "delta",
+    "ε": "epsilon",
+    "ζ": "zeta",
+    "η": "eta",
+    "θ": "theta",
+    "ι": "iota",
+    "κ": "kappa",
+    "λ": "lambda",
+    "μ": "mu",
+    "ν": "nu",
+    "ξ": "xi",
+    "π": "pi",
+    "ρ": "rho",
+    "σ": "sigma",
+    "τ": "tau",
+    "φ": "phi",
+    "χ": "chi",
+    "ψ": "psi",
+    "ω": "omega",
+    "Α": "Alpha",
+    "Β": "Beta",
+    "Γ": "Gamma",
+    "Δ": "Delta",
+    "Ε": "Epsilon",
+    "Ζ": "Zeta",
+    "Η": "Eta",
+    "Θ": "Theta",
+    "Ι": "Iota",
+    "Κ": "Kappa",
+    "Λ": "Lambda",
+    "Μ": "Mu",
+    "Ν": "Nu",
+    "Ξ": "Xi",
+    "Π": "Pi",
+    "Ρ": "Rho",
+    "Σ": "Sigma",
+    "Τ": "Tau",
+    "Φ": "Phi",
+    "Χ": "Chi",
+    "Ψ": "Psi",
+    "Ω": "Omega",
+}
+
+_MATHML_OPERATOR_TEXT = {
+    "−": "-",
+    "–": "-",
+    "—": "-",
+    "×": "*",
+    "⋅": "*",
+    "·": "*",
+    "⁢": "*",
+    "÷": "/",
+    "≤": "<=",
+    "≥": ">=",
+    "≠": "!=",
+    "≈": "~=",
+    "∼": "~",
+    "∝": "proportional_to",
+}
+_TOKEN_BOUNDARY_RE = re.compile(r"\s+")
 
 
 def build_physical_equation_candidates_query(
@@ -143,6 +211,8 @@ class WikidataEquationCandidate:
     ) -> dict[str, Any]:
         """Render this candidate as a row for ``physics_equation_candidates``."""
 
+        formula_plain_text = extract_plain_formula_text(self.formula_text)
+        formula_parse_hint = _formula_parse_hint(self.formula_text, formula_plain_text)
         record: dict[str, Any] = {
             "source_candidate_id": self.source_candidate_id,
             "source_entity_uri": self.entity_uri,
@@ -161,6 +231,9 @@ class WikidataEquationCandidate:
                 "formula_property_id": self.formula_property_id,
                 "aliases": list(self.aliases),
                 "uses": [use.to_payload() for use in self.uses],
+                "formula_plain_text": formula_plain_text,
+                "formula_plain_text_format": "plain_text" if formula_plain_text else "",
+                "formula_parse_hint": formula_parse_hint,
                 "source_rows": list(self.source_rows),
             },
             "notes": "",
@@ -283,6 +356,27 @@ def build_snapshot_record(
     }
 
 
+def extract_plain_formula_text(formula_text: str) -> str:
+    """Return a normalization-friendly text hint for Wikidata math payloads.
+
+    Wikidata P2534 values are often MathML fragments.  The ingest contract keeps
+    that raw payload intact, but downstream symbolic normalization benefits from
+    a deterministic plain-text hint when the MathML is structurally simple.
+    """
+
+    text = formula_text.strip()
+    if not text:
+        return ""
+    if not text.startswith("<"):
+        return _normalize_formula_text_tokens(text)
+    try:
+        root = ElementTree.fromstring(html.unescape(text))
+        extracted = _mathml_node_to_text(root)
+    except (ElementTree.ParseError, ValueError):
+        return ""
+    return _normalize_formula_text_tokens(extracted)
+
+
 def stable_payload_hash(payload: Mapping[str, Any]) -> str:
     """Return a stable SHA-256 hash for JSON-compatible payloads."""
 
@@ -324,6 +418,121 @@ def _value(row: Mapping[str, Mapping[str, str]], key: str) -> str:
 
 def _plain_binding_row(row: Mapping[str, Mapping[str, str]]) -> dict[str, str]:
     return {key: value.get("value", "") for key, value in row.items()}
+
+
+def _formula_parse_hint(raw_formula: str, formula_plain_text: str) -> str:
+    if not formula_plain_text:
+        return "raw_only"
+    if raw_formula.strip() == formula_plain_text:
+        return "source_plain_text"
+    return "mathml_plain_text_extracted"
+
+
+def _mathml_node_to_text(node: ElementTree.Element) -> str:
+    tag = _local_name(node.tag)
+    if tag in {"math", "mrow", "mstyle", "semantics", "annotation-xml"}:
+        return _join_math_tokens(_mathml_children_to_text(node))
+    if tag in {"mi", "mn", "mtext"}:
+        return _normalize_identifier_text(_node_text(node))
+    if tag == "mo":
+        return _MATHML_OPERATOR_TEXT.get(_node_text(node), _node_text(node))
+    if tag == "msub":
+        base, subscript = _first_two_children(node)
+        return f"{_mathml_node_to_text(base)}_{_wrap_if_needed(_mathml_node_to_text(subscript))}"
+    if tag == "msup":
+        base, exponent = _first_two_children(node)
+        return f"{_mathml_node_to_text(base)}^{_wrap_if_needed(_mathml_node_to_text(exponent))}"
+    if tag == "msubsup":
+        children = list(node)
+        if len(children) < 3:
+            return _join_math_tokens(_mathml_children_to_text(node))
+        base = _mathml_node_to_text(children[0])
+        subscript = _wrap_if_needed(_mathml_node_to_text(children[1]))
+        exponent = _wrap_if_needed(_mathml_node_to_text(children[2]))
+        return f"{base}_{subscript}^{exponent}"
+    if tag == "mfrac":
+        numerator, denominator = _first_two_children(node)
+        return (
+            f"(({_mathml_node_to_text(numerator)})/"
+            f"({_mathml_node_to_text(denominator)}))"
+        )
+    if tag == "msqrt":
+        return f"sqrt({_join_math_tokens(_mathml_children_to_text(node))})"
+    if tag == "mfenced":
+        open_fence = node.attrib.get("open", "(")
+        close_fence = node.attrib.get("close", ")")
+        return f"{open_fence}{_join_math_tokens(_mathml_children_to_text(node))}{close_fence}"
+    text = _node_text(node)
+    children = _mathml_children_to_text(node)
+    return _join_math_tokens((text, *children))
+
+
+def _mathml_children_to_text(node: ElementTree.Element) -> tuple[str, ...]:
+    return tuple(_mathml_node_to_text(child) for child in list(node))
+
+
+def _first_two_children(
+    node: ElementTree.Element,
+) -> tuple[ElementTree.Element, ElementTree.Element]:
+    children = list(node)
+    if len(children) < 2:
+        raise ValueError(f"MathML {node.tag!r} node requires two children")
+    return children[0], children[1]
+
+
+def _local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _node_text(node: ElementTree.Element) -> str:
+    parts = []
+    if node.text:
+        parts.append(node.text)
+    for child in list(node):
+        if child.tail:
+            parts.append(child.tail)
+    return "".join(parts).strip()
+
+
+def _normalize_identifier_text(value: str) -> str:
+    return "".join(_GREEK_SYMBOL_NAMES.get(char, char) for char in value)
+
+
+def _join_math_tokens(tokens: Iterable[str]) -> str:
+    output = ""
+    for token in (item.strip() for item in tokens if item and item.strip()):
+        if not output:
+            output = token
+            continue
+        if token in {")", "]", "}", ",", ";"}:
+            output += token
+        elif output.endswith(("(", "[", "{", "_", "^")):
+            output += token
+        elif token in {"(", "[", "{"}:
+            output += token
+        elif token in {"+", "-", "*", "/", "=", "!=", "<", ">", "<=", ">=", "~="}:
+            output += f" {token} "
+        elif output.endswith((" + ", " - ", " * ", " / ", " = ", " != ")):
+            output += token
+        else:
+            output += f" {token}"
+    return output
+
+
+def _wrap_if_needed(text: str) -> str:
+    stripped = text.strip()
+    if not stripped:
+        return ""
+    if re.fullmatch(r"[A-Za-z0-9_]+", stripped):
+        return stripped
+    return f"({stripped})"
+
+
+def _normalize_formula_text_tokens(text: str) -> str:
+    text = "".join(_GREEK_SYMBOL_NAMES.get(char, char) for char in text)
+    for old, new in _MATHML_OPERATOR_TEXT.items():
+        text = text.replace(old, new)
+    return _TOKEN_BOUNDARY_RE.sub(" ", text).strip()
 
 
 def _sparql_values(variable: str, namespace: str, identifiers: Sequence[str]) -> str:
