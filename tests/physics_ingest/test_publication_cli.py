@@ -249,6 +249,16 @@ def test_publication_backfill_payload_surfaces_source_runtime_execution_plan() -
     assert preflight["side_effect_free"] is True
     assert preflight["summary"]["requires_http_client_count"] == 1
     assert preflight["summary"]["blocking_diagnostic_count"] == 2
+    assert report["dashboard_summary"]["source_runtime_execution"] == {
+        "step_count": preflight["summary"]["total_steps"],
+        "diagnostic_count": preflight["summary"]["diagnostic_count"],
+        "blocking_diagnostic_count": preflight["summary"][
+            "blocking_diagnostic_count"
+        ],
+        "execution_requested": True,
+        "execution_performed": False,
+        "side_effect_free": True,
+    }
 
 
 def test_publication_backfill_payload_validates_boundary_payloads() -> None:
@@ -421,6 +431,26 @@ def test_publication_backfill_payload_surfaces_dashboard_summaries() -> None:
     ]
 
     assert "publication_readiness_summary" in surfaced_summary_keys
+    dashboard = report["dashboard_summary"]
+    assert json.loads(json.dumps(dashboard, sort_keys=True)) == dashboard
+    assert dashboard["report_version"] == (
+        "physics-ingest-publication-backfill-dashboard.v1"
+    )
+    assert dashboard["ok"] is True
+    assert dashboard["publication"] == {
+        "ok": True,
+        "source_bundle_count": 1,
+        "publication_manifest_count": 1,
+        "diagnostic_count": 0,
+        "id_strategy": "deterministic",
+        "write_plan": {
+            "batch_count": 4,
+            "row_count": 4,
+            "mode_counts": {"insert": 4},
+        },
+    }
+    assert dashboard["backfill"] == report["backfill_report"]["dashboard_summary"]
+    assert "source_runtime_execution" not in dashboard
     for summary_key in surfaced_summary_keys:
         assert report[summary_key] == report["backfill_report"][summary_key]
         assert json.loads(json.dumps(report[summary_key], sort_keys=True)) == (

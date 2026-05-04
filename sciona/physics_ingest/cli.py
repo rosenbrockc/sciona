@@ -241,6 +241,11 @@ def build_publication_backfill_dry_run_report_from_payload(
             review_queue_write_plan_rows,
             include_rows=include_rows,
         )
+    report["dashboard_summary"] = _composed_backfill_dashboard_summary(
+        publication_report=publication_report,
+        backfill_report=backfill_report,
+        ok=report["ok"],
+    )
     _assert_json_serializable(report)
     return report
 
@@ -348,6 +353,102 @@ def _diagnostic_to_dict(row: PublicationDiagnostic) -> dict[str, Any]:
         "severity": row.severity,
         "detail": row.detail,
     }
+
+
+def _composed_backfill_dashboard_summary(
+    *,
+    publication_report: Mapping[str, Any],
+    backfill_report: Mapping[str, Any],
+    ok: bool,
+) -> dict[str, Any]:
+    summary: dict[str, Any] = {
+        "report_version": "physics-ingest-publication-backfill-dashboard.v1",
+        "ok": bool(ok),
+        "dry_run": True,
+        "publication": _publication_dashboard_rollup(publication_report),
+        "backfill": _json_safe_mapping(
+            _mapping_or_empty(backfill_report.get("dashboard_summary"))
+        ),
+    }
+    runtime_preflight = _mapping_or_empty(
+        backfill_report.get("source_runtime_execution_preflight")
+    )
+    if runtime_preflight:
+        summary["source_runtime_execution"] = (
+            _source_runtime_execution_dashboard_rollup(runtime_preflight)
+        )
+    return _json_safe_mapping(summary)
+
+
+def _publication_dashboard_rollup(report: Mapping[str, Any]) -> dict[str, Any]:
+    write_plan = _mapping_or_empty(report.get("write_plan"))
+    batches = [
+        batch
+        for batch in write_plan.get("batches", ())
+        if isinstance(batch, Mapping)
+    ]
+    return {
+        "ok": bool(report.get("ok")),
+        "source_bundle_count": _int_value(report.get("source_bundle_count")),
+        "publication_manifest_count": _int_value(
+            report.get("publication_manifest_count")
+        ),
+        "diagnostic_count": len(
+            [row for row in report.get("diagnostics", ()) if isinstance(row, Mapping)]
+        ),
+        "id_strategy": str(
+            _mapping_or_empty(report.get("id_planning")).get("strategy") or ""
+        ),
+        "write_plan": {
+            "batch_count": len(batches),
+            "row_count": sum(_int_value(batch.get("row_count")) for batch in batches),
+            "mode_counts": _count_values(
+                str(batch.get("mode") or "unknown") for batch in batches
+            ),
+        },
+    }
+
+
+def _source_runtime_execution_dashboard_rollup(
+    preflight: Mapping[str, Any],
+) -> dict[str, Any]:
+    summary = _mapping_or_empty(preflight.get("summary"))
+    return {
+        "step_count": _int_value(summary.get("total_steps")),
+        "diagnostic_count": _int_value(summary.get("diagnostic_count")),
+        "blocking_diagnostic_count": _int_value(
+            summary.get("blocking_diagnostic_count")
+        ),
+        "execution_requested": bool(preflight.get("execution_requested")),
+        "execution_performed": bool(preflight.get("execution_performed")),
+        "side_effect_free": bool(preflight.get("side_effect_free", True)),
+    }
+
+
+def _mapping_or_empty(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _count_values(values: Iterable[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _int_value(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
 
 
 def _assert_json_serializable(report: Mapping[str, Any]) -> None:
