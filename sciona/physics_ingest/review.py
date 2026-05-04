@@ -11,8 +11,11 @@ import hashlib
 import json
 import math
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from sciona.physics_ingest.write_plan import PublicationWritePlan, WriteMode
 
 
 REVIEW_STATUSES: tuple[str, ...] = (
@@ -53,6 +56,7 @@ REVIEW_QUEUE_TASK_STATUSES: tuple[str, ...] = (
 )
 REVIEW_QUEUE_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low")
 REVIEW_QUEUE_PRIORITIES: tuple[str, ...] = ("p0", "p1", "p2", "p3")
+REVIEW_QUEUE_TASKS_TABLE = "physics_review_queue_tasks"
 
 
 @dataclass(frozen=True)
@@ -261,6 +265,49 @@ class ReviewQueueRows:
 
     def to_dict(self) -> dict[str, Any]:
         return {"tasks": self.to_rows()}
+
+
+@dataclass(frozen=True)
+class ReviewQueueWritePlanRows:
+    """Review queue rows shaped for the inert publication writer boundary."""
+
+    rows_by_table: Mapping[str, tuple[dict[str, Any], ...]]
+    diagnostics: tuple[Mapping[str, Any], ...] = ()
+    summary: Mapping[str, Any] = field(default_factory=dict)
+    write_plan: "PublicationWritePlan | None" = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "rows_by_table",
+            {
+                str(table): tuple(dict(_json_safe(row)) for row in rows)
+                for table, rows in self.rows_by_table.items()
+            },
+        )
+        object.__setattr__(
+            self,
+            "diagnostics",
+            tuple(_json_safe(diagnostic) for diagnostic in self.diagnostics),
+        )
+        object.__setattr__(self, "summary", _json_safe(self.summary))
+
+    def to_insert_rows(self) -> dict[str, list[dict[str, Any]]]:
+        return {
+            table: [dict(row) for row in rows]
+            for table, rows in self.rows_by_table.items()
+            if rows
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "insert_rows": self.to_insert_rows(),
+            "diagnostics": [dict(diagnostic) for diagnostic in self.diagnostics],
+            "summary": dict(self.summary),
+            "write_plan": None
+            if self.write_plan is None
+            else self.write_plan.to_dict(),
+        }
 
 
 def assess_publishability(
@@ -597,6 +644,54 @@ def summarize_review_queue_tasks(
     }
 
 
+def build_review_queue_write_plan_rows(
+    tasks: ReviewQueueRows
+    | ReviewQueueTask
+    | Mapping[str, Any]
+    | Iterable[ReviewQueueTask | Mapping[str, Any]],
+    *,
+    include_write_plan: bool = False,
+    table_name: str = REVIEW_QUEUE_TASKS_TABLE,
+    table_modes: Mapping[str, "WriteMode"] | None = None,
+) -> ReviewQueueWritePlanRows:
+    """Adapt review queue task rows to the injected publication writer path.
+
+    The helper performs no database IO. It accepts materialized
+    ``ReviewQueueRows``, individual tasks, task mappings, or iterable task
+    values, then returns deterministic JSON-safe table rows plus write-plan
+    summary metadata.
+    """
+
+    if not isinstance(table_name, str) or not table_name.strip():
+        raise ValueError("table_name must be a non-empty string")
+    table_name = table_name.strip()
+
+    normalized_rows, diagnostics = _normalize_review_queue_write_rows(
+        tasks,
+        table_name=table_name,
+    )
+    rows_by_table = {table_name: normalized_rows} if normalized_rows else {}
+
+    from sciona.physics_ingest.write_plan import build_publication_write_plan
+
+    write_plan = build_publication_write_plan(
+        rows_by_table,
+        table_modes={table_name: "upsert", **dict(table_modes or {})},
+    )
+    summary = _build_review_queue_write_plan_rows_summary(
+        rows=normalized_rows,
+        diagnostics=diagnostics,
+        write_plan=write_plan,
+        table_name=table_name,
+    )
+    return ReviewQueueWritePlanRows(
+        rows_by_table=rows_by_table,
+        diagnostics=diagnostics,
+        summary=summary,
+        write_plan=write_plan if include_write_plan else None,
+    )
+
+
 def require_publishable(**kwargs: Any) -> ReviewAssessment:
     """Return an assessment or raise ``ValueError`` with gate blockers."""
 
@@ -687,6 +782,161 @@ def _queue_task_row(task: ReviewQueueTask | Mapping[str, Any]) -> Mapping[str, A
     if isinstance(task, ReviewQueueTask):
         return task.to_dict()
     return task if isinstance(task, Mapping) else {}
+
+
+def _normalize_review_queue_write_rows(
+    tasks: ReviewQueueRows
+    | ReviewQueueTask
+    | Mapping[str, Any]
+    | Iterable[ReviewQueueTask | Mapping[str, Any]],
+    *,
+    table_name: str,
+) -> tuple[tuple[dict[str, Any], ...], tuple[Mapping[str, Any], ...]]:
+    task_values = _review_queue_task_values(tasks)
+    diagnostics: list[Mapping[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    for index, task in enumerate(task_values):
+        row = _queue_task_row(task)
+        if not row:
+            diagnostics.append(
+                _review_queue_write_diagnostic(
+                    table_name=table_name,
+                    reason="empty_task_row",
+                    row_index=index,
+                    detail="task row must be a ReviewQueueTask or mapping",
+                )
+            )
+            continue
+        safe_row = dict(_json_safe(row))
+        if not _text(safe_row, "task_id"):
+            diagnostics.append(
+                _review_queue_write_diagnostic(
+                    table_name=table_name,
+                    reason="missing_task_id",
+                    row_index=index,
+                    detail="review queue write rows require task_id conflict key",
+                )
+            )
+            continue
+        if not _text(safe_row, "replay_key"):
+            diagnostics.append(
+                _review_queue_write_diagnostic(
+                    table_name=table_name,
+                    reason="missing_replay_key",
+                    row_index=index,
+                    severity="warning",
+                    detail="review queue task row is missing replay_key",
+                )
+            )
+        rows.append(safe_row)
+    return tuple(sorted(rows, key=_review_queue_write_row_sort_key)), tuple(diagnostics)
+
+
+def _review_queue_task_values(
+    tasks: ReviewQueueRows
+    | ReviewQueueTask
+    | Mapping[str, Any]
+    | Iterable[ReviewQueueTask | Mapping[str, Any]],
+) -> tuple[ReviewQueueTask | Mapping[str, Any], ...]:
+    if isinstance(tasks, ReviewQueueRows):
+        return tasks.tasks
+    if isinstance(tasks, ReviewQueueTask):
+        return (tasks,)
+    if isinstance(tasks, Mapping):
+        task_rows = tasks.get("tasks")
+        if task_rows is None:
+            return (tasks,)
+        if (
+            isinstance(task_rows, Mapping)
+            or isinstance(task_rows, (str, bytes))
+            or task_rows is None
+        ):
+            raise ValueError("tasks mapping value must be an iterable of task rows")
+        return tuple(task_rows)
+    if isinstance(tasks, (str, bytes)) or not isinstance(tasks, Iterable):
+        raise ValueError("tasks must be ReviewQueueRows, a task row, or iterable rows")
+    return tuple(tasks)
+
+
+def _review_queue_write_row_sort_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
+    priority = _summary_text(row, "priority")
+    severity = _summary_text(row, "severity")
+    task_status = _summary_text(row, "task_status")
+    task_kind = _summary_text(row, "task_kind")
+    return (
+        _rank_or_after(priority, REVIEW_QUEUE_PRIORITIES),
+        _rank_or_after(severity, REVIEW_QUEUE_SEVERITIES),
+        _rank_or_after(task_status, REVIEW_QUEUE_TASK_STATUSES),
+        _rank_or_after(task_kind, REVIEW_QUEUE_TASK_KINDS),
+        _summary_text(row, "task_id"),
+        _summary_text(row, "replay_key"),
+    )
+
+
+def _rank_or_after(value: str, preferred_order: Sequence[str]) -> tuple[int, str]:
+    try:
+        return preferred_order.index(value), value
+    except ValueError:
+        return len(preferred_order), value
+
+
+def _review_queue_write_diagnostic(
+    *,
+    table_name: str,
+    reason: str,
+    row_index: int,
+    detail: str,
+    severity: str = "skipped",
+) -> dict[str, Any]:
+    return {
+        "table": table_name,
+        "reason": reason,
+        "severity": severity,
+        "row_index": row_index,
+        "detail": detail,
+    }
+
+
+def _build_review_queue_write_plan_rows_summary(
+    *,
+    rows: Sequence[Mapping[str, Any]],
+    diagnostics: Sequence[Mapping[str, Any]],
+    write_plan: "PublicationWritePlan",
+    table_name: str,
+) -> dict[str, Any]:
+    task_summary = summarize_review_queue_tasks(rows)
+    return dict(
+        _json_safe(
+            {
+                "summary_kind": "review_queue_write_plan_rows_summary.v1",
+                "review_queue_table": table_name,
+                "review_queue_row_count": len(rows),
+                "review_queue_table_row_counts": {table_name: len(rows)}
+                if rows
+                else {},
+                "diagnostic_count": len(diagnostics),
+                "diagnostics_by_severity": _ordered_counts(
+                    _summary_text(diagnostic, "severity")
+                    for diagnostic in diagnostics
+                ),
+                "task_kind_counts": task_summary["task_kind_counts"],
+                "task_status_counts": task_summary["task_status_counts"],
+                "trust_status_counts": task_summary["trust_status_counts"],
+                "severity_counts": task_summary["severity_counts"],
+                "priority_counts": task_summary["priority_counts"],
+                "source_family_counts": task_summary["source_family_counts"],
+                "blocker_reason_counts": task_summary["blocker_reason_counts"],
+                "write_plan_table_order": list(write_plan.ordered_tables()),
+                "write_plan_table_modes": {
+                    table: write_plan.mode_for(table)
+                    for table in write_plan.ordered_tables()
+                },
+                "write_plan_row_counts": dict(
+                    write_plan.audit_summary.planned_row_counts
+                ),
+            }
+        )
+    )
 
 
 def _queue_blocker_summaries(row: Mapping[str, Any]) -> tuple[Mapping[str, Any], ...]:

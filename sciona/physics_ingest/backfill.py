@@ -17,6 +17,9 @@ from sciona.physics_ingest.publication import (
 from sciona.physics_ingest.sources.execution_plan import (
     build_source_execution_readiness_report_dict,
 )
+from sciona.physics_ingest.sources.runtime_execution import (
+    build_source_retrieval_runtime_execution_report_dict,
+)
 from sciona.physics_ingest.supabase_adapter import (
     preflight_publication_postgrest_write,
 )
@@ -42,6 +45,7 @@ def build_physics_ingest_backfill_report(
     table_modes: Mapping[str, WriteMode] | None = None,
     include_phase7_coverage_summary: bool = True,
     include_source_request_envelopes: bool = False,
+    include_source_runtime_execution_preflight: bool = False,
     include_publication_write_preflight: bool = False,
     include_execution_boundary_preflight: bool = False,
     include_audit_artifact_manifests: bool = False,
@@ -70,6 +74,15 @@ def build_physics_ingest_backfill_report(
         source_retrieval_run_plan
         if source_retrieval_run_plan is not None
         else retrieval_run_plan
+    )
+    source_runtime_execution_preflight = (
+        _source_runtime_execution_preflight_section(retrieval_report["plan"])
+        if (
+            include_source_runtime_execution_preflight
+            or include_execution_boundary_preflight
+        )
+        and (source_retrieval_run_plan is not None or retrieval_run_plan is not None)
+        else None
     )
     normalized_rows, normalized_publication_diagnostics = (
         _publication_rows_from_normalized_drafts(normalized_draft_list)
@@ -140,32 +153,39 @@ def build_physics_ingest_backfill_report(
     skip_diagnostics = _diagnostics_by_severity(diagnostics, severity="skipped")
     has_errors = bool(retry_diagnostics)
     replay_keys = _replay_keys(pipeline_result.write_plan.to_dict()["batches"])
+    input_summary = {
+        "source_bundle_count": len(source_bundle_list),
+        "publication_manifest_count": len(publication_manifest_list),
+        "data_artifact_seed_count": len(data_artifact_seed_summaries),
+        "normalized_draft_count": len(normalized_draft_list),
+        "normalized_draft_table_count": len(normalized_rows),
+        "normalized_draft_row_count": sum(
+            len(rows) for rows in normalized_rows.values()
+        ),
+        "pdg_table_count": len(pdg_rows),
+        "pdg_row_count": sum(len(rows) for rows in pdg_rows.values()),
+        "review_publication_table_count": len(review_rows),
+        "review_publication_row_count": sum(
+            len(rows) for rows in review_rows.values()
+        ),
+        "phase7_coverage_row_count": sum(phase7_coverage_row_counts.values()),
+        "review_diagnostic_count": len(review_diagnostic_rows),
+        "normalization_diagnostic_count": len(normalization_diagnostic_rows),
+        "source_retrieval_step_count": retrieval_report["step_count"],
+        "source_retrieval_diagnostic_count": len(retrieval_diagnostic_rows),
+    }
+    if source_runtime_execution_preflight is not None:
+        input_summary.update(
+            _source_runtime_execution_preflight_input_counts(
+                source_runtime_execution_preflight
+            )
+        )
 
     report: dict[str, Any] = {
         "report_kind": BACKFILL_REPORT_KIND,
         "dry_run": True,
         "ok": not has_errors,
-        "input_summary": {
-            "source_bundle_count": len(source_bundle_list),
-            "publication_manifest_count": len(publication_manifest_list),
-            "data_artifact_seed_count": len(data_artifact_seed_summaries),
-            "normalized_draft_count": len(normalized_draft_list),
-            "normalized_draft_table_count": len(normalized_rows),
-            "normalized_draft_row_count": sum(
-                len(rows) for rows in normalized_rows.values()
-            ),
-            "pdg_table_count": len(pdg_rows),
-            "pdg_row_count": sum(len(rows) for rows in pdg_rows.values()),
-            "review_publication_table_count": len(review_rows),
-            "review_publication_row_count": sum(
-                len(rows) for rows in review_rows.values()
-            ),
-            "phase7_coverage_row_count": sum(phase7_coverage_row_counts.values()),
-            "review_diagnostic_count": len(review_diagnostic_rows),
-            "normalization_diagnostic_count": len(normalization_diagnostic_rows),
-            "source_retrieval_step_count": retrieval_report["step_count"],
-            "source_retrieval_diagnostic_count": len(retrieval_diagnostic_rows),
-        },
+        "input_summary": input_summary,
         "source_family_counts": _source_family_counts(
             source_bundle_list,
             publication_manifest_list,
@@ -221,6 +241,10 @@ def build_physics_ingest_backfill_report(
     if include_source_request_envelopes or include_execution_boundary_preflight:
         report["source_request_envelope_preflight"] = (
             _source_request_envelope_preflight_section(retrieval_report["plan"])
+        )
+    if source_runtime_execution_preflight is not None:
+        report["source_runtime_execution_preflight"] = (
+            source_runtime_execution_preflight
         )
     if include_publication_write_preflight or include_execution_boundary_preflight:
         report["publication_storage_write_preflight"] = (
@@ -753,6 +777,44 @@ def _source_request_envelope_preflight_section(
     }
 
 
+def _source_runtime_execution_preflight_section(
+    retrieval_plan: Mapping[str, Any],
+) -> dict[str, Any]:
+    return _json_safe_mapping(
+        build_source_retrieval_runtime_execution_report_dict(
+            retrieval_plan,
+            execute=True,
+            preflight=True,
+        )
+    )
+
+
+def _source_runtime_execution_preflight_input_counts(
+    preflight: Mapping[str, Any],
+) -> dict[str, int]:
+    summary = preflight.get("summary") or {}
+    if not isinstance(summary, Mapping):
+        summary = {}
+    return {
+        "source_runtime_execution_step_count": int(summary.get("total_steps") or 0),
+        "source_runtime_execution_diagnostic_count": int(
+            summary.get("diagnostic_count") or 0
+        ),
+        "source_runtime_execution_blocking_diagnostic_count": int(
+            summary.get("blocking_diagnostic_count") or 0
+        ),
+        "source_runtime_execution_requires_http_client_count": int(
+            summary.get("requires_http_client_count") or 0
+        ),
+        "source_runtime_execution_requires_snapshot_sink_count": int(
+            summary.get("requires_snapshot_sink_count") or 0
+        ),
+        "source_runtime_execution_requires_auth_count": int(
+            summary.get("requires_auth_count") or 0
+        ),
+    }
+
+
 def _retrieval_execution_expectation(
     *,
     readiness_step: Mapping[str, Any],
@@ -932,6 +994,7 @@ def _dashboard_summary(report: Mapping[str, Any]) -> dict[str, Any]:
     )
     diagnostic_summary = _json_safe_mapping(report.get("diagnostic_summary") or {})
     source_retrieval_report = report.get("source_retrieval_run_plan") or {}
+    source_runtime_execution = report.get("source_runtime_execution_preflight") or {}
     source_family_counts = report.get("source_family_counts") or {}
     publication_readiness = report.get("publication_readiness_summary") or {}
 
@@ -983,10 +1046,39 @@ def _dashboard_summary(report: Mapping[str, Any]) -> dict[str, Any]:
             "seed_count": int(input_summary.get("data_artifact_seed_count") or 0),
         },
     }
+    if isinstance(source_runtime_execution, Mapping) and source_runtime_execution:
+        summary["source_runtime_execution"] = (
+            _source_runtime_execution_dashboard_rollup(source_runtime_execution)
+        )
     phase7_rollup = _phase7_dashboard_rollup(report)
     if phase7_rollup is not None:
         summary["phase7_coverage"] = phase7_rollup
     return _json_safe_mapping(summary)
+
+
+def _source_runtime_execution_dashboard_rollup(
+    preflight: Mapping[str, Any],
+) -> dict[str, Any]:
+    summary = preflight.get("summary") or {}
+    if not isinstance(summary, Mapping):
+        summary = {}
+    return {
+        "step_count": int(summary.get("total_steps") or 0),
+        "diagnostic_count": int(summary.get("diagnostic_count") or 0),
+        "blocking_diagnostic_count": int(
+            summary.get("blocking_diagnostic_count") or 0
+        ),
+        "requires_http_client_count": int(
+            summary.get("requires_http_client_count") or 0
+        ),
+        "requires_snapshot_sink_count": int(
+            summary.get("requires_snapshot_sink_count") or 0
+        ),
+        "requires_auth_count": int(summary.get("requires_auth_count") or 0),
+        "execution_requested": bool(preflight.get("execution_requested")),
+        "execution_performed": bool(preflight.get("execution_performed")),
+        "side_effect_free": bool(preflight.get("side_effect_free", True)),
+    }
 
 
 def _publication_readiness_dashboard_rollup(
@@ -1042,6 +1134,7 @@ def _audit_artifact_manifests(
         "audit_replay",
         "phase7_coverage_summary",
         "source_request_envelope_preflight",
+        "source_runtime_execution_preflight",
         "publication_storage_write_preflight",
     )
     manifests = []
@@ -1148,6 +1241,18 @@ def _audit_artifact_payload_counts(
         )
         counts["row_count"] = row_count
         counts["payload_count"] = row_count
+    elif section_name == "source_runtime_execution_preflight":
+        summary = payload.get("summary") or {}
+        if not isinstance(summary, Mapping):
+            summary = {}
+        row_count = int(summary.get("total_steps") or 0)
+        diagnostic_count = int(summary.get("diagnostic_count") or 0)
+        counts["row_count"] = row_count
+        counts["diagnostic_count"] = diagnostic_count
+        counts["blocking_diagnostic_count"] = int(
+            summary.get("blocking_diagnostic_count") or 0
+        )
+        counts["payload_count"] = row_count + diagnostic_count
     elif section_name == "publication_storage_write_preflight":
         counts["table_count"] = int(payload.get("table_count") or 0)
         counts["row_count"] = int(payload.get("total_row_count") or 0)

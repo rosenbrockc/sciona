@@ -392,6 +392,12 @@ def test_backfill_audit_artifact_manifests_follow_preflight_flags() -> None:
         include_publication_write_preflight=True,
         include_audit_artifact_manifests=True,
     )
+    runtime_report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=retrieval_plan,
+        review_status_rows=review_rows,
+        include_source_runtime_execution_preflight=True,
+        include_audit_artifact_manifests=True,
+    )
     boundary_report = build_physics_ingest_backfill_report(
         source_retrieval_run_plan=retrieval_plan,
         review_status_rows=review_rows,
@@ -411,11 +417,18 @@ def test_backfill_audit_artifact_manifests_follow_preflight_flags() -> None:
         "phase7_coverage_summary",
         "publication_storage_write_preflight",
     ]
+    assert _manifest_names(runtime_report) == [
+        "dashboard_summary",
+        "audit_replay",
+        "phase7_coverage_summary",
+        "source_runtime_execution_preflight",
+    ]
     assert _manifest_names(boundary_report) == [
         "dashboard_summary",
         "audit_replay",
         "phase7_coverage_summary",
         "source_request_envelope_preflight",
+        "source_runtime_execution_preflight",
         "publication_storage_write_preflight",
     ]
 
@@ -427,9 +440,19 @@ def test_backfill_audit_artifact_manifests_follow_preflight_flags() -> None:
         boundary_report,
         "publication_storage_write_preflight",
     )
+    runtime_manifest = _manifest_by_name(
+        boundary_report,
+        "source_runtime_execution_preflight",
+    )
     assert source_manifest["row_count"] == boundary_report[
         "source_request_envelope_preflight"
     ]["step_count"]
+    assert runtime_manifest["row_count"] == boundary_report[
+        "source_runtime_execution_preflight"
+    ]["summary"]["total_steps"]
+    assert runtime_manifest["diagnostic_count"] == boundary_report[
+        "source_runtime_execution_preflight"
+    ]["summary"]["diagnostic_count"]
     assert write_manifest["row_count"] == boundary_report[
         "publication_storage_write_preflight"
     ]["total_row_count"]
@@ -872,6 +895,10 @@ def test_backfill_report_accepts_retrieval_run_plan_dict_and_diagnostics() -> No
 
 def test_backfill_report_can_include_execution_boundary_preflight_sections() -> None:
     retrieval_plan = build_physics_source_retrieval_run_plan(max_jobs=3, limit=5)
+    runtime_dependency_plan = build_physics_source_retrieval_run_plan(
+        job_id="hitran_lines.backfill",
+        dry_run=False,
+    )
 
     report = build_physics_ingest_backfill_report(
         source_retrieval_run_plan=retrieval_plan,
@@ -883,6 +910,10 @@ def test_backfill_report_can_include_execution_boundary_preflight_sections() -> 
                 }
             ]
         },
+        include_execution_boundary_preflight=True,
+    )
+    runtime_diagnostic_report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=runtime_dependency_plan,
         include_execution_boundary_preflight=True,
     )
     repeated_report = build_physics_ingest_backfill_report(
@@ -934,6 +965,58 @@ def test_backfill_report_can_include_execution_boundary_preflight_sections() -> 
     assert source_preflight["request_envelopes"][1]["request_envelope"]["paging"][
         "limit"
     ] == 5
+
+    runtime_preflight = report["source_runtime_execution_preflight"]
+    assert json.loads(json.dumps(runtime_preflight, sort_keys=True)) == (
+        runtime_preflight
+    )
+    assert runtime_preflight == repeated_report[
+        "source_runtime_execution_preflight"
+    ]
+    assert runtime_preflight["report_version"] == "physics-source-runtime-execution.v1"
+    assert runtime_preflight["preflight"] is True
+    assert runtime_preflight["execution_requested"] is True
+    assert runtime_preflight["execution_performed"] is False
+    assert runtime_preflight["execution_skipped_reason"] == "preflight_only"
+    assert runtime_preflight["side_effect_free"] is True
+    assert runtime_preflight["execution_report"] is None
+    assert runtime_preflight["summary"]["total_steps"] == 3
+    assert runtime_preflight["summary"]["diagnostic_count"] == 0
+    assert report["input_summary"]["source_runtime_execution_step_count"] == 3
+    assert report["input_summary"]["source_runtime_execution_diagnostic_count"] == 0
+    assert report["dashboard_summary"]["source_runtime_execution"] == {
+        "step_count": 3,
+        "diagnostic_count": 0,
+        "blocking_diagnostic_count": 0,
+        "requires_http_client_count": 0,
+        "requires_snapshot_sink_count": 0,
+        "requires_auth_count": 0,
+        "execution_requested": True,
+        "execution_performed": False,
+        "side_effect_free": True,
+    }
+
+    runtime_dependency_preflight = runtime_diagnostic_report[
+        "source_runtime_execution_preflight"
+    ]
+    assert runtime_dependency_preflight["execution_requested"] is True
+    assert runtime_dependency_preflight["execution_performed"] is False
+    assert runtime_dependency_preflight["execution_skipped_reason"] == (
+        "preflight_only"
+    )
+    assert runtime_dependency_preflight["side_effect_free"] is True
+    assert runtime_dependency_preflight["execution_report"] is None
+    assert runtime_dependency_preflight["summary"]["blocking_diagnostic_count"] == 3
+    assert runtime_dependency_preflight["summary"]["by_diagnostic_code"] == {
+        "missing_auth": 1,
+        "missing_http_client": 1,
+        "missing_snapshot_sink": 1,
+    }
+    assert [row["code"] for row in runtime_dependency_preflight["diagnostics"]] == [
+        "missing_http_client",
+        "missing_snapshot_sink",
+        "missing_auth",
+    ]
 
     write_preflight = report["publication_storage_write_preflight"]
     assert json.loads(json.dumps(write_preflight, sort_keys=True)) == write_preflight

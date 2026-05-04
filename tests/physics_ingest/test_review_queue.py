@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 
 from sciona.physics_ingest.review import (
+    REVIEW_QUEUE_TASKS_TABLE,
     ReviewTrustReport,
     build_review_queue_task_rows,
+    build_review_queue_write_plan_rows,
     materialize_review_queue_task_rows,
     summarize_review_queue_tasks,
 )
@@ -221,6 +223,85 @@ def test_review_queue_summary_and_rows_are_json_safe() -> None:
             "human_review": 1,
         },
     }
+
+
+def test_review_queue_write_plan_rows_are_ordered_json_safe_and_repeatable() -> None:
+    materialized = materialize_review_queue_task_rows(
+        [
+            _review(
+                trust_status="needs_human",
+                achieved_status="source_verified",
+                blockers=("human review evidence must include a review timestamp",),
+            ),
+            _review(
+                trust_status="blocked",
+                achieved_status="raw_imported",
+                blockers=("candidate_status is blocked",),
+            ),
+            _review(
+                trust_status="human_reviewed",
+                achieved_status="published",
+                publishable=True,
+                blockers=(),
+            ),
+        ],
+        candidates=[
+            _candidate(source_family="mechanics"),
+            _candidate(source_family="thermo"),
+            _candidate(source_family="mechanics"),
+        ],
+        expressions=[
+            _expression(source_family="mechanics"),
+            _expression(source_family="thermo"),
+            _expression(source_family="mechanics"),
+        ],
+    )
+
+    result = build_review_queue_write_plan_rows(
+        materialized,
+        include_write_plan=True,
+    )
+    repeat = build_review_queue_write_plan_rows(
+        {"tasks": materialized.to_rows()},
+        include_write_plan=True,
+    )
+
+    rows = result.to_insert_rows()[REVIEW_QUEUE_TASKS_TABLE]
+    assert [row["task_status"] for row in rows] == ["blocked", "open", "complete"]
+    assert [row["task_kind"] for row in rows] == [
+        "blocked_resolution",
+        "human_review_required",
+        "audit_complete",
+    ]
+    assert result.diagnostics == ()
+    assert result.summary["task_kind_counts"] == {
+        "human_review_required": 1,
+        "blocked_resolution": 1,
+        "audit_complete": 1,
+    }
+    assert result.summary["task_status_counts"] == {
+        "open": 1,
+        "blocked": 1,
+        "complete": 1,
+    }
+    assert result.summary["severity_counts"] == {
+        "critical": 1,
+        "medium": 1,
+        "low": 1,
+    }
+    assert result.summary["priority_counts"] == {
+        "p0": 1,
+        "p2": 1,
+        "p3": 1,
+    }
+    assert result.summary["write_plan_table_order"] == [REVIEW_QUEUE_TASKS_TABLE]
+    assert json.loads(json.dumps(result.to_dict())) == result.to_dict()
+    assert result.to_dict() == repeat.to_dict()
+
+    assert result.write_plan is not None
+    batch = result.write_plan.batches_by_table()[REVIEW_QUEUE_TASKS_TABLE]
+    assert batch.conflict_keys == ("task_id",)
+    assert result.write_plan.mode_for(REVIEW_QUEUE_TASKS_TABLE) == "upsert"
 
 
 def _review(

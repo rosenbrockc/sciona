@@ -50,11 +50,16 @@ The current pipeline is split at the storage boundary:
 - `sciona.physics_ingest.backfill`, `sciona.physics_ingest.pdg_cdg`, and
   `sciona.physics_ingest.review` expose JSON-safe rollups for bulk dashboards,
   PDG/CDG publication audit, and Phase 5 trust review triage. Backfill reports
-  can opt into source request-envelope, publication write preflight, and
-  persistable audit/dashboard artifact manifest sections. PDG/CDG helpers also
-  project derived CDGs into deterministic catalog/search rows for review before
-  production catalog storage is wired, and can merge those projections with
-  publication rows into inert write plans.
+  can opt into source request-envelope preflight, source runtime execution
+  preflight, publication write preflight, and persistable audit/dashboard
+  artifact manifest sections. PDG/CDG helpers also project derived CDGs into
+  deterministic catalog/search rows for review before production catalog
+  storage is wired, and can merge those projections with publication rows into
+  inert write plans. Review queue helpers can now shape queue tasks into inert
+  write plans for production queue storage.
+- `sciona.physics_ingest.audit_artifacts` converts backfill audit/dashboard
+  artifact manifests into deterministic rows and optional write plans for
+  caller-owned storage.
 - `sciona.physics_ingest.retrieval` provides side-effect-free symbolic
   retrieval and synthesis ranking over already-fetched catalog/document rows.
 - `sciona.physics_ingest.retrieval_io` plans and executes catalog/RPC fetches
@@ -319,6 +324,6 @@ ingestion roadmap. Remaining work includes:
 - wire review queue task rows for `needs_human`, `human_reviewed`, and
   `blocked` into production queues and reviewer UX;
 - add production bulk backfill orchestration and storage adapters for persisted
-  coverage dashboard and replay/audit artifact manifests;
+  coverage dashboard and replay/audit artifact manifest writes;
 - connect the planner service invocation boundary to the production runtime
   planner service.

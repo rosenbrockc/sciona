@@ -27,6 +27,8 @@ PUBLICATION_TABLE_ORDER = (
     "catalog_cdg_nodes",
     "catalog_cdg_relationships",
     "catalog_symbolic_artifacts",
+    "physics_review_queue_tasks",
+    "physics_ingest_audit_artifacts",
 )
 
 CONFLICT_KEYS_BY_TABLE: Mapping[str, tuple[str, ...]] = {
@@ -52,6 +54,8 @@ CONFLICT_KEYS_BY_TABLE: Mapping[str, tuple[str, ...]] = {
     "catalog_cdg_nodes": ("version_id", "node_id", "projection_kind"),
     "catalog_cdg_relationships": ("relationship_id", "projection_kind"),
     "catalog_symbolic_artifacts": ("artifact_id", "version_id", "projection_kind"),
+    "physics_review_queue_tasks": ("task_id",),
+    "physics_ingest_audit_artifacts": ("artifact_key",),
 }
 
 
