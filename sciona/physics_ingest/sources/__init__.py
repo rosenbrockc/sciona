@@ -44,6 +44,13 @@ from sciona.physics_ingest.sources.runtime_adapters import (
     build_source_retrieval_runtime_adapter_report,
     build_source_retrieval_runtime_adapters,
 )
+from sciona.physics_ingest.sources.runtime_execution import (
+    SourceRetrievalRuntimeExecutionDiagnostic,
+    SourceRetrievalRuntimeExecutionReport,
+    SourceRetrievalRuntimeExecutionStep,
+    build_source_retrieval_runtime_execution_report,
+    build_source_retrieval_runtime_execution_report_dict,
+)
 
 __all__ = [
     "PHASE7_RING_ORDER",
@@ -67,6 +74,9 @@ __all__ = [
     "SourceRetrievalManifest",
     "SourceRetrievalRuntimeAdapterBundle",
     "SourceRetrievalRuntimeAdapterReport",
+    "SourceRetrievalRuntimeExecutionDiagnostic",
+    "SourceRetrievalRuntimeExecutionReport",
+    "SourceRetrievalRuntimeExecutionStep",
     "SourceRetrievalSnapshotSinkAdapter",
     "build_physics_source_retrieval_manifest",
     "build_physics_source_retrieval_manifest_dict",
@@ -78,6 +88,8 @@ __all__ = [
     "build_source_execution_readiness_report_dict",
     "build_source_retrieval_runtime_adapter_report",
     "build_source_retrieval_runtime_adapters",
+    "build_source_retrieval_runtime_execution_report",
+    "build_source_retrieval_runtime_execution_report_dict",
     "execute_source_retrieval_plan",
     "execute_source_retrieval_plan_dict",
 ]

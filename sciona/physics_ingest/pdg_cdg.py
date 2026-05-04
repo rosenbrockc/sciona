@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 import hashlib
 import json
 import math
-from typing import Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 from uuid import NAMESPACE_URL, uuid5
 
 from sciona.physics_ingest.sources.pdg import (
@@ -27,6 +27,9 @@ from sciona.physics_ingest.staging import (
 
 
 JSONDict = dict[str, Any]
+
+if TYPE_CHECKING:
+    from sciona.physics_ingest.write_plan import PublicationWritePlan, WriteMode
 
 PHASE4_SCAFFOLD_VERSION = "phase4.pdg_cdg_scaffold.v1"
 _CDG_VERSION_NAMESPACE = uuid5(NAMESPACE_URL, "sciona.physics_ingest.pdg_cdg.version")
@@ -224,6 +227,55 @@ class PDGCDGCatalogProjectionRows:
             "projection_rows": self.to_projection_rows(),
             "diagnostics": list(self.diagnostics),
             "summary": dict(self.summary),
+        }
+
+
+@dataclass(frozen=True)
+class PDGCDGCatalogWritePlanRows:
+    """Merged publication and PDG CDG catalog rows for inert write planning."""
+
+    insert_rows_by_table: Mapping[str, tuple[JSONDict, ...]]
+    catalog_projection_rows: PDGCDGCatalogProjectionRows
+    diagnostics: tuple[JSONDict, ...] = ()
+    summary: Mapping[str, Any] = field(default_factory=dict)
+    write_plan: "PublicationWritePlan | None" = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "diagnostics",
+            tuple(_json_safe_value(row) for row in self.diagnostics),
+        )
+        if self.summary:
+            object.__setattr__(self, "summary", _json_safe_mapping(self.summary))
+        else:
+            object.__setattr__(
+                self,
+                "summary",
+                _build_catalog_write_plan_rows_summary(
+                    publication_rows_by_table={},
+                    catalog_projection_rows=self.catalog_projection_rows,
+                    merged_rows_by_table=self.to_insert_rows(),
+                    diagnostics=self.diagnostics,
+                    write_plan=self.write_plan,
+                ),
+            )
+
+    def to_insert_rows(self) -> dict[str, list[JSONDict]]:
+        return {
+            table: [dict(row) for row in rows]
+            for table, rows in self.insert_rows_by_table.items()
+        }
+
+    def to_dict(self) -> JSONDict:
+        return {
+            "insert_rows": self.to_insert_rows(),
+            "catalog_projection_rows": self.catalog_projection_rows.to_dict(),
+            "diagnostics": list(self.diagnostics),
+            "summary": dict(self.summary),
+            "write_plan": None
+            if self.write_plan is None
+            else self.write_plan.to_dict(),
         }
 
 
@@ -502,6 +554,72 @@ def build_pdg_cdg_catalog_projection_rows(
             if table_rows
         },
         diagnostics=tuple(_json_safe_value(row) for row in diagnostics),
+    )
+
+
+def build_pdg_cdg_catalog_write_plan_rows(
+    rows: PDGPublicationWriteRows | Mapping[str, Iterable[Mapping[str, Any]]],
+    *,
+    include_write_plan: bool = False,
+    table_modes: Mapping[str, "WriteMode"] | None = None,
+) -> PDGCDGCatalogWritePlanRows:
+    """Merge PDG publication rows with catalog projections for inert writers.
+
+    The helper performs no storage IO. It reuses the existing catalog projection
+    adapter, concatenates the projected catalog rows with the original
+    publication rows, and builds a side-effect-free ``PublicationWritePlan`` for
+    deterministic ordering and conflict metadata. The plan is included on the
+    result only when requested, but its table order is always reflected in the
+    summary.
+    """
+
+    from sciona.physics_ingest.write_plan import (
+        build_publication_write_plan,
+        merge_publication_insert_rows,
+    )
+
+    publication_rows_by_table = (
+        rows.to_insert_rows()
+        if isinstance(rows, PDGPublicationWriteRows)
+        else _copy_rows_by_table(rows)
+    )
+    projection_rows = build_pdg_cdg_catalog_projection_rows(publication_rows_by_table)
+    merged_rows_by_table = merge_publication_insert_rows(
+        publication_rows_by_table,
+        projection_rows.to_projection_rows(),
+    )
+    safe_merged_rows_by_table = {
+        table: [_json_safe_value(row) for row in table_rows]
+        for table, table_rows in merged_rows_by_table.items()
+    }
+    write_plan = build_publication_write_plan(
+        safe_merged_rows_by_table,
+        table_modes=table_modes,
+    )
+    diagnostics = tuple(
+        _json_safe_value(row)
+        for row in (
+            *(rows.diagnostics if isinstance(rows, PDGPublicationWriteRows) else ()),
+            *projection_rows.diagnostics,
+        )
+    )
+    summary = _build_catalog_write_plan_rows_summary(
+        publication_rows_by_table=publication_rows_by_table,
+        catalog_projection_rows=projection_rows,
+        merged_rows_by_table=safe_merged_rows_by_table,
+        diagnostics=diagnostics,
+        write_plan=write_plan,
+    )
+    return PDGCDGCatalogWritePlanRows(
+        insert_rows_by_table={
+            table: tuple(table_rows)
+            for table, table_rows in safe_merged_rows_by_table.items()
+            if table_rows
+        },
+        catalog_projection_rows=projection_rows,
+        diagnostics=diagnostics,
+        summary=summary,
+        write_plan=write_plan if include_write_plan else None,
     )
 
 
@@ -1294,6 +1412,79 @@ def _build_catalog_projection_summary(
             ),
         }
     )
+
+
+def _build_catalog_write_plan_rows_summary(
+    *,
+    publication_rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
+    catalog_projection_rows: PDGCDGCatalogProjectionRows,
+    merged_rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
+    diagnostics: Iterable[Mapping[str, Any]],
+    write_plan: "PublicationWritePlan | None",
+) -> JSONDict:
+    publication_counts = {
+        table: len(tuple(rows))
+        for table, rows in sorted(publication_rows_by_table.items())
+    }
+    projection_counts = {
+        table: len(rows)
+        for table, rows in sorted(catalog_projection_rows.to_projection_rows().items())
+    }
+    merged_counts = {
+        table: len(tuple(rows)) for table, rows in sorted(merged_rows_by_table.items())
+    }
+    diagnostic_rows = tuple(diagnostics)
+    table_order = (
+        list(write_plan.ordered_tables())
+        if write_plan is not None
+        else [table for table, count in merged_counts.items() if count]
+    )
+    return _json_safe_mapping(
+        {
+            "summary_kind": "pdg_cdg_catalog_write_plan_rows_summary.v1",
+            "source_system": PDG_SOURCE_SYSTEM,
+            "scaffold_version": PHASE4_SCAFFOLD_VERSION,
+            "publication_table_row_counts": publication_counts,
+            "catalog_projection_table_row_counts": projection_counts,
+            "merged_table_row_counts": merged_counts,
+            "publication_row_count": sum(publication_counts.values()),
+            "catalog_projection_row_count": sum(projection_counts.values()),
+            "merged_row_count": sum(merged_counts.values()),
+            "diagnostic_count": len(diagnostic_rows),
+            "diagnostics_by_severity": _count_mapping_values(
+                diagnostic_rows, "severity"
+            ),
+            "diagnostics_by_reason": _count_mapping_values(diagnostic_rows, "reason"),
+            "diagnostics_by_table": _count_mapping_values(diagnostic_rows, "table"),
+            "write_plan_table_order": table_order,
+            "write_plan_batch_count": 0
+            if write_plan is None
+            else write_plan.audit_summary.batch_count,
+            "write_plan_total_row_count": 0
+            if write_plan is None
+            else write_plan.audit_summary.total_row_count,
+        }
+    )
+
+
+def _copy_rows_by_table(
+    rows_by_table: Mapping[str, Iterable[Mapping[str, Any]]],
+) -> dict[str, list[JSONDict]]:
+    if not isinstance(rows_by_table, Mapping):
+        raise ValueError("rows must be a mapping")
+    copied: dict[str, list[JSONDict]] = {}
+    for table, rows in rows_by_table.items():
+        if not isinstance(table, str) or not table:
+            raise ValueError("rows table names must be non-empty strings")
+        if isinstance(rows, Mapping) or isinstance(rows, (str, bytes)) or rows is None:
+            raise ValueError(f"{table} rows must be an iterable of mappings")
+        table_rows: list[JSONDict] = []
+        for index, row in enumerate(rows):
+            if not isinstance(row, Mapping):
+                raise ValueError(f"{table} row {index} must be a mapping")
+            table_rows.append(dict(row))
+        copied[table] = table_rows
+    return copied
 
 
 def _relationship_row_operation_kind(row: Mapping[str, Any]) -> str:
@@ -2097,12 +2288,14 @@ def _cdg_diagnostic(
 
 __all__ = [
     "PDGCDGCatalogProjectionRows",
+    "PDGCDGCatalogWritePlanRows",
     "PDGExpressionBinding",
     "PDGCDGArtifactEnvelope",
     "PDGPublicationWriteRows",
     "PDGRelationshipIngestResult",
     "PHASE4_SCAFFOLD_VERSION",
     "build_pdg_cdg_catalog_projection_rows",
+    "build_pdg_cdg_catalog_write_plan_rows",
     "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
     "validate_pdg_cdg_publication_graph",

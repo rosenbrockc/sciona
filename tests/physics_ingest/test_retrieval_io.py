@@ -12,8 +12,12 @@ from sciona.physics_ingest.retrieval_io import (
     CATALOG_SYMBOLIC_ARTIFACTS_TABLE,
     SYMBOLIC_RETRIEVAL_PLANNER_REQUEST_KIND,
     SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND,
+    SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_INVOCATION_KIND,
+    SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_RESPONSE_KIND,
+    build_symbolic_retrieval_planner_service_invocation,
     build_symbolic_retrieval_planner_request,
     build_symbolic_retrieval_fetch_plan,
+    execute_symbolic_retrieval_planner_service_invocation,
     execute_symbolic_retrieval_planner_request,
     fetch_symbolic_retrieval,
 )
@@ -77,6 +81,26 @@ class _FakeClient:
 
     def rpc(self, rpc_name: str, params: dict[str, object]) -> _FakeRpcQuery:
         return _FakeRpcQuery(self, rpc_name, params)
+
+
+class _FakeAsyncPlannerClient:
+    def __init__(self, response: dict[str, object]) -> None:
+        self.response = response
+        self.calls: list[dict[str, object]] = []
+
+    async def plan(self, request: dict[str, object]) -> dict[str, object]:
+        self.calls.append(request)
+        return self.response
+
+
+class _FakeSyncInvokePlannerClient:
+    def __init__(self, response: dict[str, object]) -> None:
+        self.response = response
+        self.calls: list[dict[str, object]] = []
+
+    def invoke(self, request: dict[str, object]) -> dict[str, object]:
+        self.calls.append(request)
+        return self.response
 
 
 def test_symbolic_retrieval_fetch_plan_dry_run_is_deterministic() -> None:
@@ -465,4 +489,218 @@ async def test_symbolic_retrieval_planner_response_is_json_safe() -> None:
     assert request["query"]["validity_bounds"][0]["lower_value"] == "nan"
     assert request["query"]["validity_bounds"][0]["upper_value"] == "inf"
     assert json.loads(json.dumps(request, sort_keys=True)) == request
+    assert json.loads(json.dumps(response, sort_keys=True)) == response
+
+
+def test_symbolic_retrieval_planner_service_invocation_is_deterministic() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+
+    invocation = build_symbolic_retrieval_planner_service_invocation(
+        request,
+        preflight=True,
+    )
+    invocation_again = build_symbolic_retrieval_planner_service_invocation(
+        request,
+        preflight=True,
+    )
+
+    assert invocation == invocation_again
+    assert (
+        invocation["invocation_kind"]
+        == SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_INVOCATION_KIND
+    )
+    assert len(invocation["invocation_hash"]) == 64
+    assert invocation["planner_request_hash"] == request["request_hash"]
+    assert invocation["planner_request_replay_key"] == request["replay_key"]
+    assert invocation["execution_policy"] == {
+        "dry_run": False,
+        "preflight": True,
+    }
+    assert json.loads(json.dumps(invocation, sort_keys=True)) == invocation
+
+
+async def test_symbolic_retrieval_planner_service_dry_run_does_not_call_client() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+    client = _FakeAsyncPlannerClient(
+        {"report_kind": SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND}
+    )
+
+    response = await execute_symbolic_retrieval_planner_service_invocation(
+        request,
+        client=client,
+        dry_run=True,
+    )
+
+    assert response["report_kind"] == SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_RESPONSE_KIND
+    assert response["dry_run"] is True
+    assert response["preflight"] is False
+    assert response["blocked"] is False
+    assert response["diagnostics"] == []
+    assert response["planner_response"] == {}
+    assert client.calls == []
+
+
+async def test_symbolic_retrieval_planner_service_preflight_does_not_call_client() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+    client = _FakeSyncInvokePlannerClient(
+        {"report_kind": SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND}
+    )
+
+    response = await execute_symbolic_retrieval_planner_service_invocation(
+        request,
+        client=client,
+        preflight=True,
+    )
+
+    assert response["dry_run"] is False
+    assert response["preflight"] is True
+    assert response["blocked"] is False
+    assert client.calls == []
+
+
+async def test_symbolic_retrieval_planner_service_async_plan_normalizes_response() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+    planner_response = {
+        "report_kind": SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND,
+        "blocked": False,
+        "dry_run": False,
+        "executable_candidates": [{"candidate_key": "expr-reviewed-wave"}],
+        "external_knowledge_suggestions": [{"candidate_key": "expr-raw-wave"}],
+        "diagnostics": [{"severity": "info", "code": "ok", "message": "ok"}],
+    }
+    client = _FakeAsyncPlannerClient(planner_response)
+
+    response = await execute_symbolic_retrieval_planner_service_invocation(
+        request,
+        client=client,
+    )
+
+    assert len(client.calls) == 1
+    assert (
+        client.calls[0]["invocation_kind"]
+        == SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_INVOCATION_KIND
+    )
+    assert client.calls[0]["planner_request"] == request
+    assert response["blocked"] is False
+    assert response["executable_candidates"] == [
+        {"candidate_key": "expr-reviewed-wave"}
+    ]
+    assert response["external_knowledge_suggestions"] == [
+        {"candidate_key": "expr-raw-wave"}
+    ]
+    assert response["blocked_candidates"] == []
+    assert response["diagnostics"][0]["code"] == "ok"
+    assert response["request_replay_metadata"]["request_hash"] == request[
+        "request_hash"
+    ]
+    assert response["request_replay_metadata"][
+        "service_invocation_hash"
+    ] == response["service_invocation"]["invocation_hash"]
+    assert json.loads(json.dumps(response, sort_keys=True)) == response
+
+
+async def test_symbolic_retrieval_planner_service_sync_invoke_normalizes_response() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+    client = _FakeSyncInvokePlannerClient(
+        {
+            "blocked": False,
+            "executable_candidates": [{"candidate_key": "expr-sync"}],
+        }
+    )
+
+    response = await execute_symbolic_retrieval_planner_service_invocation(
+        request,
+        client=client,
+    )
+
+    assert client.calls[0]["planner_request_hash"] == request["request_hash"]
+    assert response["planner_response"]["report_kind"] == (
+        SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND
+    )
+    assert response["executable_candidates"] == [{"candidate_key": "expr-sync"}]
+
+
+async def test_symbolic_retrieval_planner_service_callable_client() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+    calls: list[dict[str, object]] = []
+
+    def planner(request_payload: dict[str, object]) -> dict[str, object]:
+        calls.append(request_payload)
+        return {
+            "blocked": False,
+            "external_knowledge_suggestions": [{"candidate_key": "expr-callable"}],
+        }
+
+    response = await execute_symbolic_retrieval_planner_service_invocation(
+        request,
+        client=planner,
+    )
+
+    assert calls[0]["planner_request_replay_key"] == request["replay_key"]
+    assert response["external_knowledge_suggestions"] == [
+        {"candidate_key": "expr-callable"}
+    ]
+
+
+async def test_symbolic_retrieval_planner_service_missing_client_blocks() -> None:
+    request = build_symbolic_retrieval_planner_request(
+        {"topology_hash": "topo-wave"},
+        dry_run=False,
+    )
+
+    response = await execute_symbolic_retrieval_planner_service_invocation(request)
+
+    assert response["blocked"] is True
+    assert response["diagnostics"] == [
+        {
+            "severity": "error",
+            "code": "missing_planner_client",
+            "message": (
+                "non-dry-run planner service invocation requires an injected "
+                "planner client"
+            ),
+        }
+    ]
+    assert response["blocked_candidates"][0]["candidate_key"] == "<planner_service>"
+    assert response["blocked_candidates"][0]["compiler_contract"]["blockers"] == [
+        "missing_planner_client"
+    ]
+
+
+async def test_symbolic_retrieval_planner_service_invalid_request_is_reported() -> None:
+    response = await execute_symbolic_retrieval_planner_service_invocation(
+        {"request_kind": "wrong"},
+        client=_FakeAsyncPlannerClient({}),
+    )
+
+    assert response["blocked"] is True
+    assert response["diagnostics"] == [
+        {
+            "severity": "error",
+            "code": "invalid_planner_request",
+            "message": "planner_request must be a symbolic retrieval planner request",
+        }
+    ]
+    assert response["service_invocation"]["planner_request_hash"] == ""
+    assert response["blocked_candidates"][0]["compiler_contract"]["blockers"] == [
+        "invalid_planner_request"
+    ]
     assert json.loads(json.dumps(response, sort_keys=True)) == response

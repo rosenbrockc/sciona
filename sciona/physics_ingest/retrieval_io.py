@@ -29,6 +29,12 @@ ARTIFACT_DOCUMENT_RPC = "get_artifact_document"
 SYMBOLIC_RETRIEVAL_FETCH_REPORT_KIND = "symbolic_retrieval_fetch"
 SYMBOLIC_RETRIEVAL_PLANNER_REQUEST_KIND = "symbolic_retrieval_planner_request"
 SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND = "symbolic_retrieval_planner_response"
+SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_INVOCATION_KIND = (
+    "symbolic_retrieval_planner_service_invocation"
+)
+SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_RESPONSE_KIND = (
+    "symbolic_retrieval_planner_service_response"
+)
 
 ReportMode = Literal["none", "retrieval", "synthesis"]
 
@@ -88,6 +94,24 @@ class SymbolicRetrievalPlannerExecutionPolicy:
                 "client_required": self.client_required,
                 "report_mode": self.report_mode,
             }
+        )
+
+
+@dataclass(frozen=True)
+class SymbolicRetrievalPlannerServiceInvocation:
+    """JSON-safe planner service invocation built from a planner request."""
+
+    planner_request: Mapping[str, Any]
+    dry_run: bool = False
+    preflight: bool = False
+    service_name: str = "symbolic_retrieval_planner_service"
+
+    def to_dict(self) -> dict[str, Any]:
+        return build_symbolic_retrieval_planner_service_invocation(
+            self.planner_request,
+            dry_run=self.dry_run,
+            preflight=self.preflight,
+            service_name=self.service_name,
         )
 
 _DOCUMENT_FQDN_KEYS = (
@@ -248,6 +272,101 @@ def build_symbolic_retrieval_planner_request(
             "request_hash": request_hash,
             "replay_key": f"symbolic-retrieval-planner:{request_hash}",
         }
+    )
+
+
+def build_symbolic_retrieval_planner_service_invocation(
+    planner_request: Mapping[str, Any],
+    *,
+    dry_run: bool = False,
+    preflight: bool = False,
+    service_name: str = "symbolic_retrieval_planner_service",
+) -> dict[str, Any]:
+    """Build a deterministic JSON-safe envelope for a planner service call."""
+
+    request = _planner_request(planner_request)
+    return _planner_service_invocation_payload(
+        planner_request=request,
+        dry_run=dry_run,
+        preflight=preflight,
+        service_name=service_name,
+        valid_planner_request=True,
+    )
+
+
+async def execute_symbolic_retrieval_planner_service_invocation(
+    planner_request: Mapping[str, Any],
+    *,
+    client: Any | None = None,
+    dry_run: bool = False,
+    preflight: bool = False,
+    service_name: str = "symbolic_retrieval_planner_service",
+) -> dict[str, Any]:
+    """Invoke an injected planner service with a planner request envelope."""
+
+    request, validation_diagnostic = _planner_service_request_or_diagnostic(
+        planner_request
+    )
+    invocation = _planner_service_invocation_payload(
+        planner_request=(
+            request if request is not None else _json_safe(planner_request)
+        ),
+        dry_run=dry_run,
+        preflight=preflight,
+        service_name=service_name,
+        valid_planner_request=request is not None,
+    )
+    if validation_diagnostic is not None:
+        return _planner_service_response(
+            invocation,
+            blocked=True,
+            dry_run=dry_run,
+            preflight=preflight,
+            diagnostics=[validation_diagnostic],
+            planner_response={},
+        )
+    if dry_run or preflight:
+        return _planner_service_response(
+            invocation,
+            blocked=False,
+            dry_run=dry_run,
+            preflight=preflight,
+            diagnostics=[],
+            planner_response={},
+        )
+    if client is None:
+        diagnostic = {
+            "severity": "error",
+            "code": "missing_planner_client",
+            "message": (
+                "non-dry-run planner service invocation requires an injected "
+                "planner client"
+            ),
+        }
+        return _planner_service_response(
+            invocation,
+            blocked=True,
+            dry_run=False,
+            preflight=False,
+            diagnostics=[diagnostic],
+            planner_response={},
+        )
+    try:
+        service_payload = await _execute_planner_service_client(client, invocation)
+    except Exception as exc:  # pragma: no cover - runtime-specific exception
+        return _planner_service_response(
+            invocation,
+            blocked=True,
+            dry_run=False,
+            preflight=False,
+            diagnostics=[_client_error("planner_service_invocation_failed", exc)],
+            planner_response={},
+        )
+    return _normalize_planner_service_response(
+        invocation,
+        service_payload,
+        dry_run=False,
+        preflight=False,
     )
 
 
@@ -557,6 +676,244 @@ def _planner_replay_metadata(
         "fetch_plan_replay_key": str(requested_plan.get("replay_key", "") or ""),
         "executed_fetch_plan_hash": str(summary.get("plan_hash", "") or ""),
         "executed_fetch_plan_replay_key": str(summary.get("replay_key", "") or ""),
+    }
+
+
+def _planner_service_request_or_diagnostic(
+    planner_request: Any,
+) -> tuple[dict[str, Any] | None, dict[str, str] | None]:
+    try:
+        return _planner_request(planner_request), None
+    except (TypeError, ValueError) as exc:
+        return None, {
+            "severity": "error",
+            "code": "invalid_planner_request",
+            "message": str(exc),
+        }
+
+
+def _planner_service_invocation_payload(
+    *,
+    planner_request: Any,
+    dry_run: bool,
+    preflight: bool,
+    service_name: str,
+    valid_planner_request: bool,
+) -> dict[str, Any]:
+    request = _json_safe(planner_request)
+    request_hash = ""
+    request_replay_key = ""
+    if isinstance(request, Mapping):
+        request_hash = str(request.get("request_hash", "") or "")
+        request_replay_key = str(request.get("replay_key", "") or "")
+    stable = _json_safe(
+        {
+            "invocation_kind": (
+                SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_INVOCATION_KIND
+            ),
+            "invocation_version": 1,
+            "service_name": str(service_name),
+            "planner_request": request,
+            "planner_request_hash": request_hash,
+            "planner_request_replay_key": request_replay_key,
+            "valid_planner_request": bool(valid_planner_request),
+            "execution_policy": {
+                "dry_run": bool(dry_run),
+                "preflight": bool(preflight),
+            },
+        }
+    )
+    invocation_hash = stable_payload_sha256(stable)
+    return _json_safe(
+        {
+            **stable,
+            "invocation_hash": invocation_hash,
+            "replay_key": f"symbolic-retrieval-planner-service:{invocation_hash}",
+        }
+    )
+
+
+async def _execute_planner_service_client(
+    client: Any,
+    invocation: Mapping[str, Any],
+) -> Any:
+    for method_name in ("plan", "invoke"):
+        method = getattr(client, method_name, None)
+        if method is not None:
+            return await _maybe_await(method(dict(invocation)))
+    if callable(client):
+        return await _maybe_await(client(dict(invocation)))
+    raise TypeError("planner client does not expose plan, invoke, or callable")
+
+
+def _normalize_planner_service_response(
+    invocation: Mapping[str, Any],
+    service_payload: Any,
+    *,
+    dry_run: bool,
+    preflight: bool,
+) -> dict[str, Any]:
+    payload = _unwrap_data(service_payload)
+    if not isinstance(payload, Mapping):
+        diagnostic = {
+            "severity": "error",
+            "code": "invalid_planner_service_response",
+            "message": "planner service response must be a mapping",
+        }
+        return _planner_service_response(
+            invocation,
+            blocked=True,
+            dry_run=dry_run,
+            preflight=preflight,
+            diagnostics=[diagnostic],
+            planner_response={},
+        )
+    planner_response = _normalize_planner_response_payload(payload, invocation)
+    diagnostics = _mapping_list(planner_response.get("diagnostics"))
+    return _planner_service_response(
+        invocation,
+        blocked=bool(planner_response.get("blocked")),
+        dry_run=bool(planner_response.get("dry_run", dry_run)),
+        preflight=preflight,
+        diagnostics=diagnostics,
+        planner_response=planner_response,
+    )
+
+
+def _normalize_planner_response_payload(
+    payload: Mapping[str, Any],
+    invocation: Mapping[str, Any],
+) -> dict[str, Any]:
+    response = _json_safe(payload)
+    if response.get("report_kind") != SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND:
+        response = {
+            "report_kind": SYMBOLIC_RETRIEVAL_PLANNER_RESPONSE_KIND,
+            **dict(response),
+        }
+    request_metadata = _mapping(response.get("request_replay_metadata"))
+    if not request_metadata:
+        request_metadata = _planner_service_request_replay_metadata(invocation)
+    normalized = {
+        **dict(response),
+        "request_replay_metadata": request_metadata,
+        "blocked": bool(response.get("blocked")),
+        "dry_run": bool(response.get("dry_run")),
+        "executable_candidates": _mapping_list(
+            response.get("executable_candidates")
+        ),
+        "external_knowledge_suggestions": _mapping_list(
+            response.get("external_knowledge_suggestions")
+        ),
+        "blocked_candidates": _mapping_list(response.get("blocked_candidates")),
+        "diagnostics": _mapping_list(response.get("diagnostics")),
+    }
+    return _json_safe(normalized)
+
+
+def _planner_service_response(
+    invocation: Mapping[str, Any],
+    *,
+    blocked: bool,
+    dry_run: bool,
+    preflight: bool,
+    diagnostics: Sequence[Mapping[str, Any]],
+    planner_response: Mapping[str, Any],
+) -> dict[str, Any]:
+    candidate_sections = _planner_service_candidate_sections(planner_response)
+    diagnostics_list = _mapping_list(diagnostics)
+    blocked_candidates = list(candidate_sections["blocked_candidates"])
+    if blocked and not blocked_candidates:
+        blocked_candidates.append(_planner_service_blocked_candidate(diagnostics_list))
+    return _json_safe(
+        {
+            "report_kind": SYMBOLIC_RETRIEVAL_PLANNER_SERVICE_RESPONSE_KIND,
+            "service_invocation": _planner_service_invocation_metadata(invocation),
+            "request_replay_metadata": _planner_service_request_replay_metadata(
+                invocation
+            ),
+            "blocked": bool(blocked),
+            "dry_run": bool(dry_run),
+            "preflight": bool(preflight),
+            "executable_candidates": candidate_sections["executable_candidates"],
+            "external_knowledge_suggestions": candidate_sections[
+                "external_knowledge_suggestions"
+            ],
+            "blocked_candidates": blocked_candidates,
+            "diagnostics": diagnostics_list,
+            "planner_response": dict(planner_response),
+        }
+    )
+
+
+def _planner_service_candidate_sections(
+    planner_response: Mapping[str, Any],
+) -> dict[str, list[dict[str, Any]]]:
+    return {
+        "executable_candidates": _mapping_list(
+            planner_response.get("executable_candidates")
+        ),
+        "external_knowledge_suggestions": _mapping_list(
+            planner_response.get("external_knowledge_suggestions")
+        ),
+        "blocked_candidates": _mapping_list(
+            planner_response.get("blocked_candidates")
+        ),
+    }
+
+
+def _planner_service_invocation_metadata(
+    invocation: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "invocation_kind": str(invocation.get("invocation_kind", "") or ""),
+        "invocation_hash": str(invocation.get("invocation_hash", "") or ""),
+        "invocation_replay_key": str(invocation.get("replay_key", "") or ""),
+        "service_name": str(invocation.get("service_name", "") or ""),
+        "planner_request_hash": str(
+            invocation.get("planner_request_hash", "") or ""
+        ),
+        "planner_request_replay_key": str(
+            invocation.get("planner_request_replay_key", "") or ""
+        ),
+    }
+
+
+def _planner_service_request_replay_metadata(
+    invocation: Mapping[str, Any],
+) -> dict[str, Any]:
+    request = _mapping(invocation.get("planner_request"))
+    fetch_plan = _mapping(request.get("fetch_plan"))
+    return {
+        "request_hash": str(invocation.get("planner_request_hash", "") or ""),
+        "request_replay_key": str(
+            invocation.get("planner_request_replay_key", "") or ""
+        ),
+        "fetch_plan_hash": str(fetch_plan.get("plan_hash", "") or ""),
+        "fetch_plan_replay_key": str(fetch_plan.get("replay_key", "") or ""),
+        "service_invocation_hash": str(invocation.get("invocation_hash", "") or ""),
+        "service_invocation_replay_key": str(invocation.get("replay_key", "") or ""),
+    }
+
+
+def _planner_service_blocked_candidate(
+    diagnostics: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    codes = [
+        str(diagnostic.get("code"))
+        for diagnostic in diagnostics
+        if diagnostic.get("code")
+    ]
+    return {
+        "candidate_key": "<planner_service>",
+        "eligible": False,
+        "trust_status": "blocked",
+        "score": 0.0,
+        "score_reasons": codes or ["planner_service_blocked"],
+        "compiler_contract": {
+            "blockers": codes or ["planner_service_blocked"],
+            "can_compile": False,
+            "requires_human_review": False,
+        },
     }
 
 

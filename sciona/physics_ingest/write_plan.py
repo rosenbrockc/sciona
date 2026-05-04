@@ -22,6 +22,11 @@ PUBLICATION_TABLE_ORDER = (
     "artifact_cdg_nodes",
     "artifact_cdg_edges",
     "artifact_cdg_bindings",
+    "catalog_cdg_artifacts",
+    "catalog_cdg_versions",
+    "catalog_cdg_nodes",
+    "catalog_cdg_relationships",
+    "catalog_symbolic_artifacts",
 )
 
 CONFLICT_KEYS_BY_TABLE: Mapping[str, tuple[str, ...]] = {
@@ -42,6 +47,11 @@ CONFLICT_KEYS_BY_TABLE: Mapping[str, tuple[str, ...]] = {
         "input_name",
     ),
     "artifact_cdg_bindings": ("version_id", "node_id", "bound_artifact_fqdn"),
+    "catalog_cdg_artifacts": ("artifact_id", "version_id", "projection_kind"),
+    "catalog_cdg_versions": ("version_id", "projection_kind"),
+    "catalog_cdg_nodes": ("version_id", "node_id", "projection_kind"),
+    "catalog_cdg_relationships": ("relationship_id", "projection_kind"),
+    "catalog_symbolic_artifacts": ("artifact_id", "version_id", "projection_kind"),
 }
 
 

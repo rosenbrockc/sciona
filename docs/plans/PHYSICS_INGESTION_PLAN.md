@@ -437,6 +437,9 @@ Current modules:
 - `sciona.physics_ingest.sources.runtime_adapters`: wraps injected HTTP/session
   objects and snapshot sinks into executor-ready adapters with capability
   reports, preflight metadata, and normalized snapshot receipts.
+- `sciona.physics_ingest.sources.runtime_execution`: builds deterministic
+  runtime execution/preflight reports around source run plans, adapter bundles,
+  and optional injected execution.
 - `sciona.physics_ingest.pipeline`: composes ID planning, orchestration, write
   planning, and optional execution.
 - `sciona.physics_ingest.cli`: builds JSON-serializable dry-run reports from
@@ -449,13 +452,14 @@ Current modules:
   audit/dashboard artifact manifests.
 - `sciona.physics_ingest.pdg_cdg`: builds PDG relationship rows, validates
   derived CDG publication graphs, and projects PDG-derived CDGs into
-  deterministic catalog/search rows.
+  deterministic catalog/search rows and catalog-aware inert write plans.
 - `sciona.physics_ingest.review`: materializes deterministic review queue task
   rows for `needs_human`, `blocked`, and human-reviewed audit completion states.
 - `sciona.physics_ingest.retrieval_io`: plans and executes catalog/RPC fetches
   through injected clients for runtime retrieval and synthesis ranking, and
   wraps those fetches in planner request/response envelopes with replay hashes,
-  compiler expectations, and trust-policy blockers.
+  compiler expectations, trust-policy blockers, and injected planner-service
+  invocation envelopes.
 
 Dry-run usage:
 
