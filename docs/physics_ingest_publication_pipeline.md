@@ -30,6 +30,16 @@ The current pipeline is split at the storage boundary:
 - `sciona.physics_ingest.deployment_runtime` composes side-effect-free
   deployment preflight reports across source runtime execution readiness and
   optional storage preflight summaries.
+- `sciona.physics_ingest.pdg_deployment` composes PDG-derived CDG publication
+  rows, catalog projection rows, deployment storage bundles, storage preflight,
+  and optional injected-client storage apply results.
+- `sciona.physics_ingest.backfill_deployment` builds production bulk backfill
+  deployment reports that carry persisted audit/dashboard artifact storage rows,
+  runtime preflight, storage preflight, and optional injected-client apply
+  summaries.
+- `sciona.physics_ingest.planner_runtime` batches symbolic retrieval planner
+  service calls through an injected runtime planner client while preserving
+  replay hashes, blocker counts, diagnostics, and dry-run/preflight state.
 - `sciona.physics_ingest.pipeline` composes all steps and can either dry-run,
   stop at a side-effect-free plan, or execute through an injected client.
 - `sciona.physics_ingest.sources.retrieval_plan` emits deterministic
@@ -57,11 +67,11 @@ The current pipeline is split at the storage boundary:
   PDG/CDG publication audit, and Phase 5 trust review triage. Backfill reports
   can opt into source request-envelope preflight, source runtime execution
   preflight, publication write preflight, and persistable audit/dashboard
-  artifact manifest sections. PDG/CDG helpers also project derived CDGs into
-  deterministic catalog/search rows for review before production catalog
-  storage is wired, and can merge those projections with publication rows into
-  inert write plans. Review queue helpers can now shape queue tasks into inert
-  write plans for production queue storage.
+  artifact manifest sections. PDG/CDG helpers project derived CDGs into
+  deterministic catalog/search rows, can merge those projections with
+  publication rows into inert write plans, and can now hand those rows to the
+  deployment storage boundary. Review queue helpers can shape queue tasks into
+  inert write plans for production queue storage.
 - `sciona.physics_ingest.audit_artifacts` converts backfill audit/dashboard
   artifact manifests into deterministic rows and optional write plans for
   caller-owned storage.
@@ -71,7 +81,8 @@ The current pipeline is split at the storage boundary:
   through injected clients before handing rows to the side-effect-free rankers,
   and can build/execute planner request envelopes that preserve replay hashes,
   compiler expectations, and trust-policy blockers. It also wraps those
-  requests in injected planner-service invocation envelopes.
+  requests in injected planner-service invocation envelopes for use by the
+  runtime planner batch boundary.
 
 Publication table order is:
 
@@ -318,13 +329,7 @@ that should inspect rows without requiring credentials.
 The current publication pipeline does not yet complete the full physics
 ingestion roadmap. Remaining work includes:
 
-- apply PDG-derived CDG publication and catalog projection write plans through
-  production storage and catalog views;
 - broaden symbolic normalization coverage across the long-tail equation corpus
   and keep expanding QUDT/unit alias coverage;
 - wire review queue task rows for `needs_human`, `human_reviewed`, and
-  `blocked` into production queues and reviewer UX;
-- add production bulk backfill orchestration and storage adapters for persisted
-  coverage dashboard and replay/audit artifact manifest writes;
-- connect the planner service invocation boundary to the production runtime
-  planner service.
+  `blocked` into production queues, storage plans, and reviewer UX.

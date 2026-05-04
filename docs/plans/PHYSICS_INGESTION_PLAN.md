@@ -440,6 +440,16 @@ Current modules:
 - `sciona.physics_ingest.deployment_runtime`: composes side-effect-free
   production deployment preflight reports across full source runtime execution
   readiness and optional storage bundle preflight summaries.
+- `sciona.physics_ingest.pdg_deployment`: merges PDG-derived CDG publication
+  rows, catalog projection rows, storage preflight summaries, and optional
+  injected-client storage apply results into one deterministic deployment plan.
+- `sciona.physics_ingest.backfill_deployment`: wraps bulk backfill reports,
+  persistable audit/dashboard artifact rows, storage preflight, runtime
+  preflight, and optional injected-client storage apply results into a
+  JSON-safe deployment report.
+- `sciona.physics_ingest.planner_runtime`: batches symbolic retrieval planner
+  service requests against an injected runtime planner client, preserving
+  replay hashes, blocker counts, diagnostics, and dry-run/preflight state.
 - `sciona.physics_ingest.sources.retrieval_plan`: emits deterministic
   executor-facing request envelopes for source jobs.
 - `sciona.physics_ingest.sources.executor`: executes retrieval envelopes only

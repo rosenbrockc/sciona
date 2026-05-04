@@ -4,6 +4,12 @@ from sciona.physics_ingest.backfill import (
     BACKFILL_REPORT_KIND,
     build_physics_ingest_backfill_report,
 )
+from sciona.physics_ingest.backfill_deployment import (
+    BACKFILL_DEPLOYMENT_REPORT_KIND,
+    BACKFILL_DEPLOYMENT_REPORT_VERSION,
+    PhysicsIngestBackfillDeploymentReport,
+    build_physics_ingest_backfill_deployment_report,
+)
 from sciona.physics_ingest.audit_artifacts import (
     BACKFILL_AUDIT_ARTIFACTS_TABLE,
     BackfillAuditArtifactWritePlanRows,
@@ -78,6 +84,10 @@ from sciona.physics_ingest.pdg_cdg import (
     build_pdg_publication_write_rows,
     build_pdg_relationship_ingest,
     validate_pdg_cdg_publication_graph,
+)
+from sciona.physics_ingest.pdg_deployment import (
+    PDGDeploymentStoragePlan,
+    build_pdg_deployment_storage_plan,
 )
 from sciona.physics_ingest.pipeline import (
     PublicationPipelineResult,
@@ -184,6 +194,13 @@ from sciona.physics_ingest.retrieval_io import (
     execute_symbolic_retrieval_planner_service_invocation,
     fetch_symbolic_retrieval,
 )
+from sciona.physics_ingest.planner_runtime import (
+    DEFAULT_PLANNER_SERVICE_NAME,
+    PLANNER_RUNTIME_SERVICE_BATCH_REPORT_KIND,
+    SymbolicRetrievalPlannerRuntimeBatchReport,
+    execute_symbolic_retrieval_planner_runtime_service,
+    execute_symbolic_retrieval_planner_runtime_service_batch,
+)
 from sciona.physics_ingest.staging import (
     ArtifactRelationshipRow,
     PhysicsEquationCandidateRow,
@@ -240,11 +257,14 @@ __all__ = [
     "ArtifactRelationshipRow",
     "ArtifactBinding",
     "BACKFILL_AUDIT_ARTIFACTS_TABLE",
+    "BACKFILL_DEPLOYMENT_REPORT_KIND",
+    "BACKFILL_DEPLOYMENT_REPORT_VERSION",
     "BACKFILL_REPORT_KIND",
     "BackfillAuditArtifactWritePlanRows",
     "BindingDiagnostic",
     "BindingResolutionResult",
     "COMPOSED_REPORT_KIND",
+    "DEFAULT_PLANNER_SERVICE_NAME",
     "DEPLOYMENT_RUNTIME_REPORT_VERSION",
     "DeterministicIdError",
     "NormalizationDiagnostic",
@@ -252,12 +272,14 @@ __all__ = [
     "PDGCDGArtifactEnvelope",
     "PDGCDGCatalogProjectionRows",
     "PDGCDGCatalogWritePlanRows",
+    "PDGDeploymentStoragePlan",
     "PDGExpressionBinding",
     "PDGPublicationWriteRows",
     "PDGRelationshipIngestResult",
     "Phase7CoverageBucket",
     "Phase7CoverageSummary",
     "PhysicsEquationCandidateRow",
+    "PhysicsIngestBackfillDeploymentReport",
     "PhysicsIngestDeploymentRuntimeReport",
     "PhysicsIngestDeploymentStorageApplyResult",
     "PhysicsIngestDeploymentStorageBundle",
@@ -315,6 +337,7 @@ __all__ = [
     "SourceRetrievalRuntimeExecutionStep",
     "SourceRetrievalSnapshotSinkAdapter",
     "RawTrustPolicy",
+    "PLANNER_RUNTIME_SERVICE_BATCH_REPORT_KIND",
     "REPORT_KIND",
     "ARTIFACT_DOCUMENT_RPC",
     "CATALOG_SYMBOLIC_ARTIFACTS_TABLE",
@@ -329,6 +352,7 @@ __all__ = [
     "SymbolicRelationship",
     "SymbolicRetrievalPlannerExecutionPolicy",
     "SymbolicRetrievalPlannerFetchOptions",
+    "SymbolicRetrievalPlannerRuntimeBatchReport",
     "SymbolicRetrievalPlannerServiceInvocation",
     "SymbolicRetrievalQuery",
     "SymbolicValidityBound",
@@ -352,9 +376,11 @@ __all__ = [
     "build_publication_write_plan",
     "build_pdg_cdg_catalog_projection_rows",
     "build_pdg_cdg_catalog_write_plan_rows",
+    "build_pdg_deployment_storage_plan",
     "build_pdg_publication_write_rows",
     "build_pdg_relationship_ingest",
     "build_physics_ingest_backfill_report",
+    "build_physics_ingest_backfill_deployment_report",
     "build_physics_ingest_deployment_runtime_report",
     "build_physics_ingest_deployment_runtime_report_dict",
     "build_physics_ingest_deployment_storage_bundle",
@@ -387,6 +413,8 @@ __all__ = [
     "execute_source_retrieval_plan",
     "execute_source_retrieval_plan_dict",
     "execute_symbolic_retrieval_planner_request",
+    "execute_symbolic_retrieval_planner_runtime_service",
+    "execute_symbolic_retrieval_planner_runtime_service_batch",
     "execute_symbolic_retrieval_planner_service_invocation",
     "fetch_symbolic_retrieval",
     "load_symbolic_publication_manifest",
