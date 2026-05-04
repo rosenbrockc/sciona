@@ -129,6 +129,12 @@ from sciona.physics_ingest.review import (
     summarize_review_assessments,
     summarize_review_queue_tasks,
 )
+from sciona.physics_ingest.review_deployment import (
+    REVIEW_DEPLOYMENT_REPORT_KIND,
+    REVIEW_DEPLOYMENT_REPORT_VERSION,
+    PhysicsIngestReviewDeploymentReport,
+    build_physics_ingest_review_deployment_report,
+)
 from sciona.physics_ingest.sources import (
     RetrievalRunDiagnostic,
     RetrievalRunPlan,
@@ -284,6 +290,7 @@ __all__ = [
     "PhysicsIngestDeploymentStorageApplyResult",
     "PhysicsIngestDeploymentStorageBundle",
     "PhysicsIngestDeploymentStorageComponent",
+    "PhysicsIngestReviewDeploymentReport",
     "PhysicsIngestSnapshotRow",
     "PublicationAuditSummary",
     "PublicationDiagnostic",
@@ -308,6 +315,8 @@ __all__ = [
     "REVIEW_QUEUE_TASK_KINDS",
     "REVIEW_QUEUE_TASK_STATUSES",
     "REVIEW_QUEUE_TASKS_TABLE",
+    "REVIEW_DEPLOYMENT_REPORT_KIND",
+    "REVIEW_DEPLOYMENT_REPORT_VERSION",
     "REVIEW_STATUSES",
     "RawCandidateExternalKnowledgeSuggestion",
     "ReviewAssessment",
@@ -384,6 +393,7 @@ __all__ = [
     "build_physics_ingest_deployment_runtime_report",
     "build_physics_ingest_deployment_runtime_report_dict",
     "build_physics_ingest_deployment_storage_bundle",
+    "build_physics_ingest_review_deployment_report",
     "build_physics_ingestion_validation_report",
     "build_physics_source_retrieval_run_plan",
     "build_physics_source_retrieval_run_plan_dict",

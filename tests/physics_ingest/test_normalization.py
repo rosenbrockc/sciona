@@ -315,6 +315,126 @@ def test_qudt_assisted_normalization_resolves_quantity_kind_label_alias() -> Non
     } == {"J": "M1L2T-1", "x": "M1L2T-1"}
 
 
+def test_qudt_assisted_normalization_resolves_unit_uri_node_alias() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-unit-node-alias",
+            "raw_formula": "a = x",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "a": {
+                    "role": "output",
+                    "unit": {"@id": "http://qudt.org/vocab/unit/M-PER-SEC2"},
+                    "dim_signature": "",
+                },
+                "x": {"role": "input", "dim_signature": "L1T-2"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/M-PER-SEC2",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Metre per Square Second",
+                "qudt:hasDimensionVector": "A0E0L1I0M0H0T-2D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"a": "L1T-2", "x": "L1T-2"}
+
+
+def test_qudt_assisted_normalization_resolves_long_tail_unit_code_aliases() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-long-tail-unit-code-alias",
+            "raw_formula": "P = F",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "P": {
+                    "role": "output",
+                    "unit_ucum_code": "N.m/s",
+                    "dim_signature": "",
+                },
+                "F": {"role": "input", "dim_signature": "M1L2T-3"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/unit/W",
+                "@type": ["qudt:Unit"],
+                "rdfs:label": "Watt",
+                "qudt:symbol": "W",
+                "qudt:ucumCode": [{"@value": "N.m/s"}],
+                "qudt:abbreviation": "W",
+                "qudt:hasDimensionVector": "A0E0L2I0M1H0T-3D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"F": "M1L2T-3", "P": "M1L2T-3"}
+
+
+def test_qudt_assisted_normalization_resolves_quantity_kind_alt_label() -> None:
+    draft = normalize_candidate_expression_draft_with_qudt_dimensions(
+        {
+            "source_candidate_id": "fixture-qudt-quantity-kind-alt-label",
+            "raw_formula": "c_p = y",
+            "raw_formula_format": "plain_text",
+            "variables": {
+                "c_p": {
+                    "role": "output",
+                    "physical_quantity": "specific heat capacity at constant pressure",
+                    "dim_signature": "",
+                },
+                "y": {"role": "input", "dim_signature": "L2T-2Th-1"},
+            },
+        },
+        qudt_records=[
+            {
+                "@id": "http://qudt.org/vocab/quantitykind/SpecificHeatCapacity",
+                "@type": ["qudt:QuantityKind"],
+                "rdfs:label": "Specific Heat Capacity",
+                "skos:altLabel": [
+                    {"@value": "Specific Heat Capacity at Constant Pressure"}
+                ],
+                "qudt:hasDimensionVector": "A0E0L2I0M0H-1T-2D0",
+            }
+        ],
+        artifact_id=ARTIFACT_ID,
+        version_id=VERSION_ID,
+        require_dimensions=True,
+    )
+
+    dimensions = draft.row.evidence_json["normalization"]["dimensions"]
+
+    assert draft.row.parse_status == "normalized"
+    assert draft.row.review_status == "automated_pass"
+    assert {
+        entry["symbol"]: entry["dim_signature"]
+        for entry in dimensions["provided_dimensions"]["signatures"]
+    } == {"c_p": "L2T-2Th-1", "y": "L2T-2Th-1"}
+
+
 def test_unresolved_qudt_dimensions_remain_reviewable_not_dimensionless() -> None:
     draft = normalize_candidate_expression_draft_with_qudt_dimensions(
         {

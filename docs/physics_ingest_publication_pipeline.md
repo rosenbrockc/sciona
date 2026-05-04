@@ -55,8 +55,8 @@ The current pipeline is split at the storage boundary:
   runtime execution/preflight reports around source run plans, adapter bundles,
   and optional injected execution.
 - `sciona.physics_ingest.normalization` includes opt-in QUDT-assisted dimension
-  resolution before symbolic normalization; unresolved or ambiguous dimensions
-  stay reviewable.
+  resolution before symbolic normalization, including common QUDT/UCUM/JSON-LD
+  alias spellings; unresolved or ambiguous dimensions stay reviewable.
 - `sciona.physics_ingest.cli` provides JSON-serializable dry-run report helpers
   for decoded payloads.
 - `sciona.physics_ingest.validation` provides the offline validation report used
@@ -72,6 +72,10 @@ The current pipeline is split at the storage boundary:
   publication rows into inert write plans, and can now hand those rows to the
   deployment storage boundary. Review queue helpers can shape queue tasks into
   inert write plans for production queue storage.
+- `sciona.physics_ingest.review_deployment` packages review assessments,
+  candidate/expression status patches, queue rows, storage preflight, and replay
+  digests into a side-effect-free reviewer workflow deployment report for
+  caller-owned reviewer UX and persistence.
 - `sciona.physics_ingest.audit_artifacts` converts backfill audit/dashboard
   artifact manifests into deterministic rows and optional write plans for
   caller-owned storage.
@@ -329,7 +333,7 @@ that should inspect rows without requiring credentials.
 The current publication pipeline does not yet complete the full physics
 ingestion roadmap. Remaining work includes:
 
-- broaden symbolic normalization coverage across the long-tail equation corpus
-  and keep expanding QUDT/unit alias coverage;
-- wire review queue task rows for `needs_human`, `human_reviewed`, and
-  `blocked` into production queues, storage plans, and reviewer UX.
+- continue expanding symbolic normalization coverage across the long-tail
+  equation corpus as new source-specific unit and quantity aliases appear;
+- connect the reviewer workflow deployment report to the production reviewer UX
+  outside this storage-neutral matcher boundary.

@@ -34,22 +34,44 @@ _UNIT_ALIAS_KEYS = (
     "unit_symbol",
     "unit_code",
     "unit_name",
+    "units",
+    "uom",
+    "unit_of_measure",
+    "unit_abbreviation",
+    "ucum_code",
+    "ucumCode",
+    "unit_ucum_code",
+    "unece_common_code",
+    "uneceCommonCode",
 )
 _QUANTITY_KIND_ALIAS_KEYS = (
     "quantity_kind",
     "quantity_kind_label",
     "quantity_kind_name",
+    "quantity_kind_symbol",
+    "quantity_kind_code",
+    "quantity",
+    "quantity_label",
+    "quantity_name",
+    "physical_quantity",
+    "qudt_quantity_kind",
 )
 _GENERIC_QUDT_ALIAS_KEYS = (
     "source_symbol",
     "symbol",
     "symbol_name",
     "name",
+    "label",
+    "display_label",
+    "display_name",
 )
 _QUDT_UNIT_PAYLOAD_ALIAS_KEYS = (
     "qudt:symbol",
     "symbol",
     "http://qudt.org/schema/qudt/symbol",
+    "qudt:abbreviation",
+    "abbreviation",
+    "http://qudt.org/schema/qudt/abbreviation",
     "qudt:ucumCode",
     "ucumCode",
     "http://qudt.org/schema/qudt/ucumCode",
@@ -64,6 +86,12 @@ _QUDT_QUANTITY_KIND_PAYLOAD_ALIAS_KEYS = (
     "rdfs:label",
     "label",
     "http://www.w3.org/2000/01/rdf-schema#label",
+    "skos:prefLabel",
+    "prefLabel",
+    "http://www.w3.org/2004/02/skos/core#prefLabel",
+    "skos:altLabel",
+    "altLabel",
+    "http://www.w3.org/2004/02/skos/core#altLabel",
 )
 _LABEL_ALIAS_SEPARATOR_RE = re.compile(r"[\s_-]+")
 
@@ -550,6 +578,7 @@ def _qudt_record_matches_aliases(
 
 def _qudt_record_aliases(record: Any, *, kind: str, transform: Any) -> set[str]:
     aliases = {
+        transform(record.source_entity_uri),
         transform(record.source_label),
         transform(_uri_tail(record.source_entity_uri)),
     }
@@ -611,7 +640,21 @@ def _iter_text_aliases(value: Any) -> tuple[str, ...]:
         return (text,) if text else ()
     if isinstance(value, Mapping):
         aliases = []
-        for key in ("@id", "id", "@value", "value", "uri", "label"):
+        for key in (
+            "@id",
+            "id",
+            "@value",
+            "value",
+            "uri",
+            "label",
+            "rdfs:label",
+            "skos:prefLabel",
+            "skos:altLabel",
+            "symbol",
+            "qudt:symbol",
+            "ucumCode",
+            "qudt:ucumCode",
+        ):
             if key in value:
                 aliases.extend(_iter_text_aliases(value[key]))
         return tuple(aliases)
