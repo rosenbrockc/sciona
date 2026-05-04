@@ -426,12 +426,23 @@ Current modules:
   plans with per-table insert/upsert modes.
 - `sciona.physics_ingest.writer`: applies plans through an injected
   `PublicationTableClient` and supports dry runs.
+- `sciona.physics_ingest.supabase_adapter`: adapts injected PostgREST/Supabase
+  clients, preflights planned writes, and applies writes through the shared
+  writer without constructing storage clients.
+- `sciona.physics_ingest.sources.retrieval_plan`: emits deterministic
+  executor-facing request envelopes for source jobs.
+- `sciona.physics_ingest.sources.executor`: executes retrieval envelopes only
+  through injected HTTP clients and snapshot sinks; dry runs and manual sources
+  perform no IO.
 - `sciona.physics_ingest.pipeline`: composes ID planning, orchestration, write
   planning, and optional execution.
 - `sciona.physics_ingest.cli`: builds JSON-serializable dry-run reports from
   decoded payloads.
 - `sciona.physics_ingest.validation`: offline validation for symbolic
   publication fixtures and PDG-derived CDG publication rows.
+- `sciona.physics_ingest.backfill`: builds deterministic bulk backfill reports,
+  including opt-in source request-envelope and publication write preflight
+  sections for production execution review.
 
 Dry-run usage:
 

@@ -665,6 +665,102 @@ def test_backfill_report_accepts_retrieval_run_plan_dict_and_diagnostics() -> No
     assert report["diagnostic_summary"]["by_severity"]["warning"] == 1
 
 
+def test_backfill_report_can_include_execution_boundary_preflight_sections() -> None:
+    retrieval_plan = build_physics_source_retrieval_run_plan(max_jobs=3, limit=5)
+
+    report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=retrieval_plan,
+        review_status_rows={
+            "artifact_symbolic_expressions": [
+                {
+                    "expression_id": "expression-review-2",
+                    "review_status": "human_reviewed",
+                }
+            ]
+        },
+        include_execution_boundary_preflight=True,
+    )
+    repeated_report = build_physics_ingest_backfill_report(
+        source_retrieval_run_plan=retrieval_plan,
+        review_status_rows={
+            "artifact_symbolic_expressions": [
+                {
+                    "expression_id": "expression-review-2",
+                    "review_status": "human_reviewed",
+                }
+            ]
+        },
+        include_execution_boundary_preflight=True,
+    )
+
+    source_preflight = report["source_request_envelope_preflight"]
+    assert json.loads(json.dumps(source_preflight, sort_keys=True)) == source_preflight
+    assert source_preflight == repeated_report["source_request_envelope_preflight"]
+    assert source_preflight["report_version"] == (
+        "physics-ingest-source-request-envelope-preflight.v1"
+    )
+    assert source_preflight["step_count"] == 3
+    assert source_preflight["execution_expectation_counts"] == {
+        "manual": 1,
+        "network": 2,
+        "blocked": 0,
+    }
+    assert source_preflight["manual_retrieval_expected_count"] == 1
+    assert source_preflight["network_retrieval_expected_count"] == 2
+    assert source_preflight["blocked_retrieval_expected_count"] == 0
+    assert source_preflight["readiness_summary"]["by_status"] == {
+        "executable": 2,
+        "manual": 1,
+    }
+    assert [
+        row["execution_expectation"]
+        for row in source_preflight["request_envelopes"]
+    ] == ["manual", "network", "network"]
+    assert source_preflight["request_envelopes"][0]["request_envelope"][
+        "execution"
+    ] == {
+        "mode": "manual",
+        "dry_run": True,
+        "io_performed": False,
+        "network_required": False,
+        "network_io_allowed": False,
+        "manual_source": True,
+    }
+    assert source_preflight["request_envelopes"][1]["request_envelope"]["paging"][
+        "limit"
+    ] == 5
+
+    write_preflight = report["publication_storage_write_preflight"]
+    assert json.loads(json.dumps(write_preflight, sort_keys=True)) == write_preflight
+    assert write_preflight == repeated_report["publication_storage_write_preflight"]
+    assert write_preflight == {
+        "report_version": "physics-ingest-publication-storage-write-preflight.v1",
+        "dry_run": True,
+        "table_count": 1,
+        "total_row_count": 1,
+        "mode_counts": {"upsert": 1},
+        "tables": [
+            {
+                "table": "artifact_symbolic_expressions",
+                "mode": "upsert",
+                "row_count": 1,
+                "conflict_keys": ["expression_id"],
+                "missing_conflict_metadata": False,
+            }
+        ],
+        "missing_conflict_metadata_for_upserts": [],
+        "adapter_capabilities": {
+            "imports_supabase": False,
+            "requires_injected_client": True,
+            "writes_during_preflight": False,
+            "supports_insert": True,
+            "supports_upsert": True,
+            "supports_upsert_on_conflict": True,
+        },
+    }
+    assert json.loads(json.dumps(report, sort_keys=True)) == report
+
+
 def _source_bundle() -> dict[str, Any]:
     return {
         "bundle_key": "fixture-bundle",

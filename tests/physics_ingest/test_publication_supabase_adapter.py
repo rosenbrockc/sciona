@@ -7,6 +7,7 @@ from typing import Any
 from sciona.physics_ingest.supabase_adapter import (
     PostgrestPublicationTableClient,
     adapt_publication_supabase_client,
+    apply_publication_supabase_write,
     preflight_publication_supabase_write,
 )
 from sciona.physics_ingest.write_plan import PublicationWritePlan
@@ -157,6 +158,120 @@ def test_preflight_accepts_rows_modes_and_explicit_conflict_metadata() -> None:
             "conflict_keys": ["source_id", "version"],
             "missing_conflict_metadata": False,
         },
+    ]
+
+
+def test_apply_publication_supabase_write_dry_run_does_not_call_client() -> None:
+    client = FakePostgrestClient()
+    plan = PublicationWritePlan.from_rows(
+        {
+            "physics_ingest_snapshots": [{"snapshot_id": "snap-1"}],
+            "artifact_symbolic_expressions": [{"expression_id": "expr-1"}],
+        },
+        table_modes={"artifact_symbolic_expressions": "upsert"},
+    )
+
+    result = apply_publication_supabase_write(client, plan, dry_run=True)
+
+    assert client.calls == []
+    assert result.to_dict() == {
+        "dry_run": True,
+        "inserted_count": 0,
+        "upserted_count": 0,
+        "affected_count": 0,
+        "has_errors": False,
+        "tables": [
+            {
+                "table": "physics_ingest_snapshots",
+                "mode": "insert",
+                "planned_count": 1,
+                "inserted_count": 0,
+                "upserted_count": 0,
+                "affected_count": 0,
+                "dry_run": True,
+            },
+            {
+                "table": "artifact_symbolic_expressions",
+                "mode": "upsert",
+                "planned_count": 1,
+                "inserted_count": 0,
+                "upserted_count": 0,
+                "affected_count": 0,
+                "dry_run": True,
+            },
+        ],
+        "diagnostics": [
+            {
+                "table": "physics_ingest_snapshots",
+                "reason": "dry_run",
+                "severity": "info",
+                "detail": "planned insert of 1 rows",
+            },
+            {
+                "table": "artifact_symbolic_expressions",
+                "reason": "dry_run",
+                "severity": "info",
+                "detail": "planned upsert of 1 rows",
+            },
+        ],
+    }
+
+
+def test_apply_publication_supabase_write_applies_insert_and_upsert_batches() -> None:
+    client = FakePostgrestClient(
+        responses={
+            "physics_ingest_snapshots": {"count": 1},
+            "artifact_symbolic_expressions": {"count": 2},
+        }
+    )
+
+    result = apply_publication_supabase_write(
+        client,
+        {
+            "artifact_symbolic_expressions": [
+                {"expression_id": "expr-1"},
+                {"expression_id": "expr-2"},
+            ],
+            "physics_ingest_snapshots": [{"snapshot_id": "snap-1"}],
+        },
+        table_modes={"artifact_symbolic_expressions": "upsert"},
+    )
+
+    assert result.inserted_count == 1
+    assert result.upserted_count == 2
+    assert client.calls == [
+        QueryCall(
+            table="physics_ingest_snapshots",
+            mode="insert",
+            rows=({"snapshot_id": "snap-1"},),
+            kwargs={},
+        ),
+        QueryCall(
+            table="artifact_symbolic_expressions",
+            mode="upsert",
+            rows=({"expression_id": "expr-1"}, {"expression_id": "expr-2"}),
+            kwargs={"on_conflict": "expression_id"},
+        ),
+    ]
+
+
+def test_apply_publication_supabase_write_propagates_explicit_conflict_metadata() -> None:
+    client = FakePostgrestClient()
+
+    apply_publication_supabase_write(
+        client,
+        {"custom_publications": [{"source_id": "src", "version": 1}]},
+        table_modes={"custom_publications": "upsert"},
+        conflict_keys_by_table={"custom_publications": ("source_id", "version")},
+    )
+
+    assert client.calls == [
+        QueryCall(
+            table="custom_publications",
+            mode="upsert",
+            rows=({"source_id": "src", "version": 1},),
+            kwargs={"on_conflict": "source_id,version"},
+        )
     ]
 
 

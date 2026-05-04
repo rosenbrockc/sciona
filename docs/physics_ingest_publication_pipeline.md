@@ -23,12 +23,16 @@ The current pipeline is split at the storage boundary:
   `PublicationTableClient`; it does not import Supabase.
 - `sciona.physics_ingest.supabase_adapter` wraps injected PostgREST-style
   clients and can preflight planned writes without importing Supabase or writing
-  rows.
+  rows. It also exposes a high-level apply helper for injected clients so
+  deployment code can share the same dry-run/write accounting path.
 - `sciona.physics_ingest.pipeline` composes all steps and can either dry-run,
   stop at a side-effect-free plan, or execute through an injected client.
 - `sciona.physics_ingest.sources.retrieval_plan` emits deterministic
   executor-facing request envelopes for retrieval jobs without performing
   network IO.
+- `sciona.physics_ingest.sources.executor` can execute those retrieval envelopes
+  through injected HTTP clients and snapshot sinks; dry runs and manual sources
+  remain side-effect free.
 - `sciona.physics_ingest.normalization` includes opt-in QUDT-assisted dimension
   resolution before symbolic normalization; unresolved or ambiguous dimensions
   stay reviewable.
@@ -39,7 +43,8 @@ The current pipeline is split at the storage boundary:
   adapter coverage, and data-artifact seed shape without Supabase.
 - `sciona.physics_ingest.backfill`, `sciona.physics_ingest.pdg_cdg`, and
   `sciona.physics_ingest.review` expose JSON-safe rollups for bulk dashboards,
-  PDG/CDG publication audit, and Phase 5 trust review triage.
+  PDG/CDG publication audit, and Phase 5 trust review triage. Backfill reports
+  can opt into source request-envelope and publication write preflight sections.
 - `sciona.physics_ingest.retrieval` provides side-effect-free symbolic
   retrieval and synthesis ranking over already-fetched catalog/document rows.
 
@@ -288,9 +293,10 @@ that should inspect rows without requiring credentials.
 The current publication pipeline does not yet complete the full physics
 ingestion roadmap. Remaining work includes:
 
-- implement real source retrieval executors for the full external source set
-  using the existing request envelopes;
-- wire injected production PostgREST/Supabase clients through deployment code;
+- wire production HTTP clients and snapshot sinks through the source retrieval
+  executor boundary for the full external source set;
+- wire injected production PostgREST/Supabase clients through deployment code
+  using the shared apply/preflight helper;
 - connect PDG-derived CDG publication rows to production storage and catalog
   views;
 - broaden symbolic normalization coverage across the long-tail equation corpus

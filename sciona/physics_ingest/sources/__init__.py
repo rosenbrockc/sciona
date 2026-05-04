@@ -14,6 +14,12 @@ from sciona.physics_ingest.sources.execution_plan import (
     build_source_execution_readiness_report,
     build_source_execution_readiness_report_dict,
 )
+from sciona.physics_ingest.sources.executor import (
+    SourceRetrievalExecutionReport,
+    SourceRetrievalExecutionResult,
+    execute_source_retrieval_plan,
+    execute_source_retrieval_plan_dict,
+)
 from sciona.physics_ingest.sources.retrieval_plan import (
     PHASE7_RING_ORDER,
     PaginationSpec,
@@ -47,6 +53,8 @@ __all__ = [
     "SourceExecutionDiagnostic",
     "SourceExecutionReadinessReport",
     "SourceExecutionReadinessStep",
+    "SourceRetrievalExecutionReport",
+    "SourceRetrievalExecutionResult",
     "SourceRetrievalManifest",
     "build_physics_source_retrieval_manifest",
     "build_physics_source_retrieval_manifest_dict",
@@ -56,4 +64,6 @@ __all__ = [
     "build_source_adapter_coverage_report_dict",
     "build_source_execution_readiness_report",
     "build_source_execution_readiness_report_dict",
+    "execute_source_retrieval_plan",
+    "execute_source_retrieval_plan_dict",
 ]

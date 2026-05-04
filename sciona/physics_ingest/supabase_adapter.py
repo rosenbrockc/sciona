@@ -17,6 +17,7 @@ from sciona.physics_ingest.write_plan import (
     PublicationWritePlan,
     WriteMode,
 )
+from sciona.physics_ingest.writer import PublicationWriteResult, write_publication_rows
 
 
 POSTGREST_PUBLICATION_ADAPTER_CAPABILITIES: Mapping[str, bool] = {
@@ -197,6 +198,45 @@ def preflight_publication_supabase_write(
         plan_or_rows,
         table_modes=table_modes,
         conflict_keys_by_table=conflict_keys_by_table,
+    )
+
+
+def apply_publication_supabase_write(
+    client: Any,
+    plan_or_rows: PublicationWritePlan | Mapping[str, Iterable[Mapping[str, Any]]],
+    *,
+    table_modes: Mapping[str, WriteMode] | None = None,
+    conflict_keys_by_table: Mapping[str, Sequence[str]] | None = None,
+    dry_run: bool = False,
+) -> PublicationWriteResult:
+    """Apply publication rows through an injected Supabase/PostgREST client.
+
+    The helper keeps Supabase client construction outside this module. It
+    performs the same side-effect-free preflight used by callers that want a
+    report, adapts the injected client to the publication writer protocol, and
+    delegates write accounting to the existing writer helper.
+    """
+
+    write_plan = _write_plan_for_preflight(plan_or_rows, table_modes=table_modes)
+    preflight_publication_supabase_write(
+        write_plan,
+        conflict_keys_by_table=conflict_keys_by_table,
+    )
+    adapted_client = adapt_publication_supabase_client(
+        client,
+        write_plan=write_plan,
+        conflict_keys_by_table=conflict_keys_by_table,
+    )
+    write_modes = {
+        table: write_plan.mode_for(table)
+        for table in write_plan.ordered_tables()
+    }
+    return write_publication_rows(
+        write_plan.to_insert_rows(),
+        client=adapted_client,
+        table_modes=write_modes,
+        dry_run=dry_run,
+        dependency_order=write_plan.ordered_tables(),
     )
 
 

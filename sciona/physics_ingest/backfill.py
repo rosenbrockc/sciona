@@ -14,6 +14,12 @@ from sciona.physics_ingest.publication import (
     ArtifactBinding,
     build_publication_load_result_from_normalized_drafts,
 )
+from sciona.physics_ingest.sources.execution_plan import (
+    build_source_execution_readiness_report_dict,
+)
+from sciona.physics_ingest.supabase_adapter import (
+    preflight_publication_postgrest_write,
+)
 from sciona.physics_ingest.write_plan import WriteMode, merge_publication_insert_rows
 
 
@@ -35,6 +41,9 @@ def build_physics_ingest_backfill_report(
     artifact_bindings: Mapping[str, Mapping[str, Any] | ArtifactBinding] | None = None,
     table_modes: Mapping[str, WriteMode] | None = None,
     include_phase7_coverage_summary: bool = True,
+    include_source_request_envelopes: bool = False,
+    include_publication_write_preflight: bool = False,
+    include_execution_boundary_preflight: bool = False,
     include_rows: bool = False,
 ) -> dict[str, Any]:
     """Build a deterministic dry-run report for a bulk physics backfill.
@@ -208,6 +217,14 @@ def build_physics_ingest_backfill_report(
         "source_retrieval_run_plan": retrieval_report["report"],
         "diagnostic_summary": _diagnostic_summary(diagnostics),
     }
+    if include_source_request_envelopes or include_execution_boundary_preflight:
+        report["source_request_envelope_preflight"] = (
+            _source_request_envelope_preflight_section(retrieval_report["plan"])
+        )
+    if include_publication_write_preflight or include_execution_boundary_preflight:
+        report["publication_storage_write_preflight"] = (
+            _publication_storage_write_preflight_section(pipeline_result.write_plan)
+        )
     if include_phase7_coverage_summary:
         report["phase7_coverage_row_counts"] = phase7_coverage_row_counts
         report["phase7_coverage_summary"] = build_phase7_coverage_summary_dict(
@@ -513,9 +530,18 @@ def _diagnostic_row(diagnostic: Mapping[str, Any] | Any) -> Mapping[str, Any]:
 
 def _source_retrieval_report_section(value: Any | None) -> dict[str, Any]:
     if value is None:
+        empty_plan = {
+            "manifest_version": "",
+            "snapshot_key_prefix": "",
+            "dry_run": True,
+            "filters": {},
+            "steps": [],
+            "diagnostics": [],
+        }
         return {
             "step_count": 0,
             "diagnostics": (),
+            "plan": empty_plan,
             "report": {
                 "manifest_version": "",
                 "snapshot_key_prefix": "",
@@ -539,10 +565,19 @@ def _source_retrieval_report_section(value: Any | None) -> dict[str, Any]:
         for step in steps
         if step.get("replay_key")
     ]
+    normalized_plan = {
+        "manifest_version": str(plan.get("manifest_version") or ""),
+        "snapshot_key_prefix": str(plan.get("snapshot_key_prefix") or ""),
+        "dry_run": bool(plan.get("dry_run", True)),
+        "filters": _json_safe_mapping(plan.get("filters") or {}),
+        "steps": [_json_safe_mapping(dict(step)) for step in steps],
+        "diagnostics": [_json_safe_mapping(dict(diagnostic)) for diagnostic in diagnostics],
+    }
 
     return {
         "step_count": len(steps),
         "diagnostics": diagnostics,
+        "plan": normalized_plan,
         "report": {
             "manifest_version": str(plan.get("manifest_version") or ""),
             "snapshot_key_prefix": str(plan.get("snapshot_key_prefix") or ""),
@@ -630,6 +665,127 @@ def _source_retrieval_step_summary(step: Mapping[str, Any]) -> dict[str, Any]:
         "dry_run": bool(step.get("dry_run", True)),
         "replay_key": str(step.get("replay_key") or ""),
         "warnings": [str(warning) for warning in step.get("warnings", ())],
+    }
+
+
+def _source_request_envelope_preflight_section(
+    retrieval_plan: Mapping[str, Any],
+) -> dict[str, Any]:
+    readiness = build_source_execution_readiness_report_dict(retrieval_plan)
+    readiness_steps = {
+        (
+            int(step.get("step_index") or 0),
+            str(step.get("job_id") or ""),
+        ): step
+        for step in readiness.get("steps", ())
+        if isinstance(step, Mapping)
+    }
+    envelope_rows = []
+    counts = Counter({"manual": 0, "network": 0, "blocked": 0})
+    for step in retrieval_plan.get("steps", ()):
+        if not isinstance(step, Mapping):
+            continue
+        readiness_step = readiness_steps.get(
+            (
+                int(step.get("step_index") or 0),
+                str(step.get("job_id") or ""),
+            ),
+            {},
+        )
+        envelope = step.get("request_envelope") or {}
+        envelope_mapping = envelope if isinstance(envelope, Mapping) else {}
+        execution = envelope_mapping.get("execution") or {}
+        execution_mapping = execution if isinstance(execution, Mapping) else {}
+        expectation = _retrieval_execution_expectation(
+            readiness_step=readiness_step,
+            execution=execution_mapping,
+            method=str(step.get("method") or ""),
+            url=str(step.get("url") or ""),
+        )
+        counts[expectation] += 1
+        envelope_rows.append(
+            {
+                "step_index": int(step.get("step_index") or 0),
+                "job_id": str(step.get("job_id") or ""),
+                "endpoint_id": str(step.get("endpoint_id") or ""),
+                "source_system": str(step.get("source_system") or ""),
+                "source_family": str(step.get("source_family") or ""),
+                "method": str(step.get("method") or ""),
+                "url": str(step.get("url") or ""),
+                "endpoint_kind": str(step.get("endpoint_kind") or ""),
+                "snapshot_key": str(step.get("snapshot_key") or ""),
+                "replay_key": str(step.get("replay_key") or ""),
+                "readiness_status": str(readiness_step.get("status") or ""),
+                "execution_expectation": expectation,
+                "network_required": bool(execution_mapping.get("network_required")),
+                "network_io_allowed": bool(
+                    execution_mapping.get("network_io_allowed")
+                ),
+                "manual_source": bool(execution_mapping.get("manual_source")),
+                "io_performed": bool(execution_mapping.get("io_performed")),
+                "request_envelope": _json_safe_mapping(envelope_mapping),
+            }
+        )
+
+    execution_counts = {
+        key: int(counts.get(key, 0)) for key in ("manual", "network", "blocked")
+    }
+    return {
+        "report_version": "physics-ingest-source-request-envelope-preflight.v1",
+        "step_count": len(envelope_rows),
+        "manual_retrieval_expected_count": execution_counts["manual"],
+        "network_retrieval_expected_count": execution_counts["network"],
+        "blocked_retrieval_expected_count": execution_counts["blocked"],
+        "execution_expectation_counts": execution_counts,
+        "readiness_summary": _json_safe_mapping(readiness.get("summary") or {}),
+        "readiness_diagnostic_count": len(readiness.get("diagnostics") or ()),
+        "request_envelopes": envelope_rows,
+    }
+
+
+def _retrieval_execution_expectation(
+    *,
+    readiness_step: Mapping[str, Any],
+    execution: Mapping[str, Any],
+    method: str,
+    url: str,
+) -> str:
+    readiness_status = str(readiness_step.get("status") or "")
+    if readiness_status in {"offline_blocked", "blocked"}:
+        return "blocked"
+    if readiness_status == "manual":
+        return "manual"
+    mode = str(execution.get("mode") or "")
+    if mode == "manual" or method == "MANUAL" or url.startswith("manual://"):
+        return "manual"
+    if bool(execution.get("network_required")) or mode == "network":
+        return "network"
+    if readiness_status:
+        return "network"
+    return "blocked"
+
+
+def _publication_storage_write_preflight_section(write_plan: Any) -> dict[str, Any]:
+    preflight = preflight_publication_postgrest_write(write_plan).to_dict()
+    tables = tuple(
+        table for table in preflight.get("tables", ()) if isinstance(table, Mapping)
+    )
+    return {
+        "report_version": "physics-ingest-publication-storage-write-preflight.v1",
+        "dry_run": True,
+        "table_count": int(preflight.get("table_count") or 0),
+        "total_row_count": int(preflight.get("total_row_count") or 0),
+        "mode_counts": _sorted_counts(
+            str(table.get("mode") or "unknown") for table in tables
+        ),
+        "tables": [_json_safe_mapping(table) for table in tables],
+        "missing_conflict_metadata_for_upserts": [
+            str(table)
+            for table in preflight.get("missing_conflict_metadata_for_upserts", ())
+        ],
+        "adapter_capabilities": _json_safe_mapping(
+            preflight.get("adapter_capabilities") or {}
+        ),
     }
 
 
