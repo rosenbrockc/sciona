@@ -169,7 +169,7 @@ def test_retrieves_mined_ml_gap_operations() -> None:
             stage_names=("feature_engineering", "model_training", "prediction_ensemble"),
         ),
         max_sequences=3,
-        max_operations_per_sequence=4,
+        max_operations_per_sequence=5,
     )
 
     assert sequences

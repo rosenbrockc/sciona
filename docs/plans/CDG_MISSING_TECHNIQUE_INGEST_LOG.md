@@ -56,3 +56,42 @@ Semantic comparison to closest existing operations:
 Batch outcome: all 21 support >= 4 clusters are now either implemented as a
 new reusable expansion/refinement operation or intentionally collapsed into a
 broader existing/new operation with metadata and diagnostics.
+
+## Batch 3: Support-3 Candidate Pass
+
+Source: `/tmp/sciona_expansion_gap_mining_after_batch2.json`, mined after
+Batch 2. The refreshed deterministic pass marked 48 clusters as covered and
+left 30 support-3 clusters plus two metadata-only support-4 clusters as
+candidate reusable operations.
+
+Semantic comparison to closest existing operations:
+
+| Missing technique cluster | Closest existing operation(s) | Verdict | Action |
+| --- | --- | --- | --- |
+| GroupKFold / Stratified GroupKFold variants | `force_cv_strategy`, `apply_kfold_ensemble` | Covered conceptually, but deterministic triggers missed stratified/group-specific terms. | Enriched `force_cv_strategy` metadata and diagnostics. |
+| StandardScaler numerical preprocessing | `insert_preprocessing_before_estimator` | Covered conceptually, but deterministic triggers missed exact StandardScaler phrasing. | Enriched preprocessing metadata and diagnostics. |
+| MixUp/CutMix/frequency/spatial/color/blur augmentation | `insert_progressive_resizing_before_forward` | Unique. Progressive resizing is a curriculum; these are data augmentation policies. | Added `insert_training_augmentation_before_forward`. |
+| Sequence-level / transformer aggregation | `insert_sequence_cnn_recurrent_backbone_before_loss` | Unique enough. CNN/RNN backbones model sequence context differently from transformer aggregation. | Added `insert_transformer_sequence_aggregation_before_loss`. |
+| Pseudo-labeling on unlabeled/test/external/domain data | `insert_balanced_sampling_before_training` | Unique. Sampling changes class frequency; pseudo-labeling expands supervision. | Added `insert_pseudo_labeling_loop_before_training`. |
+| Iterative imputation | `insert_preprocessing_before_estimator` | Unique. Generic scaling/power transforms do not model missing values. | Added `insert_iterative_imputation_before_estimator`. |
+| LLRD / CLR / Adam decay / weight decay | `insert_mixed_precision_training_before_forward` | Unique. Numeric policy is separate from optimizer scheduling. | Added `insert_optimizer_schedule_before_update`. |
+| Domain-specific SFT/adapters and Xeno-Canto pretraining | `apply_dl_backbone_substitution` | Unique but adjacent. Backbone substitution chooses transfer architecture; this refines initialization/adaptation. | Added `insert_domain_specific_finetuning_before_forward`. |
+| Bandpass/Butterworth/whitening filter phrases | `signal_filter` base CDG and `insert_passband_ripple_measurement_after_validate` | Not a new expansion; the base signal-filter CDG already represents filtering. | Enriched signal-filter metadata with exact phrases. |
+| Adaptive Batch Normalization | `insert_activation_statistics_after_forward` | Unique. Activation statistics observes; AdaBN changes normalization state. | Added `insert_adaptive_batch_norm_before_forward`. |
+| Boosted-tree early stopping | `apply_tree_ensemble_blend`, `replace_loss_with_metric_aligned_objective` | Unique. It constrains training iterations with validation feedback. | Added `insert_tree_early_stopping_validation`. |
+| Dynamic ArcFace margin scaling | `insert_arcface_margin_loss_before_loss` | Covered by ArcFace-family margin-loss operation. | Collapsed into existing ArcFace metadata/diagnostics. |
+| Siamese networks | `insert_hard_negative_mining_before_loss` | Unique. Mining selects examples; Siamese backbones change pair representation. | Added `insert_siamese_metric_backbone_before_loss`. |
+| BCE / Dice+BCE loss | `insert_multilabel_focal_bce_loss_before_loss` | Unique enough for segmentation and mask losses. | Added `insert_dice_bce_loss_before_loss`. |
+| Database Augmentation (DBA) | `insert_retrieval_reranking_after_prediction` | Unique. Reranking orders candidates; DBA smooths retrieval embeddings. | Added `insert_database_augmentation_for_retrieval`. |
+| GNN interaction models | `apply_dl_backbone_substitution` | Unique. Graph message passing changes relational structure. | Added `insert_graph_interaction_network_before_loss`. |
+| Dropout/L2 regularization | `insert_multi_sample_dropout_before_loss` | Unique enough. Multi-sample dropout averages predictions; generic regularization covers dropout/L2 policies. | Added `insert_regularization_before_loss`. |
+| PointRend boundary refinement | `insert_dice_bce_loss_before_loss` | Unique. Loss changes training objective; PointRend refines boundary prediction. | Added `insert_pointrend_boundary_refinement_after_forward`. |
+| MegaDetector / ROI cropping | `apply_dl_backbone_substitution` | Unique. It changes input region selection before the main model. | Added `insert_roi_cropping_before_forward`. |
+| Feature Hashing | `insert_smoothed_target_encoding_before_estimator` | Unique. Target encoding uses target means; hashing bounds sparse feature dimensionality. | Added `insert_feature_hashing_before_estimator`. |
+| Chain-of-thought prompt augmentation | `insert_prompt_reasoning_augmentation_before_training` | Unique for LLM-style tasks but still represented as a pre-training/pre-inference augmentation. | Added `insert_prompt_reasoning_augmentation_before_training`. |
+| Bradley-Terry preference ranking | `insert_metric_optimized_thresholding_after_prediction` | Unique. Thresholding is post-prediction; preference modeling changes pairwise supervision. | Added `insert_preference_ranking_head_before_loss`. |
+| DeBERTa cross-encoder | `apply_pretrained_backbone_ensemble` | Unique enough. Cross-encoders jointly encode pairs for relevance/ranking. | Added `insert_cross_encoder_backbone_before_loss`. |
+
+Batch outcome: the support-3 tier is now represented by reusable operations or
+collapsed into existing operations with explicit metadata hooks. Manifest
+closure after this batch reports 34 assets and 182 operations.

@@ -123,10 +123,16 @@ def test_ml_model_selection_provider_expansion_asset_loads() -> None:
         "insert_recursive_feature_elimination_before_estimator",
         "insert_permutation_importance_feature_selection_before_estimator",
         "insert_balanced_sampling_before_training",
+        "insert_pseudo_labeling_loop_before_training",
+        "insert_iterative_imputation_before_estimator",
+        "insert_feature_hashing_before_estimator",
+        "insert_tree_early_stopping_validation",
         "insert_log_target_transform_before_estimator",
         "replace_loss_with_metric_aligned_objective",
         "insert_metric_optimized_thresholding_after_prediction",
         "insert_retrieval_reranking_after_prediction",
+        "insert_database_augmentation_for_retrieval",
+        "insert_prompt_reasoning_augmentation_before_training",
         "insert_smoothed_target_encoding_before_estimator",
     }
     assert asset.operation("apply_kfold_ensemble").operation_type == "replace"
@@ -356,3 +362,28 @@ def test_second_pass_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
         ),
     )
     assert "retrieval_reranking" in {node.node_id for node in reranking.cdg.nodes}
+
+
+def test_support_three_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
+    rule_set = _asset_backed_ml_rule_set()
+    cases = [
+        (
+            "model_selection.requires_pseudo_labeling",
+            {"generate_pseudo_labels", "filter_pseudo_labels"},
+        ),
+        ("model_selection.requires_iterative_imputation", {"iterative_imputation"}),
+        ("model_selection.requires_feature_hashing", {"feature_hashing"}),
+        ("model_selection.requires_tree_early_stopping", {"tree_early_stopping"}),
+        ("model_selection.requires_database_augmentation", {"database_augmentation"}),
+        (
+            "model_selection.requires_prompt_reasoning_augmentation",
+            {"prompt_reasoning_augmentation"},
+        ),
+    ]
+
+    for intermediate_key, expected_node_ids in cases:
+        result = ExpansionEngine([rule_set]).expand(
+            _tabular_pipeline_cdg(),
+            ExpansionContext(intermediates={intermediate_key: True}),
+        )
+        assert expected_node_ids.issubset({node.node_id for node in result.cdg.nodes})

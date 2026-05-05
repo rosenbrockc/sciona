@@ -90,6 +90,19 @@ def test_neural_network_provider_asset_includes_mined_training_operations() -> N
         "insert_multilabel_sigmoid_head_before_loss",
         "insert_multilabel_focal_bce_loss_before_loss",
         "insert_arcface_margin_loss_before_loss",
+        "insert_training_augmentation_before_forward",
+        "insert_domain_specific_finetuning_before_forward",
+        "insert_adaptive_batch_norm_before_forward",
+        "insert_roi_cropping_before_forward",
+        "insert_transformer_sequence_aggregation_before_loss",
+        "insert_optimizer_schedule_before_update",
+        "insert_regularization_before_loss",
+        "insert_siamese_metric_backbone_before_loss",
+        "insert_graph_interaction_network_before_loss",
+        "insert_pointrend_boundary_refinement_after_forward",
+        "insert_cross_encoder_backbone_before_loss",
+        "insert_preference_ranking_head_before_loss",
+        "insert_dice_bce_loss_before_loss",
     }
 
 
@@ -165,3 +178,29 @@ def test_second_pass_neural_network_expansion_rules_apply_to_training_loop() -> 
         ExpansionContext(intermediates={"requires_arcface_margin_loss": True}),
     )
     assert "ArcFace Margin Loss" in {node.name for node in arcface.cdg.nodes}
+
+
+def test_support_three_neural_network_expansion_rules_apply_to_training_loop() -> None:
+    rule_set = _asset_backed_rule_set()
+    cases = [
+        ("requires_training_augmentation", "Training Data Augmentation"),
+        ("requires_domain_specific_finetuning", "Domain-Specific Fine-Tuning"),
+        ("requires_adaptive_batch_norm", "Adaptive Batch Normalization"),
+        ("requires_roi_cropping", "ROI Cropping Detector"),
+        ("requires_transformer_sequence_aggregation", "Transformer Sequence Aggregation"),
+        ("requires_optimizer_schedule", "Optimizer Schedule"),
+        ("requires_regularization", "Dropout and L2 Regularization"),
+        ("requires_siamese_metric_backbone", "Siamese Metric Backbone"),
+        ("requires_graph_interaction_network", "Graph Interaction Network"),
+        ("requires_pointrend_boundary_refinement", "PointRend Boundary Refinement"),
+        ("requires_cross_encoder_backbone", "Cross-Encoder Backbone"),
+        ("requires_preference_ranking_head", "Preference Ranking Head"),
+        ("requires_dice_bce_loss", "Dice/BCE Loss"),
+    ]
+
+    for intermediate_key, expected_node_name in cases:
+        result = ExpansionEngine([rule_set]).expand(
+            _neural_training_cdg(),
+            ExpansionContext(intermediates={intermediate_key: True}),
+        )
+        assert expected_node_name in {node.name for node in result.cdg.nodes}

@@ -799,6 +799,113 @@ def _build_insert_balanced_sampling_before_training() -> RewriteRule:
     )
 
 
+def _build_insert_pseudo_labeling_loop_before_training() -> RewriteRule:
+    """Insert pseudo-label generation and filtered retraining before model training."""
+    generate = _node(
+        "generate_pseudo_labels",
+        "Generate Pseudo Labels",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="pseudo_label_generation",
+        inputs=[IOSpec(name="unlabeled_data", type_desc="DataFrame")],
+        outputs=[IOSpec(name="pseudo_labeled_data", type_desc="DataFrame")],
+        description="Generate pseudo-labels for unlabeled, test, external, scraped, or domain-adaptation data.",
+    )
+    filter_labels = _node(
+        "filter_pseudo_labels",
+        "Filter Pseudo Labels",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="confidence_filtered_pseudo_labels",
+        inputs=[IOSpec(name="pseudo_labeled_data", type_desc="DataFrame")],
+        outputs=[IOSpec(name="filtered_training_data", type_desc="DataFrame")],
+        description="Keep high-confidence pseudo-labels before retraining.",
+    )
+    return _semantic_only_rule(
+        "insert_pseudo_labeling_loop_before_training",
+        priority=4,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[generate, filter_labels],
+            chain_edges=[
+                _edge("generate_pseudo_labels", "filter_pseudo_labels", "pseudo_labeled_data", "pseudo_labeled_data"),
+            ],
+        ),
+    )
+
+
+def _build_insert_iterative_imputation_before_estimator() -> RewriteRule:
+    """Insert iterative imputation before estimator training."""
+    impute = _node(
+        "iterative_imputation",
+        "Iterative Imputation",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="sklearn.impute.IterativeImputer",
+        inputs=[IOSpec(name="X", type_desc="ndarray")],
+        outputs=[IOSpec(name="X_imputed", type_desc="ndarray")],
+        description="Impute missing values with iterative chained models before estimator training.",
+    )
+    return _semantic_only_rule(
+        "insert_iterative_imputation_before_estimator",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[impute],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_feature_hashing_before_estimator() -> RewriteRule:
+    """Insert feature hashing for high-cardinality sparse inputs."""
+    hashing = _node(
+        "feature_hashing",
+        "Feature Hashing",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="sklearn.feature_extraction.FeatureHasher",
+        inputs=[IOSpec(name="categorical_or_text_features", type_desc="DataFrame")],
+        outputs=[IOSpec(name="hashed_features", type_desc="sparse_matrix")],
+        description="Hash high-cardinality categorical or text features into a fixed sparse feature space.",
+    )
+    return _semantic_only_rule(
+        "insert_feature_hashing_before_estimator",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[hashing],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_tree_early_stopping_validation() -> RewriteRule:
+    """Insert an early-stopping validation callback for boosted trees."""
+    early = _node(
+        "tree_early_stopping",
+        "Boosted Tree Early Stopping",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="lightgbm_xgboost_early_stopping",
+        inputs=[IOSpec(name="validation_set", type_desc="tuple[ndarray, ndarray]")],
+        outputs=[IOSpec(name="best_iteration", type_desc="int")],
+        description="Stop LightGBM or XGBoost training at the best validation iteration.",
+    )
+    return _semantic_only_rule(
+        "insert_tree_early_stopping_validation",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["model_training", "estimator"],
+            target_labels=["prediction_ensemble", "ensemble", "validation", "output"],
+            chain_nodes=[early],
+            chain_edges=[],
+        ),
+    )
+
+
 def _build_insert_log_target_transform() -> RewriteRule:
     """Insert a log target transform for skewed regression targets."""
     transform = _node(
@@ -900,6 +1007,54 @@ def _build_insert_retrieval_reranking() -> RewriteRule:
             source_labels=["prediction_ensemble", "ensemble", "meta_predict"],
             target_labels=["output", "submission", "validation"],
             chain_nodes=[rerank],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_database_augmentation_for_retrieval() -> RewriteRule:
+    """Insert database augmentation for retrieval embeddings."""
+    dba = _node(
+        "database_augmentation",
+        "Database Augmentation",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="retrieval_database_augmentation",
+        inputs=[IOSpec(name="embeddings", type_desc="ndarray")],
+        outputs=[IOSpec(name="augmented_embeddings", type_desc="ndarray")],
+        description="Average or diffuse retrieval database embeddings with nearest-neighbor evidence before search or reranking.",
+    )
+    return _semantic_only_rule(
+        "insert_database_augmentation_for_retrieval",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["prediction_ensemble", "ensemble", "meta_predict"],
+            target_labels=["output", "submission", "validation"],
+            chain_nodes=[dba],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_prompt_reasoning_augmentation() -> RewriteRule:
+    """Insert prompt/chain-of-thought augmentation for LLM-style tasks."""
+    prompt_aug = _node(
+        "prompt_reasoning_augmentation",
+        "Prompt Reasoning Augmentation",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="chain_of_thought_prompt_augmentation",
+        inputs=[IOSpec(name="prompt_examples", type_desc="list[str]")],
+        outputs=[IOSpec(name="augmented_prompts", type_desc="list[str]")],
+        description="Augment prompts or training traces with chain-of-thought-style reasoning examples when the task requires explicit reasoning.",
+    )
+    return _semantic_only_rule(
+        "insert_prompt_reasoning_augmentation_before_training",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[prompt_aug],
             chain_edges=[],
         ),
     )
@@ -1152,11 +1307,13 @@ def _diagnose_cv_strategy(
         f"{_PREFIX}.requires_group_kfold",
         f"{_PREFIX}.use_group_kfold",
         f"{_PREFIX}.requires_group_aware_cv",
+        f"{_PREFIX}.requires_stratified_group_kfold",
+        f"{_PREFIX}.use_stratified_group_kfold",
     )
     planning = _planning_text(context)
     planning_group = any(
         token in planning
-        for token in ("groupkfold", "group kfold", "group-aware", "patient id", "session id", "cultivar")
+        for token in ("groupkfold", "group kfold", "stratified groupkfold", "stratified group", "group-aware", "patient id", "session id", "cultivar")
     )
     if rec is None:
         if not explicit_group and not planning_group:
@@ -1442,6 +1599,102 @@ def _diagnose_balanced_sampling(
     )
 
 
+def _diagnose_pseudo_labeling(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_pseudo_labeling",
+        f"{_PREFIX}.use_pseudo_labeling",
+        f"{_PREFIX}.use_test_pseudo_labels",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in ("pseudo-label", "pseudo label", "unlabeled regions", "unlabeled images", "external scraped")
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_pseudo_labeling_loop_before_training",
+        severity=0.75,
+        evidence="Pseudo-labeling is required for unlabeled, test, external, or domain-adaptation data.",
+        metric_name="requires_pseudo_labeling",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_iterative_imputation(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_iterative_imputation",
+        f"{_PREFIX}.use_iterative_imputation",
+    )
+    planning = _planning_text(context)
+    if not explicit and "iterative imputation" not in planning:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_iterative_imputation_before_estimator",
+        severity=0.70,
+        evidence="Iterative imputation is required before estimator training.",
+        metric_name="requires_iterative_imputation",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_feature_hashing(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_feature_hashing",
+        f"{_PREFIX}.use_feature_hashing",
+    )
+    planning = _planning_text(context)
+    if not explicit and "feature hashing" not in planning and "hashing trick" not in planning:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_feature_hashing_before_estimator",
+        severity=0.70,
+        evidence="Feature hashing is required for high-cardinality sparse inputs.",
+        metric_name="requires_feature_hashing",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_tree_early_stopping(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_tree_early_stopping",
+        f"{_PREFIX}.use_tree_early_stopping",
+    )
+    planning = _planning_text(context)
+    planning_requires = "early stopping" in planning and (
+        "xgboost" in planning or "lightgbm" in planning
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_tree_early_stopping_validation",
+        severity=0.65,
+        evidence="Boosted-tree training requires early stopping against a validation set.",
+        metric_name="requires_tree_early_stopping",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
 def _diagnose_recursive_feature_elimination(
     cdg: CDGExport, context: ExpansionContext,
 ) -> ExpansionDiagnostic | None:
@@ -1457,6 +1710,54 @@ def _diagnose_recursive_feature_elimination(
         severity=0.70,
         evidence="Recursive Feature Elimination is needed before estimator training.",
         metric_name="requires_recursive_feature_elimination",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_database_augmentation(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_database_augmentation",
+        f"{_PREFIX}.use_database_augmentation",
+    )
+    planning = _planning_text(context)
+    if not explicit and "database augmentation" not in planning and "dba" not in planning:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_database_augmentation_for_retrieval",
+        severity=0.70,
+        evidence="Retrieval embeddings require database augmentation before final ranking.",
+        metric_name="requires_database_augmentation",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_prompt_reasoning_augmentation(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_prompt_reasoning_augmentation",
+        f"{_PREFIX}.use_chain_of_thought",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in ("chain-of-thought", "chain of thought", "cot prompting", "cot data augmentation")
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_prompt_reasoning_augmentation_before_training",
+        severity=0.65,
+        evidence="Prompt or chain-of-thought reasoning augmentation is required.",
+        metric_name="requires_prompt_reasoning_augmentation",
         metric_value=1.0,
         threshold=0.0,
         source_domain=_DOMAIN,
@@ -1629,10 +1930,16 @@ class MLModelSelectionRuleSet:
             _build_insert_recursive_feature_elimination(),
             _build_insert_permutation_importance_feature_selection(),
             _build_insert_balanced_sampling_before_training(),
+            _build_insert_pseudo_labeling_loop_before_training(),
+            _build_insert_iterative_imputation_before_estimator(),
+            _build_insert_feature_hashing_before_estimator(),
+            _build_insert_tree_early_stopping_validation(),
             _build_insert_log_target_transform(),
             _build_replace_loss_with_metric_aligned_objective(),
             _build_insert_metric_optimized_thresholding(),
             _build_insert_retrieval_reranking(),
+            _build_insert_database_augmentation_for_retrieval(),
+            _build_insert_prompt_reasoning_augmentation(),
             _build_insert_smoothed_target_encoding(),
         ]
 
@@ -1657,11 +1964,17 @@ class MLModelSelectionRuleSet:
             _diagnose_tree_ensemble_blend,
             _diagnose_permutation_importance_feature_selection,
             _diagnose_balanced_sampling,
+            _diagnose_pseudo_labeling,
+            _diagnose_iterative_imputation,
+            _diagnose_feature_hashing,
+            _diagnose_tree_early_stopping,
             _diagnose_recursive_feature_elimination,
             _diagnose_log_target_transform,
             _diagnose_metric_aligned_objective,
             _diagnose_metric_optimized_thresholding,
             _diagnose_retrieval_reranking,
+            _diagnose_database_augmentation,
+            _diagnose_prompt_reasoning_augmentation,
             _diagnose_smoothed_target_encoding,
         ]:
             d = fn(cdg, context)
