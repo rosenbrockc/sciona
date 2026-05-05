@@ -1310,19 +1310,57 @@ def _diagnose_cv_strategy(
         f"{_PREFIX}.requires_stratified_group_kfold",
         f"{_PREFIX}.use_stratified_group_kfold",
     )
+    explicit_spatial = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_spatial_cv",
+        f"{_PREFIX}.use_spatial_cv",
+        f"{_PREFIX}.requires_spatial_cross_validation",
+    )
     planning = _planning_text(context)
     planning_group = any(
         token in planning
-        for token in ("groupkfold", "group kfold", "stratified groupkfold", "stratified group", "group-aware", "patient id", "session id", "cultivar")
+        for token in (
+            "groupkfold",
+            "group kfold",
+            "stratified groupkfold",
+            "stratified group",
+            "group-aware",
+            "patient id",
+            "session id",
+            "cultivar",
+        )
+    )
+    planning_spatial = any(
+        token in planning
+        for token in (
+            "spatial cross-validation",
+            "spatial cross validation",
+            "spatial cv",
+            "scv",
+            "location-based validation",
+        )
+    )
+    requires_leakage_safe_cv = (
+        explicit_group or planning_group or explicit_spatial or planning_spatial
     )
     if rec is None:
-        if not explicit_group and not planning_group:
+        if not requires_leakage_safe_cv:
             return None
+        metric_name = (
+            "requires_spatial_cv"
+            if explicit_spatial or planning_spatial
+            else "requires_group_aware_cv"
+        )
+        evidence = (
+            "Spatial cross-validation is required to avoid leakage across nearby or location-related examples."
+            if metric_name == "requires_spatial_cv"
+            else "Group-aware cross-validation is required to avoid leakage across related examples."
+        )
         return ExpansionDiagnostic(
             rule_name="force_cv_strategy",
             severity=1.0,
-            evidence="Group-aware cross-validation is required to avoid leakage across related examples.",
-            metric_name="requires_group_aware_cv",
+            evidence=evidence,
+            metric_name=metric_name,
             metric_value=1.0,
             threshold=0.0,
             source_domain=_DOMAIN,
@@ -1330,13 +1368,17 @@ def _diagnose_cv_strategy(
     intermediates = context.intermediates or {}
     is_ts = intermediates.get(f"{_PREFIX}.is_time_series")
     if is_ts is None:
-        if not explicit_group and not planning_group:
+        if not requires_leakage_safe_cv:
             return None
         return ExpansionDiagnostic(
             rule_name="force_cv_strategy",
             severity=1.0,
             evidence=rec.get("reasoning", "Group-aware cross-validation is required."),
-            metric_name="requires_group_aware_cv",
+            metric_name=(
+                "requires_spatial_cv"
+                if explicit_spatial or planning_spatial
+                else "requires_group_aware_cv"
+            ),
             metric_value=1.0,
             threshold=0.0,
             source_domain=_DOMAIN,
@@ -1346,13 +1388,17 @@ def _diagnose_cv_strategy(
     except (ValueError, TypeError):
         return None
     if not ts_flag:
-        if not explicit_group and not planning_group:
+        if not requires_leakage_safe_cv:
             return None
         return ExpansionDiagnostic(
             rule_name="force_cv_strategy",
             severity=1.0,
             evidence=rec.get("reasoning", "Group-aware cross-validation is required."),
-            metric_name="requires_group_aware_cv",
+            metric_name=(
+                "requires_spatial_cv"
+                if explicit_spatial or planning_spatial
+                else "requires_group_aware_cv"
+            ),
             metric_value=1.0,
             threshold=0.0,
             source_domain=_DOMAIN,

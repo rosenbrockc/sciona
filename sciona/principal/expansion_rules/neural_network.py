@@ -701,6 +701,52 @@ def _build_insert_dice_bce_loss_before_loss() -> RewriteRule:
     )
 
 
+def _build_insert_multiple_instance_learning_head_before_loss() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_multiple_instance_learning_head_before_loss",
+        node_id="multiple_instance_learning_head",
+        node_name="Multiple Instance Learning Head",
+        matched_primitive="chowder_multiple_instance_learning_attention_pooling",
+        description="Aggregate bag, tile, or patch-level embeddings with a MIL head such as Chowder or attention pooling.",
+        input_name="instance_embeddings",
+        output_name="bag_logits",
+    )
+
+
+def _build_insert_specaugment_before_forward() -> RewriteRule:
+    return _build_insert_before_forward_rule(
+        rule_name="insert_specaugment_before_forward",
+        node_id="specaugment",
+        node_name="SpecAugment",
+        matched_primitive="frequency_time_masking_specaugment",
+        description="Apply frequency masking, time masking, or time-frequency masking to spectrogram-like training inputs.",
+        priority=2,
+    )
+
+
+def _build_insert_non_maximum_suppression_after_forward() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_non_maximum_suppression_after_forward",
+        node_id="non_maximum_suppression",
+        node_name="Non-Maximum Suppression",
+        matched_primitive="class_aware_non_maximum_suppression_triplet_filtering",
+        description="Filter overlapping boxes, detections, or triplets with class-aware non-maximum suppression after prediction.",
+        input_name="detections",
+        output_name="filtered_detections",
+    )
+
+
+def _build_insert_stochastic_depth_before_forward() -> RewriteRule:
+    return _build_insert_before_forward_rule(
+        rule_name="insert_stochastic_depth_before_forward",
+        node_id="stochastic_depth",
+        node_name="Stochastic Depth",
+        matched_primitive="stochastic_depth_drop_path_transformer_regularization",
+        description="Regularize residual, Swin, or transformer blocks with stochastic depth or DropPath during training.",
+        priority=2,
+    )
+
+
 def _build_insert_arcface_margin_loss_before_loss() -> RewriteRule:
     forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
     loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
@@ -1142,6 +1188,50 @@ def _diagnose_dice_bce_loss(cdg: CDGExport, context: ExpansionContext) -> Expans
     )
 
 
+def _diagnose_multiple_instance_learning_head(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_multiple_instance_learning_head_before_loss",
+        metric_name="requires_multiple_instance_learning_head",
+        evidence="A multiple-instance learning head is required for bag, tile, or patch aggregation.",
+        intermediate_keys=("requires_multiple_instance_learning_head", "use_mil_head", "use_chowder_mil"),
+        planning_terms=("multiple instance learning", "mil head", "chowder"),
+    )
+
+
+def _diagnose_specaugment(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_specaugment_before_forward",
+        metric_name="requires_specaugment",
+        evidence="SpecAugment frequency/time masking is required for spectrogram training.",
+        intermediate_keys=("requires_specaugment", "use_specaugment"),
+        planning_terms=("specaugment", "frequency masking", "time masking", "frequency/time masking", "time/frequency masking"),
+    )
+
+
+def _diagnose_non_maximum_suppression(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_non_maximum_suppression_after_forward",
+        metric_name="requires_nms",
+        evidence="Non-maximum suppression is required after detection or triplet prediction.",
+        intermediate_keys=("requires_nms", "use_nms", "use_class_aware_nms"),
+        planning_terms=("non-maximum suppression", "non maximum suppression", "class-aware nms", "nms"),
+    )
+
+
+def _diagnose_stochastic_depth(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_stochastic_depth_before_forward",
+        metric_name="requires_stochastic_depth",
+        evidence="Stochastic depth or DropPath regularization is required for residual or transformer layers.",
+        intermediate_keys=("requires_stochastic_depth", "use_stochastic_depth", "use_drop_path"),
+        planning_terms=("stochastic depth", "drop path", "droppath", "swin layers", "transformer layers"),
+    )
+
+
 def _diagnose_multilabel_focal_bce_loss(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
     explicit = _truthy_intermediate(context, "requires_multilabel_focal_bce_loss", "use_multilabel_focal_loss")
     planning = _planning_text(context)
@@ -1212,6 +1302,10 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_multilabel_sigmoid_head(),
             _build_insert_multilabel_focal_bce_loss(),
             _build_insert_dice_bce_loss_before_loss(),
+            _build_insert_multiple_instance_learning_head_before_loss(),
+            _build_insert_specaugment_before_forward(),
+            _build_insert_non_maximum_suppression_after_forward(),
+            _build_insert_stochastic_depth_before_forward(),
             _build_insert_arcface_margin_loss_before_loss(),
         ]
 
@@ -1243,6 +1337,10 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_multilabel_sigmoid_head,
                     _diagnose_multilabel_focal_bce_loss,
                     _diagnose_dice_bce_loss,
+                    _diagnose_multiple_instance_learning_head,
+                    _diagnose_specaugment,
+                    _diagnose_non_maximum_suppression,
+                    _diagnose_stochastic_depth,
                     _diagnose_arcface_margin_loss]:
             d = fn(cdg, context)
             if d is not None:

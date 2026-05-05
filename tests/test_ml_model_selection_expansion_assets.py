@@ -387,3 +387,27 @@ def test_support_three_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
             ExpansionContext(intermediates={intermediate_key: True}),
         )
         assert expected_node_ids.issubset({node.node_id for node in result.cdg.nodes})
+
+
+def test_force_cv_strategy_covers_spatial_cross_validation() -> None:
+    validation_cdg = CDGExport(
+        nodes=[
+            AlgorithmicNode(
+                node_id="validation",
+                name="Validation",
+                description="validation split",
+                concept_type=ConceptType.ML_MODEL_SELECTION,
+                status=NodeStatus.ATOMIC,
+            )
+        ],
+        edges=[],
+    )
+    result = ExpansionEngine([_asset_backed_ml_rule_set()]).expand(
+        validation_cdg,
+        ExpansionContext(
+            intermediates={"model_selection.requires_spatial_cv": True}
+        ),
+    )
+
+    assert result.expanded is True
+    assert result.applied_rules == ("force_cv_strategy",)
