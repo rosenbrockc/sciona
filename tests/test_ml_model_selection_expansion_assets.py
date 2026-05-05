@@ -15,6 +15,7 @@ from sciona.principal.expansion_assets import (
     load_local_expansion_assets_by_family,
 )
 from sciona.principal.expansion_rules.ml_model_selection import MLModelSelectionRuleSet
+from sciona.principal.expansion_rules import default_rule_sets
 
 
 def _tabular_pipeline_cdg() -> CDGExport:
@@ -123,6 +124,23 @@ def test_ml_model_selection_provider_expansion_asset_loads() -> None:
         asset.operation("apply_kfold_ensemble").operation_id
         == "sciona.expansions.ml.kfold_ensemble"
     )
+
+
+def test_known_provider_assets_wrap_default_rule_sets() -> None:
+    clear_local_expansion_asset_caches()
+
+    assets = load_local_expansion_assets_by_family()
+    wrapped = {
+        getattr(rule_set, "name", ""): type(rule_set).__name__
+        for rule_set in default_rule_sets()
+    }
+
+    for family in assets:
+        if family == "signal_event_rate":
+            # signal_event_rate is an alias-backed specialized rule set in the
+            # signal family and is already covered by provider asset tests.
+            continue
+        assert wrapped.get(family) == "AssetBackedExpansionRuleSet"
 
 
 def test_kfold_ensemble_rule_uses_common_expansion_asset_metadata() -> None:
