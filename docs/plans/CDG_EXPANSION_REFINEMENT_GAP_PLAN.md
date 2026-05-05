@@ -83,6 +83,8 @@ Status: complete.
 
 ## Phase 8: Duplicate CDG Governance
 
+Status: complete.
+
 - Before accepting a new base CDG, compare it against existing bases plus
   expansion/refinement operations.
 - Reject or flag base CDGs that are mostly isomorphic to an existing base plus

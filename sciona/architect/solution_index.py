@@ -168,6 +168,11 @@ class SolutionTemplateIndex:
     def size(self) -> int:
         return len(self._templates)
 
+    @property
+    def templates(self) -> tuple[SolutionTemplate, ...]:
+        """Return indexed templates in deterministic name order."""
+        return tuple(self._templates[name] for name in sorted(self._templates))
+
     def get(self, name: str) -> SolutionTemplate | None:
         return self._templates.get(name)
 
