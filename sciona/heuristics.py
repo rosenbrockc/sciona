@@ -56,6 +56,12 @@ _EXPLICIT_CANONICAL_HEURISTIC_IDS = {
     "dimensionality_reduction_selection",
     "hyperparameter_range_selection",
     "cv_strategy_selection",
+    # Symbolic funnel: data-to-equation matching heuristics
+    "boundary_triage_pass",
+    "exponent_signature_match",
+    "invariant_variance_cv",
+    "ransac_fit_residual",
+    "graph_pruning_depth",
 }
 EXTERNAL_CANONICAL_ASSET_CANDIDATES: tuple[tuple[str, ...], ...] = (
     ("data", "heuristics", "canonical_registry.json"),
