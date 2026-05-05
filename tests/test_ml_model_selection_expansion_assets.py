@@ -143,6 +143,26 @@ def test_known_provider_assets_wrap_default_rule_sets() -> None:
         assert wrapped.get(family) == "AssetBackedExpansionRuleSet"
 
 
+def test_default_rule_sets_have_provider_asset_operations() -> None:
+    clear_local_expansion_asset_caches()
+
+    assets = load_local_expansion_assets_by_family()
+    rule_sets = default_rule_sets()
+    missing_assets = sorted(
+        getattr(rule_set, "name", "")
+        for rule_set in rule_sets
+        if getattr(rule_set, "name", "") not in assets
+    )
+
+    assert missing_assets == []
+
+    for rule_set in rule_sets:
+        family = getattr(rule_set, "name", "")
+        asset_rule_names = {operation.rule_name for operation in assets[family].operations}
+        runtime_rule_names = {rule.name for rule in rule_set.rules()}
+        assert sorted(runtime_rule_names - asset_rule_names) == []
+
+
 def test_kfold_ensemble_rule_uses_common_expansion_asset_metadata() -> None:
     result = ExpansionEngine([_asset_backed_ml_rule_set()]).expand(
         _tabular_pipeline_cdg(),
