@@ -25,6 +25,12 @@ DEFINING_FORMULA_PROPERTY_ID = "P2534"
 HAS_USE_PROPERTY_ID = "P366"
 ADAPTER_NAME = "sciona.physics_ingest.sources.wikidata"
 ADAPTER_VERSION = "0.1.0"
+PHYSICS_EQUATION_ROOT_QID = "Q36338801"
+PHYSICAL_LAW_ROOT_QID = "Q214070"
+DEFAULT_PHYSICS_INGESTION_CLASS_ROOT_QIDS = (
+    PHYSICS_EQUATION_ROOT_QID,
+    PHYSICAL_LAW_ROOT_QID,
+)
 
 _GREEK_SYMBOL_NAMES = {
     "α": "alpha",
@@ -99,6 +105,7 @@ def build_physical_equation_candidates_query(
     formula_property_ids: Sequence[str] = (DEFINING_FORMULA_PROPERTY_ID,),
     required_use_qids: Sequence[str] = (),
     item_qids: Sequence[str] = (),
+    class_root_qids: Sequence[str] = (),
 ) -> str:
     """Build a SPARQL query for Wikidata items with equation-like formulae.
 
@@ -121,6 +128,9 @@ def build_physical_equation_candidates_query(
     ]
     if item_qids:
         clauses.insert(0, _sparql_values("item", "wd", item_qids))
+    if class_root_qids:
+        clauses.append(_sparql_values("classRoot", "wd", class_root_qids))
+        clauses.append("?item wdt:P31/wdt:P279* ?classRoot .")
     if required_use_qids:
         clauses.append(_sparql_values("requiredUse", "wd", required_use_qids))
         clauses.append("?item wdt:P366 ?requiredUse .")
@@ -135,6 +145,28 @@ def build_physical_equation_candidates_query(
     bd:serviceParam wikibase:language "{lang},mul,en".
   }}
 }} LIMIT {int(limit)}"""
+
+
+def build_physics_ingestion_candidate_query(
+    *,
+    limit: int = 500,
+    language: str = "en",
+    formula_property_ids: Sequence[str] = (DEFINING_FORMULA_PROPERTY_ID,),
+    class_root_qids: Sequence[str] = DEFAULT_PHYSICS_INGESTION_CLASS_ROOT_QIDS,
+) -> str:
+    """Build the default physics-scoped Wikidata ingestion candidate query.
+
+    This is narrower than the long-tail P2534 discovery query.  It starts with
+    items classified under Wikidata's Physics equations or physical law roots so
+    bulk ingestion does not begin with pure mathematical curiosities.
+    """
+
+    return build_physical_equation_candidates_query(
+        limit=limit,
+        language=language,
+        formula_property_ids=formula_property_ids,
+        class_root_qids=class_root_qids,
+    )
 
 
 def execute_sparql_query(

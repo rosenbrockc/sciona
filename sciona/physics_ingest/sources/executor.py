@@ -347,6 +347,20 @@ def _render_body_template(
     step: Mapping[str, Any],
 ) -> Any:
     query_builder = str(body_template.get("query_builder") or "")
+    if query_builder == "build_physics_ingestion_candidate_query":
+        from sciona.physics_ingest.sources.wikidata import (
+            build_physics_ingestion_candidate_query,
+        )
+
+        return {
+            "body_kind": "form",
+            "data": {
+                "query": build_physics_ingestion_candidate_query(
+                    limit=_request_limit(envelope=envelope, step=step)
+                ),
+                "format": "json",
+            },
+        }
     if query_builder == "build_physical_equation_candidates_query":
         from sciona.physics_ingest.sources.wikidata import (
             build_physical_equation_candidates_query,

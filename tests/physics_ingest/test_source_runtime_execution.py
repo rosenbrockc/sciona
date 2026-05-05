@@ -154,6 +154,8 @@ def test_runtime_execution_uses_injected_fake_session_and_sink() -> None:
                         "?formula ?alias ?use ?useLabel ?useDescription WHERE {\n"
                         "  VALUES ?formulaProperty { wdt:P2534 }\n"
                         "  ?item ?formulaProperty ?formula .\n"
+                        "  VALUES ?classRoot { wd:Q36338801 wd:Q214070 }\n"
+                        "  ?item wdt:P31/wdt:P279* ?classRoot .\n"
                         '  OPTIONAL { ?item skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }\n'
                         "  OPTIONAL { ?item wdt:P366 ?use . }\n"
                         "  SERVICE wikibase:label {\n"

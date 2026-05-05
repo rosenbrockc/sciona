@@ -419,9 +419,13 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             retry_policy=cautious_retry,
             headers={"Accept": "application/sparql-results+json"},
             body_template={
-                "query_builder": "build_physical_equation_candidates_query"
+                "query_builder": "build_physics_ingestion_candidate_query"
             },
-            notes="Adapter already exposes the query builder; executor injects offset.",
+            notes=(
+                "Adapter exposes a physics-scoped query builder for the first "
+                "ingestion queue; use the broader formula query for long-tail "
+                "P2534 discovery."
+            ),
         ),
         RetrievalEndpoint(
             endpoint_id="qudt_units_quantity_kinds",

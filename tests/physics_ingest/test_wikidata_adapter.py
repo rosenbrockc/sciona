@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from sciona.physics_ingest.sources.wikidata import (
+    DEFAULT_PHYSICS_INGESTION_CLASS_ROOT_QIDS,
     DEFINING_FORMULA_PROPERTY_ID,
     HAS_USE_PROPERTY_ID,
     build_physical_equation_candidates_query,
+    build_physics_ingestion_candidate_query,
     build_snapshot_record,
     build_wave0_candidate_records,
     entity_uri_to_id,
@@ -58,14 +60,28 @@ def test_build_physical_equation_candidates_query_preserves_wikidata_ids() -> No
         limit=25,
         item_qids=("Q1",),
         required_use_qids=("Q2",),
+        class_root_qids=("Q36338801",),
     )
 
     assert "VALUES ?formulaProperty { wdt:P2534 }" in query
     assert "VALUES ?item { wd:Q1 }" in query
+    assert "VALUES ?classRoot { wd:Q36338801 }" in query
+    assert "?item wdt:P31/wdt:P279* ?classRoot" in query
     assert "VALUES ?requiredUse { wd:Q2 }" in query
     assert "?item wdt:P366 ?requiredUse" in query
     assert "?item skos:altLabel ?alias" in query
     assert "LIMIT 25" in query
+
+
+def test_build_physics_ingestion_candidate_query_filters_to_physics_roots() -> None:
+    query = build_physics_ingestion_candidate_query(limit=50)
+
+    expected_values = " ".join(
+        f"wd:{qid}" for qid in DEFAULT_PHYSICS_INGESTION_CLASS_ROOT_QIDS
+    )
+    assert f"VALUES ?classRoot {{ {expected_values} }}" in query
+    assert "?item wdt:P31/wdt:P279* ?classRoot" in query
+    assert "LIMIT 50" in query
 
 
 def test_parse_sparql_bindings_groups_aliases_and_uses() -> None:
