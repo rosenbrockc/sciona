@@ -461,9 +461,9 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
             adapter_name="sciona.physics_ingest.sources.pdg",
             adapter_version="wave1.pdg_scaffold.v1",
             method="GET",
-            url="https://github.com/woojin1063/Physics-Derivation-Graph",
+            url="https://github.com/allofphysicsgraph/ui_v8_website_flask_neo4j",
             endpoint_kind="repository_snapshot",
-            license_expression="upstream-license-required",
+            license_expression="CC-BY-4.0",
             provenance_summary=(
                 "Physics Derivation Graph equation and inference-rule payloads "
                 "captured from an immutable repository snapshot."
@@ -475,7 +475,16 @@ def _current_endpoints(*, snapshot_key_prefix: str) -> tuple[RetrievalEndpoint, 
                 default_limit=100,
                 terminal_condition="all_matching_files_retrieved",
             ),
-            rate_limit=RateLimitHint(requests_per_second=0.5, concurrency=1),
+            rate_limit=RateLimitHint(
+                requests_per_second=0.5,
+                concurrency=1,
+                min_delay_seconds=2.0,
+                notes=(
+                    "Use GitHub API tree snapshots with a Sciona User-Agent; "
+                    "avoid recursive per-file downloads except for explicit core "
+                    "Cypher inventory runs."
+                ),
+            ),
             retry_policy=bulk_retry,
             content_type="application/json",
         ),
