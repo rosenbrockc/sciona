@@ -10,6 +10,8 @@ Expansion insertion points:
   - After Loss Computation: loss convergence monitoring
   - After Parameter Update: weight distribution check
   - Around training loop: SWA, mixed precision, AWP, progressive resizing
+  - Competition refinements: recurrent sequence backbones, GeM pooling,
+    multi-sample dropout, hard-negative mining, ArcFace-style margin losses
 """
 
 from __future__ import annotations
@@ -291,6 +293,202 @@ def _build_insert_progressive_resizing_before_forward() -> RewriteRule:
     )
 
 
+def _build_insert_sequence_cnn_recurrent_backbone() -> RewriteRule:
+    forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
+    loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
+    lhs = CDGExport(nodes=[forward, loss], edges=[_edge("forward", "loss")])
+    interface = CDGExport(nodes=[forward, loss], edges=[])
+
+    sequence = _node(
+        "sequence_cnn_recurrent_backbone",
+        "CNN-Recurrent Sequence Backbone",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="cnn_bidirectional_lstm_gru_backbone",
+        inputs=[IOSpec(name="sequence_features", type_desc="Tensor")],
+        outputs=[IOSpec(name="sequence_embedding", type_desc="Tensor")],
+        description="Encode temporal or ordered features with a 1D/2D CNN followed by bidirectional LSTM or GRU layers.",
+    )
+    rhs = CDGExport(
+        nodes=[forward, sequence, loss],
+        edges=[_edge("forward", "sequence_cnn_recurrent_backbone"), _edge("sequence_cnn_recurrent_backbone", "loss")],
+    )
+    return RewriteRule(
+        name="insert_sequence_cnn_recurrent_backbone_before_loss",
+        lhs=lhs, rhs=rhs, interface=interface,
+        l_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        r_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        priority=3,
+    )
+
+
+def _build_insert_gem_pooling() -> RewriteRule:
+    forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
+    loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
+    lhs = CDGExport(nodes=[forward, loss], edges=[_edge("forward", "loss")])
+    interface = CDGExport(nodes=[forward, loss], edges=[])
+
+    pooling = _node(
+        "gem_pooling",
+        "Generalized Mean Pooling",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="generalized_mean_pooling",
+        inputs=[IOSpec(name="feature_map", type_desc="Tensor")],
+        outputs=[IOSpec(name="pooled_features", type_desc="Tensor")],
+        description="Aggregate convolutional features with GeM or GAP-style global pooling before the task head.",
+    )
+    rhs = CDGExport(
+        nodes=[forward, pooling, loss],
+        edges=[_edge("forward", "gem_pooling"), _edge("gem_pooling", "loss")],
+    )
+    return RewriteRule(
+        name="insert_gem_pooling_after_forward",
+        lhs=lhs, rhs=rhs, interface=interface,
+        l_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        r_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        priority=3,
+    )
+
+
+def _build_insert_multi_sample_dropout() -> RewriteRule:
+    forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
+    loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
+    lhs = CDGExport(nodes=[forward, loss], edges=[_edge("forward", "loss")])
+    interface = CDGExport(nodes=[forward, loss], edges=[])
+
+    dropout = _node(
+        "multi_sample_dropout",
+        "Multi-Sample Dropout",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="multi_sample_dropout_head",
+        inputs=[IOSpec(name="features", type_desc="Tensor")],
+        outputs=[IOSpec(name="averaged_logits", type_desc="Tensor")],
+        description="Average logits from multiple dropout masks to stabilize the task head.",
+    )
+    rhs = CDGExport(
+        nodes=[forward, dropout, loss],
+        edges=[_edge("forward", "multi_sample_dropout"), _edge("multi_sample_dropout", "loss")],
+    )
+    return RewriteRule(
+        name="insert_multi_sample_dropout_before_loss",
+        lhs=lhs, rhs=rhs, interface=interface,
+        l_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        r_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        priority=2,
+    )
+
+
+def _build_insert_hard_negative_mining() -> RewriteRule:
+    forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
+    loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
+    lhs = CDGExport(nodes=[forward, loss], edges=[_edge("forward", "loss")])
+    interface = CDGExport(nodes=[forward, loss], edges=[])
+
+    mining = _node(
+        "hard_negative_mining",
+        "Hard Negative Mining",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="hard_negative_triplet_mining",
+        inputs=[IOSpec(name="embeddings", type_desc="Tensor")],
+        outputs=[IOSpec(name="mined_pairs", type_desc="Tensor")],
+        description="Select hard negatives or hard triplets before contrastive, triplet, or ranking loss computation.",
+    )
+    rhs = CDGExport(
+        nodes=[forward, mining, loss],
+        edges=[_edge("forward", "hard_negative_mining"), _edge("hard_negative_mining", "loss")],
+    )
+    return RewriteRule(
+        name="insert_hard_negative_mining_before_loss",
+        lhs=lhs, rhs=rhs, interface=interface,
+        l_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        r_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        priority=3,
+    )
+
+
+def _build_insert_multilabel_sigmoid_head() -> RewriteRule:
+    forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
+    loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
+    lhs = CDGExport(nodes=[forward, loss], edges=[_edge("forward", "loss")])
+    interface = CDGExport(nodes=[forward, loss], edges=[])
+
+    head = _node(
+        "multilabel_sigmoid_head",
+        "Multi-Label Sigmoid Head",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="multilabel_sigmoid_classification_head",
+        inputs=[IOSpec(name="features", type_desc="Tensor")],
+        outputs=[IOSpec(name="label_logits", type_desc="Tensor")],
+        description="Predict independent label logits for multi-label or auxiliary multi-task classification.",
+    )
+    rhs = CDGExport(
+        nodes=[forward, head, loss],
+        edges=[_edge("forward", "multilabel_sigmoid_head"), _edge("multilabel_sigmoid_head", "loss")],
+    )
+    return RewriteRule(
+        name="insert_multilabel_sigmoid_head_before_loss",
+        lhs=lhs, rhs=rhs, interface=interface,
+        l_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        r_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        priority=3,
+    )
+
+
+def _build_insert_multilabel_focal_bce_loss() -> RewriteRule:
+    forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
+    loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
+    lhs = CDGExport(nodes=[forward, loss], edges=[_edge("forward", "loss")])
+    interface = CDGExport(nodes=[forward, loss], edges=[])
+
+    multilabel_loss = _node(
+        "multilabel_focal_bce_loss",
+        "Multi-Label Focal/BCE Loss",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="multilabel_focal_bce_label_smoothing_loss",
+        inputs=[IOSpec(name="label_logits", type_desc="Tensor"), IOSpec(name="labels", type_desc="Tensor")],
+        outputs=[IOSpec(name="loss", type_desc="Tensor")],
+        description="Compute multi-label focal or BCE loss, optionally with label smoothing.",
+    )
+    rhs = CDGExport(
+        nodes=[forward, multilabel_loss, loss],
+        edges=[_edge("forward", "multilabel_focal_bce_loss"), _edge("multilabel_focal_bce_loss", "loss")],
+    )
+    return RewriteRule(
+        name="insert_multilabel_focal_bce_loss_before_loss",
+        lhs=lhs, rhs=rhs, interface=interface,
+        l_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        r_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        priority=3,
+    )
+
+
+def _build_insert_arcface_margin_loss_before_loss() -> RewriteRule:
+    forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
+    loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
+    lhs = CDGExport(nodes=[forward, loss], edges=[_edge("forward", "loss")])
+    interface = CDGExport(nodes=[forward, loss], edges=[])
+
+    arcface = _node(
+        "arcface_margin_loss",
+        "ArcFace Margin Loss",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="arcface_subcenter_margin_loss",
+        inputs=[IOSpec(name="embeddings", type_desc="Tensor"), IOSpec(name="labels", type_desc="Tensor")],
+        outputs=[IOSpec(name="loss", type_desc="Tensor")],
+        description="Use additive angular margin loss, including ArcFace or sub-center ArcFace variants.",
+    )
+    rhs = CDGExport(
+        nodes=[forward, arcface, loss],
+        edges=[_edge("forward", "arcface_margin_loss"), _edge("arcface_margin_loss", "loss")],
+    )
+    return RewriteRule(
+        name="insert_arcface_margin_loss_before_loss",
+        lhs=lhs, rhs=rhs, interface=interface,
+        l_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        r_morphism=Morphism(node_map={"forward": "forward", "loss": "loss"}, edge_map={}),
+        priority=3,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------
@@ -450,6 +648,109 @@ def _diagnose_progressive_resizing(cdg: CDGExport, context: ExpansionContext) ->
     )
 
 
+def _diagnose_sequence_cnn_recurrent_backbone(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    explicit = _truthy_intermediate(context, "requires_sequence_cnn_recurrent_backbone", "use_bilstm_gru_backbone")
+    planning = _planning_text(context)
+    planning_requires = any(token in planning for token in ("bidirectional lstm", "bilstm", "gru", "1d-cnn", "2d cnn"))
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_sequence_cnn_recurrent_backbone_before_loss",
+        severity=0.75,
+        evidence="A CNN plus bidirectional LSTM/GRU sequence backbone is required.",
+        metric_name="requires_sequence_cnn_recurrent_backbone", metric_value=1.0, threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_gem_pooling(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    explicit = _truthy_intermediate(context, "requires_gem_pooling", "use_gem_pooling", "use_gap_pooling")
+    planning = _planning_text(context)
+    planning_requires = any(token in planning for token in ("generalized mean", "gem pooling", "global average pooling", "gap features"))
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_gem_pooling_after_forward",
+        severity=0.70,
+        evidence="GeM or GAP-style global pooling is required after the backbone forward pass.",
+        metric_name="requires_gem_pooling", metric_value=1.0, threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_multi_sample_dropout(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    explicit = _truthy_intermediate(context, "requires_multi_sample_dropout", "use_multi_sample_dropout")
+    planning = _planning_text(context)
+    if not explicit and "multi-sample dropout" not in planning and "multi sample dropout" not in planning:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_multi_sample_dropout_before_loss",
+        severity=0.65,
+        evidence="Multi-sample dropout is required to stabilize task-head logits.",
+        metric_name="requires_multi_sample_dropout", metric_value=1.0, threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_hard_negative_mining(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    explicit = _truthy_intermediate(context, "requires_hard_negative_mining", "use_hard_negative_mining")
+    planning = _planning_text(context)
+    planning_requires = any(token in planning for token in ("hard negative", "hard triplet", "triplet mining"))
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_hard_negative_mining_before_loss",
+        severity=0.75,
+        evidence="Hard-negative or hard-triplet mining is required before loss computation.",
+        metric_name="requires_hard_negative_mining", metric_value=1.0, threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_multilabel_sigmoid_head(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    explicit = _truthy_intermediate(context, "requires_multilabel_sigmoid_head", "use_multilabel_sigmoid_head")
+    planning = _planning_text(context)
+    planning_requires = any(token in planning for token in ("multi-label sigmoid", "multilabel sigmoid", "multi-task sigmoid", "auxiliary head"))
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_multilabel_sigmoid_head_before_loss",
+        severity=0.70,
+        evidence="A multi-label or multi-task sigmoid head is required before loss computation.",
+        metric_name="requires_multilabel_sigmoid_head", metric_value=1.0, threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_multilabel_focal_bce_loss(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    explicit = _truthy_intermediate(context, "requires_multilabel_focal_bce_loss", "use_multilabel_focal_loss")
+    planning = _planning_text(context)
+    planning_requires = any(token in planning for token in ("multi-label focal", "multilabel focal", "multi-label bce", "bce loss with label smoothing"))
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_multilabel_focal_bce_loss_before_loss",
+        severity=0.70,
+        evidence="A multi-label focal/BCE loss variant is required.",
+        metric_name="requires_multilabel_focal_bce_loss", metric_value=1.0, threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_arcface_margin_loss(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    explicit = _truthy_intermediate(context, "requires_arcface_margin_loss", "use_arcface", "use_subcenter_arcface")
+    planning = _planning_text(context)
+    if not explicit and "arcface" not in planning and "additive angular margin" not in planning:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_arcface_margin_loss_before_loss",
+        severity=0.75,
+        evidence="ArcFace or sub-center ArcFace angular-margin loss is required.",
+        metric_name="requires_arcface_margin_loss", metric_value=1.0, threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Rule set
 # ---------------------------------------------------------------------------
@@ -471,6 +772,13 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_mixed_precision_training(),
             _build_insert_adversarial_weight_perturbation(),
             _build_insert_progressive_resizing_before_forward(),
+            _build_insert_sequence_cnn_recurrent_backbone(),
+            _build_insert_gem_pooling(),
+            _build_insert_multi_sample_dropout(),
+            _build_insert_hard_negative_mining(),
+            _build_insert_multilabel_sigmoid_head(),
+            _build_insert_multilabel_focal_bce_loss(),
+            _build_insert_arcface_margin_loss_before_loss(),
         ]
 
     def diagnose(self, cdg: CDGExport, context: ExpansionContext) -> list[ExpansionDiagnostic]:
@@ -480,7 +788,14 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_swa_checkpoint_averaging,
                     _diagnose_mixed_precision_training,
                     _diagnose_adversarial_weight_perturbation,
-                    _diagnose_progressive_resizing]:
+                    _diagnose_progressive_resizing,
+                    _diagnose_sequence_cnn_recurrent_backbone,
+                    _diagnose_gem_pooling,
+                    _diagnose_multi_sample_dropout,
+                    _diagnose_hard_negative_mining,
+                    _diagnose_multilabel_sigmoid_head,
+                    _diagnose_multilabel_focal_bce_loss,
+                    _diagnose_arcface_margin_loss]:
             d = fn(cdg, context)
             if d is not None:
                 diagnostics.append(d)

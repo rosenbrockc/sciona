@@ -683,6 +683,50 @@ def _build_apply_tree_ensemble_blend() -> RewriteRule:
     )
 
 
+def _build_apply_pretrained_backbone_ensemble() -> RewriteRule:
+    """Replace single training with a blend of pretrained image/text backbones."""
+    train_cnn = _node(
+        "train_pretrained_cnn_backbone",
+        "Train Pretrained CNN Backbone",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="efficientnet_resnet_densenet_finetuning",
+        inputs=[IOSpec(name="train_data", type_desc="DataLoader")],
+        outputs=[IOSpec(name="cnn_model", type_desc="nn.Module")],
+        description="Finetune an EfficientNet, ResNet, DenseNet, Inception, or VGG-style backbone.",
+    )
+    train_transformer = _node(
+        "train_pretrained_transformer_backbone",
+        "Train Pretrained Transformer Backbone",
+        ConceptType.NEURAL_NETWORK,
+        matched_primitive="swin_deit_convnext_finetuning",
+        inputs=[IOSpec(name="train_data", type_desc="DataLoader")],
+        outputs=[IOSpec(name="transformer_model", type_desc="nn.Module")],
+        description="Finetune a Swin, DeiT, ConvNeXt, NFNet, or UNet-style transfer backbone.",
+    )
+    blend = _node(
+        "blend_pretrained_backbones",
+        "Blend Pretrained Backbone Predictions",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="pretrained_backbone_ensemble_blend",
+        inputs=[IOSpec(name="models", type_desc="list[nn.Module]")],
+        outputs=[IOSpec(name="predictions", type_desc="ndarray")],
+        description="Blend predictions from diverse pretrained backbones.",
+    )
+    return _semantic_only_rule(
+        "apply_pretrained_backbone_ensemble",
+        priority=5,
+        semantic_apply=lambda graph: _replace_nodes_with_chain(
+            graph,
+            target_labels=["model_training", "prediction_ensemble"],
+            chain_nodes=[train_cnn, train_transformer, blend],
+            chain_edges=[
+                _edge("train_pretrained_cnn_backbone", "blend_pretrained_backbones", "cnn_model", "models"),
+                _edge("train_pretrained_transformer_backbone", "blend_pretrained_backbones", "transformer_model", "models"),
+            ],
+        ),
+    )
+
+
 def _build_insert_recursive_feature_elimination() -> RewriteRule:
     """Insert recursive feature elimination before the estimator."""
     rfe = _node(
@@ -707,6 +751,54 @@ def _build_insert_recursive_feature_elimination() -> RewriteRule:
     )
 
 
+def _build_insert_permutation_importance_feature_selection() -> RewriteRule:
+    """Insert permutation-importance feature selection before model training."""
+    select = _node(
+        "permutation_importance_feature_selection",
+        "Permutation Importance Feature Selection",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="sklearn.inspection.permutation_importance",
+        inputs=[IOSpec(name="X", type_desc="ndarray"), IOSpec(name="y", type_desc="ndarray")],
+        outputs=[IOSpec(name="X_selected", type_desc="ndarray")],
+        description="Select features by validating permutation importance and removing low-value columns.",
+    )
+    return _semantic_only_rule(
+        "insert_permutation_importance_feature_selection_before_estimator",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[select],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_balanced_sampling_before_training() -> RewriteRule:
+    """Insert rare-class balanced sampling before model training."""
+    sample = _node(
+        "balanced_rare_class_sampling",
+        "Balanced Rare-Class Sampling",
+        ConceptType.DATA_ASSEMBLY,
+        matched_primitive="balanced_oversampling_sampler",
+        inputs=[IOSpec(name="X", type_desc="ndarray"), IOSpec(name="y", type_desc="ndarray")],
+        outputs=[IOSpec(name="sampled_training_data", type_desc="tuple[ndarray, ndarray]")],
+        description="Oversample or balance rare classes before estimator training.",
+    )
+    return _semantic_only_rule(
+        "insert_balanced_sampling_before_training",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[sample],
+            chain_edges=[],
+        ),
+    )
+
+
 def _build_insert_log_target_transform() -> RewriteRule:
     """Insert a log target transform for skewed regression targets."""
     transform = _node(
@@ -726,6 +818,88 @@ def _build_insert_log_target_transform() -> RewriteRule:
             source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
             target_labels=["estimator", "model_training"],
             chain_nodes=[transform],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_replace_loss_with_metric_aligned_objective() -> RewriteRule:
+    """Replace generic model training with a leaderboard-metric-aligned objective."""
+    configure = _node(
+        "configure_metric_aligned_objective",
+        "Configure Metric-Aligned Objective",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="metric_aligned_custom_objective",
+        inputs=[IOSpec(name="metric", type_desc="str")],
+        outputs=[IOSpec(name="objective", type_desc="callable")],
+        description="Configure custom loss for quantile, RMSLE/RMSE, partial AUC, Brier, Pearson, or F1-weighted objectives.",
+    )
+    train = _node(
+        "train_metric_aligned_estimator",
+        "Train Metric-Aligned Estimator",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="lightgbm_xgboost_custom_objective",
+        inputs=[IOSpec(name="objective", type_desc="callable")],
+        outputs=[IOSpec(name="model", type_desc="trained_model")],
+        description="Train LightGBM, XGBoost, or a compatible estimator with the configured objective.",
+    )
+    return _semantic_only_rule(
+        "replace_loss_with_metric_aligned_objective",
+        priority=4,
+        semantic_apply=lambda graph: _replace_nodes_with_chain(
+            graph,
+            target_labels=["model_training", "estimator"],
+            chain_nodes=[configure, train],
+            chain_edges=[
+                _edge("configure_metric_aligned_objective", "train_metric_aligned_estimator", "objective", "objective"),
+            ],
+        ),
+    )
+
+
+def _build_insert_metric_optimized_thresholding() -> RewriteRule:
+    """Insert threshold calibration before final output formatting."""
+    threshold = _node(
+        "metric_optimized_thresholding",
+        "Metric-Optimized Thresholding",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="macro_f1_mcc_threshold_optimization",
+        inputs=[IOSpec(name="probabilities", type_desc="ndarray")],
+        outputs=[IOSpec(name="labels", type_desc="ndarray")],
+        description="Tune class or label thresholds against Macro F1, MCC, tag F1, or related discrete metrics.",
+    )
+    return _semantic_only_rule(
+        "insert_metric_optimized_thresholding_after_prediction",
+        priority=4,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["prediction_ensemble", "ensemble", "meta_predict"],
+            target_labels=["output", "submission", "validation"],
+            chain_nodes=[threshold],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_retrieval_reranking() -> RewriteRule:
+    """Insert local-feature or pairwise model reranking after first-pass predictions."""
+    rerank = _node(
+        "retrieval_reranking",
+        "Retrieval Re-Ranking",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="delf_xgboost_pairwise_reranking",
+        inputs=[IOSpec(name="candidates", type_desc="DataFrame")],
+        outputs=[IOSpec(name="reranked_candidates", type_desc="DataFrame")],
+        description="Rerank first-pass retrieval candidates with DELF local features or an XGBoost pair-ranker.",
+    )
+    return _semantic_only_rule(
+        "insert_retrieval_reranking_after_prediction",
+        priority=4,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["prediction_ensemble", "ensemble", "meta_predict"],
+            target_labels=["output", "submission", "validation"],
+            chain_nodes=[rerank],
             chain_edges=[],
         ),
     )
@@ -872,6 +1046,26 @@ def _diagnose_preprocessing(
     cdg: CDGExport, context: ExpansionContext,
 ) -> ExpansionDiagnostic | None:
     rec = _get_rec(context, "recommend_preprocessing")
+    explicit_scaling = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.use_standard_scaler",
+        f"{_PREFIX}.requires_feature_scaling",
+    )
+    planning = _planning_text(context)
+    if rec is None and (
+        explicit_scaling
+        or "standardscaler" in planning
+        or "standard scaler" in planning
+    ):
+        return ExpansionDiagnostic(
+            rule_name="insert_preprocessing_before_estimator",
+            severity=0.70,
+            evidence="StandardScaler or equivalent numeric feature scaling is required.",
+            metric_name="requires_feature_scaling",
+            metric_value=1.0,
+            threshold=0.0,
+            source_domain=_DOMAIN,
+        )
     if rec is None:
         return None
     # Only fire if preprocessing is actually recommended
@@ -953,18 +1147,59 @@ def _diagnose_cv_strategy(
     cdg: CDGExport, context: ExpansionContext,
 ) -> ExpansionDiagnostic | None:
     rec = _get_rec(context, "recommend_cv_strategy")
+    explicit_group = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_group_kfold",
+        f"{_PREFIX}.use_group_kfold",
+        f"{_PREFIX}.requires_group_aware_cv",
+    )
+    planning = _planning_text(context)
+    planning_group = any(
+        token in planning
+        for token in ("groupkfold", "group kfold", "group-aware", "patient id", "session id", "cultivar")
+    )
     if rec is None:
-        return None
+        if not explicit_group and not planning_group:
+            return None
+        return ExpansionDiagnostic(
+            rule_name="force_cv_strategy",
+            severity=1.0,
+            evidence="Group-aware cross-validation is required to avoid leakage across related examples.",
+            metric_name="requires_group_aware_cv",
+            metric_value=1.0,
+            threshold=0.0,
+            source_domain=_DOMAIN,
+        )
     intermediates = context.intermediates or {}
     is_ts = intermediates.get(f"{_PREFIX}.is_time_series")
     if is_ts is None:
-        return None
+        if not explicit_group and not planning_group:
+            return None
+        return ExpansionDiagnostic(
+            rule_name="force_cv_strategy",
+            severity=1.0,
+            evidence=rec.get("reasoning", "Group-aware cross-validation is required."),
+            metric_name="requires_group_aware_cv",
+            metric_value=1.0,
+            threshold=0.0,
+            source_domain=_DOMAIN,
+        )
     try:
         ts_flag = bool(is_ts)
     except (ValueError, TypeError):
         return None
     if not ts_flag:
-        return None
+        if not explicit_group and not planning_group:
+            return None
+        return ExpansionDiagnostic(
+            rule_name="force_cv_strategy",
+            severity=1.0,
+            evidence=rec.get("reasoning", "Group-aware cross-validation is required."),
+            metric_name="requires_group_aware_cv",
+            metric_value=1.0,
+            threshold=0.0,
+            source_domain=_DOMAIN,
+        )
     return ExpansionDiagnostic(
         rule_name="force_cv_strategy",
         severity=1.0,  # absolute confidence — time series leakage is critical
@@ -1092,6 +1327,43 @@ def _diagnose_dl_backbone_substitution(
     )
 
 
+def _diagnose_pretrained_backbone_ensemble(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_pretrained_backbone_ensemble",
+        f"{_PREFIX}.use_pretrained_backbone_ensemble",
+        f"{_PREFIX}.use_efficientnet_ensemble",
+        f"{_PREFIX}.use_swin_unet_ensemble",
+    )
+    planning = _planning_text(context)
+    backbone_terms = (
+        "efficientnet",
+        "densenet",
+        "resnet",
+        "inception",
+        "vgg",
+        "deit",
+        "swin",
+        "convnext",
+        "nfnet",
+        "unet",
+    )
+    planning_requires = "ensemble" in planning and any(term in planning for term in backbone_terms)
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="apply_pretrained_backbone_ensemble",
+        severity=0.85,
+        evidence="A diverse pretrained-backbone ensemble is required.",
+        metric_name="requires_pretrained_backbone_ensemble",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
 def _diagnose_tree_ensemble_blend(
     cdg: CDGExport, context: ExpansionContext,
 ) -> ExpansionDiagnostic | None:
@@ -1114,6 +1386,56 @@ def _diagnose_tree_ensemble_blend(
         severity=0.80,
         evidence="A heterogeneous LightGBM/XGBoost/CatBoost-style tree ensemble is required.",
         metric_name="requires_tree_ensemble_blend",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_permutation_importance_feature_selection(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_permutation_importance_feature_selection",
+        f"{_PREFIX}.use_permutation_importance",
+    )
+    planning = _planning_text(context)
+    planning_requires = "permutation importance" in planning or "feature importance-based selection" in planning
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_permutation_importance_feature_selection_before_estimator",
+        severity=0.70,
+        evidence="Permutation-importance feature selection is needed before estimator training.",
+        metric_name="requires_permutation_importance_feature_selection",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_balanced_sampling(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_balanced_sampling",
+        f"{_PREFIX}.use_balanced_oversampling",
+        f"{_PREFIX}.use_rare_class_sampling",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in ("balanced over-sampling", "balanced oversampling", "rare classes", "rare species")
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_balanced_sampling_before_training",
+        severity=0.70,
+        evidence="Rare classes require balanced sampling before training.",
+        metric_name="requires_balanced_sampling",
         metric_value=1.0,
         threshold=0.0,
         source_domain=_DOMAIN,
@@ -1156,6 +1478,98 @@ def _diagnose_log_target_transform(
         severity=0.70,
         evidence="A skewed regression target requires log1p target scaling and inverse-transform prediction.",
         metric_name="requires_log_target_transform",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_metric_aligned_objective(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_metric_aligned_objective",
+        f"{_PREFIX}.use_custom_objective",
+        f"{_PREFIX}.use_quantile_loss",
+        f"{_PREFIX}.use_rmsle_objective",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in (
+            "custom loss",
+            "custom objective",
+            "quantile loss",
+            "rmsle",
+            "rmse loss",
+            "partial auc",
+            "brier score",
+            "pearson correlation",
+            "f1-weighted loss",
+        )
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="replace_loss_with_metric_aligned_objective",
+        severity=0.75,
+        evidence="Training should use a loss or objective aligned with the competition metric.",
+        metric_name="requires_metric_aligned_objective",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_metric_optimized_thresholding(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_metric_optimized_thresholding",
+        f"{_PREFIX}.use_macro_f1_thresholding",
+        f"{_PREFIX}.use_mcc_thresholding",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in ("macro f1", "mcc-optimized", "threshold optimization", "thresholding per", "tag f1")
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_metric_optimized_thresholding_after_prediction",
+        severity=0.75,
+        evidence="Prediction thresholds should be optimized against the leaderboard metric.",
+        metric_name="requires_metric_optimized_thresholding",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_retrieval_reranking(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_retrieval_reranking",
+        f"{_PREFIX}.use_delf_reranking",
+        f"{_PREFIX}.use_xgboost_reranking",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in ("delf", "deep local features", "pair re-ranking", "pair reranking", "xgboost for re-ranking", "xgboost for reranking")
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_retrieval_reranking_after_prediction",
+        severity=0.75,
+        evidence="First-pass retrieval candidates require DELF or pairwise-model reranking.",
+        metric_name="requires_retrieval_reranking",
         metric_value=1.0,
         threshold=0.0,
         source_domain=_DOMAIN,
@@ -1211,8 +1625,14 @@ class MLModelSelectionRuleSet:
             _build_insert_constraint_injection(),
             _build_apply_dl_backbone_substitution(),
             _build_apply_tree_ensemble_blend(),
+            _build_apply_pretrained_backbone_ensemble(),
             _build_insert_recursive_feature_elimination(),
+            _build_insert_permutation_importance_feature_selection(),
+            _build_insert_balanced_sampling_before_training(),
             _build_insert_log_target_transform(),
+            _build_replace_loss_with_metric_aligned_objective(),
+            _build_insert_metric_optimized_thresholding(),
+            _build_insert_retrieval_reranking(),
             _build_insert_smoothed_target_encoding(),
         ]
 
@@ -1233,9 +1653,15 @@ class MLModelSelectionRuleSet:
             _diagnose_stacking_ensemble,
             _diagnose_constraint_injection,
             _diagnose_dl_backbone_substitution,
+            _diagnose_pretrained_backbone_ensemble,
             _diagnose_tree_ensemble_blend,
+            _diagnose_permutation_importance_feature_selection,
+            _diagnose_balanced_sampling,
             _diagnose_recursive_feature_elimination,
             _diagnose_log_target_transform,
+            _diagnose_metric_aligned_objective,
+            _diagnose_metric_optimized_thresholding,
+            _diagnose_retrieval_reranking,
             _diagnose_smoothed_target_encoding,
         ]:
             d = fn(cdg, context)

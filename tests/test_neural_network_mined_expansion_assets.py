@@ -83,6 +83,13 @@ def test_neural_network_provider_asset_includes_mined_training_operations() -> N
         "insert_mixed_precision_training_before_forward",
         "insert_adversarial_weight_perturbation_before_update",
         "insert_progressive_resizing_before_forward",
+        "insert_sequence_cnn_recurrent_backbone_before_loss",
+        "insert_gem_pooling_after_forward",
+        "insert_multi_sample_dropout_before_loss",
+        "insert_hard_negative_mining_before_loss",
+        "insert_multilabel_sigmoid_head_before_loss",
+        "insert_multilabel_focal_bce_loss_before_loss",
+        "insert_arcface_margin_loss_before_loss",
     }
 
 
@@ -112,3 +119,49 @@ def test_mined_neural_network_expansion_rules_apply_to_training_loop() -> None:
         ExpansionContext(intermediates={"requires_progressive_resizing": True}),
     )
     assert "Progressive Image Resizing" in {node.name for node in resize.cdg.nodes}
+
+
+def test_second_pass_neural_network_expansion_rules_apply_to_training_loop() -> None:
+    rule_set = _asset_backed_rule_set()
+
+    sequence = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_sequence_cnn_recurrent_backbone": True}),
+    )
+    assert "CNN-Recurrent Sequence Backbone" in {node.name for node in sequence.cdg.nodes}
+
+    gem = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_gem_pooling": True}),
+    )
+    assert "Generalized Mean Pooling" in {node.name for node in gem.cdg.nodes}
+
+    dropout = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_multi_sample_dropout": True}),
+    )
+    assert "Multi-Sample Dropout" in {node.name for node in dropout.cdg.nodes}
+
+    mining = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_hard_negative_mining": True}),
+    )
+    assert "Hard Negative Mining" in {node.name for node in mining.cdg.nodes}
+
+    multilabel_head = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_multilabel_sigmoid_head": True}),
+    )
+    assert "Multi-Label Sigmoid Head" in {node.name for node in multilabel_head.cdg.nodes}
+
+    multilabel_loss = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_multilabel_focal_bce_loss": True}),
+    )
+    assert "Multi-Label Focal/BCE Loss" in {node.name for node in multilabel_loss.cdg.nodes}
+
+    arcface = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_arcface_margin_loss": True}),
+    )
+    assert "ArcFace Margin Loss" in {node.name for node in arcface.cdg.nodes}

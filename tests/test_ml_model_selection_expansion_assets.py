@@ -119,8 +119,14 @@ def test_ml_model_selection_provider_expansion_asset_loads() -> None:
         "insert_constraint_injection",
         "apply_dl_backbone_substitution",
         "apply_tree_ensemble_blend",
+        "apply_pretrained_backbone_ensemble",
         "insert_recursive_feature_elimination_before_estimator",
+        "insert_permutation_importance_feature_selection_before_estimator",
+        "insert_balanced_sampling_before_training",
         "insert_log_target_transform_before_estimator",
+        "replace_loss_with_metric_aligned_objective",
+        "insert_metric_optimized_thresholding_after_prediction",
+        "insert_retrieval_reranking_after_prediction",
         "insert_smoothed_target_encoding_before_estimator",
     }
     assert asset.operation("apply_kfold_ensemble").operation_type == "replace"
@@ -284,3 +290,69 @@ def test_mined_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
     assert "smoothed_target_encoding" in {
         node.node_id for node in target_encoding.cdg.nodes
     }
+
+
+def test_second_pass_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
+    rule_set = _asset_backed_ml_rule_set()
+
+    backbone_ensemble = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={
+                "model_selection.requires_pretrained_backbone_ensemble": True
+            }
+        ),
+    )
+    assert {
+        "train_pretrained_cnn_backbone",
+        "train_pretrained_transformer_backbone",
+        "blend_pretrained_backbones",
+    }.issubset({node.node_id for node in backbone_ensemble.cdg.nodes})
+
+    permutation = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={
+                "model_selection.requires_permutation_importance_feature_selection": True
+            }
+        ),
+    )
+    assert "permutation_importance_feature_selection" in {
+        node.node_id for node in permutation.cdg.nodes
+    }
+
+    balanced = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(intermediates={"model_selection.requires_balanced_sampling": True}),
+    )
+    assert "balanced_rare_class_sampling" in {
+        node.node_id for node in balanced.cdg.nodes
+    }
+
+    objective = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={"model_selection.requires_metric_aligned_objective": True}
+        ),
+    )
+    assert {"configure_metric_aligned_objective", "train_metric_aligned_estimator"}.issubset(
+        {node.node_id for node in objective.cdg.nodes}
+    )
+
+    thresholding = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={"model_selection.requires_metric_optimized_thresholding": True}
+        ),
+    )
+    assert "metric_optimized_thresholding" in {
+        node.node_id for node in thresholding.cdg.nodes
+    }
+
+    reranking = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={"model_selection.requires_retrieval_reranking": True}
+        ),
+    )
+    assert "retrieval_reranking" in {node.node_id for node in reranking.cdg.nodes}
