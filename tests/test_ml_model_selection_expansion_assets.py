@@ -118,6 +118,10 @@ def test_ml_model_selection_provider_expansion_asset_loads() -> None:
         "apply_stacking_ensemble",
         "insert_constraint_injection",
         "apply_dl_backbone_substitution",
+        "apply_tree_ensemble_blend",
+        "insert_recursive_feature_elimination_before_estimator",
+        "insert_log_target_transform_before_estimator",
+        "insert_smoothed_target_encoding_before_estimator",
     }
     assert asset.operation("apply_kfold_ensemble").operation_type == "replace"
     assert (
@@ -240,3 +244,43 @@ def test_obvious_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
     assert {"load_pretrained", "finetune_backbone", "test_time_augmentation"}.issubset(
         node_ids
     )
+
+
+def test_mined_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
+    rule_set = _asset_backed_ml_rule_set()
+
+    tree_blend = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={"model_selection.requires_tree_ensemble_blend": True}
+        ),
+    )
+    assert {"train_lightgbm", "train_xgboost", "blend_tree_predictions"}.issubset(
+        {node.node_id for node in tree_blend.cdg.nodes}
+    )
+
+    rfe = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={
+                "model_selection.requires_recursive_feature_elimination": True
+            }
+        ),
+    )
+    assert "recursive_feature_elimination" in {node.node_id for node in rfe.cdg.nodes}
+
+    log_target = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={"model_selection.requires_log_target_transform": True}
+        ),
+    )
+    assert "log_target_transform" in {node.node_id for node in log_target.cdg.nodes}
+
+    target_encoding = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(intermediates={"model_selection.requires_target_encoding": True}),
+    )
+    assert "smoothed_target_encoding" in {
+        node.node_id for node in target_encoding.cdg.nodes
+    }

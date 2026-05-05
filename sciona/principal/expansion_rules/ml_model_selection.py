@@ -639,6 +639,122 @@ def _build_apply_dl_backbone_substitution() -> RewriteRule:
     )
 
 
+def _build_apply_tree_ensemble_blend() -> RewriteRule:
+    """Replace a single estimator with a heterogeneous tree-ensemble blend."""
+    train_lgbm = _node(
+        "train_lightgbm",
+        "Train LightGBM",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="lightgbm.LGBMModel",
+        inputs=[IOSpec(name="X_train", type_desc="ndarray"), IOSpec(name="y_train", type_desc="ndarray")],
+        outputs=[IOSpec(name="lightgbm_model", type_desc="trained_model")],
+        description="Train a LightGBM model as one member of a heterogeneous tabular ensemble.",
+    )
+    train_xgb = _node(
+        "train_xgboost",
+        "Train XGBoost Or CatBoost",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="xgboost.XGBModel",
+        inputs=[IOSpec(name="X_train", type_desc="ndarray"), IOSpec(name="y_train", type_desc="ndarray")],
+        outputs=[IOSpec(name="boosted_tree_model", type_desc="trained_model")],
+        description="Train an XGBoost or CatBoost model to diversify the tree ensemble.",
+    )
+    blend = _node(
+        "blend_tree_predictions",
+        "Blend Tree Ensemble Predictions",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="tree_ensemble_weighted_blend",
+        inputs=[IOSpec(name="models", type_desc="list[trained_model]")],
+        outputs=[IOSpec(name="predictions", type_desc="ndarray")],
+        description="Blend LightGBM, XGBoost, CatBoost, ExtraTrees, or RandomForest predictions.",
+    )
+    return _semantic_only_rule(
+        "apply_tree_ensemble_blend",
+        priority=5,
+        semantic_apply=lambda graph: _replace_nodes_with_chain(
+            graph,
+            target_labels=["model_training", "estimator", "prediction_ensemble"],
+            chain_nodes=[train_lgbm, train_xgb, blend],
+            chain_edges=[
+                _edge("train_lightgbm", "blend_tree_predictions", "lightgbm_model", "models"),
+                _edge("train_xgboost", "blend_tree_predictions", "boosted_tree_model", "models"),
+            ],
+        ),
+    )
+
+
+def _build_insert_recursive_feature_elimination() -> RewriteRule:
+    """Insert recursive feature elimination before the estimator."""
+    rfe = _node(
+        "recursive_feature_elimination",
+        "Recursive Feature Elimination",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="sklearn.feature_selection.RFE",
+        inputs=[IOSpec(name="X", type_desc="ndarray"), IOSpec(name="y", type_desc="ndarray")],
+        outputs=[IOSpec(name="X_selected", type_desc="ndarray")],
+        description="Select a compact feature subset with recursive feature elimination.",
+    )
+    return _semantic_only_rule(
+        "insert_recursive_feature_elimination_before_estimator",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[rfe],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_log_target_transform() -> RewriteRule:
+    """Insert a log target transform for skewed regression targets."""
+    transform = _node(
+        "log_target_transform",
+        "Log Target Transform",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="numpy.log1p",
+        inputs=[IOSpec(name="y", type_desc="ndarray")],
+        outputs=[IOSpec(name="y_log", type_desc="ndarray")],
+        description="Train on log-transformed targets and invert predictions with expm1.",
+    )
+    return _semantic_only_rule(
+        "insert_log_target_transform_before_estimator",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[transform],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_insert_smoothed_target_encoding() -> RewriteRule:
+    """Insert leakage-safe smoothed target encoding for categorical features."""
+    encode = _node(
+        "smoothed_target_encoding",
+        "Smoothed Target Encoding",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="category_encoders.TargetEncoder",
+        inputs=[IOSpec(name="categorical_features", type_desc="ndarray"), IOSpec(name="y", type_desc="ndarray")],
+        outputs=[IOSpec(name="encoded_features", type_desc="ndarray")],
+        description="Apply fold-aware mean target encoding with Bayesian smoothing.",
+    )
+    return _semantic_only_rule(
+        "insert_smoothed_target_encoding_before_estimator",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[encode],
+            chain_edges=[],
+        ),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------
@@ -976,6 +1092,98 @@ def _diagnose_dl_backbone_substitution(
     )
 
 
+def _diagnose_tree_ensemble_blend(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_tree_ensemble_blend",
+        f"{_PREFIX}.use_lightgbm_catboost_ensemble",
+        f"{_PREFIX}.use_xgboost_lightgbm_ensemble",
+        f"{_PREFIX}.use_random_forest_xgboost_ensemble",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in ("catboost", "lightgbm", "xgboost", "extratrees", "random forest ensemble")
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="apply_tree_ensemble_blend",
+        severity=0.80,
+        evidence="A heterogeneous LightGBM/XGBoost/CatBoost-style tree ensemble is required.",
+        metric_name="requires_tree_ensemble_blend",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_recursive_feature_elimination(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_recursive_feature_elimination",
+        f"{_PREFIX}.use_rfe",
+    )
+    if not explicit and "recursive feature elimination" not in _planning_text(context):
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_recursive_feature_elimination_before_estimator",
+        severity=0.70,
+        evidence="Recursive Feature Elimination is needed before estimator training.",
+        metric_name="requires_recursive_feature_elimination",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_log_target_transform(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_log_target_transform",
+        f"{_PREFIX}.use_log_target_transform",
+    )
+    if not explicit and "log-target" not in _planning_text(context) and "log target" not in _planning_text(context):
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_log_target_transform_before_estimator",
+        severity=0.70,
+        evidence="A skewed regression target requires log1p target scaling and inverse-transform prediction.",
+        metric_name="requires_log_target_transform",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_smoothed_target_encoding(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_target_encoding",
+        f"{_PREFIX}.use_smoothed_target_encoding",
+    )
+    planning = _planning_text(context)
+    if not explicit and "target encoding" not in planning and "mean target" not in planning:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_smoothed_target_encoding_before_estimator",
+        severity=0.75,
+        evidence="Categorical features require leakage-safe smoothed target encoding.",
+        metric_name="requires_target_encoding",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Rule set
 # ---------------------------------------------------------------------------
@@ -1002,6 +1210,10 @@ class MLModelSelectionRuleSet:
             _build_apply_stacking_ensemble(),
             _build_insert_constraint_injection(),
             _build_apply_dl_backbone_substitution(),
+            _build_apply_tree_ensemble_blend(),
+            _build_insert_recursive_feature_elimination(),
+            _build_insert_log_target_transform(),
+            _build_insert_smoothed_target_encoding(),
         ]
 
     def diagnose(
@@ -1021,6 +1233,10 @@ class MLModelSelectionRuleSet:
             _diagnose_stacking_ensemble,
             _diagnose_constraint_injection,
             _diagnose_dl_backbone_substitution,
+            _diagnose_tree_ensemble_blend,
+            _diagnose_recursive_feature_elimination,
+            _diagnose_log_target_transform,
+            _diagnose_smoothed_target_encoding,
         ]:
             d = fn(cdg, context)
             if d is not None:

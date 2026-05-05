@@ -1,0 +1,114 @@
+from __future__ import annotations
+
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import (
+    AlgorithmicNode,
+    ConceptType,
+    DependencyEdge,
+    NodeStatus,
+)
+from sciona.principal.expansion import ExpansionContext, ExpansionEngine
+from sciona.principal.expansion_assets import (
+    asset_backed_rule_sets,
+    clear_local_expansion_asset_caches,
+    load_local_expansion_assets_by_family,
+)
+from sciona.principal.expansion_rules.neural_network import NeuralNetworkExpansionRuleSet
+
+
+def _edge(source_id: str, target_id: str) -> DependencyEdge:
+    return DependencyEdge(
+        source_id=source_id,
+        target_id=target_id,
+        output_name="out",
+        input_name="in",
+        source_type="Tensor",
+        target_type="Tensor",
+    )
+
+
+def _node(node_id: str, name: str) -> AlgorithmicNode:
+    return AlgorithmicNode(
+        node_id=node_id,
+        name=name,
+        description=name,
+        concept_type=ConceptType.NEURAL_NETWORK,
+        status=NodeStatus.ATOMIC,
+    )
+
+
+def _neural_training_cdg() -> CDGExport:
+    src = AlgorithmicNode(
+        node_id="src",
+        name="source",
+        description="training batches",
+        concept_type=ConceptType.DATA_ASSEMBLY,
+        status=NodeStatus.ATOMIC,
+    )
+    forward = _node("forward", "Forward Pass")
+    loss = _node("loss", "Loss Computation")
+    backward = _node("backward", "Backward Pass")
+    update = _node("update", "Parameter Update")
+    sink = AlgorithmicNode(
+        node_id="sink",
+        name="sink",
+        description="trained model",
+        concept_type=ConceptType.CUSTOM,
+        status=NodeStatus.ATOMIC,
+    )
+    return CDGExport(
+        nodes=[src, forward, loss, backward, update, sink],
+        edges=[
+            _edge("src", "forward"),
+            _edge("forward", "loss"),
+            _edge("loss", "backward"),
+            _edge("backward", "update"),
+            _edge("update", "sink"),
+        ],
+    )
+
+
+def _asset_backed_rule_set():
+    clear_local_expansion_asset_caches()
+    return asset_backed_rule_sets([NeuralNetworkExpansionRuleSet()])[0]
+
+
+def test_neural_network_provider_asset_includes_mined_training_operations() -> None:
+    clear_local_expansion_asset_caches()
+
+    asset = load_local_expansion_assets_by_family()["neural_network"]
+
+    assert {operation.rule_name for operation in asset.operations} >= {
+        "insert_swa_checkpoint_averaging_after_update",
+        "insert_mixed_precision_training_before_forward",
+        "insert_adversarial_weight_perturbation_before_update",
+        "insert_progressive_resizing_before_forward",
+    }
+
+
+def test_mined_neural_network_expansion_rules_apply_to_training_loop() -> None:
+    rule_set = _asset_backed_rule_set()
+
+    swa = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_swa": True}),
+    )
+    assert "Stochastic Weight Averaging" in {node.name for node in swa.cdg.nodes}
+
+    mixed_precision = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_mixed_precision": True}),
+    )
+    assert "Configure Mixed Precision" in {node.name for node in mixed_precision.cdg.nodes}
+
+    awp = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_awp": True}),
+    )
+    assert "Adversarial Weight Perturbation" in {node.name for node in awp.cdg.nodes}
+
+    resize = ExpansionEngine([rule_set]).expand(
+        _neural_training_cdg(),
+        ExpansionContext(intermediates={"requires_progressive_resizing": True}),
+    )
+    assert "Progressive Image Resizing" in {node.name for node in resize.cdg.nodes}

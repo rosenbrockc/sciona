@@ -152,3 +152,59 @@ def test_operation_retrieval_can_rank_by_family_stage_and_context() -> None:
     assert matches[0].asset_family == "ode_solver"
     assert matches[0].rule_name == "insert_stiffness_detection_before_advance"
     assert "family:ode_solver" in matches[0].reasons
+
+
+def test_retrieves_mined_ml_gap_operations() -> None:
+    clear_local_expansion_asset_caches()
+
+    sequences = ExpansionAssetRetriever().retrieve_sequences(
+        ExpansionRetrievalQuery(
+            families=("ml_model_selection",),
+            missing_techniques=(
+                "CatBoost and LightGBM ensemble",
+                "Recursive Feature Elimination (RFE)",
+                "Log-target transformation",
+                "Target Encoding with smoothing",
+            ),
+            stage_names=("feature_engineering", "model_training", "prediction_ensemble"),
+        ),
+        max_sequences=3,
+        max_operations_per_sequence=4,
+    )
+
+    assert sequences
+    rule_names = {operation.rule_name for operation in sequences[0].operations}
+    assert {
+        "apply_tree_ensemble_blend",
+        "insert_recursive_feature_elimination_before_estimator",
+        "insert_log_target_transform_before_estimator",
+        "insert_smoothed_target_encoding_before_estimator",
+    }.issubset(rule_names)
+
+
+def test_retrieves_mined_neural_network_gap_operations() -> None:
+    clear_local_expansion_asset_caches()
+
+    sequences = ExpansionAssetRetriever().retrieve_sequences(
+        ExpansionRetrievalQuery(
+            families=("neural_network", "deep_learning"),
+            missing_techniques=(
+                "Stochastic Weight Averaging (SWA)",
+                "Mixed-precision training (bf16)",
+                "Adversarial Weight Perturbation (AWP)",
+                "Progressive Image Resizing",
+            ),
+            stage_names=("forward pass", "backward pass", "parameter update"),
+        ),
+        max_sequences=3,
+        max_operations_per_sequence=4,
+    )
+
+    assert sequences
+    rule_names = {operation.rule_name for operation in sequences[0].operations}
+    assert {
+        "insert_swa_checkpoint_averaging_after_update",
+        "insert_mixed_precision_training_before_forward",
+        "insert_adversarial_weight_perturbation_before_update",
+        "insert_progressive_resizing_before_forward",
+    }.issubset(rule_names)
