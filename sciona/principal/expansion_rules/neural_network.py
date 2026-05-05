@@ -542,6 +542,19 @@ def _build_insert_regularization_before_loss() -> RewriteRule:
     )
 
 
+def _build_insert_test_time_augmentation_after_forward() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_test_time_augmentation_after_forward",
+        node_id="test_time_augmentation",
+        node_name="Test-Time Augmentation",
+        matched_primitive="test_time_augmentation_multiscale_flip",
+        description="Average inference predictions over multi-scale, flipping, crop, or other safe test-time augmentations.",
+        input_name="inference_batch",
+        output_name="tta_predictions",
+        priority=3,
+    )
+
+
 def _build_insert_hard_negative_mining() -> RewriteRule:
     forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
     loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
@@ -1021,6 +1034,18 @@ def _diagnose_regularization(cdg: CDGExport, context: ExpansionContext) -> Expan
     )
 
 
+def _diagnose_test_time_augmentation(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_test_time_augmentation_after_forward",
+        metric_name="requires_test_time_augmentation",
+        evidence="Test-Time Augmentation is required for inference-time prediction averaging.",
+        intermediate_keys=("requires_test_time_augmentation", "use_test_time_augmentation", "use_tta"),
+        planning_terms=("test-time augmentation", "test time augmentation", " tta", "multi-scale test-time", "tta with flipping", "tta with scaling"),
+        severity=0.75,
+    )
+
+
 def _diagnose_hard_negative_mining(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
     explicit = _truthy_intermediate(context, "requires_hard_negative_mining", "use_hard_negative_mining")
     planning = _planning_text(context)
@@ -1177,6 +1202,7 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_optimizer_schedule_before_update(),
             _build_insert_multi_sample_dropout(),
             _build_insert_regularization_before_loss(),
+            _build_insert_test_time_augmentation_after_forward(),
             _build_insert_hard_negative_mining(),
             _build_insert_siamese_metric_backbone(),
             _build_insert_graph_interaction_network(),
@@ -1207,6 +1233,7 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_optimizer_schedule,
                     _diagnose_multi_sample_dropout,
                     _diagnose_regularization,
+                    _diagnose_test_time_augmentation,
                     _diagnose_hard_negative_mining,
                     _diagnose_siamese_metric_backbone,
                     _diagnose_graph_interaction_network,

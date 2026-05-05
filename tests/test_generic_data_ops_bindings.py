@@ -31,7 +31,7 @@ EXPECTED_BINDINGS = {
     ): (
         "active",
         "replace_stage",
-        "sciona.atoms.medical_imaging_3d.preprocessing.dicom_window",
+        "sciona.atoms.bio.medical_imaging_3d.preprocessing.dicom_window",
     ),
     (
         "moa_prediction_1st",

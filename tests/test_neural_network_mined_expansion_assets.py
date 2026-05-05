@@ -103,6 +103,7 @@ def test_neural_network_provider_asset_includes_mined_training_operations() -> N
         "insert_cross_encoder_backbone_before_loss",
         "insert_preference_ranking_head_before_loss",
         "insert_dice_bce_loss_before_loss",
+        "insert_test_time_augmentation_after_forward",
     }
 
 
@@ -190,6 +191,7 @@ def test_support_three_neural_network_expansion_rules_apply_to_training_loop() -
         ("requires_transformer_sequence_aggregation", "Transformer Sequence Aggregation"),
         ("requires_optimizer_schedule", "Optimizer Schedule"),
         ("requires_regularization", "Dropout and L2 Regularization"),
+        ("requires_test_time_augmentation", "Test-Time Augmentation"),
         ("requires_siamese_metric_backbone", "Siamese Metric Backbone"),
         ("requires_graph_interaction_network", "Graph Interaction Network"),
         ("requires_pointrend_boundary_refinement", "PointRend Boundary Refinement"),

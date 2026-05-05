@@ -274,7 +274,7 @@ def _existing_sequence(
             families=(*families[:3], *paradigms[:3]),
             missing_techniques=terms,
         ),
-        max_sequences=3,
+        max_sequences=5,
         max_operations_per_sequence=3,
     )
     for sequence in sequences:
@@ -359,4 +359,3 @@ _STOP_WORDS = {
     "training",
     "inference",
 }
-

@@ -41,8 +41,8 @@ def test_gap_mining_clusters_reusable_missing_techniques() -> None:
 
     report = mine_expansion_gaps(
         [
-            _result("comp-a", ["tabular metadata branch"]),
-            _result("comp-b", ["metadata tabular branch"]),
+            _result("comp-a", ["synthetic vortex branch"]),
+            _result("comp-b", ["vortex synthetic branch"]),
             _result("comp-c", ["rare one off calibration"]),
         ],
         min_support=2,

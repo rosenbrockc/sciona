@@ -652,12 +652,12 @@ def _build_apply_tree_ensemble_blend() -> RewriteRule:
     )
     train_xgb = _node(
         "train_xgboost",
-        "Train XGBoost Or CatBoost",
+        "Train XGBoost CatBoost Or SVR",
         ConceptType.ML_MODEL_SELECTION,
         matched_primitive="xgboost.XGBModel",
         inputs=[IOSpec(name="X_train", type_desc="ndarray"), IOSpec(name="y_train", type_desc="ndarray")],
         outputs=[IOSpec(name="boosted_tree_model", type_desc="trained_model")],
-        description="Train an XGBoost or CatBoost model to diversify the tree ensemble.",
+        description="Train an XGBoost, CatBoost, or SVR model to diversify the ensemble.",
     )
     blend = _node(
         "blend_tree_predictions",
@@ -666,7 +666,7 @@ def _build_apply_tree_ensemble_blend() -> RewriteRule:
         matched_primitive="tree_ensemble_weighted_blend",
         inputs=[IOSpec(name="models", type_desc="list[trained_model]")],
         outputs=[IOSpec(name="predictions", type_desc="ndarray")],
-        description="Blend LightGBM, XGBoost, CatBoost, ExtraTrees, or RandomForest predictions.",
+        description="Blend LightGBM, XGBoost, CatBoost, ExtraTrees, RandomForest, or SVR predictions.",
     )
     return _semantic_only_rule(
         "apply_tree_ensemble_blend",
@@ -1493,6 +1493,7 @@ def _diagnose_pretrained_backbone_ensemble(
         f"{_PREFIX}.use_pretrained_backbone_ensemble",
         f"{_PREFIX}.use_efficientnet_ensemble",
         f"{_PREFIX}.use_swin_unet_ensemble",
+        f"{_PREFIX}.use_efficientnet_b4_b7_ensemble",
     )
     planning = _planning_text(context)
     backbone_terms = (
@@ -1530,18 +1531,20 @@ def _diagnose_tree_ensemble_blend(
         f"{_PREFIX}.use_lightgbm_catboost_ensemble",
         f"{_PREFIX}.use_xgboost_lightgbm_ensemble",
         f"{_PREFIX}.use_random_forest_xgboost_ensemble",
+        f"{_PREFIX}.use_random_forest_extratrees_ensemble",
+        f"{_PREFIX}.use_random_forest_svr_ensemble",
     )
     planning = _planning_text(context)
     planning_requires = any(
         token in planning
-        for token in ("catboost", "lightgbm", "xgboost", "extratrees", "random forest ensemble")
+        for token in ("catboost", "lightgbm", "xgboost", "extratrees", "random forest ensemble", "random forest and svr", "random forest and extratrees")
     )
     if not explicit and not planning_requires:
         return None
     return ExpansionDiagnostic(
         rule_name="apply_tree_ensemble_blend",
         severity=0.80,
-        evidence="A heterogeneous LightGBM/XGBoost/CatBoost-style tree ensemble is required.",
+        evidence="A heterogeneous LightGBM/XGBoost/CatBoost/RandomForest/ExtraTrees/SVR-style ensemble is required.",
         metric_name="requires_tree_ensemble_blend",
         metric_value=1.0,
         threshold=0.0,
