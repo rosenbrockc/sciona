@@ -135,6 +135,27 @@ class ExpansionOperationAsset(BaseModel):
     """One auditable family refinement operation."""
 
     rule_name: str
+    operation_id: str = Field(
+        default="",
+        validation_alias=AliasChoices("operation_id", "expansion_id"),
+    )
+    operation_type: str = Field(
+        default="",
+        validation_alias=AliasChoices("operation_type", "expansion_type"),
+    )
+    applies_to: str = ""
+    source_cdg_path: str = ""
+    prerequisite_operations: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices(
+            "prerequisite_operations",
+            "prerequisite_expansions",
+        ),
+    )
+    replaces_node: str = ""
+    replaces_nodes: list[str] = Field(default_factory=list)
+    insert_after: str = ""
+    insert_before: str = ""
     runtime_rule_builder: str = ""
     runtime_diagnostic: str = ""
     name: str = Field(validation_alias=AliasChoices("name", "summary"))
@@ -149,6 +170,8 @@ class ExpansionOperationAsset(BaseModel):
     uncertainty_notes: list[str] = Field(default_factory=list)
 
     def model_post_init(self, __context: object) -> None:
+        if not self.operation_id:
+            self.operation_id = self.rule_name
         if not self.runtime_rule_builder:
             self.runtime_rule_builder = self.rule_name
         if not self.runtime_diagnostic:
@@ -251,6 +274,9 @@ def expansion_asset_summary(
         "asset_review_status": asset.audit.review_status,
         "asset_source_kind": asset.audit.source_kind,
         "asset_operation": operation.rule_name,
+        "asset_operation_id": operation.operation_id,
+        "asset_operation_type": operation.operation_type,
+        "asset_applies_to": operation.applies_to,
         "action_classes": [action.value for action in operation.action_classes],
         "asset_migration_readiness_status": readiness.get(
             "migration_readiness_status", ""
@@ -596,6 +622,9 @@ class AssetBackedExpansionRuleSet:
                     asset_source_kind=summary["asset_source_kind"],
                     asset_review_status=summary["asset_review_status"],
                     asset_operation=summary["asset_operation"],
+                    asset_operation_id=summary["asset_operation_id"],
+                    asset_operation_type=summary["asset_operation_type"],
+                    asset_applies_to=summary["asset_applies_to"],
                     asset_migration_readiness_status=summary[
                         "asset_migration_readiness_status"
                     ],

@@ -15,6 +15,18 @@ sources:
     path: ../sciona-atoms-ml
     python_path: src
     package: sciona.atoms.ml
+  - name: sciona-atoms-dl
+    path: ../sciona-atoms-dl
+    python_path: src
+    package: sciona.atoms.dl
+  - name: sciona-atoms-geo
+    path: ../sciona-atoms-geo
+    python_path: src
+    package: sciona.atoms.geo
+  - name: sciona-atoms-cs
+    path: ../sciona-atoms-cs
+    python_path: src
+    package: sciona.atoms.cs
   - name: sciona-atoms-bio
     path: ../sciona-atoms-bio
     python_path: src
