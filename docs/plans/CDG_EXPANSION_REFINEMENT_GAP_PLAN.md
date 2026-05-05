@@ -34,6 +34,8 @@ Status: in progress.
 
 ## Phase 3: Runtime Rule Coverage
 
+Status: complete.
+
 - For each provider expansion asset, ensure there is a matching
   `ExpansionRuleSet` rule name in `default_rule_sets()`.
 - Add missing DPO or semantic rewrite rules for obvious operations already
@@ -43,6 +45,8 @@ Status: in progress.
 
 ## Phase 4: Operation Applicability Contracts
 
+Status: complete.
+
 - Tighten `trigger`, `required_runtime_keys`, boundary requirements,
   primitive requirements, and adjacency requirements.
 - Make every expansion safe to skip when the host CDG does not satisfy its
@@ -50,6 +54,8 @@ Status: in progress.
 - Add contraindication fields if needed for operations that are easy to misuse.
 
 ## Phase 5: Expansion Retrieval
+
+Status: complete.
 
 - Build a retrieval index over expansion/refinement assets.
 - Given a base CDG and missing techniques, retrieve candidate operations by
