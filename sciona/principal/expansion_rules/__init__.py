@@ -119,6 +119,9 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
     from sciona.principal.expansion_rules.randomized import (
         RandomizedExpansionRuleSet,
     )
+    from sciona.principal.expansion_rules.agent_simulation_search_planning import (
+        AgentSimulationSearchPlanningRuleSet,
+    )
 
     return asset_backed_rule_sets([
         SignalEventRateExpansionRuleSet(),
@@ -155,4 +158,5 @@ def default_rule_sets() -> list[ExpansionRuleSet]:
         RandomizedExpansionRuleSet(),
         InformationTheoryExpansionRuleSet(),
         CompressionExpansionRuleSet(),
+        AgentSimulationSearchPlanningRuleSet(),
     ])

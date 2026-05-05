@@ -249,14 +249,17 @@ def _missing_after_plan(
     )
 
 
-def _candidate_sort_key(candidate: DeltaPlanCandidate) -> tuple[float, float, float, str]:
+def _candidate_sort_key(candidate: DeltaPlanCandidate) -> tuple[float, float, float, float, str]:
     sequence_name = ""
+    sequence_score = 0.0
     if candidate.operation_sequence is not None:
         sequence_name = candidate.operation_sequence.asset_family
+        sequence_score = candidate.operation_sequence.score
     return (
-        -candidate.utility_score,
         -candidate.projected_coverage,
+        -sequence_score,
         candidate.intrusion_cost,
+        -candidate.utility_score,
         sequence_name,
     )
 
@@ -275,4 +278,3 @@ def _normalize_phrase(value: str) -> str:
 
 def _clamp(value: float) -> float:
     return min(1.0, max(0.0, float(value)))
-
