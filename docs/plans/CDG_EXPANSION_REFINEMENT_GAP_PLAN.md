@@ -64,6 +64,8 @@ Status: complete.
 
 ## Phase 6: Delta Planning
 
+Status: complete.
+
 - Add an architect path that plans:
   `base CDG -> operation sequence -> adapted CDG`.
 - Score candidates by projected technique coverage divided by intrusion cost.
