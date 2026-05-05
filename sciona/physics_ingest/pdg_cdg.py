@@ -1069,54 +1069,90 @@ def _build_cdg_candidate_manifests(
     if not selected_edges:
         return []
 
+    grouped_edges: dict[str, list[PDGInferenceEdge]] = {}
+    group_order: list[str] = []
+    for index, edge in enumerate(selected_edges, start=1):
+        group_key = _edge_step_group_key(edge, fallback_index=index)
+        if group_key not in grouped_edges:
+            grouped_edges[group_key] = []
+            group_order.append(group_key)
+        grouped_edges[group_key].append(edge)
+
     nodes: list[JSONDict] = []
     cdg_edges: list[JSONDict] = []
     output_to_step_id: dict[str, str] = {}
     referenced_node_ids: set[str] = set()
 
-    for index, edge in enumerate(selected_edges, start=1):
+    for index, group_key in enumerate(group_order, start=1):
+        edges_for_step = grouped_edges[group_key]
+        edge = edges_for_step[0]
         step_id = f"pdg_step_{index}"
         operation_kind = _manifest_operation_kind(edge)
-        input_binding = bindings[edge.source_node_id]
-        output_binding = bindings[edge.target_node_id]
-        referenced_node_ids.update((edge.source_node_id, edge.target_node_id))
+        input_node_ids = _unique_texts(edge.source_node_id for edge in edges_for_step)
+        output_node_ids = _unique_texts(edge.target_node_id for edge in edges_for_step)
+        input_refs = [bindings[node_id].to_manifest_ref() for node_id in input_node_ids]
+        output_refs = [bindings[node_id].to_manifest_ref() for node_id in output_node_ids]
+        referenced_node_ids.update((*input_node_ids, *output_node_ids))
         node = {
             "node_id": step_id,
             "operation_kind": operation_kind,
             "label": edge.inference_rule_label or edge.inference_rule_id,
-            "input_expressions": [input_binding.to_manifest_ref()],
-            "output_expression": output_binding.to_manifest_ref(),
+            "input_expressions": input_refs,
+            "output_expression": output_refs[0] if output_refs else {},
+            "output_expressions": output_refs,
             "pdg_edge_id": edge.edge_id,
+            "pdg_edge_ids": [row.edge_id for row in edges_for_step],
             "source_pdg_inference_id": edge.edge_id,
+            "source_pdg_inference_ids": [row.edge_id for row in edges_for_step],
+            "source_pdg_step_id": group_key,
             "relationship_kind": edge.relationship_kind,
             "inference_rule_id": edge.inference_rule_id,
-            "assumptions": list(edge.assumptions),
-            "binding_metadata": dict(edge.binding_metadata),
-            "variable_bindings": _edge_variable_bindings(edge),
-            "dimensions": _edge_dimensions(edge),
+            "assumptions": _unique_texts(
+                assumption for row in edges_for_step for assumption in row.assumptions
+            ),
+            "binding_metadata": _merged_edge_binding_metadata(edges_for_step),
+            "variable_bindings": _merged_edge_json_mappings(
+                _edge_variable_bindings(row) for row in edges_for_step
+            ),
+            "dimensions": _merged_edge_json_mappings(
+                _edge_dimensions(row) for row in edges_for_step
+            ),
         }
-        if labels.get(edge.source_node_id) or labels.get(edge.target_node_id):
+        input_labels = {
+            node_id: labels.get(node_id, "")
+            for node_id in input_node_ids
+            if labels.get(node_id)
+        }
+        output_labels = {
+            node_id: labels.get(node_id, "")
+            for node_id in output_node_ids
+            if labels.get(node_id)
+        }
+        if input_labels or output_labels:
             node["equation_labels"] = {
-                "input": labels.get(edge.source_node_id, ""),
-                "output": labels.get(edge.target_node_id, ""),
+                "inputs": input_labels,
+                "outputs": output_labels,
             }
         nodes.append(node)
 
-        upstream_step_id = output_to_step_id.get(edge.source_node_id)
-        if upstream_step_id is not None:
-            cdg_edges.append(
-                {
-                    "source_id": upstream_step_id,
-                    "target_id": step_id,
-                    "edge_kind": "symbolic_equation_flow",
-                    "pdg_node_id": edge.source_node_id,
-                    "expression_id": input_binding.expression_id,
-                }
-            )
-        output_to_step_id[edge.target_node_id] = step_id
+        for input_node_id in input_node_ids:
+            upstream_step_id = output_to_step_id.get(input_node_id)
+            if upstream_step_id is not None:
+                cdg_edges.append(
+                    {
+                        "source_id": upstream_step_id,
+                        "target_id": step_id,
+                        "edge_kind": "symbolic_equation_flow",
+                        "pdg_node_id": input_node_id,
+                        "expression_id": bindings[input_node_id].expression_id,
+                    }
+                )
+        for output_node_id in output_node_ids:
+            output_to_step_id[output_node_id] = step_id
 
     manifest_seed = {
         "edge_ids": [edge.edge_id for edge in selected_edges],
+        "step_group_ids": group_order,
         "expression_ids": [
             bindings[node_id].expression_id for node_id in sorted(referenced_node_ids)
         ],
@@ -1135,17 +1171,11 @@ def _build_cdg_candidate_manifests(
             "metadata": {
                 "relationship_edge_ids": [edge.edge_id for edge in selected_edges],
                 "source_pdg_inference_coverage": [
-                    {
-                        "pdg_edge_id": edge.edge_id,
-                        "source_node_id": edge.source_node_id,
-                        "target_node_id": edge.target_node_id,
-                        "variable_bindings": _edge_variable_bindings(edge),
-                        "dimensions": _edge_dimensions(edge),
-                        "assumptions": list(edge.assumptions),
-                    }
+                    _edge_source_coverage(edge)
                     for edge in selected_edges
                 ],
                 "candidate_scope": "algebraic_rearrangement_derivation_chain",
+                "cdg_projection": "pdg_step_normalized",
             },
         }
     ]
@@ -1224,6 +1254,83 @@ def _candidate_manifest_to_cdg_rows(
     return rows, diagnostics
 
 
+def _edge_step_group_key(edge: PDGInferenceEdge, *, fallback_index: int) -> str:
+    step_id = _edge_step_id(edge)
+    if step_id:
+        return step_id
+    return f"pdg_edge_{fallback_index}:{edge.edge_id}"
+
+
+def _edge_step_id(edge: PDGInferenceEdge) -> str:
+    for source in (edge.binding_metadata, edge.evidence):
+        for key in ("pdg_step_id", "step_id"):
+            value = source.get(key)
+            if value is not None and str(value):
+                return str(value)
+    return ""
+
+
+def _edge_source_coverage(edge: PDGInferenceEdge) -> JSONDict:
+    coverage: JSONDict = {
+        "pdg_edge_id": edge.edge_id,
+        "source_node_id": edge.source_node_id,
+        "target_node_id": edge.target_node_id,
+        "variable_bindings": _edge_variable_bindings(edge),
+        "dimensions": _edge_dimensions(edge),
+        "assumptions": list(edge.assumptions),
+    }
+    step_id = _edge_step_id(edge)
+    if step_id:
+        coverage["pdg_step_id"] = step_id
+    return coverage
+
+
+def _unique_texts(values: Iterable[Any]) -> list[str]:
+    seen: set[str] = set()
+    unique: list[str] = []
+    for value in values:
+        text = str(value)
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        unique.append(text)
+    return unique
+
+
+def _merged_edge_binding_metadata(edges: Iterable[PDGInferenceEdge]) -> JSONDict:
+    merged: JSONDict = {}
+    for edge in edges:
+        for key, value in edge.binding_metadata.items():
+            if key not in merged:
+                merged[key] = _json_safe_value(value)
+                continue
+            if merged[key] == value:
+                continue
+            existing = merged[key] if isinstance(merged[key], list) else [merged[key]]
+            candidate = _json_safe_value(value)
+            if candidate not in existing:
+                existing.append(candidate)
+            merged[key] = existing
+    return merged
+
+
+def _merged_edge_json_mappings(values: Iterable[Mapping[str, Any]]) -> JSONDict:
+    merged: JSONDict = {}
+    for mapping in values:
+        for key, value in mapping.items():
+            if key not in merged:
+                merged[key] = _json_safe_value(value)
+                continue
+            if merged[key] == value:
+                continue
+            existing = merged[key] if isinstance(merged[key], list) else [merged[key]]
+            candidate = _json_safe_value(value)
+            if candidate not in existing:
+                existing.append(candidate)
+            merged[key] = existing
+    return merged
+
+
 def _manifest_version_id(manifest: Mapping[str, Any]) -> str:
     explicit = str(manifest.get("version_id") or "")
     if explicit:
@@ -1248,15 +1355,23 @@ def _node_type_signature(node: Mapping[str, Any]) -> str:
         str(ref.get("expression_id") or "")
         for ref in _expression_refs(node.get("input_expressions"))
     ]
-    output = _expression_ref(node.get("output_expression"))
+    outputs = [
+        str(ref.get("expression_id") or "")
+        for ref in _node_output_expression_refs(node)
+    ]
     return _canonical_json(
         {
             "inputs": [value for value in inputs if value],
-            "output": "" if output is None else str(output.get("expression_id") or ""),
+            "output": outputs[0] if outputs else "",
+            "outputs": [value for value in outputs if value],
             "operation_kind": str(node.get("operation_kind") or ""),
             "source_pdg_inference_id": str(
                 node.get("source_pdg_inference_id") or node.get("pdg_edge_id") or ""
             ),
+            "source_pdg_inference_ids": _text_list(
+                node.get("source_pdg_inference_ids")
+            ),
+            "source_pdg_step_id": str(node.get("source_pdg_step_id") or ""),
             "inference_rule_id": str(node.get("inference_rule_id") or ""),
             "relationship_kind": str(node.get("relationship_kind") or ""),
             "assumptions": _text_list(node.get("assumptions")),
@@ -2000,9 +2115,7 @@ def _node_binding_rows(
         ("input", ref)
         for ref in _expression_refs(node.get("input_expressions"))
     ]
-    output_ref = _expression_ref(node.get("output_expression"))
-    if output_ref is not None:
-        refs.append(("output", output_ref))
+    refs.extend(("output", ref) for ref in _node_output_expression_refs(node))
 
     for role, ref in refs:
         bound_fqdn = _ref_text(ref, "bound_artifact_fqdn")
@@ -2043,6 +2156,14 @@ def _node_binding_rows(
             }
         )
     return rows, diagnostics
+
+
+def _node_output_expression_refs(node: Mapping[str, Any]) -> tuple[Mapping[str, Any], ...]:
+    output_refs = _expression_refs(node.get("output_expressions"))
+    if output_refs:
+        return output_refs
+    output_ref = _expression_ref(node.get("output_expression"))
+    return () if output_ref is None else (output_ref,)
 
 
 def _expression_refs(value: Any) -> tuple[Mapping[str, Any], ...]:

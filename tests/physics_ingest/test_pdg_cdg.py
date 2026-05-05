@@ -162,6 +162,77 @@ def test_pdg_phase4_extracts_cdg_candidate_manifest_with_expression_refs() -> No
     ]
 
 
+def test_pdg_phase4_groups_multi_input_edges_into_one_cdg_step() -> None:
+    bundle = parse_pdg_document(
+        {
+            "equations": [
+                {"id": "eq:left", "label": "left", "latex": "F \\propto m_1"},
+                {"id": "eq:right", "label": "right", "latex": "F \\propto m_2"},
+                {
+                    "id": "eq:combined",
+                    "label": "combined",
+                    "latex": "F \\propto m_1 m_2",
+                },
+            ],
+            "inference_edges": [
+                {
+                    "id": "edge:sub-left",
+                    "source": "eq:left",
+                    "target": "eq:combined",
+                    "rule": "substitute LHS of two expressions into expr",
+                    "bindings": {"step_id": "pdg-source-step-1"},
+                },
+                {
+                    "id": "edge:sub-right",
+                    "source": "eq:right",
+                    "target": "eq:combined",
+                    "rule": "substitute LHS of two expressions into expr",
+                    "bindings": {"step_id": "pdg-source-step-1"},
+                },
+            ],
+        }
+    )
+
+    result = build_pdg_relationship_ingest(
+        bundle,
+        expression_bindings_by_pdg_node_id={
+            "eq:left": EXPR_BASE,
+            "eq:right": EXPR_SOLVED,
+            "eq:combined": EXPR_FORCE,
+        },
+    )
+    manifest = result.cdg_candidate_manifests[0]
+    publication_rows = build_pdg_publication_write_rows(result)
+    insert_rows = publication_rows.to_insert_rows()
+    node_signature = json.loads(
+        insert_rows["artifact_cdg_nodes"][0]["type_signature"]
+    )
+
+    assert len(result.relationship_insert_rows()) == 2
+    assert len(manifest["nodes"]) == 1
+    assert manifest["nodes"][0]["source_pdg_step_id"] == "pdg-source-step-1"
+    assert manifest["nodes"][0]["source_pdg_inference_ids"] == [
+        "edge:sub-left",
+        "edge:sub-right",
+    ]
+    assert [
+        ref["expression_id"] for ref in manifest["nodes"][0]["input_expressions"]
+    ] == [EXPR_BASE, EXPR_SOLVED]
+    assert manifest["nodes"][0]["output_expression"]["expression_id"] == EXPR_FORCE
+    assert manifest["metadata"]["relationship_edge_ids"] == [
+        "edge:sub-left",
+        "edge:sub-right",
+    ]
+    assert manifest["metadata"]["cdg_projection"] == "pdg_step_normalized"
+    assert len(insert_rows["artifact_relationships"]) == 2
+    assert len(insert_rows["artifact_cdg_nodes"]) == 1
+    assert insert_rows.get("artifact_cdg_edges") is None
+    assert node_signature["inputs"] == [EXPR_BASE, EXPR_SOLVED]
+    assert node_signature["outputs"] == [EXPR_FORCE]
+    assert node_signature["source_pdg_step_id"] == "pdg-source-step-1"
+    assert validate_pdg_cdg_publication_graph(publication_rows) == ()
+
+
 def test_pdg_phase4_skips_edges_missing_expression_bindings() -> None:
     result = build_pdg_relationship_ingest(
         _bundle(),
