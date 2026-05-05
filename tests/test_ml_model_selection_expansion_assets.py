@@ -163,6 +163,31 @@ def test_default_rule_sets_have_provider_asset_operations() -> None:
         assert sorted(runtime_rule_names - asset_rule_names) == []
 
 
+def test_provider_expansion_operations_have_applicability_contracts() -> None:
+    clear_local_expansion_asset_caches()
+
+    missing_contracts: list[tuple[str, str, list[str]]] = []
+    for asset in load_local_expansion_assets_by_family().values():
+        for operation in asset.operations:
+            gaps: list[str] = []
+            if not operation.operation_type:
+                gaps.append("operation_type")
+            if not operation.applies_to:
+                gaps.append("applies_to")
+            if not operation.trigger.metric_name:
+                gaps.append("trigger.metric_name")
+            if not operation.rewrite.before_summary:
+                gaps.append("rewrite.before_summary")
+            if not operation.rewrite.after_summary:
+                gaps.append("rewrite.after_summary")
+            if not operation.rewrite.information_flow_effect:
+                gaps.append("rewrite.information_flow_effect")
+            if gaps:
+                missing_contracts.append((asset.family, operation.rule_name, gaps))
+
+    assert missing_contracts == []
+
+
 def test_kfold_ensemble_rule_uses_common_expansion_asset_metadata() -> None:
     result = ExpansionEngine([_asset_backed_ml_rule_set()]).expand(
         _tabular_pipeline_cdg(),

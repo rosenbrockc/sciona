@@ -149,6 +149,8 @@ class TestExpansionAssets:
                 "operations": [
                     {
                         "rule_name": "insert_normalization_gate",
+                        "operation_type": "insert",
+                        "applies_to": "generic_records.records->normalize_records",
                         "name": "Insert Normalization Gate",
                         "intent": "Protect downstream processing by inserting a normalization stage before the first consumer.",
                         "dejargonized_summary": "Add a normalization step when the incoming records need cleanup before the main analysis.",
@@ -165,6 +167,11 @@ class TestExpansionAssets:
                                     "matched_primitives": ["normalize_records"],
                                 }
                             ],
+                        },
+                        "rewrite": {
+                            "before_summary": "Records flow into normalization without a cleanup gate.",
+                            "after_summary": "A normalization gate is inserted before downstream processing.",
+                            "information_flow_effect": "Adds input-shape evidence before records are consumed.",
                         },
                     }
                 ],
@@ -239,6 +246,8 @@ class TestExpansionAssets:
                 "operations": [
                     {
                         "rule_name": "boundary_rule",
+                        "operation_type": "insert",
+                        "applies_to": "synthetic_boundary.signal->filter_signal_for_detection",
                         "name": "Boundary Rule",
                         "intent": "Require semantic boundary applicability.",
                         "dejargonized_summary": "Only apply when a root signal boundary feeds a filter that feeds a detector.",
@@ -254,6 +263,11 @@ class TestExpansionAssets:
                             "required_adjacencies": [
                                 ["filter_signal_for_detection", "detect_peaks_in_signal"]
                             ],
+                        },
+                        "rewrite": {
+                            "before_summary": "The root signal boundary feeds the filter directly.",
+                            "after_summary": "A boundary-aware validation stage is inserted before the filter.",
+                            "information_flow_effect": "Keeps raw signal access explicit before detection.",
                         },
                     }
                 ],
@@ -278,3 +292,86 @@ class TestExpansionAssets:
         assert diagnostics
         assert diagnostics[0].asset_id == "family.synthetic_boundary.expansions.v1"
         assert diagnostics[0].asset_operation == "boundary_rule"
+
+    def test_asset_wrapper_supports_any_requirements_and_contraindications(self):
+        class _StubRuleSet:
+            name = "synthetic_any"
+            domain = "tabular_processing"
+
+            def diagnose(self, cdg, context):
+                return [
+                    ExpansionDiagnostic(
+                        rule_name="any_rule",
+                        severity=0.9,
+                        evidence="synthetic any evidence",
+                        metric_name="quality",
+                        metric_value=1.0,
+                        threshold=0.0,
+                    )
+                ]
+
+            def rules(self):
+                return []
+
+        asset = ExpansionFamilyAsset.model_validate(
+            {
+                "asset_id": "family.synthetic_any.expansions.v1",
+                "asset_version": "phase4.v1",
+                "family": "synthetic_any",
+                "domain": "tabular_processing",
+                "name": "Synthetic Any Expansion Inventory",
+                "summary": "Synthetic asset for any-key and contraindication tests.",
+                "operations": [
+                    {
+                        "rule_name": "any_rule",
+                        "operation_type": "validation",
+                        "applies_to": "synthetic_any.records",
+                        "name": "Any Rule",
+                        "intent": "Require one of several evidence keys and reject a known contraindication.",
+                        "dejargonized_summary": "Apply when either quality signal is present unless cleanup already ran.",
+                        "trigger": {
+                            "metric_name": "quality",
+                            "comparison": "gt",
+                            "threshold": 0.0,
+                            "required_any_intermediate_keys": [
+                                "quality_score",
+                                "quality_flag",
+                            ],
+                            "contraindicated_intermediate_keys": [
+                                "cleanup_already_applied"
+                            ],
+                        },
+                        "rewrite": {
+                            "before_summary": "Records flow onward with only raw quality evidence.",
+                            "after_summary": "A validation stage records the quality decision.",
+                            "information_flow_effect": "Adds quality evidence without changing the output contract.",
+                        },
+                    }
+                ],
+                "audit": {
+                    "review_status": "transitional",
+                    "source_kind": "local_asset",
+                    "dejargonized_summary": "Synthetic any-key asset.",
+                    "references": [{"title": "Synthetic any-key reference"}],
+                },
+            }
+        )
+        rule_set = AssetBackedExpansionRuleSet(_StubRuleSet(), asset)
+
+        assert rule_set.diagnose(
+            _generic_records_cdg(),
+            ExpansionContext(intermediates={"quality_flag": True}),
+        )
+        assert not rule_set.diagnose(
+            _generic_records_cdg(),
+            ExpansionContext(intermediates={"other_quality": True}),
+        )
+        assert not rule_set.diagnose(
+            _generic_records_cdg(),
+            ExpansionContext(
+                intermediates={
+                    "quality_flag": True,
+                    "cleanup_already_applied": True,
+                }
+            ),
+        )

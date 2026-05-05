@@ -57,9 +57,13 @@ class ExpansionTriggerAsset(BaseModel):
     )
     threshold: float = 0.0
     required_runtime_keys: list[str] = Field(default_factory=list)
+    required_any_runtime_keys: list[str] = Field(default_factory=list)
     required_runtime_namespaces: list[str] = Field(default_factory=list)
+    required_any_runtime_namespaces: list[str] = Field(default_factory=list)
     required_intermediate_keys: list[str] = Field(default_factory=list)
+    required_any_intermediate_keys: list[str] = Field(default_factory=list)
     required_primitives: list[str] = Field(default_factory=list)
+    required_any_primitives: list[str] = Field(default_factory=list)
     required_boundary_requirements: list["ExpansionBoundaryRequirement"] = Field(
         default_factory=list
     )
@@ -71,6 +75,9 @@ class ExpansionTriggerAsset(BaseModel):
             "required_planning_terms",
         ),
     )
+    contraindicated_runtime_keys: list[str] = Field(default_factory=list)
+    contraindicated_intermediate_keys: list[str] = Field(default_factory=list)
+    contraindicated_primitives: list[str] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -536,6 +543,16 @@ def _operation_matches(
         for key in operation.trigger.required_runtime_keys
     ):
         return False
+    if operation.trigger.required_any_runtime_keys and not any(
+        key in available_runtime_keys
+        for key in operation.trigger.required_any_runtime_keys
+    ):
+        return False
+    if any(
+        key in available_runtime_keys
+        for key in operation.trigger.contraindicated_runtime_keys
+    ):
+        return False
     if operation.trigger.required_runtime_namespaces:
         runtime_keys = sorted(available_runtime_keys)
         for namespace in operation.trigger.required_runtime_namespaces:
@@ -543,10 +560,28 @@ def _operation_matches(
                 _runtime_key_matches_namespace(key, namespace) for key in runtime_keys
             ):
                 return False
+    if operation.trigger.required_any_runtime_namespaces:
+        runtime_keys = sorted(available_runtime_keys)
+        if not any(
+            _runtime_key_matches_namespace(key, namespace)
+            for namespace in operation.trigger.required_any_runtime_namespaces
+            for key in runtime_keys
+        ):
+            return False
     available_intermediate_keys = _available_intermediate_keys(context)
     if any(
         key not in available_intermediate_keys
         for key in operation.trigger.required_intermediate_keys
+    ):
+        return False
+    if operation.trigger.required_any_intermediate_keys and not any(
+        key in available_intermediate_keys
+        for key in operation.trigger.required_any_intermediate_keys
+    ):
+        return False
+    if any(
+        key in available_intermediate_keys
+        for key in operation.trigger.contraindicated_intermediate_keys
     ):
         return False
     if operation.trigger.required_planning_constraint_categories:
@@ -564,6 +599,20 @@ def _operation_matches(
         }
         required = {primitive for primitive in operation.trigger.required_primitives}
         if not required.issubset(primitives):
+            return False
+    if operation.trigger.required_any_primitives:
+        primitives = {
+            str(getattr(node, "matched_primitive", "") or "")
+            for node in cdg.nodes
+        }
+        if not set(operation.trigger.required_any_primitives).intersection(primitives):
+            return False
+    if operation.trigger.contraindicated_primitives:
+        primitives = {
+            str(getattr(node, "matched_primitive", "") or "")
+            for node in cdg.nodes
+        }
+        if set(operation.trigger.contraindicated_primitives).intersection(primitives):
             return False
     if operation.trigger.required_boundary_requirements or operation.trigger.required_adjacencies:
         semantic = project_semantic_cdg(cdg)
