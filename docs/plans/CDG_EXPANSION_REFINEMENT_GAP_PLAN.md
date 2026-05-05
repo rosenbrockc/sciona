@@ -103,6 +103,8 @@ Status: complete.
 
 ## Phase 10: Promotion and Manifest Closure
 
+Status: complete.
+
 - Register operation helper atoms where needed.
 - Reseed provider catalogs and sync skeleton/artifact bindings.
 - Ensure Supabase, Memgraph, and SQLite manifest exports all see the same
