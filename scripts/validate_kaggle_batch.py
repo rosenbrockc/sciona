@@ -274,7 +274,9 @@ def main():
                 ]
                 if top_candidates:
                     rerank_output = await rerank_templates(
-                        prompt, top_candidates, llm, max_candidates=5
+                        prompt, top_candidates, llm,
+                        max_candidates=5,
+                        key_techniques=key_techniques or None,
                     )
                     # Reorder matches based on LLM ranking
                     if rerank_output.best_match and rerank_output.best_match != "none":
@@ -309,9 +311,31 @@ def main():
                 bindings = None
                 if bindings_path.exists():
                     bindings = json.loads(bindings_path.read_text())
-                evaluation = evaluate_template_coverage(
-                    tmpl.raw_cdg, bindings, key_techniques, catalog
-                )
+
+                # Use LLM technique coverage if available, else keyword
+                if rerank_output and rerank_output.technique_coverage:
+                    covered = [
+                        tc.technique for tc in rerank_output.technique_coverage
+                        if tc.covered
+                    ]
+                    missing = [
+                        tc.technique for tc in rerank_output.technique_coverage
+                        if not tc.covered
+                    ]
+                    tc_rate = len(covered) / len(key_techniques) if key_techniques else 0.0
+                    evaluation = evaluate_template_coverage(
+                        tmpl.raw_cdg, bindings, key_techniques, catalog
+                    )
+                    # Override technique coverage with LLM-evaluated values
+                    evaluation["technique_coverage"] = round(tc_rate, 3)
+                    evaluation["covered_techniques"] = covered
+                    evaluation["missing_techniques"] = missing
+                    evaluation["coverage_source"] = "llm_semantic"
+                else:
+                    evaluation = evaluate_template_coverage(
+                        tmpl.raw_cdg, bindings, key_techniques, catalog
+                    )
+                    evaluation["coverage_source"] = "keyword_heuristic"
 
         assessment = assess_result(
             matches[0] if matches else None,

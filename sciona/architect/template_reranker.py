@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -38,7 +38,31 @@ Output JSON only (no markdown fences):
   "best_match": "<name or 'none'>",
   "should_compose_novel": <true|false>,
   "novel_reasoning": "<why no template fits, if applicable>"
-}"""
+}
+
+If key_techniques are provided, also evaluate technique coverage for the \
+best-matching template. For EACH technique, determine if the template has \
+a stage that implements it — even if using different vocabulary or model \
+names (e.g., "EfficientNet-B0" matches a stage with "efficientnet_backbone", \
+"5-fold stratified CV" matches a stage with "cross_validation").
+
+Add to the JSON:
+  "technique_coverage": [
+    {
+      "technique": "<technique name from the list>",
+      "covered": <true|false>,
+      "reasoning": "<why it matches or doesn't>"
+    }
+  ]"""
+
+
+@dataclass(frozen=True)
+class TechniqueCoverage:
+    """LLM-evaluated coverage of a single technique."""
+
+    technique: str
+    covered: bool
+    reasoning: str = ""
 
 
 @dataclass(frozen=True)
@@ -58,14 +82,24 @@ class RerankOutput:
     best_match: str | None
     should_compose_novel: bool
     novel_reasoning: str
+    technique_coverage: list[TechniqueCoverage] = field(default_factory=list)
 
 
 def _format_rerank_prompt(
     prompt: str,
     candidates: list[SolutionTemplate],
+    key_techniques: list[str] | None = None,
 ) -> str:
     """Format the user prompt for the reranker."""
-    parts = [f"## Problem Description\n\n{prompt}\n\n## Candidate Templates\n"]
+    parts = [f"## Problem Description\n\n{prompt}\n"]
+
+    if key_techniques:
+        parts.append("## Key Techniques from Winning Solution\n")
+        for t in key_techniques:
+            parts.append(f"- {t}")
+        parts.append("")
+
+    parts.append("## Candidate Templates\n")
 
     for i, tmpl in enumerate(candidates, 1):
         use_when = "\n".join(f"  - {u}" for u in tmpl.use_when) or "  (none)"
@@ -132,11 +166,21 @@ def _parse_rerank_response(text: str) -> RerankOutput:
     if best == "none":
         best = None
 
+    technique_coverage = [
+        TechniqueCoverage(
+            technique=tc.get("technique", ""),
+            covered=bool(tc.get("covered", False)),
+            reasoning=tc.get("reasoning", ""),
+        )
+        for tc in data.get("technique_coverage", [])
+    ]
+
     return RerankOutput(
         rankings=rankings,
         best_match=best,
         should_compose_novel=data.get("should_compose_novel", False),
         novel_reasoning=data.get("novel_reasoning", ""),
+        technique_coverage=technique_coverage,
     )
 
 
@@ -145,6 +189,7 @@ async def rerank_templates(
     candidates: list[SolutionTemplate],
     llm: object,
     max_candidates: int = 5,
+    key_techniques: list[str] | None = None,
 ) -> RerankOutput:
     """Use LLM to rerank candidate templates by semantic fit.
 
@@ -158,11 +203,16 @@ async def rerank_templates(
         Any object with ``async complete(system, user)`` method.
     max_candidates : int
         Maximum candidates to send to LLM (cost control).
+    key_techniques : list[str] | None
+        Winning solution techniques for semantic coverage evaluation.
+        When provided, the LLM evaluates whether each technique is
+        covered by the best-matching template.
 
     Returns
     -------
     RerankOutput
-        Ranked templates with confidence scores and reasoning.
+        Ranked templates with confidence scores, reasoning, and
+        per-technique semantic coverage (when key_techniques provided).
     """
     candidates = candidates[:max_candidates]
     if not candidates:
@@ -173,7 +223,7 @@ async def rerank_templates(
             novel_reasoning="No candidates to rerank",
         )
 
-    user_prompt = _format_rerank_prompt(prompt, candidates)
+    user_prompt = _format_rerank_prompt(prompt, candidates, key_techniques)
     text = await llm.complete(  # type: ignore[union-attr]
         system=TEMPLATE_RERANK_SYSTEM,
         user=user_prompt,
