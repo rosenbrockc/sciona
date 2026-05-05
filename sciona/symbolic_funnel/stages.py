@@ -42,6 +42,20 @@ def run_funnel(
     timing: dict[str, float] = {}
     stages_executed: list[str] = []
 
+    # Stage 0: Spectral dimensionality gate.
+    if cfg.spectral_gate_enabled:
+        t0 = time.perf_counter()
+        gate = spectral_dimensionality_gate(dataset, cfg)
+        timing["spectral_gate"] = time.perf_counter() - t0
+        stages_executed.append("spectral_gate")
+        if not gate.passed:
+            return FunnelResult(
+                ranked_candidates=[],
+                stages_executed=stages_executed,
+                timing=timing,
+                gated=True,
+            )
+
     # Start with equivalence class representatives only.
     candidates = [FunnelCandidate(entry=e) for e in index.representatives]
     total_considered = len(candidates)
@@ -80,6 +94,104 @@ def run_funnel(
         equivalence_classes_tested=len(index.representatives),
         total_candidates_considered=total_considered,
     )
+
+
+# ---------------------------------------------------------------------------
+# Stage 0: Spectral Dimensionality Gate
+# ---------------------------------------------------------------------------
+
+
+def spectral_dimensionality_gate(
+    dataset: EmpiricalDataset,
+    config: FunnelConfig,
+) -> StageVerdict:
+    """O(ND² + D³) pre-gate: reject datasets with no inter-column structure.
+
+    Computes the *participation ratio* (PR) of the eigenvalue spectrum of the
+    data's covariance matrix.  PR ranges from 1 (all variance in one direction,
+    strong relationships) to D (uniform blob, no structure).
+
+    The gate runs on both raw and log-transformed data to catch power-law
+    structure that looks like a blob in linear space.
+
+    Returns a passing verdict if either space shows structure (PR < D - tol).
+    """
+    D = dataset.n_cols
+    if D < 2:
+        return StageVerdict(
+            stage_name="spectral_gate",
+            passed=False,
+            evidence={"reason": "fewer_than_2_columns"},
+        )
+
+    threshold = D - config.spectral_pr_tolerance
+
+    # Check raw data.
+    raw_pr = _participation_ratio(dataset.data)
+    # Check log-transformed data (catches power-law structure).
+    log_dataset, log_names = dataset.log_transform()
+    log_pr = _participation_ratio(log_dataset.data) if log_dataset.n_cols >= 2 else None
+
+    has_structure = raw_pr is not None and raw_pr < threshold
+    has_log_structure = log_pr is not None and log_pr < threshold
+
+    if has_structure or has_log_structure:
+        return StageVerdict(
+            stage_name="spectral_gate",
+            passed=True,
+            score=1.0,
+            evidence={
+                "raw_participation_ratio": raw_pr,
+                "log_participation_ratio": log_pr,
+                "n_columns": D,
+                "threshold": threshold,
+                "effective_dim_raw": raw_pr,
+                "effective_dim_log": log_pr,
+            },
+        )
+    return StageVerdict(
+        stage_name="spectral_gate",
+        passed=False,
+        evidence={
+            "raw_participation_ratio": raw_pr,
+            "log_participation_ratio": log_pr,
+            "n_columns": D,
+            "threshold": threshold,
+            "reason": "no_structure_detected",
+        },
+    )
+
+
+def _participation_ratio(data: NDArray[np.floating[Any]]) -> float | None:
+    """Compute the participation ratio of the eigenvalue spectrum.
+
+    PR = (Σλ)² / Σλ²
+
+    where λ_i are the eigenvalues of the covariance matrix.
+    PR = 1 means all variance in one direction; PR = D means a uniform blob.
+    """
+    if data.shape[0] < 2 or data.shape[1] < 2:
+        return None
+
+    # Standardize columns to unit variance so scale differences don't dominate.
+    stds = np.std(data, axis=0)
+    stds = np.where(stds < 1e-30, 1.0, stds)
+    standardized = (data - np.mean(data, axis=0)) / stds
+
+    try:
+        cov = np.cov(standardized, rowvar=False)
+        eigenvalues = np.linalg.eigvalsh(cov)
+        # Clamp negative eigenvalues from numerical noise.
+        eigenvalues = np.maximum(eigenvalues, 0.0)
+        sum_eig = np.sum(eigenvalues)
+        if sum_eig < 1e-30:
+            return None
+        sum_eig_sq = np.sum(eigenvalues**2)
+        if sum_eig_sq < 1e-30:
+            return None
+        return float(sum_eig**2 / sum_eig_sq)
+    except np.linalg.LinAlgError:
+        return None
 
 
 # ---------------------------------------------------------------------------

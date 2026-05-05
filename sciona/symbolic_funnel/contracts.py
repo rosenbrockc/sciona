@@ -28,6 +28,10 @@ class FunnelConfig:
     exponent_match_confidence: float = 0.80
     ransac_confidence: float = 0.75
 
+    # Stage 0: spectral dimensionality gate
+    spectral_gate_enabled: bool = True
+    spectral_pr_tolerance: float = 0.5  # gate opens when PR < D - tolerance
+
 
 @dataclass
 class StageVerdict:
@@ -64,3 +68,4 @@ class FunnelResult:
     timing: dict[str, float] = field(default_factory=dict)
     equivalence_classes_tested: int = 0
     total_candidates_considered: int = 0
+    gated: bool = False  # True if spectral gate rejected the dataset

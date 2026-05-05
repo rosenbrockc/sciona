@@ -19,6 +19,19 @@ from sciona.symbolic_funnel.contracts import FunnelCandidate, FunnelResult
 
 
 _FUNNEL_HEURISTICS: dict[str, CanonicalHeuristic] = {
+    "spectral_dimensionality_gate": CanonicalHeuristic(
+        heuristic_id="spectral_dimensionality_gate",
+        display_name="Spectral Dimensionality Gate",
+        dejargonized_meaning=(
+            "The participation ratio of the dataset's eigenvalue spectrum "
+            "indicates inter-column structure exists — the data is not a "
+            "uniform blob across all dimensions"
+        ),
+        evidence_type=HeuristicEvidenceType.SCALAR_SCORE,
+        producer_kind=HeuristicProducerKind.RUNTIME_TRANSFORM,
+        applicability_scope=HeuristicApplicabilityScope.CROSS_FAMILY,
+        supported_action_classes=[HeuristicActionClass.PRECONDITION],
+    ),
     "boundary_triage_pass": CanonicalHeuristic(
         heuristic_id="boundary_triage_pass",
         display_name="Boundary Triage Pass",
@@ -116,6 +129,7 @@ def funnel_result_to_evidence(result: FunnelResult) -> RuntimeHeuristicEvidence:
 
 
 _STAGE_TO_HEURISTIC: dict[str, str] = {
+    "spectral_gate": "spectral_dimensionality_gate",
     "boundary_triage": "boundary_triage_pass",
     "exponent_extraction": "exponent_signature_match",
     "invariant_variance": "invariant_variance_cv",

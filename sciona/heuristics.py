@@ -57,6 +57,7 @@ _EXPLICIT_CANONICAL_HEURISTIC_IDS = {
     "hyperparameter_range_selection",
     "cv_strategy_selection",
     # Symbolic funnel: data-to-equation matching heuristics
+    "spectral_dimensionality_gate",
     "boundary_triage_pass",
     "exponent_signature_match",
     "invariant_variance_cv",
