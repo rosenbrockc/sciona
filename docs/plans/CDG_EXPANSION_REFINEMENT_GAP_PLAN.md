@@ -74,6 +74,8 @@ Status: complete.
 
 ## Phase 7: Counterfactual Validation
 
+Status: complete.
+
 - Update Kaggle validation to grade adapted CDGs after two or three
   expansion/refinement rounds.
 - Report base-only coverage and adapted coverage side by side.

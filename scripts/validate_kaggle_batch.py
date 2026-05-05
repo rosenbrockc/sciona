@@ -11,7 +11,8 @@ Usage:
     python scripts/validate_kaggle_batch.py \
         --corpus research/validation_corpus.json \
         --start 0 --end 50 \
-        --output validation_results_0.json
+        --output validation_results_0.json \
+        --expansion-rounds 2
 """
 
 from __future__ import annotations
@@ -30,6 +31,12 @@ from sciona.sdk import load_catalog_from_repos, Sciona
 from sciona.architect.models import AlgorithmicNode, ConceptType, IOSpec
 from sciona.architect.dejargonizer import dejargonize_heuristic
 from sciona.architect.solution_index import SolutionTemplateIndex
+from sciona.principal.expansion_delta_planner import (
+    DeltaAdaptationKind,
+    DeltaPlan,
+    DeltaPlanningQuery,
+    plan_expansion_delta,
+)
 
 
 def match_prompt_to_templates(
@@ -188,6 +195,134 @@ def assess_result(
         return "inadequate"
 
 
+_ASSESSMENT_RANK = {
+    "no_template": 0,
+    "no_evaluation": 0,
+    "inadequate": 1,
+    "divergent": 2,
+    "partial": 3,
+    "competitive": 4,
+}
+
+
+def _stage_names(template: dict) -> list[str]:
+    return [
+        str(value)
+        for stage in template.get("stages", [])
+        for value in (
+            stage.get("stage_id", ""),
+            stage.get("name", ""),
+            stage.get("description", ""),
+            stage.get("dejargonized_description", ""),
+            stage.get("concept_type", ""),
+            stage.get("matched_primitive", ""),
+        )
+        if value
+    ]
+
+
+def _port_names(template: dict, key: str) -> list[str]:
+    names: list[str] = []
+    for port in template.get(key, []):
+        if port.get("name"):
+            names.append(str(port["name"]))
+    for stage in template.get("stages", []):
+        for port in stage.get(key, []):
+            if port.get("name"):
+                names.append(str(port["name"]))
+    return names
+
+
+def _delta_plan_summary(plan: DeltaPlan) -> dict:
+    selected = plan.selected
+    operations = selected.operation_rule_names
+    sequence = selected.operation_sequence
+    return {
+        "decision": plan.decision.value,
+        "should_compose_novel": plan.should_compose_novel,
+        "base_coverage": plan.base_coverage,
+        "projected_coverage": selected.projected_coverage,
+        "intrusion_cost": selected.intrusion_cost,
+        "utility_score": selected.utility_score,
+        "covered_terms": list(selected.covered_terms),
+        "missing_terms_after_plan": list(selected.missing_terms_after_plan),
+        "operation_rule_names": list(operations),
+        "operation_path": list(selected.path),
+        "asset_family": sequence.asset_family if sequence else "",
+        "asset_id": sequence.asset_id if sequence else "",
+        "candidate_count": plan.candidate_count,
+        "rationale": selected.rationale,
+    }
+
+
+def evaluate_counterfactual_expansion(
+    *,
+    template_match: dict,
+    template: dict,
+    base_evaluation: dict,
+    key_techniques: list[str],
+    max_rounds: int,
+) -> tuple[dict, dict]:
+    """Project adapted coverage after a few expansion/refinement rounds."""
+    if max_rounds <= 0 or not key_techniques:
+        return dict(base_evaluation), {}
+
+    covered = tuple(base_evaluation.get("covered_techniques", []))
+    missing = tuple(base_evaluation.get("missing_techniques", []))
+    plan = plan_expansion_delta(
+        DeltaPlanningQuery(
+            families=tuple(
+                value
+                for value in (
+                    template_match.get("family", ""),
+                    template.get("family", ""),
+                    template.get("paradigm", ""),
+                )
+                if value
+            ),
+            matched_techniques=covered,
+            missing_techniques=missing,
+            stage_names=tuple(_stage_names(template)),
+            input_names=tuple(_port_names(template, "inputs")),
+            output_names=tuple(_port_names(template, "outputs")),
+            runtime_keys=tuple(_port_names(template, "inputs")),
+            intermediate_keys=tuple(_stage_names(template)),
+            base_coverage=float(base_evaluation.get("technique_coverage", 0.0)),
+            min_adapted_coverage=0.50,
+            max_sequences=5,
+            max_operations_per_sequence=max(1, max_rounds),
+        )
+    )
+
+    adapted = dict(base_evaluation)
+    if plan.decision not in (DeltaAdaptationKind.DIRECT_USE, DeltaAdaptationKind.TRUE_NOVEL):
+        adapted_covered = list(dict.fromkeys([*covered, *plan.selected.covered_terms]))
+        adapted["technique_coverage"] = plan.selected.projected_coverage
+        adapted["covered_techniques"] = adapted_covered
+        adapted["missing_techniques"] = list(plan.selected.missing_terms_after_plan)
+        adapted["coverage_source"] = (
+            str(base_evaluation.get("coverage_source", "unknown"))
+            + "_plus_delta_counterfactual"
+        )
+
+    adapted["counterfactual_expansion"] = {
+        "rounds_allowed": max_rounds,
+        **_delta_plan_summary(plan),
+    }
+    return adapted, _delta_plan_summary(plan)
+
+
+def is_rescued_by_expansion(
+    base_assessment: str,
+    adapted_assessment: str,
+    delta_plan: dict,
+) -> bool:
+    """Return true when expansion/refinement improves validation status."""
+    if not delta_plan.get("operation_rule_names"):
+        return False
+    return _ASSESSMENT_RANK.get(adapted_assessment, 0) > _ASSESSMENT_RANK.get(base_assessment, 0)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--corpus", required=True)
@@ -201,6 +336,15 @@ def main():
                         help="Use LLM to rerank top-N template candidates")
     parser.add_argument("--llm-provider", default=None,
                         help="LLM provider for reranking (e.g., claude_shim, anthropic)")
+    parser.add_argument(
+        "--expansion-rounds",
+        type=int,
+        default=0,
+        help=(
+            "Counterfactually grade base-plus-delta coverage after this many "
+            "expansion/refinement operations. Default keeps base-only scoring."
+        ),
+    )
     args = parser.parse_args()
 
     # Load corpus
@@ -337,10 +481,32 @@ def main():
                     )
                     evaluation["coverage_source"] = "keyword_heuristic"
 
-        assessment = assess_result(
+        base_assessment = assess_result(
             matches[0] if matches else None,
             evaluation,
         )
+        assessment = base_assessment
+        base_evaluation = dict(evaluation) if evaluation else None
+        adapted_evaluation = None
+        delta_plan = {}
+        rescued = False
+        if args.expansion_rounds > 0 and matches and evaluation:
+            top_name = matches[0]["template"]
+            tmpl = solution_index.get(top_name)
+            if tmpl:
+                adapted_evaluation, delta_plan = evaluate_counterfactual_expansion(
+                    template_match=matches[0],
+                    template=tmpl.raw_cdg,
+                    base_evaluation=evaluation,
+                    key_techniques=key_techniques,
+                    max_rounds=args.expansion_rounds,
+                )
+                assessment = assess_result(matches[0], adapted_evaluation)
+                rescued = is_rescued_by_expansion(
+                    base_assessment,
+                    assessment,
+                    delta_plan,
+                )
 
         result = {
             "competition_id": cid,
@@ -348,8 +514,14 @@ def main():
             "domain": comp.get("domain", ""),
             "problem_type": comp.get("problem_type", ""),
             "assessment": assessment,
+            "base_assessment": base_assessment,
             "template_matches": matches[:3],
-            "evaluation": evaluation,
+            "evaluation": adapted_evaluation or evaluation,
+            "base_evaluation": base_evaluation,
+            "adapted_evaluation": adapted_evaluation,
+            "delta_plan": delta_plan or None,
+            "rescued_by_expansion": rescued,
+            "rescued_by_operations": delta_plan.get("operation_rule_names", []) if rescued else [],
             "key_techniques_count": len(key_techniques),
             "solution_summary_preview": solution_summary[:200],
         }
@@ -364,9 +536,19 @@ def main():
         status = "✓" if assessment == "competitive" else \
                  "~" if assessment == "partial" else \
                  "!" if assessment == "divergent" else "✗"
+        final_evaluation = adapted_evaluation or evaluation
+        base_tc = base_evaluation["technique_coverage"] if base_evaluation else 0
+        final_tc = final_evaluation["technique_coverage"] if final_evaluation else 0
+        final_gr = final_evaluation["grounding_rate"] if final_evaluation else 0
+        delta_suffix = ""
+        if delta_plan:
+            op_count = len(delta_plan.get("operation_rule_names", []))
+            delta_suffix = (
+                f", base={base_assessment}/{base_tc:.0%},"
+                f" delta={delta_plan.get('decision', 'none')}:{op_count}"
+            )
         print(f"  {status} {cid}: {assessment}"
-              f" (tc={evaluation['technique_coverage'] if evaluation else 0:.0%},"
-              f" gr={evaluation['grounding_rate'] if evaluation else 0:.0%})")
+              f" (tc={final_tc:.0%}, gr={final_gr:.0%}{delta_suffix})")
 
     async def _run_all():
         for comp in competitions:
@@ -384,6 +566,14 @@ def main():
     print(f"\n=== SUMMARY ({len(results)} competitions) ===")
     for a, c in assessments.most_common():
         print(f"  {a}: {c} ({100*c/len(results):.0f}%)")
+    rescued = [r for r in results if r.get("rescued_by_expansion")]
+    if args.expansion_rounds > 0:
+        print(f"  rescued_by_expansion: {len(rescued)} ({100*len(rescued)/len(results):.0f}%)")
+        rescue_ops = Counter(
+            op for result in rescued for op in result.get("rescued_by_operations", [])
+        )
+        for op, count in rescue_ops.most_common(10):
+            print(f"    {op}: {count}")
 
 
 if __name__ == "__main__":
