@@ -119,6 +119,7 @@ def test_ml_model_selection_provider_expansion_asset_loads() -> None:
         "insert_constraint_injection",
         "apply_dl_backbone_substitution",
         "apply_tree_ensemble_blend",
+        "insert_lightgbm_large_leaf_configuration_before_training",
         "apply_pretrained_backbone_ensemble",
         "insert_recursive_feature_elimination_before_estimator",
         "insert_permutation_importance_feature_selection_before_estimator",
@@ -298,6 +299,18 @@ def test_mined_ml_expansion_rules_apply_to_tabular_pipeline() -> None:
     assert {"train_lightgbm", "train_xgboost", "blend_tree_predictions"}.issubset(
         {node.node_id for node in tree_blend.cdg.nodes}
     )
+
+    lightgbm_config = ExpansionEngine([rule_set]).expand(
+        _tabular_pipeline_cdg(),
+        ExpansionContext(
+            intermediates={
+                "model_selection.requires_lightgbm_large_leaf_configuration": True
+            }
+        ),
+    )
+    assert "configure_lightgbm_large_leaf" in {
+        node.node_id for node in lightgbm_config.cdg.nodes
+    }
 
     rfe = ExpansionEngine([rule_set]).expand(
         _tabular_pipeline_cdg(),

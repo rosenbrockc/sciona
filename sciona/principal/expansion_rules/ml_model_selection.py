@@ -683,6 +683,30 @@ def _build_apply_tree_ensemble_blend() -> RewriteRule:
     )
 
 
+def _build_insert_lightgbm_large_leaf_configuration() -> RewriteRule:
+    """Insert LightGBM leaf-wise capacity configuration before training."""
+    configure = _node(
+        "configure_lightgbm_large_leaf",
+        "Configure LightGBM Large-Leaf Parameters",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="lightgbm_large_leaf_hyperparameters",
+        inputs=[IOSpec(name="training_config", type_desc="dict")],
+        outputs=[IOSpec(name="lightgbm_config", type_desc="dict")],
+        description="Configure LightGBM leaf-wise capacity such as num_leaves, max_depth, and minimum data per leaf under validation control.",
+    )
+    return _semantic_only_rule(
+        "insert_lightgbm_large_leaf_configuration_before_training",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training", "train_lightgbm"],
+            chain_nodes=[configure],
+            chain_edges=[],
+        ),
+    )
+
+
 def _build_apply_pretrained_backbone_ensemble() -> RewriteRule:
     """Replace single training with a blend of pretrained image/text backbones."""
     train_cnn = _node(
@@ -1680,6 +1704,42 @@ def _diagnose_tree_ensemble_blend(
     )
 
 
+def _diagnose_lightgbm_large_leaf_configuration(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_lightgbm_large_leaf_configuration",
+        f"{_PREFIX}.use_lightgbm_large_leaf_configuration",
+        f"{_PREFIX}.use_lightgbm_large_leaves",
+        f"{_PREFIX}.tune_lightgbm_num_leaves",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in (
+            "lightgbm with large leaf",
+            "large leaf lightgbm",
+            "large leaves",
+            "large leaf nodes",
+            "num_leaves",
+            "leaf-wise boosting",
+            "leaf wise boosting",
+        )
+    ) and "lightgbm" in planning
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_lightgbm_large_leaf_configuration_before_training",
+        severity=0.65,
+        evidence="LightGBM training requires validation-controlled large-leaf hyperparameter configuration.",
+        metric_name="requires_lightgbm_large_leaf_configuration",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
 def _diagnose_permutation_importance_feature_selection(
     cdg: CDGExport, context: ExpansionContext,
 ) -> ExpansionDiagnostic | None:
@@ -2161,6 +2221,7 @@ class MLModelSelectionRuleSet:
             _build_insert_constraint_injection(),
             _build_apply_dl_backbone_substitution(),
             _build_apply_tree_ensemble_blend(),
+            _build_insert_lightgbm_large_leaf_configuration(),
             _build_apply_pretrained_backbone_ensemble(),
             _build_insert_recursive_feature_elimination(),
             _build_insert_permutation_importance_feature_selection(),
@@ -2200,6 +2261,7 @@ class MLModelSelectionRuleSet:
             _diagnose_dl_backbone_substitution,
             _diagnose_pretrained_backbone_ensemble,
             _diagnose_tree_ensemble_blend,
+            _diagnose_lightgbm_large_leaf_configuration,
             _diagnose_permutation_importance_feature_selection,
             _diagnose_balanced_sampling,
             _diagnose_pseudo_labeling,

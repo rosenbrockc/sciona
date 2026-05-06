@@ -49,6 +49,17 @@ Follow-up candidate-operation pass added runtime-backed reusable operations:
 - `/Users/conrad/personal/sciona-matcher/tests/test_neural_network_mined_expansion_assets.py`
   - Added asset/runtime coverage for the new reusable operations.
 
+LightGBM large-leaf follow-up pass added one runtime-backed hyperparameter refinement:
+
+- `/Users/conrad/personal/sciona-atoms-ml/data/expansions/ml_model_selection.json`
+  - Added LightGBM large-leaf configuration operation contract.
+
+- `/Users/conrad/personal/sciona-matcher/sciona/principal/expansion_rules/ml_model_selection.py`
+  - Added runtime rule builder and diagnostic for validation-controlled LightGBM large-leaf configuration.
+
+- `/Users/conrad/personal/sciona-matcher/tests/test_ml_model_selection_expansion_assets.py`
+  - Added asset/runtime coverage for the LightGBM configuration operation.
+
 ## Validation Artifacts
 
 Focused tests:
@@ -65,16 +76,16 @@ PYTHONPATH=. pytest -q \
 
 Result: `26 passed`.
 
-After the candidate-operation pass, the same focused suite result is `27 passed`.
+After the candidate-operation and LightGBM large-leaf passes, the same focused suite result is `27 passed`.
 
-Latest full deterministic validation after the candidate-operation pass:
+Latest full deterministic validation after the LightGBM large-leaf pass:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/validate_kaggle_batch.py \
   --corpus /Users/conrad/personal/sciona-atoms/research/validation_corpus.json \
   --start 0 --end 307 \
-  --output /tmp/sciona_validation_full_20260506_candidate_ops_v1.json \
+  --output /tmp/sciona_validation_full_20260506_lightgbm_leaf_v1.json \
   --expansion-rounds 2
 ```
 
@@ -89,8 +100,8 @@ Latest follow-up report:
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/review_validation_followups.py \
-  /tmp/sciona_validation_full_20260506_candidate_ops_v1.json \
-  --output /tmp/sciona_validation_followup_20260506_candidate_ops_v1.json \
+  /tmp/sciona_validation_full_20260506_lightgbm_leaf_v1.json \
+  --output /tmp/sciona_validation_followup_20260506_lightgbm_leaf_v1.json \
   --min-support 2 \
   --similarity-threshold 0.34 \
   --max-clusters 80
@@ -101,14 +112,13 @@ Follow-up summary:
 - `92` remaining divergent
 - `33` trick review tickets
 - `80` divergent gap clusters
-- `7` candidate reusable-operation clusters
-- `73` existing-operation clusters
+- `6` candidate reusable-operation clusters
+- `74` existing-operation clusters
 
 ## Remaining Candidate Clusters
 
 These look less like safe metadata-only cleanup and more like new operation/CDG decisions or trick catalog items:
 
-- `gap_cluster_086`: LightGBM large-leaf configuration
 - `gap_cluster_147`: ConvNeXt/EfficientNet large-backbone scale attention
 - `gap_cluster_191`: shallow CNN / CNN regressor
 - `gap_cluster_255`: parallel path optimization / path merging
@@ -125,13 +135,11 @@ Recommendation: stop metadata-only enrichment here. For each remaining cluster, 
 
 ## Current Repo State Notes
 
-`/Users/conrad/personal/sciona-matcher` has tracked local edits from the candidate-operation pass:
+`/Users/conrad/personal/sciona-matcher` has tracked local edits from the LightGBM large-leaf pass:
 
 - `docs/EXPANSION_REFINEMENT_RESUME.md`
 - `sciona/principal/expansion_rules/ml_model_selection.py`
-- `sciona/principal/expansion_rules/neural_network.py`
 - `tests/test_ml_model_selection_expansion_assets.py`
-- `tests/test_neural_network_mined_expansion_assets.py`
 
 It still has unrelated untracked local artifacts:
 
@@ -142,19 +150,20 @@ It still has unrelated untracked local artifacts:
 
 Do not stage the unrelated artifacts unless explicitly requested.
 
-`/Users/conrad/personal/sciona-atoms-ml` has tracked local edits from the candidate-operation pass:
+`/Users/conrad/personal/sciona-atoms-ml` has tracked local edits from the LightGBM large-leaf pass:
 
 - `data/expansions/ml_model_selection.json`
 
-`/Users/conrad/personal/sciona-atoms-dl` has tracked local edits from the candidate-operation pass:
+It also has an unrelated untracked local artifact:
 
-- `data/expansions/neural_network.json`
+- `src/sciona/atoms/ml/sklearn/linear_model/coordinate_descent_cv_metadata_routing_callback_shell/`
+
+`/Users/conrad/personal/sciona-atoms-dl` is clean after the previous pass.
 
 ## Suggested Next Step
 
-Review and commit the provider asset edits separately from matcher runtime/test edits:
+Review and commit the provider asset edit separately from matcher runtime/test edits:
 
 1. In `sciona-atoms-ml`, commit only `data/expansions/ml_model_selection.json`.
-2. In `sciona-atoms-dl`, commit only `data/expansions/neural_network.json`.
-3. In `sciona-matcher`, commit the expansion rule-set/test edits plus this resume file, but leave unrelated untracked artifacts alone.
-4. Start the next technical pass from the 7 remaining candidate clusters. The safest next decisions are probably whether LightGBM large-leaf configuration belongs as a hyperparameter-refinement operation, whether shallow CNN regressors belong under neural architecture scale variants, and whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion.
+2. In `sciona-matcher`, commit the expansion rule-set/test edits plus this resume file, but leave unrelated untracked artifacts alone.
+3. Start the next technical pass from the 6 remaining candidate clusters. The safest next decisions are probably whether shallow CNN regressors belong under neural architecture scale variants, whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion, and whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement.
