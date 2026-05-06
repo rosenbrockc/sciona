@@ -344,6 +344,51 @@ InitialSearch ──> RankCandidates ──> VerifyTopK ──> End[MatchResult]
 - **Built-in persistence** -- State can be serialized for pause/resume.
 - **Observability** -- Tracing/spans and Mermaid diagram generation come for free.
 
+### Symbolic Funnel (`sciona/symbolic_funnel/`)
+
+A deterministic pre-filter that matches empirical datasets against symbolic physics atoms without LLM calls or iterative curve fitting. When a high-confidence match is found, it short-circuits the full Hunter search loop.
+
+The funnel relies on pre-computed index fields emitted by `sciona-atoms-physics` publication manifests: `equivalence_class_hash` (collapses algebraically identical forms), `exponent_signature` (power-law fingerprints), and `invariant_forms` (isolated-constant expressions for vectorized CV checks).
+
+#### Cascade
+
+```
+Stage 0: Spectral Gate      O(ND²+D³)  participation ratio of eigenvalue spectrum
+  |                                     rejects structureless blobs
+  v
+Stage 1: Boundary Triage    O(1)/cand  variable count, validity bounds, dimensions
+  |
+  v
+Stage 2: Exponent Extraction O(N) once  log-space SVD → exponent fingerprint → O(1) index lookup
+  |
+  v
+Stage 3: Invariant Variance  O(N)/cand  vectorized CV check on isolated-constant expressions
+  |
+  v
+Stage 4: Graph Propagation  conditional CDG root-premise pruning, np.gradient synthesis
+  |
+  v
+Stage 5: RANSAC             O(K)/cand  minimal point solvers for non-linearizable expressions
+```
+
+All stages are pure functions: `(dataset, candidates, config) -> filtered_candidates`. No side effects, no LLM calls.
+
+#### Key modules
+
+| Module | Role |
+|--------|------|
+| `dataset.py` | `EmpiricalDataset` wrapping NumPy arrays with column metadata |
+| `contracts.py` | `FunnelConfig`, `StageVerdict`, `FunnelCandidate`, `FunnelResult` |
+| `index.py` | `FunnelIndex` loaded from publication manifest JSON files, O(1) lookup by exponent hash |
+| `stages.py` | Six stage functions + `run_funnel()` orchestrator |
+| `heuristic_bridge.py` | Bridges `FunnelResult` into `RuntimeHeuristicObservation` for the canonical heuristic system |
+
+#### Heuristic outputs
+
+Six canonical heuristic IDs: `spectral_dimensionality_gate`, `boundary_triage_pass`, `exponent_signature_match`, `invariant_variance_cv`, `ransac_fit_residual`, `graph_pruning_depth`.
+
+See `sciona-atoms-physics/docs/searching.md` for the full design document.
+
 ### LLM integration (`sciona/hunter/llm.py`)
 
 `LLMClient` is a Protocol with a single method: `async complete(system, user) -> str`.
