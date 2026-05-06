@@ -593,6 +593,19 @@ def _build_insert_siamese_metric_backbone() -> RewriteRule:
     )
 
 
+def _build_insert_large_backbone_scale_attention() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_large_backbone_scale_attention_before_loss",
+        node_id="large_backbone_scale_attention",
+        node_name="Large-Backbone Scale Attention",
+        matched_primitive="convnext_efficientnet_scale_attention_backbone",
+        description="Route high-capacity ConvNeXt, EfficientNet, or similar vision backbone features through scale-aware attention before the task head.",
+        input_name="feature_maps",
+        output_name="scale_attended_features",
+        priority=4,
+    )
+
+
 def _build_insert_graph_interaction_network() -> RewriteRule:
     return _build_insert_forward_loss_rule(
         rule_name="insert_graph_interaction_network_before_loss",
@@ -1131,6 +1144,32 @@ def _diagnose_siamese_metric_backbone(cdg: CDGExport, context: ExpansionContext)
     )
 
 
+def _diagnose_large_backbone_scale_attention(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_large_backbone_scale_attention_before_loss",
+        metric_name="requires_large_backbone_scale_attention",
+        evidence="A high-capacity vision backbone with scale-aware attention is required.",
+        intermediate_keys=(
+            "requires_large_backbone_scale_attention",
+            "use_large_backbone_scale_attention",
+            "use_convnext_large_backbone",
+            "use_efficientnet_v2_backbone",
+        ),
+        planning_terms=(
+            "convnext-large",
+            "convnext large",
+            "efficientnet-v2",
+            "efficientnet v2",
+            "large vision backbone",
+            "scale-attention",
+            "scale attention",
+            "scale-aware attention",
+        ),
+        severity=0.75,
+    )
+
+
 def _diagnose_graph_interaction_network(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
     return _diagnose_textual_rule(
         context,
@@ -1319,6 +1358,7 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_test_time_augmentation_after_forward(),
             _build_insert_hard_negative_mining(),
             _build_insert_siamese_metric_backbone(),
+            _build_insert_large_backbone_scale_attention(),
             _build_insert_graph_interaction_network(),
             _build_insert_pointrend_boundary_refinement(),
             _build_insert_cross_encoder_backbone(),
@@ -1355,6 +1395,7 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_test_time_augmentation,
                     _diagnose_hard_negative_mining,
                     _diagnose_siamese_metric_backbone,
+                    _diagnose_large_backbone_scale_attention,
                     _diagnose_graph_interaction_network,
                     _diagnose_pointrend_boundary_refinement,
                     _diagnose_cross_encoder_backbone,
