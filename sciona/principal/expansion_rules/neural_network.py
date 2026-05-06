@@ -747,6 +747,19 @@ def _build_insert_stochastic_depth_before_forward() -> RewriteRule:
     )
 
 
+def _build_insert_coordinate_regression_head_before_loss() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_coordinate_regression_head_before_loss",
+        node_id="coordinate_regression_head",
+        node_name="Coordinate Regression Head",
+        matched_primitive="coordinate_regression_head",
+        description="Predict coordinates, offsets, or continuous geometry targets from neural features before loss computation.",
+        input_name="features",
+        output_name="coordinates",
+        priority=4,
+    )
+
+
 def _build_insert_arcface_margin_loss_before_loss() -> RewriteRule:
     forward = _node("forward", _FORWARD_PASS, ConceptType.NEURAL_NETWORK)
     loss = _node("loss", _LOSS_COMPUTATION, ConceptType.NEURAL_NETWORK)
@@ -1232,6 +1245,17 @@ def _diagnose_stochastic_depth(cdg: CDGExport, context: ExpansionContext) -> Exp
     )
 
 
+def _diagnose_coordinate_regression_head(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_coordinate_regression_head_before_loss",
+        metric_name="requires_coordinate_regression_head",
+        evidence="A coordinate or continuous-geometry regression head is required before loss computation.",
+        intermediate_keys=("requires_coordinate_regression_head", "use_coordinate_regression_head", "use_3d_coordinate_head"),
+        planning_terms=("coordinate regression head", "coordinate regression", "3d coordinates", "xyz regression", "offset regression", "continuous geometry"),
+    )
+
+
 def _diagnose_multilabel_focal_bce_loss(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
     explicit = _truthy_intermediate(context, "requires_multilabel_focal_bce_loss", "use_multilabel_focal_loss")
     planning = _planning_text(context)
@@ -1306,6 +1330,7 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_specaugment_before_forward(),
             _build_insert_non_maximum_suppression_after_forward(),
             _build_insert_stochastic_depth_before_forward(),
+            _build_insert_coordinate_regression_head_before_loss(),
             _build_insert_arcface_margin_loss_before_loss(),
         ]
 
@@ -1341,6 +1366,7 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_specaugment,
                     _diagnose_non_maximum_suppression,
                     _diagnose_stochastic_depth,
+                    _diagnose_coordinate_regression_head,
                     _diagnose_arcface_margin_loss]:
             d = fn(cdg, context)
             if d is not None:

@@ -108,6 +108,7 @@ def test_neural_network_provider_asset_includes_mined_training_operations() -> N
         "insert_specaugment_before_forward",
         "insert_non_maximum_suppression_after_forward",
         "insert_stochastic_depth_before_forward",
+        "insert_coordinate_regression_head_before_loss",
     }
 
 
@@ -206,6 +207,7 @@ def test_support_three_neural_network_expansion_rules_apply_to_training_loop() -
         ("requires_specaugment", "SpecAugment"),
         ("requires_nms", "Non-Maximum Suppression"),
         ("requires_stochastic_depth", "Stochastic Depth"),
+        ("requires_coordinate_regression_head", "Coordinate Regression Head"),
     ]
 
     for intermediate_key, expected_node_name in cases:

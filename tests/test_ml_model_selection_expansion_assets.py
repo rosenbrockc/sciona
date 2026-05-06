@@ -134,6 +134,9 @@ def test_ml_model_selection_provider_expansion_asset_loads() -> None:
         "insert_database_augmentation_for_retrieval",
         "insert_prompt_reasoning_augmentation_before_training",
         "insert_smoothed_target_encoding_before_estimator",
+        "insert_entity_embedding_encoding_before_estimator",
+        "replace_loss_with_rank_correlation_objective",
+        "insert_candidate_generation_before_reranking",
     }
     assert asset.operation("apply_kfold_ensemble").operation_type == "replace"
     assert (
@@ -223,6 +226,31 @@ def test_kfold_ensemble_rule_uses_common_expansion_asset_metadata() -> None:
         "sciona.expansions.ml.kfold_ensemble"
     )
     assert result.applied_assets[0]["asset_operation_type"] == "replace"
+
+
+def test_candidate_reusable_ml_rules_apply_to_pipeline() -> None:
+    rule_set = _asset_backed_ml_rule_set()
+    cases = [
+        (
+            {"model_selection.requires_entity_embeddings": True},
+            "Entity Embedding Encoding",
+        ),
+        (
+            {"model_selection.requires_rank_correlation_objective": True},
+            "Train Rank-Correlation Estimator",
+        ),
+        (
+            {"model_selection.requires_candidate_generation": True},
+            "Candidate Generation",
+        ),
+    ]
+
+    for intermediates, expected_node_name in cases:
+        result = ExpansionEngine([rule_set]).expand(
+            _tabular_pipeline_cdg(),
+            ExpansionContext(intermediates=intermediates),
+        )
+        assert expected_node_name in {node.name for node in result.cdg.nodes}
 
 
 def test_obvious_ml_expansion_rules_apply_to_tabular_pipeline() -> None:

@@ -1084,6 +1084,88 @@ def _build_insert_smoothed_target_encoding() -> RewriteRule:
     )
 
 
+def _build_insert_entity_embedding_encoding() -> RewriteRule:
+    """Insert learned entity embeddings for high-cardinality categorical IDs."""
+    embed = _node(
+        "entity_embedding_encoding",
+        "Entity Embedding Encoding",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="learned_entity_embedding_encoder",
+        inputs=[IOSpec(name="categorical_ids", type_desc="ndarray")],
+        outputs=[IOSpec(name="entity_embeddings", type_desc="ndarray")],
+        description="Learn dense embeddings for high-cardinality categorical or entity identifiers before estimator training.",
+    )
+    return _semantic_only_rule(
+        "insert_entity_embedding_encoding_before_estimator",
+        priority=3,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["preprocessing", "feature_engineering", "load_features", "source"],
+            target_labels=["estimator", "model_training"],
+            chain_nodes=[embed],
+            chain_edges=[],
+        ),
+    )
+
+
+def _build_replace_loss_with_rank_correlation_objective() -> RewriteRule:
+    """Replace generic training with a rank-correlation-aware objective."""
+    objective = _node(
+        "configure_rank_correlation_objective",
+        "Configure Rank-Correlation Objective",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="kendall_tau_spearman_rank_objective",
+        inputs=[IOSpec(name="metric", type_desc="str")],
+        outputs=[IOSpec(name="rank_objective", type_desc="callable")],
+        description="Configure a surrogate objective or validation loop for Kendall Tau, Spearman, or pairwise order metrics.",
+    )
+    train = _node(
+        "train_rank_correlation_estimator",
+        "Train Rank-Correlation Estimator",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="rank_correlation_optimized_estimator",
+        inputs=[IOSpec(name="rank_objective", type_desc="callable")],
+        outputs=[IOSpec(name="model", type_desc="trained_model")],
+        description="Train a model using pairwise ranking, differentiable rank surrogates, or metric-aware validation selection.",
+    )
+    return _semantic_only_rule(
+        "replace_loss_with_rank_correlation_objective",
+        priority=4,
+        semantic_apply=lambda graph: _replace_nodes_with_chain(
+            graph,
+            target_labels=["model_training", "estimator"],
+            chain_nodes=[objective, train],
+            chain_edges=[
+                _edge("configure_rank_correlation_objective", "train_rank_correlation_estimator", "rank_objective", "rank_objective"),
+            ],
+        ),
+    )
+
+
+def _build_insert_candidate_generation_before_reranking() -> RewriteRule:
+    """Insert candidate generation before retrieval reranking or output."""
+    candidates = _node(
+        "candidate_generation",
+        "Candidate Generation",
+        ConceptType.ML_MODEL_SELECTION,
+        matched_primitive="retrieval_candidate_generation",
+        inputs=[IOSpec(name="query_items", type_desc="DataFrame")],
+        outputs=[IOSpec(name="candidate_pairs", type_desc="DataFrame")],
+        description="Generate a bounded candidate set with embeddings, approximate nearest neighbors, graph traversal, or coarse classifiers before reranking.",
+    )
+    return _semantic_only_rule(
+        "insert_candidate_generation_before_reranking",
+        priority=4,
+        semantic_apply=lambda graph: _insert_chain_between(
+            graph,
+            source_labels=["prediction_ensemble", "ensemble", "meta_predict", "model_training"],
+            target_labels=["retrieval_reranking", "output", "submission", "validation"],
+            chain_nodes=[candidates],
+            chain_edges=[],
+        ),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------
@@ -1948,6 +2030,110 @@ def _diagnose_smoothed_target_encoding(
     )
 
 
+def _diagnose_entity_embedding_encoding(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_entity_embeddings",
+        f"{_PREFIX}.use_entity_embeddings",
+        f"{_PREFIX}.requires_learned_categorical_embeddings",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in (
+            "entity embedding",
+            "entity embeddings",
+            "learned categorical embedding",
+            "categorical embeddings",
+            "embedding for ids",
+            "embedding for identifiers",
+        )
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_entity_embedding_encoding_before_estimator",
+        severity=0.75,
+        evidence="High-cardinality categorical or entity identifiers require learned embeddings before estimator training.",
+        metric_name="requires_entity_embeddings",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_rank_correlation_objective(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_rank_correlation_objective",
+        f"{_PREFIX}.use_kendall_tau_objective",
+        f"{_PREFIX}.use_spearman_objective",
+        f"{_PREFIX}.use_pairwise_ranking_objective",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in (
+            "kendall tau",
+            "kendall's tau",
+            "spearman",
+            "rank correlation",
+            "pairwise ranking objective",
+            "order-aware objective",
+        )
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="replace_loss_with_rank_correlation_objective",
+        severity=0.75,
+        evidence="Training should use a rank-correlation-aware objective or validation loop.",
+        metric_name="requires_rank_correlation_objective",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_candidate_generation(
+    cdg: CDGExport, context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    explicit = _intermediate_truthy(
+        context,
+        f"{_PREFIX}.requires_candidate_generation",
+        f"{_PREFIX}.use_candidate_generation",
+        f"{_PREFIX}.use_graph_candidate_generation",
+        f"{_PREFIX}.use_ann_candidate_generation",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in (
+            "candidate generation",
+            "candidate retrieval",
+            "candidate pairs",
+            "nearest-neighbor candidates",
+            "approximate nearest neighbor",
+            "graph-based candidate",
+        )
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_candidate_generation_before_reranking",
+        severity=0.75,
+        evidence="Retrieval or matching needs a bounded candidate generation stage before reranking.",
+        metric_name="requires_candidate_generation",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Rule set
 # ---------------------------------------------------------------------------
@@ -1990,6 +2176,9 @@ class MLModelSelectionRuleSet:
             _build_insert_database_augmentation_for_retrieval(),
             _build_insert_prompt_reasoning_augmentation(),
             _build_insert_smoothed_target_encoding(),
+            _build_insert_entity_embedding_encoding(),
+            _build_replace_loss_with_rank_correlation_objective(),
+            _build_insert_candidate_generation_before_reranking(),
         ]
 
     def diagnose(
@@ -2025,6 +2214,9 @@ class MLModelSelectionRuleSet:
             _diagnose_database_augmentation,
             _diagnose_prompt_reasoning_augmentation,
             _diagnose_smoothed_target_encoding,
+            _diagnose_entity_embedding_encoding,
+            _diagnose_rank_correlation_objective,
+            _diagnose_candidate_generation,
         ]:
             d = fn(cdg, context)
             if d is not None:

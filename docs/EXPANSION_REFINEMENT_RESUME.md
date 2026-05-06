@@ -31,7 +31,23 @@ Provider expansion assets were updated in sibling repos:
 - `/Users/conrad/personal/sciona-atoms-dl/data/expansions/neural_network.json`
   - Generalized metadata for mixed precision, progressive/high-resolution image training, label-preserving training augmentation, domain-specific fine-tuning, TTA, and stochastic depth.
 
-No files in `sciona-matcher` were changed by the guarded metadata pass itself.
+Follow-up candidate-operation pass added runtime-backed reusable operations:
+
+- `/Users/conrad/personal/sciona-atoms-ml/data/expansions/ml_model_selection.json`
+  - Added entity embedding encoding, rank-correlation objective, and retrieval candidate-generation operation contracts.
+
+- `/Users/conrad/personal/sciona-atoms-dl/data/expansions/neural_network.json`
+  - Added coordinate regression head operation contract.
+
+- `/Users/conrad/personal/sciona-matcher/sciona/principal/expansion_rules/ml_model_selection.py`
+  - Added runtime rule builders and diagnostics for entity embeddings, rank-correlation objectives, and candidate generation.
+
+- `/Users/conrad/personal/sciona-matcher/sciona/principal/expansion_rules/neural_network.py`
+  - Added runtime rule builder and diagnostic for coordinate regression heads.
+
+- `/Users/conrad/personal/sciona-matcher/tests/test_ml_model_selection_expansion_assets.py`
+- `/Users/conrad/personal/sciona-matcher/tests/test_neural_network_mined_expansion_assets.py`
+  - Added asset/runtime coverage for the new reusable operations.
 
 ## Validation Artifacts
 
@@ -49,30 +65,32 @@ PYTHONPATH=. pytest -q \
 
 Result: `26 passed`.
 
-Latest full deterministic validation:
+After the candidate-operation pass, the same focused suite result is `27 passed`.
+
+Latest full deterministic validation after the candidate-operation pass:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/validate_kaggle_batch.py \
   --corpus /Users/conrad/personal/sciona-atoms/research/validation_corpus.json \
   --start 0 --end 307 \
-  --output /tmp/sciona_validation_full_20260506_guarded_expansion_metadata_v3.json \
+  --output /tmp/sciona_validation_full_20260506_candidate_ops_v1.json \
   --expansion-rounds 2
 ```
 
 Latest full validation summary:
 
-- Strict: `102 competitive`, `111 partial`, `94 divergent`
-- Trick availability reference: `102 competitive`, `102 partial`, `8 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `71 divergent`, `19 divergent+trick_available`, `4 divergent+high_risk_trick_suppressed`
-- Rescued by expansion/refinement: `103`
+- Strict: `102 competitive`, `113 partial`, `92 divergent`
+- Trick availability reference: `102 competitive`, `103 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `69 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
+- Rescued by expansion/refinement: `105`
 
 Latest follow-up report:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/review_validation_followups.py \
-  /tmp/sciona_validation_full_20260506_guarded_expansion_metadata_v3.json \
-  --output /tmp/sciona_validation_followup_20260506_guarded_expansion_metadata_v3.json \
+  /tmp/sciona_validation_full_20260506_candidate_ops_v1.json \
+  --output /tmp/sciona_validation_followup_20260506_candidate_ops_v1.json \
   --min-support 2 \
   --similarity-threshold 0.34 \
   --max-clusters 80
@@ -80,27 +98,23 @@ PYTHONPATH=. python scripts/review_validation_followups.py \
 
 Follow-up summary:
 
-- `94` remaining divergent
-- `32` trick review tickets
+- `92` remaining divergent
+- `33` trick review tickets
 - `80` divergent gap clusters
-- `11` candidate reusable-operation clusters
-- `69` existing-operation clusters
+- `7` candidate reusable-operation clusters
+- `73` existing-operation clusters
 
 ## Remaining Candidate Clusters
 
 These look less like safe metadata-only cleanup and more like new operation/CDG decisions or trick catalog items:
 
-- `gap_cluster_052`: 3D coordinate / CDF / MLP regression heads
 - `gap_cluster_086`: LightGBM large-leaf configuration
-- `gap_cluster_132`: Kendall Tau optimization
-- `gap_cluster_153`: ConvNeXt/EfficientNet large-backbone scale attention
-- `gap_cluster_185`: entity embeddings
-- `gap_cluster_196`: shallow CNN / CNN regressor
-- `gap_cluster_225`: CNN or graph-based candidate generation
-- `gap_cluster_262`: parallel path optimization / path merging
-- `gap_cluster_280`: 3D-UNet spatio-temporal attention
-- `gap_cluster_303`: MCTS/backtracking search
-- `gap_cluster_311`: residual/wind-flow attention
+- `gap_cluster_147`: ConvNeXt/EfficientNet large-backbone scale attention
+- `gap_cluster_191`: shallow CNN / CNN regressor
+- `gap_cluster_255`: parallel path optimization / path merging
+- `gap_cluster_273`: 3D-UNet spatio-temporal attention
+- `gap_cluster_296`: MCTS/backtracking search
+- `gap_cluster_304`: residual/wind-flow attention
 
 Recommendation: stop metadata-only enrichment here. For each remaining cluster, decide whether it is:
 
@@ -111,13 +125,15 @@ Recommendation: stop metadata-only enrichment here. For each remaining cluster, 
 
 ## Current Repo State Notes
 
-`/Users/conrad/personal/sciona-matcher` has untracked work from the validation-followup phase:
+`/Users/conrad/personal/sciona-matcher` has tracked local edits from the candidate-operation pass:
 
-- `sciona/architect/validation_followup.py`
-- `scripts/review_validation_followups.py`
-- `tests/test_validation_followup.py`
+- `docs/EXPANSION_REFINEMENT_RESUME.md`
+- `sciona/principal/expansion_rules/ml_model_selection.py`
+- `sciona/principal/expansion_rules/neural_network.py`
+- `tests/test_ml_model_selection_expansion_assets.py`
+- `tests/test_neural_network_mined_expansion_assets.py`
 
-It also has unrelated untracked local artifacts:
+It still has unrelated untracked local artifacts:
 
 - `docs/symbolic_math.pdf`
 - `validation_results_3.json`
@@ -126,19 +142,19 @@ It also has unrelated untracked local artifacts:
 
 Do not stage the unrelated artifacts unless explicitly requested.
 
-`/Users/conrad/personal/sciona-atoms-ml` had unrelated pre-existing local changes before this pass. The guarded metadata pass only touched:
+`/Users/conrad/personal/sciona-atoms-ml` has tracked local edits from the candidate-operation pass:
 
 - `data/expansions/ml_model_selection.json`
 
-`/Users/conrad/personal/sciona-atoms-dl` only has:
+`/Users/conrad/personal/sciona-atoms-dl` has tracked local edits from the candidate-operation pass:
 
 - `data/expansions/neural_network.json`
 
 ## Suggested Next Step
 
-Review and commit the provider asset edits separately from matcher follow-up tooling:
+Review and commit the provider asset edits separately from matcher runtime/test edits:
 
 1. In `sciona-atoms-ml`, commit only `data/expansions/ml_model_selection.json`.
 2. In `sciona-atoms-dl`, commit only `data/expansions/neural_network.json`.
-3. In `sciona-matcher`, commit the validation follow-up tooling plus this resume file if desired, but leave unrelated untracked artifacts alone.
-4. Start the next technical pass from the 11 remaining candidate clusters, beginning with the ones that clearly map to reusable operations: entity embeddings, Kendall Tau objective, 3D coordinate/regression heads, and candidate generation.
+3. In `sciona-matcher`, commit the expansion rule-set/test edits plus this resume file, but leave unrelated untracked artifacts alone.
+4. Start the next technical pass from the 7 remaining candidate clusters. The safest next decisions are probably whether LightGBM large-leaf configuration belongs as a hyperparameter-refinement operation, whether shallow CNN regressors belong under neural architecture scale variants, and whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion.
