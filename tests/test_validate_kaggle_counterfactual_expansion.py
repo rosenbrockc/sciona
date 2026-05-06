@@ -188,3 +188,62 @@ def test_build_trick_telemetry_stays_closed_for_competitive_cases() -> None:
         "candidate_tricks": [],
         "suppressed_high_risk_tricks": [],
     }
+
+
+def test_assessment_with_trick_availability_label_is_reference_only() -> None:
+    module = _validation_module()
+
+    assert (
+        module.assessment_with_trick_availability_label(
+            "divergent",
+            {"candidate_tricks_available": 2, "high_risk_tricks_suppressed": 0},
+        )
+        == "divergent+trick_available"
+    )
+    assert (
+        module.assessment_with_trick_availability_label(
+            "divergent",
+            {"candidate_tricks_available": 0, "high_risk_tricks_suppressed": 1},
+        )
+        == "divergent+high_risk_trick_suppressed"
+    )
+    assert (
+        module.assessment_with_trick_availability_label(
+            "competitive",
+            {"candidate_tricks_available": 0, "high_risk_tricks_suppressed": 0},
+        )
+        == "competitive"
+    )
+
+
+def test_assessment_column_counts_keeps_strict_and_reference_columns_separate() -> None:
+    module = _validation_module()
+
+    counts = module.assessment_column_counts(
+        [
+            {
+                "assessment": "competitive",
+                "assessment_without_tricks": "competitive",
+                "assessment_with_trick_availability": "competitive",
+            },
+            {
+                "assessment": "divergent",
+                "assessment_without_tricks": "divergent",
+                "assessment_with_trick_availability": "divergent+trick_available",
+            },
+            {
+                "assessment": "divergent",
+                "trick_telemetry": {
+                    "candidate_tricks_available": 0,
+                    "high_risk_tricks_suppressed": 1,
+                },
+            },
+        ]
+    )
+
+    assert counts["without_tricks"] == {"competitive": 1, "divergent": 2}
+    assert counts["with_trick_availability"] == {
+        "competitive": 1,
+        "divergent+trick_available": 1,
+        "divergent+high_risk_trick_suppressed": 1,
+    }

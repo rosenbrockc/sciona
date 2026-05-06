@@ -448,6 +448,43 @@ def build_trick_telemetry(
     return telemetry
 
 
+def assessment_with_trick_availability_label(
+    assessment: str,
+    trick_telemetry: dict | None,
+) -> str:
+    """Return a reference-only assessment label annotated with trick availability."""
+    telemetry = trick_telemetry or {}
+    if int(telemetry.get("candidate_tricks_available", 0) or 0) > 0:
+        return f"{assessment}+trick_available"
+    if int(telemetry.get("high_risk_tricks_suppressed", 0) or 0) > 0:
+        return f"{assessment}+high_risk_trick_suppressed"
+    return assessment
+
+
+def assessment_column_counts(results: list[dict]) -> dict[str, dict[str, int]]:
+    """Summarize strict grading and reference-only trick availability columns."""
+    from collections import Counter
+
+    without_tricks = Counter(
+        str(result.get("assessment_without_tricks") or result.get("assessment", ""))
+        for result in results
+    )
+    with_trick_availability = Counter(
+        str(
+            result.get("assessment_with_trick_availability")
+            or assessment_with_trick_availability_label(
+                str(result.get("assessment", "")),
+                result.get("trick_telemetry") if isinstance(result.get("trick_telemetry"), dict) else None,
+            )
+        )
+        for result in results
+    )
+    return {
+        "without_tricks": dict(without_tricks),
+        "with_trick_availability": dict(with_trick_availability),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--corpus", required=True)
@@ -674,6 +711,10 @@ def main():
         result["high_risk_tricks_suppressed"] = trick_telemetry["high_risk_tricks_suppressed"]
         result["tricks_consulted_by_architect"] = trick_telemetry["tricks_consulted_by_architect"]
         result["tricks_used_in_plan"] = trick_telemetry["tricks_used_in_plan"]
+        result["assessment_without_tricks"] = assessment
+        result["assessment_with_trick_availability"] = (
+            assessment_with_trick_availability_label(assessment, trick_telemetry)
+        )
         results.append(result)
 
         status = "✓" if assessment == "competitive" else \
@@ -709,6 +750,18 @@ def main():
     print(f"\n=== SUMMARY ({len(results)} competitions) ===")
     for a, c in assessments.most_common():
         print(f"  {a}: {c} ({100*c/len(results):.0f}%)")
+    columns = assessment_column_counts(results)
+    labels = sorted(
+        set(columns["without_tricks"]) | set(columns["with_trick_availability"])
+    )
+    print("\n=== MATCH SUMMARY COLUMNS ===")
+    print("  assessment                              without_tricks  with_trick_availability")
+    for label in labels:
+        print(
+            f"  {label:<39} "
+            f"{columns['without_tricks'].get(label, 0):>14}  "
+            f"{columns['with_trick_availability'].get(label, 0):>23}"
+        )
     rescued = [r for r in results if r.get("rescued_by_expansion")]
     if args.expansion_rounds > 0:
         print(f"  rescued_by_expansion: {len(rescued)} ({100*len(rescued)/len(results):.0f}%)")
