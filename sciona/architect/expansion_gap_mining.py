@@ -14,6 +14,7 @@ from sciona.principal.expansion_retrieval import (
     ExpansionOperationSequence,
     ExpansionRetrievalQuery,
 )
+from sciona.principal.trick_retrieval import SolutionTrickRetriever, TrickRetrievalQuery
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,8 @@ class ExpansionGapCluster:
     existing_asset_family: str = ""
     existing_asset_id: str = ""
     existing_operation_rule_names: tuple[str, ...] = ()
+    candidate_trick_ids: tuple[str, ...] = ()
+    high_risk_trick_ids: tuple[str, ...] = ()
     rationale: str = ""
 
 
@@ -68,6 +71,14 @@ class ExpansionGapMiningReport:
     def one_off_count(self) -> int:
         return sum(1 for cluster in self.clusters if cluster.recommended_action == "defer_one_off")
 
+    @property
+    def trick_candidate_cluster_count(self) -> int:
+        return sum(1 for cluster in self.clusters if cluster.candidate_trick_ids)
+
+    @property
+    def high_risk_trick_cluster_count(self) -> int:
+        return sum(1 for cluster in self.clusters if cluster.high_risk_trick_ids)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "total_results": self.total_results,
@@ -77,6 +88,8 @@ class ExpansionGapMiningReport:
             "existing_operation_count": self.existing_operation_count,
             "reusable_candidate_count": self.reusable_candidate_count,
             "one_off_count": self.one_off_count,
+            "trick_candidate_cluster_count": self.trick_candidate_cluster_count,
+            "high_risk_trick_cluster_count": self.high_risk_trick_cluster_count,
             "clusters": [
                 {
                     "cluster_id": cluster.cluster_id,
@@ -89,6 +102,8 @@ class ExpansionGapMiningReport:
                     "existing_asset_family": cluster.existing_asset_family,
                     "existing_asset_id": cluster.existing_asset_id,
                     "existing_operation_rule_names": list(cluster.existing_operation_rule_names),
+                    "candidate_trick_ids": list(cluster.candidate_trick_ids),
+                    "high_risk_trick_ids": list(cluster.high_risk_trick_ids),
                     "rationale": cluster.rationale,
                 }
                 for cluster in self.clusters
@@ -130,6 +145,7 @@ def mine_expansion_gaps(
     similarity_threshold: float = 0.45,
     include_assessments: Iterable[str] = _DEFAULT_ASSESSMENTS,
     retriever: ExpansionAssetRetriever | None = None,
+    trick_retriever: SolutionTrickRetriever | None = None,
     max_clusters: int = 50,
 ) -> ExpansionGapMiningReport:
     """Cluster missing validation techniques into reusable operation gaps."""
@@ -143,8 +159,15 @@ def mine_expansion_gaps(
     occurrences = _extract_occurrences(included_results)
     raw_clusters = _cluster_occurrences(occurrences, similarity_threshold=similarity_threshold)
     asset_retriever = retriever or ExpansionAssetRetriever()
+    trick_asset_retriever = trick_retriever or SolutionTrickRetriever()
     clusters = tuple(
-        _build_cluster(index, cluster, min_support=min_support, retriever=asset_retriever)
+        _build_cluster(
+            index,
+            cluster,
+            min_support=min_support,
+            retriever=asset_retriever,
+            trick_retriever=trick_asset_retriever,
+        )
         for index, cluster in enumerate(raw_clusters, start=1)
     )
     ranked = tuple(sorted(clusters, key=_cluster_sort_key)[:max_clusters])
@@ -224,6 +247,7 @@ def _build_cluster(
     *,
     min_support: int,
     retriever: ExpansionAssetRetriever,
+    trick_retriever: SolutionTrickRetriever,
 ) -> ExpansionGapCluster:
     terms = _representative_terms(occurrences)
     competitions = tuple(sorted({occurrence.competition_id for occurrence in occurrences if occurrence.competition_id}))
@@ -248,6 +272,30 @@ def _build_cluster(
         asset_family = ""
         asset_id = ""
         rule_names = ()
+    trick_matches = trick_retriever.retrieve(
+        TrickRetrievalQuery(
+            goal=" ".join(
+                value
+                for occurrence in occurrences
+                for value in (occurrence.title, occurrence.technique)
+                if value
+            ),
+            missing_techniques=terms,
+            candidate_cdgs=tuple(
+                occurrence.template for occurrence in occurrences if occurrence.template
+            ),
+            families=(*families, *paradigms),
+        ),
+        novelty_assessment={"assessment": "divergent"},
+        max_results=5,
+        include_disallowed=True,
+    )
+    candidate_trick_ids = tuple(
+        match.trick.trick_id for match in trick_matches if not match.high_risk
+    )
+    high_risk_trick_ids = tuple(
+        match.trick.trick_id for match in trick_matches if match.high_risk
+    )
     return ExpansionGapCluster(
         cluster_id=f"gap_cluster_{index:03d}",
         representative_terms=terms,
@@ -259,6 +307,8 @@ def _build_cluster(
         existing_asset_family=asset_family,
         existing_asset_id=asset_id,
         existing_operation_rule_names=rule_names,
+        candidate_trick_ids=candidate_trick_ids,
+        high_risk_trick_ids=high_risk_trick_ids,
         rationale=rationale,
     )
 

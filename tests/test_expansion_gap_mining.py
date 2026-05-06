@@ -7,6 +7,7 @@ from sciona.architect.expansion_gap_mining import (
     mine_expansion_gaps,
 )
 from sciona.principal.expansion_assets import clear_local_expansion_asset_caches
+from sciona.principal.trick_retrieval import SolutionTrick, SolutionTrickRetriever
 
 
 def _result(
@@ -113,6 +114,52 @@ def test_gap_mining_uses_base_evaluation_when_adapted_results_exist() -> None:
 
     assert report.occurrence_count == 1
     assert report.clusters[0].representative_terms == ("base missing",)
+
+
+def test_gap_mining_reports_matching_solution_tricks() -> None:
+    retriever = SolutionTrickRetriever(
+        [
+            SolutionTrick(
+                trick_id="trick.test.metric_bound_clipping",
+                name="Metric-bound clipping",
+                kind="metric_hack",
+                status="allowed_with_validation",
+                risk_level="medium",
+                generalization_level="general",
+                summary="Clip regression predictions to metric bounds.",
+                applies_when=("metric bounds define valid prediction ranges",),
+                validation_requirements=("held-out ablation",),
+                tags=("metric", "clipping"),
+            ),
+            SolutionTrick(
+                trick_id="trick.test.public_lb_probe",
+                name="Public leaderboard probing",
+                kind="public_lb_overfit_risk",
+                status="cataloged",
+                risk_level="high",
+                generalization_level="competition_specific",
+                summary="Probe public leaderboard thresholds.",
+                tags=("leaderboard", "thresholding"),
+            ),
+        ]
+    )
+
+    report = mine_expansion_gaps(
+        [_result("comp-a", ["metric-bound clipping and leaderboard thresholding"])],
+        min_support=2,
+        trick_retriever=retriever,
+    )
+
+    cluster = report.clusters[0]
+    assert cluster.candidate_trick_ids == ("trick.test.metric_bound_clipping",)
+    assert cluster.high_risk_trick_ids == ("trick.test.public_lb_probe",)
+    assert report.trick_candidate_cluster_count == 1
+    assert report.high_risk_trick_cluster_count == 1
+    as_dict = report.to_dict()
+    assert as_dict["trick_candidate_cluster_count"] == 1
+    assert as_dict["clusters"][0]["candidate_trick_ids"] == [
+        "trick.test.metric_bound_clipping"
+    ]
 
 
 def test_load_validation_results_accepts_lists_and_wrapped_results(tmp_path) -> None:

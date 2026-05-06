@@ -37,6 +37,12 @@ from sciona.principal.expansion_delta_planner import (
     DeltaPlanningQuery,
     plan_expansion_delta,
 )
+from sciona.principal.trick_retrieval import (
+    SolutionTrickMatch,
+    SolutionTrickRetriever,
+    TrickRetrievalQuery,
+    should_consult_tricks,
+)
 
 
 def match_prompt_to_templates(
@@ -323,6 +329,125 @@ def is_rescued_by_expansion(
     return _ASSESSMENT_RANK.get(adapted_assessment, 0) > _ASSESSMENT_RANK.get(base_assessment, 0)
 
 
+def _novel_cdg_required(
+    *,
+    assessment: str,
+    base_assessment: str,
+    delta_plan: dict,
+    rerank_output: object | None = None,
+) -> bool:
+    if assessment in {"no_template", "no_evaluation", "inadequate", "divergent"}:
+        return True
+    if base_assessment in {"no_template", "no_evaluation", "inadequate", "divergent"} and not delta_plan:
+        return True
+    if bool(delta_plan.get("should_compose_novel")):
+        return True
+    if bool(getattr(rerank_output, "should_compose_novel", False)):
+        return True
+    return False
+
+
+def _trick_match_summary(match: SolutionTrickMatch) -> dict:
+    trick = match.trick
+    return {
+        "trick_id": trick.trick_id,
+        "name": trick.name,
+        "kind": trick.kind,
+        "risk_level": trick.risk_level,
+        "generalization_level": trick.generalization_level,
+        "score": match.score,
+        "reasons": list(match.reasons),
+        "matched_terms": list(match.matched_terms),
+    }
+
+
+def build_trick_telemetry(
+    *,
+    prompt: str,
+    title: str,
+    solution_summary: str,
+    matches: list[dict],
+    assessment: str,
+    base_assessment: str,
+    evaluation: dict | None,
+    base_evaluation: dict | None,
+    delta_plan: dict,
+    rerank_output: object | None = None,
+    trick_retriever: SolutionTrickRetriever | None = None,
+    max_results: int = 5,
+) -> dict:
+    """Summarize trick availability without affecting validation scoring."""
+    final_evaluation = evaluation or {}
+    base_eval = base_evaluation or {}
+    missing_techniques = (
+        final_evaluation.get("missing_techniques")
+        or base_eval.get("missing_techniques")
+        or []
+    )
+    projected_coverage = final_evaluation.get(
+        "technique_coverage",
+        base_eval.get("technique_coverage", 0.0),
+    )
+    novel_required = _novel_cdg_required(
+        assessment=assessment,
+        base_assessment=base_assessment,
+        delta_plan=delta_plan,
+        rerank_output=rerank_output,
+    )
+    novelty_assessment = {
+        "assessment": assessment,
+        "base_assessment": base_assessment,
+        "novel_cdg_required": novel_required,
+        "projected_coverage": projected_coverage,
+        "counterfactual_expansion": delta_plan,
+    }
+    telemetry = {
+        "novel_cdg_required": novel_required,
+        "candidate_tricks_available": 0,
+        "high_risk_tricks_suppressed": 0,
+        "tricks_consulted_by_architect": False,
+        "tricks_used_in_plan": [],
+        "candidate_tricks": [],
+        "suppressed_high_risk_tricks": [],
+    }
+    if not should_consult_tricks(novelty_assessment):
+        return telemetry
+
+    top_matches = matches[:3]
+    query = TrickRetrievalQuery(
+        goal=" ".join(part for part in [title, prompt, solution_summary] if part),
+        missing_techniques=tuple(str(item) for item in missing_techniques),
+        candidate_cdgs=tuple(str(match.get("template", "")) for match in top_matches),
+        families=tuple(
+            str(value)
+            for match in top_matches
+            for value in (match.get("family", ""), match.get("paradigm", ""))
+            if value
+        ),
+        tags=tuple(str(item) for item in final_evaluation.get("coverage_source", "").split("_") if item),
+    )
+    retriever = trick_retriever or SolutionTrickRetriever()
+    trick_matches = retriever.retrieve(
+        query,
+        novelty_assessment=novelty_assessment,
+        max_results=max_results,
+        include_disallowed=True,
+    )
+    high_risk = [match for match in trick_matches if match.high_risk]
+    exposed_candidates = [match for match in trick_matches if not match.high_risk]
+    telemetry.update(
+        {
+            "candidate_tricks_available": len(exposed_candidates),
+            "high_risk_tricks_suppressed": len(high_risk),
+            "candidate_tricks": [_trick_match_summary(match) for match in exposed_candidates],
+            "suppressed_high_risk_tricks": [
+                _trick_match_summary(match) for match in high_risk
+            ],
+        }
+    )
+    return telemetry
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--corpus", required=True)
@@ -531,6 +656,24 @@ def main():
                 "should_compose_novel": rerank_output.should_compose_novel,
                 "novel_reasoning": rerank_output.novel_reasoning,
             }
+        trick_telemetry = build_trick_telemetry(
+            prompt=prompt,
+            title=comp.get("title", ""),
+            solution_summary=solution_summary,
+            matches=matches,
+            assessment=assessment,
+            base_assessment=base_assessment,
+            evaluation=adapted_evaluation or evaluation,
+            base_evaluation=base_evaluation,
+            delta_plan=delta_plan or {},
+            rerank_output=rerank_output,
+        )
+        result["trick_telemetry"] = trick_telemetry
+        result["novel_cdg_required"] = trick_telemetry["novel_cdg_required"]
+        result["candidate_tricks_available"] = trick_telemetry["candidate_tricks_available"]
+        result["high_risk_tricks_suppressed"] = trick_telemetry["high_risk_tricks_suppressed"]
+        result["tricks_consulted_by_architect"] = trick_telemetry["tricks_consulted_by_architect"]
+        result["tricks_used_in_plan"] = trick_telemetry["tricks_used_in_plan"]
         results.append(result)
 
         status = "✓" if assessment == "competitive" else \
