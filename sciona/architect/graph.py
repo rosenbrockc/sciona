@@ -96,6 +96,12 @@ class DecompositionAgent:
         context_budget_chars: int = 900,
         use_monadic_rewriter: bool = False,
         architect_critique_llm_enabled: bool = True,
+        trick_context_novelty_assessment: Any = None,
+        trick_context_missing_techniques: tuple[str, ...] = (),
+        trick_context_candidate_cdgs: tuple[str, ...] = (),
+        trick_context_families: tuple[str, ...] = (),
+        trick_context_tags: tuple[str, ...] = (),
+        trick_context_max_results: int = 5,
     ) -> None:
         self._deps = DecompositionDeps(
             catalog=catalog,
@@ -109,6 +115,12 @@ class DecompositionAgent:
             context_budget_chars=context_budget_chars,
             use_monadic_rewriter=use_monadic_rewriter,
             architect_critique_llm_enabled=architect_critique_llm_enabled,
+            trick_context_novelty_assessment=trick_context_novelty_assessment,
+            trick_context_missing_techniques=tuple(trick_context_missing_techniques),
+            trick_context_candidate_cdgs=tuple(trick_context_candidate_cdgs),
+            trick_context_families=tuple(trick_context_families),
+            trick_context_tags=tuple(trick_context_tags),
+            trick_context_max_results=trick_context_max_results,
         )
         self._max_depth = max_depth
         self._graph = build_graph().compile(checkpointer=checkpointer)

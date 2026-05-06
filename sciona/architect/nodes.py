@@ -7,6 +7,7 @@ Routing functions: def fn(state) -> str
 from __future__ import annotations
 
 import json
+import logging
 import re
 import uuid
 from typing import Any
@@ -67,6 +68,10 @@ from sciona.llm_router import (
     ARCHITECT_STRATEGY,
     select_llm,
 )
+from sciona.principal.trick_retrieval import (
+    format_solution_trick_prompt_section,
+    retrieve_tricks,
+)
 from sciona.shared_context import format_context_block
 from sciona.telemetry import (
     get_current_stage,
@@ -75,6 +80,9 @@ from sciona.telemetry import (
     merge_run_metadata,
     update_stage,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_family_hint(
@@ -641,6 +649,64 @@ def _selected_skeleton_asset(skeleton: SkeletonGraph | None) -> dict[str, Any]:
     if skeleton is None:
         return {}
     return skeleton_asset_summary(skeleton)
+
+
+def _planning_artifact_values(
+    artifact: dict[str, Any] | Any,
+    keys: tuple[str, ...],
+) -> tuple[str, ...]:
+    if artifact is None:
+        return ()
+    if hasattr(artifact, "model_dump"):
+        data = artifact.model_dump(mode="json")
+    elif isinstance(artifact, dict):
+        data = artifact
+    else:
+        return ()
+    values: list[str] = []
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            values.append(value.strip())
+    return tuple(dict.fromkeys(values))
+
+
+def _solution_trick_context_block(
+    state: DecompositionState,
+    deps: DecompositionDeps,
+    node: AlgorithmicNode,
+) -> str:
+    novelty_assessment = deps.trick_context_novelty_assessment
+    if novelty_assessment is None:
+        return ""
+
+    families = deps.trick_context_families
+    if not families:
+        families = _planning_artifact_values(
+            state.get("planning_artifact"),
+            ("family_hint", "paradigm"),
+        )
+    tags = deps.trick_context_tags or (node.concept_type.value,)
+    goal_parts = [
+        str(state.get("goal", "")),
+        node.name,
+        node.description,
+        node.concept_type.value,
+    ]
+    try:
+        matches = retrieve_tricks(
+            " ".join(part for part in goal_parts if part),
+            deps.trick_context_candidate_cdgs,
+            novelty_assessment,
+            missing_techniques=deps.trick_context_missing_techniques,
+            families=families,
+            tags=tags,
+            max_results=deps.trick_context_max_results,
+        )
+    except Exception:
+        logger.debug("solution trick retrieval failed", exc_info=True)
+        return ""
+    return format_solution_trick_prompt_section(matches)
 
 
 async def _search_context(
@@ -1376,6 +1442,9 @@ async def decompose_node(
     )
     if failure_block:
         user_prompt += f"\n\n{failure_block}"
+    trick_block = _solution_trick_context_block(state, deps, node)
+    if trick_block:
+        user_prompt += f"\n\n{trick_block}"
 
     response = await select_llm(deps.llm, ARCHITECT_DECOMPOSE).complete(
         DECOMPOSE_NODE_SYSTEM,

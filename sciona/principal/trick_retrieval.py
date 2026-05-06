@@ -212,6 +212,70 @@ def clear_solution_trick_caches() -> None:
     load_local_solution_tricks.cache_clear()
 
 
+def _format_prompt_list(label: str, values: tuple[str, ...]) -> list[str]:
+    if not values:
+        return [f"  {label}: (none declared)"]
+    lines = [f"  {label}:"]
+    lines.extend(f"    - {value}" for value in values)
+    return lines
+
+
+def format_solution_trick_prompt_section(
+    matches: Iterable[SolutionTrickMatch],
+    *,
+    max_chars: int = 4500,
+) -> str:
+    """Render retrieved tricks as a distinct optional architect prompt block."""
+    selected = tuple(matches)
+    if not selected:
+        return ""
+
+    lines: list[str] = [
+        "Optional high-risk tactics for novel-CDG cases",
+        "",
+        "Use this section only after a better-fitting base CDG plus available "
+        "expansion/refinement operations remains under-covered or truly novel.",
+        "Do not use these tactics as the base topology, and do not let them "
+        "override CDG, expansion, validation, or admissibility evidence.",
+        "",
+    ]
+    for index, match in enumerate(selected, start=1):
+        trick = match.trick
+        lines.extend(
+            [
+                f"{index}. {trick.name} ({trick.trick_id})",
+                f"  kind: {trick.kind}",
+                f"  risk_level: {trick.risk_level}",
+                f"  generalization_level: {trick.generalization_level}",
+                f"  score: {match.score:.3f}",
+                f"  reasons: {', '.join(match.reasons) if match.reasons else '(none)'}",
+                f"  summary: {trick.summary}",
+            ]
+        )
+        lines.extend(_format_prompt_list("applies_when", trick.applies_when))
+        lines.extend(_format_prompt_list("do_not_use_when", trick.do_not_use_when))
+        lines.extend(
+            _format_prompt_list(
+                "validation_requirements",
+                trick.validation_requirements,
+            )
+        )
+        lines.append(
+            f"  architect_hint: {trick.architect_hint or '(none declared)'}"
+        )
+        lines.extend(_format_prompt_list("related_cdgs", trick.related_cdgs))
+        lines.extend(
+            _format_prompt_list("related_operations", trick.related_operations)
+        )
+        lines.append("")
+
+    rendered = "\n".join(lines).strip()
+    if len(rendered) <= max_chars:
+        return rendered
+    truncated = rendered[: max(0, max_chars - 80)].rstrip()
+    return truncated + "\n\n[trick context truncated to prompt budget]"
+
+
 def should_consult_tricks(novelty_assessment: Any) -> bool:
     """Return whether architect context may include optional tricks.
 
@@ -355,4 +419,3 @@ def retrieve_tricks(
         novelty_assessment=novelty_assessment,
         max_results=max_results,
     )
-

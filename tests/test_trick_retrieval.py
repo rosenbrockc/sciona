@@ -5,9 +5,11 @@ from pathlib import Path
 
 from sciona.principal.trick_retrieval import (
     SolutionTrick,
+    SolutionTrickMatch,
     SolutionTrickRetriever,
     TrickRetrievalQuery,
     clear_solution_trick_caches,
+    format_solution_trick_prompt_section,
     load_local_solution_tricks,
     retrieve_tricks,
     should_consult_tricks,
@@ -193,3 +195,38 @@ def test_retrieve_tricks_convenience_wrapper_uses_gate_and_provider(tmp_path, mo
     assert gated_in
     assert gated_in[0].trick.trick_id == "trick.test.metric_bound_clipping"
 
+
+def test_format_solution_trick_prompt_section_keeps_tactics_distinct() -> None:
+    trick = SolutionTrick(
+        trick_id="trick.test.metric_bound_clipping",
+        name="Metric-bound clipping",
+        kind="metric_hack",
+        status="allowed_with_validation",
+        risk_level="medium",
+        generalization_level="general",
+        summary="Clip regression predictions to metric bounds for RMSLE.",
+        applies_when=("metric bounds define valid prediction ranges",),
+        do_not_use_when=("bounds come only from public leaderboard probes",),
+        validation_requirements=("ablate clipping on a held-out split",),
+        architect_hint="Use only as post-processing after selecting a CDG.",
+        related_cdgs=("solution.kaggle.classical_tabular_ensemble_topology",),
+        related_operations=("metric_calibration",),
+    )
+
+    rendered = format_solution_trick_prompt_section(
+        [
+            SolutionTrickMatch(
+                trick=trick,
+                score=0.72,
+                reasons=("missing_technique:metric-bound clipping",),
+            )
+        ]
+    )
+
+    assert rendered.startswith("Optional high-risk tactics for novel-CDG cases")
+    assert "Do not use these tactics as the base topology" in rendered
+    assert "kind: metric_hack" in rendered
+    assert "risk_level: medium" in rendered
+    assert "generalization_level: general" in rendered
+    assert "validation_requirements:" in rendered
+    assert "related_cdgs:" in rendered
