@@ -619,6 +619,19 @@ def _build_insert_large_backbone_scale_attention() -> RewriteRule:
     )
 
 
+def _build_insert_spatiotemporal_unet_attention() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_spatiotemporal_unet_attention_before_loss",
+        node_id="spatiotemporal_unet_attention",
+        node_name="Spatio-Temporal U-Net Attention",
+        matched_primitive="3d_unet_spatiotemporal_attention",
+        description="Encode volumetric, frame-stack, slice-stack, or video-like tensors with a 3D U-Net-style backbone and spatio-temporal attention before the task head.",
+        input_name="spatiotemporal_features",
+        output_name="attended_volume_features",
+        priority=4,
+    )
+
+
 def _build_insert_graph_interaction_network() -> RewriteRule:
     return _build_insert_forward_loss_rule(
         rule_name="insert_graph_interaction_network_before_loss",
@@ -1211,6 +1224,36 @@ def _diagnose_large_backbone_scale_attention(cdg: CDGExport, context: ExpansionC
     )
 
 
+def _diagnose_spatiotemporal_unet_attention(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_spatiotemporal_unet_attention_before_loss",
+        metric_name="requires_spatiotemporal_unet_attention",
+        evidence="A 3D U-Net-style spatio-temporal attention backbone is required.",
+        intermediate_keys=(
+            "requires_spatiotemporal_unet_attention",
+            "use_spatiotemporal_unet_attention",
+            "use_3d_unet_attention",
+            "requires_3d_unet",
+        ),
+        planning_terms=(
+            "3d-unet",
+            "3d unet",
+            "3d u-net",
+            "3d u net",
+            "spatio-temporal attention",
+            "spatiotemporal attention",
+            "volumetric unet",
+            "volumetric u-net",
+            "temporal unet",
+            "temporal u-net",
+            "slice-stack attention",
+            "frame-stack attention",
+        ),
+        severity=0.75,
+    )
+
+
 def _diagnose_graph_interaction_network(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
     return _diagnose_textual_rule(
         context,
@@ -1401,6 +1444,7 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_hard_negative_mining(),
             _build_insert_siamese_metric_backbone(),
             _build_insert_large_backbone_scale_attention(),
+            _build_insert_spatiotemporal_unet_attention(),
             _build_insert_graph_interaction_network(),
             _build_insert_pointrend_boundary_refinement(),
             _build_insert_cross_encoder_backbone(),
@@ -1439,6 +1483,7 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_hard_negative_mining,
                     _diagnose_siamese_metric_backbone,
                     _diagnose_large_backbone_scale_attention,
+                    _diagnose_spatiotemporal_unet_attention,
                     _diagnose_graph_interaction_network,
                     _diagnose_pointrend_boundary_refinement,
                     _diagnose_cross_encoder_backbone,

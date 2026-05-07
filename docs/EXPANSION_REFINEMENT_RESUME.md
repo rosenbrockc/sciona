@@ -93,6 +93,17 @@ Parallel path optimization follow-up pass added one runtime-backed graph/search 
 - `/Users/conrad/personal/sciona-matcher/tests/test_graph_optimization_expansion_assets.py`
   - Added provider asset and runtime coverage for the parallel path optimization operation.
 
+Spatio-temporal U-Net attention follow-up pass added one runtime-backed neural architecture refinement:
+
+- `/Users/conrad/personal/sciona-atoms-dl/data/expansions/neural_network.json`
+  - Added 3D U-Net-style spatio-temporal attention operation contract.
+
+- `/Users/conrad/personal/sciona-matcher/sciona/principal/expansion_rules/neural_network.py`
+  - Added runtime rule builder and diagnostic for volumetric, slice-stack, frame-stack, or video-like tensors that need spatio-temporal attention.
+
+- `/Users/conrad/personal/sciona-matcher/tests/test_neural_network_mined_expansion_assets.py`
+  - Added provider asset and runtime coverage for the spatio-temporal U-Net attention operation.
+
 ## Validation Artifacts
 
 Focused tests:
@@ -109,32 +120,32 @@ PYTHONPATH=. pytest -q \
 
 Result: `26 passed`.
 
-After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, and parallel path optimization passes, the expanded focused suite result is `29 passed`.
+After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, parallel path optimization, and spatio-temporal U-Net attention passes, the expanded focused suite result is `29 passed`.
 
-Latest full deterministic validation after the parallel path optimization pass:
+Latest full deterministic validation after the spatio-temporal U-Net attention pass:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/validate_kaggle_batch.py \
   --corpus /Users/conrad/personal/sciona-atoms/research/validation_corpus.json \
   --start 0 --end 307 \
-  --output /tmp/sciona_validation_full_20260507_parallel_path_optimization_v1.json \
+  --output /tmp/sciona_validation_full_20260507_spatiotemporal_unet_attention_v1.json \
   --expansion-rounds 2
 ```
 
 Latest full validation summary:
 
-- Strict: `103 competitive`, `114 partial`, `90 divergent`
-- Trick availability reference: `103 competitive`, `104 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `67 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
-- Rescued by expansion/refinement: `108`
+- Strict: `103 competitive`, `115 partial`, `89 divergent`
+- Trick availability reference: `103 competitive`, `105 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `66 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
+- Rescued by expansion/refinement: `109`
 
 Latest follow-up report:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/review_validation_followups.py \
-  /tmp/sciona_validation_full_20260507_parallel_path_optimization_v1.json \
-  --output /tmp/sciona_validation_followup_20260507_parallel_path_optimization_v1.json \
+  /tmp/sciona_validation_full_20260507_spatiotemporal_unet_attention_v1.json \
+  --output /tmp/sciona_validation_followup_20260507_spatiotemporal_unet_attention_v1.json \
   --min-support 2 \
   --similarity-threshold 0.34 \
   --max-clusters 80
@@ -142,19 +153,18 @@ PYTHONPATH=. python scripts/review_validation_followups.py \
 
 Follow-up summary:
 
-- `90` remaining divergent
+- `89` remaining divergent
 - `33` trick review tickets
 - `80` divergent gap clusters
-- `3` candidate reusable-operation clusters
-- `77` existing-operation clusters
+- `2` candidate reusable-operation clusters
+- `78` existing-operation clusters
 
 ## Remaining Candidate Clusters
 
 These look less like safe metadata-only cleanup and more like new operation/CDG decisions or trick catalog items:
 
-- `gap_cluster_267`: 3D-UNet spatio-temporal attention
-- `gap_cluster_290`: MCTS/backtracking search
-- `gap_cluster_298`: residual/wind-flow attention
+- `gap_cluster_286`: MCTS/backtracking search
+- `gap_cluster_294`: residual/wind-flow attention
 
 Recommendation: stop metadata-only enrichment here. For each remaining cluster, decide whether it is:
 
@@ -165,11 +175,11 @@ Recommendation: stop metadata-only enrichment here. For each remaining cluster, 
 
 ## Current Repo State Notes
 
-The parallel path optimization pass touched these matcher files:
+The spatio-temporal U-Net attention pass touched these matcher files:
 
 - `docs/EXPANSION_REFINEMENT_RESUME.md`
-- `sciona/principal/expansion_rules/graph_optimization.py`
-- `tests/test_graph_optimization_expansion_assets.py`
+- `sciona/principal/expansion_rules/neural_network.py`
+- `tests/test_neural_network_mined_expansion_assets.py`
 
 It still has unrelated untracked local artifacts:
 
@@ -182,12 +192,12 @@ Do not stage the unrelated artifacts unless explicitly requested.
 
 `/Users/conrad/personal/sciona-atoms-ml` may have unrelated local coordinate-descent work. Do not stage or edit it for expansion follow-up passes.
 
-`/Users/conrad/personal/sciona-atoms-dl` is clean after the lightweight CNN regression pass.
+The spatio-temporal U-Net attention pass touched this provider asset:
 
-The parallel path optimization pass touched this provider asset:
+- `/Users/conrad/personal/sciona-atoms-dl/data/expansions/neural_network.json`
 
-- `data/expansions/graph_optimization.json`
+`/Users/conrad/personal/sciona-atoms-cs` is clean after the parallel path optimization pass.
 
 ## Suggested Next Step
 
-Start the next technical pass from the 3 remaining candidate clusters. The safest next decisions are probably whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion, whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement, and whether 3D-UNet spatio-temporal attention is broad enough for a runtime-backed architecture operation.
+Start the next technical pass from the 2 remaining candidate clusters. The safest next decisions are probably whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion, and whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement.
