@@ -82,6 +82,17 @@ Lightweight CNN regression follow-up pass added one runtime-backed neural archit
 - `/Users/conrad/personal/sciona-matcher/tests/test_neural_network_mined_expansion_assets.py`
   - Added asset/runtime coverage for the lightweight CNN regression operation.
 
+Parallel path optimization follow-up pass added one runtime-backed graph/search refinement:
+
+- `/Users/conrad/personal/sciona-atoms-cs/data/expansions/graph_optimization.json`
+  - Added parallel path optimization and merging operation contract.
+
+- `/Users/conrad/personal/sciona-matcher/sciona/principal/expansion_rules/graph_optimization.py`
+  - Added runtime rule builder and diagnostic for optimizing independent path candidates in parallel before final path extraction.
+
+- `/Users/conrad/personal/sciona-matcher/tests/test_graph_optimization_expansion_assets.py`
+  - Added provider asset and runtime coverage for the parallel path optimization operation.
+
 ## Validation Artifacts
 
 Focused tests:
@@ -98,32 +109,32 @@ PYTHONPATH=. pytest -q \
 
 Result: `26 passed`.
 
-After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, and lightweight CNN regression passes, the same focused suite result is `27 passed`.
+After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, and parallel path optimization passes, the expanded focused suite result is `29 passed`.
 
-Latest full deterministic validation after the lightweight CNN regression pass:
+Latest full deterministic validation after the parallel path optimization pass:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/validate_kaggle_batch.py \
   --corpus /Users/conrad/personal/sciona-atoms/research/validation_corpus.json \
   --start 0 --end 307 \
-  --output /tmp/sciona_validation_full_20260507_lightweight_cnn_regression_v1.json \
+  --output /tmp/sciona_validation_full_20260507_parallel_path_optimization_v1.json \
   --expansion-rounds 2
 ```
 
 Latest full validation summary:
 
-- Strict: `103 competitive`, `113 partial`, `91 divergent`
-- Trick availability reference: `103 competitive`, `103 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `68 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
-- Rescued by expansion/refinement: `107`
+- Strict: `103 competitive`, `114 partial`, `90 divergent`
+- Trick availability reference: `103 competitive`, `104 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `67 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
+- Rescued by expansion/refinement: `108`
 
 Latest follow-up report:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/review_validation_followups.py \
-  /tmp/sciona_validation_full_20260507_lightweight_cnn_regression_v1.json \
-  --output /tmp/sciona_validation_followup_20260507_lightweight_cnn_regression_v1.json \
+  /tmp/sciona_validation_full_20260507_parallel_path_optimization_v1.json \
+  --output /tmp/sciona_validation_followup_20260507_parallel_path_optimization_v1.json \
   --min-support 2 \
   --similarity-threshold 0.34 \
   --max-clusters 80
@@ -131,20 +142,19 @@ PYTHONPATH=. python scripts/review_validation_followups.py \
 
 Follow-up summary:
 
-- `91` remaining divergent
+- `90` remaining divergent
 - `33` trick review tickets
 - `80` divergent gap clusters
-- `4` candidate reusable-operation clusters
-- `76` existing-operation clusters
+- `3` candidate reusable-operation clusters
+- `77` existing-operation clusters
 
 ## Remaining Candidate Clusters
 
 These look less like safe metadata-only cleanup and more like new operation/CDG decisions or trick catalog items:
 
-- `gap_cluster_253`: parallel path optimization / path merging
-- `gap_cluster_271`: 3D-UNet spatio-temporal attention
-- `gap_cluster_294`: MCTS/backtracking search
-- `gap_cluster_302`: residual/wind-flow attention
+- `gap_cluster_267`: 3D-UNet spatio-temporal attention
+- `gap_cluster_290`: MCTS/backtracking search
+- `gap_cluster_298`: residual/wind-flow attention
 
 Recommendation: stop metadata-only enrichment here. For each remaining cluster, decide whether it is:
 
@@ -155,11 +165,11 @@ Recommendation: stop metadata-only enrichment here. For each remaining cluster, 
 
 ## Current Repo State Notes
 
-`/Users/conrad/personal/sciona-matcher` has tracked local edits from the lightweight CNN regression pass:
+The parallel path optimization pass touched these matcher files:
 
 - `docs/EXPANSION_REFINEMENT_RESUME.md`
-- `sciona/principal/expansion_rules/neural_network.py`
-- `tests/test_neural_network_mined_expansion_assets.py`
+- `sciona/principal/expansion_rules/graph_optimization.py`
+- `tests/test_graph_optimization_expansion_assets.py`
 
 It still has unrelated untracked local artifacts:
 
@@ -170,18 +180,14 @@ It still has unrelated untracked local artifacts:
 
 Do not stage the unrelated artifacts unless explicitly requested.
 
-`/Users/conrad/personal/sciona-atoms-ml` is clean after the previous pass, but has unrelated untracked local artifacts:
+`/Users/conrad/personal/sciona-atoms-ml` may have unrelated local coordinate-descent work. Do not stage or edit it for expansion follow-up passes.
 
-- `src/sciona/atoms/ml/sklearn/linear_model/coordinate_descent_cv_nonrouting_fallback_shell/`
+`/Users/conrad/personal/sciona-atoms-dl` is clean after the lightweight CNN regression pass.
 
-`/Users/conrad/personal/sciona-atoms-dl` has tracked local edits from the lightweight CNN regression pass:
+The parallel path optimization pass touched this provider asset:
 
-- `data/expansions/neural_network.json`
+- `data/expansions/graph_optimization.json`
 
 ## Suggested Next Step
 
-Review and commit the provider asset edit separately from matcher runtime/test edits:
-
-1. In `sciona-atoms-dl`, commit only `data/expansions/neural_network.json`.
-2. In `sciona-matcher`, commit the expansion rule-set/test edits plus this resume file, but leave unrelated untracked artifacts alone.
-3. Start the next technical pass from the 4 remaining candidate clusters. The safest next decisions are probably whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion, whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement, and whether path optimization/path merging belongs in a graph/search optimization family rather than neural or model-selection assets.
+Start the next technical pass from the 3 remaining candidate clusters. The safest next decisions are probably whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion, whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement, and whether 3D-UNet spatio-temporal attention is broad enough for a runtime-backed architecture operation.

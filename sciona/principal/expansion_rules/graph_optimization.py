@@ -298,9 +298,83 @@ def _build_insert_graph_density_analysis() -> RewriteRule:
     )
 
 
+def _build_insert_parallel_path_optimization() -> RewriteRule:
+    """Interpose parallel path optimization and path merging before extraction.
+
+    Some graph workflows produce many candidate paths, partial paths, or
+    component-local paths that should be optimized independently and merged
+    before the final extraction stage.
+    """
+    src = _node("src", "source", ConceptType.CUSTOM)
+    extract = _node(
+        "extract",
+        _EXTRACT_PATH,
+        ConceptType.GRAPH_OPTIMIZATION,
+    )
+    lhs = CDGExport(nodes=[src, extract], edges=[_edge("src", "extract")])
+    interface = CDGExport(nodes=[src, extract], edges=[])
+
+    path_opt = _node(
+        "parallel_path_optimization",
+        "Parallel Path Optimization",
+        ConceptType.GRAPH_OPTIMIZATION,
+        matched_primitive="parallel_path_optimization_and_merging",
+        inputs=[
+            IOSpec(name="candidate_paths", type_desc="list[path]"),
+            IOSpec(name="graph", type_desc="Graph"),
+        ],
+        outputs=[
+            IOSpec(name="merged_paths", type_desc="list[path]"),
+        ],
+        description="Optimize independent candidate paths or path segments in parallel and merge them before final path extraction.",
+        type_signature="list[path], Graph -> list[path]",
+    )
+    rhs = CDGExport(
+        nodes=[src, path_opt, extract],
+        edges=[
+            _edge("src", "parallel_path_optimization"),
+            _edge("parallel_path_optimization", "extract"),
+        ],
+    )
+
+    return RewriteRule(
+        name="insert_parallel_path_optimization_before_extract",
+        lhs=lhs,
+        rhs=rhs,
+        interface=interface,
+        l_morphism=Morphism(node_map={"src": "src", "extract": "extract"}, edge_map={}),
+        r_morphism=Morphism(node_map={"src": "src", "extract": "extract"}, edge_map={}),
+        priority=3,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Diagnostics (pure, deterministic)
 # ---------------------------------------------------------------------------
+
+
+def _truthy_intermediate(context: ExpansionContext, *keys: str) -> bool:
+    values = context.intermediates or {}
+    for key in keys:
+        value = values.get(key)
+        if isinstance(value, bool) and value:
+            return True
+        if isinstance(value, (int, float)) and value:
+            return True
+        if str(value or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "required",
+            "recommended",
+        }:
+            return True
+    return False
+
+
+def _planning_text(context: ExpansionContext) -> str:
+    artifact = context.planning_artifact or {}
+    return str(artifact).lower() if isinstance(artifact, dict) else ""
 
 
 def _diagnose_negative_weights(
@@ -436,6 +510,44 @@ def _diagnose_graph_density(
     return None
 
 
+def _diagnose_parallel_path_optimization(
+    cdg: CDGExport, context: ExpansionContext
+) -> ExpansionDiagnostic | None:
+    """Detect candidate path workloads that need parallel optimization."""
+    explicit = _truthy_intermediate(
+        context,
+        "requires_parallel_path_optimization",
+        "use_parallel_path_optimization",
+        "requires_path_merging",
+        "use_parallel_path_merging",
+    )
+    planning = _planning_text(context)
+    planning_requires = any(
+        token in planning
+        for token in (
+            "parallelized path optimization",
+            "parallel path optimization",
+            "parallelized path-merging",
+            "parallelized path merging",
+            "parallel path merging",
+            "path-merging",
+            "path merging",
+            "merge path candidates",
+        )
+    )
+    if not explicit and not planning_requires:
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_parallel_path_optimization_before_extract",
+        severity=0.75,
+        evidence="Path extraction requires parallel candidate-path optimization or path merging.",
+        metric_name="requires_parallel_path_optimization",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Rule set
 # ---------------------------------------------------------------------------
@@ -453,6 +565,7 @@ class GraphOptimizationExpansionRuleSet:
             _build_insert_relaxation_convergence(),
             _build_insert_distance_overflow_detection(),
             _build_insert_graph_density_analysis(),
+            _build_insert_parallel_path_optimization(),
         ]
 
     def diagnose(
@@ -477,6 +590,10 @@ class GraphOptimizationExpansionRuleSet:
         density = _diagnose_graph_density(cdg, context)
         if density is not None:
             diagnostics.append(density)
+
+        path_opt = _diagnose_parallel_path_optimization(cdg, context)
+        if path_opt is not None:
+            diagnostics.append(path_opt)
 
         return diagnostics
 
