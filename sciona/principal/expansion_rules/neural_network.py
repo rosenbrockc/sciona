@@ -437,6 +437,19 @@ def _build_insert_sequence_cnn_recurrent_backbone() -> RewriteRule:
     )
 
 
+def _build_insert_lightweight_cnn_regression_head() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_lightweight_cnn_regression_head_before_loss",
+        node_id="lightweight_cnn_regression_head",
+        node_name="Lightweight CNN Regression Head",
+        matched_primitive="shallow_cnn_maxpool_regression_head",
+        description="Use a compact convolutional stack with pooling and a regression or task head for small image, keypoint, or ROI targets.",
+        input_name="feature_maps",
+        output_name="regression_features",
+        priority=3,
+    )
+
+
 def _build_insert_transformer_sequence_aggregation() -> RewriteRule:
     return _build_insert_forward_loss_rule(
         rule_name="insert_transformer_sequence_aggregation_before_loss",
@@ -1043,6 +1056,34 @@ def _diagnose_sequence_cnn_recurrent_backbone(cdg: CDGExport, context: Expansion
     )
 
 
+def _diagnose_lightweight_cnn_regression_head(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_lightweight_cnn_regression_head_before_loss",
+        metric_name="requires_lightweight_cnn_regression_head",
+        evidence="A compact CNN with pooling and a regression or task head is required.",
+        intermediate_keys=(
+            "requires_lightweight_cnn_regression_head",
+            "use_lightweight_cnn_regressor",
+            "use_shallow_cnn_regressor",
+            "use_cnn_maxpool_head",
+        ),
+        planning_terms=(
+            "3-layer cnn",
+            "three-layer cnn",
+            "4-layer cnn",
+            "four-layer cnn",
+            "cnn regressor",
+            "cnn regression",
+            "shallow cnn",
+            "lightweight cnn",
+            "max-pooling",
+            "max pooling",
+        ),
+        severity=0.70,
+    )
+
+
 def _diagnose_transformer_sequence_aggregation(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
     return _diagnose_textual_rule(
         context,
@@ -1350,6 +1391,7 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_adaptive_batch_norm_before_forward(),
             _build_insert_roi_cropping_before_forward(),
             _build_insert_sequence_cnn_recurrent_backbone(),
+            _build_insert_lightweight_cnn_regression_head(),
             _build_insert_transformer_sequence_aggregation(),
             _build_insert_gem_pooling(),
             _build_insert_optimizer_schedule_before_update(),
@@ -1387,6 +1429,7 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_adaptive_batch_norm,
                     _diagnose_roi_cropping,
                     _diagnose_sequence_cnn_recurrent_backbone,
+                    _diagnose_lightweight_cnn_regression_head,
                     _diagnose_transformer_sequence_aggregation,
                     _diagnose_gem_pooling,
                     _diagnose_optimizer_schedule,
