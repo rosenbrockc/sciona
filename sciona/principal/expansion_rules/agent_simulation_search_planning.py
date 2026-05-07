@@ -108,7 +108,7 @@ def _insert_after_rollout(graph: CDGExport, node: AlgorithmicNode) -> GraphState
         None,
     )
     if selected_edge is None:
-        return GraphState.failure("No rollout-to-planning edge found for PPO insertion")
+        return GraphState.failure("No rollout-to-planning edge found for planning refinement insertion")
 
     node_by_id = {candidate.node_id: candidate for candidate in graph.nodes}
     source_node = node_by_id.get(selected_edge.source_id)
@@ -184,6 +184,23 @@ def _build_insert_ppo_policy_optimization_after_rollout() -> RewriteRule:
     return _semantic_rule("insert_ppo_policy_optimization_after_rollout", ppo)
 
 
+def _build_insert_mcts_backtracking_search_after_rollout() -> RewriteRule:
+    search = _node(
+        "mcts_backtracking_search",
+        "MCTS Backtracking Search",
+        ConceptType.SEARCHING,
+        matched_primitive="monte_carlo_tree_search_backtracking",
+        description=(
+            "Explore candidate reasoning, ranking, game, or planning states with "
+            "Monte Carlo Tree Search and deterministic backtracking before final "
+            "repair or plan selection."
+        ),
+        inputs=[IOSpec(name="candidate_states", type_desc="SearchStateSet")],
+        outputs=[IOSpec(name="scored_search_paths", type_desc="ScoredCandidateSet")],
+    )
+    return _semantic_rule("insert_mcts_backtracking_search_after_rollout", search)
+
+
 def _truthy(value: object) -> bool:
     if isinstance(value, bool):
         return value
@@ -227,6 +244,32 @@ def _requires_ppo(context: ExpansionContext) -> bool:
     )
 
 
+def _requires_mcts_backtracking(context: ExpansionContext) -> bool:
+    intermediates = context.intermediates or {}
+    if any(
+        _truthy(intermediates.get(key))
+        for key in (
+            "agent_simulation.requires_mcts_backtracking_search",
+            "agent_simulation.use_mcts_backtracking_search",
+            "requires_mcts_backtracking_search",
+            "use_mcts_backtracking_search",
+            "requires_mcts",
+            "use_mcts",
+            "requires_backtracking_search",
+            "use_backtracking_search",
+        )
+    ):
+        return True
+    text = _planning_text(context)
+    return bool(
+        "monte carlo tree search" in text
+        or re.search(r"\bmcts\b", text)
+        or "backtracking mcts" in text
+        or "backtracking search" in text
+        or "tree search with backtracking" in text
+    )
+
+
 def _diagnose_ppo_policy_optimization(
     cdg: CDGExport,
     context: ExpansionContext,
@@ -238,6 +281,23 @@ def _diagnose_ppo_policy_optimization(
         severity=0.80,
         evidence="PPO or multi-agent PPO is required for policy optimization inside a planning loop.",
         metric_name="requires_ppo_policy_optimization",
+        metric_value=1.0,
+        threshold=0.0,
+        source_domain=_DOMAIN,
+    )
+
+
+def _diagnose_mcts_backtracking_search(
+    cdg: CDGExport,
+    context: ExpansionContext,
+) -> ExpansionDiagnostic | None:
+    if not _requires_mcts_backtracking(context):
+        return None
+    return ExpansionDiagnostic(
+        rule_name="insert_mcts_backtracking_search_after_rollout",
+        severity=0.80,
+        evidence="MCTS or backtracking tree search is required inside the planning loop.",
+        metric_name="requires_mcts_backtracking_search",
         metric_value=1.0,
         threshold=0.0,
         source_domain=_DOMAIN,
@@ -256,12 +316,22 @@ class AgentSimulationSearchPlanningRuleSet:
         return _DOMAIN
 
     def rules(self) -> list[RewriteRule]:
-        return [_build_insert_ppo_policy_optimization_after_rollout()]
+        return [
+            _build_insert_ppo_policy_optimization_after_rollout(),
+            _build_insert_mcts_backtracking_search_after_rollout(),
+        ]
 
     def diagnose(
         self,
         cdg: CDGExport,
         context: ExpansionContext,
     ) -> list[ExpansionDiagnostic]:
-        diagnostic = _diagnose_ppo_policy_optimization(cdg, context)
-        return [diagnostic] if diagnostic is not None else []
+        diagnostics = [
+            diagnostic
+            for diagnostic in (
+                _diagnose_ppo_policy_optimization(cdg, context),
+                _diagnose_mcts_backtracking_search(cdg, context),
+            )
+            if diagnostic is not None
+        ]
+        return diagnostics

@@ -104,6 +104,17 @@ Spatio-temporal U-Net attention follow-up pass added one runtime-backed neural a
 - `/Users/conrad/personal/sciona-matcher/tests/test_neural_network_mined_expansion_assets.py`
   - Added provider asset and runtime coverage for the spatio-temporal U-Net attention operation.
 
+MCTS/backtracking search follow-up pass added one runtime-backed planning/search refinement:
+
+- `/Users/conrad/personal/sciona-atoms/data/expansions/agent_simulation_search_planning.json`
+  - Added Monte Carlo Tree Search and backtracking search operation contract.
+
+- `/Users/conrad/personal/sciona-matcher/sciona/principal/expansion_rules/agent_simulation_search_planning.py`
+  - Added runtime rule builder and diagnostic for candidate-state tree search, MCTS, and backtracking inside planning loops.
+
+- `/Users/conrad/personal/sciona-matcher/tests/test_agent_simulation_search_planning_expansion_assets.py`
+  - Added retrieval and runtime coverage for the MCTS/backtracking search operation.
+
 ## Validation Artifacts
 
 Focused tests:
@@ -120,16 +131,16 @@ PYTHONPATH=. pytest -q \
 
 Result: `26 passed`.
 
-After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, parallel path optimization, and spatio-temporal U-Net attention passes, the expanded focused suite result is `29 passed`.
+After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, parallel path optimization, spatio-temporal U-Net attention, and MCTS/backtracking search passes, the expanded focused suite result is `34 passed`.
 
-Latest full deterministic validation after the spatio-temporal U-Net attention pass:
+Latest full deterministic validation after the MCTS/backtracking search pass:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/validate_kaggle_batch.py \
   --corpus /Users/conrad/personal/sciona-atoms/research/validation_corpus.json \
   --start 0 --end 307 \
-  --output /tmp/sciona_validation_full_20260507_spatiotemporal_unet_attention_v1.json \
+  --output /tmp/sciona_validation_full_20260507_mcts_backtracking_search_v1.json \
   --expansion-rounds 2
 ```
 
@@ -144,8 +155,8 @@ Latest follow-up report:
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/review_validation_followups.py \
-  /tmp/sciona_validation_full_20260507_spatiotemporal_unet_attention_v1.json \
-  --output /tmp/sciona_validation_followup_20260507_spatiotemporal_unet_attention_v1.json \
+  /tmp/sciona_validation_full_20260507_mcts_backtracking_search_v1.json \
+  --output /tmp/sciona_validation_followup_20260507_mcts_backtracking_search_v1.json \
   --min-support 2 \
   --similarity-threshold 0.34 \
   --max-clusters 80
@@ -156,14 +167,13 @@ Follow-up summary:
 - `89` remaining divergent
 - `33` trick review tickets
 - `80` divergent gap clusters
-- `2` candidate reusable-operation clusters
-- `78` existing-operation clusters
+- `1` candidate reusable-operation cluster
+- `79` existing-operation clusters
 
 ## Remaining Candidate Clusters
 
 These look less like safe metadata-only cleanup and more like new operation/CDG decisions or trick catalog items:
 
-- `gap_cluster_286`: MCTS/backtracking search
 - `gap_cluster_294`: residual/wind-flow attention
 
 Recommendation: stop metadata-only enrichment here. For each remaining cluster, decide whether it is:
@@ -175,11 +185,11 @@ Recommendation: stop metadata-only enrichment here. For each remaining cluster, 
 
 ## Current Repo State Notes
 
-The spatio-temporal U-Net attention pass touched these matcher files:
+The MCTS/backtracking search pass touched these matcher files:
 
 - `docs/EXPANSION_REFINEMENT_RESUME.md`
-- `sciona/principal/expansion_rules/neural_network.py`
-- `tests/test_neural_network_mined_expansion_assets.py`
+- `sciona/principal/expansion_rules/agent_simulation_search_planning.py`
+- `tests/test_agent_simulation_search_planning_expansion_assets.py`
 
 It still has unrelated untracked local artifacts:
 
@@ -192,12 +202,14 @@ Do not stage the unrelated artifacts unless explicitly requested.
 
 `/Users/conrad/personal/sciona-atoms-ml` may have unrelated local coordinate-descent work. Do not stage or edit it for expansion follow-up passes.
 
-The spatio-temporal U-Net attention pass touched this provider asset:
+The MCTS/backtracking search pass touched this provider asset:
 
-- `/Users/conrad/personal/sciona-atoms-dl/data/expansions/neural_network.json`
+- `/Users/conrad/personal/sciona-atoms/data/expansions/agent_simulation_search_planning.json`
+
+`/Users/conrad/personal/sciona-atoms-dl` is clean after the spatio-temporal U-Net attention pass.
 
 `/Users/conrad/personal/sciona-atoms-cs` is clean after the parallel path optimization pass.
 
 ## Suggested Next Step
 
-Start the next technical pass from the 2 remaining candidate clusters. The safest next decisions are probably whether MCTS/backtracking should be a trick catalog entry or a reusable search-operation expansion, and whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement.
+Start the next technical pass from the 1 remaining candidate cluster. Decide whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement, or whether it should stay outside strict expansion matching as task-specific architecture detail.

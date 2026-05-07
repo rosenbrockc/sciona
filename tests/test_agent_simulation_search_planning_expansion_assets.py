@@ -83,6 +83,31 @@ def test_agent_planning_asset_retrieves_ppo_policy_optimization() -> None:
     assert plan.selected.projected_coverage == 1.0
 
 
+def test_agent_planning_asset_retrieves_mcts_backtracking_search() -> None:
+    clear_local_expansion_asset_caches()
+
+    plan = plan_expansion_delta(
+        DeltaPlanningQuery(
+            families=("agent_simulation_search_planning", "llm_preference_reasoning"),
+            matched_techniques=("candidate reasoning states",),
+            missing_techniques=(
+                "Monte Carlo Tree Search (MCTS)",
+                "Backtracking MCTS",
+            ),
+            stage_names=("State Encoder", "Search or Rollout", "Plan Selection"),
+            base_coverage=0.333,
+            min_adapted_coverage=0.50,
+            max_operations_per_sequence=3,
+        )
+    )
+
+    assert plan.decision == DeltaAdaptationKind.EXPANSION
+    assert plan.selected.operation_rule_names == (
+        "insert_mcts_backtracking_search_after_rollout",
+    )
+    assert plan.selected.projected_coverage == 1.0
+
+
 def test_agent_planning_ppo_does_not_cover_transfer_learning_by_weak_tokens() -> None:
     clear_local_expansion_asset_caches()
 
@@ -125,3 +150,24 @@ def test_agent_planning_rule_diagnoses_and_applies_ppo_expansion() -> None:
 
     assert not result.is_failure
     assert "PPO Policy Optimization" in {node.name for node in result.unwrap().nodes}
+
+
+def test_agent_planning_rule_diagnoses_and_applies_mcts_expansion() -> None:
+    rule_set = AgentSimulationSearchPlanningRuleSet()
+    diagnostics = rule_set.diagnose(
+        _planning_cdg(),
+        ExpansionContext(
+            planning_artifact={
+                "techniques": ["Backtracking MCTS (Monte Carlo Tree Search)"]
+            }
+        ),
+    )
+
+    assert [diagnostic.rule_name for diagnostic in diagnostics] == [
+        "insert_mcts_backtracking_search_after_rollout"
+    ]
+
+    result = rule_set.rules()[1].semantic_apply(_planning_cdg())
+
+    assert not result.is_failure
+    assert "MCTS Backtracking Search" in {node.name for node in result.unwrap().nodes}
