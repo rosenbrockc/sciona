@@ -115,6 +115,17 @@ MCTS/backtracking search follow-up pass added one runtime-backed planning/search
 - `/Users/conrad/personal/sciona-matcher/tests/test_agent_simulation_search_planning_expansion_assets.py`
   - Added retrieval and runtime coverage for the MCTS/backtracking search operation.
 
+Flow-aware residual attention follow-up pass added one runtime-backed neural architecture refinement:
+
+- `/Users/conrad/personal/sciona-atoms-dl/data/expansions/neural_network.json`
+  - Added flow-aware residual attention operation contract.
+
+- `/Users/conrad/personal/sciona-matcher/sciona/principal/expansion_rules/neural_network.py`
+  - Added runtime rule builder and diagnostic for residual attention guided by motion, wind, flow, or displacement fields.
+
+- `/Users/conrad/personal/sciona-matcher/tests/test_neural_network_mined_expansion_assets.py`
+  - Added provider asset and runtime coverage for the flow-aware residual attention operation.
+
 ## Validation Artifacts
 
 Focused tests:
@@ -131,32 +142,33 @@ PYTHONPATH=. pytest -q \
 
 Result: `26 passed`.
 
-After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, parallel path optimization, spatio-temporal U-Net attention, and MCTS/backtracking search passes, the expanded focused suite result is `34 passed`.
+After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, parallel path optimization, spatio-temporal U-Net attention, MCTS/backtracking search, and flow-aware residual attention passes, the expanded focused suite result is `34 passed`.
 
-Latest full deterministic validation after the MCTS/backtracking search pass:
+Latest full deterministic validation after the flow-aware residual attention pass:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/validate_kaggle_batch.py \
   --corpus /Users/conrad/personal/sciona-atoms/research/validation_corpus.json \
   --start 0 --end 307 \
-  --output /tmp/sciona_validation_full_20260507_mcts_backtracking_search_v1.json \
+  --output /tmp/sciona_validation_full_20260507_flow_residual_attention_v2.json \
   --expansion-rounds 2
 ```
 
 Latest full validation summary:
 
-- Strict: `103 competitive`, `115 partial`, `89 divergent`
-- Trick availability reference: `103 competitive`, `105 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `66 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
+- Strict: `102 competitive`, `116 partial`, `89 divergent`
+- Trick availability reference: `102 competitive`, `106 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `66 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
 - Rescued by expansion/refinement: `109`
+- Note: this clears the final reusable-operation candidate but shifts one previously competitive case (`isic-2019`) to partial by changing expansion-planner ranking.
 
 Latest follow-up report:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/review_validation_followups.py \
-  /tmp/sciona_validation_full_20260507_mcts_backtracking_search_v1.json \
-  --output /tmp/sciona_validation_followup_20260507_mcts_backtracking_search_v1.json \
+  /tmp/sciona_validation_full_20260507_flow_residual_attention_v2.json \
+  --output /tmp/sciona_validation_followup_20260507_flow_residual_attention_v2.json \
   --min-support 2 \
   --similarity-threshold 0.34 \
   --max-clusters 80
@@ -167,16 +179,14 @@ Follow-up summary:
 - `89` remaining divergent
 - `33` trick review tickets
 - `80` divergent gap clusters
-- `1` candidate reusable-operation cluster
-- `79` existing-operation clusters
+- `0` candidate reusable-operation clusters
+- `80` existing-operation clusters
 
 ## Remaining Candidate Clusters
 
-These look less like safe metadata-only cleanup and more like new operation/CDG decisions or trick catalog items:
+No reusable-operation candidate clusters remain at `--min-support 2 --similarity-threshold 0.34 --max-clusters 80`.
 
-- `gap_cluster_294`: residual/wind-flow attention
-
-Recommendation: stop metadata-only enrichment here. For each remaining cluster, decide whether it is:
+Recommendation: stop metadata-only enrichment here. For future clusters, decide whether each is:
 
 - A genuinely reusable expansion/refinement operation with runtime support.
 - A new base CDG/topology.
@@ -185,11 +195,11 @@ Recommendation: stop metadata-only enrichment here. For each remaining cluster, 
 
 ## Current Repo State Notes
 
-The MCTS/backtracking search pass touched these matcher files:
+The flow-aware residual attention pass touched these matcher files:
 
 - `docs/EXPANSION_REFINEMENT_RESUME.md`
-- `sciona/principal/expansion_rules/agent_simulation_search_planning.py`
-- `tests/test_agent_simulation_search_planning_expansion_assets.py`
+- `sciona/principal/expansion_rules/neural_network.py`
+- `tests/test_neural_network_mined_expansion_assets.py`
 
 It still has unrelated untracked local artifacts:
 
@@ -202,14 +212,14 @@ Do not stage the unrelated artifacts unless explicitly requested.
 
 `/Users/conrad/personal/sciona-atoms-ml` may have unrelated local coordinate-descent work. Do not stage or edit it for expansion follow-up passes.
 
-The MCTS/backtracking search pass touched this provider asset:
+The flow-aware residual attention pass touched this provider asset:
 
-- `/Users/conrad/personal/sciona-atoms/data/expansions/agent_simulation_search_planning.json`
-
-`/Users/conrad/personal/sciona-atoms-dl` is clean after the spatio-temporal U-Net attention pass.
+- `/Users/conrad/personal/sciona-atoms-dl/data/expansions/neural_network.json`
 
 `/Users/conrad/personal/sciona-atoms-cs` is clean after the parallel path optimization pass.
 
+`/Users/conrad/personal/sciona-atoms` is clean after the MCTS/backtracking search pass.
+
 ## Suggested Next Step
 
-Start the next technical pass from the 1 remaining candidate cluster. Decide whether residual/wind-flow attention is broad enough for a runtime-backed attention refinement, or whether it should stay outside strict expansion matching as task-specific architecture detail.
+Stop the candidate-cluster loop for this validation configuration. The next useful review is the one-case strict regression (`isic-2019`) or trick-review tickets, not another reusable-operation candidate.

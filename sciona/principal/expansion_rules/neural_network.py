@@ -632,6 +632,19 @@ def _build_insert_spatiotemporal_unet_attention() -> RewriteRule:
     )
 
 
+def _build_insert_flow_residual_attention() -> RewriteRule:
+    return _build_insert_forward_loss_rule(
+        rule_name="insert_flow_residual_attention_before_loss",
+        node_id="flow_residual_attention",
+        node_name="Flow-Aware Residual Attention",
+        matched_primitive="flow_residual_attention_mechanism",
+        description="Refine feature maps with residual attention guided by motion, wind, flow, or displacement fields before the task head.",
+        input_name="feature_maps",
+        output_name="flow_attended_features",
+        priority=4,
+    )
+
+
 def _build_insert_graph_interaction_network() -> RewriteRule:
     return _build_insert_forward_loss_rule(
         rule_name="insert_graph_interaction_network_before_loss",
@@ -1254,6 +1267,38 @@ def _diagnose_spatiotemporal_unet_attention(cdg: CDGExport, context: ExpansionCo
     )
 
 
+def _diagnose_flow_residual_attention(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
+    return _diagnose_textual_rule(
+        context,
+        rule_name="insert_flow_residual_attention_before_loss",
+        metric_name="requires_flow_residual_attention",
+        evidence="A flow-aware residual attention mechanism is required before loss computation.",
+        intermediate_keys=(
+            "requires_flow_residual_attention",
+            "use_flow_residual_attention",
+            "requires_residual_attention",
+            "use_residual_attention",
+            "requires_wind_flow_attention",
+            "use_wind_flow_attention",
+        ),
+        planning_terms=(
+            "residual-attention",
+            "residual attention",
+            "flow-aware attention",
+            "flow aware attention",
+            "flow attention",
+            "wind-flow-attention",
+            "wind-flow attention",
+            "wind flow attention",
+            "motion-field attention",
+            "motion field attention",
+            "displacement-field attention",
+            "displacement field attention",
+        ),
+        severity=0.75,
+    )
+
+
 def _diagnose_graph_interaction_network(cdg: CDGExport, context: ExpansionContext) -> ExpansionDiagnostic | None:
     return _diagnose_textual_rule(
         context,
@@ -1445,6 +1490,7 @@ class NeuralNetworkExpansionRuleSet:
             _build_insert_siamese_metric_backbone(),
             _build_insert_large_backbone_scale_attention(),
             _build_insert_spatiotemporal_unet_attention(),
+            _build_insert_flow_residual_attention(),
             _build_insert_graph_interaction_network(),
             _build_insert_pointrend_boundary_refinement(),
             _build_insert_cross_encoder_backbone(),
@@ -1484,6 +1530,7 @@ class NeuralNetworkExpansionRuleSet:
                     _diagnose_siamese_metric_backbone,
                     _diagnose_large_backbone_scale_attention,
                     _diagnose_spatiotemporal_unet_attention,
+                    _diagnose_flow_residual_attention,
                     _diagnose_graph_interaction_network,
                     _diagnose_pointrend_boundary_refinement,
                     _diagnose_cross_encoder_backbone,
