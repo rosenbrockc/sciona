@@ -142,33 +142,33 @@ PYTHONPATH=. pytest -q \
 
 Result: `26 passed`.
 
-After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, parallel path optimization, spatio-temporal U-Net attention, MCTS/backtracking search, and flow-aware residual attention passes, the expanded focused suite result is `34 passed`.
+After the candidate-operation, LightGBM large-leaf, large-backbone scale-attention, lightweight CNN regression, parallel path optimization, spatio-temporal U-Net attention, MCTS/backtracking search, flow-aware residual attention, and retrieval-stability passes, the expanded focused suite result is `40 passed`.
 
-Latest full deterministic validation after the flow-aware residual attention pass:
+Latest full deterministic validation after the retrieval-stability fix:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/validate_kaggle_batch.py \
   --corpus /Users/conrad/personal/sciona-atoms/research/validation_corpus.json \
   --start 0 --end 307 \
-  --output /tmp/sciona_validation_full_20260507_flow_residual_attention_v2.json \
+  --output /tmp/sciona_validation_full_20260507_flow_residual_attention_retrieval_fix_v1.json \
   --expansion-rounds 2
 ```
 
 Latest full validation summary:
 
-- Strict: `102 competitive`, `116 partial`, `89 divergent`
-- Trick availability reference: `102 competitive`, `106 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `66 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
+- Strict: `103 competitive`, `115 partial`, `89 divergent`
+- Trick availability reference: `103 competitive`, `105 partial`, `9 partial+trick_available`, `1 partial+high_risk_trick_suppressed`, `66 divergent`, `18 divergent+trick_available`, `5 divergent+high_risk_trick_suppressed`
 - Rescued by expansion/refinement: `109`
-- Note: this clears the final reusable-operation candidate but shifts one previously competitive case (`isic-2019`) to partial by changing expansion-planner ranking.
+- Note: the flow-aware residual attention operation initially shifted `isic-2019` from competitive to partial by pushing `insert_balanced_sampling_before_training` out of the top-40 global operation pool before sequence grouping. `sciona/principal/expansion_retrieval.py` now carries all indexed matching operations into family grouping, restoring `isic-2019` to competitive while preserving `0` reusable-operation candidates.
 
 Latest follow-up report:
 
 ```bash
 cd /Users/conrad/personal/sciona-matcher
 PYTHONPATH=. python scripts/review_validation_followups.py \
-  /tmp/sciona_validation_full_20260507_flow_residual_attention_v2.json \
-  --output /tmp/sciona_validation_followup_20260507_flow_residual_attention_v2.json \
+  /tmp/sciona_validation_full_20260507_flow_residual_attention_retrieval_fix_v1.json \
+  --output /tmp/sciona_validation_followup_20260507_flow_residual_attention_retrieval_fix_v1.json \
   --min-support 2 \
   --similarity-threshold 0.34 \
   --max-clusters 80
@@ -193,13 +193,17 @@ Recommendation: stop metadata-only enrichment here. For future clusters, decide 
 - A trick catalog entry exposed to the architect but not counted as a strict match.
 - Too competition-specific to encode at this stage.
 
-## Current Repo State Notes
+## Latest Edit Notes
 
-The flow-aware residual attention pass touched these matcher files:
+The retrieval-stability pass touched these matcher files:
 
 - `docs/EXPANSION_REFINEMENT_RESUME.md`
-- `sciona/principal/expansion_rules/neural_network.py`
-- `tests/test_neural_network_mined_expansion_assets.py`
+- `sciona/principal/expansion_retrieval.py`
+- `tests/test_expansion_delta_planner.py`
+
+The fix prevents global pre-group truncation from dropping a useful lower-scored operation before family sequence selection. Regression coverage mirrors the `isic-2019` validation query and asserts the restored `apply_dl_backbone_substitution` + `insert_balanced_sampling_before_training` pack.
+
+## Current Repo State Notes
 
 It still has unrelated untracked local artifacts:
 
@@ -222,4 +226,4 @@ The flow-aware residual attention pass touched this provider asset:
 
 ## Suggested Next Step
 
-Stop the candidate-cluster loop for this validation configuration. The next useful review is the one-case strict regression (`isic-2019`) or trick-review tickets, not another reusable-operation candidate.
+Stop the candidate-cluster loop for this validation configuration. The `isic-2019` strict regression has been fixed; the next useful review is trick-review tickets, not another reusable-operation candidate.

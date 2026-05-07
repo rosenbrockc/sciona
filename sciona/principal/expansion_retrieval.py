@@ -323,11 +323,15 @@ class ExpansionAssetRetriever:
         max_operations_per_sequence: int = 4,
     ) -> list[ExpansionOperationSequence]:
         """Return ranked operation sequences grouped by expansion family."""
+        pre_group_limit = max(
+            len(self._indexed),
+            max_sequences * max(4, max_operations_per_sequence * 4),
+        )
         operations = self.retrieve_operations(
             query,
             cdg=cdg,
             min_score=min_operation_score,
-            max_results=max_sequences * max(4, max_operations_per_sequence * 4),
+            max_results=pre_group_limit,
         )
         by_family: dict[str, list[ExpansionOperationMatch]] = {}
         for operation in operations:
