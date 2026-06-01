@@ -1,0 +1,2320 @@
+[
+  {
+    "competition_id": "caterpillar-tube-pricing",
+    "title": "Caterpillar Tube Pricing",
+    "domain": "tabular",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 3,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      },
+      {
+        "template": "petfinder_adoption_1st",
+        "overlap_score": 3,
+        "family": "multimodal_classification",
+        "paradigm": "optimization",
+        "summary": "Ordinal adoption speed prediction from pet images, text descriptions, and tabular metadata via DenseNet121 image embeddings, TF-IDF/SVD text features, target-encoded tabular features, an XGBoost/Light"
+      },
+      {
+        "template": "instacart_basket_1st",
+        "overlap_score": 3,
+        "family": "set_prediction",
+        "paradigm": "optimization",
+        "summary": "Two-stage pipeline computing rich user-product interaction features fed into a LightGBM reorder-probability model, followed by an exact dynamic programming algorithm (Faron's kernel) to select the pro"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Component-weight and count aggregation",
+        "Target encoding for high-cardinality IDs"
+      ],
+      "missing_techniques": [
+        "XGBoost and Random Forest ensemble",
+        "Power transformation of price",
+        "Handling nested 'Bill of Materials' (BOM)",
+        "Stratified 10-fold Cross-Validation"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of Gradient Boosting with extensive component aggregation. 1st place used an ensemble of XGBoost and Random Forest. They focused on 'Component-level' aggregation, creating features for the to"
+  },
+  {
+    "competition_id": "denoising-dirty-documents",
+    "title": "Denoising Dirty Documents",
+    "domain": "cv",
+    "problem_type": "regression",
+    "assessment": "partial",
+    "template_matches": [
+      {
+        "template": "commonlit_readability_1st",
+        "overlap_score": 4,
+        "family": "nlp_regression",
+        "paradigm": "neural_network",
+        "summary": "Text readability regression using domain-adapted RoBERTa and DeBERTa transformers with attention pooling, stochastic weight averaging, and SVR/Ridge calibration heads on extracted embeddings."
+      },
+      {
+        "template": "hubmap_kidney_1st",
+        "overlap_score": 4,
+        "family": "gigapixel_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Gigapixel whole-slide image segmentation pipeline using Macenko stain normalization, DeepLabV3+ with ResNeSt-50 backbone trained with Lovasz-BCE loss, 8x TTA on overlapping tiles, and gigapixel mask r"
+      },
+      {
+        "template": "severstal_steel_1st",
+        "overlap_score": 4,
+        "family": "semantic_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Multi-label semantic segmentation pipeline using a ResNet classifier to filter negative images, FPN and U-Net segmentation models with EfficientNet backbones on positive images only, two-stage conditi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.667,
+      "covered_techniques": [
+        "Patch-based CNN regression",
+        "Overlapping patch inference (Averaging)",
+        "Adam optimizer with MSE loss",
+        "Data augmentation (Rotation/Scaling)"
+      ],
+      "missing_techniques": [
+        "Contrastive Stretching pre-processing",
+        "Median filtering for final cleanup"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Patch-based CNN for image denoising. 1st place utilized a custom CNN architecture that operated on small 32x32 image patches. They used 'Contrastive Stretching' as a pre-processing step to normalize t"
+  },
+  {
+    "competition_id": "bci-challenge-ner-2015",
+    "title": "BCI Challenge @ NER 2015",
+    "domain": "scientific",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 7,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      },
+      {
+        "template": "global_wheat_1st",
+        "overlap_score": 5,
+        "family": "object_detection_2d",
+        "paradigm": "neural_network",
+        "summary": "Two-stage object detection pipeline combining Faster R-CNN (ResNeSt-101) and YOLOv5 with heavy mosaic/CutMix augmentation, pseudo-label-based self-training on test data, and weighted box fusion for fi"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 5,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 7,
+      "bound_active": 4,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Riemannian Covariance Matrix estimation",
+        "Minimum Distance to Mean (MDM)"
+      ],
+      "missing_techniques": [
+        "Tangent Space projection (TS-LDA)",
+        "Bandpass filtering (1-40 Hz)",
+        "Common Spatial Patterns (CSP)",
+        "Cross-subject ensemble weights"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Riemannian Geometry and Linear Discriminant Analysis. 1st place utilized 'Riemannian MDM' (Minimum Distance to Mean) and 'TS-LDA' (Tangent Space LDA). They calculated the 'Covariance Matrices' of the "
+  },
+  {
+    "competition_id": "grasp-and-lift-eeg-detection",
+    "title": "Grasp-and-Lift EEG Detection",
+    "domain": "scientific",
+    "problem_type": "detection",
+    "assessment": "competitive",
+    "template_matches": [
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 5,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      },
+      {
+        "template": "barachant_seizure_1st",
+        "overlap_score": 4,
+        "family": "riemannian_bci",
+        "paradigm": "signal_filter",
+        "summary": "Four parallel EEG feature extraction branches (relative log-power, classical statistics, autocorrelation covariance with tangent space projection, cross-frequency coherence with tangent space projecti"
+      },
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 3,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 7,
+      "bound_active": 4,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.833,
+      "covered_techniques": [
+        "1D-CNN for raw EEG feature extraction",
+        "Sliding window temporal context",
+        "Multi-task Sigmoid classification head",
+        "Weighted ensemble of CNN and LSTM",
+        "Time-lagged feature engineering"
+      ],
+      "missing_techniques": [
+        "Butterworth Bandpass Filtering"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "1D-CNN and Recurrent Neural Networks (RNN). 1st place utilized an ensemble of 1D-CNNs that operated on raw EEG data. They used 'Sliding Windows' to capture temporal context and applied a 'Butterworth "
+  },
+  {
+    "competition_id": "visual-taxi-route-prediction",
+    "title": "ECML/PKDD 15: Taxi Trajectory Prediction",
+    "domain": "geospatial",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "covid_vaccine_mrna_1st",
+        "overlap_score": 3,
+        "family": "structured_prediction",
+        "paradigm": "neural_network",
+        "summary": "Dual-branch neural architecture combining bidirectional RNN on raw RNA sequences with GCN on secondary-structure adjacency matrices, fused at every sequence position and decoded with a linear head to "
+      },
+      {
+        "template": "predict_future_sales_benchmark",
+        "overlap_score": 2,
+        "family": "time_series_forecasting",
+        "paradigm": "loss_function",
+        "summary": "Tabular Time Series Forecasting solution template for Predict Future Sales - Kaggle Benchmark Standard (2015), modeled as a 5-stage deterministic pipeline: Time aggregation, Target clipping, Lag featu"
+      },
+      {
+        "template": "hpa_single_cell_classification_1st",
+        "overlap_score": 2,
+        "family": "semantic_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Weakly Supervised Vision / Instance Segmentation solution template for Human Protein Atlas - Single Cell Classification - 1st Place (2021), modeled as a 5-stage deterministic pipeline: Instance Segmen"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 4,
+      "bound_approximate": 0,
+      "orchestration": 1,
+      "trivial_inline": 0,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "MLP on GPS trajectory sequences",
+        "Mean-Shift clustering for destination priors",
+        "Haversine Distance loss function",
+        "Time-of-day and Day-of-week embeddings",
+        "Trajectory prefix feature engineering",
+        "Coordinate normalization and scaling"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Destination-clustering with Multi-Layer Perceptron (MLP). 1st place utilized an MLP that took the 'last 5 GPS points' and 'taxi metadata' as input. They used a custom 'Destination Cluster' prior where"
+  },
+  {
+    "competition_id": "pkdd-15-taxi-trip-time-prediction-ii",
+    "title": "ECML/PKDD 15: Taxi Trip Time Prediction",
+    "domain": "geospatial",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "predict_future_sales_benchmark",
+        "overlap_score": 3,
+        "family": "time_series_forecasting",
+        "paradigm": "loss_function",
+        "summary": "Tabular Time Series Forecasting solution template for Predict Future Sales - Kaggle Benchmark Standard (2015), modeled as a 5-stage deterministic pipeline: Time aggregation, Target clipping, Lag featu"
+      },
+      {
+        "template": "web_traffic_forecasting_1st",
+        "overlap_score": 3,
+        "family": "structured_prediction",
+        "paradigm": "loss_function",
+        "summary": "Time Series / Sequence-to-Sequence solution template for Web Traffic Time Series Forecasting - 1st Place (2017), modeled as a 5-stage deterministic pipeline: Log1p Transformation, Missing value maskin"
+      },
+      {
+        "template": "two_sigma_news_stock_1st",
+        "overlap_score": 3,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "NLP Sentiment + Tabular Time Series solution template for Two Sigma: Using News to Predict Stock Movements - 1st Place (2019), modeled as a 5-stage deterministic pipeline: News aggregation, Market fea"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 5,
+      "bound_active": 1,
+      "bound_approximate": 0,
+      "orchestration": 1,
+      "trivial_inline": 1,
+      "external": 2,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Historical route-average features",
+        "Log-target transformation"
+      ],
+      "missing_techniques": [
+        "XGBoost with RMSLE-optimized objective",
+        "Time-of-day and weather metadata fusion",
+        "Coordinate-grid distance features",
+        "10-fold Cross-Validation by TaxiID"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of Gradient Boosting with 'Trip-Length' priors. 1st place used an ensemble of XGBoost and Random Forest. They engineered 'Trip-History' features, such as the 'average time for this specific r"
+  },
+  {
+    "competition_id": "axa-driver-telematics-analysis",
+    "title": "AXA Driver Telematics Analysis",
+    "domain": "tabular",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 5,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      },
+      {
+        "template": "osic_pulmonary_1st",
+        "overlap_score": 5,
+        "family": "survival_regression",
+        "paradigm": "neural_network",
+        "summary": "Predict lung function decline in pulmonary fibrosis patients using EfficientNet-B5 CT scan feature extraction, tabular feature engineering of baseline FVC and temporal deltas, and MLP quantile regress"
+      },
+      {
+        "template": "alaska2_steganalysis_1st",
+        "overlap_score": 4,
+        "family": "image_forensics",
+        "paradigm": "neural_network",
+        "summary": "Steganography detection pipeline that bypasses standard JPEG decompression by directly parsing DCT coefficients and YCbCr channels, stacking them into 6-channel inputs for EfficientNet/MixNet backbone"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 3,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Random Forest on telematics signatures",
+        "Centripetal acceleration and G-force features",
+        "Speed/Acceleration quantiles (10th, 50th, 90th)",
+        "Trip-to-Centroid distance matching",
+        "Smoothing GPS noise via Kalman Filter",
+        "Oversampling for minority 'imposter' trips"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Feature engineering-centric Random Forest. 1st place created 'Signature' features for each trip, such as 'centripetal acceleration in turns', 'braking intensity', and 'speed quantiles'. They used a Ra"
+  },
+  {
+    "competition_id": "click-through-rate-prediction",
+    "title": "Click-Through Rate Prediction",
+    "domain": "tabular",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 7,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 4,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      },
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 3,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Field-aware Factorization Machines (FFM)",
+        "Target encoding for low-cardinality IDs"
+      ],
+      "missing_techniques": [
+        "Feature Hashing (Hashing Trick)",
+        "Stochastic Gradient Descent (SGD)",
+        "N-gram interactions between fields",
+        "L1/L2 regularization for sparsity"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Field-aware Factorization Machines (FFM) with the 'Hashing Trick'. 1st place used FFM to model second-order interactions between all categorical fields. They implemented an 'online learning' approach "
+  },
+  {
+    "competition_id": "seizure-prediction",
+    "title": "American Epilepsy Society Seizure Prediction",
+    "domain": "scientific",
+    "problem_type": "classification",
+    "assessment": "partial",
+    "template_matches": [
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 4,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      },
+      {
+        "template": "bengali_grapheme_1st",
+        "overlap_score": 4,
+        "family": "multitask_image_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-task handwritten grapheme classification using SE-ResNeXt-50 with three classification heads (root, vowel, consonant), weighted multi-task loss, CutMix/MixUp/GridMask augmentation, online hard e"
+      },
+      {
+        "template": "alaska2_steganalysis_1st",
+        "overlap_score": 3,
+        "family": "image_forensics",
+        "paradigm": "neural_network",
+        "summary": "Steganography detection pipeline that bypasses standard JPEG decompression by directly parsing DCT coefficients and YCbCr channels, stacking them into 6-channel inputs for EfficientNet/MixNet backbone"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 7,
+      "bound_active": 4,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.5,
+      "covered_techniques": [
+        "FFT Power Band features",
+        "Time-domain smoothing (Sliding window)",
+        "Subject-specific feature scaling"
+      ],
+      "missing_techniques": [
+        "Random Forest and SVM ensemble",
+        "Spectral Edge Frequency (SEF)",
+        "Channel Correlation Matrices"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Spectral feature engineering and Random Forest. 1st place utilized an ensemble of Random Forest and SVM. They extracted 'Spectral Edge Frequency', 'FFT Power Bands' (Delta, Theta, Alpha, Beta, Gamma),"
+  },
+  {
+    "competition_id": "seizure-detection",
+    "title": "UPenn and Mayo Clinic Seizure Detection",
+    "domain": "scientific",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 4,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      },
+      {
+        "template": "alaska2_steganalysis_1st",
+        "overlap_score": 3,
+        "family": "image_forensics",
+        "paradigm": "neural_network",
+        "summary": "Steganography detection pipeline that bypasses standard JPEG decompression by directly parsing DCT coefficients and YCbCr channels, stacking them into 6-channel inputs for EfficientNet/MixNet backbone"
+      },
+      {
+        "template": "barachant_seizure_1st",
+        "overlap_score": 3,
+        "family": "riemannian_bci",
+        "paradigm": "signal_filter",
+        "summary": "Four parallel EEG feature extraction branches (relative log-power, classical statistics, autocorrelation covariance with tangent space projection, cross-frequency coherence with tangent space projecti"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 7,
+      "bound_active": 4,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Short-Time Fourier Transform (STFT)",
+        "Subject-specific feature centering"
+      ],
+      "missing_techniques": [
+        "XGBoost and Random Forest ensemble",
+        "Cross-channel coherence features",
+        "Log-power spectral density (PSD)",
+        "Artifact removal via bandpass filter"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Multi-scale spectral analysis with Gradient Boosting. 1st place utilized an ensemble of XGBoost and Random Forest. They used 'Short-Time Fourier Transform' (STFT) to analyze the frequency content at m"
+  },
+  {
+    "competition_id": "bike-sharing-demand",
+    "title": "Bike Sharing Demand",
+    "domain": "time_series",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 2,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 2,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      },
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 1,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 3,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Random Forest and XGBoost ensemble",
+        "Cyclical time features (Hourly/Weekly)",
+        "Apparent Temperature (Thermal Comfort) features",
+        "Holiday and Working-Day indicators",
+        "Log-target transformation",
+        "Rolling-window demand statistics"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of Gradient Boosting with 'Cyclical' time features. 1st place utilized an ensemble of Random Forest and XGBoost. They engineered 'Hour-of-day' and 'Day-of-week' features as categorical variab"
+  },
+  {
+    "competition_id": "criteo-display-ad-challenge",
+    "title": "Criteo Display Advertising Challenge",
+    "domain": "tabular",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 8,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 6,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      },
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 5,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Quadratic Feature Interactions",
+        "Online Gradient Descent learning"
+      ],
+      "missing_techniques": [
+        "Logistic Regression with Vowpal Wabbit",
+        "Feature Hashing (Hashing Trick)",
+        "L1 Regularization for feature selection",
+        "StandardScaler for numerical logs"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Logistic Regression with L1 regularization and the 'Hashing Trick'. 1st place utilized a high-performance Logistic Regression trained using 'Vowpal Wabbit'. They applied 'Feature Hashing' to handle th"
+  },
+  {
+    "competition_id": "avazu-ctr-prediction",
+    "title": "Avazu Click-Through Rate Prediction",
+    "domain": "tabular",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 4,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      },
+      {
+        "template": "melanoma_1st",
+        "overlap_score": 4,
+        "family": "medical_image_tabular",
+        "paradigm": "neural_network",
+        "summary": "Melanoma classification from dermoscopic images and patient metadata using EfficientNet/SE-ResNeXt backbones with domain-specific augmentations, metadata concatenation, pseudo-labeling on prior compet"
+      },
+      {
+        "template": "moa_prediction_1st",
+        "overlap_score": 4,
+        "family": "multilabel_tabular",
+        "paradigm": "neural_network",
+        "summary": "Multi-label mechanism-of-action prediction from gene expression and cell viability features using PCA/UMAP-enriched deep tabular models (MLP, TabNet, 1D-CNN ResNet) with label smoothing, pseudo-labeli"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 3,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Target encoding with high smoothing",
+        "L1 Regularization for sparsity"
+      ],
+      "missing_techniques": [
+        "Field-aware Factorization Machines (FFM)",
+        "Time-since-last-click (Device level) features",
+        "Feature Hashing (Hashing Trick)",
+        "5-fold time-based Cross-Validation"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Field-aware Factorization Machines (FFM) and Gradient Boosting. 1st place utilized FFM as the primary model. They implemented 'Target Encoding' with strong smoothing to handle the rare app/site IDs an"
+  },
+  {
+    "competition_id": "higgs-boson",
+    "title": "Higgs Boson Machine Learning Challenge",
+    "domain": "scientific",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "petfinder_adoption_1st",
+        "overlap_score": 4,
+        "family": "multimodal_classification",
+        "paradigm": "optimization",
+        "summary": "Ordinal adoption speed prediction from pet images, text descriptions, and tabular metadata via DenseNet121 image embeddings, TF-IDF/SVD text features, target-encoded tabular features, an XGBoost/Light"
+      },
+      {
+        "template": "indoor_navigation_1st",
+        "overlap_score": 4,
+        "family": "sensor_fusion",
+        "paradigm": "optimization",
+        "summary": "Indoor positioning pipeline fusing Wi-Fi fingerprint-based position estimates (LightGBM + 1D CNN) with IMU-based pedestrian dead reckoning via Kalman filtering and cost minimization, with final trajec"
+      },
+      {
+        "template": "hubmap_kidney_1st",
+        "overlap_score": 4,
+        "family": "gigapixel_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Gigapixel whole-slide image segmentation pipeline using Macenko stain normalization, DeepLabV3+ with ResNeSt-50 backbone trained with Lovasz-BCE loss, 8x TTA on overlapping tiles, and gigapixel mask r"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 0,
+      "bound_approximate": 1,
+      "orchestration": 3,
+      "trivial_inline": 1,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.167,
+      "covered_techniques": [
+        "XGBoost and MLP ensemble"
+      ],
+      "missing_techniques": [
+        "AMS-optimized threshold selection",
+        "Gaussian Rank Transformation",
+        "Feature interactions between decay products",
+        "StandardScaler for particle momentum",
+        "Oversampling the signal class"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of Neural Networks and XGBoost with custom AMS loss. 1st place utilized an ensemble of deep MLPs (Multi-Layer Perceptrons) and XGBoost. They used 'Cross-validation weighted AMS' to select the"
+  },
+  {
+    "competition_id": "tradeshift-text-classification",
+    "title": "Tradeshift Text Classification",
+    "domain": "nlp",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 10,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      },
+      {
+        "template": "moa_prediction_1st",
+        "overlap_score": 9,
+        "family": "multilabel_tabular",
+        "paradigm": "neural_network",
+        "summary": "Multi-label mechanism-of-action prediction from gene expression and cell viability features using PCA/UMAP-enriched deep tabular models (MLP, TabNet, 1D-CNN ResNet) with label smoothing, pseudo-labeli"
+      },
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 8,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "XGBoost and Factorization Machines ensemble",
+        "Feature Hashing for sparse text"
+      ],
+      "missing_techniques": [
+        "Multi-label dependency modeling",
+        "Target encoding with Bayesian smoothing",
+        "Log-loss optimization per label",
+        "OOF (Out-of-fold) stacking"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of XGBoost and Factorization Machines. 1st place utilized a 2-stage approach: first, they used XGBoost to predict each binary target independently. Second, they used a 'Factorization Machine'"
+  },
+  {
+    "competition_id": "walmart-recruiting-store-sales-forecasting",
+    "title": "Walmart Recruiting - Store Sales Forecasting",
+    "domain": "time_series",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "predict_future_sales_benchmark",
+        "overlap_score": 4,
+        "family": "time_series_forecasting",
+        "paradigm": "loss_function",
+        "summary": "Tabular Time Series Forecasting solution template for Predict Future Sales - Kaggle Benchmark Standard (2015), modeled as a 5-stage deterministic pipeline: Time aggregation, Target clipping, Lag featu"
+      },
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 3,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      },
+      {
+        "template": "lyft_motion_1st",
+        "overlap_score": 3,
+        "family": "trajectory_prediction",
+        "paradigm": "neural_network",
+        "summary": "Multi-modal trajectory prediction from bird's-eye-view rasterized scene representations using EfficientNet/ResNet backbones with a custom 3-mode prediction head trained via negative log-likelihood los"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 5,
+      "bound_active": 1,
+      "bound_approximate": 0,
+      "orchestration": 1,
+      "trivial_inline": 1,
+      "external": 2,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Random Forest and Linear Regression ensemble",
+        "Holiday Shifting (Temporal alignment)",
+        "Weighted Mean Absolute Error optimization",
+        "Store-Department specific trend features",
+        "Lagged sales from same holiday last year",
+        "StandardScaler for temperature/fuel price"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Trend-based regression with holiday-specific scaling. 1st place utilized an ensemble of Random Forest and Linear Regression. They focused on 'Holiday Shifting', where they manually aligned sales patte"
+  },
+  {
+    "competition_id": "liberty-mutual-fire-loss",
+    "title": "Liberty Mutual Fire Loss",
+    "domain": "tabular",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "indoor_navigation_1st",
+        "overlap_score": 4,
+        "family": "sensor_fusion",
+        "paradigm": "optimization",
+        "summary": "Indoor positioning pipeline fusing Wi-Fi fingerprint-based position estimates (LightGBM + 1D CNN) with IMU-based pedestrian dead reckoning via Kalman filtering and cost minimization, with final trajec"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 4,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      },
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 3,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 1,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 2,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.167,
+      "covered_techniques": [
+        "Categorical feature interaction features"
+      ],
+      "missing_techniques": [
+        "XGBoost and Random Forest ensemble",
+        "Custom Gini Coefficient objective",
+        "Quantile Regression for loss distribution",
+        "Log-target transformation",
+        "Feature selection via permutation importance"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of Gradient Boosting with custom Gini loss. 1st place utilized an ensemble of XGBoost and Random Forest. They used 'Quantile Regression' to model the probability distribution of the loss amou"
+  },
+  {
+    "competition_id": "allstate-purchase-prediction-challenge",
+    "title": "Allstate Purchase Prediction Challenge",
+    "domain": "tabular",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "moa_prediction_1st",
+        "overlap_score": 5,
+        "family": "multilabel_tabular",
+        "paradigm": "neural_network",
+        "summary": "Multi-label mechanism-of-action prediction from gene expression and cell viability features using PCA/UMAP-enriched deep tabular models (MLP, TabNet, 1D-CNN ResNet) with label smoothing, pseudo-labeli"
+      },
+      {
+        "template": "covid_vaccine_mrna_1st",
+        "overlap_score": 5,
+        "family": "structured_prediction",
+        "paradigm": "neural_network",
+        "summary": "Dual-branch neural architecture combining bidirectional RNN on raw RNA sequences with GCN on secondary-structure adjacency matrices, fused at every sequence position and decoded with a linear head to "
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 5,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 4,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "One-hot encoding for policy options (A-G)",
+        "Stratified 10-fold Cross-Validation"
+      ],
+      "missing_techniques": [
+        "XGBoost with Markov Chain features",
+        "Quote sequence transition features",
+        "Last Quote (persistence) baseline",
+        "Target encoding for high-cardinality IDs"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Sequence modeling with Gradient Boosting and Markov Chains. 1st place utilized a 2-stage approach: first, a first-order Markov Chain modeled the transition probabilities between different quote states"
+  },
+  {
+    "competition_id": "stumbleupon",
+    "title": "StumbleUpon Evergreen Classification Challenge",
+    "domain": "nlp",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "indoor_navigation_1st",
+        "overlap_score": 4,
+        "family": "sensor_fusion",
+        "paradigm": "optimization",
+        "summary": "Indoor positioning pipeline fusing Wi-Fi fingerprint-based position estimates (LightGBM + 1D CNN) with IMU-based pedestrian dead reckoning via Kalman filtering and cost minimization, with final trajec"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 3,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      },
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 2,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 1,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 2,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Logistic Regression and Random Forest ensemble",
+        "TF-IDF with 1-3 gram word ranges",
+        "LDA (Latent Dirichlet Allocation) topics",
+        "URL-based feature engineering",
+        "Text cleaning (HTML tag removal)",
+        "StandardScaler for numerical metadata"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Hybrid NLP and Gradient Boosting. 1st place utilized an ensemble of Logistic Regression (on TF-IDF features) and Random Forest (on webpage metadata). They used 'LDA' (Latent Dirichlet Allocation) to e"
+  },
+  {
+    "competition_id": "melbourne-university-seizure-prediction",
+    "title": "Melbourne University Seizure Prediction",
+    "domain": "scientific",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "barachant_seizure_1st",
+        "overlap_score": 5,
+        "family": "riemannian_bci",
+        "paradigm": "signal_filter",
+        "summary": "Four parallel EEG feature extraction branches (relative log-power, classical statistics, autocorrelation covariance with tangent space projection, cross-frequency coherence with tangent space projecti"
+      },
+      {
+        "template": "bengali_grapheme_1st",
+        "overlap_score": 5,
+        "family": "multitask_image_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-task handwritten grapheme classification using SE-ResNeXt-50 with three classification heads (root, vowel, consonant), weighted multi-task loss, CutMix/MixUp/GridMask augmentation, online hard e"
+      },
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 4,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      }
+    ],
+    "evaluation": {
+      "total_stages": 7,
+      "bound_active": 6,
+      "bound_approximate": 0,
+      "orchestration": 1,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.167,
+      "covered_techniques": [
+        "Subject-specific model fine-tuning"
+      ],
+      "missing_techniques": [
+        "2D CNN on STFT spectrograms",
+        "Bidirectional LSTM for raw EEG",
+        "Phase-locking Value (PLV) between channels",
+        "Spectral Entropy and Power Bands",
+        "Test-Time Augmentation (TTA)"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Deep CNN-LSTM ensemble with FFT features. 1st place utilized an ensemble of 2D CNNs (on spectrograms) and Bidirectional LSTMs (on raw time-series). They extracted 'Spectral Entropy' and 'Phase-locking"
+  },
+  {
+    "competition_id": "rsna-bone-age",
+    "title": "RSNA Pediatric Bone Age Challenge",
+    "domain": "medical",
+    "problem_type": "regression",
+    "assessment": "partial",
+    "template_matches": [
+      {
+        "template": "osic_pulmonary_1st",
+        "overlap_score": 6,
+        "family": "survival_regression",
+        "paradigm": "neural_network",
+        "summary": "Predict lung function decline in pulmonary fibrosis patients using EfficientNet-B5 CT scan feature extraction, tabular feature engineering of baseline FVC and temporal deltas, and MLP quantile regress"
+      },
+      {
+        "template": "cause_effect_2nd",
+        "overlap_score": 4,
+        "family": "causal_inference",
+        "paradigm": "analysis",
+        "summary": "Determine causal direction between variable pairs using asymmetric statistical features (IGCI, HSIC, conditional noise diagnostics, additive noise model residuals) fed into a three-estimator ensemble "
+      },
+      {
+        "template": "instacart_basket_1st",
+        "overlap_score": 4,
+        "family": "set_prediction",
+        "paradigm": "optimization",
+        "summary": "Two-stage pipeline computing rich user-product interaction features fed into a LightGBM reorder-probability model, followed by an exact dynamic programming algorithm (Faron's kernel) to select the pro"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 5,
+      "bound_active": 2,
+      "bound_approximate": 1,
+      "orchestration": 1,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.667,
+      "covered_techniques": [
+        "Gender-metadata feature fusion",
+        "CLAHE (Histogram Equalization) pre-processing",
+        "ImageNet pre-training",
+        "MAE-optimized regression loss"
+      ],
+      "missing_techniques": [
+        "VGG16 and Inception-v3 ensemble",
+        "Heavy rotation and flip augmentation"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Fine-tuned VGG16 with gender-metadata fusion. 1st place utilized an ensemble of VGG16 and Inception-v3 models. They concatenated the 'Gender' feature to the final global pooling layer before the regre"
+  },
+  {
+    "competition_id": "inaturalist-2018",
+    "title": "iNaturalist 2018 - FGVC5",
+    "domain": "scientific",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "melanoma_1st",
+        "overlap_score": 5,
+        "family": "medical_image_tabular",
+        "paradigm": "neural_network",
+        "summary": "Melanoma classification from dermoscopic images and patient metadata using EfficientNet/SE-ResNeXt backbones with domain-specific augmentations, metadata concatenation, pseudo-labeling on prior compet"
+      },
+      {
+        "template": "trackml_5th",
+        "overlap_score": 4,
+        "family": "particle_tracking",
+        "paradigm": "geometry",
+        "summary": "Reconstruct charged particle trajectories from 3D hit positions using analytic helix geometry, adaptive Bayesian neighbor matching, and perturbative learned corrections. No neural networks \u2014 pure geom"
+      },
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 3,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 4,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Inception-ResNet-v2 and SENet-154",
+        "Progressive Image Resizing (224 to 448 px)",
+        "Balanced over-sampling for rare species",
+        "Label Smoothing for 8,000+ classes",
+        "Test-Time Augmentation (TTA)",
+        "Stochastic Weight Averaging (SWA)"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Large-scale Vision Transformer and CNN ensemble. 1st place utilized an ensemble of Inception-ResNet-v2 and SENet-154. They applied 'Progressive Image Resizing', training at 224, 299, and finally 448 p"
+  },
+  {
+    "competition_id": "instant-gratification",
+    "title": "Instant Gratification",
+    "domain": "tabular",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 8,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      },
+      {
+        "template": "moa_prediction_1st",
+        "overlap_score": 7,
+        "family": "multilabel_tabular",
+        "paradigm": "neural_network",
+        "summary": "Multi-label mechanism-of-action prediction from gene expression and cell viability features using PCA/UMAP-enriched deep tabular models (MLP, TabNet, 1D-CNN ResNet) with label smoothing, pseudo-labeli"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 7,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Quadratic Discriminant Analysis (QDA)",
+        "Pseudo-labeling for covariance refinement",
+        "Feature selection per partition",
+        "GMM-based clustering for initial seeds",
+        "NuSVC (Support Vector Classification)",
+        "Bayesian optimization for hyper-parameters"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Quadratic Discriminant Analysis (QDA) applied independently to each data block. The 1st place solution identified that the 'wheezy-copper-turtle-magic' feature partitioned the data into subsets with d"
+  },
+  {
+    "competition_id": "predict-energy-behavior-of-prosumers",
+    "title": "Enefit - Predict Energy Behavior of Prosumers",
+    "domain": "time_series",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "petfinder_adoption_1st",
+        "overlap_score": 4,
+        "family": "multimodal_classification",
+        "paradigm": "optimization",
+        "summary": "Ordinal adoption speed prediction from pet images, text descriptions, and tabular metadata via DenseNet121 image embeddings, TF-IDF/SVD text features, target-encoded tabular features, an XGBoost/Light"
+      },
+      {
+        "template": "image_matching_1st",
+        "overlap_score": 2,
+        "family": "geometric_matching",
+        "paradigm": "geometry",
+        "summary": "Multi-method local feature extraction and matching pipeline combining SuperPoint+SuperGlue sparse matching with LoFTR dense matching, fused through MAGSAC++ robust estimation to recover the fundamenta"
+      },
+      {
+        "template": "indoor_navigation_1st",
+        "overlap_score": 2,
+        "family": "sensor_fusion",
+        "paradigm": "optimization",
+        "summary": "Indoor positioning pipeline fusing Wi-Fi fingerprint-based position estimates (LightGBM + 1D CNN) with IMU-based pedestrian dead reckoning via Kalman filtering and cost minimization, with final trajec"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 0,
+      "bound_approximate": 1,
+      "orchestration": 3,
+      "trivial_inline": 1,
+      "external": 1,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Harmonic features (Sin/Cos) for seasonality",
+        "County-level target encoding"
+      ],
+      "missing_techniques": [
+        "LightGBM with custom quantile loss",
+        "24-hour and 48-hour price lag features",
+        "Interpolation for missing weather observations",
+        "CatBoost for categorical categorical handling"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of LightGBM and CatBoost models with advanced temporal feature engineering. The winning approach utilized a 24-hour lag structure for electricity prices and custom 'weather-residual' features"
+  },
+  {
+    "competition_id": "rsna-breast-cancer-detection",
+    "title": "RSNA Breast Cancer Detection",
+    "domain": "medical",
+    "problem_type": "classification",
+    "assessment": "partial",
+    "template_matches": [
+      {
+        "template": "melanoma_1st",
+        "overlap_score": 6,
+        "family": "medical_image_tabular",
+        "paradigm": "neural_network",
+        "summary": "Melanoma classification from dermoscopic images and patient metadata using EfficientNet/SE-ResNeXt backbones with domain-specific augmentations, metadata concatenation, pseudo-labeling on prior compet"
+      },
+      {
+        "template": "rsna_mammography_breast_cancer_1st",
+        "overlap_score": 5,
+        "family": "medical_detection_2d",
+        "paradigm": "neural_network",
+        "summary": "Medical Imaging (Multi-view 2D) solution template for RSNA Screening Mammography Breast Cancer Detection - 1st Place (2023), modeled as a 5-stage deterministic pipeline: DICOM preprocessing, ROI extra"
+      },
+      {
+        "template": "severstal_steel_1st",
+        "overlap_score": 5,
+        "family": "semantic_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Multi-label semantic segmentation pipeline using a ResNet classifier to filter negative images, FPN and U-Net segmentation models with EfficientNet backbones on positive images only, two-stage conditi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 4,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.5,
+      "covered_techniques": [
+        "EfficientNet-v2-L and ConvNeXt-B backbones",
+        "Global Average Pooling with MIL head",
+        "Pseudo-labeling on external datasets"
+      ],
+      "missing_techniques": [
+        "YOLOv5 for breast tissue localization",
+        "Tissue-density windowing (pre-processing)",
+        "Probabilistic F1-weighted loss"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Two-stage pipeline using ROI detection and MIL-inspired classification. The 1st place solution used YOLOv5 to detect breast tissue and ignore empty space, followed by an ensemble of EfficientNet-v2-L "
+  },
+  {
+    "competition_id": "conways-reverse-game-of-life-2020",
+    "title": "Conway's Reverse Game of Life 2020",
+    "domain": "scientific",
+    "problem_type": "optimization",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "lyft_motion_1st",
+        "overlap_score": 4,
+        "family": "trajectory_prediction",
+        "paradigm": "neural_network",
+        "summary": "Multi-modal trajectory prediction from bird's-eye-view rasterized scene representations using EfficientNet/ResNet backbones with a custom 3-mode prediction head trained via negative log-likelihood los"
+      },
+      {
+        "template": "petfinder_adoption_1st",
+        "overlap_score": 4,
+        "family": "multimodal_classification",
+        "paradigm": "optimization",
+        "summary": "Ordinal adoption speed prediction from pet images, text descriptions, and tabular metadata via DenseNet121 image embeddings, TF-IDF/SVD text features, target-encoded tabular features, an XGBoost/Light"
+      },
+      {
+        "template": "moa_prediction_1st",
+        "overlap_score": 4,
+        "family": "multilabel_tabular",
+        "paradigm": "neural_network",
+        "summary": "Multi-label mechanism-of-action prediction from gene expression and cell viability features using PCA/UMAP-enriched deep tabular models (MLP, TabNet, 1D-CNN ResNet) with label smoothing, pseudo-labeli"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Z3 SMT Solver for logical constraints",
+        "Genetic Algorithm for large-grid optimization",
+        "Simulated Annealing for state refinement",
+        "Look-up tables for 3x3 local patterns",
+        "CNN-based state candidate generation",
+        "Symmetry-breaking constraints"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Constraint satisfaction using SAT solvers and Genetic Algorithms. The 1st place solution (Team 'The Reversers') utilized the Z3 SMT solver to find exact solutions for small grids and a custom Genetic "
+  },
+  {
+    "competition_id": "nfl-big-data-bowl-2022",
+    "title": "NFL Big Data Bowl 2022",
+    "domain": "rl",
+    "problem_type": "optimization",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "vsb_power_line_1st",
+        "overlap_score": 4,
+        "family": "signal_classification",
+        "paradigm": "signal_transform",
+        "summary": "Binary fault detection from high-frequency power line signals using wavelet denoising, peak detection feature engineering, and a weighted blend of LightGBM on handcrafted features with 1D CNN+LSTM on "
+      },
+      {
+        "template": "trackml_5th",
+        "overlap_score": 3,
+        "family": "particle_tracking",
+        "paradigm": "geometry",
+        "summary": "Reconstruct charged particle trajectories from 3D hit positions using analytic helix geometry, adaptive Bayesian neighbor matching, and perturbative learned corrections. No neural networks \u2014 pure geom"
+      },
+      {
+        "template": "flavours_physics_1st",
+        "overlap_score": 2,
+        "family": "constrained_ml",
+        "paradigm": "optimization",
+        "summary": "Three parallel classification paths (safe-feature vanilla GBM, flatness-constrained gradient boosting with mass decorrelation, full-feature GBM with noise injection) evaluated against statistical cons"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 7,
+      "bound_active": 4,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Time-to-Contact (TTC) features",
+        "Spatial-temporal player aggregation"
+      ],
+      "missing_techniques": [
+        "Voronoi diagrams for space control",
+        "Gaussian Process regression for risk surfaces",
+        "Physics-informed trajectory modeling",
+        "Expected Return Yards (ERY) metric"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Expected Return Yards (ERY) model using Gaussian Processes. The winning entry modeled the field as a dynamic 'risk surface' where the returner's speed and the proximity of tacklers were mapped using V"
+  },
+  {
+    "competition_id": "traveling-santa-2018-prime-paths",
+    "title": "Traveling Santa 2018 - Prime Paths",
+    "domain": "geospatial",
+    "problem_type": "optimization",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "shopee_price_match_1st",
+        "overlap_score": 2,
+        "family": "multimodal_retrieval",
+        "paradigm": "neural_network",
+        "summary": "Multimodal product matching using ArcFace-trained image embeddings (NFNet/ResNeXt), multilingual BERT and TF-IDF text embeddings, L2-normalized fusion, RAPIDS cuML cosine similarity search, dynamic th"
+      },
+      {
+        "template": "santa_2021_magic_minves_1st",
+        "overlap_score": 2,
+        "family": "combinatorial_optimization",
+        "paradigm": "graph_signal_processing",
+        "summary": "Combinatorial Optimization (String routing) solution template for Santa 2021 - The Magic of Magical Minves - 1st Place (2021), modeled as a 5-stage deterministic pipeline: Problem reduction, Distance "
+      },
+      {
+        "template": "flavours_physics_1st",
+        "overlap_score": 2,
+        "family": "constrained_ml",
+        "paradigm": "optimization",
+        "summary": "Three parallel classification paths (safe-feature vanilla GBM, flatness-constrained gradient boosting with mass decorrelation, full-feature GBM with noise injection) evaluated against statistical cons"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "LKH-3 (Lin-Kernighan-Helsgaun) solver",
+        "Penalty-aware cost function",
+        "K-opt local search (k=3 to k=5)",
+        "Iterated Local Search (ILS) with kicks",
+        "Parallelized path-merging",
+        "Grid-based city bucketing"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Modified LKH-3 solver with prime-aware heuristics. The 1st place solution adapted the Lin-Kernighan-Helsgaun (LKH) algorithm to include a penalty-aware cost function. They used a 'k-opt' local search "
+  },
+  {
+    "competition_id": "santa-2022-the-elves-workload",
+    "title": "Santa 2022 - The Elves' Workload",
+    "domain": "rl",
+    "problem_type": "optimization",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "severstal_steel_1st",
+        "overlap_score": 5,
+        "family": "semantic_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Multi-label semantic segmentation pipeline using a ResNet classifier to filter negative images, FPN and U-Net segmentation models with EfficientNet backbones on positive images only, two-stage conditi"
+      },
+      {
+        "template": "lyft_motion_1st",
+        "overlap_score": 4,
+        "family": "trajectory_prediction",
+        "paradigm": "neural_network",
+        "summary": "Multi-modal trajectory prediction from bird's-eye-view rasterized scene representations using EfficientNet/ResNet backbones with a custom 3-mode prediction head trained via negative log-likelihood los"
+      },
+      {
+        "template": "bengali_grapheme_1st",
+        "overlap_score": 4,
+        "family": "multitask_image_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-task handwritten grapheme classification using SE-ResNeXt-50 with three classification heads (root, vowel, consonant), weighted multi-task loss, CutMix/MixUp/GridMask augmentation, online hard e"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 5,
+      "bound_active": 1,
+      "bound_approximate": 3,
+      "orchestration": 1,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Simulated Annealing for path refinement",
+        "Hill Climbing (Greedy local search)",
+        "TSP-based initial path (LKH solver)",
+        "Bit-manipulation for arm state",
+        "Parallel C++ move evaluation",
+        "Dynamic programming for joint-cost nodes"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Simulated Annealing and Hill Climbing on path sequences. The winning solution modeled the robotic arm movements as a graph search problem. They used a 'Shortest Path' initialization using a TSP solver"
+  },
+  {
+    "competition_id": "isic-2019",
+    "title": "ISIC 2019 Skin Lesion Analysis Towards Melanoma Detection",
+    "domain": "medical",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "melanoma_1st",
+        "overlap_score": 7,
+        "family": "medical_image_tabular",
+        "paradigm": "neural_network",
+        "summary": "Melanoma classification from dermoscopic images and patient metadata using EfficientNet/SE-ResNeXt backbones with domain-specific augmentations, metadata concatenation, pseudo-labeling on prior compet"
+      },
+      {
+        "template": "osic_pulmonary_1st",
+        "overlap_score": 4,
+        "family": "survival_regression",
+        "paradigm": "neural_network",
+        "summary": "Predict lung function decline in pulmonary fibrosis patients using EfficientNet-B5 CT scan feature extraction, tabular feature engineering of baseline FVC and temporal deltas, and MLP quantile regress"
+      },
+      {
+        "template": "dsb2017_1st",
+        "overlap_score": 4,
+        "family": "medical_imaging_3d",
+        "paradigm": "neural_network",
+        "summary": "Detect-then-classify pipeline for lung cancer prediction from 3D CT volumes: a coordinate-aware 3D U-Net detects nodule candidates, proposals are sampled stochastically, per-nodule features are extrac"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 4,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "EfficientNet-B0 to B5 and ResNeXt-101",
+        "Metadata fusion via MLP branch"
+      ],
+      "missing_techniques": [
+        "Label Smoothing for human-error noise",
+        "Multi-stage transfer learning",
+        "Oversampling rare classes (Melanoma)",
+        "Test-Time Augmentation (TTA)"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of Deep CNNs with metadata fusion. 1st place utilized an ensemble of EfficientNet-B0 to B5 and ResNeXt-101. They concatenated patient metadata to the final global pooling layer and used 'Labe"
+  },
+  {
+    "competition_id": "freesound-audio-tagging-2019",
+    "title": "Freesound Audio Tagging 2019",
+    "domain": "audio",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "toxic_comment_1st",
+        "overlap_score": 8,
+        "family": "nlp_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-label toxic comment classification using back-translation augmentation, pre-trained word embeddings, bidirectional GRU/LSTM with dual pooling, and a LightGBM meta-model trained on out-of-fold ne"
+      },
+      {
+        "template": "bengali_grapheme_1st",
+        "overlap_score": 6,
+        "family": "multitask_image_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-task handwritten grapheme classification using SE-ResNeXt-50 with three classification heads (root, vowel, consonant), weighted multi-task loss, CutMix/MixUp/GridMask augmentation, online hard e"
+      },
+      {
+        "template": "ogb_mag240m_1st",
+        "overlap_score": 5,
+        "family": "graph_inference",
+        "paradigm": "graph_signal_processing",
+        "summary": "Graph ML / Node Classification solution template for OGB Large-Scale Challenge - MAG240M - 1st Place (2021), modeled as a 5-stage deterministic pipeline: Node text extraction, Graph sampling, Message "
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 0,
+      "bound_approximate": 5,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.167,
+      "covered_techniques": [
+        "BCE Loss with Label Smoothing"
+      ],
+      "missing_techniques": [
+        "Log-mel Spectrogram feature extraction",
+        "Mixup augmentation (frequency domain)",
+        "SpecAugment (time/frequency masking)",
+        "DenseNet and EfficientNet-B0",
+        "Test-Time Augmentation (TTA)"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Log-mel Spectrogram CNN with Mixup and SpecAugment. The 1st place solution used an ensemble of 1D and 2D CNNs (DenseNet and EfficientNet). They utilized a 'Noise-robust' training strategy where they f"
+  },
+  {
+    "competition_id": "gendered-pronoun-resolution",
+    "title": "Gendered Pronoun Resolution",
+    "domain": "nlp",
+    "problem_type": "classification",
+    "assessment": "partial",
+    "template_matches": [
+      {
+        "template": "commonlit_readability_1st",
+        "overlap_score": 5,
+        "family": "nlp_regression",
+        "paradigm": "neural_network",
+        "summary": "Text readability regression using domain-adapted RoBERTa and DeBERTa transformers with attention pooling, stochastic weight averaging, and SVR/Ridge calibration heads on extracted embeddings."
+      },
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 4,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      },
+      {
+        "template": "toxic_comment_1st",
+        "overlap_score": 3,
+        "family": "nlp_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-label toxic comment classification using back-translation augmentation, pre-trained word embeddings, bidirectional GRU/LSTM with dual pooling, and a LightGBM meta-model trained on out-of-fold ne"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.667,
+      "covered_techniques": [
+        "BERT-Large and GPT-2 ensemble",
+        "Multi-head attention linkage head",
+        "Layer-wise Learning Rate Decay (LLRD)",
+        "Stochastic Weight Averaging (SWA)"
+      ],
+      "missing_techniques": [
+        "Span-based embedding extraction",
+        "Adversarial Weight Perturbation (AWP)"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "BERT-based coreference resolution with custom head. The 1st place solution utilized an ensemble of BERT-Large and GPT-2 models. They used a 'Span-based' approach where the embeddings of the pronoun an"
+  },
+  {
+    "competition_id": "cat-in-the-dat-ii",
+    "title": "Categorical Feature Encoding Challenge II",
+    "domain": "tabular",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 7,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      },
+      {
+        "template": "moa_prediction_1st",
+        "overlap_score": 6,
+        "family": "multilabel_tabular",
+        "paradigm": "neural_network",
+        "summary": "Multi-label mechanism-of-action prediction from gene expression and cell viability features using PCA/UMAP-enriched deep tabular models (MLP, TabNet, 1D-CNN ResNet) with label smoothing, pseudo-labeli"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 6,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 3,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.167,
+      "covered_techniques": [
+        "Target encoding with 5-fold OOF"
+      ],
+      "missing_techniques": [
+        "GLMM (Generalized Linear Mixed Model) encoding",
+        "One-Hot and Hash encoding ensemble",
+        "LightGBM with categorical support",
+        "Logistic Regression with L2 penalty",
+        "Rank-averaging for final ensemble"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Stacked ensemble of Linear and Non-linear models with GLMM encoding. 1st place used a 2-level stack: Level 1 included Logistic Regression (on One-Hot/Hash encoded features) and LightGBM (on Target/Ord"
+  },
+  {
+    "competition_id": "dog-breed-identification",
+    "title": "Dog Breed Identification",
+    "domain": "cv",
+    "problem_type": "classification",
+    "assessment": "partial",
+    "template_matches": [
+      {
+        "template": "bengali_grapheme_1st",
+        "overlap_score": 7,
+        "family": "multitask_image_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-task handwritten grapheme classification using SE-ResNeXt-50 with three classification heads (root, vowel, consonant), weighted multi-task loss, CutMix/MixUp/GridMask augmentation, online hard e"
+      },
+      {
+        "template": "shopee_price_match_1st",
+        "overlap_score": 5,
+        "family": "multimodal_retrieval",
+        "paradigm": "neural_network",
+        "summary": "Multimodal product matching using ArcFace-trained image embeddings (NFNet/ResNeXt), multilingual BERT and TF-IDF text embeddings, L2-normalized fusion, RAPIDS cuML cosine similarity search, dynamic th"
+      },
+      {
+        "template": "osic_pulmonary_1st",
+        "overlap_score": 5,
+        "family": "survival_regression",
+        "paradigm": "neural_network",
+        "summary": "Predict lung function decline in pulmonary fibrosis patients using EfficientNet-B5 CT scan feature extraction, tabular feature engineering of baseline FVC and temporal deltas, and MLP quantile regress"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.667,
+      "covered_techniques": [
+        "ResNet-101 / Inception-v3 / Xception ensemble",
+        "Global Average Pooling (GAP)",
+        "Label Smoothing for class-confusion",
+        "Heavy rotation and crop augmentation"
+      ],
+      "missing_techniques": [
+        "Multi-scale Test-Time Augmentation (TTA)",
+        "Cosine Annealing learning rate"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of high-capacity CNNs with heavy TTA. The 1st place solution used an ensemble of ResNet-101, Inception-v3, and Xception backbones. They applied 'Global Average Pooling' and 'Dropout' to preve"
+  },
+  {
+    "competition_id": "inaturalist-2020-fgvc7",
+    "title": "iNaturalist 2020 - FGVC7",
+    "domain": "scientific",
+    "problem_type": "classification",
+    "assessment": "partial",
+    "template_matches": [
+      {
+        "template": "melanoma_1st",
+        "overlap_score": 8,
+        "family": "medical_image_tabular",
+        "paradigm": "neural_network",
+        "summary": "Melanoma classification from dermoscopic images and patient metadata using EfficientNet/SE-ResNeXt backbones with domain-specific augmentations, metadata concatenation, pseudo-labeling on prior compet"
+      },
+      {
+        "template": "petfinder_adoption_1st",
+        "overlap_score": 6,
+        "family": "multimodal_classification",
+        "paradigm": "optimization",
+        "summary": "Ordinal adoption speed prediction from pet images, text descriptions, and tabular metadata via DenseNet121 image embeddings, TF-IDF/SVD text features, target-encoded tabular features, an XGBoost/Light"
+      },
+      {
+        "template": "global_wheat_1st",
+        "overlap_score": 6,
+        "family": "object_detection_2d",
+        "paradigm": "neural_network",
+        "summary": "Two-stage object detection pipeline combining Faster R-CNN (ResNeSt-101) and YOLOv5 with heavy mosaic/CutMix augmentation, pseudo-label-based self-training on test data, and weighted box fusion for fi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 4,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.5,
+      "covered_techniques": [
+        "EfficientNet-B6 and B7 ensemble",
+        "ArcFace (Additive Angular Margin Loss)",
+        "Label Smoothing"
+      ],
+      "missing_techniques": [
+        "Progressive Image Resizing (256 -> 600 px)",
+        "Oversampling of rare species",
+        "Stochastic Weight Averaging (SWA)"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "EfficientNet ensemble with Progressive Resizing. The winning solution utilized an ensemble of EfficientNet-B6 and B7 backbones. They implemented 'Progressive Image Resizing', training initially at 256"
+  },
+  {
+    "competition_id": "youtube8m-2019",
+    "title": "YouTube-8M Video Understanding Challenge",
+    "domain": "cv",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "dsb2017_1st",
+        "overlap_score": 6,
+        "family": "medical_imaging_3d",
+        "paradigm": "neural_network",
+        "summary": "Detect-then-classify pipeline for lung cancer prediction from 3D CT volumes: a coordinate-aware 3D U-Net detects nodule candidates, proposals are sampled stochastically, per-nodule features are extrac"
+      },
+      {
+        "template": "instacart_basket_1st",
+        "overlap_score": 4,
+        "family": "set_prediction",
+        "paradigm": "optimization",
+        "summary": "Two-stage pipeline computing rich user-product interaction features fed into a LightGBM reorder-probability model, followed by an exact dynamic programming algorithm (Faron's kernel) to select the pro"
+      },
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 3,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 10,
+      "bound_active": 9,
+      "bound_approximate": 0,
+      "orchestration": 1,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "NextVLAD temporal aggregation",
+        "Context Gating (SE-block variant)",
+        "Multi-task learning with label hierarchy",
+        "Bag-of-Words (BoW) feature fusion",
+        "MoE (Mixture of Experts) pooling",
+        "Rank-averaging ensemble"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "NextVLAD aggregation with Context Gating. 1st place utilized the 'NextVLAD' architecture, an efficient variant of NetVLAD that uses grouped convolutions to reduce parameters. They applied 'Context Gat"
+  },
+  {
+    "competition_id": "personalized-medicine-redefining-cancer-treatment",
+    "title": "Personalized Medicine: Redefining Cancer Treatment",
+    "domain": "medical",
+    "problem_type": "classification",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "plasticc_1st",
+        "overlap_score": 6,
+        "family": "time_series_classification",
+        "paradigm": "optimization",
+        "summary": "Multi-class astronomical object classification from irregularly-sampled light curves using red-shift flux correction, tsfresh/cesium feature extraction, Gaussian Process interpolation for smooth curve"
+      },
+      {
+        "template": "santander_transaction_1st",
+        "overlap_score": 4,
+        "family": "tabular_classification",
+        "paradigm": "optimization",
+        "summary": "Tabular binary classification pipeline that detects and removes synthetic padding rows from the test set, replaces raw feature values with frequency-count encodings, applies shuffle augmentation withi"
+      },
+      {
+        "template": "mercari_price_1st",
+        "overlap_score": 4,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "Product price prediction from text and categorical features using CountVectorizer/TF-IDF text vectorization, sparse one-hot categorical encoding, FTRL-trained Factorization Machines on the sparse feat"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 3,
+      "orchestration": 1,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "XGBoost on hybrid NLP features",
+        "TF-IDF with SVD dimensionality reduction",
+        "Word2Vec / Doc2Vec embeddings",
+        "LDA (Latent Dirichlet Allocation) topics",
+        "Categorical target encoding for 'Gene'",
+        "Pseudo-labeling on test set literature"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "TF-IDF + Word2Vec ensemble with Gradient Boosting. 1st place used a hybrid of NLP features: TF-IDF on n-grams (1-3) and Word2Vec embeddings averaged over the paper text. These were fed into an XGBoost"
+  },
+  {
+    "competition_id": "bigquery-geotab-threshold-forecasting",
+    "title": "BigQuery-Geotab Intersection Congestion",
+    "domain": "geospatial",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "lyft_motion_1st",
+        "overlap_score": 4,
+        "family": "trajectory_prediction",
+        "paradigm": "neural_network",
+        "summary": "Multi-modal trajectory prediction from bird's-eye-view rasterized scene representations using EfficientNet/ResNet backbones with a custom 3-mode prediction head trained via negative log-likelihood los"
+      },
+      {
+        "template": "trackml_5th",
+        "overlap_score": 3,
+        "family": "particle_tracking",
+        "paradigm": "geometry",
+        "summary": "Reconstruct charged particle trajectories from 3D hit positions using analytic helix geometry, adaptive Bayesian neighbor matching, and perturbative learned corrections. No neural networks \u2014 pure geom"
+      },
+      {
+        "template": "indoor_navigation_1st",
+        "overlap_score": 3,
+        "family": "sensor_fusion",
+        "paradigm": "optimization",
+        "summary": "Indoor positioning pipeline fusing Wi-Fi fingerprint-based position estimates (LightGBM + 1D CNN) with IMU-based pedestrian dead reckoning via Kalman filtering and cost minimization, with final trajec"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Sin/Cos cyclic time encoding",
+        "StandardScaler for wait-time targets"
+      ],
+      "missing_techniques": [
+        "LightGBM and MLP ensemble",
+        "Intersection ID embeddings",
+        "City-specific target encoding",
+        "Grid-based distance features"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Ensemble of LightGBM and Deep MLP with cyclic time features. 1st place utilized LightGBM and a 4-layer MLP. They engineered 'Circular Time' features (Sin/Cos of Hour and Day) to handle temporal contin"
+  },
+  {
+    "competition_id": "image-matching-challenge-2024",
+    "title": "Image Matching Challenge 2024 - Hexathlon",
+    "domain": "cv",
+    "problem_type": "matching",
+    "assessment": "competitive",
+    "template_matches": [
+      {
+        "template": "image_matching_1st",
+        "overlap_score": 7,
+        "family": "geometric_matching",
+        "paradigm": "geometry",
+        "summary": "Multi-method local feature extraction and matching pipeline combining SuperPoint+SuperGlue sparse matching with LoFTR dense matching, fused through MAGSAC++ robust estimation to recover the fundamenta"
+      },
+      {
+        "template": "melanoma_1st",
+        "overlap_score": 5,
+        "family": "medical_image_tabular",
+        "paradigm": "neural_network",
+        "summary": "Melanoma classification from dermoscopic images and patient metadata using EfficientNet/SE-ResNeXt backbones with domain-specific augmentations, metadata concatenation, pseudo-labeling on prior compet"
+      },
+      {
+        "template": "hubmap_kidney_1st",
+        "overlap_score": 5,
+        "family": "gigapixel_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Gigapixel whole-slide image segmentation pipeline using Macenko stain normalization, DeepLabV3+ with ResNeSt-50 backbone trained with Lovasz-BCE loss, 8x TTA on overlapping tiles, and gigapixel mask r"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 1,
+      "orchestration": 0,
+      "trivial_inline": 2,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.833,
+      "covered_techniques": [
+        "LoFTR (Detector-Free Local Features)",
+        "SuperPoint and SuperGlue ensemble",
+        "MAGSAC++ robust E-matrix estimation",
+        "Two-pass coarse-to-fine refinement",
+        "Image-pair pre-filtering via global descriptors"
+      ],
+      "missing_techniques": [
+        "Guided matching via epipolar geometry"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Hybrid LoFTR and SuperGlue pipeline with RANSAC refinement. The winning solution used LoFTR (Detector-free matching) for low-texture areas and SuperPoint/SuperGlue for high-texture areas. They impleme"
+  },
+  {
+    "competition_id": "learning-equality-curriculum-recommendations",
+    "title": "Learning Equality - Curriculum Recommendations",
+    "domain": "nlp",
+    "problem_type": "matching",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "shopee_price_match_1st",
+        "overlap_score": 7,
+        "family": "multimodal_retrieval",
+        "paradigm": "neural_network",
+        "summary": "Multimodal product matching using ArcFace-trained image embeddings (NFNet/ResNeXt), multilingual BERT and TF-IDF text embeddings, L2-normalized fusion, RAPIDS cuML cosine similarity search, dynamic th"
+      },
+      {
+        "template": "trackml_5th",
+        "overlap_score": 5,
+        "family": "particle_tracking",
+        "paradigm": "geometry",
+        "summary": "Reconstruct charged particle trajectories from 3D hit positions using analytic helix geometry, adaptive Bayesian neighbor matching, and perturbative learned corrections. No neural networks \u2014 pure geom"
+      },
+      {
+        "template": "porto_seguro_1st",
+        "overlap_score": 5,
+        "family": "tabular_classification",
+        "paradigm": "neural_network",
+        "summary": "Tabular binary classification on highly imbalanced driver safety data using denoising autoencoder feature extraction, concatenation with original features, and rank-averaged ensemble of LightGBM, XGBo"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Sentence-BERT (Bi-Encoder) for retrieval",
+        "Cosine Similarity thresholding"
+      ],
+      "missing_techniques": [
+        "XLM-RoBERTa-Large (Cross-Encoder) for ranking",
+        "Multilingual translation augmentation",
+        "F2-Score-optimized candidate filtering",
+        "FAISS for fast vector retrieval"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Two-stage Retrieval and Re-ranking using Sentence-BERT. 1st place utilized 'Paraphrase-Multilingual-MiniLM' to retrieve the top-50 content candidates for each topic via cosine similarity. In the secon"
+  },
+  {
+    "competition_id": "open-images-2019-instance-segmentation",
+    "title": "Open Images 2019 - Instance Segmentation",
+    "domain": "cv",
+    "problem_type": "segmentation",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "hubmap_kidney_1st",
+        "overlap_score": 7,
+        "family": "gigapixel_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Gigapixel whole-slide image segmentation pipeline using Macenko stain normalization, DeepLabV3+ with ResNeSt-50 backbone trained with Lovasz-BCE loss, 8x TTA on overlapping tiles, and gigapixel mask r"
+      },
+      {
+        "template": "bengali_grapheme_1st",
+        "overlap_score": 6,
+        "family": "multitask_image_classification",
+        "paradigm": "neural_network",
+        "summary": "Multi-task handwritten grapheme classification using SE-ResNeXt-50 with three classification heads (root, vowel, consonant), weighted multi-task loss, CutMix/MixUp/GridMask augmentation, online hard e"
+      },
+      {
+        "template": "severstal_steel_1st",
+        "overlap_score": 6,
+        "family": "semantic_segmentation",
+        "paradigm": "neural_network",
+        "summary": "Multi-label semantic segmentation pipeline using a ResNet classifier to filter negative images, FPN and U-Net segmentation models with EfficientNet backbones on positive images only, two-stage conditi"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 2,
+      "bound_approximate": 4,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.333,
+      "covered_techniques": [
+        "Cascade Mask R-CNN architecture",
+        "ResNeSt-200 (Split-Attention) backbone"
+      ],
+      "missing_techniques": [
+        "PointRend for boundary refinement",
+        "Class-aware Non-Maximum Suppression (NMS)",
+        "Hierarchical label reinforcement loss",
+        "Multi-scale training and testing"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Cascade Mask R-CNN with ResNeSt backbone. 1st place used an ensemble of Cascade Mask R-CNNs with ResNeSt-101 and ResNeSt-200 encoders. They applied 'Class-aware NMS' to handle overlapping objects in t"
+  },
+  {
+    "competition_id": "google-smartphone-decimeter-2023",
+    "title": "Google Smartphone Decimeter Challenge 2023",
+    "domain": "geospatial",
+    "problem_type": "regression",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "indoor_navigation_1st",
+        "overlap_score": 5,
+        "family": "sensor_fusion",
+        "paradigm": "optimization",
+        "summary": "Indoor positioning pipeline fusing Wi-Fi fingerprint-based position estimates (LightGBM + 1D CNN) with IMU-based pedestrian dead reckoning via Kalman filtering and cost minimization, with final trajec"
+      },
+      {
+        "template": "covid_vaccine_mrna_1st",
+        "overlap_score": 5,
+        "family": "structured_prediction",
+        "paradigm": "neural_network",
+        "summary": "Dual-branch neural architecture combining bidirectional RNN on raw RNA sequences with GCN on secondary-structure adjacency matrices, fused at every sequence position and decoded with a linear head to "
+      },
+      {
+        "template": "google_decimeter_1st",
+        "overlap_score": 4,
+        "family": "sensor_fusion",
+        "paradigm": "sequential_filter",
+        "summary": "Sensor fusion / Trajectory Optimization solution template for Google Smartphone Decimeter Challenge - 1st Place (2021), modeled as a 5-stage deterministic pipeline: Raw GNSS processing, Outlier reject"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 1,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 2,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.167,
+      "covered_techniques": [
+        "Extended Kalman Filter (EKF) with RTK"
+      ],
+      "missing_techniques": [
+        "Rauch-Tung-Striebel (RTS) smoother",
+        "Cycle-slip detection via phase residuals",
+        "HMM-based Map Matching",
+        "Atmospheric delay correction (Klobuchar)",
+        "Satellite-specific clock bias estimation"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Real-Time Kinematic (RTK) positioning with carrier-phase smoothing. 1st place utilized an EKF (Extended Kalman Filter) that integrated 'Phase-residuals' to identify cycle slips. They used a 'Forward-B"
+  },
+  {
+    "competition_id": "llm-efficiency-challenge-2024",
+    "title": "NeurIPS 2024 - LLM Efficiency Challenge",
+    "domain": "nlp",
+    "problem_type": "optimization",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "commonlit_readability_1st",
+        "overlap_score": 6,
+        "family": "nlp_regression",
+        "paradigm": "neural_network",
+        "summary": "Text readability regression using domain-adapted RoBERTa and DeBERTa transformers with attention pooling, stochastic weight averaging, and SVR/Ridge calibration heads on extracted embeddings."
+      },
+      {
+        "template": "two_sigma_news_stock_1st",
+        "overlap_score": 4,
+        "family": "tabular_text_regression",
+        "paradigm": "optimization",
+        "summary": "NLP Sentiment + Tabular Time Series solution template for Two Sigma: Using News to Predict Stock Movements - 1st Place (2019), modeled as a 5-stage deterministic pipeline: News aggregation, Market fea"
+      },
+      {
+        "template": "ogb_wikikg90m_1st",
+        "overlap_score": 4,
+        "family": "graph_inference",
+        "paradigm": "graph_signal_processing",
+        "summary": "Graph ML / Link Prediction solution template for OGB Large-Scale Challenge - WikiKG90M - 1st Place (2021), modeled as a 5-stage deterministic pipeline: Language feature embedding, Relational embedding"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 3,
+      "orchestration": 0,
+      "trivial_inline": 0,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "QLoRA (4-bit Quantized LoRA)",
+        "FlashAttention-2 for training speedup",
+        "Data Distillation / Quality Filtering",
+        "Mixed-Precision (bf16) training",
+        "Gradient Accumulation for batch sizing",
+        "Paged Optimizers for memory management"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Low-Rank Adaptation (LoRA) with 4-bit quantization (QLoRA). 1st place utilized a Llama-3-8B base model with 4-bit NormalFloat quantization. They implemented 'FlashAttention-2' to speed up training and"
+  },
+  {
+    "competition_id": "ai-mathematical-olympiad-progress-prize-2",
+    "title": "AI Mathematical Olympiad - Progress Prize 2",
+    "domain": "rl",
+    "problem_type": "matching",
+    "assessment": "divergent",
+    "template_matches": [
+      {
+        "template": "lyft_motion_1st",
+        "overlap_score": 3,
+        "family": "trajectory_prediction",
+        "paradigm": "neural_network",
+        "summary": "Multi-modal trajectory prediction from bird's-eye-view rasterized scene representations using EfficientNet/ResNet backbones with a custom 3-mode prediction head trained via negative log-likelihood los"
+      },
+      {
+        "template": "commonlit_readability_1st",
+        "overlap_score": 3,
+        "family": "nlp_regression",
+        "paradigm": "neural_network",
+        "summary": "Text readability regression using domain-adapted RoBERTa and DeBERTa transformers with attention pooling, stochastic weight averaging, and SVR/Ridge calibration heads on extracted embeddings."
+      },
+      {
+        "template": "aimo_llm_tool_use_topology",
+        "overlap_score": 3,
+        "family": "llm_tool_use",
+        "paradigm": "external_tool",
+        "summary": "Automated Reasoning / LLM Tool Use solution template for AI Mathematical Olympiad (AIMO) Prize - Top Solution Topology (2024), modeled as a 5-stage deterministic pipeline: Prompt injection, Code Gener"
+      }
+    ],
+    "evaluation": {
+      "total_stages": 6,
+      "bound_active": 3,
+      "bound_approximate": 2,
+      "orchestration": 0,
+      "trivial_inline": 1,
+      "external": 0,
+      "gap": 0,
+      "grounding_rate": 1.0,
+      "technique_coverage": 0.0,
+      "covered_techniques": [],
+      "missing_techniques": [
+        "Chain-of-Thought (CoT) prompting",
+        "Self-Correction / Self-Reflection loops",
+        "Python Sandbox tool-use",
+        "Majority Voting / Self-Consistency",
+        "AIME-specific fine-tuning (SFT)",
+        "Reinforcement Learning from Human Feedback (RLHF)"
+      ]
+    },
+    "key_techniques_count": 6,
+    "solution_summary_preview": "Chain-of-Thought (CoT) reasoning with self-correction and Python tool-use. 1st place utilized an ensemble of Llama-3-70B and DeBERTa-v4. They implemented a 'Self-Consistency' mechanism where the model"
+  }
+]
