@@ -31,6 +31,8 @@ def generate_ffi_imports(language: str) -> str:
         return "import ctypes\n" "import ctypes.util\n" "from pathlib import Path\n"
     elif language == "haskell":
         return "import ctypes\n" "import ctypes.util\n" "from pathlib import Path\n"
+    elif language == "mojo":
+        return ""
     else:
         return ""
 
@@ -67,6 +69,8 @@ def generate_ffi_stub(atom: MacroAtomSpec, language: str) -> str:
         return _rust_stub(fn_name, atom, params, ret_type)
     elif language == "haskell":
         return _haskell_stub(fn_name, atom, params, ret_type)
+    elif language == "mojo":
+        return _mojo_stub(fn_name, atom, params, ret_type)
     else:
         return ""
 
@@ -178,4 +182,21 @@ def _haskell_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str)
     lines.append("    _func.restype = ctypes.c_void_p")
     lines.append(f"    return _func({params})")
     lines.append("")
+    return "\n".join(lines)
+
+
+def _mojo_stub(fn_name: str, atom: MacroAtomSpec, params: str, ret_type: str) -> str:
+    """Generate a direct-import FFI stub for Mojo.
+
+    Mojo modules are importable from Python without ctypes — the Mojo
+    compiler exposes compiled functions as regular Python callables.
+    """
+    module = atom.method_names[0] if atom.method_names else fn_name
+    lines = [
+        f"def {fn_name}_ffi({params}):",
+        f'    """FFI bridge to Mojo implementation of {atom.name}."""',
+        f"    from {fn_name}_mojo import {module}",
+        f"    return {module}({params})",
+        "",
+    ]
     return "\n".join(lines)

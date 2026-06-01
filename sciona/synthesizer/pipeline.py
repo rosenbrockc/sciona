@@ -21,6 +21,7 @@ async def assemble_and_check(
     env: ProofEnvironment,
     *,
     skip_ghost_sim: bool = False,
+    aot_target: str = "numpy",
 ) -> AssemblyResult:
     """Assemble a CDG + match results into a skeleton, then compile it.
 
@@ -51,7 +52,7 @@ async def assemble_and_check(
                 ghost_report.error,
             )
 
-    assembler = Assembler(prover=env.prover_name)
+    assembler = Assembler(prover=env.prover_name, aot_target=aot_target)
     skeleton = assembler.assemble(cdg, match_results)
 
     # Attach ghost report to skeleton metadata

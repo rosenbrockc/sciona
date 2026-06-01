@@ -301,12 +301,19 @@ def _uses_known_atom_package(module_name: str) -> bool:
 class Assembler:
     """Assembles a CDG and match results into a compilable skeleton."""
 
-    def __init__(self, prover: Prover | str, *, with_telemetry: bool = False) -> None:
+    def __init__(
+        self,
+        prover: Prover | str,
+        *,
+        with_telemetry: bool = False,
+        aot_target: str = "numpy",
+    ) -> None:
         if isinstance(prover, str):
             self._prover = Prover(prover)
         else:
             self._prover = prover
         self._with_telemetry = with_telemetry
+        self._aot_target = aot_target
 
     def assemble(
         self,
@@ -1122,7 +1129,7 @@ class Assembler:
             sname = sanitize_name(unit.name)
             lines.append(f"# Node: {unit.name} ({unit.node_id})")
 
-            # --- AOT path: if unit has a symbolic expression, emit inline NumPy ---
+            # --- AOT path: if unit has a symbolic expression, emit inline NumPy/Mojo ---
             _reg_entry = (
                 _GHOST_REGISTRY.get(unit.declaration_name)
                 or _GHOST_REGISTRY.get(unit.name)
@@ -1130,16 +1137,28 @@ class Assembler:
             _symbolic = _reg_entry.get("symbolic") if _reg_entry else None
             if _symbolic is not None:
                 try:
-                    from sciona.synthesizer.numpy_codegen import (
-                        sympy_to_numpy_source,
-                    )
-                    aot_src = sympy_to_numpy_source(
-                        _symbolic,
-                        sname,
-                        input_vars=[inp.name for inp in unit.inputs],
-                        docstring=f"AOT-compiled: {unit.name} ({unit.node_id})",
-                    )
-                    lines.append(f"# AOT-compiled from SymPy (zero sympy runtime dependency)")
+                    if self._aot_target == "mojo":
+                        from sciona.synthesizer.mojo_codegen import (
+                            sympy_to_mojo_source,
+                        )
+                        aot_src = sympy_to_mojo_source(
+                            _symbolic,
+                            sname,
+                            input_vars=[inp.name for inp in unit.inputs],
+                            docstring=f"AOT-compiled: {unit.name} ({unit.node_id})",
+                        )
+                        lines.append("# AOT-compiled from SymPy to Mojo (native speed)")
+                    else:
+                        from sciona.synthesizer.numpy_codegen import (
+                            sympy_to_numpy_source,
+                        )
+                        aot_src = sympy_to_numpy_source(
+                            _symbolic,
+                            sname,
+                            input_vars=[inp.name for inp in unit.inputs],
+                            docstring=f"AOT-compiled: {unit.name} ({unit.node_id})",
+                        )
+                        lines.append("# AOT-compiled from SymPy (zero sympy runtime dependency)")
                     lines.append(aot_src)
                     lines.append("")
                     lines.append("")

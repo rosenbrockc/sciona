@@ -52,6 +52,10 @@ class TestFFIImports:
         result = generate_ffi_imports("rust")
         assert "ctypes" in result
 
+    def test_mojo_imports(self):
+        result = generate_ffi_imports("mojo")
+        assert result == ""
+
     def test_unknown_returns_empty(self):
         result = generate_ffi_imports("fortran")
         assert result == ""
@@ -93,6 +97,12 @@ class TestFFIStubs:
         assert "def test_atom_ffi(x):" in result
         assert "ctypes.CDLL" in result
 
+    def test_mojo_stub_structure(self):
+        atom = _make_atom()
+        result = generate_ffi_stub(atom, "mojo")
+        assert "def test_atom_ffi(x):" in result
+        assert "from test_atom_mojo import" in result
+
     def test_unknown_language_returns_empty(self):
         atom = _make_atom()
         result = generate_ffi_stub(atom, "fortran")
@@ -123,6 +133,15 @@ class TestFFIBindings:
         result = generate_ffi_bindings(atoms, "julia")
         assert "juliacall" in result
         assert "epoch_offset_ffi" in result
+
+    def test_mojo_full_bindings(self):
+        atoms = [
+            _make_atom("Signal Filter", inputs=[("signal", "np.ndarray")]),
+        ]
+        result = generate_ffi_bindings(atoms, "mojo")
+        assert "signal_filter_ffi" in result
+        assert "Auto-generated FFI bindings for mojo" in result
+        compile(result, "<test>", "exec")
 
     def test_bindings_are_valid_python(self):
         atoms = [_make_atom()]

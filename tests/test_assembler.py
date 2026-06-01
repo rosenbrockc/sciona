@@ -1316,3 +1316,87 @@ class TestParamsHarness:
         assembler = Assembler(Prover.PYTHON)
         skeleton = assembler.assemble(cdg, matches)
         assert "_SCIONA_PARAMS" not in skeleton.source_code
+
+
+# ---------------------------------------------------------------------------
+# AOT target: Mojo
+# ---------------------------------------------------------------------------
+
+
+class TestAotMojoTarget:
+    """Verify that Assembler(aot_target="mojo") dispatches to mojo_codegen."""
+
+    def test_aot_mojo_target_emits_mojo_fn(self):
+        """When a symbolic atom is registered and aot_target='mojo',
+        the emitted source should contain Mojo ``fn`` and ``Float64``."""
+        import sympy as sp
+        from sciona.ghost.registry import REGISTRY
+        from sciona.ghost.symbolic import SymbolicExpression, serialize_expr
+
+        # Register a symbolic atom in the ghost registry
+        x = sp.Symbol("x")
+        expr = sp.sin(x) * sp.exp(-x)
+        sym = SymbolicExpression(
+            srepr_str=serialize_expr(expr),
+            variables={"x": "input"},
+        )
+        REGISTRY["test_mojo_atom.damped_sin"] = {
+            "impl": lambda x: None,
+            "witness": lambda x: None,
+            "doc": "",
+            "signature": {},
+            "heavy_signature": {},
+            "module": "test_mojo_atom",
+            "name": "test_mojo_atom.damped_sin",
+            "dim_signature": {},
+            "symbolic": sym,
+        }
+        try:
+            root = AlgorithmicNode(
+                node_id="root",
+                name="Damped Pipeline",
+                description="Root",
+                concept_type=ConceptType.ANALYSIS,
+                status=NodeStatus.DECOMPOSED,
+                children=["leaf"],
+                inputs=[IOSpec(name="x", type_desc="float")],
+                outputs=[IOSpec(name="result", type_desc="float")],
+            )
+            leaf = AlgorithmicNode(
+                node_id="leaf",
+                parent_id="root",
+                name="Damped Sin",
+                description="Damped sinusoid",
+                concept_type=ConceptType.CUSTOM,
+                status=NodeStatus.ATOMIC,
+                matched_primitive="damped_sin",
+                inputs=[IOSpec(name="x", type_desc="float")],
+                outputs=[IOSpec(name="result", type_desc="float")],
+            )
+            cdg = CDGExport(nodes=[root, leaf], edges=[])
+            match = MatchResult(
+                pdg_node=PDGNode(predicate_id="leaf", statement="float -> float"),
+                verified_match=VerificationResult(
+                    candidate=CandidateMatch(
+                        declaration=Declaration(
+                            name="test_mojo_atom.damped_sin",
+                            type_signature="float -> float",
+                            prover=Prover.PYTHON,
+                        ),
+                        score=0.9,
+                        retrieval_method="test",
+                    ),
+                    verified=True,
+                ),
+            )
+
+            assembler = Assembler(Prover.PYTHON, aot_target="mojo")
+            skeleton = assembler.assemble(cdg, [match])
+
+            assert "fn " in skeleton.source_code
+            assert "Float64" in skeleton.source_code
+            assert "AOT-compiled from SymPy to Mojo" in skeleton.source_code
+            # Should NOT have numpy AOT marker
+            assert "zero sympy runtime dependency" not in skeleton.source_code
+        finally:
+            REGISTRY.pop("test_mojo_atom.damped_sin", None)
