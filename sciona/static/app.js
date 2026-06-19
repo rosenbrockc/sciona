@@ -73,13 +73,17 @@
 
   var detailControls = null;
   var isoControls = null;
+  var runnerControls = null;
+
   detailControls = window.initVisualizerDetailPanel({
     conceptFamily: CONCEPT_FAMILY,
     familyColors: FAMILY_COLORS,
     getCy: function () { return graphControls.getCy(); },
     getNodeById: function (nodeId) { return graphControls.getNodeById(nodeId); },
     getNodeColors: getNodeColors,
-    focusNode: function (nodeId) { graphControls.focusNode(nodeId); }
+    focusNode: function (nodeId) { graphControls.focusNode(nodeId); },
+    getRunId: function () { return runnerControls ? runnerControls.getActiveRunId() : null; },
+    isApiAvailable: function () { return browserControls && browserControls.isApiAvailable(); }
   });
 
   var graphControls = window.initVisualizerGraph({
@@ -95,6 +99,22 @@
       detailControls.hide();
     }
   });
+
+  runnerControls = window.initVisualizerRunner({
+    getCy: function () { return graphControls.getCy(); },
+    getCurrentData: function () { return graphControls.getCurrentData(); },
+    isApiAvailable: function () { return browserControls && browserControls.isApiAvailable(); },
+    detailControls: detailControls
+  });
+
+  // Intercept validateAndLoad to trigger runner panel repo session sync
+  var originalValidateAndLoad = graphControls.validateAndLoad;
+  graphControls.validateAndLoad = function (data) {
+    originalValidateAndLoad(data);
+    if (data && data.metadata && data.metadata.repo && runnerControls) {
+      runnerControls.setRepo(data.metadata.repo);
+    }
+  };
 
   var browserControls = window.initVisualizerBrowser({
     conceptFamily: CONCEPT_FAMILY,
@@ -180,5 +200,32 @@
 
   requestAnimationFrame(animateFlow);
   browserControls.fetchCDGList();
-  graphControls.tryLoadDefault();
+
+  // Startup URL-based loader
+  var queryRepo = null;
+  var search = window.location ? window.location.search : "";
+  var match = RegExp("[?&]repo=([^&]*)").exec(search);
+  if (match) {
+    queryRepo = decodeURIComponent(match[1].replace(/\+/g, " "));
+  }
+
+  if (queryRepo) {
+    var statusText = document.getElementById("status-text");
+    if (statusText) statusText.textContent = "Loading " + queryRepo + "...";
+    fetch("/api/cdg?repo=" + encodeURIComponent(queryRepo))
+      .then(function (res) {
+        if (!res.ok) throw new Error("CDG not found");
+        return res.json();
+      })
+      .then(function (data) {
+        graphControls.validateAndLoad(data);
+      })
+      .catch(function (err) {
+        var statusText = document.getElementById("status-text");
+        if (statusText) statusText.textContent = "Error: " + err.message;
+        graphControls.tryLoadDefault();
+      });
+  } else {
+    graphControls.tryLoadDefault();
+  }
 })();

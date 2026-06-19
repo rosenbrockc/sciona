@@ -106,11 +106,12 @@ class HeuristicBackend:
     """
 
     def estimate(self, atom_name: str) -> AtomUncertaintyEstimate:
-        # Exact match
-        if atom_name in _ATOM_ERROR_FACTORS:
+        # Exact match (using suffix leaf name)
+        short_name = atom_name.rsplit(".", 1)[-1]
+        if short_name in _ATOM_ERROR_FACTORS:
             return AtomUncertaintyEstimate(
                 mode="heuristic",
-                scalar_factor=_ATOM_ERROR_FACTORS[atom_name],
+                scalar_factor=_ATOM_ERROR_FACTORS[short_name],
                 confidence=0.2,
                 notes="hand-tuned exact match",
             )

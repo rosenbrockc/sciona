@@ -937,7 +937,7 @@ def run_ghost_simulation(
             skipped.append(node.name)
             continue
 
-        atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
+        atom_name = mr.verified_match.candidate.declaration.name
         if atom_name in registered:
             simulable_nodes.append(nid)
         else:
@@ -960,9 +960,7 @@ def run_ghost_simulation(
             node = node_map[nid]
             mr = match_map.get(nid)
             if mr and mr.success:
-                atom_name = _extract_atom_name(
-                    mr.verified_match.candidate.declaration.name
-                )
+                atom_name = mr.verified_match.candidate.declaration.name
                 if atom_name not in registered:
                     unsimulated_categories.add(
                         node.concept_type.value
@@ -1018,7 +1016,7 @@ def run_ghost_simulation(
                     )
 
         # Build SimNode
-        atom_name = _extract_atom_name(mr.verified_match.candidate.declaration.name)
+        atom_name = mr.verified_match.candidate.declaration.name
 
         output_name = ""
         if node.outputs:
@@ -1102,7 +1100,7 @@ def run_ghost_simulation(
             report.error = str(exc)
             report.error_node = exc.node_name
             report.error_function = exc.function_name
-            logger.warning("Ghost simulation failed: %s", exc)
+            logger.warning("Ghost simulation failed: %s", exc, exc_info=True)
         except Exception as exc:
             report.error = f"Unexpected error: {exc}"
             logger.warning("Ghost simulation unexpected error: %s", exc)

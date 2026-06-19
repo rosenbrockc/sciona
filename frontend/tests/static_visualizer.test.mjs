@@ -15,6 +15,7 @@ const localVisualizerScripts = [
   "browser_panel.js",
   "compare_mode.js",
   "isomorphism_panel.js",
+  "runner_panel.js",
   "app.js",
 ];
 
@@ -315,6 +316,23 @@ function createVisualizerDocument() {
     "btn-open",
     "btn-dashboard",
     "legend-content",
+    "active-run-id",
+    "btn-run-cdg",
+    "btn-new-inputs",
+    "btn-history",
+    "btn-history-close",
+    "run-history-browser",
+    "history-list",
+    "run-modal",
+    "run-modal-inputs",
+    "run-modal-error",
+    "run-modal-cancel",
+    "run-modal-execute",
+    "btn-run-node",
+    "execution-empty",
+    "execution-content",
+    "exec-inputs-list",
+    "exec-outputs-list",
   ].forEach((id) => addElement(document, "div", id, body));
 
   const layoutSelect = document.getElementById("layout-select");
@@ -345,7 +363,7 @@ function createVisualizerDocument() {
   isoMaxResults.value = "20";
 
   const detailTabs = addElement(document, "div", "detail-tabs", body);
-  ["summary", "ports", "lineage", "isomorphisms"].forEach((tab, index) => {
+  ["summary", "ports", "lineage", "isomorphisms", "execution"].forEach((tab, index) => {
     addElement(document, "button", "", detailTabs, {
       classes: index === 0 ? ["detail-tab", "active"] : ["detail-tab"],
       attributes: { "data-tab": tab },

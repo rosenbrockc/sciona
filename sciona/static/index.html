@@ -15,12 +15,16 @@
     <span class="meta-chip" id="meta-nodes">Nodes: 0</span>
     <span class="meta-chip" id="meta-edges">Edges: 0</span>
     <span class="meta-chip" id="meta-thread">Thread: —</span>
+    <span class="meta-chip" id="meta-run-id" style="margin-left: auto;">Run ID: <span id="active-run-id">—</span></span>
   </div>
 
   <!-- Toolbar -->
   <div id="toolbar">
     <button id="btn-browse">Browse CDGs</button>
     <button id="btn-open">Open File...</button>
+    <button id="btn-run-cdg" class="hidden">Run CDG</button>
+    <button id="btn-new-inputs" class="hidden">New Inputs</button>
+    <button id="btn-history" class="hidden">History</button>
     <label for="layout-select">Layout:</label>
     <select id="layout-select">
       <option value="dagre" selected>Hierarchical</option>
@@ -82,13 +86,17 @@
     <div id="detail-panel">
       <div id="detail-header">
         <h3 id="detail-name"></h3>
-        <button id="btn-find-iso" class="iso-btn" title="Find similar subgraphs">Isomorphisms</button>
+        <div style="display: flex; gap: 5px;">
+          <button id="btn-run-node" class="iso-btn hidden" title="Run node incrementally">Run Node</button>
+          <button id="btn-find-iso" class="iso-btn" title="Find similar subgraphs">Isomorphisms</button>
+        </div>
       </div>
       <div id="detail-tabs">
         <button class="detail-tab active" data-tab="summary">Summary</button>
         <button class="detail-tab" data-tab="ports">Ports</button>
         <button class="detail-tab" data-tab="lineage">Lineage</button>
         <button class="detail-tab" data-tab="isomorphisms">Isomorphisms</button>
+        <button class="detail-tab" data-tab="execution">Execution</button>
       </div>
 
       <!-- Summary tab -->
@@ -172,6 +180,23 @@
         </div>
         <div id="iso-results"></div>
       </div>
+
+      <!-- Execution tab -->
+      <div id="tab-execution" class="tab-content">
+        <div id="execution-empty" class="lineage-hint">
+          No execution data for this node yet. Configure inputs and execute.
+        </div>
+        <div id="execution-content" class="hidden">
+          <div class="detail-section">
+            <label>Inputs</label>
+            <div id="exec-inputs-list" class="exec-values-list"></div>
+          </div>
+          <div class="detail-section">
+            <label>Outputs</label>
+            <div id="exec-outputs-list" class="exec-values-list"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -213,10 +238,36 @@
   <!-- Hidden file input -->
   <input type="file" id="file-input" accept=".json" style="display:none">
 
+  <!-- Run History Slide-Out Panel -->
+  <div id="run-history-browser">
+    <div class="browser-header">
+      <h3>Run History</h3>
+      <button id="btn-history-close">&times;</button>
+    </div>
+    <div id="history-list" style="padding: 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+      <div class="lineage-hint">No history loaded.</div>
+    </div>
+  </div>
+
+  <!-- Run Input Settings Modal -->
+  <div id="run-modal" class="iso-modal hidden">
+    <div class="iso-modal-backdrop"></div>
+    <div class="iso-modal-content" style="max-width: 550px; max-height: 85vh; display: flex; flex-direction: column;">
+      <h4>Configure CDG Inputs</h4>
+      <div id="run-modal-inputs" style="flex: 1; overflow-y: auto; padding: 10px 0; display: flex; flex-direction: column; gap: 15px;"></div>
+      <div id="run-modal-error" style="color: #ff5252; font-size: 13px; margin: 10px 0; display: none; white-space: pre-wrap;"></div>
+      <div class="iso-modal-actions" style="margin-top: 15px;">
+        <button id="run-modal-cancel" class="iso-modal-btn">Cancel</button>
+        <button id="run-modal-execute" class="iso-modal-btn iso-modal-btn-primary">Execute</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CDN scripts -->
   <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
   <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
   <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="graph_styles.js"></script>
   <script src="graph_state.js"></script>
   <script src="graph_core.js"></script>
@@ -224,6 +275,7 @@
   <script src="browser_panel.js"></script>
   <script src="compare_mode.js"></script>
   <script src="isomorphism_panel.js"></script>
+  <script src="runner_panel.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

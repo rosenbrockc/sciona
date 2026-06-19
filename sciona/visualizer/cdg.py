@@ -104,6 +104,7 @@ async def _load_cdg(request: Request, repo: str) -> dict[str, Any]:
             "is_external": atom.get("is_external", False),
             "parallelizable": atom.get("parallelizable", False),
             "conceptual_summary": atom.get("conceptual_summary", ""),
+            "matched_primitive": atom.get("matched_primitive", ""),
             "inputs": [
                 {
                     "name": dict(ip).get("name", ""),

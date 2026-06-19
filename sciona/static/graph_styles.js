@@ -150,6 +150,35 @@
             "line-color": "#ffa726",
             "target-arrow-color": "#ffa726"
           }
+        },
+        {
+          selector: "node.exec-success",
+          style: {
+            "border-color": "#2e7d32",
+            "border-width": 4
+          }
+        },
+        {
+          selector: "node.exec-cached",
+          style: {
+            "border-color": "#4caf50",
+            "border-style": "double",
+            "border-width": 6
+          }
+        },
+        {
+          selector: "node.exec-failed",
+          style: {
+            "border-color": "#c62828",
+            "border-width": 4
+          }
+        },
+        {
+          selector: "node.has-outputs",
+          style: {
+            "border-color": "#1565c0",
+            "border-width": 4
+          }
         }
       ];
     }

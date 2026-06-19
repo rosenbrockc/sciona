@@ -57,7 +57,8 @@ def register_atom(
             return np.fft.fft(a, ...)
     """
     def decorator(heavy_func: Callable) -> Callable:
-        atom_name = name or heavy_func.__name__
+        fqdn = f"{heavy_func.__module__}.{heavy_func.__name__}"
+        atom_name = name or fqdn
         REGISTRY[atom_name] = {
             "impl": heavy_func,
             "witness": witness,
@@ -85,12 +86,28 @@ def get_witness(name: str) -> Callable:
     Raises:
         KeyError: If no atom with that name is registered.
     """
-    if name not in REGISTRY:
+    if name in REGISTRY:
+        return REGISTRY[name]["witness"]
+
+    # Suffix fallback for short name lookups
+    short_name = name.rsplit(".", 1)[-1]
+    matches = []
+    for key in REGISTRY:
+        if key == short_name or key.endswith("." + short_name):
+            matches.append((key, REGISTRY[key]["witness"]))
+
+    if len(matches) == 1:
+        return matches[0][1]
+    elif len(matches) > 1:
         raise KeyError(
-            f"No ghost witness registered for '{name}'. "
-            f"Available: {sorted(REGISTRY.keys())}"
+            f"Ambiguous witness lookup for '{name}'; matches multiple registered keys: "
+            f"{[item[0] for item in matches]}"
         )
-    return REGISTRY[name]["witness"]
+
+    raise KeyError(
+        f"No ghost witness registered for '{name}'. "
+        f"Available: {sorted(REGISTRY.keys())}"
+    )
 
 
 def list_registered() -> list[str]:

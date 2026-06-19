@@ -75,6 +75,326 @@
       document.getElementById("detail-parent").textContent = node.parent_id || "(root)";
       document.getElementById("detail-rationale").textContent = node.decomposition_rationale || "(none)";
       document.getElementById("detail-critic").value = node.critic_notes || "(none)";
+
+      // Control "Run Node" button visibility
+      if (btnRunNode) {
+        if (node.status === "atomic") {
+          btnRunNode.classList.remove("hidden");
+        } else {
+          btnRunNode.classList.add("hidden");
+        }
+      }
+    }
+
+    function renderVariableVisual(container, runId, nodeId, valName, isInput, meta) {
+      container.innerHTML = "";
+      
+      var valKey = (isInput ? "in_" : "out_") + valName;
+      
+      var item = document.createElement("div");
+      item.className = "exec-value-item";
+      
+      var header = document.createElement("div");
+      header.className = "exec-value-header";
+      
+      var nameEl = document.createElement("span");
+      nameEl.className = "exec-value-name";
+      nameEl.textContent = valName;
+      
+      var typeDesc = meta.dtype ? meta.dtype + " " + JSON.stringify(meta.shape) : meta.type || "Any";
+      var metaEl = document.createElement("span");
+      metaEl.className = "exec-value-meta";
+      metaEl.textContent = typeDesc;
+      
+      header.appendChild(nameEl);
+      header.appendChild(metaEl);
+      item.appendChild(header);
+
+      // Slicing control container (only for arrays with ndim > 1)
+      var sliceInput = null;
+      var visualWrapper = document.createElement("div");
+
+      function loadSlice(sliceStr) {
+        visualWrapper.innerHTML = '<div class="lineage-hint">Loading slice...</div>';
+        
+        var url = "/api/cdg/runs/" + runId + "/nodes/" + nodeId + "/values/" + valKey + "/slice";
+        if (sliceStr) {
+          url += "?slice=" + encodeURIComponent(sliceStr);
+        }
+        
+        fetch(url)
+          .then(function (res) { return res.json(); })
+          .then(function (res) {
+            visualWrapper.innerHTML = "";
+            
+            if (res.type === "scalar") {
+              var txt = document.createElement("pre");
+              txt.style.margin = "0";
+              txt.style.fontSize = "11px";
+              txt.textContent = "Scalar Value: " + res.data;
+              visualWrapper.appendChild(txt);
+            } else if (res.type === "1d") {
+              var container = document.createElement("div");
+              container.className = "chart-container";
+              
+              var canvas = document.createElement("canvas");
+              container.appendChild(canvas);
+              visualWrapper.appendChild(container);
+              
+              var ctx = canvas.getContext("2d");
+              new Chart(ctx, {
+                type: "line",
+                data: {
+                  labels: res.data.map(function (_, i) { return i; }),
+                  datasets: [{
+                    label: valName + (sliceStr ? " (" + sliceStr + ")" : ""),
+                    data: res.data,
+                    borderColor: "#009688",
+                    backgroundColor: "rgba(0, 150, 136, 0.05)",
+                    borderWidth: 1.5,
+                    pointRadius: res.data.length > 100 ? 0 : 2
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: { ticks: { font: { size: 8 } } },
+                    x: { ticks: { font: { size: 8 }, maxTicksLimit: 8 } }
+                  },
+                  plugins: { legend: { display: false } }
+                }
+              });
+            } else if (res.type === "2d") {
+              // Provide Grid / Canvas Heatmap previews
+              var bar = document.createElement("div");
+              bar.style.display = "flex";
+              bar.style.gap = "8px";
+              bar.style.marginBottom = "5px";
+              
+              var btnTable = document.createElement("button");
+              btnTable.className = "exec-slice-btn";
+              btnTable.textContent = "Table";
+              
+              var btnImg = document.createElement("button");
+              btnImg.className = "exec-slice-btn";
+              btnImg.textContent = "Heatmap";
+              
+              bar.appendChild(btnTable);
+              bar.appendChild(btnImg);
+              visualWrapper.appendChild(bar);
+              
+              var pane = document.createElement("div");
+              visualWrapper.appendChild(pane);
+
+              function renderTable() {
+                pane.innerHTML = "";
+                var wrapper = document.createElement("div");
+                wrapper.className = "matrix-table-wrapper";
+                var table = document.createElement("table");
+                table.className = "matrix-table";
+                
+                var grid = res.data;
+                var rows = Math.min(grid.length, 50);
+                var cols = rows > 0 ? Math.min(grid[0].length, 25) : 0;
+                
+                var thead = document.createElement("thead");
+                var headerRow = document.createElement("tr");
+                headerRow.appendChild(document.createElement("th")); // corner
+                for (var c = 0; c < cols; c++) {
+                  var th = document.createElement("th");
+                  th.textContent = c;
+                  headerRow.appendChild(th);
+                }
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+                
+                var tbody = document.createElement("tbody");
+                for (var r = 0; r < rows; r++) {
+                  var row = document.createElement("tr");
+                  var rth = document.createElement("th");
+                  rth.textContent = r;
+                  row.appendChild(rth);
+                  for (var c = 0; c < cols; c++) {
+                    var td = document.createElement("td");
+                    var num = grid[r][c];
+                    td.textContent = typeof num === "number" ? num.toFixed(4) : String(num);
+                    row.appendChild(td);
+                  }
+                  tbody.appendChild(row);
+                }
+                table.appendChild(tbody);
+                wrapper.appendChild(table);
+                pane.appendChild(wrapper);
+                
+                if (grid.length > 50 || (grid[0] && grid[0].length > 25)) {
+                  var cap = document.createElement("div");
+                  cap.className = "exec-value-meta";
+                  cap.textContent = "* Showing truncated 50x25 preview of " + grid.length + "x" + (grid[0] ? grid[0].length : 0) + " matrix.";
+                  pane.appendChild(cap);
+                }
+              }
+
+              function renderHeatmap() {
+                pane.innerHTML = "";
+                var grid = res.data;
+                var rows = grid.length;
+                var cols = rows > 0 ? grid[0].length : 0;
+                if (rows === 0 || cols === 0) return;
+                
+                var wrapper = document.createElement("div");
+                wrapper.className = "image-preview-container";
+                var canvas = document.createElement("canvas");
+                canvas.className = "image-preview-canvas";
+                
+                // Fine-tune canvas display sizes
+                canvas.style.width = "100%";
+                canvas.style.height = "auto";
+                
+                wrapper.appendChild(canvas);
+                pane.appendChild(wrapper);
+                
+                var min = Infinity;
+                var max = -Infinity;
+                for (var r = 0; r < rows; r++) {
+                  for (var c = 0; c < cols; c++) {
+                    var v = grid[r][c];
+                    if (v < min) min = v;
+                    if (v > max) max = v;
+                  }
+                }
+                var range = max - min || 1;
+                
+                canvas.width = cols;
+                canvas.height = rows;
+                var ctx = canvas.getContext("2d");
+                var imgData = ctx.createImageData(cols, rows);
+                
+                for (var r = 0; r < rows; r++) {
+                  for (var c = 0; c < cols; c++) {
+                    var val = grid[r][c];
+                    var norm = (val - min) / range;
+                    var idx = (r * cols + c) * 4;
+                    // Draw a teal-spectrum heat scale
+                    imgData.data[idx] = Math.round(norm * 0 + (1 - norm) * 240);
+                    imgData.data[idx + 1] = Math.round(norm * 150 + (1 - norm) * 240);
+                    imgData.data[idx + 2] = Math.round(norm * 136 + (1 - norm) * 240);
+                    imgData.data[idx + 3] = 255;
+                  }
+                }
+                ctx.putImageData(imgData, 0, 0);
+              }
+
+              btnTable.addEventListener("click", renderTable);
+              btnImg.addEventListener("click", renderHeatmap);
+              
+              // Default to table/grid view
+              renderTable();
+            } else if (res.type === "nd") {
+              var txt = document.createElement("div");
+              txt.className = "lineage-hint";
+              txt.textContent = res.message || "Tensors of rank 3+ are unsupported. Add a slice query to select a plane.";
+              visualWrapper.appendChild(txt);
+            } else if (res.type === "json") {
+              var pre = document.createElement("pre");
+              pre.style.margin = "0";
+              pre.style.fontSize = "11px";
+              pre.style.maxHeight = "120px";
+              pre.style.overflow = "auto";
+              pre.textContent = JSON.stringify(res.data, null, 2);
+              visualWrapper.appendChild(pre);
+            }
+          })
+          .catch(function (err) {
+            visualWrapper.innerHTML = '<div class="lineage-hint" style="color: #ff5252;">Error loading slice: ' + err.message + '</div>';
+          });
+      }
+
+      if (meta.shape && meta.shape.length > 1) {
+        var sliceBar = document.createElement("div");
+        sliceBar.className = "exec-slice-container";
+        
+        sliceInput = document.createElement("input");
+        sliceInput.type = "text";
+        sliceInput.className = "exec-slice-input";
+        sliceInput.placeholder = "Slice E.g. [0:10, 0] or [:]";
+        
+        var sliceBtn = document.createElement("button");
+        sliceBtn.className = "exec-slice-btn";
+        sliceBtn.textContent = "Apply";
+        sliceBtn.addEventListener("click", function () {
+          loadSlice(sliceInput.value);
+        });
+
+        sliceBar.appendChild(sliceInput);
+        sliceBar.appendChild(sliceBtn);
+        item.appendChild(sliceBar);
+      }
+
+      item.appendChild(visualWrapper);
+      container.appendChild(item);
+      
+      // Load initial un-sliced value
+      loadSlice("");
+    }
+
+    function populateExecutionTab(nodeId) {
+      var execEmpty = document.getElementById("execution-empty");
+      var execContent = document.getElementById("execution-content");
+      var inputsList = document.getElementById("exec-inputs-list");
+      var outputsList = document.getElementById("exec-outputs-list");
+
+      if (!inputsList || !outputsList) return;
+      inputsList.innerHTML = "";
+      outputsList.innerHTML = "";
+
+      var runId = options.getRunId ? options.getRunId() : null;
+      if (!runId || !options.isApiAvailable || !options.isApiAvailable()) {
+        if (execEmpty) execEmpty.style.display = "block";
+        if (execContent) execContent.classList.add("hidden");
+        return;
+      }
+
+      fetch("/api/cdg/runs/" + runId + "/nodes/" + nodeId + "/values")
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          var hasInputs = data.inputs && Object.keys(data.inputs).length > 0;
+          var hasOutputs = data.outputs && Object.keys(data.outputs).length > 0;
+
+          if (!hasInputs && !hasOutputs) {
+            if (execEmpty) execEmpty.style.display = "block";
+            if (execContent) execContent.classList.add("hidden");
+            return;
+          }
+
+          if (execEmpty) execEmpty.style.display = "none";
+          if (execContent) execContent.classList.remove("hidden");
+
+          if (hasInputs) {
+            Object.keys(data.inputs).forEach(function (name) {
+              var row = document.createElement("div");
+              inputsList.appendChild(row);
+              renderVariableVisual(row, runId, nodeId, name, true, data.inputs[name]);
+            });
+          } else {
+            inputsList.innerHTML = '<div class="lineage-hint">(none)</div>';
+          }
+
+          if (hasOutputs) {
+            Object.keys(data.outputs).forEach(function (name) {
+              var row = document.createElement("div");
+              outputsList.appendChild(row);
+              renderVariableVisual(row, runId, nodeId, name, false, data.outputs[name]);
+            });
+          } else {
+            outputsList.innerHTML = '<div class="lineage-hint">(none)</div>';
+          }
+        })
+        .catch(function (err) {
+          console.error("Failed to query node execution values:", err);
+          if (execEmpty) execEmpty.style.display = "block";
+          if (execContent) execContent.classList.add("hidden");
+        });
     }
 
     function buildLineageTree(startId, direction, container, maxDepth) {
@@ -168,6 +488,7 @@
       selectedNodeId = node.node_id;
       populateDetailPanel(node);
       populateLineage(node.node_id);
+      populateExecutionTab(node.node_id);
       detailPanel.classList.add("visible");
     }
 
@@ -186,7 +507,10 @@
       handleNodeSelected: handleNodeSelected,
       getSelectedNodeId: function () { return selectedNodeId; },
       hide: hide,
-      getPanel: function () { return detailPanel; }
+      getPanel: function () { return detailPanel; },
+      refreshExecutionTab: function () {
+        if (selectedNodeId) populateExecutionTab(selectedNodeId);
+      }
     };
   };
 })(window);
