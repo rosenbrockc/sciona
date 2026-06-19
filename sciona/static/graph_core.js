@@ -405,6 +405,13 @@
           graphSearch.blur();
         }
       });
+    if (window.ResizeObserver && cyContainer) {
+      var resizeObserver = new ResizeObserver(function () {
+        if (cy) {
+          cy.resize();
+        }
+      });
+      resizeObserver.observe(cyContainer);
     }
 
     return {
