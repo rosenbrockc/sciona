@@ -71,6 +71,211 @@
     reader.readAsText(file);
   }
 
+  var TUTORIAL_A_CDG = {
+    nodes: [
+      {
+        node_id: "ingest",
+        name: "ECG Ingestion",
+        description: "Loads the raw ECG voltage signals.",
+        concept_type: "state_init",
+        status: "atomic",
+        matched_primitive: "biosppy.signals.ecg.load",
+        inputs: [],
+        outputs: [{ name: "sig", type_desc: "np.ndarray", constraints: "time domain" }],
+        depth: 1
+      },
+      {
+        node_id: "fft1",
+        name: "Forward FFT",
+        description: "Transforms signal into frequency domain for filtering.",
+        concept_type: "signal_transform",
+        status: "atomic",
+        matched_primitive: "fft",
+        inputs: [{ name: "sig", type_desc: "np.ndarray", constraints: "time domain" }],
+        outputs: [{ name: "spectrum", type_desc: "np.ndarray", constraints: "freq domain" }],
+        depth: 1
+      },
+      {
+        node_id: "fft2",
+        name: "Second Forward FFT (Invalid)",
+        description: "Applies a second forward FFT, causing domain mismatch (expects time domain, gets freq domain).",
+        concept_type: "signal_transform",
+        status: "atomic",
+        matched_primitive: "fft",
+        inputs: [{ name: "sig", type_desc: "np.ndarray", constraints: "freq domain" }],
+        outputs: [{ name: "spectrum2", type_desc: "np.ndarray", constraints: "freq domain" }],
+        depth: 1
+      }
+    ],
+    edges: [
+      {
+        source_id: "ingest",
+        target_id: "fft1",
+        output_name: "sig",
+        input_name: "sig",
+        source_type: "np.ndarray",
+        target_type: "np.ndarray"
+      },
+      {
+        source_id: "fft1",
+        target_id: "fft2",
+        output_name: "spectrum",
+        input_name: "sig",
+        source_type: "np.ndarray",
+        target_type: "np.ndarray"
+      }
+    ],
+    metadata: {
+      goal: "Demonstrate GhostSim mismatch detection on ECG pipelines",
+      paradigm: "filtering",
+      repo: "biosppy/ecg_mismatch"
+    }
+  };
+
+  var TUTORIAL_B_CDG = {
+    nodes: [
+      {
+        node_id: "data_prep",
+        name: "data_assembly",
+        description: "Prepares features and labels.",
+        concept_type: "data_assembly",
+        status: "atomic",
+        matched_primitive: "pandas.read_csv",
+        inputs: [],
+        outputs: [{ name: "X", type_desc: "ndarray" }],
+        depth: 1
+      },
+      {
+        node_id: "fit_est",
+        name: "fit estimator",
+        description: "model_training",
+        concept_type: "ml_model_selection",
+        status: "atomic",
+        matched_primitive: "sklearn.linear_model.LogisticRegression.fit",
+        inputs: [{ name: "X", type_desc: "ndarray" }],
+        outputs: [{ name: "model", type_desc: "estimator" }],
+        depth: 1
+      },
+      {
+        node_id: "score_val",
+        name: "score validation split",
+        description: "prediction_ensemble",
+        concept_type: "ml_model_selection",
+        status: "atomic",
+        matched_primitive: "sklearn.metrics.accuracy_score",
+        inputs: [{ name: "model", type_desc: "estimator" }],
+        outputs: [{ name: "score", type_desc: "float" }],
+        depth: 1
+      },
+      {
+        node_id: "kfold_ensemble",
+        name: "k-fold cross validated ensemble",
+        description: "Perform ensembling using K-fold CV.",
+        concept_type: "ml_model_selection",
+        status: "atomic",
+        matched_primitive: null,
+        inputs: [],
+        outputs: [],
+        depth: 1
+      },
+      {
+        node_id: "stacking_meta",
+        name: "stacking meta learner",
+        description: "Use stacking ensemble classifier.",
+        concept_type: "ml_model_selection",
+        status: "atomic",
+        matched_primitive: null,
+        inputs: [],
+        outputs: [],
+        depth: 1
+      }
+    ],
+    edges: [
+      {
+        source_id: "data_prep",
+        target_id: "fit_est",
+        output_name: "X",
+        input_name: "X",
+        source_type: "ndarray",
+        target_type: "ndarray"
+      },
+      {
+        source_id: "fit_est",
+        target_id: "score_val",
+        output_name: "model",
+        input_name: "model",
+        source_type: "estimator",
+        target_type: "estimator"
+      }
+    ],
+    metadata: {
+      goal: "Demonstrate Delta Planner ensembling quick-fixes on Tabular ML CDGs",
+      paradigm: "ml_model_selection",
+      repo: "sklearn/tabular_ml"
+    }
+  };
+
+  var TUTORIAL_C_CDG = {
+    nodes: [
+      {
+        node_id: "data_load",
+        name: "High-Dimensional Input",
+        description: "Loads the raw high-dimensional dataset.",
+        concept_type: "data_assembly",
+        status: "atomic",
+        matched_primitive: "pandas.read_csv",
+        inputs: [],
+        outputs: [{ name: "data", type_desc: "np.ndarray" }],
+        depth: 1
+      },
+      {
+        node_id: "pca_projection",
+        name: "PCA Pre-reduction",
+        description: "Reduces dimension to 50 using PCA to speed up downstream projection.",
+        concept_type: "signal_transform",
+        status: "atomic",
+        matched_primitive: "sklearn.decomposition.PCA",
+        inputs: [{ name: "data", type_desc: "np.ndarray" }],
+        outputs: [{ name: "reduced", type_desc: "np.ndarray" }],
+        depth: 1
+      },
+      {
+        node_id: "umap_layout",
+        name: "UMAP Projection",
+        description: "Computes UMAP 2D coordinates.",
+        concept_type: "signal_transform",
+        status: "atomic",
+        matched_primitive: "umap.UMAP",
+        inputs: [{ name: "reduced", type_desc: "np.ndarray" }],
+        outputs: [{ name: "projection", type_desc: "np.ndarray" }],
+        depth: 1
+      }
+    ],
+    edges: [
+      {
+        source_id: "data_load",
+        target_id: "pca_projection",
+        output_name: "data",
+        input_name: "data",
+        source_type: "np.ndarray",
+        target_type: "np.ndarray"
+      },
+      {
+        source_id: "pca_projection",
+        target_id: "umap_layout",
+        output_name: "reduced",
+        input_name: "reduced",
+        source_type: "np.ndarray",
+        target_type: "np.ndarray"
+      }
+    ],
+    metadata: {
+      goal: "Structured composition and layout of UMAP scientific computing pipeline",
+      paradigm: "dimensionality_reduction",
+      repo: "umap/scientific_computing"
+    }
+  };
+
   var detailControls = null;
   var isoControls = null;
   var runnerControls = null;
@@ -83,7 +288,9 @@
     getNodeColors: getNodeColors,
     focusNode: function (nodeId) { graphControls.focusNode(nodeId); },
     getRunId: function () { return runnerControls ? runnerControls.getActiveRunId() : null; },
-    isApiAvailable: function () { return browserControls && browserControls.isApiAvailable(); }
+    isApiAvailable: function () { return browserControls && browserControls.isApiAvailable(); },
+    getCurrentData: function () { return graphControls ? graphControls.getCurrentData() : null; },
+    validateAndLoad: function (data) { if (graphControls) graphControls.validateAndLoad(data); }
   });
 
   var graphControls = window.initVisualizerGraph({
@@ -97,7 +304,13 @@
     },
     onCanvasTapped: function () {
       detailControls.hide();
-    }
+    },
+    onCDGLoaded: function () {
+      if (detailControls && detailControls.fetchQuickFixes) {
+        detailControls.fetchQuickFixes(null);
+      }
+    },
+    isApiAvailable: function () { return browserControls && browserControls.isApiAvailable(); }
   });
 
   runnerControls = window.initVisualizerRunner({
@@ -176,6 +389,65 @@
   if (btnDashboard) {
     btnDashboard.addEventListener("click", function () {
       window.open("/dashboard.html", "_blank");
+    });
+  }
+
+  var btnTutorials = document.getElementById("btn-tutorials");
+  var btnTutorialsClose = document.getElementById("btn-tutorials-close");
+  var tutorialsModal = document.getElementById("tutorials-modal");
+
+  if (btnTutorials && tutorialsModal) {
+    btnTutorials.addEventListener("click", function () {
+      tutorialsModal.classList.remove("hidden");
+    });
+  }
+
+  if (btnTutorialsClose && tutorialsModal) {
+    btnTutorialsClose.addEventListener("click", function () {
+      tutorialsModal.classList.add("hidden");
+    });
+  }
+
+  // Tutorial tab switching
+  var tutorialTabButtons = document.querySelectorAll("#tutorials-tabs button");
+  tutorialTabButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      tutorialTabButtons.forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      
+      var selectedTut = btn.getAttribute("data-tutorial");
+      var panes = document.querySelectorAll(".tutorial-pane");
+      panes.forEach(function (pane) {
+        if (pane.id === "tut-" + selectedTut) {
+          pane.classList.remove("hidden");
+        } else {
+          pane.classList.add("hidden");
+        }
+      });
+    });
+  });
+
+  // Load tutorial buttons
+  var btnLoadTutA = document.getElementById("btn-load-tutorial-a");
+  var btnLoadTutB = document.getElementById("btn-load-tutorial-b");
+  var btnLoadTutC = document.getElementById("btn-load-tutorial-c");
+
+  if (btnLoadTutA) {
+    btnLoadTutA.addEventListener("click", function () {
+      graphControls.validateAndLoad(TUTORIAL_A_CDG);
+      if (tutorialsModal) tutorialsModal.classList.add("hidden");
+    });
+  }
+  if (btnLoadTutB) {
+    btnLoadTutB.addEventListener("click", function () {
+      graphControls.validateAndLoad(TUTORIAL_B_CDG);
+      if (tutorialsModal) tutorialsModal.classList.add("hidden");
+    });
+  }
+  if (btnLoadTutC) {
+    btnLoadTutC.addEventListener("click", function () {
+      graphControls.validateAndLoad(TUTORIAL_C_CDG);
+      if (tutorialsModal) tutorialsModal.classList.add("hidden");
     });
   }
 

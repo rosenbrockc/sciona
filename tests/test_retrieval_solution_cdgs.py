@@ -102,9 +102,12 @@ def _load_all_atom_primitives() -> list[AlgorithmicPrimitive]:
             for node in data.get("nodes", []):
                 if node.get("status") != "atomic":
                     continue
+                node_id = node.get("node_id") or node.get("name")
+                if not node_id:
+                    continue
                 primitives.append(
                     AlgorithmicPrimitive(
-                        name=node["node_id"],
+                        name=node_id,
                         source=str(cdg_path.parent.relative_to(repo)),
                         category=_safe_concept_type(
                             node.get("concept_type", "custom")

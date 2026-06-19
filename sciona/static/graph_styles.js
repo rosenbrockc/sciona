@@ -152,6 +152,17 @@
           }
         },
         {
+          selector: "edge.mismatch-edge",
+          style: {
+            "line-color": "#c62828",
+            "target-arrow-color": "#c62828",
+            "width": 4,
+            "line-style": "solid",
+            "color": "#c62828",
+            "font-weight": "bold"
+          }
+        },
+        {
           selector: "node.exec-success",
           style: {
             "border-color": "#2e7d32",

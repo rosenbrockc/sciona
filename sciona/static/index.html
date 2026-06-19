@@ -21,6 +21,7 @@
   <!-- Toolbar -->
   <div id="toolbar">
     <button id="btn-browse">Browse CDGs</button>
+    <button id="btn-tutorials">Showcase Tutorials</button>
     <button id="btn-open">Open File...</button>
     <button id="btn-run-cdg" class="hidden">Run CDG</button>
     <button id="btn-new-inputs" class="hidden">New Inputs</button>
@@ -97,6 +98,7 @@
         <button class="detail-tab" data-tab="lineage">Lineage</button>
         <button class="detail-tab" data-tab="isomorphisms">Isomorphisms</button>
         <button class="detail-tab" data-tab="execution">Execution</button>
+        <button class="detail-tab" data-tab="repair">Repair Log</button>
       </div>
 
       <!-- Summary tab -->
@@ -133,6 +135,16 @@
         <div class="detail-section">
           <label>Critic Agent</label>
           <textarea id="detail-critic" readonly></textarea>
+        </div>
+        <div class="detail-section" id="mismatch-diagnostic-section" style="display: none;">
+          <label style="color: #c62828;">Ghost Mismatch Diagnostic</label>
+          <div id="detail-mismatch-error" style="color: #c62828; font-family: monospace; font-size: 11px; white-space: pre-wrap; background: #ffebee; padding: 8px; border-radius: 4px; border: 1px solid #ffcdd2;"></div>
+        </div>
+        <div class="detail-section" id="quick-fixes-section">
+          <label>Quick-Fix Recommendations</label>
+          <div id="quick-fixes-list">
+            <span class="lineage-hint">No quick-fixes available</span>
+          </div>
         </div>
       </div>
 
@@ -197,6 +209,18 @@
           </div>
         </div>
       </div>
+
+      <!-- Synthesis & Repair tab -->
+      <div id="tab-repair" class="tab-content">
+        <div class="detail-section">
+          <label>Live Compilation Trace</label>
+          <div id="repair-log-content" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 4px; max-height: 250px; overflow-y: auto; white-space: pre-wrap;">Waiting for compilation logs...</div>
+        </div>
+        <div class="detail-section">
+          <label>Patch Code Diff</label>
+          <pre id="repair-diff-content" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 4px; max-height: 350px; overflow-y: auto; white-space: pre-wrap; margin-top: 5px;">No patches applied yet.</pre>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -231,6 +255,74 @@
       <div class="iso-modal-actions">
         <button id="iso-cancel" class="iso-modal-btn">Cancel</button>
         <button id="iso-search" class="iso-modal-btn iso-modal-btn-primary">Search</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Showcase Tutorials Modal -->
+  <div id="tutorials-modal" class="iso-modal hidden">
+    <div class="iso-modal-backdrop"></div>
+    <div class="iso-modal-content" style="max-width: 750px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="browser-header" style="background: #1976d2; margin: -20px -20px 15px -20px; padding: 12px 20px; border-top-left-radius: 6px; border-top-right-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="color: #fff; margin: 0;">Showcase Walkthrough Tutorials</h3>
+        <button id="btn-tutorials-close" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
+      </div>
+      
+      <div id="tutorials-tabs" style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #cfd8dc; padding-bottom: 10px;">
+        <button class="detail-tab active" data-tutorial="a">A: ECG Signal Processing</button>
+        <button class="detail-tab" data-tutorial="b">B: Tabular ML</button>
+        <button class="detail-tab" data-tutorial="c">C: UMAP Scientific Computing</button>
+      </div>
+
+      <div id="tutorial-content" style="flex: 1; overflow-y: auto; font-size: 13px; line-height: 1.6;">
+        <!-- Walkthrough A -->
+        <div id="tut-a" class="tutorial-pane">
+          <h4>Walkthrough A: ECG Signal Processing Pipeline</h4>
+          <p>This walkthrough demonstrates automated design and verification of cardiac signal processing filters using biosppy-compatible atoms.</p>
+          <div style="background: #f5f5f5; padding: 10px; border-left: 4px solid #1976d2; margin: 10px 0;">
+            <strong>Step 1: Signal Ingestion</strong><br>
+            A high-frequency ECG signal is loaded. Notice the raw signal contains significant muscle tremor and baseline drift.
+          </div>
+          <div style="background: #f5f5f5; padding: 10px; border-left: 4px solid #1976d2; margin: 10px 0;">
+            <strong>Step 2: Bandpass Filtering</strong><br>
+            A Butterworth bandpass filter (0.5 to 40 Hz) is applied. If the input domain does not match (e.g. frequency domain fed into time domain), <strong>GhostSim</strong> raises a mismatch.
+          </div>
+          <div style="background: #f5f5f5; padding: 10px; border-left: 4px solid #1976d2; margin: 10px 0;">
+            <strong>Step 3: R-Peak Segmentation</strong><br>
+            Hamilton segmentation detects peak intervals. Click <strong>Run Node</strong> to verify inputs/outputs incrementally.
+          </div>
+          <button class="log-btn" id="btn-load-tutorial-a" style="margin-top: 10px; padding: 6px 12px; background: #1976d2; color: white; border: none; border-radius: 3px; cursor: pointer;">Load ECG CDG Template</button>
+        </div>
+
+        <!-- Walkthrough B -->
+        <div id="tut-b" class="tutorial-pane hidden">
+          <h4>Walkthrough B: Tabular Machine Learning</h4>
+          <p>This walkthrough illustrates tabular ML model selection, training, and ensembling. Learn how to resolve ungrounded estimators using the Delta Planner.</p>
+          <div style="background: #f5f5f5; padding: 10px; border-left: 4px solid #43a047; margin: 10px 0;">
+            <strong>Step 1: Base Pipeline</strong><br>
+            A basic estimator (e.g. simple regression or classification fit) is initially constructed. This has low validation split coverage (0.50).
+          </div>
+          <div style="background: #f5f5f5; padding: 10px; border-left: 4px solid #43a047; margin: 10px 0;">
+            <strong>Step 2: Quick-Fix Ensembling</strong><br>
+            Delta Planner recommends <code>apply_kfold_ensemble</code> and <code>apply_stacking_ensemble</code>. Click "Apply" in the sidebar to expand the graph into a robust ensemble pipeline.
+          </div>
+          <button class="log-btn" id="btn-load-tutorial-b" style="margin-top: 10px; padding: 6px 12px; background: #43a047; color: white; border: none; border-radius: 3px; cursor: pointer;">Load Tabular ML CDG Template</button>
+        </div>
+
+        <!-- Walkthrough C -->
+        <div id="tut-c" class="tutorial-pane hidden">
+          <h4>Walkthrough C: UMAP Scientific Computing</h4>
+          <p>This walkthrough shows how complex dimensionality reduction (PCA, t-SNE, UMAP) is structured, composed, and validated.</p>
+          <div style="background: #f5f5f5; padding: 10px; border-left: 4px solid #8e24aa; margin: 10px 0;">
+            <strong>Step 1: High-Dimensional Features</strong><br>
+            High-dimensional dataset is passed through initial data assembly.
+          </div>
+          <div style="background: #f5f5f5; padding: 10px; border-left: 4px solid #8e24aa; margin: 10px 0;">
+            <strong>Step 2: Dimensionality Reduction</strong><br>
+            UMAP projection maps the space into 2D. We verify spectral stability and layout constraints using GhostSim witnesses.
+          </div>
+          <button class="log-btn" id="btn-load-tutorial-c" style="margin-top: 10px; padding: 6px 12px; background: #8e24aa; color: white; border: none; border-radius: 3px; cursor: pointer;">Load UMAP CDG Template</button>
+        </div>
       </div>
     </div>
   </div>

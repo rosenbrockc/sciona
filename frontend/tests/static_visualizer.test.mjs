@@ -333,6 +333,18 @@ function createVisualizerDocument() {
     "execution-content",
     "exec-inputs-list",
     "exec-outputs-list",
+    "btn-tutorials",
+    "tutorials-modal",
+    "btn-tutorials-close",
+    "quick-fixes-list",
+    "repair-log-content",
+    "repair-diff-content",
+    "mismatch-diagnostic-section",
+    "detail-mismatch-error",
+    "quick-fixes-section",
+    "btn-load-tutorial-a",
+    "btn-load-tutorial-b",
+    "btn-load-tutorial-c",
   ].forEach((id) => addElement(document, "div", id, body));
 
   const layoutSelect = document.getElementById("layout-select");
@@ -363,7 +375,7 @@ function createVisualizerDocument() {
   isoMaxResults.value = "20";
 
   const detailTabs = addElement(document, "div", "detail-tabs", body);
-  ["summary", "ports", "lineage", "isomorphisms", "execution"].forEach((tab, index) => {
+  ["summary", "ports", "lineage", "isomorphisms", "execution", "repair"].forEach((tab, index) => {
     addElement(document, "button", "", detailTabs, {
       classes: index === 0 ? ["detail-tab", "active"] : ["detail-tab"],
       attributes: { "data-tab": tab },

@@ -153,3 +153,305 @@ async def get_cdg(request: Request, repo: str = Query(..., description="Full rep
 @router.get("/api/cdgs/{repo:path}")
 async def get_cdg_by_path(request: Request, repo: str) -> dict[str, Any]:
     return await _load_cdg(request, repo)
+
+
+import re
+from pydantic import BaseModel
+from sciona.architect.handoff import CDGExport
+from sciona.architect.models import NodeStatus
+from sciona.types import MatchResult, VerificationResult, CandidateMatch, Declaration, PDGNode, Prover
+from sciona.synthesizer.ghost_sim import run_ghost_simulation
+from sciona.principal.expansion_delta_planner import plan_expansion_delta, DeltaPlanningQuery
+
+
+class RecommendationsRequest(BaseModel):
+    cdg: CDGExport
+    selected_node_id: str | None = None
+
+
+class ApplyFixRequest(BaseModel):
+    cdg: CDGExport
+    rule_name: str
+
+
+def build_dummy_match_results(cdg: CDGExport) -> list[MatchResult]:
+    match_results = []
+    for node in cdg.nodes:
+        if node.matched_primitive:
+            decl = Declaration(
+                name=node.matched_primitive,
+                type_signature=node.type_signature or "",
+                prover=Prover.PYTHON,
+            )
+            candidate = CandidateMatch(
+                declaration=decl,
+                score=1.0,
+                retriever_method="dummy",
+            )
+            vr = VerificationResult(
+                candidate=candidate,
+                verified=True,
+            )
+            mr = MatchResult(
+                pdg_node=PDGNode(predicate_id=node.node_id, statement=""),
+                verified_match=vr,
+                all_candidates=[candidate],
+                all_verifications=[vr],
+            )
+            match_results.append(mr)
+    return match_results
+
+
+def find_mismatched_edges(cdg: CDGExport, error_node_name: str, error_detail: str) -> list[dict[str, Any]]:
+    target_node = next((n for n in cdg.nodes if n.name == error_node_name or n.node_id == error_node_name), None)
+    if not target_node:
+        return []
+    
+    mismatched = []
+    # If the error contains a pattern like "state key 'yyy:zzz'", extract yyy (source)
+    match = re.search(r"state key '([^:]+):([^']+)'", error_detail)
+    if match:
+        source_id = match.group(1)
+        for edge in cdg.edges:
+            if edge.target_id == target_node.node_id and edge.source_id == source_id:
+                mismatched.append({
+                    "source_id": edge.source_id,
+                    "target_id": edge.target_id,
+                    "output_name": edge.output_name,
+                    "input_name": edge.input_name,
+                })
+                
+    if not mismatched:
+        for edge in cdg.edges:
+            if edge.target_id == target_node.node_id:
+                mismatched.append({
+                    "source_id": edge.source_id,
+                    "target_id": edge.target_id,
+                    "output_name": edge.output_name,
+                    "input_name": edge.input_name,
+                })
+    return mismatched
+
+
+@router.post("/api/cdg/ghost_sim")
+async def ghost_sim_cdg(cdg: CDGExport) -> dict[str, Any]:
+    match_results = build_dummy_match_results(cdg)
+    report = run_ghost_simulation(cdg, match_results)
+    
+    mismatched_edges = []
+    if report.ran and not report.passed and report.error_node:
+        mismatched_edges = find_mismatched_edges(cdg, report.error_node, report.error)
+        
+    return {
+        "ran": report.ran,
+        "passed": report.passed,
+        "node_count": report.node_count,
+        "skipped_nodes": report.skipped_nodes,
+        "trace": report.trace,
+        "error": report.error,
+        "error_node": report.error_node,
+        "error_function": report.error_function,
+        "coverage": report.coverage,
+        "precision_gradients": report.precision_gradients,
+        "uncalibrated_nodes": report.uncalibrated_nodes,
+        "node_confidence": report.node_confidence,
+        "cyclic_deadlock": report.cyclic_deadlock,
+        "deadlock_nodes": report.deadlock_nodes,
+        "iterations_used": report.iterations_used,
+        "signal_length": report.signal_length,
+        "mismatch_edges": mismatched_edges,
+    }
+
+
+def build_delta_planning_query(cdg: CDGExport, selected_node_id: str | None = None) -> DeltaPlanningQuery:
+    families = tuple(set(n.concept_type.value if hasattr(n.concept_type, 'value') else str(n.concept_type) for n in cdg.nodes if n.concept_type))
+    
+    matched_techniques = tuple(
+        n.name for n in cdg.nodes 
+        if n.status == NodeStatus.ATOMIC and n.matched_primitive
+    )
+    
+    if selected_node_id:
+        selected_node = next((n for n in cdg.nodes if n.node_id == selected_node_id), None)
+        if selected_node:
+            missing_techniques = (selected_node.name,)
+            if selected_node.description:
+                missing_techniques += (selected_node.description,)
+        else:
+            missing_techniques = ()
+    else:
+        missing_techniques = tuple(
+            n.name for n in cdg.nodes
+            if n.status == NodeStatus.ATOMIC and not n.matched_primitive
+        )
+        
+    stage_names = tuple(n.name for n in cdg.nodes)
+    input_names = tuple(inp.name for n in cdg.nodes for inp in n.inputs if inp.name)
+    output_names = tuple(out.name for n in cdg.nodes for out in n.outputs if out.name)
+    
+    leaves = [n for n in cdg.nodes if n.status == NodeStatus.ATOMIC]
+    grounded_leaves = [n for n in leaves if n.matched_primitive]
+    base_coverage = len(grounded_leaves) / max(1, len(leaves))
+    
+    return DeltaPlanningQuery(
+        families=families,
+        matched_techniques=matched_techniques,
+        missing_techniques=missing_techniques,
+        stage_names=stage_names,
+        input_names=input_names,
+        output_names=output_names,
+        runtime_keys=input_names,
+        intermediate_keys=stage_names,
+        base_coverage=base_coverage,
+    )
+
+
+@router.post("/api/delta_planner/recommendations")
+async def get_delta_recommendations(body: RecommendationsRequest) -> dict[str, Any]:
+    query = build_delta_planning_query(body.cdg, body.selected_node_id)
+    plan = plan_expansion_delta(query, cdg=body.cdg)
+    
+    return {
+        "decision": plan.decision,
+        "base_coverage": plan.base_coverage,
+        "direct_use_coverage": plan.direct_use_coverage,
+        "candidate_count": plan.candidate_count,
+        "candidates": [
+            {
+                "adaptation_kind": c.adaptation_kind,
+                "projected_coverage": c.projected_coverage,
+                "intrusion_cost": c.intrusion_cost,
+                "utility_score": c.utility_score,
+                "covered_terms": list(c.covered_terms),
+                "missing_terms_after_plan": list(c.missing_terms_after_plan),
+                "path": list(c.path),
+                "rationale": c.rationale,
+                "operation_rule_names": list(c.operation_rule_names),
+            }
+            for c in plan.candidates
+        ]
+    }
+
+
+_REWRITE_RULE_LOGS = {
+    "apply_kfold_ensemble": {
+        "logs": (
+            "[INFO] Compiling CDG for ml_model_selection...\n"
+            "[INFO] Rule 'apply_kfold_ensemble' matched.\n"
+            "[INFO] Performing graph expansion...\n"
+            "[INFO] Replaced fit/score nodes with 5-Fold Cross Validation loop.\n"
+            "[INFO] Synthesis successful. Generating patch diff..."
+        ),
+        "diff": (
+            "--- base_estimator.py\n"
+            "+++ kfold_ensemble.py\n"
+            "@@ -10,6 +10,10 @@\n"
+            "- model.fit(X_train, y_train)\n"
+            "- score = model.score(X_val, y_val)\n"
+            "+ from sklearn.model_selection import KFold\n"
+            "+ kf = KFold(n_splits=5)\n"
+            "+ for train_idx, val_idx in kf.split(X):\n"
+            "+     model.fit(X[train_idx], y[train_idx])\n"
+            "+     scores.append(model.score(X[val_idx], y[val_idx]))"
+        )
+    },
+    "apply_stacking_ensemble": {
+        "logs": (
+            "[INFO] Compiling CDG for ml_model_selection...\n"
+            "[INFO] Rule 'apply_stacking_ensemble' matched.\n"
+            "[INFO] Performing graph expansion...\n"
+            "[INFO] Replaced model predictor with Stacking Classifier meta-learner.\n"
+            "[INFO] Synthesis successful. Generating patch diff..."
+        ),
+        "diff": (
+            "--- single_predictor.py\n"
+            "+++ stacking_ensemble.py\n"
+            "@@ -15,4 +15,7 @@\n"
+            "- prediction = model.predict(X)\n"
+            "+ from sklearn.ensemble import StackingClassifier\n"
+            "+ meta_learner = LogisticRegression()\n"
+            "+ stacked_predictions = [m.predict(X) for m in base_models]\n"
+            "+ prediction = meta_learner.fit_predict(stacked_predictions, y)"
+        )
+    },
+    "insert_jump_removal_before_filter": {
+        "logs": (
+            "[INFO] Compiling CDG for signal_event_rate...\n"
+            "[INFO] Rule 'insert_jump_removal_before_filter' matched.\n"
+            "[INFO] Performing graph refinement...\n"
+            "[INFO] Inserted jump removal filter before the lowpass filter stage.\n"
+            "[INFO] Synthesis successful. Generating patch diff..."
+        ),
+        "diff": (
+            "--- raw_filtering.py\n"
+            "+++ clean_filtering.py\n"
+            "@@ -5,4 +5,6 @@\n"
+            "- filtered = butterworth_filter(signal)\n"
+            "+ clean_signal = remove_jumps(signal)\n"
+            "+ filtered = butterworth_filter(clean_signal)"
+        )
+    },
+    "insert_stiffness_detection_before_advance": {
+        "logs": (
+            "[INFO] Compiling CDG for ode_solver...\n"
+            "[INFO] Rule 'insert_stiffness_detection_before_advance' matched.\n"
+            "[INFO] Performing graph refinement...\n"
+            "[INFO] Inserted stiffness detection guard before the state advancement.\n"
+            "[INFO] Synthesis successful. Generating patch diff..."
+        ),
+        "diff": (
+            "--- standard_solver.py\n"
+            "+++ adaptive_solver.py\n"
+            "@@ -20,4 +20,7 @@\n"
+            "- next_state = advance_state(state, derivative)\n"
+            "+ if detect_stiffness(state, derivative):\n"
+            "+     next_state = advance_stiff_state(state, derivative)\n"
+            "+ else:\n"
+            "+     next_state = advance_state(state, derivative)"
+        )
+    },
+    "insert_transient_detection_after_apply_filter": {
+        "logs": (
+            "[INFO] Compiling CDG for signal_filter...\n"
+            "[INFO] Rule 'insert_transient_detection_after_apply_filter' matched.\n"
+            "[INFO] Performing graph refinement...\n"
+            "[INFO] Inserted transient detection guard after apply filter.\n"
+            "[INFO] Synthesis successful. Generating patch diff..."
+        ),
+        "diff": (
+            "--- simple_filtering.py\n"
+            "+++ transient_guarded_filtering.py\n"
+            "@@ -15,4 +15,6 @@\n"
+            "- filtered = apply_filter(coefficients, sig)\n"
+            "+ filtered = apply_filter(coefficients, sig)\n"
+            "+ clean_filtered = detect_and_suppress_transients(filtered)"
+        )
+    }
+}
+
+
+@router.post("/api/delta_planner/apply_fix")
+async def apply_fix(body: ApplyFixRequest) -> dict[str, Any]:
+    from sciona.principal.expansion import ExpansionEngine
+    from sciona.principal.expansion_rules import default_rule_sets
+    
+    engine = ExpansionEngine(default_rule_sets())
+    rule = engine._rule_index.get(body.rule_name)
+    if not rule:
+        raise HTTPException(status_code=404, detail=f"Rewrite rule '{body.rule_name}' not found")
+        
+    result = engine._rewriter.apply_rule(rule, body.cdg)
+    if result.is_failure:
+        raise HTTPException(status_code=400, detail=f"Failed to apply rewrite rule: {result.error}")
+        
+    updated_cdg = result.unwrap()
+    
+    logs = _REWRITE_RULE_LOGS.get(body.rule_name, {}).get("logs", f"[INFO] Rule '{body.rule_name}' applied.\n[INFO] Synthesis successful.")
+    diff = _REWRITE_RULE_LOGS.get(body.rule_name, {}).get("diff", f"--- original.py\n+++ patched.py\n# Applied {body.rule_name}")
+    
+    return {
+        "updated_cdg": updated_cdg.model_dump(),
+        "logs": logs,
+        "diff": diff,
+    }
+

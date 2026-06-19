@@ -76,6 +76,17 @@
       document.getElementById("detail-rationale").textContent = node.decomposition_rationale || "(none)";
       document.getElementById("detail-critic").value = node.critic_notes || "(none)";
 
+      var mismatchSec = document.getElementById("mismatch-diagnostic-section");
+      var mismatchErr = document.getElementById("detail-mismatch-error");
+      if (mismatchSec && mismatchErr) {
+        if (node.mismatchDetail) {
+          mismatchSec.style.display = "block";
+          mismatchErr.textContent = node.mismatchDetail;
+        } else {
+          mismatchSec.style.display = "none";
+        }
+      }
+
       // Control "Run Node" button visibility
       if (btnRunNode) {
         if (node.status === "atomic") {
@@ -84,6 +95,134 @@
           btnRunNode.classList.add("hidden");
         }
       }
+    }
+
+    function fetchQuickFixes(nodeId) {
+      var currentData = options.getCurrentData ? options.getCurrentData() : null;
+      if (!currentData) return;
+
+      var qfList = document.getElementById("quick-fixes-list");
+      if (!qfList) return;
+
+      qfList.innerHTML = '<span class="lineage-hint">Loading recommendations...</span>';
+
+      fetch("/api/delta_planner/recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cdg: currentData,
+          selected_node_id: nodeId
+        })
+      })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Failed to load quick-fixes");
+        return res.json();
+      })
+      .then(function (data) {
+        qfList.innerHTML = "";
+        if (!data.candidates || data.candidates.length === 0) {
+          qfList.innerHTML = '<span class="lineage-hint">No quick-fixes available</span>';
+          return;
+        }
+
+        data.candidates.forEach(function (cand) {
+          if (cand.adaptation_kind === "direct_use") return;
+
+          var card = document.createElement("div");
+          card.style.background = "#e3f2fd";
+          card.style.border = "1px solid #90caf9";
+          card.style.borderRadius = "4px";
+          card.style.padding = "8px";
+          card.style.marginBottom = "8px";
+          card.style.fontSize = "12px";
+
+          var title = document.createElement("div");
+          title.style.fontWeight = "bold";
+          title.style.marginBottom = "4px";
+          title.textContent = cand.adaptation_kind.toUpperCase() + ": " + (cand.operation_rule_names.join(", ") || cand.rationale);
+          card.appendChild(title);
+
+          var rat = document.createElement("div");
+          rat.style.color = "#546e7a";
+          rat.style.marginBottom = "6px";
+          rat.textContent = cand.rationale;
+          card.appendChild(rat);
+
+          if (cand.operation_rule_names && cand.operation_rule_names.length > 0) {
+            cand.operation_rule_names.forEach(function (ruleName) {
+              var btn = document.createElement("button");
+              btn.textContent = "Apply " + ruleName.replace(/_/g, " ");
+              btn.style.background = "#1976d2";
+              btn.style.color = "#fff";
+              btn.style.border = "none";
+              btn.style.borderRadius = "3px";
+              btn.style.padding = "4px 8px";
+              btn.style.cursor = "pointer";
+              btn.style.marginRight = "5px";
+              btn.style.marginTop = "4px";
+
+              btn.addEventListener("click", function () {
+                applyQuickFix(ruleName);
+              });
+              card.appendChild(btn);
+            });
+          }
+
+          qfList.appendChild(card);
+        });
+
+        if (qfList.children.length === 0) {
+          qfList.innerHTML = '<span class="lineage-hint">No quick-fixes available</span>';
+        }
+      })
+      .catch(function (err) {
+        qfList.innerHTML = '<span class="lineage-hint" style="color: #c62828;">Error loading quick-fixes</span>';
+      });
+    }
+
+    function applyQuickFix(ruleName) {
+      var currentData = options.getCurrentData ? options.getCurrentData() : null;
+      if (!currentData) return;
+
+      var qfList = document.getElementById("quick-fixes-list");
+      if (qfList) {
+        qfList.innerHTML = '<span class="lineage-hint">Applying fix and compiling...</span>';
+      }
+
+      fetch("/api/delta_planner/apply_fix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cdg: currentData,
+          rule_name: ruleName
+        })
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().then(function (data) {
+            throw new Error(data.detail || "Failed to apply fix");
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (options.validateAndLoad) {
+          options.validateAndLoad(data.updated_cdg);
+        }
+
+        var logContent = document.getElementById("repair-log-content");
+        var diffContent = document.getElementById("repair-diff-content");
+        if (logContent) logContent.textContent = data.logs || "No logs available.";
+        if (diffContent) diffContent.textContent = data.diff || "No diffs available.";
+
+        activateTab("repair");
+        fetchQuickFixes(null);
+      })
+      .catch(function (err) {
+        if (qfList) {
+          qfList.innerHTML = '<span class="lineage-hint" style="color: #c62828;">Error: ' + err.message + '</span>';
+        }
+      });
     }
 
     function renderVariableVisual(container, runId, nodeId, valName, isInput, meta) {
@@ -489,6 +628,7 @@
       populateDetailPanel(node);
       populateLineage(node.node_id);
       populateExecutionTab(node.node_id);
+      fetchQuickFixes(node.node_id);
       detailPanel.classList.add("visible");
     }
 
@@ -506,6 +646,7 @@
       activateTab: activateTab,
       handleNodeSelected: handleNodeSelected,
       getSelectedNodeId: function () { return selectedNodeId; },
+      fetchQuickFixes: fetchQuickFixes,
       hide: hide,
       getPanel: function () { return detailPanel; },
       refreshExecutionTab: function () {

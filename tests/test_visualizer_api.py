@@ -1303,3 +1303,144 @@ class TestDashboardAPI:
         data = resp.json()
         assert data["is_hung"] is True
         assert len(data["stale_stages"]) == 1
+
+
+class TestVisualizerAPIAdditionalEndpoints:
+    def test_ghost_sim_endpoint(self, client):
+        payload = {
+            "nodes": [
+                {
+                    "node_id": "n1",
+                    "name": "Node 1",
+                    "description": "test description",
+                    "concept_type": "signal_filter",
+                    "status": "atomic",
+                    "depth": 1,
+                }
+            ],
+            "edges": [],
+            "metadata": {"goal": "test"},
+        }
+        with patch("sciona.visualizer.cdg.run_ghost_simulation") as mock_sim:
+            from sciona.synthesizer.ghost_sim import GhostSimReport
+            mock_sim.return_value = GhostSimReport(
+                ran=True,
+                passed=False,
+                node_count=1,
+                skipped_nodes=[],
+                trace=["Node 1"],
+                error="domain mismatch",
+                error_node="Node 1",
+                error_function="fft",
+            )
+            resp = client.post("/api/cdg/ghost_sim", json=payload)
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["ran"] is True
+            assert data["passed"] is False
+            assert data["error"] == "domain mismatch"
+            assert data["error_node"] == "Node 1"
+
+    def test_recommendations_endpoint(self, client):
+        payload = {
+            "cdg": {
+                "nodes": [
+                    {
+                        "node_id": "n1",
+                        "name": "Node 1",
+                        "description": "test description",
+                        "concept_type": "ml_model_selection",
+                        "status": "atomic",
+                        "depth": 1,
+                    }
+                ],
+                "edges": [],
+                "metadata": {"goal": "test"},
+            },
+            "selected_node_id": "n1"
+        }
+        with patch("sciona.visualizer.cdg.plan_expansion_delta") as mock_plan:
+            from sciona.principal.expansion_delta_planner import DeltaPlan, DeltaPlanCandidate, DeltaAdaptationKind
+            mock_op = MagicMock()
+            mock_op.rule_name = "apply_kfold_ensemble"
+            mock_seq = MagicMock()
+            mock_seq.operations = (mock_op,)
+            
+            candidate = DeltaPlanCandidate(
+                adaptation_kind=DeltaAdaptationKind.EXPANSION,
+                operation_sequence=mock_seq,
+                projected_coverage=1.0,
+                intrusion_cost=0.5,
+                utility_score=2.0,
+                covered_terms=("term1",),
+                missing_terms_after_plan=(),
+                path=("base_cdg", "rule_name", "adapted_cdg"),
+                rationale="test rationale"
+            )
+            mock_plan.return_value = DeltaPlan(
+                decision=DeltaAdaptationKind.EXPANSION,
+                base_coverage=0.5,
+                direct_use_coverage=0.5,
+                candidate_count=1,
+                candidates=(candidate,),
+                selected=candidate,
+                should_compose_novel=False
+            )
+            resp = client.post("/api/delta_planner/recommendations", json=payload)
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["decision"] == "expansion"
+            assert len(data["candidates"]) == 1
+            assert data["candidates"][0]["operation_rule_names"] == ["apply_kfold_ensemble"]
+
+    def test_apply_fix_endpoint(self, client):
+        payload = {
+            "cdg": {
+                "nodes": [
+                    {
+                        "node_id": "n1",
+                        "name": "Node 1",
+                        "description": "test description",
+                        "concept_type": "ml_model_selection",
+                        "status": "atomic",
+                        "depth": 1,
+                    }
+                ],
+                "edges": [],
+                "metadata": {"goal": "test"},
+            },
+            "rule_name": "apply_kfold_ensemble"
+        }
+        with patch("sciona.principal.expansion.ExpansionEngine") as mock_engine_cls:
+            mock_engine = MagicMock()
+            mock_rule = MagicMock()
+            mock_engine._rule_index = {"apply_kfold_ensemble": mock_rule}
+            mock_engine_cls.return_value = mock_engine
+            
+            mock_result = MagicMock()
+            mock_result.is_failure = False
+            
+            from sciona.architect.handoff import CDGExport
+            updated_cdg = CDGExport(
+                nodes=[
+                    {
+                        "node_id": "n1",
+                        "name": "Node 1 (Updated)",
+                        "description": "test description",
+                        "concept_type": "ml_model_selection",
+                        "status": "atomic",
+                        "depth": 1,
+                    }
+                ],
+                edges=[],
+                metadata={"goal": "test"}
+            )
+            mock_result.unwrap.return_value = updated_cdg
+            mock_engine._rewriter.apply_rule.return_value = mock_result
+            
+            resp = client.post("/api/delta_planner/apply_fix", json=payload)
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["updated_cdg"]["nodes"][0]["name"] == "Node 1 (Updated)"
+            assert "apply_kfold_ensemble" in data["logs"]
+            assert "kfold_ensemble.py" in data["diff"]

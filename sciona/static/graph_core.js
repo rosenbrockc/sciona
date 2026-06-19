@@ -103,6 +103,9 @@
           (d.sourceType ? " (" + d.sourceType + ")" : "") +
           " \u2192 " + d.target + "." + d.inputName +
           (d.targetType ? " (" + d.targetType + ")" : "");
+        if (d.mismatchDetail) {
+          tip = "⚠️ CONTRACT MISMATCH:\n" + d.mismatchDetail + "\n\n" + tip;
+        }
         edge.data("_tipLabel", tip);
         edge.addClass("edge-tooltip");
       }
@@ -230,6 +233,76 @@
       );
     }
 
+    function runGhostSimulation(data) {
+      if (!options.isApiAvailable || !options.isApiAvailable()) return;
+
+      fetch("/api/cdg/ghost_sim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Ghost simulation request failed");
+        return res.json();
+      })
+      .then(function (report) {
+        if (!cy) return;
+
+        cy.edges().removeClass("mismatch-edge");
+        cy.nodes().removeClass("exec-failed");
+
+        if (report.ran && !report.passed) {
+          if (report.mismatch_edges) {
+            report.mismatch_edges.forEach(function (mEdge) {
+              var selector = 'edge[source="' + mEdge.source_id + '"][target="' + mEdge.target_id + '"]';
+              cy.edges(selector).forEach(function (edge) {
+                edge.addClass("mismatch-edge");
+                edge.data("mismatchDetail", report.error);
+                var originalLabel = edge.data("original_label") || edge.data("label") || "";
+                if (!edge.data("original_label")) {
+                  edge.data("original_label", originalLabel);
+                }
+                edge.data("label", "⚠️ " + originalLabel);
+              });
+            });
+          }
+
+          if (report.error_node) {
+            cy.nodes().forEach(function (node) {
+              var nd = node.data("_nodeData");
+              if (nd && (nd.name === report.error_node || nd.node_id === report.error_node)) {
+                node.addClass("exec-failed");
+                nd.mismatchDetail = report.error;
+              }
+            });
+          }
+
+          var logContent = document.getElementById("repair-log-content");
+          if (logContent) {
+            logContent.textContent = "[ERROR] Ghost Witness Simulation Failed!\n" +
+              "Node: " + report.error_node + " (" + report.error_function + ")\n" +
+              "Detail: " + report.error;
+          }
+        } else if (report.ran && report.passed) {
+          cy.edges().forEach(function (edge) {
+            if (edge.data("original_label")) {
+              edge.data("label", edge.data("original_label"));
+            }
+          });
+          
+          var logContent = document.getElementById("repair-log-content");
+          if (logContent) {
+            logContent.textContent = "[INFO] Ghost Witness Simulation passed successfully.\n" +
+              "Simulated " + report.node_count + " nodes.\n" +
+              "Trace: " + report.trace.join(" -> ");
+          }
+        }
+      })
+      .catch(function (err) {
+        console.error("Ghost simulation error:", err);
+      });
+    }
+
     function validateAndLoad(data) {
       if (!data.nodes || !Array.isArray(data.nodes)) {
         setStatus("Error: JSON must contain a 'nodes' array");
@@ -240,6 +313,10 @@
       }
       if (dropZone) dropZone.classList.add("hidden");
       buildGraph(data);
+      runGhostSimulation(data);
+      if (options.onCDGLoaded) {
+        options.onCDGLoaded();
+      }
     }
 
     function tryLoadDefault() {
