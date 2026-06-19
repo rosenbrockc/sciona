@@ -186,7 +186,7 @@ def build_dummy_match_results(cdg: CDGExport) -> list[MatchResult]:
             candidate = CandidateMatch(
                 declaration=decl,
                 score=1.0,
-                retriever_method="dummy",
+                retrieval_method="dummy",
             )
             vr = VerificationResult(
                 candidate=candidate,
