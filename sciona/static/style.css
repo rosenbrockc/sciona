@@ -501,6 +501,7 @@ body {
 #compare-container {
   display: flex;
   flex: 1;
+  min-width: 0;
   gap: 2px;
   background: #cfd8dc;
 }
@@ -536,6 +537,7 @@ body {
 /* Cytoscape container */
 #cy-container {
   flex: 1;
+  min-width: 0;
   position: relative;
   background: #fff;
 }

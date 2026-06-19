@@ -631,10 +631,25 @@
       populateExecutionTab(node.node_id);
       fetchQuickFixes(node.node_id);
       detailPanel.classList.add("visible");
+
+      var cy = options.getCy ? options.getCy() : null;
+      if (cy) {
+        setTimeout(function () {
+          cy.resize();
+        }, 50);
+      }
     }
 
     function hide() {
-      if (detailPanel) detailPanel.classList.remove("visible");
+      if (detailPanel) {
+        detailPanel.classList.remove("visible");
+        var cy = options.getCy ? options.getCy() : null;
+        if (cy) {
+          setTimeout(function () {
+            cy.resize();
+          }, 50);
+        }
+      }
     }
 
     detailTabs.forEach(function (tab) {
