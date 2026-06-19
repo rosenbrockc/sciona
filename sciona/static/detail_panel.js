@@ -6,6 +6,7 @@
     var detailTabs = document.querySelectorAll(".detail-tab");
     var tabContents = document.querySelectorAll(".tab-content");
     var selectedNodeId = null;
+    var btnRunNode = document.getElementById("btn-run-node");
 
     function activateTab(target) {
       detailTabs.forEach(function (t) {

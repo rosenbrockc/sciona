@@ -484,19 +484,27 @@
   if (queryRepo) {
     var statusText = document.getElementById("status-text");
     if (statusText) statusText.textContent = "Loading " + queryRepo + "...";
-    fetch("/api/cdg?repo=" + encodeURIComponent(queryRepo))
-      .then(function (res) {
-        if (!res.ok) throw new Error("CDG not found");
-        return res.json();
-      })
-      .then(function (data) {
-        graphControls.validateAndLoad(data);
-      })
-      .catch(function (err) {
-        var statusText = document.getElementById("status-text");
-        if (statusText) statusText.textContent = "Error: " + err.message;
-        graphControls.tryLoadDefault();
-      });
+    if (queryRepo === "biosppy/ecg_mismatch") {
+      graphControls.validateAndLoad(TUTORIAL_A_CDG);
+    } else if (queryRepo === "sklearn/tabular_ml") {
+      graphControls.validateAndLoad(TUTORIAL_B_CDG);
+    } else if (queryRepo === "umap/scientific_computing") {
+      graphControls.validateAndLoad(TUTORIAL_C_CDG);
+    } else {
+      fetch("/api/cdg?repo=" + encodeURIComponent(queryRepo))
+        .then(function (res) {
+          if (!res.ok) throw new Error("CDG not found");
+          return res.json();
+        })
+        .then(function (data) {
+          graphControls.validateAndLoad(data);
+        })
+        .catch(function (err) {
+          var statusText = document.getElementById("status-text");
+          if (statusText) statusText.textContent = "Error: " + err.message;
+          graphControls.tryLoadDefault();
+        });
+    }
   } else {
     graphControls.tryLoadDefault();
   }
