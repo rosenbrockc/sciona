@@ -232,6 +232,8 @@ def _load_atomic_node_index(
         try:
             with open(cdg_path) as handle:
                 payload = json.load(handle)
+            if not isinstance(payload, dict):
+                continue
         except Exception:
             continue
 

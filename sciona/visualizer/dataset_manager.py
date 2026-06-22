@@ -31,6 +31,8 @@ def load_curated_inputs_from_repos() -> dict[str, list[str]]:
             try:
                 with open(cdg_path, "r") as f:
                     data = json.load(f)
+                if not isinstance(data, dict):
+                    continue
             except Exception:
                 continue
 
