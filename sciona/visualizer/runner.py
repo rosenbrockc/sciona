@@ -235,6 +235,16 @@ def get_topo_sorted_leaves(nodes: List[AlgorithmicNode], edges: List[DependencyE
 def parse_input_value(raw_val: Any, type_desc: str) -> Any:
     """Parses user input strings/dicts into the expected Python types based on type signatures."""
     type_desc = type_desc.strip()
+
+    # Handle S3 canonical datasets
+    if isinstance(raw_val, str) and raw_val.startswith("s3://"):
+        from sciona.visualizer.dataset_manager import DatasetManager
+        try:
+            logger.info("Resolving S3 dataset FQN: %s", raw_val)
+            return DatasetManager().load_dataset(raw_val)
+        except Exception as e:
+            logger.error("Failed to load S3 dataset %s: %s", raw_val, e)
+            raise ValueError(f"Failed to load S3 dataset {raw_val}: {e}")
     
     # Handle files
     if isinstance(raw_val, str) and (raw_val.endswith(".npy") or raw_val.endswith(".parquet") or raw_val.endswith(".csv") or raw_val.endswith(".json")):

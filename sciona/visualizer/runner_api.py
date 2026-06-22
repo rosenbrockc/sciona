@@ -221,3 +221,35 @@ async def upload_file(
         return {"filepath": str(file_path.resolve())}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {e}")
+
+
+@router.get("/api/datasets")
+async def list_datasets():
+    from sciona.visualizer.dataset_manager import DatasetManager
+    try:
+        return DatasetManager().list_datasets()
+    except Exception as e:
+        logger.exception("Failed to list datasets")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/cdg/primitive/{name:path}/curated_inputs")
+async def get_curated_inputs(name: str):
+    from sciona.visualizer.dataset_manager import DatasetManager
+    try:
+        dm = DatasetManager()
+        fqns = dm.get_curated_inputs_for_primitive(name)
+        return [dm.load_manifest(fqn) for fqn in fqns]
+    except Exception as e:
+        logger.exception("Failed to get curated inputs")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/datasets/preview")
+async def preview_dataset(fqn: str = Query(..., description="The dataset FQN")):
+    from sciona.visualizer.dataset_manager import DatasetManager
+    try:
+        return DatasetManager().load_manifest(fqn)
+    except Exception as e:
+        logger.exception("Failed to preview dataset")
+        raise HTTPException(status_code=500, detail=str(e))

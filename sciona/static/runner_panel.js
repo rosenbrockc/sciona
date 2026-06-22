@@ -146,6 +146,7 @@
             rootInputs.push({
               nodeId: node.node_id,
               nodeName: node.name,
+              matched_primitive: node.matched_primitive || "",
               name: inp.name,
               type_desc: inp.type_desc,
               constraints: inp.constraints
@@ -180,7 +181,7 @@
         sublabel.textContent = "Required by: " + inp.nodeName;
         sublabel.style.marginBottom = "2px";
 
-        // Dropdown type selector (Constant, JSON, File Path, File Upload)
+        // Dropdown type selector (Constant, JSON, File Path, File Upload, Curated Dataset)
         var select = document.createElement("select");
         select.className = "run-input-select";
         select.style.marginBottom = "5px";
@@ -191,11 +192,8 @@
           '<option value="constant">Constant (int/float/str/bool)</option>' +
           '<option value="json">JSON Structure (tuple/list/dict)</option>' +
           '<option value="path">' + (isArrayType ? "File Path (npy/parquet/csv)" : "File Path") + '</option>' +
-          '<option value="upload">File Upload (npy/parquet/csv)</option>';
-
-        if (isArrayType) {
-          select.value = "path"; // default arrays to path input
-        }
+          '<option value="upload">File Upload (npy/parquet/csv)</option>' +
+          '<option value="curated">Curated S3 Dataset</option>';
 
         var fieldContainer = document.createElement("div");
         
@@ -238,7 +236,6 @@
             var file = fileInput.files[0];
             fileLabel.textContent = "Uploading: " + file.name;
             
-            // Trigger FastAPI upload
             var formData = new FormData();
             formData.append("file", file);
             
@@ -252,7 +249,7 @@
             })
             .then(function (data) {
               fileLabel.textContent = "Uploaded: " + file.name;
-              txtInput.value = data.filepath; // Set input value to uploaded path
+              txtInput.value = data.filepath;
             })
             .catch(function (err) {
               fileLabel.textContent = "Upload failed! " + err.message;
@@ -265,33 +262,138 @@
         uploadContainer.appendChild(fileLabel);
         uploadContainer.appendChild(fileInput);
 
+        var curatedContainer = document.createElement("div");
+        curatedContainer.className = "run-curated-container";
+        curatedContainer.style.display = "none";
+        curatedContainer.style.flexDirection = "column";
+        curatedContainer.style.gap = "5px";
+
+        var curatedSelect = document.createElement("select");
+        curatedSelect.className = "run-curated-select run-input-field";
+        curatedSelect.style.width = "100%";
+        curatedSelect.innerHTML = '<option value="">Loading curated inputs...</option>';
+
+        var curatedPreview = document.createElement("div");
+        curatedPreview.className = "run-curated-preview";
+        curatedPreview.style.marginTop = "4px";
+
+        curatedContainer.appendChild(curatedSelect);
+        curatedContainer.appendChild(curatedPreview);
+
         fieldContainer.appendChild(txtInput);
         fieldContainer.appendChild(textarea);
         fieldContainer.appendChild(uploadContainer);
+        fieldContainer.appendChild(curatedContainer);
 
-        // Event listener for type dropdown
+        var datasetsCache = [];
+
+        function updateCuratedPreview() {
+          var fqn = curatedSelect.value;
+          var found = datasetsCache.find(function (d) { return d.fqn === fqn; });
+          if (found) {
+            curatedPreview.innerHTML = 
+              '<div style="margin-top: 8px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px;">' +
+                '<div><strong>Dataset:</strong> ' + found.name + '</div>' +
+                '<div><strong>FQN:</strong> <code>' + found.fqn + '</code></div>' +
+                '<div><strong>Shape:</strong> ' + JSON.stringify(found.shape) + ' (' + (found.dtype || "unknown") + ')</div>' +
+                '<div><strong>Description:</strong> ' + found.description + '</div>' +
+                (found.attribution && found.attribution.source ? '<div><strong>Source:</strong> <a href="' + (found.attribution.url || "#") + '" target="_blank" style="color: #2563eb; text-decoration: none;">' + found.attribution.source + '</a></div>' : '') +
+              '</div>';
+          } else {
+            curatedPreview.innerHTML = "";
+          }
+        }
+
+        curatedSelect.addEventListener("change", updateCuratedPreview);
+
+        var isCuratedLoaded = false;
+
         select.addEventListener("change", function () {
           var type = select.value;
           if (type === "constant") {
             txtInput.style.display = "block";
             textarea.style.display = "none";
             uploadContainer.style.display = "none";
+            curatedContainer.style.display = "none";
             txtInput.placeholder = "E.g. 42 or standard_value";
           } else if (type === "json") {
             txtInput.style.display = "none";
             textarea.style.display = "block";
             uploadContainer.style.display = "none";
+            curatedContainer.style.display = "none";
           } else if (type === "path") {
             txtInput.style.display = "block";
             textarea.style.display = "none";
             uploadContainer.style.display = "none";
-            txtInput.placeholder = "E.g. /path/to/data.npy";
+            curatedContainer.style.display = "none";
+            txtInput.placeholder = isArrayType ? "E.g. /path/to/data.npy" : "E.g. 42 or standard_value";
           } else if (type === "upload") {
             txtInput.style.display = "none";
             textarea.style.display = "none";
             uploadContainer.style.display = "flex";
+            curatedContainer.style.display = "none";
+          } else if (type === "curated") {
+            txtInput.style.display = "none";
+            textarea.style.display = "none";
+            uploadContainer.style.display = "none";
+            curatedContainer.style.display = "flex";
+
+            if (!isCuratedLoaded) {
+              var primitiveName = inp.matched_primitive || inp.nodeName;
+              curatedSelect.innerHTML = '<option value="">Loading curated inputs...</option>';
+              fetch("/api/cdg/primitive/" + encodeURIComponent(primitiveName) + "/curated_inputs")
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                  isCuratedLoaded = true;
+                  datasetsCache = data;
+                  curatedSelect.innerHTML = "";
+
+                  if (!data || data.length === 0) {
+                    fetch("/api/datasets")
+                      .then(function (res2) { return res2.json(); })
+                      .then(function (allData) {
+                        datasetsCache = allData;
+                        curatedSelect.innerHTML = "";
+                        if (!allData || allData.length === 0) {
+                          curatedSelect.innerHTML = '<option value="">(No datasets available)</option>';
+                          curatedPreview.innerHTML = '<span class="lineage-hint">No datasets cataloged.</span>';
+                          return;
+                        }
+                        allData.forEach(function (ds) {
+                          var opt = document.createElement("option");
+                          opt.value = ds.fqn;
+                          opt.textContent = ds.name;
+                          curatedSelect.appendChild(opt);
+                        });
+                        updateCuratedPreview();
+                      });
+                    return;
+                  }
+
+                  data.forEach(function (ds) {
+                    var opt = document.createElement("option");
+                    opt.value = ds.fqn;
+                    opt.textContent = ds.name;
+                    curatedSelect.appendChild(opt);
+                  });
+
+                  updateCuratedPreview();
+                })
+                .catch(function (err) {
+                  curatedSelect.innerHTML = '<option value="">(Error loading datasets)</option>';
+                  curatedPreview.innerHTML = '<span class="lineage-hint" style="color: #ef4444;">Failed to load dataset suggestion mapping.</span>';
+                  console.error("Failed to load curated inputs:", err);
+                });
+            }
           }
         });
+
+        if (isArrayType) {
+          select.value = "curated";
+          setTimeout(function () {
+            select.dispatchEvent(new Event("change"));
+          }, 0);
+        }
 
         // Pre-populate if we have stored values
         var cachedVal = userInputs[inp.name];
@@ -349,6 +451,13 @@
           val = group.querySelector("input").value; // filled post-upload
           if (!val) {
             runModalError.textContent = "File upload required for input '" + name + "'.";
+            runModalError.style.display = "block";
+            errorFound = true;
+          }
+        } else if (type === "curated") {
+          val = group.querySelector(".run-curated-select").value;
+          if (!val) {
+            runModalError.textContent = "Curated dataset selection required for input '" + name + "'.";
             runModalError.style.display = "block";
             errorFound = true;
           }
