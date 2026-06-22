@@ -151,7 +151,11 @@ class DatasetManager:
 
         local_data_path.parent.mkdir(parents=True, exist_ok=True)
 
-        s3_client = boto3.client("s3")
+        try:
+            session = boto3.Session(profile_name="sciona")
+        except Exception:
+            session = boto3.Session()
+        s3_client = session.client("s3")
         try:
             # Download manifest first
             logger.info(f"Downloading manifest from S3: {fqn}.json")
