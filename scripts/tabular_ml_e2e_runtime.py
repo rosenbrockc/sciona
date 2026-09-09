@@ -71,8 +71,15 @@ async def _discover(client: RemoteCatalogClient) -> tuple[dict[str, CatalogEntry
 
 
 def _log_loss(probabilities: Any, targets: Any) -> float:
-    values = np.clip(np.asarray(probabilities, dtype=float), 1e-12, 1.0 - 1e-12)
-    labels = np.asarray(targets, dtype=int)
+    values = np.asarray(probabilities, dtype=float)
+    labels = np.asarray(targets)
+    if values.ndim != 1 or labels.shape != values.shape or not values.size:
+        raise ValueError("probabilities and targets must be nonempty aligned vectors")
+    if not np.all(np.isfinite(values)) or np.any((values < 0) | (values > 1)):
+        raise ValueError("probabilities must be finite and between zero and one")
+    if not np.all(np.isin(labels, [0, 1])):
+        raise ValueError("targets must be binary labels")
+    values = np.clip(values, 1e-12, 1.0 - 1e-12)
     return float(-np.mean(labels * np.log(values) + (1 - labels) * np.log1p(-values)))
 
 
@@ -86,7 +93,8 @@ def _evaluate_functions(functions: dict[str, Callable[..., Any]], dataset: pd.Da
     refined, refined_targets = functions["predict"](cv_model, X_test, y_test)
 
     if not (
-        np.array_equal(prior_targets, expanded_targets)
+        np.array_equal(y_test, prior_targets)
+        and np.array_equal(prior_targets, expanded_targets)
         and np.array_equal(expanded_targets, refined_targets)
     ):
         raise AssertionError("model versions did not preserve the held-out evaluation partition")
@@ -106,6 +114,7 @@ def _evaluate_functions(functions: dict[str, Callable[..., Any]], dataset: pd.Da
         "test_count": int(len(X_test)),
         "positive_rate": float(np.mean(y_test)),
         "losses": losses,
+        "refinement_improved": losses["cv_refinement"] < losses["model_expansion"],
         "loss_deltas": {
             "model_expansion": losses["model_expansion"] - losses["prior_baseline"],
             "cv_refinement": losses["cv_refinement"] - losses["model_expansion"],

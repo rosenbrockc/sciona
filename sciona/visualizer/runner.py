@@ -308,6 +308,13 @@ def reconstruct_parameters(func: Callable, args_dict: Dict[str, Any]) -> Dict[st
             continue
         val = args_dict[param_name]
         param_type = type_hints.get(param_name, param.annotation)
+
+        # JSON inputs and upstream list outputs need the callable's array type
+        # restored before contracts run. Preserve list-typed parameters.
+        if (
+            param_type is np.ndarray or typing.get_origin(param_type) is np.ndarray
+        ) and isinstance(val, (list, tuple)):
+            val = np.asarray(val)
         
         # If type annotation is a dataclass and we received a dict, reconstruct it
         if dataclasses.is_dataclass(param_type) and isinstance(val, dict):

@@ -8,6 +8,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from sciona.api.models import CatalogEntry, ProviderInstallInfo
 
@@ -113,3 +114,37 @@ def test_cli_uses_a_repo_local_cache_by_default(monkeypatch) -> None:
 
     assert RUNTIME.main() == 0
     assert captured["cache_dir"] == SCRIPT.parents[1] / ".sciona_datasets_cache" / "open-data"
+
+
+@pytest.mark.parametrize("probabilities,targets", [
+    ([np.nan, 0.5], [0, 1]),
+    ([np.inf, 0.5], [0, 1]),
+    ([-0.1, 0.5], [0, 1]),
+    ([1.1, 0.5], [0, 1]),
+    ([[0.2], [0.8]], [0, 1]),
+    ([0.2, 0.8], [0]),
+    ([], []),
+    ([0.2, 0.8], [0, 0.5]),
+])
+def test_log_loss_rejects_invalid_predictions(probabilities, targets):
+    with pytest.raises(ValueError):
+        RUNTIME._log_loss(probabilities, targets)
+
+
+def test_log_loss_accepts_boundary_probabilities():
+    assert np.isfinite(RUNTIME._log_loss([0.0, 1.0], [1, 0]))
+
+
+def test_evaluation_rejects_consistently_changed_holdout_labels():
+    targets = np.array([0, 1])
+    changed = 1 - targets
+    functions = {
+        "split": lambda table: (table, table, targets, targets),
+        "prior_fit": lambda y: 0.5,
+        "prior_predict": lambda *args: (np.array([0.5, 0.5]), changed),
+        "model_fit": lambda *args: None,
+        "cv_fit": lambda *args: None,
+        "predict": lambda *args: (np.array([0.8, 0.2]), changed),
+    }
+    with pytest.raises(AssertionError, match="held-out"):
+        RUNTIME._evaluate_functions(functions, pd.DataFrame({"x": [0, 1]}))

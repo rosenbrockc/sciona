@@ -264,6 +264,50 @@ async def test_cdg_execution_session(temp_run_dir):
 
 
 @pytest.mark.anyio
+async def test_execution_restores_array_annotation_from_json_input(tmp_path, monkeypatch):
+    monkeypatch.setattr("sciona.visualizer.runner.RUNS_DIR", tmp_path)
+    monkeypatch.setattr("sciona.visualizer.runner._ensure_atoms_imported", lambda: None)
+
+    def vector_sum(values: np.ndarray, labels: list) -> int:
+        assert isinstance(values, np.ndarray)
+        assert isinstance(labels, list)
+        return int(values.sum())
+
+    monkeypatch.setitem(REGISTRY, "synthetic_vector_sum", {"impl": vector_sum})
+    node = AlgorithmicNode(
+        node_id="sum", name="Sum", description="", concept_type="custom",
+        status=NodeStatus.ATOMIC, depth=0, type_signature="", children=[],
+        inputs=[
+            {"name": "values", "type_desc": "np.ndarray", "constraints": ""},
+            {"name": "labels", "type_desc": "list", "constraints": ""},
+        ],
+        outputs=[{"name": "result", "type_desc": "int", "constraints": ""}],
+        matched_primitive="synthetic_vector_sum",
+    )
+    session = CDGExecutionSession(driver=None, repo="synthetic", run_id="array-input")
+    result = await session.execute(
+        {"values": [2, 5, 9], "labels": ["a", "b", "c"]},
+        cdg=SimpleNamespace(nodes=[node], edges=[], metadata={}),
+    )
+    assert result["status"] == "completed"
+    output = json.loads((tmp_path / "array-input" / "sum" / "out_result.json").read_text())
+    assert output["value"] == 16
+
+
+def test_reconstructed_json_vector_satisfies_ecg_atom_contract():
+    from sciona.atoms.signal_processing.biosppy.ecg import heart_rate_computation
+
+    # Uniform synthetic events at one-second intervals, independent of real data.
+    args = reconstruct_parameters(
+        heart_rate_computation,
+        {"rpeaks": list(range(0, 2000, 250)), "sampling_rate": 250.0},
+    )
+    indices, rates = heart_rate_computation(**args)
+    assert len(indices) == len(rates) > 0
+    np.testing.assert_allclose(rates, 60.0)
+
+
+@pytest.mark.anyio
 async def test_cdg_execution_session_uses_supplied_graph_snapshot(temp_run_dir):
     call_count = 0
 

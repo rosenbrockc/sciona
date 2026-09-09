@@ -629,6 +629,7 @@ def _exercise_cold_runtime(
     work_dir: Path,
     matcher_root: Path,
     ecg_edf: Path | None = None,
+    tabular_cache_dir: Path | None = None,
 ) -> dict[str, object]:
     fqdn_rows = json.dumps([fqdn for _provider, fqdn in PROVIDERS])
     provider_rows = json.dumps([provider for provider, _fqdn in PROVIDERS])
@@ -740,6 +741,26 @@ asyncio.run(main())
     if not output:
         raise RuntimeError("Cold runtime produced no result")
     runtime_result = json.loads(output[-1])
+    tabular_run = _run(
+        [
+            str(python),
+            str(matcher_root / "scripts" / "tabular_ml_e2e_runtime.py"),
+            "--api-url",
+            api_url,
+            "--cache-dir",
+            str(tabular_cache_dir if tabular_cache_dir is not None else work_dir / "open-data"),
+        ],
+        cwd=work_dir,
+        env=env,
+        capture=True,
+    )
+    tabular_output = tabular_run.stdout.strip().splitlines()
+    if not tabular_output:
+        raise RuntimeError("Tabular runtime produced no result")
+    tabular_result = json.loads(tabular_output[-1])
+    if not isinstance(tabular_result, dict) or tabular_result.get("status") != "passed":
+        raise RuntimeError("Tabular runtime did not pass")
+    runtime_result["tabular"] = tabular_result
     if ecg_result is not None:
         runtime_result["ecg"] = ecg_result
     return runtime_result
@@ -1060,6 +1081,7 @@ def main() -> int:
             work_dir=work_dir,
             matcher_root=matcher_root,
             ecg_edf=ecg_edf,
+            tabular_cache_dir=args.open_data_cache_dir,
         )
         print(
             json.dumps(
